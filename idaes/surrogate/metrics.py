@@ -11,6 +11,7 @@
 # license information.
 #################################################################################
 
+
 def compute_fit_metrics(surrogate, dataframe):
     """
     Compute the fit metrics for the surrogate against the
@@ -23,13 +24,15 @@ def compute_fit_metrics(surrogate, dataframe):
        surrogate : surrogate object (derived from SurrogateBase)
           This is the surrogate object we want to evaluate for the comparison
        dataframe : pandas DataFrame
-          The dataframe that contains the inputs and outputs we want to use 
+          The dataframe that contains the inputs and outputs we want to use
           in the evaluation.
+
+    Returns:
+        dict-of-dicts with outer keys representing output labels and inner keys
+        representing metrics for that output.
     """
     y = dataframe[surrogate.output_labels()]
     f = surrogate.evaluate_surrogate(dataframe)
-    #print(f.columns.to_list())
-    #print(surrogate.output_labels())
     assert f.columns.to_list() == surrogate.output_labels()
 
     y_mean = y.mean(axis=0)
@@ -42,69 +45,14 @@ def compute_fit_metrics(surrogate, dataframe):
     MSE = ((y-f)**2).mean(axis=0)
     RMSE = MSE**0.5
 
-    return TrainingMetrics(RMSE=RMSE, MSE=MSE, MAE=MAE, maxAE=maxAE, SSE=SSE, R2=R2)
+    # Reorder indices to have output first
+    metrics = {}
+    for o in surrogate.output_labels():
+        metrics[o] = {"RMSE": RMSE[o],
+                      "MSE": MSE[o],
+                      "MAE": MAE[o],
+                      "maxAE": maxAE[o],
+                      "SSE": SSE[o],
+                      "R2": R2[o]}
 
-
-#TODO: Maybe this should just be a dictionary (or munch)
-#TODO: think of other metrics utility functions we may want
-class TrainingMetrics(object):
-    def __init__(self, RMSE, MSE, MAE, maxAE, SSE, R2):
-        # root mean-squared error
-        self._RMSE = RMSE
-
-        # mean squared error
-        self._MSE = MSE
-
-        # mean absolute error
-        self._MAE = MAE
-
-        # max absolute error
-        self._maxAE = maxAE
-
-        # sum of squared errors
-        self._SSE = SSE
-
-        # R-squared
-        self._R2 = R2
-
-
-        # TODO: number of datapoints out of bounds
-
-    @property
-    def RMSE(self):
-        return self._RMSE
-
-    @property
-    def MSE(self):
-        return self._MSE
-
-    @property
-    def MAE(self):
-        return self._MAE
-
-    @property
-    def maxAE(self):
-        return self._maxAE
-
-    @property
-    def SSE(self):
-        return self._SSE
-
-    @property
-    def R2(self):
-        return self._R2
-
-    def __str__(self):
-        ret = '\n'
-        for l in self.RMSE.index:
-            ret += '\nQuality metrics for output: {}\n'.format(l)
-            ret += '---------------------------------------------------------\n'
-            ret += 'RMSE:          {}\n'.format(float(self.RMSE[l]))
-            ret += 'MSE:           {}\n'.format(float(self.MSE[l]))
-            ret += 'MAE:           {}\n'.format(float(self.MAE[l]))
-            ret += 'maxAE:         {}\n'.format(float(self.maxAE[l]))
-            ret += 'R2:            {}\n'.format(float(self.R2[l]))
-            ret += 'SSE:           {}\n'.format(float(self.SSE[l]))
-
-        return ret
-
+    return metrics

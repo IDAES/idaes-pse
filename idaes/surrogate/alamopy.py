@@ -24,10 +24,8 @@ from pyomo.common.config import ConfigValue, In, Path, ListOf, Bool
 from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
-from pyomo.core.base.global_set import UnindexedComponent_set
 
-from idaes.surrogate.surrogate_base import (
-    SurrogateTrainer, SurrogateBase, TrainingStatus)
+from idaes.surrogate.surrogate_base import SurrogateTrainer, SurrogateBase
 from idaes.core.util.exceptions import ConfigurationError
 
 # TODO: Adaptive sampling
@@ -482,8 +480,10 @@ class AlamoTrainer(SurrogateTrainer):
             None
 
         Returns:
-            TrainingStatus : status of the training run in Alamo
-            AlamoObject : trained surrogate model object
+            tuple : (success, AlamoObject, message) where success indicates
+            whether ALAMO was usccessfully executed, an instance of an
+            AlamoObject representing the trained surrogate, and message is the
+            final status line from the ALAMO output log.
         """
         # Get paths for temp files
         self._get_files()
@@ -514,9 +514,8 @@ class AlamoTrainer(SurrogateTrainer):
         if rc == 0:
             success = True
         almmsg = almlog.split("\n")[-3]
-        status = TrainingStatus(success, rc, almmsg)
 
-        return status, alamo_object
+        return success, alamo_object, almmsg
 
     # TODO: let's generalize this under the metrics?
     def get_alamo_results(self):
