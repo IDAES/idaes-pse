@@ -1657,12 +1657,12 @@ def pfd_result(outfile, m, df):
     tags["emissions"] = sofc_fstr(pyo.value(m.sofc_fs.CO2_emissions[0]), 1)
 
     original_svg_file = os.path.join(this_file_dir(),
-                                     "sofc_results_template.svg")
+                                     "rsofc_sofc_results.svg")
     with open(original_svg_file, "r") as f:
         svg_tag(tags, f, outfile=outfile)
 
 
-def report_results(m, outfile="sofc_results_report.svg"):
+def report_results(m, outfile="rsofc_sofc_results.svg"):
     make_stream_dict(m)
     df = create_stream_table_dataframe(streams=m._streams, orient="index")
     pfd_result(outfile, m, df)
@@ -1760,6 +1760,7 @@ def get_model(m=None, use_DNN=False):
     # initialize_costing(m)
     # # save model
     # ms.to_json(m, fname=init_fname)
+    report_results(m)
 
     return m
 
@@ -1767,4 +1768,4 @@ def get_model(m=None, use_DNN=False):
 if __name__ == "__main__":
     m = pyo.ConcreteModel()
     m = get_model(m)
-    check_scaling(m)
+    # check_scaling(m)
