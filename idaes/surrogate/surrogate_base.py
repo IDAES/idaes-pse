@@ -18,13 +18,6 @@ from pyomo.common.config import ConfigBlock
 from idaes.surrogate.metrics import compute_fit_metrics
 
 
-class TrainingStatus(object):
-    def __init__(self, success, return_code, msg):
-        self.success = success
-        self.return_code = return_code
-        self.msg = msg
-
-
 class SurrogateTrainer(object):
     CONFIG = ConfigBlock()
 
@@ -131,7 +124,10 @@ class SurrogateTrainer(object):
         instance of a derived surrogate object (from SurrogateBase)
 
         Returns:
-           tuple : (TrainingStatus, surrogate object)
+           tuple : (bool, surrogate object, message) where bool indicates
+           status of model training, surrogate object is an instance of a
+           class derived from SurrogateBase, and message is string containing
+           additional information from the trainer.
 
         """
         raise NotImplementedError(

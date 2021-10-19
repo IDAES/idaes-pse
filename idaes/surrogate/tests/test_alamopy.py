@@ -1176,16 +1176,16 @@ class TestWorkflow():
         alamo_trainer.config.monomialpower = [2, 3, 4, 5, 6]
         alamo_trainer.config.multi2power = [1, 2]
 
-        alamo_trainer._status, alamo_trainer._alamo_object = \
-            alamo_trainer.train_surrogate()
+        (alamo_trainer.status,
+         alamo_trainer.alamo_object,
+         alamo_trainer.msg) = alamo_trainer.train_surrogate()
 
         return alamo_trainer
 
     def test_execution(self, alamo_trainer):
         # Check execution
-        assert alamo_trainer._status.return_code == 0
-        assert alamo_trainer._status.success is True
-        assert alamo_trainer._status.msg == " Normal termination"
+        assert alamo_trainer.status is True
+        assert alamo_trainer.msg == " Normal termination"
 
         # Check temp file clean up
         assert alamo_trainer._temp_context is None
@@ -1219,7 +1219,7 @@ class TestWorkflow():
                 "0.99999999999973088193883 * x1*x2"}
 
     def test_alamo_object(self, alamo_trainer):
-        alamo_object = alamo_trainer._alamo_object
+        alamo_object = alamo_trainer.alamo_object
         assert isinstance(alamo_object, AlamoObject)
         assert alamo_object._surrogate_expressions == {
             'z1': ' z1 == 3.9999999999925432980774 * x1**2 - '
@@ -1247,7 +1247,7 @@ class TestWorkflow():
         assert len(blk.alamo_constraint) == 1
 
     def test_metrics(self, alamo_trainer):
-        alamo_object = alamo_trainer._alamo_object
+        alamo_object = alamo_trainer.alamo_object
 
         metrics = compute_fit_metrics(alamo_object, TestWorkflow.training_data)
 
