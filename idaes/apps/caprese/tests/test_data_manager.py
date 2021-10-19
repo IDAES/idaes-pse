@@ -270,7 +270,8 @@ class TestDataManager(object):
                 )
         plant.construct()
 
-        states_of_interest = [pyo.Reference(model.conc[:, "A"])]
+        states_of_interest = [pyo.Reference(model.conc[:, "A"]),
+                              pyo.Reference(model.rate[:, "A"])]
         plant_datamanager = PlantDataManager(plant, states_of_interest,)
 
         # Make sure all methods are there.
@@ -302,9 +303,10 @@ class TestDataManager(object):
         assert hasattr(plant_datamanager, "plant_vars_of_interest")
         pred_plant_vars_of_interest = plant.differential_vars + \
                                         [states_of_interest[1]] + \
-                                        plant.input_vars
+                                            plant.input_vars
         assert all(i1[t0] == i2[t0] for i1, i2 in
-                   zip(plant_datamanager.plant_vars_of_interest, pred_plant_vars_of_interest))
+                   zip(plant_datamanager.plant_vars_of_interest,
+                       pred_plant_vars_of_interest))
 
         assert hasattr(plant_datamanager, "plant_df")
         # empty_dataframe_from_variables has been tested.
@@ -338,7 +340,7 @@ class TestDataManager(object):
         plant.vectors.differential[0,:].set_value(35.)
         plant.vectors.differential[1,:].set_value(45.)
 
-        # Set some values at t0 for the user-interested variable.
+        # Set value at t0 for the user-interested variable.
         plant.vectors.algebraic[1,:].set_value(0.2)
 
         plant_datamanager.save_initial_plant_data()
