@@ -568,11 +568,25 @@ class ENRTL(Ideal):
         return exp(ln_gamma[j])
 
     @staticmethod
+    def log_act_phase_comp(b, p, j):
+        ln_gamma = getattr(b,"_log_act_phase_comp")
+        return ln_gamma[p, j]
+
+    @staticmethod
+    def log_act_phase_solvents(b, p):
+        ln_gamma = getattr(b,"_log_act_phase_solvents")
+        return ln_gamma[p]
+
+    @staticmethod
     def pressure_osm_phase(b, p):
-        return (-ENRTL.gas_constant(b)*b.temperature *
-                log(sum(b.act_phase_comp[p, j]
-                        for j in b.params.solvent_set)) /
-                b.vol_mol_phase[p])
+        if len(b.params.solvent_set) > 1:
+            return (-ENRTL.gas_constant(b)*b.temperature *
+                    log_act_phase_solvents[p] /
+                    b.vol_mol_phase[p])
+        elif len(b.params.solvent_set) == 1:
+            return (-ENRTL.gas_constant(b)*b.temperature *
+                    log_act_phase_comp[p, b.params.solvent_set.first()] /
+                    b.vol_mol_phase[p])
 
     @staticmethod
     def vol_mol_phase(b, p):

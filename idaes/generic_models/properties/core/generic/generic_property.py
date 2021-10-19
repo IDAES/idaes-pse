@@ -917,6 +917,7 @@ class GenericParameterData(PhysicalParameterBlock):
              'vol_mol_phase': {'method': '_vol_mol_phase'},
              'dh_rxn': {'method': '_dh_rxn'},
              'log_act_phase_comp': {'method': '_log_act_phase_comp'},
+             'log_act_phase_solvents': {'method': '_log_act_phase_solvents'},
              'log_act_phase_comp_true': {'method': '_log_act_phase_comp_true'},
              'log_act_phase_comp_apparent': {
                  'method': '_log_act_phase_comp_apparent'},
@@ -1839,6 +1840,15 @@ class GenericStateBlockData(StateBlockData):
                     default=1e-3,
                     warning=True,
                     hint="for log_mole_frac_phase_comp_true")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+        #TODO: Revisit scaling factor for log_act_phase_solvents
+        if self.is_property_constructed("log_act_phase_solvents"):
+            for p, v in self.log_act_phase_solvents_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    sum(self.mole_frac_phase[p,j] for j in self.params.solvent_set),
+                    default=1e-3,
+                    warning=True)
                 iscale.constraint_scaling_transform(
                     v, sf_x, overwrite=False)
 
@@ -3096,6 +3106,28 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.log_act_phase_comp)
             self.del_component(self.log_act_phase_comp_eq)
+            raise
+
+    def _log_act_phase_solvents(self):
+        try:
+            self.log_act_phase_solvents = Var(
+                self.phase_set,
+                initialize=1,
+                bounds=(-50, 1),
+                units=pyunits.dimensionless,
+                doc="Log of activities summed across solvents by phase")
+
+            def rule_log_act_phase_solvents(b, p):
+                p_config = b.params.get_phase(p).config
+                return exp(b.log_act_phase_solvents[p]) == \
+                       sum(p_config.equation_of_state.act_phase_comp(b, p, j) for j in b.params.solvent_set)
+            self.log_act_phase_solvents_eq = Constraint(
+                    self.phase_set,
+                    doc="Natural log of summed solvent activity in each phase",
+                    rule=rule_log_act_phase_solvents)
+        except AttributeError:
+            self.del_component(self.log_act_phase_solvents)
+            self.del_component(self.log_act_phase_solvents_eq)
             raise
 
     def _log_act_phase_comp_true(self):
