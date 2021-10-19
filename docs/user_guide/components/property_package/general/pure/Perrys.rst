@@ -107,7 +107,7 @@ Units are :math:`\text{kmol/}\text{m}^3`.
     Currently, only the most common correlation form from Perry's Handbook is implemented. Some components use different forms which are not yet supported.
     
 .. note::
-    When Perry's methods are used, a equation form for liquid molar density must be specified as an additional coefficient 'eqn_type.' At present, this
+    When Perry's methods are used, an equation form for liquid molar density must be specified as an additional coefficient 'eqn_type.' At present, this
     parameter may be either '1' or '2' to select an equation form. The second correlation form for liquid molar density is most often used for water or
     o-terphenyl (values exist in Perry's Handbook). For components missing from Perry's datatables, experimental data may be fit to either equation form
     as long as `dens_mol_comp_liq_coeff_eqn_type` is specified in the property config dictionary.
