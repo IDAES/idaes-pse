@@ -290,7 +290,7 @@ def state_initialization(b):
     # Need to do sanity checking of mole fractions for ideal phase fraction
     # calculations
     for j in b.component_list:
-        if value(b.mole_frac_comp[j]) <= -1E-6:
+        if value(b.mole_frac_comp[j]) <= 0:
             raise ValueError(f"Component {j} has a negative "
                              f"mole fraction in block {b.getname()}. "
                              "Check your initialization.")
@@ -299,8 +299,8 @@ def state_initialization(b):
     # equivalent to a phantom nonvaporizable component in the ideal phase
     # fraction calculations. Nevertheless, since we need to check for values 
     # greater than 1, we might as well check values less than 1
-    if abs(sum([value(b.mole_frac_comp[j]) 
-                for j in b.component_list])-1) >= 0.01:
+    if abs(value(sum([b.mole_frac_comp[j] 
+                for j in b.component_list]))-1) >= 1e-3:
         raise ValueError(f"Mole fractions in block {b.getname()} do not "
                          "add up to 1.")
 
@@ -354,13 +354,13 @@ def state_initialization(b):
                 raoult_init = False
             if raoult_init:
                 for j in vl_comps:
-                    if psat[j] <= -1E-6:
+                    if psat[j] <= 0:
                         raise UserModelError(f"Component {j} has a negative "
                                          f"saturation pressure in block "
                                          f"{b.getname()}. Check "
                                          f"your implementation and parameters.")
                 for j in henry_comps:
-                    if H[j] <= -1E-6:
+                    if H[j] <= 0:
                         raise UserModelError(f"Component {j} has a negative "
                                          f"Henry's Law constant in block "
                                          f"{b.getname()}. Check "
@@ -504,9 +504,9 @@ def state_initialization(b):
                 for j in l_only_comps:
                     b.mole_frac_phase_comp[p, j].value = value(
                         b.mole_frac_comp[j]/(1-vapFrac))
-                else:
-                    # Cannot do anything without a method to calculate Psat
-                    pass
+            else:
+                # Cannot do anything without a method to calculate Psat
+                pass
 
         elif pobj.is_vapor_phase() and init_VLE:            
             if tbub is None and tdew is None:
