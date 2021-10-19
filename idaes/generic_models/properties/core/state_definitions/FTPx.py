@@ -290,9 +290,9 @@ def state_initialization(b):
     # Need to do sanity checking of mole fractions for ideal phase fraction
     # calculations
     for j in b.component_list:
-        if value(b.mole_frac_comp[j]) <= 0:
+        if value(b.mole_frac_comp[j]) < 0:
             raise ValueError(f"Component {j} has a negative "
-                             f"mole fraction in block {b.getname()}. "
+                             f"mole fraction in block {b.name}. "
                              "Check your initialization.")
     
     # Mole fractions that add up to a value less than 1 are mathematically
@@ -301,7 +301,7 @@ def state_initialization(b):
     # greater than 1, we might as well check values less than 1
     if abs(value(sum([b.mole_frac_comp[j] 
                 for j in b.component_list]))-1) >= 1e-3:
-        raise ValueError(f"Mole fractions in block {b.getname()} do not "
+        raise ValueError(f"Mole fractions in block {b.name} do not "
                          "add up to 1.")
 
     vl_comps = []
@@ -354,16 +354,16 @@ def state_initialization(b):
                 raoult_init = False
             if raoult_init:
                 for j in vl_comps:
-                    if psat[j] <= 0:
+                    if psat[j] < 0:
                         raise UserModelError(f"Component {j} has a negative "
                                          f"saturation pressure in block "
-                                         f"{b.getname()}. Check "
+                                         f"{b.name}. Check "
                                          f"your implementation and parameters.")
                 for j in henry_comps:
-                    if H[j] <= 0:
+                    if H[j] < 0:
                         raise UserModelError(f"Component {j} has a negative "
                                          f"Henry's Law constant in block "
-                                         f"{b.getname()}. Check "
+                                         f"{b.name}. Check "
                                          f"your implementation and parameters.")
 
                 # Calculate bubble and dew pressures for an ideal mixture
@@ -693,6 +693,6 @@ class FTPx(object):
 # the error message is put in a separate function so we can test formatting.
 def raise_runtime_error(b):
     raise RuntimeError("Could not calculate ideal vapor fraction "
-                        f"in initialization of block {b.getname()}. "
+                        f"in initialization of block {b.name}. "
                         "Check that mole fractions and saturation "
                         "pressures have reasonable values.")
