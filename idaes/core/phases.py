@@ -65,8 +65,6 @@ class PhaseData(ProcessBlockData):
             doc="Internal config argument indicating whether phase_list "
             "needs to be populated."))
 
-    CONFIG.declare("diffus_phase_comp", ConfigValue(
-        description="Method to calculate component diffusivities in phase"))
     CONFIG.declare("therm_cond_phase", ConfigValue(
         description="Method to calculate thermal conductivity phase"))
     CONFIG.declare("surf_tens_phase", ConfigValue(

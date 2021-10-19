@@ -676,6 +676,24 @@ class GenericParameterData(PhysicalParameterBlock):
                             # Assume it is not needed and continue
                             pass
 
+        # Validate and other phase indexed props
+        phase_indexed_props = ["diffus_phase_comp"]
+        for prop in phase_indexed_props:
+            if cobj.config[prop] is not None:
+                for p, meth in cobj.config[prop].items():
+                    # First validate that p is a phase
+                    if p not in self.phase_list:
+                        raise ConfigurationError(
+                            f"{self.name} property {prop} definition contained"
+                            f" unrecognised phase {p}.")
+                    else:
+                        try:
+                            meth.build_parameters(cobj, p)
+                        except AttributeError:
+                            # Method provided has no build_parameters method
+                            # Assume it is not needed and continue
+                            pass
+
         for p in self.phase_list:
             pobj = self.get_phase(p)
             # pobj.config.equation_of_state.build_parameters(pobj)
@@ -894,6 +912,9 @@ class GenericParameterData(PhysicalParameterBlock):
              'cv_mol_phase': {'method': '_cv_mol_phase'},
              'cv_mol_phase_comp': {'method': '_cv_mol_phase_comp'},
              'diffus_phase_comp': {'method': '_diffus_phase_comp'},
+             'diffus_phase_comp_apparent': {
+                 'method': '_diffus_phase_comp_apparent'},
+             'diffus_phase_comp_true': {'method': '_diffus_phase_comp_true'},
              'heat_capacity_ratio_phase': {
                  'method': '_heat_capacity_ratio_phase'},
              'dens_mass': {'method': '_dens_mass'},
@@ -2435,13 +2456,55 @@ class GenericStateBlockData(StateBlockData):
     def _diffus_phase_comp(self):
         try:
             def rule_diffus_phase_comp(b, p, j):
-                return get_phase_method(b, "diffus_phase_comp", p)(b, p, j)
+                cobj = b.params.get_component(j)
+                if (cobj.config.diffus_phase_comp is not None and
+                        p in cobj.config.diffus_phase_comp):
+                    return cobj.config.diffus_phase_comp[p].return_expression(
+                        b, p, j, b.temperature)
+                else:
+                    return Expression.Skip
             self.diffus_phase_comp = Expression(
                     self.phase_component_set,
                     doc="Diffusivity for each phase-component pair",
                     rule=rule_diffus_phase_comp)
         except AttributeError:
             self.del_component(self.diffus_phase_comp)
+            raise
+
+    def _diffus_phase_comp_apparent(self):
+        try:
+            def rule_diffus_phase_comp_apparent(b, p, j):
+                cobj = b.params.get_component(j)
+                if (cobj.config.diffus_phase_comp is not None and
+                        p in cobj.config.diffus_phase_comp):
+                    return cobj.config.diffus_phase_comp[p].return_expression(
+                        b, p, j, b.temperature)
+                else:
+                    return Expression.Skip
+            self.diffus_phase_comp_apparent = Expression(
+                    self.params.apparent_phase_component_set,
+                    doc="Diffusivity for apparent components in each phase",
+                    rule=rule_diffus_phase_comp_apparent)
+        except AttributeError:
+            self.del_component(self.diffus_phase_comp_apparent)
+            raise
+
+    def _diffus_phase_comp_true(self):
+        try:
+            def rule_diffus_phase_comp_true(b, p, j):
+                cobj = b.params.get_component(j)
+                if (cobj.config.diffus_phase_comp is not None and
+                        p in cobj.config.diffus_phase_comp):
+                    return cobj.config.diffus_phase_comp[p].return_expression(
+                        b, p, j, b.temperature)
+                else:
+                    return Expression.Skip
+            self.diffus_phase_comp_true = Expression(
+                    self.params.true_phase_component_set,
+                    doc="Diffusivity for true components in each phase",
+                    rule=rule_diffus_phase_comp_true)
+        except AttributeError:
+            self.del_component(self.diffus_phase_comp_true)
             raise
 
     def _energy_internal_mol(self):
