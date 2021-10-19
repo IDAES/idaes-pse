@@ -22,7 +22,7 @@ from pyomo.environ import log, Var, Param, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config
 
-from idaes.core.util.exceptions import BurntToast
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -257,9 +257,9 @@ class dens_mol_liq_comp():  # dens_mol_liq_comp_eqn_1, dens_mol_liq_comp_eqn_2
         elif eqn_type == 2:
             rho = dens_mol_liq_comp_eqn_2().return_expression(b, cobj, T)
         else:
-            raise Exception("No expression for eqn_type of dens_mol_liq_comp"
-                            "_coeff specified, please refer to Perrys EOS "
-                            "package for valid expression flags.")
+            raise ConfigurationError("No expression for eqn_type of "
+                                     "dens_mol_liq_comp_coeff specified,"
+                                     "please specify valid flag.")
         return rho
 
 
