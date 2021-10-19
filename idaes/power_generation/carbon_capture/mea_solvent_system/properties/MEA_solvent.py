@@ -14,7 +14,7 @@
 Ideal Liquid Phase properties for aqueous MEA solvent with CO2.
 
 The following apparent species are used to represent the mixture, along with
-the method used to calculate theri vapor pressure:
+the method used to calculate their vapor pressure:
 
     Carbon Dioxide (CO2) - Henry's Law
     Monoethanolamine (MEA) - non-volatile,
@@ -34,7 +34,7 @@ References:
     [2] Morgan et.al (2015)
 """
 # Import Pyomo units
-from pyomo.environ import exp, log, units as pyunits, Var
+from pyomo.environ import exp, log, units as pyunits, Var, Expression
 
 # Import IDAES cores
 from idaes.core import AqueousPhase, Solvent, Solute, Anion, Cation
@@ -296,6 +296,78 @@ class VolMolCO2():
 
 # -----------------------------------------------------------------------------
 # Transport property models
+class DiffusCO2():
+    @staticmethod
+    def build_parameters(cobj, phase):
+        cobj.diffus_phase_comp_coeff_1 = Var(
+                doc="Parameter 1 for liquid phase diffusivity model",
+                units=pyunits.m**2/pyunits.s)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="1")
+        cobj.diffus_phase_comp_coeff_2 = Var(
+                doc="Parameter 2 for liquid phase diffusivity model",
+                units=pyunits.m**5/pyunits.kmol/pyunits.s)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="2")
+        cobj.diffus_phase_comp_coeff_3 = Var(
+                doc="Parameter 3 for liquid phase diffusivity model",
+                units=pyunits.m**8/pyunits.kmol**2/pyunits.s)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="3")
+        cobj.diffus_phase_comp_coeff_4 = Var(
+                doc="Parameter 4 for liquid phase diffusivity model",
+                units=pyunits.dimensionless)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="4")
+        cobj.diffus_phase_comp_coeff_5 = Var(
+                doc="Parameter 5 for liquid phase diffusivity model",
+                units=pyunits.K)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="5")
+
+    @staticmethod
+    def return_expression(blk, p, j, T):
+        cobj = blk.params.get_component(j)
+        C_MEA = blk.conc_mol_comp['MEA']*1e-3*pyunits.kmol/pyunits.mol
+        return ((cobj.diffus_phase_comp_coeff_1 +
+                 cobj.diffus_phase_comp_coeff_2*C_MEA +
+                 cobj.diffus_phase_comp_coeff_3*C_MEA**2) *
+                exp((cobj.diffus_phase_comp_coeff_4 +
+                     cobj.diffus_phase_comp_coeff_5) / T))
+
+
+class DiffusMEA():
+    @staticmethod
+    def build_parameters(cobj, phase):
+        cobj.diffus_phase_comp_coeff_1 = Var(
+                doc="Parameter 1 for liquid phase diffusivity model",
+                units=pyunits.dimensionless)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="1")
+        cobj.diffus_phase_comp_coeff_2 = Var(
+                doc="Parameter 2 for liquid phase diffusivity model",
+                units=pyunits.K)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="2")
+        cobj.diffus_phase_comp_coeff_3 = Var(
+                doc="Parameter 3 for liquid phase diffusivity model",
+                units=pyunits.m**3/pyunits.mol)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="3")
+
+    @staticmethod
+    def return_expression(blk, p, j, T):
+        cobj = blk.params.get_component(j)
+        cobj.display()
+        C_MEA = blk.conc_mol_comp['MEA']
+        return exp(cobj.diffus_phase_comp_coeff_1 +
+                   cobj.diffus_phase_comp_coeff_2/T +
+                   cobj.diffus_phase_comp_coeff_3*C_MEA)*pyunits.m**2/pyunits.s
+
+
+class DiffusNone():
+    # placeholder method for components where diffusivity is not required
+    @staticmethod
+    def build_parameters(pobj):
+        pass
+
+    @staticmethod
+    def return_expression(blk, p, j, T):
+        return Expression.Skip
+
+
 class Viscosity():
     @staticmethod
     def build_parameters(pobj):
@@ -589,6 +661,7 @@ configuration = {
     "components": {
         'H2O': {"type": Solvent,
                 "cp_mol_liq_comp": CpMolSolvent,
+                "diffus_phase_comp": {"Liq": DiffusNone},
                 "enth_mol_liq_comp": EnthMolSolvent,
                 "pressure_sat_comp": PressureSatSolvent,
                 "vol_mol_liq_comp": VolMolSolvent,
@@ -613,6 +686,7 @@ configuration = {
                     }},
         'MEA': {"type": Solvent,
                 "cp_mol_liq_comp": CpMolSolvent,
+                "diffus_phase_comp": {"Liq": DiffusMEA},
                 "enth_mol_liq_comp": EnthMolSolvent,
                 "pressure_sat_comp": PressureSatSolvent,
                 "vol_mol_liq_comp": VolMolSolvent,
@@ -628,6 +702,10 @@ configuration = {
                         '1': (-5.35162e-7, pyunits.g/pyunits.mL/pyunits.K**2),  # [2]
                         '2': (-4.51417e-4, pyunits.g/pyunits.mL/pyunits.K),
                         '3': (1.19451, pyunits.g/pyunits.mL)},
+                    "diffus_phase_comp_coeff": {
+                            '1': -13.275,
+                            '2': -2198.3,
+                            '3': -7.8142e-5},
                     "pressure_sat_comp_coeff": {
                         '1': 172.78,
                         '2': -13492,
@@ -637,12 +715,19 @@ configuration = {
                     }},
         'CO2': {"type": Solute,
                 "cp_mol_liq_comp": CpMolCO2,
+                "diffus_phase_comp": {"Liq": DiffusCO2},
                 "enth_mol_liq_comp": EnthMolCO2,
                 "henry_component": {"Liq": N2OAnalogy},
                 "vol_mol_liq_comp": VolMolCO2,
                 "parameter_data": {
                     "mw": (0.04401, pyunits.kg/pyunits.mol),
                     "dh_abs_co2": -84000,
+                    "diffus_phase_comp_coeff": {
+                        '1': 2.35e-6,
+                        '2': 2.9837e-8,
+                        '3': -9.7078e-9,
+                        '4': -2119,
+                        '5': -20.132},
                     "vol_mol_liq_comp_coeff": {
                         'a': (10.2074, pyunits.mL/pyunits.mol),  # [2]
                         'b': (-2.2642, pyunits.mL/pyunits.mol),
@@ -650,11 +735,14 @@ configuration = {
                         'd': (207, pyunits.mL/pyunits.mol),
                         'e': (-563.3701, pyunits.mL/pyunits.mol)}}},
         'MEA_+': {"type": Cation,
-                  "charge": +1},
+                  "charge": +1,
+                  "diffus_phase_comp": {"Liq": DiffusNone}},
         'MEACOO_-': {"type": Anion,
-                     "charge": -1},
+                     "charge": -1,
+                     "diffus_phase_comp": {"Liq": DiffusNone}},
         'HCO3_-': {"type": Anion,
-                   "charge": -1}},
+                   "charge": -1,
+                   "diffus_phase_comp": {"Liq": DiffusNone}}},
 
     # Specifying phases
     "phases":  {'Liq': {"type": AqueousPhase,
