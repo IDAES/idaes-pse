@@ -23,6 +23,7 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
+                           units as pyunits,
                            Constraint)
 from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType)
@@ -32,6 +33,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables,
                                               unused_variables_set)
 from idaes.core.util.testing import initialization_tester
+from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util import get_solver
 
 # Import FixedBed0D unit model
@@ -54,7 +56,9 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_set": [0, 3600]})
+    m.fs = FlowsheetBlock(default={"dynamic": True,
+                                   "time_set": [0, 3600],
+                                   "time_units": pyunits.s})
 
     # Set up thermo props and reaction props
     m.fs.gas_props = GasPhaseParameterBlock()
@@ -87,19 +91,20 @@ class TestIronOC(object):
     @pytest.fixture(scope="class")
     def iron_oc(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": True, "time_set": [0, 3600]})
+        m.fs = FlowsheetBlock(default={"dynamic": True,
+                                       "time_set": [0, 3600],
+                                       "time_units": pyunits.s})
 
-        # Set up thermo props and reaction props
         m.fs.gas_props = GasPhaseParameterBlock()
         m.fs.solid_props = SolidPhaseParameterBlock()
         m.fs.solid_rxns = HeteroReactionParameterBlock(
                 default={"solid_property_package": m.fs.solid_props,
                          "gas_property_package": m.fs.gas_props})
 
-        m.fs.unit = FixedBed0D(
-            default={"gas_property_package": m.fs.gas_props,
-                     "solid_property_package": m.fs.solid_props,
-                     "reaction_package": m.fs.solid_rxns})
+        m.fs.unit = FixedBed0D(default={
+                        "gas_property_package": m.fs.gas_props,
+                        "solid_property_package": m.fs.solid_props,
+                        "reaction_package": m.fs.solid_rxns})
 
         # Discretize time domain
         m.discretizer = TransformationFactory('dae.finite_difference')
@@ -108,8 +113,11 @@ class TestIronOC(object):
                                wrt=m.fs.time,
                                scheme="BACKWARD")
 
+        # Set reactor design conditions
+        m.fs.unit.bed_diameter.fix(1)  # diameter of the TGA reactor [m]
+        m.fs.unit.bed_height.fix(1)  # height of solids in the TGA reactor [m]
+
         # Set initial conditions of the solid phase
-        m.fs.unit.mass_solids[0].fix(1)
         m.fs.unit.solids[0].particle_porosity.fix(0.20)
         m.fs.unit.solids[0].mass_frac_comp['Fe2O3'].fix(0.45)
         m.fs.unit.solids[0].mass_frac_comp['Fe3O4'].fix(0)
@@ -125,28 +133,28 @@ class TestIronOC(object):
             m.fs.unit.gas[t].mole_frac_comp['CO2'].fix(0.4)
             m.fs.unit.gas[t].mole_frac_comp['H2O'].fix(0.5)
             m.fs.unit.gas[t].mole_frac_comp['CH4'].fix(0.1)
-            if m.fs.unit.config.energy_balance_type == EnergyBalanceType.none:
-                m.fs.unit.solids[t].temperature.fix(1273.15)
 
         return m
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, iron_oc):
+        assert isinstance(iron_oc.fs.unit.volume_bed_constraint, Constraint)
+        assert isinstance(iron_oc.fs.unit.volume_solid_constraint, Constraint)
         assert isinstance(iron_oc.fs.unit.solids_material_holdup_constraints,
                           Constraint)
         assert isinstance(iron_oc.fs.unit
                           .solids_material_accumulation_constraints,
                           Constraint)
-        assert isinstance(iron_oc.fs.unit.mass_solids_eq, Constraint)
-        assert isinstance(iron_oc.fs.unit.sum_component_eqn, Constraint)
+        assert isinstance(iron_oc.fs.unit.mass_solids_constraint, Constraint)
+        assert isinstance(iron_oc.fs.unit.sum_component_constraint, Constraint)
         assert isinstance(iron_oc.fs.unit.solids_energy_holdup_constraints,
                           Constraint)
         assert isinstance(iron_oc.fs.unit
                           .solids_energy_accumulation_constraints, Constraint)
 
-        assert number_variables(iron_oc) == 3546
-        assert number_total_constraints(iron_oc) == 2823
+        assert number_variables(iron_oc) == 3650
+        assert number_total_constraints(iron_oc) == 2925
         assert number_unused_variables(iron_oc) == 206
 
     @pytest.mark.unit
@@ -157,7 +165,17 @@ class TestIronOC(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, iron_oc):
+        optarg = {
+                 "bound_push": 1e-8,
+                 'halt_on_ampl_error': 'yes',
+                 'linear_solver': 'ma27'
+                  }
+
         initialization_tester(iron_oc)
+
+        solver = get_solver('ipopt', optarg)  # create solver
+
+        initialize_by_time_element(iron_oc.fs, iron_oc.fs.time, solver=solver)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -174,7 +192,7 @@ class TestIronOC(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iron_oc):  # need to update these values
-        assert (pytest.approx(0.9851, abs=1e-2) ==
+        assert (pytest.approx(1795.6616, abs=1e-2) ==
                 iron_oc.fs.unit.mass_solids[3600].value)
         assert (pytest.approx(0.1955, abs=1e-2) ==
                 iron_oc.fs.unit.solids[3600].particle_porosity.value)
@@ -192,18 +210,23 @@ class TestIronOC(object):
     @pytest.mark.component
     def test_conservation(self, iron_oc):
         # Conservation of material check
-        # first, check if Final Mass - Initial Mass = Total Holdup Change
+        # first, check if Final Mass - Initial Mass = Total Amount Reacted
+        dt = 36  # time step in seconds, used in time point discretization
         mbal_solid_total = value(
                 (iron_oc.fs.unit.mass_solids[3600] -
                  iron_oc.fs.unit.mass_solids[0]) -
-                (sum(iron_oc.fs.unit.solids_material_holdup[3600, j]
-                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4')) -
-                 sum(iron_oc.fs.unit.solids_material_holdup[0, j]
-                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4'))))
+                (sum(iron_oc.fs.unit.config.reaction_package.
+                     rate_reaction_stoichiometry[r, "Sol", j] *
+                     iron_oc.fs.unit.reactions[t].reaction_rate[r] *
+                     iron_oc.fs.unit.volume_solid[t] *
+                     dt * iron_oc.fs.unit.solids[t]._params.mw_comp[j]
+                     for r in iron_oc.fs.unit.config.reaction_package.
+                     rate_reaction_idx
+                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4')
+                     for t in iron_oc.fs.time)))
         assert abs(mbal_solid_total) <= 1e-2
 
-        # second, check if Change in Mass = Change in Holdup at each time t
-        dt = 36  # time step in seconds, used in time point discretization
+        # second, check if Change in Mass = Amount Reacted at each time t
         mbal_solid = []
         for t in iron_oc.fs.time:
             if t == 0:
@@ -212,10 +235,14 @@ class TestIronOC(object):
                 mbal_solid.append(value(
                     (iron_oc.fs.unit.mass_solids[t] -
                      iron_oc.fs.unit.mass_solids[t - dt]) -
-                    (sum(iron_oc.fs.unit.solids_material_holdup[t, j]
-                         for j in ('Al2O3', 'Fe2O3', 'Fe3O4')) -
-                     sum(iron_oc.fs.unit.solids_material_holdup[t - dt, j]
-                         for j in ('Al2O3', 'Fe2O3', 'Fe3O4')))))
+                    (iron_oc.fs.unit.config.reaction_package.
+                     rate_reaction_stoichiometry[r, "Sol", j] *
+                     iron_oc.fs.unit.reactions[t - dt].reaction_rate[r] *
+                     iron_oc.fs.unit.volume_solid[t - dt] *
+                     dt * iron_oc.fs.unit.solids[t]._params.mw_comp[j]
+                     for r in iron_oc.fs.unit.config.reaction_package.
+                     rate_reaction_idx
+                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4'))))
         for val in mbal_solid:
             assert abs(val) <= 1e-2
 
@@ -238,18 +265,21 @@ class TestIronOC(object):
         assert (pytest.approx(1.5, abs=1e-6) == stoichiometric_ratio)
 
         # Conservation of energy check
-        # first, check if Final Energy - Initial Energy = Total Holdup Change
+        # first, check if Final Energy - Initial Energy = Reaction Enthalpy
         ebal_solid_total = value(
                 (iron_oc.fs.unit.mass_solids[3600] *
                  iron_oc.fs.unit.solids[3600].enth_mass -
                  iron_oc.fs.unit.mass_solids[0] *
                  iron_oc.fs.unit.solids[0].enth_mass) -
-                (iron_oc.fs.unit.solids_energy_holdup[3600] -
-                 iron_oc.fs.unit.solids_energy_holdup[0]))
+                (sum(iron_oc.fs.unit.reactions[t].reaction_rate[r] *
+                     iron_oc.fs.unit.volume_solid[t] *
+                     dt * iron_oc.fs.unit.reactions[t].dh_rxh[r]
+                     for r in iron_oc.fs.unit.config.reaction_package.
+                     rate_reaction_idx
+                     for t in iron_oc.fs.time)))
         assert abs(ebal_solid_total) <= 1e-2
 
         # second, check if Change in Energy = Change in Holdup at each time t
-        dt = 36  # seconds, used in time point discretization
         ebal_solid = []
         for t in iron_oc.fs.time:
             if t == 0:
@@ -260,8 +290,11 @@ class TestIronOC(object):
                      iron_oc.fs.unit.solids[t].enth_mass -
                      iron_oc.fs.unit.mass_solids[t - dt] *
                      iron_oc.fs.unit.solids[t - dt].enth_mass) -
-                    (iron_oc.fs.unit.solids_energy_holdup[t] -
-                     iron_oc.fs.unit.solids_energy_holdup[t - dt])))
+                    (iron_oc.fs.unit.reactions[t - dt].reaction_rate[r] *
+                     iron_oc.fs.unit.volume_solid[t - dt] *
+                     dt * iron_oc.fs.unit.reactions[t - dt].dh_rxh[r]
+                     for r in iron_oc.fs.unit.config.reaction_package.
+                     rate_reaction_idx)))
         for val in ebal_solid:
             assert abs(val) <= 1e-2
 
@@ -278,20 +311,21 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.fixture(scope="class")
     def iron_oc(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": True, "time_set": [0, 3600]})
+        m.fs = FlowsheetBlock(default={"dynamic": True,
+                                       "time_set": [0, 3600],
+                                       "time_units": pyunits.s})
 
-        # Set up thermo props and reaction props
-        m.fs.gas_properties = GasPhaseParameterBlock()
-        m.fs.solid_properties = SolidPhaseParameterBlock()
-        m.fs.hetero_reactions = HeteroReactionParameterBlock(
-                default={"solid_property_package": m.fs.solid_properties,
-                         "gas_property_package": m.fs.gas_properties})
+        m.fs.gas_props = GasPhaseParameterBlock()
+        m.fs.solid_props = SolidPhaseParameterBlock()
+        m.fs.solid_rxns = HeteroReactionParameterBlock(
+                default={"solid_property_package": m.fs.solid_props,
+                         "gas_property_package": m.fs.gas_props})
 
-        m.fs.unit = FixedBed0D(
-                default={"energy_balance_type": EnergyBalanceType.none,
-                         "gas_property_package": m.fs.gas_properties,
-                         "solid_property_package": m.fs.solid_properties,
-                         "reaction_package": m.fs.hetero_reactions})
+        m.fs.unit = FixedBed0D(default={
+                        "energy_balance_type": EnergyBalanceType.none,
+                        "gas_property_package": m.fs.gas_props,
+                        "solid_property_package": m.fs.solid_props,
+                        "reaction_package": m.fs.solid_rxns})
 
         # Discretize time domain
         m.discretizer = TransformationFactory('dae.finite_difference')
@@ -300,8 +334,11 @@ class TestIronOC_EnergyBalanceType(object):
                                wrt=m.fs.time,
                                scheme="BACKWARD")
 
+        # Set reactor design conditions
+        m.fs.unit.bed_diameter.fix(1)  # diameter of the TGA reactor [m]
+        m.fs.unit.bed_height.fix(1)  # height of solids in the TGA reactor [m]
+
         # Set initial conditions of the solid phase
-        m.fs.unit.mass_solids[0].fix(1)
         m.fs.unit.solids[0].particle_porosity.fix(0.20)
         m.fs.unit.solids[0].mass_frac_comp['Fe2O3'].fix(0.45)
         m.fs.unit.solids[0].mass_frac_comp['Fe3O4'].fix(0)
@@ -317,24 +354,24 @@ class TestIronOC_EnergyBalanceType(object):
             m.fs.unit.gas[t].mole_frac_comp['CO2'].fix(0.4)
             m.fs.unit.gas[t].mole_frac_comp['H2O'].fix(0.5)
             m.fs.unit.gas[t].mole_frac_comp['CH4'].fix(0.1)
-            if m.fs.unit.config.energy_balance_type == EnergyBalanceType.none:
-                m.fs.unit.solids[t].temperature.fix(1273.15)
 
         return m
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, iron_oc):
+        assert isinstance(iron_oc.fs.unit.volume_bed_constraint, Constraint)
+        assert isinstance(iron_oc.fs.unit.volume_solid_constraint, Constraint)
         assert isinstance(iron_oc.fs.unit.solids_material_holdup_constraints,
                           Constraint)
         assert isinstance(iron_oc.fs.unit
                           .solids_material_accumulation_constraints,
                           Constraint)
-        assert isinstance(iron_oc.fs.unit.mass_solids_eq, Constraint)
-        assert isinstance(iron_oc.fs.unit.sum_component_eqn, Constraint)
+        assert isinstance(iron_oc.fs.unit.mass_solids_constraint, Constraint)
+        assert isinstance(iron_oc.fs.unit.sum_component_constraint, Constraint)
 
-        assert number_variables(iron_oc) == 2940
-        assert number_total_constraints(iron_oc) == 2117
+        assert number_variables(iron_oc) == 3044
+        assert number_total_constraints(iron_oc) == 2219
         assert number_unused_variables(iron_oc) == 206
         print(unused_variables_set(iron_oc))
 
@@ -363,7 +400,7 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iron_oc):  # need to update these values
-        assert (pytest.approx(0.9851, abs=1e-2) ==
+        assert (pytest.approx(1798.5462, abs=1e-2) ==
                 iron_oc.fs.unit.mass_solids[3600].value)
         assert (pytest.approx(0.1955, abs=1e-2) ==
                 iron_oc.fs.unit.solids[3600].particle_porosity.value)
@@ -381,18 +418,23 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.component
     def test_conservation(self, iron_oc):
         # Conservation of material check
-        # first, check if Final Mass - Initial Mass = Total Holdup Change
+        # first, check if Final Mass - Initial Mass = Total Amount Reacted
+        dt = 36  # time step in seconds, used in time point discretization
         mbal_solid_total = value(
                 (iron_oc.fs.unit.mass_solids[3600] -
                  iron_oc.fs.unit.mass_solids[0]) -
-                (sum(iron_oc.fs.unit.solids_material_holdup[3600, j]
-                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4')) -
-                 sum(iron_oc.fs.unit.solids_material_holdup[0, j]
-                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4'))))
+                (sum(iron_oc.fs.unit.config.reaction_package.
+                     rate_reaction_stoichiometry[r, "Sol", j] *
+                     iron_oc.fs.unit.reactions[t].reaction_rate[r] *
+                     iron_oc.fs.unit.volume_solid[t] *
+                     dt * iron_oc.fs.unit.solids[t]._params.mw_comp[j]
+                     for r in iron_oc.fs.unit.config.reaction_package.
+                     rate_reaction_idx
+                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4')
+                     for t in iron_oc.fs.time)))
         assert abs(mbal_solid_total) <= 1e-2
 
-        # second, check if Change in Mass = Change in Holdup at each time t
-        dt = 36  # time step in seconds, used in time point discretization
+        # second, check if Change in Mass = Amount Reacted at each time t
         mbal_solid = []
         for t in iron_oc.fs.time:
             if t == 0:
@@ -401,10 +443,14 @@ class TestIronOC_EnergyBalanceType(object):
                 mbal_solid.append(value(
                     (iron_oc.fs.unit.mass_solids[t] -
                      iron_oc.fs.unit.mass_solids[t - dt]) -
-                    (sum(iron_oc.fs.unit.solids_material_holdup[t, j]
-                         for j in ('Al2O3', 'Fe2O3', 'Fe3O4')) -
-                     sum(iron_oc.fs.unit.solids_material_holdup[t - dt, j]
-                         for j in ('Al2O3', 'Fe2O3', 'Fe3O4')))))
+                    (iron_oc.fs.unit.config.reaction_package.
+                     rate_reaction_stoichiometry[r, "Sol", j] *
+                     iron_oc.fs.unit.reactions[t - dt].reaction_rate[r] *
+                     iron_oc.fs.unit.volume_solid[t - dt] *
+                     dt * iron_oc.fs.unit.solids[t]._params.mw_comp[j]
+                     for r in iron_oc.fs.unit.config.reaction_package.
+                     rate_reaction_idx
+                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4'))))
         for val in mbal_solid:
             assert abs(val) <= 1e-2
 

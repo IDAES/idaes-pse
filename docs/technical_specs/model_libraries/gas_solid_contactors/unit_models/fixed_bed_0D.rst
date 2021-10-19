@@ -19,7 +19,7 @@ gas-solid interaction between both phases through reaction, mass and heat transf
 Degrees of Freedom
 ------------------
 
-FixedBed0D Reactors generally have at least 0 (or more) degrees of freedom, consisting of design and operating variables. At a minimum, the inlet stream and initial solid properties must be specified (specifying geometric or design parameters is optional).
+FixedBed0D Reactors generally have at least 2 (or more) degrees of freedom, including the reactor bed diameter and height.
 
 Model Structure
 ---------------
@@ -64,6 +64,12 @@ FixedBed0D units write the following Constraints:
 Reaction and Mass/Heat Transfer Constraints
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Volume of the bed
+.. math:: V_{bed} = \pi L_{bed} (0.5 D_{bed})^2
+
+Volume of the solid
+.. math:: V_{s,t} = V_{bed} (1 - \epsilon_{s})
+
 Solid material holdup:
 
 .. math:: j_{mass,s,t,j} = V_{s} \rho_{mass,s,t} x_{mass,s,t,j}
@@ -96,17 +102,20 @@ List of Variables
 .. csv-table::
    :header: "Variable", "Description", "Reference to"
 
+   ":math:`D_{bed}`", "Reactor bed diameter", "``bed_diameter``"
    ":math:`H_{mass,s,t}`", "Solid phase mass enthalpy", "``solids.enth_mass``"
    ":math:`H_{rxn,s,t,r}`", "Solid phase reaction enthalpy", "``solids.reactions.dh_rxn``"
    ":math:`j_{mass,s,t,j}`", "Material holdup, solid phase", "``solids.solids_material_holdup``"
    ":math:`{\dot{j}}_{mass,s,t,j}`", "Material accumulation, solid phase", "``solids.solids_material_accumulation``"
+   ":math:`L_{bed}`", "Reactor bed height", "``bed_height``"
    ":math:`M_{s,t}`", "Total mass of solids", "``solids.mass_solids``"
    ":math:`q_{energy,s,t}`", "Energy holdup, solid phase", "``solids.energy_material_holdup``"
    ":math:`{\dot{q}}_{energy,s,t}`", "Energy accumulation, solid phase", "``solids.solids_energy_accumulation``"
    ":math:`r_{s,t,r}`", "Solid phase reaction rate of reaction r", "``solids.reactions.reaction_rate``"
    ":math:`T_{s,t,x}`", "Solid phase temperature", "``solids.temperature``"
    ":math:`x_{mass,s,t,j}`", "Mass fraction of component j, solid phase", "``solids.mass_frac_comp``"
-   ":math:`V_{s}`", "Total volume of solids", "``solids.volume_solid``"
+   ":math:`V_{bed}`", "Total volume of the bed", "``volume_bed``"
+   ":math:`V_{s,t}`", "Total volume of solids", "``solids.volume_solid``"
    "*Greek letters*", " ", " "
    ":math:`\rho_{mass,s,t}`", "Density of solid particles", "``solids.dens_mass_particle``"
 
@@ -116,6 +125,7 @@ List of Parameters
 .. csv-table::
    :header: "Parameter", "Description", "Reference to"
 
+   ":math:`\epsilon_{s}`", "Void fraction of the solid", "``solids._params.voidage``"
    ":math:`{MW}_{s,j}`", "Molecular weight of solid component j", "``solids._params.mw_comp``"
    ":math:`\nu_{s,j,r}`", "Stoichiometric coefficients", "``solids.reaction_package.rate_reaction_stoichiometry``"
 
