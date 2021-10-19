@@ -13,7 +13,7 @@
 import pyomo.environ as pyo
 import pytest
 import idaes.core.plugins
-from idaes.core.solvers.features import lp, milp, nlp, minlp
+from idaes.core.solvers.features import lp, milp, nlp, minlp, nle
 from idaes.core.solvers import ipopt_has_linear_solver
 
 @pytest.mark.unit
@@ -22,7 +22,7 @@ def test_couenne_available():
         raise Exception("Could not find couenne.")
 
 @pytest.mark.unit
-def test_couenne_available():
+def test_bonmin_available():
     if not pyo.SolverFactory('bonmin').available():
         raise Exception("Could not find bonmin.")
 
@@ -47,6 +47,11 @@ def test_ipopt_idaes_available():
 def test_cbc_available():
     if not pyo.SolverFactory('cbc').available():
         raise Exception("Could not find cbc.")
+
+@pytest.mark.unit
+def test_clp_available():
+    if not pyo.SolverFactory('clp').available():
+        raise Exception("Could not find clp.")
 
 @pytest.mark.unit
 def test_sipopt_idaes_solve():
@@ -85,10 +90,11 @@ def test_bonmin_idaes_solve():
     Make sure there is no issue with the solver class or default settings that
     break the solver object.  Passing a bad solver option will result in failure
     """
-    m, x = minlp()
+    m, x, i = minlp()
     solver = pyo.SolverFactory('bonmin')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
+    assert i == pyo.value(m.i)    
 
 @pytest.mark.unit
 def test_couenne_idaes_solve():
@@ -96,10 +102,12 @@ def test_couenne_idaes_solve():
     Make sure there is no issue with the solver class or default settings that
     break the solver object.  Passing a bad solver option will result in failure
     """
-    m, x = minlp()
+    m, x, i = minlp()
     solver = pyo.SolverFactory('couenne')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
+    assert i == pyo.value(m.i)
+
 
 @pytest.mark.unit
 def test_cbc_idaes_solve():
@@ -110,5 +118,15 @@ def test_cbc_idaes_solve():
     m, x = milp()
     solver = pyo.SolverFactory('cbc')
     solver.solve(m)
-    m.display()
+    assert pytest.approx(x) == pyo.value(m.x)
+
+@pytest.mark.unit
+def test_clp_idaes_solve():
+    """
+    Make sure there is no issue with the solver class or default settings that
+    break the solver object.  Passing a bad solver option will result in failure
+    """
+    m, x = lp()
+    solver = pyo.SolverFactory('clp')
+    solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
