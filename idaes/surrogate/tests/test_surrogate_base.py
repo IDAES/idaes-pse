@@ -17,7 +17,7 @@ import pytest
 
 import pandas as pd
 
-from idaes.surrogate.surrogate_base import SurrogateTrainer, SurrogateBase
+from idaes.surrogate.base.surrogate_base import SurrogateTrainer, SurrogateBase
 
 tdata = {'x1': [1, 2, 3, 4], 'x2': [10, 20, 30, 40], 'z1': [11, 22, 33, 44]}
 training_data = pd.DataFrame.from_dict(tdata)

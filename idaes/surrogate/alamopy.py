@@ -25,7 +25,7 @@ from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
 
-from idaes.surrogate.surrogate_base import SurrogateTrainer, SurrogateBase
+from idaes.surrogate.base.surrogate_base import SurrogateTrainer, SurrogateBase
 from idaes.core.util.exceptions import ConfigurationError
 
 # TODO: Adaptive sampling
@@ -474,15 +474,15 @@ class AlamoTrainer(SurrogateTrainer):
         General workflow method for training an ALAMO surrogate.
 
         Takes the existing data set and executes the ALAMO workflow to create
-        an AlamoObject based on the current configuration arguments.
+        an AlamoSurrogate based on the current configuration arguments.
 
         Args:
             None
 
         Returns:
-            tuple : (success, AlamoObject, message) where success indicates
+            tuple : (success, AlamoSurrogate, message) where success indicates
             whether ALAMO was usccessfully executed, an instance of an
-            AlamoObject representing the trained surrogate, and message is the
+            AlamoSurrogate representing the trained surrogate, and message is the
             final status line from the ALAMO output log.
         """
         # Get paths for temp files
@@ -867,9 +867,9 @@ class AlamoTrainer(SurrogateTrainer):
             None
 
         Returns:
-            AlamoObject
+            AlamoSurrogate
         """
-        return AlamoObject(
+        return AlamoSurrogate(
             surrogate_expressions=self._results["Model"],
             input_labels=self._input_labels,
             output_labels=self._output_labels,
@@ -895,7 +895,7 @@ class AlamoTrainer(SurrogateTrainer):
         self._temp_context = None
 
 
-class AlamoObject(SurrogateBase):
+class AlamoSurrogate(SurrogateBase):
     """
     Standard SurrogateObject for surrogates trained using ALAMO.
 
@@ -906,7 +906,7 @@ class AlamoObject(SurrogateBase):
 
     def __init__(
             self, surrogate_expressions, input_labels, output_labels, input_bounds=None):
-        super(AlamoObject, self).__init__(input_labels, output_labels, input_bounds)
+        super(AlamoSurrogate, self).__init__(input_labels, output_labels, input_bounds)
         self._surrogate_expressions = surrogate_expressions
 
     def evaluate_surrogate(self, inputs):
@@ -1024,7 +1024,7 @@ class AlamoObject(SurrogateBase):
     @staticmethod
     def create_from_json(js):
         """
-        Method to create an AlamoObject based on data stored in
+        Method to create an AlamoSurrogate based on data stored in
         a json string.
 
         Args:
@@ -1041,7 +1041,7 @@ class AlamoObject(SurrogateBase):
         for k, v in d["input_bounds"].items():
             input_bounds[k] = tuple(v)
 
-        return AlamoObject(surrogate_expressions=surrogate_expressions,
+        return AlamoSurrogate(surrogate_expressions=surrogate_expressions,
                            input_labels=input_labels,
                            output_labels=output_labels,
                            input_bounds=input_bounds)
@@ -1066,18 +1066,18 @@ class AlamoObject(SurrogateBase):
     @staticmethod
     def load(filename):
         """
-        Static method to create an AlamoObject from contents of a json file.
+        Static method to create an AlamoSurrogate from contents of a json file.
 
-        Useage: surrogate = AlamoObject.load(filename)
+        Useage: surrogate = AlamoSurrogate.load(filename)
 
         Args:
             filename - path of json file to load
 
         Returns:
-            AlamoObject with data loaded from json file
+            AlamoSurrogate with data loaded from json file
         """
         with open(filename, "r") as f:
             js = f.read()
         f.close()
 
-        return AlamoObject.create_from_json(js)
+        return AlamoSurrogate.create_from_json(js)

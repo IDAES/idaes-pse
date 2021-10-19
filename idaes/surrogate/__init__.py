@@ -11,4 +11,4 @@
 # license information.
 #################################################################################
 
-from .alamopy import AlamoTrainer, AlamoObject, Modelers, Screener
+from .alamopy import AlamoTrainer, AlamoSurrogate, Modelers, Screener
