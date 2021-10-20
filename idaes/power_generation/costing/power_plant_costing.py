@@ -773,17 +773,17 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
              c.maintenance_material_percent/0.85/nameplate_capacity/8760)
 
 
-def get_variable_OM_costs(m, production_rate, resources, rates,
+def get_variable_OM_costs(fs, production_rate, resources, rates,
                           prices={}):
     """
     This function is used to calculate the variable cost of producing either
     electricity in $/MWh or hydrogen in $/kg. The function is structured to
     allow the user to generate all fuel, consumable, and waste disposal costs
-    at once. A total variable cost is created for each point in m.fs.time.
+    at once. A total variable cost is created for each point in fs.time.
 
     Args:
         m: pyomo concrete model
-        production_rate: pyomo var indexed by m.fs.time representing the net
+        production_rate: pyomo var indexed by fs.time representing the net
         system power or the hydrogen production rate
         resources: a list of strings for the resorces to be costed
         rates: a list of pyomo vars for resource consumption rates
@@ -828,8 +828,8 @@ def get_variable_OM_costs(m, production_rate, resources, rates,
         raise Exception("resources and rates must be lists of the same length")
 
     # check if flowsheet level costing block exists
-    if not hasattr(m.fs, "costing"):
-        m.fs.get_costing(year='2018')
+    if not hasattr(fs, "costing"):
+        fs.get_costing(year='2018')
 
     # dictionary of default prices
     default_prices = {
@@ -862,24 +862,24 @@ def get_variable_OM_costs(m, production_rate, resources, rates,
     resource_rates = dict(zip(resources, rates))
     resource_prices = dict(zip(resources, prices))
 
-    # if costing power make vars in m.fs.costing, if costing hydrogen make vars
-    # in m.fs.H2_costing
+    # if costing power make vars in fs.costing, if costing hydrogen make vars
+    # in fs.H2_costing
     if mode == "power":
-        costing = m.fs.costing
+        costing = fs.costing
     elif mode == "hydrogen":
-        m.fs.H2_costing = Block()
-        costing = m.fs.H2_costing
+        fs.H2_costing = Block()
+        costing = fs.H2_costing
 
     # make vars
     costing.variable_operating_costs = Var(
-        m.fs.time,
+        fs.time,
         resources,
         initialize=1,
         doc="variable operating costs",
         units=cost_units)
 
     costing.other_variable_costs = Var(
-        m.fs.time,
+        fs.time,
         initialize=0,
         doc="a variable to include non-standard O&M costs",
         units=cost_units)
@@ -887,35 +887,35 @@ def get_variable_OM_costs(m, production_rate, resources, rates,
     costing.other_variable_costs.fix(0)
 
     costing.total_variable_OM_cost = Var(
-        m.fs.time,
+        fs.time,
         initialize=1,
         doc="total variable operating and maintenance costs",
         units=cost_units)
 
     # make constraints
-    @costing.Constraint(m.fs.time, resources)
+    @costing.Constraint(fs.time, resources)
     def variable_cost_rule(c, t, r):
         return c.variable_operating_costs[t, r] == (
             pyunits.convert(
                 resource_prices[r] * resource_rates[r][t] / production_rate[t],
                 cost_units))
 
-    if mode == "power" and hasattr(m.fs.costing, "maintenance_material_cost"):
-        @m.fs.costing.Constraint(m.fs.time)
+    if mode == "power" and hasattr(fs.costing, "maintenance_material_cost"):
+        @fs.costing.Constraint(fs.time)
         def total_variable_cost_rule(c, t):
             return (c.total_variable_OM_cost[t] ==
                     sum(c.variable_operating_costs[t, r] for r in resources) +
                     c.maintenance_material_cost +
                     c.other_variable_costs[t])
     else:
-        @costing.Constraint(m.fs.time)
+        @costing.Constraint(fs.time)
         def total_variable_cost_rule(c, t):
             return (c.total_variable_OM_cost[t] ==
                     sum(c.variable_operating_costs[t, r] for r in resources) +
                     c.other_variable_costs[t])
 
         if mode == "power":
-            _log.warning("The variable m.fs.costing.maintenance_material_cost "
+            _log.warning("The variable fs.costing.maintenance_material_cost "
                          "could not be found, total_variable_cost_rule was "
                          "constructed without in. get_fixed_OM_costs should be"
                          " called before get_variable_OM_costs")
@@ -949,32 +949,32 @@ def initialize_fixed_OM_costs(m):
             m.fs.costing.maintenance_material_cost_rule)
 
 
-def initialize_variable_OM_costs(m):
+def initialize_variable_OM_costs(fs):
     # initialization for power generation costs
-    if hasattr(m.fs, "costing") and hasattr(m.fs.costing, "variable_operating_costs"):
+    if hasattr(fs, "costing") and hasattr(fs.costing, "variable_operating_costs"):
 
-        for i in m.fs.costing.variable_operating_costs.keys():
+        for i in fs.costing.variable_operating_costs.keys():
             calculate_variable_from_constraint(
-                m.fs.costing.variable_operating_costs[i],
-                m.fs.costing.variable_cost_rule[i])
+                fs.costing.variable_operating_costs[i],
+                fs.costing.variable_cost_rule[i])
 
-        for i in m.fs.costing.total_variable_OM_cost.keys():
+        for i in fs.costing.total_variable_OM_cost.keys():
             calculate_variable_from_constraint(
-                m.fs.costing.total_variable_OM_cost[i],
-                m.fs.costing.total_variable_cost_rule[i])
+                fs.costing.total_variable_OM_cost[i],
+                fs.costing.total_variable_cost_rule[i])
 
     # initialization for H2 production costs
-    if hasattr(m.fs, "H2_costing") and hasattr(m.fs.H2_costing, "variable_operating_costs"):
+    if hasattr(fs, "H2_costing") and hasattr(fs.H2_costing, "variable_operating_costs"):
 
-        for i in m.fs.H2_costing.variable_operating_costs.keys():
+        for i in fs.H2_costing.variable_operating_costs.keys():
             calculate_variable_from_constraint(
-                m.fs.H2_costing.variable_operating_costs[i],
-                m.fs.H2_costing.variable_cost_rule[i])
+                fs.H2_costing.variable_operating_costs[i],
+                fs.H2_costing.variable_cost_rule[i])
 
-        for i in m.fs.H2_costing.total_variable_OM_cost.keys():
+        for i in fs.H2_costing.total_variable_OM_cost.keys():
             calculate_variable_from_constraint(
-                m.fs.H2_costing.total_variable_OM_cost[i],
-                m.fs.H2_costing.total_variable_cost_rule[i])
+                fs.H2_costing.total_variable_OM_cost[i],
+                fs.H2_costing.total_variable_cost_rule[i])
 
 
 # -----------------------------------------------------------------------------
@@ -1053,7 +1053,7 @@ def display_equipment_costs(fs):
 
 def get_total_TPC(m):
     TPC_list = []
-    for o in m.fs.component_objects(descend_into=False):
+    for o in m.component_objects(descend_into=True):
         # look for costing blocks
         if hasattr(o, 'costing') and hasattr(o.costing, "total_plant_cost"):
             for key in o.costing.total_plant_cost.keys():

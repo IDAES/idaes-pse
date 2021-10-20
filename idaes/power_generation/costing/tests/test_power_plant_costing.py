@@ -594,19 +594,19 @@ def test_OM_costing():
     rates = [m.fs.NG_rate, m.fs.solvent_rate]
     prices = {"solvent": 500*pyunits.USD/pyunits.ton}
 
-    get_variable_OM_costs(m,
+    get_variable_OM_costs(m.fs,  # pass a flowsheet object
                           m.fs.net_power,
                           resources,
                           rates,
                           prices=prices)
 
-    get_variable_OM_costs(m,
+    get_variable_OM_costs(m.fs,  # pass a flowsheet object
                           m.fs.H2_prod,
                           resources,
                           rates,
                           prices=prices)
 
-    initialize_variable_OM_costs(m)
+    initialize_variable_OM_costs(m.fs)  # pass a flowsheet object
 
     assert hasattr(m.fs, "costing")
     assert hasattr(m.fs.costing, "total_fixed_OM_cost")
