@@ -22,48 +22,52 @@ import copy
 
 __author__ = "Robert Parker and Kuan-Han Lin"
 
-def merge_variable_lists_w_different_types(dynamic_block,
-                                           user_var_list,
-                                           dynamic_var_list,
-                                           return_new_user_vars = False):
+
+def _generate_cuids(components):
+    for comp in components:
+        if comp.is_reference():
+            yield ComponentUID(comp.referent)
+        else:
+            yield ComponentUID(comp)
+
+
+def _filter_duplicates(items):
+    seen = set()
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            yield item
+
+
+def find_and_merge_variables(block, varlist1, varlist2):
     '''
-    This function does two things:
-        a. Given user_var_list, find corresponding variables in dynamic_block.
-        b. Merge two var list whose components are different types but may point
-            to the same variable in the model.
+    This function converts two lists of variable to CUIDs, combines them,
+    filtering duplicates, and finds the corresponding variables on the
+    block. This functionality is repeated when we want to initialize
+    a data manager that stores some default states (differential variables)
+    and any states the user specified.
+
     Parameters
     ----------
-    dynamic_block : pyomo block
+    block : Pyomo Block
         The block where the variables are searched.
-    user_var_list : list
-        User given varialbe list, whose components are based on "DynamicBlock".
-    dynamic_var_list : list
-        List with default saving variables.
+    varlist1 : list
+        First list of variables to merge
+    varlist2 : list
+        Second list of variables to merge
 
     Returns
     -------
     merged_list : list
 
     '''
-
-    CUID_set = {ComponentUID(var.referent) for var in dynamic_var_list}
-    merged_list = copy.copy(dynamic_var_list)
-    new_added_user_vars = [] # This is for controller to save the setpoint.
-    for item in user_var_list:
-        if item.is_reference():
-            item_cuid = ComponentUID(item.referent)
-        else:
-            item_cuid = ComponentUID(item)
-        # Save the variable that is not in CUID_set
-        if item_cuid not in CUID_set:
-            CUID_set.add(item_cuid)
-            item_in_block = item_cuid.find_component_on(dynamic_block)
-            merged_list.append(item_in_block)
-            new_added_user_vars.append(item_in_block)
-    if return_new_user_vars:
-        return merged_list, new_added_user_vars
-    else:
-        return merged_list
+    cuids1 = list(_generate_cuids(varlist1))
+    cuids2 = list(_generate_cuids(varlist2))
+    merged_cuids = list(_filter_duplicates(cuids1 + cuids2))
+    merged_list = [
+        cuid.find_component_on(block) for cuid in merged_cuids
+    ]
+    return merged_list
 
 
 def empty_dataframe_from_variables(variables, rename_map=None):
@@ -206,7 +210,7 @@ def add_variable_setpoints_to_dataframe(dataframe,
         column_name = str(ComponentUID(var.referent))
         if var in map_for_user_given_vars:
             # User given variables are not nmpc_var, so they don't have setpoint attribute.
-            # User a componentmap to get corresponding nmpc_var.
+            # Use a componentmap to get corresponding nmpc_var.
             df_map[column_name] = len(time_subset)* \
                                     [map_for_user_given_vars[var].setpoint]
         else:
@@ -230,10 +234,10 @@ class PlantDataManager(object):
 
         if user_interested_states is None:
             self.plant_user_interested_states = []
-        self.plant_states_of_interest = merge_variable_lists_w_different_types(
+        self.plant_states_of_interest = find_and_merge_variables(
                                                     plantblock,
-                                                    user_interested_states,
                                                     self.plantblock.differential_vars,
+                                                    user_interested_states,
                                                     )
 
         self.plant_vars_of_interest = self.plant_states_of_interest + \
@@ -268,21 +272,24 @@ class ControllerDataManager(object):
 
         if user_interested_states is None:
             user_interested_states = []
-        self.controller_states_of_interest, self.extra_vars_user_interested = \
-            merge_variable_lists_w_different_types(
-                                                controllerblock,
-                                                user_interested_states,
-                                                self.controllerblock.differential_vars,
-                                                return_new_user_vars  = True,
-                                                    )
+        self.controller_states_of_interest = \
+            find_and_merge_variables(
+                controllerblock,
+                self.controllerblock.differential_vars,
+                user_interested_states,
+            )
+        self.extra_vars_user_interested = self.controller_states_of_interest
 
         self.controller_df = empty_dataframe_from_variables(self.controllerblock.input_vars)
 
         self.setpoint_df = empty_dataframe_from_variables(self.controller_states_of_interest)
 
-        # Important!!!
-        # User given variables are not nmpc_var, so they don't have setpoint attribute.
-        # Create this componentmap to map the given vars to corresponding nmpc_vars.
+        # HACK:
+        # User given variables are not nmpc_var, so they don't have setpoint
+        # attribute. Create this componentmap to map the given vars to
+        # corresponding nmpc_vars.
+        # TODO: We should stop using the setpoint attribute, and custom vars
+        # altogether. Setpoint should instead be a dict mapping cuids to values.
         vardata_map = self.controllerblock.vardata_map
         t0 = self.controllerblock.time.first()
         self.user_given_vars_map_nmpcvar = ComponentMap((var, vardata_map[var[t0]])
@@ -305,11 +312,13 @@ class ControllerDataManager(object):
                                                               iteration,
                                                               time_subset = time_subset,)
 
-        self.setpoint_df = add_variable_setpoints_to_dataframe(self.setpoint_df,
-                                                               self.controller_states_of_interest,
-                                                               iteration,
-                                                               time_subset,
-                                                               self.user_given_vars_map_nmpcvar,)
+        self.setpoint_df = add_variable_setpoints_to_dataframe(
+            self.setpoint_df,
+            self.controller_states_of_interest,
+            iteration,
+            time_subset,
+            self.user_given_vars_map_nmpcvar,
+        )
 
 class EstimatorDataManager(object):
     def __init__(self,
@@ -320,10 +329,12 @@ class EstimatorDataManager(object):
         # Convert vars in plant to vars in estimator
         if user_interested_states is None:
             user_interested_states = []
-        self.estimator_vars_of_interest = merge_variable_lists_w_different_types(
-                                                estimatorblock,
-                                                user_interested_states,
-                                                estimatorblock.differential_vars)
+        self.estimator_vars_of_interest = \
+            find_and_merge_variables(
+                estimatorblock,
+                estimatorblock.differential_vars,
+                user_interested_states,
+            )
 
         self.estimator_df = empty_dataframe_from_variables(self.estimator_vars_of_interest)
 
