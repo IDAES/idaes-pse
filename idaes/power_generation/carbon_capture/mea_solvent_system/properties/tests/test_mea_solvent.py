@@ -52,46 +52,18 @@ class TestStateBlock(object):
         model.props[1].calculate_scaling_factors()
 
         # Fix state
-        # Initial test conditions: 0.2 kg MEA/kg H2O, 0.2 mol CO2/mol MEA
-        # 1 kg H20 = 55.5mol
-        # 0.2 kg MEA/kg H2O = 0.2 kg MEA = 3.27 mol
-        # 0.2 mol CO2/mol MEA = 0.655 mol
-        model.props[1].flow_mol.fix(1)
-        model.props[1].temperature.fix(298.15)
-        model.props[1].pressure.fix(101325)
-        model.props[1].mole_frac_comp["H2O"].fix(0.93388)
-        model.props[1].mole_frac_comp["MEA"].fix(0.05510)
-        model.props[1].mole_frac_comp["CO2"].fix(0.01102)
-
-        # Set values of mole_frac_phase_comp to get correct property values
-        model.props[1].mole_frac_phase_comp["Liq", "H2O"].set_value(0.93388)
-        model.props[1].mole_frac_phase_comp["Liq", "MEA"].set_value(0.05510)
-        model.props[1].mole_frac_phase_comp["Liq", "CO2"].set_value(0.01102)
+        model.props[1].flow_mol.fix(83.89)
+        model.props[1].temperature.fix(392.5)
+        model.props[1].pressure.fix(183700)
+        model.props[1].mole_frac_comp["CO2"].fix(0.0326)
+        model.props[1].mole_frac_comp["H2O"].fix(0.8589)
+        model.props[1].mole_frac_comp["MEA"].fix(0.1085)
 
         return model
 
     @pytest.mark.unit
     def test_dof(self, model):
         assert degrees_of_freedom(model.props[1]) == 0
-
-    @pytest.mark.unit
-    def test_properties(self, model):
-        model.props[1].visc_d_phase.display()
-
-        assert pytest.approx(79.5139, rel=1e-5) == value(
-            model.props[1].cp_mol_phase["Liq"])
-        assert pytest.approx(-84000*0.01102, rel=1e-5) == value(
-            model.props[1].enth_mol_phase["Liq"])
-        assert pytest.approx(2988.034, rel=1e-5) == value(
-            model.props[1].henry["Liq", "CO2"])
-        assert pytest.approx(3185.403, rel=1e-5) == value(
-            model.props[1].pressure_sat_comp["H2O"])
-        assert pytest.approx(49.2646, rel=1e-5) == value(
-            model.props[1].pressure_sat_comp["MEA"])
-        assert pytest.approx(2.032875e-05, rel=1e-5) == value(
-            model.props[1].vol_mol_phase["Liq"])
-        assert pytest.approx(9.495423e-4, rel=1e-5) == value(
-            model.props[1].visc_d_phase["Liq"])
 
     @pytest.mark.component
     def test_unit_consistency(self, model):
@@ -128,17 +100,24 @@ class TestStateBlock(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    # @pytest.mark.skipif(solver is None, reason="Solver not available")
-    # @pytest.mark.component
-    # def test_solution(self, model):
-    #     # Check phase equilibrium results
-    #     assert model.props[1].mole_frac_phase_comp["Liq", "benzene"].value == \
-    #         pytest.approx(0.4121, abs=1e-4)
-    #     assert model.props[1].mole_frac_phase_comp["Vap", "benzene"].value == \
-    #         pytest.approx(0.6339, abs=1e-4)
-    #     assert model.props[1].phase_frac["Vap"].value == \
-    #         pytest.approx(0.3961, abs=1e-4)
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        model.props[1].mole_frac_phase_comp_true.display()
+        model.props[1].mole_frac_phase_comp_apparent.display()
 
-    #     assert value(model.props[1].conc_mol_phase_comp["Vap", "benzene"]) == \
-    #         pytest.approx(20.9946, abs=1e-4)
+        model.props[1].log_k_eq.display()
+        model.props[1].conc_mol_phase_comp_true.display()
 
+        model.props[1].cp_mol_phase.display()
+        model.props[1].enth_mol_phase.display()
+        model.props[1].henry.display()
+        model.props[1].pressure_sat_comp.display()
+        model.props[1].vol_mol_phase.display()
+        model.props[1].visc_d_phase.display()
+        model.props[1].mass_frac_phase_comp_apparent.display()
+        model.props[1].therm_cond_phase.display()
+        model.props[1].surf_tens_phase.display()
+        model.props[1].diffus_phase_comp_apparent.display()
+
+        assert False

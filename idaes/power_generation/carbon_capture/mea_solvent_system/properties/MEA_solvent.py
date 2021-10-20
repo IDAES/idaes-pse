@@ -14,7 +14,7 @@
 Ideal Liquid Phase properties for aqueous MEA solvent with CO2.
 
 The following apparent species are used to represent the mixture, along with
-the method used to calculate theri vapor pressure:
+the method used to calculate their vapor pressure:
 
     Carbon Dioxide (CO2) - Henry's Law
     Monoethanolamine (MEA) - non-volatile,
@@ -34,13 +34,21 @@ References:
     [2] Morgan et.al (2015)
 """
 # Import Pyomo units
-from pyomo.environ import exp, log, units as pyunits, Var
+from pyomo.environ import exp, log, units as pyunits, Var, Expression
 
 # Import IDAES cores
 from idaes.core import AqueousPhase, Solvent, Solute, Anion, Cation
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.generic.generic_property import (
+        StateIndex)
 from idaes.generic_models.properties.core.eos.ideal import Ideal
+
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
+    log_power_law_equil
+from idaes.generic_models.properties.core.generic.utility import (
+    ConcentrationForm)
+
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
 
@@ -197,7 +205,7 @@ class PressureSatSolvent():
     @staticmethod
     def return_expression(b, cobj, T, dT=False):
         if dT:
-            return PressureSatSolvent.dT_expression(b, cobj, T)
+            raise Exception("No dT method for pressure sat")
 
         return (exp(cobj.pressure_sat_comp_coeff_1 +
                     cobj.pressure_sat_comp_coeff_2/T +
@@ -288,6 +296,78 @@ class VolMolCO2():
 
 # -----------------------------------------------------------------------------
 # Transport property models
+class DiffusCO2():
+    @staticmethod
+    def build_parameters(cobj, phase):
+        cobj.diffus_phase_comp_coeff_1 = Var(
+                doc="Parameter 1 for liquid phase diffusivity model",
+                units=pyunits.m**2/pyunits.s)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="1")
+        cobj.diffus_phase_comp_coeff_2 = Var(
+                doc="Parameter 2 for liquid phase diffusivity model",
+                units=pyunits.m**5/pyunits.kmol/pyunits.s)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="2")
+        cobj.diffus_phase_comp_coeff_3 = Var(
+                doc="Parameter 3 for liquid phase diffusivity model",
+                units=pyunits.m**8/pyunits.kmol**2/pyunits.s)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="3")
+        cobj.diffus_phase_comp_coeff_4 = Var(
+                doc="Parameter 4 for liquid phase diffusivity model",
+                units=pyunits.dimensionless)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="4")
+        cobj.diffus_phase_comp_coeff_5 = Var(
+                doc="Parameter 5 for liquid phase diffusivity model",
+                units=pyunits.K)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="5")
+
+    @staticmethod
+    def return_expression(blk, p, j, T):
+        cobj = blk.params.get_component(j)
+        C_MEA = blk.conc_mol_comp['MEA']*1e-3*pyunits.kmol/pyunits.mol
+        return ((cobj.diffus_phase_comp_coeff_1 +
+                 cobj.diffus_phase_comp_coeff_2*C_MEA +
+                 cobj.diffus_phase_comp_coeff_3*C_MEA**2) *
+                exp((cobj.diffus_phase_comp_coeff_4 +
+                     cobj.diffus_phase_comp_coeff_5) / T))
+
+
+class DiffusMEA():
+    @staticmethod
+    def build_parameters(cobj, phase):
+        cobj.diffus_phase_comp_coeff_1 = Var(
+                doc="Parameter 1 for liquid phase diffusivity model",
+                units=pyunits.dimensionless)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="1")
+        cobj.diffus_phase_comp_coeff_2 = Var(
+                doc="Parameter 2 for liquid phase diffusivity model",
+                units=pyunits.K)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="2")
+        cobj.diffus_phase_comp_coeff_3 = Var(
+                doc="Parameter 3 for liquid phase diffusivity model",
+                units=pyunits.m**3/pyunits.mol)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="3")
+
+    @staticmethod
+    def return_expression(blk, p, j, T):
+        cobj = blk.params.get_component(j)
+        cobj.display()
+        C_MEA = blk.conc_mol_comp['MEA']
+        return exp(cobj.diffus_phase_comp_coeff_1 +
+                   cobj.diffus_phase_comp_coeff_2/T +
+                   cobj.diffus_phase_comp_coeff_3*C_MEA)*pyunits.m**2/pyunits.s
+
+
+class DiffusNone():
+    # placeholder method for components where diffusivity is not required
+    @staticmethod
+    def build_parameters(pobj):
+        pass
+
+    @staticmethod
+    def return_expression(blk, p, j, T):
+        return Expression.Skip
+
+
 class Viscosity():
     @staticmethod
     def build_parameters(pobj):
@@ -330,11 +410,10 @@ class Viscosity():
     def return_expression(blk, phase):
         pobj = blk.params.get_phase(phase)
 
-        # Calculate mass fraction from mole fraction and molecular weights
-        r = (blk.mole_frac_comp['MEA'] *
-             blk.mw_phase["Liq"] / blk.mw_comp["MEA"] * 100)
+        r = blk.mass_frac_phase_comp_apparent['Liq', 'MEA']*100
         T = blk.temperature
-        alpha = blk.mole_frac_comp['CO2'] / blk.mole_frac_comp['MEA']
+        alpha = (blk.mole_frac_phase_comp_apparent['Liq', 'CO2'] /
+                 blk.mole_frac_phase_comp_apparent['Liq', 'MEA'])
         mu_H2O = (1.002e-3*pyunits.Pa/pyunits.s *
                   10**((1.3272 *
                         (293.15*pyunits.K - T -
@@ -356,6 +435,225 @@ class Viscosity():
                             T**2 * pyunits.K**2)
 
 
+class ThermalCond():
+    @staticmethod
+    def build_parameters(pobj):
+        pass
+
+    @staticmethod
+    def return_expression(blk, phase):
+        Tb_MEA = 443*pyunits.K
+        Tc_MEA = 614.2*pyunits.K
+        T = blk.temperature
+        Tr = T / Tc_MEA
+        Tbr_MEA = Tb_MEA / Tc_MEA
+        K_MEA = (1.1053152/(61.08**0.5) *
+                 (3 + 20*(1 - Tr)**(2/3)) /
+                 (3 + 20*(1 - Tbr_MEA)**(2/3)))
+        K_H2O = 0.6065 * (-1.48445 + 4.12292*T/(298.15*pyunits.K) -
+                          1.63866*(T/(298.15*pyunits.K))**2)
+
+        x = blk.mole_frac_phase_comp_apparent
+        return ((
+            (x['Liq', 'H2O']*K_H2O**-2 + x['Liq', 'MEA']*K_MEA**-2)**-1)**0.5 *
+            pyunits.W/pyunits.m/pyunits.K)
+
+
+class SurfTens():
+    @staticmethod
+    def build_parameters(pobj):
+        pobj.surf_tens_H2O_coeff_1 = Var(
+                doc="Parameter 1 for surface tension model of pure water",
+                units=pyunits.N/pyunits.m)
+        set_param_from_config(pobj, param="surf_tens_H2O_coeff", index="1")
+        pobj.surf_tens_H2O_coeff_2 = Var(
+                doc="Parameter 2 for surface tension model of pure water",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_H2O_coeff", index="2")
+        pobj.surf_tens_H2O_coeff_3 = Var(
+                doc="Parameter 3 for surface tension model of pure water",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_H2O_coeff", index="3")
+        pobj.surf_tens_H2O_coeff_4 = Var(
+                doc="Parameter 4 for surface tension model of pure water",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_H2O_coeff", index="4")
+
+        pobj.surf_tens_MEA_coeff_1 = Var(
+                doc="Parameter 1 for surface tension model of pure MEA",
+                units=pyunits.N/pyunits.m)
+        set_param_from_config(pobj, param="surf_tens_MEA_coeff", index="1")
+        pobj.surf_tens_MEA_coeff_2 = Var(
+                doc="Parameter 2 for surface tension model of pure MEA",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_MEA_coeff", index="2")
+        pobj.surf_tens_MEA_coeff_3 = Var(
+                doc="Parameter 3 for surface tension model of pure MEA",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_MEA_coeff", index="3")
+        pobj.surf_tens_MEA_coeff_4 = Var(
+                doc="Parameter 4 for surface tension model of pure MEA",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_MEA_coeff", index="4")
+
+        pobj.surf_tens_CO2_coeff_1 = Var(
+                doc="Parameter 1 for surface tension model of pure CO2",
+                units=pyunits.N/pyunits.m)
+        set_param_from_config(pobj, param="surf_tens_CO2_coeff", index="1")
+        pobj.surf_tens_CO2_coeff_2 = Var(
+                doc="Parameter 2 for surface tension model of pure CO2",
+                units=pyunits.N/pyunits.m)
+        set_param_from_config(pobj, param="surf_tens_CO2_coeff", index="2")
+        pobj.surf_tens_CO2_coeff_3 = Var(
+                doc="Parameter 3 for surface tension model of pure CO2",
+                units=pyunits.N/pyunits.m)
+        set_param_from_config(pobj, param="surf_tens_CO2_coeff", index="3")
+        pobj.surf_tens_CO2_coeff_4 = Var(
+                doc="Parameter 4 for surface tension model of pure CO2",
+                units=pyunits.N/pyunits.m/pyunits.K)
+        set_param_from_config(pobj, param="surf_tens_CO2_coeff", index="4")
+        pobj.surf_tens_CO2_coeff_5 = Var(
+                doc="Parameter 5 for surface tension model of pure CO2",
+                units=pyunits.N/pyunits.m/pyunits.K)
+        set_param_from_config(pobj, param="surf_tens_CO2_coeff", index="5")
+        pobj.surf_tens_CO2_coeff_6 = Var(
+                doc="Parameter 6 for surface tension model of pure CO2",
+                units=pyunits.N/pyunits.m/pyunits.K)
+        set_param_from_config(pobj, param="surf_tens_CO2_coeff", index="6")
+
+        pobj.surf_tens_F_coeff_a = Var(
+                doc="Parameter Fa for liquid phase surface tension model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_F_coeff", index="a")
+        pobj.surf_tens_F_coeff_b = Var(
+                doc="Parameter Fb for liquid phase surface tension model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_F_coeff", index="b")
+        pobj.surf_tens_F_coeff_c = Var(
+                doc="Parameter Fc for liquid phase surface tension model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_F_coeff", index="c")
+        pobj.surf_tens_F_coeff_d = Var(
+                doc="Parameter Fd for liquid phase surface tension model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_F_coeff", index="d")
+        pobj.surf_tens_F_coeff_e = Var(
+                doc="Parameter Fe for liquid phase surface tension model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_F_coeff", index="e")
+        pobj.surf_tens_F_coeff_f = Var(
+                doc="Parameter Ff for liquid phase surface tension model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_F_coeff", index="f")
+        pobj.surf_tens_F_coeff_g = Var(
+                doc="Parameter Fg for liquid phase surface tension model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_F_coeff", index="g")
+        pobj.surf_tens_F_coeff_h = Var(
+                doc="Parameter Fh for liquid phase surface tension model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_F_coeff", index="h")
+        pobj.surf_tens_F_coeff_i = Var(
+                doc="Parameter Fi for liquid phase surface tension model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_F_coeff", index="i")
+        pobj.surf_tens_F_coeff_j = Var(
+                doc="Parameter Fj for liquid phase surface tension model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="surf_tens_F_coeff", index="j")
+
+    @staticmethod
+    def return_expression(blk, phase):
+        pobj = blk.params.get_phase(phase)
+
+        T = blk.temperature
+        r = (blk.mass_frac_phase_comp['Liq', 'MEA'] /
+             (blk.mass_frac_phase_comp['Liq', 'MEA'] +
+              blk.mass_frac_phase_comp['Liq', 'H2O']))
+
+        alpha = (blk.mole_frac_phase_comp_apparent['Liq', 'CO2'] /
+                 blk.mole_frac_phase_comp_apparent['Liq', 'MEA'])
+
+        Tc_h2o = blk.params.H2O.temperature_crit
+        Tc_mea = blk.params.MEA.temperature_crit
+
+        sigma_h2o = (
+            pobj.surf_tens_H2O_coeff_1*(1 - T/Tc_h2o)**(
+                pobj.surf_tens_H2O_coeff_2 +
+                pobj.surf_tens_H2O_coeff_3*T/Tc_h2o +
+                pobj.surf_tens_H2O_coeff_4*(T/Tc_h2o)**2))
+        sigma_mea = (
+            pobj.surf_tens_MEA_coeff_1*(1 - T/Tc_mea)**(
+                pobj.surf_tens_MEA_coeff_2 +
+                pobj.surf_tens_MEA_coeff_3*T/Tc_mea +
+                pobj.surf_tens_MEA_coeff_4*(T/Tc_mea)**2))
+        sigma_co2 = (pobj.surf_tens_CO2_coeff_1*r**2 +
+                     pobj.surf_tens_CO2_coeff_2*r +
+                     pobj.surf_tens_CO2_coeff_3 +
+                     T*(pobj.surf_tens_CO2_coeff_4*r**2 +
+                        pobj.surf_tens_CO2_coeff_5*r +
+                        pobj.surf_tens_CO2_coeff_6))
+
+        Fa = pobj.surf_tens_F_coeff_a
+        Fb = pobj.surf_tens_F_coeff_b
+        Fc = pobj.surf_tens_F_coeff_c
+        Fd = pobj.surf_tens_F_coeff_d
+        Fe = pobj.surf_tens_F_coeff_e
+        Ff = pobj.surf_tens_F_coeff_f
+        Fg = pobj.surf_tens_F_coeff_g
+        Fh = pobj.surf_tens_F_coeff_h
+        Fi = pobj.surf_tens_F_coeff_i
+        Fj = pobj.surf_tens_F_coeff_j
+
+        return (sigma_h2o +
+                (sigma_co2 - sigma_h2o) *
+                blk.mole_frac_comp['CO2'] *
+                (Fa + Fb*alpha + Fc*alpha**2 + Fd*r + Fe*r**2) +
+                (sigma_mea - sigma_h2o) *
+                (Ff + Fg*alpha + Fh*alpha**2 + Fi*r + Fj*r**2) *
+                blk.mole_frac_comp['MEA'])
+
+
+# -----------------------------------------------------------------------------
+# Equilibrium constant model
+class k_eq():
+
+    @staticmethod
+    def build_parameters(rblock, config):
+        rblock.k_eq_coeff_1 = Var(
+                doc="Equilibrium constant coefficient 1",
+                units=pyunits.dimensionless)
+        set_param_from_config(
+            rblock, param="k_eq_coeff", index="1", config=config)
+
+        rblock.k_eq_coeff_2 = Var(
+                doc="Equilibrium constant coefficient 2",
+                units=pyunits.K)
+        set_param_from_config(
+            rblock, param="k_eq_coeff", index="2", config=config)
+
+        rblock.k_eq_coeff_3 = Var(
+                doc="Equilibrium constant coefficient 3",
+                units=pyunits.dimensionless)
+        set_param_from_config(
+            rblock, param="k_eq_coeff", index="3", config=config)
+
+    @staticmethod
+    def return_expression(b, rblock, r_idx, T):
+        return exp(b.log_k_eq[r_idx])
+
+    @staticmethod
+    def return_log_expression(b, rblock, r_idx, T):
+        return b.log_k_eq[r_idx] == (
+            rblock.k_eq_coeff_1 +
+            rblock.k_eq_coeff_2/T +
+            rblock.k_eq_coeff_3*log(T/pyunits.K) + log(1e-3))
+
+    @staticmethod
+    def calculate_scaling_factors(b, rblock):
+        return 1
+
+
 # -----------------------------------------------------------------------------
 # Configuration dictionary for aqueous MEA solvent
 configuration = {
@@ -363,6 +661,7 @@ configuration = {
     "components": {
         'H2O': {"type": Solvent,
                 "cp_mol_liq_comp": CpMolSolvent,
+                "diffus_phase_comp": {"Liq": DiffusNone},
                 "enth_mol_liq_comp": EnthMolSolvent,
                 "pressure_sat_comp": PressureSatSolvent,
                 "vol_mol_liq_comp": VolMolSolvent,
@@ -382,10 +681,12 @@ configuration = {
                         '1': 72.55,
                         '2': -7206.70,
                         '3': -7.1385,
-                        '4': 4.05e-6}
+                        '4': 4.05e-6},
+                    "temperature_crit": (647.13, pyunits.K)
                     }},
         'MEA': {"type": Solvent,
                 "cp_mol_liq_comp": CpMolSolvent,
+                "diffus_phase_comp": {"Liq": DiffusMEA},
                 "enth_mol_liq_comp": EnthMolSolvent,
                 "pressure_sat_comp": PressureSatSolvent,
                 "vol_mol_liq_comp": VolMolSolvent,
@@ -401,32 +702,85 @@ configuration = {
                         '1': (-5.35162e-7, pyunits.g/pyunits.mL/pyunits.K**2),  # [2]
                         '2': (-4.51417e-4, pyunits.g/pyunits.mL/pyunits.K),
                         '3': (1.19451, pyunits.g/pyunits.mL)},
+                    "diffus_phase_comp_coeff": {
+                            '1': -13.275,
+                            '2': -2198.3,
+                            '3': -7.8142e-5},
                     "pressure_sat_comp_coeff": {
                         '1': 172.78,
                         '2': -13492,
                         '3': -21.914,
-                        '4': 1.38e-5}
+                        '4': 1.38e-5},
+                    "temperature_crit": (614.45, pyunits.K)
                     }},
         'CO2': {"type": Solute,
                 "cp_mol_liq_comp": CpMolCO2,
+                "diffus_phase_comp": {"Liq": DiffusCO2},
                 "enth_mol_liq_comp": EnthMolCO2,
                 "henry_component": {"Liq": N2OAnalogy},
                 "vol_mol_liq_comp": VolMolCO2,
                 "parameter_data": {
                     "mw": (0.04401, pyunits.kg/pyunits.mol),
                     "dh_abs_co2": -84000,
+                    "diffus_phase_comp_coeff": {
+                        '1': 2.35e-6,
+                        '2': 2.9837e-8,
+                        '3': -9.7078e-9,
+                        '4': -2119,
+                        '5': -20.132},
                     "vol_mol_liq_comp_coeff": {
                         'a': (10.2074, pyunits.mL/pyunits.mol),  # [2]
                         'b': (-2.2642, pyunits.mL/pyunits.mol),
                         'c': (3.0059, pyunits.mL/pyunits.mol),
                         'd': (207, pyunits.mL/pyunits.mol),
-                        'e': (-563.3701, pyunits.mL/pyunits.mol)}}}},
+                        'e': (-563.3701, pyunits.mL/pyunits.mol)}}},
+        'MEA_+': {"type": Cation,
+                  "charge": +1,
+                  "diffus_phase_comp": {"Liq": DiffusNone}},
+        'MEACOO_-': {"type": Anion,
+                     "charge": -1,
+                     "diffus_phase_comp": {"Liq": DiffusNone}},
+        'HCO3_-': {"type": Anion,
+                   "charge": -1,
+                   "diffus_phase_comp": {"Liq": DiffusNone}}},
 
     # Specifying phases
     "phases":  {'Liq': {"type": AqueousPhase,
                         "equation_of_state": Ideal,
+                        "equation_of_state_options":
+                            {"property_basis": "apparent"},
+                        "surf_tens_phase": SurfTens,
+                        "therm_cond_phase": ThermalCond,
                         "visc_d_phase": Viscosity,
                         "parameter_data": {
+                            "surf_tens_H2O_coeff": {
+                                "1": 0.18548,
+                                "2": 2.717,
+                                "3": -3.554,
+                                "4": 2.047},
+                            "surf_tens_MEA_coeff": {
+                                "1": 0.09945,
+                                "2": 1.067,
+                                "3": 0.0,
+                                "4": 0.0},
+                            "surf_tens_CO2_coeff": {
+                                "1": -5.987,
+                                "2": 3.7699,
+                                "3": -0.43164,
+                                "4": 0.018155,
+                                "5": -0.01207,
+                                "6": 0.002119},
+                            "surf_tens_F_coeff": {
+                                "a": 2.4558,
+                                "b": -1.5311,
+                                "c": 3.4994,
+                                "d": -5.6398,
+                                "e": 10.2109,
+                                "f": 2.3122,
+                                "g": 4.5608,
+                                "h": -2.3924,
+                                "i": 5.3324,
+                                "j": -12.0494},
                             "visc_d_coeff": {
                                 "a": -0.0838,
                                 "b": 2.8817,
@@ -448,5 +802,33 @@ configuration = {
     "state_bounds": {"flow_mol": (0, 1, 1000, pyunits.mol/pyunits.s),
                      "temperature": (273.15, 298.15, 450, pyunits.K),
                      "pressure": (5e4, 101325, 1e6, pyunits.Pa)},
+    "state_components": StateIndex.apparent,
     "pressure_ref": (101325, pyunits.Pa),
-    "temperature_ref": (298.15, pyunits.K)}
+    "temperature_ref": (298.15, pyunits.K),
+
+    "inherent_reactions": {
+        "carbamate": {"stoichiometry": {("Liq", "MEA"): -2,
+                                        ("Liq", "CO2"): -1,
+                                        ("Liq", "MEA_+"): 1,
+                                        ("Liq", "MEACOO_-"): 1},
+                      "equilibrium_constant": k_eq,
+                      "equilibrium_form": log_power_law_equil,
+                      "concentration_form": ConcentrationForm.molarity,
+                      "parameter_data": {
+                          "k_eq_coeff": {
+                              "1": 233.4,
+                              "2": -3410,
+                              "3": -36.8}}},
+        "bicarbonate": {"stoichiometry": {("Liq", "MEA"): -1,
+                                          ("Liq", "CO2"): -1,
+                                          ("Liq", "H2O"): -1,
+                                          ("Liq", "HCO3_-"): 1,
+                                          ("Liq", "MEA_+"): 1},
+                        "equilibrium_constant": k_eq,
+                        "equilibrium_form": log_power_law_equil,
+                        "concentration_form": ConcentrationForm.molarity,
+                        "parameter_data": {
+                            "k_eq_coeff": {
+                                "1": 176.72,
+                                "2": -2909,
+                                "3": -28.46}}}}}
