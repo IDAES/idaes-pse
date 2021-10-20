@@ -132,6 +132,11 @@ class EnthMolSolvent():
         if not hasattr(cobj, "cp_mass_liq_comp_coeff_1"):
             CpMolSolvent.build_parameters(cobj)
 
+        cobj.dh_vap = Var(
+                doc="Heat of absorption of component @ Tref",
+                units=pyunits.J/pyunits.mol)
+        set_param_from_config(cobj, param="dh_vap")
+
     @staticmethod
     def return_expression(b, cobj, T):
         # Specific enthalpy
@@ -146,7 +151,8 @@ class EnthMolSolvent():
                 (cobj.cp_mass_liq_comp_coeff_4/4)*(T**4-Tr**4) +
                 (cobj.cp_mass_liq_comp_coeff_3/3)*(T**3-Tr**3) +
                 (cobj.cp_mass_liq_comp_coeff_2/2)*(T**2-Tr**2) +
-                cobj.cp_mass_liq_comp_coeff_1*(T-Tr)),
+                cobj.cp_mass_liq_comp_coeff_1*(T-Tr)) +
+            cobj.dh_vap,
             units["energy_mole"]))
 
         return h
@@ -703,6 +709,7 @@ configuration = {
                         '1': (-3.2484e-6, pyunits.g/pyunits.mL/pyunits.K**2),  # [2]
                         '2': (0.00165, pyunits.g/pyunits.mL/pyunits.K),
                         '3': (0.793, pyunits.g/pyunits.mL)},
+                    "dh_vap": 43.99e3,
                     "pressure_sat_comp_coeff": {
                         '1': 72.55,
                         '2': -7206.70,
@@ -728,6 +735,7 @@ configuration = {
                         '1': (-5.35162e-7, pyunits.g/pyunits.mL/pyunits.K**2),  # [2]
                         '2': (-4.51417e-4, pyunits.g/pyunits.mL/pyunits.K),
                         '3': (1.19451, pyunits.g/pyunits.mL)},
+                    "dh_vap": 0,  # MEA is assumed to be non-volatile
                     "diffus_phase_comp_coeff": {
                             '1': -13.275,
                             '2': -2198.3,
