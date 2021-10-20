@@ -212,9 +212,10 @@ class _ControllerBlockData(_DynamicBlockData):
                                "Please use either 'measurement' or 'estimate'.")
 
     def load_measurements(self, measured, timepoint=None):
-        super(_ControllerBlockData, self).load_measurements(
-            measured, "measurement", timepoint
-        )
+        time = self.time
+        t = timepoint if timepoint is not None else time.first()
+        for var, val in zip(self.vectors.measurement[:, t], measured):
+            var.fix(val)
 
 
 class ControllerBlock(DynamicBlock):

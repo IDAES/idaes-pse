@@ -494,9 +494,10 @@ class _EstimatorBlockData(_DynamicBlockData):
         return [val for val in self.vectors.differential[:, t].value]
 
     def load_measurements(self, measured, timepoint=None):
-        super(_EstimatorBlockData, self).load_measurements(
-            measured, "actualmeasurement", timepoint
-        )
+        time = self.time
+        t = timepoint if timepoint is not None else time.first()
+        for var, val in zip(self.vectors.actualmeasurement[:, t], measured):
+            var.fix(val)
 
 
 class EstimatorBlock(DynamicBlock):
