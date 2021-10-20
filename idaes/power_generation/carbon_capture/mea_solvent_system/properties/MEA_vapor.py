@@ -211,39 +211,40 @@ class ThermalCond():
                 units=pyunits.K**2)
         set_param_from_config(pobj, param="therm_cond_co2_coeff", index="4")
 
-        pobj.therm_cond_n2_coeff_1 = Var(
-                doc="Parameter 1 for N2 thermal conductivity model",
-                units=pyunits.dimensionless)
-        set_param_from_config(pobj, param="therm_cond_n2_coeff", index="1")
-        pobj.therm_cond_n2_coeff_2 = Var(
-                doc="Parameter 2 for N2 thermal conductivity model",
-                units=pyunits.dimensionless)
-        set_param_from_config(pobj, param="therm_cond_n2_coeff", index="2")
-        pobj.therm_cond_n2_coeff_3 = Var(
-                doc="Parameter 3 for N2 thermal conductivity model",
-                units=pyunits.K)
-        set_param_from_config(pobj, param="therm_cond_n2_coeff", index="3")
-        pobj.therm_cond_n2_coeff_4 = Var(
-                doc="Parameter 4 for N2 thermal conductivity model",
-                units=pyunits.K**2)
-        set_param_from_config(pobj, param="therm_cond_n2_coeff", index="4")
+        if "N2" in pobj.parent_block().component_list:
+            pobj.therm_cond_n2_coeff_1 = Var(
+                    doc="Parameter 1 for N2 thermal conductivity model",
+                    units=pyunits.dimensionless)
+            set_param_from_config(pobj, param="therm_cond_n2_coeff", index="1")
+            pobj.therm_cond_n2_coeff_2 = Var(
+                    doc="Parameter 2 for N2 thermal conductivity model",
+                    units=pyunits.dimensionless)
+            set_param_from_config(pobj, param="therm_cond_n2_coeff", index="2")
+            pobj.therm_cond_n2_coeff_3 = Var(
+                    doc="Parameter 3 for N2 thermal conductivity model",
+                    units=pyunits.K)
+            set_param_from_config(pobj, param="therm_cond_n2_coeff", index="3")
+            pobj.therm_cond_n2_coeff_4 = Var(
+                    doc="Parameter 4 for N2 thermal conductivity model",
+                    units=pyunits.K**2)
+            set_param_from_config(pobj, param="therm_cond_n2_coeff", index="4")
 
-        pobj.therm_cond_o2_coeff_1 = Var(
-                doc="Parameter 1 for O2 thermal conductivity model",
-                units=pyunits.dimensionless)
-        set_param_from_config(pobj, param="therm_cond_o2_coeff", index="1")
-        pobj.therm_cond_o2_coeff_2 = Var(
-                doc="Parameter 2 for O2 thermal conductivity model",
-                units=pyunits.dimensionless)
-        set_param_from_config(pobj, param="therm_cond_o2_coeff", index="2")
-        pobj.therm_cond_o2_coeff_3 = Var(
-                doc="Parameter 3 for O2 thermal conductivity model",
-                units=pyunits.K)
-        set_param_from_config(pobj, param="therm_cond_o2_coeff", index="3")
-        pobj.therm_cond_o2_coeff_4 = Var(
-                doc="Parameter 4 for O2 thermal conductivity model",
-                units=pyunits.K**2)
-        set_param_from_config(pobj, param="therm_cond_o2_coeff", index="4")
+            pobj.therm_cond_o2_coeff_1 = Var(
+                    doc="Parameter 1 for O2 thermal conductivity model",
+                    units=pyunits.dimensionless)
+            set_param_from_config(pobj, param="therm_cond_o2_coeff", index="1")
+            pobj.therm_cond_o2_coeff_2 = Var(
+                    doc="Parameter 2 for O2 thermal conductivity model",
+                    units=pyunits.dimensionless)
+            set_param_from_config(pobj, param="therm_cond_o2_coeff", index="2")
+            pobj.therm_cond_o2_coeff_3 = Var(
+                    doc="Parameter 3 for O2 thermal conductivity model",
+                    units=pyunits.K)
+            set_param_from_config(pobj, param="therm_cond_o2_coeff", index="3")
+            pobj.therm_cond_o2_coeff_4 = Var(
+                    doc="Parameter 4 for O2 thermal conductivity model",
+                    units=pyunits.K**2)
+            set_param_from_config(pobj, param="therm_cond_o2_coeff", index="4")
 
     @staticmethod
     def return_expression(blk, phase):
@@ -316,31 +317,32 @@ class Viscosity():
                 units=pyunits.K)
         set_param_from_config(pobj, param="visc_d_co2_coeff", index="3")
 
-        pobj.visc_d_n2_coeff_1 = Var(
-                doc="Parameter 1 for N2 viscosity model",
-                units=pyunits.Pa/pyunits.s)
-        set_param_from_config(pobj, param="visc_d_n2_coeff", index="1")
-        pobj.visc_d_n2_coeff_2 = Var(
-                doc="Parameter 2 for N2 viscosity model",
-                units=pyunits.K)
-        set_param_from_config(pobj, param="visc_d_n2_coeff", index="2")
-        pobj.visc_d_n2_coeff_3 = Var(
-                doc="Parameter 3 for N2 viscosity model",
-                units=pyunits.K)
-        set_param_from_config(pobj, param="visc_d_n2_coeff", index="3")
+        if "N2" in pobj.parent_block().component_list:
+            pobj.visc_d_n2_coeff_1 = Var(
+                    doc="Parameter 1 for N2 viscosity model",
+                    units=pyunits.Pa/pyunits.s)
+            set_param_from_config(pobj, param="visc_d_n2_coeff", index="1")
+            pobj.visc_d_n2_coeff_2 = Var(
+                    doc="Parameter 2 for N2 viscosity model",
+                    units=pyunits.K)
+            set_param_from_config(pobj, param="visc_d_n2_coeff", index="2")
+            pobj.visc_d_n2_coeff_3 = Var(
+                    doc="Parameter 3 for N2 viscosity model",
+                    units=pyunits.K)
+            set_param_from_config(pobj, param="visc_d_n2_coeff", index="3")
 
-        pobj.visc_d_o2_coeff_1 = Var(
-                doc="Parameter 1 for O2 viscosity model",
-                units=pyunits.Pa/pyunits.s)
-        set_param_from_config(pobj, param="visc_d_o2_coeff", index="1")
-        pobj.visc_d_o2_coeff_2 = Var(
-                doc="Parameter 2 for O2 viscosity model",
-                units=pyunits.K)
-        set_param_from_config(pobj, param="visc_d_o2_coeff", index="2")
-        pobj.visc_d_o2_coeff_3 = Var(
-                doc="Parameter 3 for O2 viscosity model",
-                units=pyunits.K)
-        set_param_from_config(pobj, param="visc_d_o2_coeff", index="3")
+            pobj.visc_d_o2_coeff_1 = Var(
+                    doc="Parameter 1 for O2 viscosity model",
+                    units=pyunits.Pa/pyunits.s)
+            set_param_from_config(pobj, param="visc_d_o2_coeff", index="1")
+            pobj.visc_d_o2_coeff_2 = Var(
+                    doc="Parameter 2 for O2 viscosity model",
+                    units=pyunits.K)
+            set_param_from_config(pobj, param="visc_d_o2_coeff", index="2")
+            pobj.visc_d_o2_coeff_3 = Var(
+                    doc="Parameter 3 for O2 viscosity model",
+                    units=pyunits.K)
+            set_param_from_config(pobj, param="visc_d_o2_coeff", index="3")
 
     @staticmethod
     def return_expression(blk, phase):
@@ -476,6 +478,79 @@ flue_gas = {
                                 "1": 0.02018e-3,
                                 "2": 292.25,
                                 "3": 127}}
+                        }
+                },
+
+    # Set base units of measurement
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
+
+    # Specifying state definition
+    "state_definition": FTPx,
+    "state_bounds": {"flow_mol": (0, 1, 1000, pyunits.mol/pyunits.s),
+                     "temperature": (273.15, 298.15, 450, pyunits.K),
+                     "pressure": (5e4, 101325, 1e6, pyunits.Pa)},
+    "state_components": StateIndex.apparent,
+    "pressure_ref": (101325, pyunits.Pa),
+    "temperature_ref": (298.15, pyunits.K)}
+
+
+wet_co2 = {
+    # Specifying components
+    "components": {
+        'CO2': {"type": Component,
+                "cp_mol_ig_comp": Cp,
+                "diffus_phase_comp": {"Vap": Diffus},
+                "enth_mol_ig_comp": EnthMol,
+                "parameter_data": {
+                    "mw": (0.04401, pyunits.kg/pyunits.mol),
+                    "cp_mol_vap_comp_coeff": {
+                        '1': 5.457,
+                        '2': 1.045E-3,
+                        '3': -1.157E5}
+                    }},
+        'H2O': {"type": Component,
+                "cp_mol_ig_comp": Cp,
+                "diffus_phase_comp": {"Vap": Diffus},
+                "enth_mol_ig_comp": EnthMol,
+                "parameter_data": {
+                    "mw": (0.01802, pyunits.kg/pyunits.mol),
+                    "cp_mol_vap_comp_coeff": {
+                        '1': 3.47,
+                        '2': 1.45E-3,
+                        '3': 0.121E5}
+                    }}},
+
+    # Specifying phases
+    "phases":  {'Vap': {"type": VaporPhase,
+                        "equation_of_state": Ideal,
+                        "therm_cond_phase": ThermalCond,
+                        "visc_d_phase": Viscosity,
+                        "parameter_data": {
+                            "diffus_binary_param": {
+                                'CO2': 26.7,
+                                'H2O': 13.1},
+                            "therm_cond_co2_coeff": {
+                                "1": 3.69,
+                                "2": -0.3838,
+                                "3": 964,
+                                "4": 1.86e6},
+                            "therm_cond_h2o_coeff": {
+                                "1": 6.204e-6,
+                                "2": 1.3973,
+                                "3": 0.0,
+                                "4": 0},
+                            "visc_d_co2_coeff": {
+                                "1": 2.148e-6,
+                                "2": 0.46,
+                                "3": 290},
+                            "visc_d_h2o_coeff": {
+                                "1": 1.7096e-8,
+                                "2": 1.1146,
+                                "3": 0.0}}
                         }
                 },
 
