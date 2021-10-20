@@ -204,12 +204,17 @@ class _ControllerBlockData(_DynamicBlockData):
         if type_of_ics == "estimate":
             self.load_estimates(ics)
         elif type_of_ics == "measurement":
-            self.load_measurements(ics, 
-                                   target = "measurement",
-                                   timepoint = self.time.first())
+            self.load_measurements(
+                ics, timepoint = self.time.first()
+            )
         else:
             raise RuntimeError("Declared type of initial conditions does not support."
                                "Please use either 'measurement' or 'estimate'.")
+
+    def load_measurements(self, measured, timepoint=None):
+        super(_ControllerBlockData, self).load_measurements(
+            measured, "measurement", timepoint
+        )
 
 
 class ControllerBlock(DynamicBlock):

@@ -795,13 +795,8 @@ class TestEstimatorBlock(object):
         blk = self.make_estimator()
         time = blk.time
         t0 = time.first()
-        vals = [0.25]
-        blk.load_measurements(vals, target = "measurement", timepoint = t0)        
-        for b, val in zip(blk.MEASUREMENT_BLOCK.values(), vals):
-            assert b.var[t0].value == val
-
-        vals2 = [0.75]
+        vals = [0.75]
         t_last = time.last()
-        blk.load_measurements(vals2, target = "actualmeasurement", timepoint = t_last)
-        for b, val in zip(blk.ACTUALMEASUREMENT_BLOCK.values(), vals2):
+        blk.load_measurements(vals, timepoint = t_last)
+        for b, val in zip(blk.ACTUALMEASUREMENT_BLOCK.values(), vals):
             assert b.var[t_last].value == val

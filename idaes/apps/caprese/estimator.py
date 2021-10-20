@@ -493,6 +493,11 @@ class _EstimatorBlockData(_DynamicBlockData):
     def generate_estimates_at_time(self, t):
         return [val for val in self.vectors.differential[:, t].value]
 
+    def load_measurements(self, measured, timepoint=None):
+        super(_EstimatorBlockData, self).load_measurements(
+            measured, "actualmeasurement", timepoint
+        )
+
 
 class EstimatorBlock(DynamicBlock):
     """ This is a user-facing class to be instantiated when one
