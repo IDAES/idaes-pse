@@ -312,7 +312,7 @@ def main(plot_switch=False):
     #controller.mod.fs.cstr.volume[0].unfix()
     controller.mod.fs.cstr.control_volume.material_holdup[0,'aq','Solvent'].fix()
 
-    controller.add_setpoint_objective(setpoint, setpoint_weights)
+    controller.add_single_time_optimization_objective(setpoint, setpoint_weights)
     controller.solve_setpoint(solver)
 
     # Now we are ready to construct the tracking NMPC problem

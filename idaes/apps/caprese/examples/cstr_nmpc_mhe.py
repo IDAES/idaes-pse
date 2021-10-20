@@ -238,7 +238,6 @@ def main():
     # Extract measurements from the plant and inject them into MHE
     measurements = dyna.plant.generate_measurements_at_time(p_ts)
     dyna.estimator.load_measurements(measurements,
-                                     target = "actualmeasurement",
                                      timepoint = estimator.time.last())
     dyna.estimator.load_inputs_into_last_sample(inputs)
 
@@ -271,7 +270,6 @@ def main():
         measurements = dyna.plant.generate_measurements_at_time(p_ts)
         dyna.estimator.advance_one_sample()
         dyna.estimator.load_measurements(measurements,
-                                         target = "actualmeasurement",
                                          timepoint = estimator.time.last())
         dyna.estimator.load_inputs_into_last_sample(inputs)
 

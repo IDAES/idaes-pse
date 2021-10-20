@@ -178,7 +178,6 @@ def main():
     # Extract measurements from the plant and inject them into MHE
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
     mhe.estimator.load_measurements(measurements,
-                                    target = "actualmeasurement",
                                     timepoint = estimator.time.last())
     mhe.estimator.load_inputs_into_last_sample(
         mhe.plant.generate_inputs_at_time(p_ts))
@@ -216,7 +215,6 @@ def main():
 
         mhe.estimator.advance_one_sample()
         mhe.estimator.load_measurements(measurements,
-                                        target = "actualmeasurement",
                                         timepoint = estimator.time.last())
         mhe.estimator.load_inputs_into_last_sample(cinput)
 
