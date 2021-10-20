@@ -205,7 +205,7 @@ def get_rsofc_soec_variable_OM_costing(fs):
     @fs.Expression(fs.time)
     def plant_load(fs, t):
         return (
-            -1 * fs.net_power[t]  # net power
+            fs.net_power[t]  # net power
         )
 
     # natural gas
