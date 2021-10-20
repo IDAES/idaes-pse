@@ -50,7 +50,10 @@ def merge_variable_lists_w_different_types(dynamic_block,
     merged_list = copy.copy(dynamic_var_list)
     new_added_user_vars = [] # This is for controller to save the setpoint.
     for item in user_var_list:
-        item_cuid = ComponentUID(item.referent)
+        if item.is_reference():
+            item_cuid = ComponentUID(item.referent)
+        else:
+            item_cuid = ComponentUID(item)
         # Save the variable that is not in CUID_set
         if item_cuid not in CUID_set:
             CUID_set.add(item_cuid)
