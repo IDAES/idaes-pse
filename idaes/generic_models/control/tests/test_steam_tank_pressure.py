@@ -34,7 +34,11 @@ from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.generic_models.unit_models import Heater, Valve
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.initialization import propagate_state
-from idaes.generic_models.control.controller import PIDController, ControllerType
+from idaes.generic_models.control.controller import (
+    PIDController,
+    ControllerType,
+    ControllerMVBoundType
+)
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 from idaes.core.util.plot import plot_grid_dynamic
@@ -151,7 +155,7 @@ def create_model(
                 "pv": m.fs.tank.control_volume.properties_out[:].pressure,
                 "mv": m.fs.valve_1.valve_opening,
                 "calculate_initial_integral": calc_integ,
-                "bounded_output": True,
+                "mv_bound_type": ControllerMVBoundType.SMOOTH_BOUND,
                 "type": ControllerType.PID, #rather use PI, but testing all terms
             }
         )

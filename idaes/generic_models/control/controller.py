@@ -38,6 +38,19 @@ class ControllerType(enum.Enum):
     PID = 4
 
 
+class ControllerMVBoundType(enum.Enum):
+    """Manipulated value bound type.
+
+    NONE: No bound on manipulated value output.
+    SMOOTH_BOUND: Use a smoothed version of mv = min(max(mv_unbound, ub), lb)
+    LOGISTIC: Use a logistic function too keep mv between the bounds
+    """
+
+    NONE = 1
+    SMOOTH_BOUND = 2
+    LOGISTIC = 3
+
+
 @declare_process_block_class(
     "PIDController",
     doc="PID controller model block.  To use this the model must be dynamic.",
@@ -67,13 +80,31 @@ class PIDControllerData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-        "bounded_output",
+        "mv_bound_type",
         ConfigValue(
-            default=False,
-            description="Flag to bound manipulated variable",
+            default=ControllerMVBoundType.NONE,
+            domain=In(
+                [
+                    ControllerMVBoundType.NONE,
+                    ControllerMVBoundType.SMOOTH_BOUND,
+                    ControllerMVBoundType.LOGISTIC,
+                ]
+            ),
+            description="Type of bounds to apply to the manipulated variable (mv)).",
             doc=(
-                "If True, the output for the manipulated variable is bounded,"
-                " between the 'mv_lb' and 'mv_ub' parameters. (Default=False)"
+                """Type of bounds to apply to the manipulated variable output. If,
+bounds are applied, the model parameters mv_lb and mv_ub set the bounds."
+- ControllerMVBoundType.NONE: no bounds"
+- ControllerMVBoundType.SMOOTH_BOUND: use smoothed mv = min(max(mv_unbound, ub), lb)
+    the model parameter smooth_eps controls the amount of smoothing, with lower
+    values representing a closer approximation to the min and max functions.
+- ControllerMVBoundType.LOGISTIC: use a logistic function to keep mv between
+    it's bounds. This bounding type is smoother, but doesn't match the unbounded
+    output as well as the SMOOTH_BOUND option.  At the mid point between bounds,
+    the unbounded and bounded output match.  The parameter, logistic_bound_k
+    controls the steepness of the function and how fast it approachess the bounds,
+    with higher values approaching the bounds faster with a steeper curve.
+    this is mv = lb + (ub - lb)/(1 + exp(-k/(ub - lb)*(mv_unbound-(ub + lb)/2)))."""
             ),
         ),
     )
@@ -154,7 +185,15 @@ Default is ControllerType.PI""",
         self.smooth_eps = pyo.Param(
             mutable=True,
             initialize=1e-4,
-            doc="Smoothing parameter for controller output limits",
+            doc="Smoothing parameter for controller output limits when the bound"
+            " type is SMOOTH_BOUND",
+            units=mv_units,
+        )
+        self.logistic_bound_k = pyo.Param(
+            mutable=True,
+            initialize=4,
+            doc="Smoothing parameter for controller output limits when the bound"
+            " type is LOGISTIC",
             units=mv_units,
         )
 
@@ -278,11 +317,20 @@ Default is ControllerType.PI""",
             if t == time_set.first():
                 return pyo.Constraint.Skip
             else:
-                if self.config.bounded_output is True:
-                    l = b.mv_lb
-                    h = b.mv_ub
-                    mv = b.mv_unbounded[t]
-                    e = b.smooth_eps
-                    return b.mv[t] == smooth_bound(mv, lb=l, ub=h, eps=e)
-                else:
-                    return b.mv[t] == b.mv_unbounded[t]
+                if self.config.mv_bound_type == ControllerMVBoundType.SMOOTH_BOUND:
+                    return b.mv[t] == smooth_bound(
+                        b.mv_unbounded[t], lb=b.mv_lb, ub=b.mv_ub, eps=b.smooth_eps
+                    )
+                elif self.config.mv_bound_type == ControllerMVBoundType.LOGISTIC:
+                    return (
+                        (b.mv[t] - b.mv_lb)
+                        * (
+                            1
+                            + pyo.exp(
+                                -b.logistic_bound_k
+                                / (b.mv_ub - b.mv_lb)
+                                * (b.mv_unbounded[t] - (b.mv_lb + b.mv_ub) / 2)
+                            )
+                        )
+                    ) == b.mv_ub - b.mv_lb
+                return b.mv[t] == b.mv_unbounded[t]
