@@ -679,20 +679,22 @@ class GenericParameterData(PhysicalParameterBlock):
         # Validate and other phase indexed props
         phase_indexed_props = ["diffus_phase_comp"]
         for prop in phase_indexed_props:
-            if cobj.config[prop] is not None:
-                for p, meth in cobj.config[prop].items():
-                    # First validate that p is a phase
-                    if p not in self.phase_list:
-                        raise ConfigurationError(
-                            f"{self.name} property {prop} definition contained"
-                            f" unrecognised phase {p}.")
-                    else:
-                        try:
-                            meth.build_parameters(cobj, p)
-                        except AttributeError:
-                            # Method provided has no build_parameters method
-                            # Assume it is not needed and continue
-                            pass
+            for j in self.component_list:
+                cobj = self.get_component(j)
+                if cobj.config[prop] is not None:
+                    for p, meth in cobj.config[prop].items():
+                        # First validate that p is a phase
+                        if p not in self.phase_list:
+                            raise ConfigurationError(
+                                f"{self.name} property {prop} definition contained"
+                                f" unrecognised phase {p}.")
+                        else:
+                            try:
+                                meth.build_parameters(cobj, p)
+                            except AttributeError:
+                                # Method provided has no build_parameters method
+                                # Assume it is not needed and continue
+                                continue
 
         for p in self.phase_list:
             pobj = self.get_phase(p)
