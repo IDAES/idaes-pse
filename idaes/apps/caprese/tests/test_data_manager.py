@@ -89,7 +89,8 @@ class TestDataManager(object):
         assert df1.empty
         assert len(df1.index) == 0
         pred_column_strings1 = ["iteration"]+\
-                                [str(ComponentUID(var.referent)) for var in variables]
+                                [str(ComponentUID(var.referent))
+                                 for var in variables]
         assert all(i1 == i2 for i1, i2 in zip(pred_column_strings1, df1.columns))
         assert df1["iteration"].dtype == "int64"
         assert all(dtype == "float64" for dtype in df1.dtypes[1:])
@@ -320,11 +321,11 @@ class TestDataManager(object):
         plant_datamanager = PlantDataManager(plant, states_of_interest)
 
         assert hasattr(plant_datamanager, "plantblock")
-        assert plant == plant_datamanager.plantblock
+        assert plant is plant_datamanager.plantblock
 
         # Note that model.conc[:, "A"] has alrealy existed in differential_vars
         assert hasattr(plant_datamanager, "plant_states_of_interest")
-        assert all(i1[t0] == i2[t0] for i1, i2 in
+        assert all(i1[t0] is i2[t0] for i1, i2 in
                    zip(plant_datamanager.plant_states_of_interest,
                        plant.differential_vars + [states_of_interest[1]]))
 
@@ -332,7 +333,7 @@ class TestDataManager(object):
         pred_plant_vars_of_interest = plant.differential_vars + \
                                         [states_of_interest[1]] + \
                                             plant.input_vars
-        assert all(i1[t0] == i2[t0] for i1, i2 in
+        assert all(i1[t0] is i2[t0] for i1, i2 in
                    zip(plant_datamanager.plant_vars_of_interest,
                        pred_plant_vars_of_interest))
 
@@ -473,12 +474,12 @@ class TestDataManager(object):
                                           states_of_interest,)
 
         assert hasattr(nmpc_data, "controllerblock")
-        assert nmpc_data.controllerblock == controller
+        assert nmpc_data.controllerblock is controller
 
         assert hasattr(nmpc_data, "controller_states_of_interest")
         pred_controller_states_of_interest = controller.differential_vars + \
                                                 [pyo.Reference(c_model.rate[:, "A"])]
-        assert all(i1[c_t0] == i2[c_t0] for i1, i2 in
+        assert all(i1[c_t0] is i2[c_t0] for i1, i2 in
                        zip(pred_controller_states_of_interest,
                            nmpc_data.controller_states_of_interest))
 
@@ -489,7 +490,7 @@ class TestDataManager(object):
         assert hasattr(nmpc_data, "user_given_vars_map_nmpcvar")
         vardata_map = controller.vardata_map
         for var in nmpc_data.extra_vars_user_interested:
-            assert nmpc_data.user_given_vars_map_nmpcvar[var] == vardata_map[var[c_t0]]
+            assert nmpc_data.user_given_vars_map_nmpcvar[var] is vardata_map[var[c_t0]]
 
     @pytest.mark.unit
     def test_get_controller_dataframe(self):
@@ -648,7 +649,7 @@ class TestDataManager(object):
         assert hasattr(mhe_data, "estimator_vars_of_interest")
         pred_estimator_vars_of_interest = estimator.differential_vars + \
                                             [pyo.Reference(e_model.rate[:, "A"])]
-        assert all(i1[e_t0] == i2[e_t0] for i1, i2
+        assert all(i1[e_t0] is i2[e_t0] for i1, i2
                     in zip(pred_estimator_vars_of_interest,
                             mhe_data.estimator_vars_of_interest))
 

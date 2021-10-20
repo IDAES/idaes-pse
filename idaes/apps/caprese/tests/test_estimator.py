@@ -285,7 +285,7 @@ class TestEstimatorBlock(object):
             alg_contlast_ids.remove(id(con))
         assert alg_contlast_ids == []
 
-        pred_disc_cons = [mod.dcdt_disc_eq[tlast, "A"], 
+        pred_disc_cons = [mod.dcdt_disc_eq[tlast, "A"],
                           mod.dcdt_disc_eq[tlast, "B"]]
         disc_cons = estimator.con_category_dict[ConstraintCategory.DISCRETIZATION]
         disc_contlast_ids = [id(con[tlast]) for con in disc_cons]
@@ -316,7 +316,7 @@ class TestEstimatorBlock(object):
             varlist = estimator.category_dict[categ]
             for var in varlist:
                 assert var.is_reference()
-                assert var.ctype == ctype
+                assert var.ctype is ctype
 
     @pytest.mark.unit
     def test_add_sample_point_set(self):
@@ -325,7 +325,7 @@ class TestEstimatorBlock(object):
         t0 = time.first()
 
         assert hasattr(estimator, 'SAMPLEPOINT_SET')
-        assert all(i1 is i2 for i1, i2 
+        assert all(i1 is i2 for i1, i2
                    in zip(estimator.SAMPLEPOINT_SET.ordered_data(), estimator.sample_points))
 
     @pytest.mark.unit
@@ -417,7 +417,7 @@ class TestEstimatorBlock(object):
         actmea_vars = estimator.category_dict[VariableCategory.ACTUALMEASUREMENT]
         for var in actmea_vars:
             assert var.is_reference()
-            assert var.ctype == ActualMeasurementVar
+            assert var.ctype is ActualMeasurementVar
             assert var._attr == "actualmeasurement"
             assert var[t0] in pred_actmea_vars
             pred_actmea_vars.remove(var[t0])
@@ -429,7 +429,7 @@ class TestEstimatorBlock(object):
         meaerr_vars = estimator.category_dict[VariableCategory.MEASUREMENTERROR]
         for var in meaerr_vars:
             assert var.is_reference()
-            assert var.ctype == MeasurementErrorVar
+            assert var.ctype is MeasurementErrorVar
             assert var._attr == "measurementerror"
             assert var[t0] in pred_meaerr_vars
             pred_meaerr_vars.remove(var[t0])
@@ -441,7 +441,7 @@ class TestEstimatorBlock(object):
         moddis_vars = estimator.category_dict[VariableCategory.MODELDISTURBANCE]
         for var in moddis_vars:
             assert var.is_reference()
-            assert var.ctype == ModelDisturbanceVar
+            assert var.ctype is ModelDisturbanceVar
             assert var._attr == "modeldisturbance"
             assert var[t0] in pred_moddis_vars
             pred_moddis_vars.remove(var[t0])
@@ -456,21 +456,21 @@ class TestEstimatorBlock(object):
         moddis_block = estimator.MODELDISTURBANCE_BLOCK
         diffvar_map_moddis = estimator.diffvar_map_moddis
         for ind, var in enumerate(estimator.differential_vars):
-            assert diffvar_map_moddis[var[t0]] == moddis_block[ind].var
+            assert diffvar_map_moddis[var[t0]] is moddis_block[ind].var
         derivar_map_moddis = estimator.derivar_map_moddis
         for ind, var in enumerate(estimator.derivative_vars):
-            assert derivar_map_moddis[var[t0]] == moddis_block[ind].var
+            assert derivar_map_moddis[var[t0]] is moddis_block[ind].var
 
 
         meaerr_block = estimator.MEASUREMENTERROR_BLOCK
         meavar_map_meaerr = estimator.meavar_map_meaerr
         for ind, var in enumerate(estimator.measurement_vars):
-            assert meavar_map_meaerr[var[t0]] == meaerr_block[ind].var
+            assert meavar_map_meaerr[var[t0]] is meaerr_block[ind].var
 
         actmea_block = estimator.ACTUALMEASUREMENT_BLOCK
         meavar_map_actmea = estimator.meavar_map_actmea
         for ind, var in enumerate(estimator.measurement_vars):
-            assert meavar_map_actmea[var[t0]] == actmea_block[ind].var
+            assert meavar_map_actmea[var[t0]] is actmea_block[ind].var
 
     @pytest.mark.unit
     def test_add_measurement_constraint(self):
@@ -494,7 +494,7 @@ class TestEstimatorBlock(object):
             curr_con = meacon_block[bind].con_mea_err
             assert curr_con.index_set() == time
             assert all(i1 is i2 for i1, i2 in zip(curr_con.keys(), estimator.SAMPLEPOINT_SET))
-            for t in time: 
+            for t in time:
                 if t in estimator.SAMPLEPOINT_SET:
                     pred_expr = actmea_block[bind].actual_measurement[t] ==\
                                 (mea_block[bind].var[t] + meaerr_block[bind].measurement_error[t])
@@ -508,7 +508,7 @@ class TestEstimatorBlock(object):
 
         MHEBlock = estimator.MHE_VARS_CONS_BLOCK
 
-        assert hasattr(MHEBlock, "DISTURBED_DIFFERENTIAL_CONSTRAINT_BLOCK") 
+        assert hasattr(MHEBlock, "DISTURBED_DIFFERENTIAL_CONSTRAINT_BLOCK")
         ddc_block = MHEBlock.DISTURBED_DIFFERENTIAL_CONSTRAINT_BLOCK
         assert ddc_block.dim() == 1
         assert len(list(ddc_block.keys())) == len(estimator.con_category_dict[ConstraintCategory.DIFFERENTIAL])
@@ -569,7 +569,7 @@ class TestEstimatorBlock(object):
                 ]
         estimator.add_single_time_optimization_objective(desiredss, weights)
         pred_obj_expr = (
-                1.0*(estimator.mod.flow_in[t0] - 3.0)**2 + 
+                1.0*(estimator.mod.flow_in[t0] - 3.0)**2 +
                 5.0*(estimator.mod.conc[t0,'A'] - 1.5)**2
                 )
         obj_expr = estimator.single_time_optimization_objective.expr
@@ -593,7 +593,7 @@ class TestEstimatorBlock(object):
         initialize_t0(estimator.mod)
 
         dof_prior = degrees_of_freedom(estimator)
-        estimator.solve_single_time_optimization(solver, 
+        estimator.solve_single_time_optimization(solver,
                                             ic_type = "differential_var",
                                             require_steady = True,
                                             load_setpoints = False,
@@ -666,7 +666,7 @@ class TestEstimatorBlock(object):
         initialize_t0(estimator.mod)
 
         estimator.initialize_past_info_with_steady_state(desiredss,
-                                                         weights, 
+                                                         weights,
                                                          solver)
 
         for tp in time:
