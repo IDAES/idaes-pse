@@ -73,7 +73,7 @@ MHE_CATEGORY_TYPE_MAP = {
 
 class _EstimatorBlockData(_DynamicBlockData):
     """ This class adds methods for building MHE and for working with dynamic
-    models. 
+    models.
     """
 
     def _construct(self):
@@ -82,7 +82,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                 error constraints, disturbed differential equations
         """
         self._categorize_constraints = True
-        
+
         if self._sample_time is None:
             raise RuntimeError("MHE needs the sample time to be provided!")
 
@@ -151,14 +151,14 @@ class _EstimatorBlockData(_DynamicBlockData):
     def _add_sample_point_set(self):
         '''
         Measurement errors, actual measurements, and model disturbances are indexed by
-        sample points. 
+        sample points.
         '''
         set_name = "SAMPLEPOINT_SET"
         self.add_component(set_name, ContinuousSet(initialize = self.sample_points))
 
     def _add_actual_measurement_param(self):
-        """This function creates a indexed block and "fixed" variables to allocate 
-        actual measurements that come from the plant. 
+        """This function creates a indexed block and "fixed" variables to allocate
+        actual measurements that come from the plant.
         """
         MHEBlock = self.MHE_VARS_CONS_BLOCK
 
@@ -167,12 +167,12 @@ class _EstimatorBlockData(_DynamicBlockData):
         actmea_block = Block(mea_set)
         MHEBlock.add_component(block_name, actmea_block)
 
-        sps_set = self.SAMPLEPOINT_SET       
+        sps_set = self.SAMPLEPOINT_SET
         for i in mea_set:
             var_name = "actual_measurement"
             actmea_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
             #Variables in this block should always be fixed!
-            actmea_block[i].find_component(var_name).fix() 
+            actmea_block[i].find_component(var_name).fix()
 
     def _add_measurement_error(self):
         """This function creates a indexed block for measurement errors.
@@ -206,7 +206,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             var_name = "model_disturbance"
             moddis_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
             #Fix model disturbance at t = 0 as 0.0
-            moddis_block[i].find_component(var_name)[t0].fix(0.0) 
+            moddis_block[i].find_component(var_name)[t0].fix(0.0)
 
     def _get_mhe_var_category_dict(self):
         MHEBlock = self.MHE_VARS_CONS_BLOCK
@@ -269,7 +269,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         '''
         This function creates a indexed block, containing measurement error equations.
         '''
-        
+
         MHEBlock = self.MHE_VARS_CONS_BLOCK
         block_name = "MEASUREMENT_CONSTRAINT_BLOCK"
         mea_set = MHEBlock.MEASUREMENT_SET
@@ -294,7 +294,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                     actual_mea = top_parent.meavar_map_actmea[measured_stat[t0]]
                     mea_err = top_parent.meavar_map_meaerr[measured_stat[t0]]
                     return actual_mea[s] == measured_stat[s] + mea_err[s]
-            meacon_block[i].add_component(con_name, Constraint(time, 
+            meacon_block[i].add_component(con_name, Constraint(time,
                                                                rule = _con_mea_err))
 
     def _add_disturbance_to_differential_cons(self):
@@ -327,7 +327,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             def _dd_rule(m, tp):
                 curr_sampt = curr_sample_point(tp, sample_points)
                 newbody = (curr_difeq[tp].body - mod_dist[curr_sampt])
-                # Differential constraints are confirmed as equalities 
+                # Differential constraints are confirmed as equalities
                 # in categorize_dae_variables_and_constraints.
                 # I just set it equal to the original upper bound for convience.
                 newexpr = newbody == curr_difeq[tp].upper.value
@@ -336,7 +336,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             ddc_block[i].add_component(con_name, _dd_con)
 
             #Deactivate the original/undisturbed differential equs
-            curr_difeq.deactivate() 
+            curr_difeq.deactivate()
 
     def initialize_actualmeasurements_at_t0(self):
         t0 = self.time.first()
@@ -345,7 +345,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             mea_block = self.MEASUREMENT_BLOCK[ind]
             actmea_block.var[t0].set_value(mea_block.var[t0].value)
 
-    def initialize_past_info_with_steady_state(self, 
+    def initialize_past_info_with_steady_state(self,
                                                desired_ss,
                                                ss_weights,
                                                solver):
@@ -365,7 +365,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         # self.solve_steady_state(solver)
 
         self.add_single_time_optimization_objective(desired_ss, ss_weights)
-        self.solve_single_time_optimization(solver, 
+        self.solve_single_time_optimization(solver,
                                             ic_type = "differential_var",
                                             require_steady = True,
                                             load_setpoints = False,
@@ -395,12 +395,12 @@ class _EstimatorBlockData(_DynamicBlockData):
         or 'variance'.
 
         Parameters
-        ----------        
-        model_disturbance_weights: A list of vardata-value tuples describing 
-                                    the weight for model disturbance to be 
+        ----------
+        model_disturbance_weights: A list of vardata-value tuples describing
+                                    the weight for model disturbance to be
                                     given to the objective term containing each variable.
-        measurement noise_weights: A list of vardata-value tuples describing 
-                                    the weight for measurement error to be 
+        measurement noise_weights: A list of vardata-value tuples describing
+                                    the weight for measurement error to be
                                     given to the objective term containing each variable.
         givenform: The form of given lists. It should be either "weight" (default)
                     or "variance".
@@ -412,7 +412,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                    "Please assign either 'weight' or 'variance'.")
 
         diff_id_set = {id(var[t0]) for var in self.differential_vars}
-        for var, val in model_disturbance_weights:  
+        for var, val in model_disturbance_weights:
             #Check whether the given variable is classified under diffvar
             if id(var) not in diff_id_set:
                 raise RuntimeError(var.name,
@@ -427,7 +427,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         for var, val in measurement_noise_weights:
             #Check whether the given variable is declared as a measurement before
             if id(var) not in mea_id_set:
-                raise RuntimeError(var.name, 
+                raise RuntimeError(var.name,
                                    " is not declared as a measurement.")
 
             if givenform == "weight":
@@ -495,7 +495,7 @@ class _EstimatorBlockData(_DynamicBlockData):
 
     def load_measurements(self, measured, timepoint=None):
         time = self.time
-        t = timepoint if timepoint is not None else time.first()
+        t = timepoint if timepoint is not None else time.last()
         for var, val in zip(self.vectors.actualmeasurement[:, t], measured):
             var.fix(val)
 
