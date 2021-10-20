@@ -28,6 +28,7 @@ from idaes.apps.caprese.tests.test_simple_model import (
         initialize_t0,
         )
 from idaes.apps.caprese.data_manager import (
+                    merge_variable_lists_w_different_types,
                     empty_dataframe_from_variables,
                     add_variable_values_to_dataframe,
                     add_variable_setpoints_to_dataframe,
@@ -49,6 +50,48 @@ class TestDataManager(object):
         init_dict = {**init_d1, **init_d2}
         m.var1 = pyo.Var(m.set1, m.set2, initialize = init_dict)
         return m
+
+    @pytest.mark.unit
+    def test_merge_variable_lists_w_different_types(self):
+        plant = self.make_plant()
+        p_model = plant.mod
+        p_time = plant.time
+        p_t0 = p_time.first()
+
+        controller = self.make_controller()
+        c_model = controller.mod
+        c_time = controller.time
+        c_t0 = c_time.first()
+
+        # states_of_interest is defined with plant
+        states_of_interest = [pyo.Reference(p_model.conc[:, "A"]),
+                              pyo.Reference(p_model.rate[:, "A"]),
+                              p_model.flow_out]
+
+        pred_merged_list = controller.differential_vars + \
+                            [pyo.Reference(c_model.rate[:, "A"]),
+                             c_model.flow_out]
+
+        # case 1: return_new_user_vars = false
+        merged_list_1 = merge_variable_lists_w_different_types(controller,
+                                                               states_of_interest,
+                                                               controller.differential_vars,
+                                                               return_new_user_vars = False)
+        assert all(i1[c_t0] == i2[c_t0] for i1, i2
+                   in zip(merged_list_1, pred_merged_list))
+
+        # case 2: return_new_user_vars = True
+        merged_list_2, return_new_user_vars = merge_variable_lists_w_different_types(
+                                                        controller,
+                                                        states_of_interest,
+                                                        controller.differential_vars,
+                                                        return_new_user_vars = True)
+        assert all(i1[c_t0] == i2[c_t0] for i1, i2
+                   in zip(merged_list_2, pred_merged_list))
+
+        pred_return_new_user_vars = [pyo.Reference(c_model.rate[:, "A"]), c_model.flow_out]
+        assert all(i1[c_t0] == i2[c_t0] for i1, i2
+                   in zip(return_new_user_vars, pred_return_new_user_vars))
 
     @pytest.mark.unit
     def test_empty_dataframe_from_variables(self):
