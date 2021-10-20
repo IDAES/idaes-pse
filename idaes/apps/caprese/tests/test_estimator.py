@@ -87,7 +87,8 @@ class TestEstimatorBlock(object):
         assert estimator.time is time
         assert estimator._sample_time
         assert all(i1 is i2 for i1, i2 in zip(estimator._inputs, inputs))
-        assert all(i1 is i2 for i1, i2 in zip(estimator._measurements, measurements))
+        assert all(i1 is i2 for i1, i2 in
+                   zip(estimator._measurements, measurements))
         assert hasattr(estimator, "category_dict")
         assert hasattr(estimator, "con_category_dict")
         assert hasattr(estimator, "MHE_VARS_CONS_BLOCK")
@@ -108,7 +109,8 @@ class TestEstimatorBlock(object):
                 for i in estimator_set}
         time_map = {i: model_map[i].time for i in estimator_set}
         inputs_map = {i: [model_map[i].flow_in[0]] for i in estimator_set}
-        measurements_map = {i: [model_map[i].conc[0, 'A']] for i in estimator_set}
+        measurements_map = {i: [model_map[i].conc[0, 'A']]
+                            for i in estimator_set}
         sample_time_map = {i: sample_time for i in estimator_set}
 
         estimator = EstimatorBlock(
@@ -123,7 +125,8 @@ class TestEstimatorBlock(object):
         assert type(estimator) is IndexedEstimatorBlock
         assert isinstance(estimator, IndexedEstimatorBlock)
         estimator.construct()
-        assert all(b.parent_component() is estimator for b in estimator.values())
+        assert all(b.parent_component() is estimator
+                   for b in estimator.values())
 
         for i in estimator_set:
             assert i in estimator
@@ -132,13 +135,15 @@ class TestEstimatorBlock(object):
             assert c.time is time_map[i]
             assert c._sample_time is sample_time_map[i]
             assert all(i1 is i2 for i1, i2 in zip(c._inputs, inputs_map[i]))
-            assert all(i1 is i2 for i1, i2 in zip(c._measurements, measurements_map[i]))
+            assert all(i1 is i2
+                       for i1, i2 in zip(c._measurements, measurements_map[i]))
             assert hasattr(c, "category_dict")
             assert hasattr(c, "con_category_dict")
             assert hasattr(c, "MHE_VARS_CONS_BLOCK")
             MHEBlock = c.MHE_VARS_CONS_BLOCK
             assert hasattr(MHEBlock, "MEASUREMENT_SET")
-            assert len(MHEBlock.MEASUREMENT_SET.ordered_data()) == len(measurements_map[i])
+            assert len(MHEBlock.MEASUREMENT_SET.ordered_data()) == \
+                        len(measurements_map[i])
             assert hasattr(MHEBlock, "DIFFERENTIAL_SET")
             assert len(MHEBlock.DIFFERENTIAL_SET.ordered_data()) == \
                 len(c.category_dict[VariableCategory.DIFFERENTIAL])
@@ -170,19 +175,25 @@ class TestEstimatorBlock(object):
         inputs = [model.flow_in[t0]]
         measurements = [model.conc[t0,'A']]
 
-        scalar_vars, dae_vars = flatten_dae_components(model, time, ctype=pyo.Var)
-        scalar_cons, dae_cons = flatten_dae_components(model, time, ctype = pyo.Constraint)
+        scalar_vars, dae_vars = flatten_dae_components(model,
+                                                       time,
+                                                       ctype=pyo.Var)
+        scalar_cons, dae_cons = flatten_dae_components(model,
+                                                       time,
+                                                       ctype = pyo.Constraint)
         input_ids = [id(vart0) for vart0 in inputs]
         input_vars = [var for var in dae_vars if id(var[t0]) in input_ids]
         measurement_ids = [id(vart0) for vart0 in measurements]
-        measurement_vars = [var for var in dae_vars if id(var[t0]) in measurement_ids]
-        category_dict, con_category_dict = categorize_dae_variables_and_constraints(
-                                                                                    model,
-                                                                                    dae_vars,
-                                                                                    dae_cons,
-                                                                                    time,
-                                                                                    input_vars = input_vars,
-                                                                                    )
+        measurement_vars = [var for var in dae_vars
+                            if id(var[t0]) in measurement_ids]
+        category_dict, con_category_dict = \
+            categorize_dae_variables_and_constraints(
+                                                    model,
+                                                    dae_vars,
+                                                    dae_cons,
+                                                    time,
+                                                    input_vars = input_vars,
+                                                    )
 
         # Provide the category_dict when constructing EstimatorBlock
         estimator = EstimatorBlock(
@@ -223,7 +234,7 @@ class TestEstimatorBlock(object):
 
         mod = estimator.mod
 
-        # line227 - 261: make sure variables are categoried in correct cateogries.
+        # line227-261: make sure variables are categoried in correct cateogries.
         pred_diff_vars = [mod.conc[t0, "A"], mod.conc[t0, "B"]]
         diff_vars = estimator.category_dict[VariableCategory.DIFFERENTIAL]
         diff_vart0_ids = [id(var[t0]) for var in diff_vars]
@@ -261,9 +272,8 @@ class TestEstimatorBlock(object):
         assert input_vart0_ids == []
 
 
-        # line265 - 296: make sure constraints are categoried in correct cateogries.
+        # line265-296: make sure constraints are categoried in correct cateogries.
         tlast = time.last()
-
         pred_diff_cons = [mod.material_balance[tlast, "A"],
                           mod.material_balance[tlast, "B"]]
         diff_cons = estimator.con_category_dict[ConstraintCategory.DIFFERENTIAL]
@@ -326,7 +336,8 @@ class TestEstimatorBlock(object):
 
         assert hasattr(estimator, 'SAMPLEPOINT_SET')
         assert all(i1 is i2 for i1, i2
-                   in zip(estimator.SAMPLEPOINT_SET.ordered_data(), estimator.sample_points))
+                   in zip(estimator.SAMPLEPOINT_SET.ordered_data(),
+                          estimator.sample_points))
 
     @pytest.mark.unit
     def test_add_actual_measurement_param(self):
@@ -343,7 +354,8 @@ class TestEstimatorBlock(object):
         for bind in estimator.MEASUREMENT_SET:
             curr_block = acemeablock[bind]
             assert hasattr(curr_block, "actual_measurement")
-            assert curr_block.actual_measurement.index_set() == estimator.SAMPLEPOINT_SET
+            assert curr_block.actual_measurement.index_set() == \
+                        estimator.SAMPLEPOINT_SET
             var = curr_block.actual_measurement
             for sp in estimator.SAMPLEPOINT_SET:
                 assert var[sp].value == 0.0
@@ -364,7 +376,8 @@ class TestEstimatorBlock(object):
         for bind in estimator.MEASUREMENT_SET:
             curr_block = meaerrblock[bind]
             assert hasattr(curr_block, "measurement_error")
-            assert curr_block.measurement_error.index_set() == estimator.SAMPLEPOINT_SET
+            assert curr_block.measurement_error.index_set() == \
+                        estimator.SAMPLEPOINT_SET
             var = curr_block.measurement_error
             for sp in estimator.SAMPLEPOINT_SET:
                 assert var[sp].value == 0.0
@@ -384,7 +397,8 @@ class TestEstimatorBlock(object):
         for bind in estimator.MEASUREMENT_SET:
             curr_block = moddisblock[bind]
             assert hasattr(curr_block, "model_disturbance")
-            assert curr_block.model_disturbance.index_set() == estimator.SAMPLEPOINT_SET
+            assert curr_block.model_disturbance.index_set() == \
+                        estimator.SAMPLEPOINT_SET
             var = curr_block.model_disturbance
             for sp in estimator.SAMPLEPOINT_SET:
                 if sp == t0:
@@ -493,11 +507,13 @@ class TestEstimatorBlock(object):
             assert hasattr(meacon_block[bind], "con_mea_err")
             curr_con = meacon_block[bind].con_mea_err
             assert curr_con.index_set() == time
-            assert all(i1 is i2 for i1, i2 in zip(curr_con.keys(), estimator.SAMPLEPOINT_SET))
+            assert all(i1 is i2 for i1, i2 in
+                       zip(curr_con.keys(), estimator.SAMPLEPOINT_SET))
             for t in time:
                 if t in estimator.SAMPLEPOINT_SET:
                     pred_expr = actmea_block[bind].actual_measurement[t] ==\
-                                (mea_block[bind].var[t] + meaerr_block[bind].measurement_error[t])
+                                (mea_block[bind].var[t] + \
+                                 meaerr_block[bind].measurement_error[t])
                     assert curr_con[t].expr.to_string() == pred_expr.to_string()
 
     @pytest.mark.unit
@@ -511,7 +527,8 @@ class TestEstimatorBlock(object):
         assert hasattr(MHEBlock, "DISTURBED_DIFFERENTIAL_CONSTRAINT_BLOCK")
         ddc_block = MHEBlock.DISTURBED_DIFFERENTIAL_CONSTRAINT_BLOCK
         assert ddc_block.dim() == 1
-        assert len(list(ddc_block.keys())) == len(estimator.con_category_dict[ConstraintCategory.DIFFERENTIAL])
+        assert len(list(ddc_block.keys())) == \
+                len(estimator.con_category_dict[ConstraintCategory.DIFFERENTIAL])
 
         def map_t_to_sp(tind):
             for item in estimator.sample_point_indices:
@@ -529,7 +546,8 @@ class TestEstimatorBlock(object):
             for t in time:
                 tind = time.find_nearest_index(t)
                 sp = map_t_to_sp(tind)
-                pred_expr = diff_cons[bind][t].body - moddis_block[bind].var[sp] == 0.0
+                pred_expr = diff_cons[bind][t].body - \
+                    moddis_block[bind].var[sp] == 0.0
                 assert curr_con[t].expr.to_string() == pred_expr.to_string()
                 assert not diff_cons[bind][t].active
 
@@ -637,7 +655,8 @@ class TestEstimatorBlock(object):
         time = estimator.time
         t0 = time.first()
 
-        # Re-initialize measurements and actualmeasurements to make sure they are different before assertion
+        # Re-initialize measurements and actualmeasurements to make sure they
+        # are different before assertion
         estimator.vectors.measurement[...].set_value(20.)
         estimator.vectors.actualmeasurement[...].set_value(100.)
 
@@ -712,9 +731,12 @@ class TestEstimatorBlock(object):
 
         MD_block = estimator.MHE_VARS_CONS_BLOCK.MODEL_DISTURBANCE_BLOCK
         ME_block = estimator.MHE_VARS_CONS_BLOCK.MEASUREMENT_ERROR_BLOCK
-        pred_obj_expr = sum(0.1*(MD_block[0].model_disturbance[t])**2 for t in estimator.sample_points if t!=t0) + \
-                        sum(0.2*(MD_block[1].model_disturbance[t])**2 for t in estimator.sample_points if t!=t0) + \
-                        sum(10.*(ME_block[0].measurement_error[t])**2 for t in estimator.sample_points)
+        pred_obj_expr = sum(0.1*(MD_block[0].model_disturbance[t])**2
+                            for t in estimator.sample_points if t!=t0) + \
+                        sum(0.2*(MD_block[1].model_disturbance[t])**2
+                            for t in estimator.sample_points if t!=t0) + \
+                        sum(10.*(ME_block[0].measurement_error[t])**2
+                            for t in estimator.sample_points)
         obj_expr = estimator.noise_minimize_objective.expr
         assert pyo.value(pred_obj_expr) == pyo.value(obj_expr)
         assert pyo.value(obj_expr) > 0
@@ -732,9 +754,12 @@ class TestEstimatorBlock(object):
 
         assert hasattr(estimator, 'noise_minimize_objective')
 
-        pred_obj_expr = sum(1/10.*(MD_block[0].model_disturbance[t])**2 for t in estimator.sample_points if t!=t0) + \
-                        sum(1/20.*(MD_block[1].model_disturbance[t])**2 for t in estimator.sample_points if t!=t0) + \
-                        sum(1/0.1*(ME_block[0].measurement_error[t])**2 for t in estimator.sample_points)
+        pred_obj_expr = sum(1/10.*(MD_block[0].model_disturbance[t])**2
+                            for t in estimator.sample_points if t!=t0) + \
+                        sum(1/20.*(MD_block[1].model_disturbance[t])**2
+                            for t in estimator.sample_points if t!=t0) + \
+                        sum(1/0.1*(ME_block[0].measurement_error[t])**2
+                            for t in estimator.sample_points)
         obj_expr = estimator.noise_minimize_objective.expr
         assert pyo.value(pred_obj_expr) == pyo.value(obj_expr)
         assert pyo.value(obj_expr) > 0
@@ -772,7 +797,8 @@ class TestEstimatorBlock(object):
         estimator.load_inputs_into_last_sample(input)
 
         spi = estimator.sample_point_indices
-        check_t_list = [tp for tp in time if tp > time[spi[-2]] and tp <= time[spi[-1]]]
+        check_t_list = [tp for tp in time if tp > time[spi[-2]]
+                                            and tp <= time[spi[-1]]]
         for tp in check_t_list:
             assert pyo.value(estimator.vectors.input[0, tp]) == 100.
 

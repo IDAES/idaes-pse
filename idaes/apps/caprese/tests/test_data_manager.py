@@ -83,7 +83,8 @@ class TestDataManager(object):
         m = self.make_small_ContreteModel()
 
         # w/o rename_map
-        variables = [pyo.Reference(m.var1[:, "A"]), pyo.Reference(m.var1[:, "B"])]
+        variables = [pyo.Reference(m.var1[:, "A"]),
+                     pyo.Reference(m.var1[:, "B"])]
         df1 = empty_dataframe_from_variables(variables)
         assert type(df1) is pd.core.frame.DataFrame
         assert df1.empty
@@ -91,7 +92,8 @@ class TestDataManager(object):
         pred_column_strings1 = ["iteration"]+\
                                 [str(ComponentUID(var.referent))
                                  for var in variables]
-        assert all(i1 == i2 for i1, i2 in zip(pred_column_strings1, df1.columns))
+        assert all(i1 == i2 for i1, i2 in
+                   zip(pred_column_strings1, df1.columns))
         assert df1["iteration"].dtype == "int64"
         assert all(dtype == "float64" for dtype in df1.dtypes[1:])
 
@@ -104,15 +106,18 @@ class TestDataManager(object):
         assert df2.empty
         assert len(df2.index) == 0
         pred_column_strings2 = ["iteration"]+\
-                                [str(ComponentUID(var.referent))+"_random" for var in variables]
-        assert all(i1 == i2 for i1, i2 in zip(pred_column_strings2, df2.columns))
+                                [str(ComponentUID(var.referent))+"_random"
+                                 for var in variables]
+        assert all(i1 == i2 for i1, i2 in
+                   zip(pred_column_strings2, df2.columns))
         assert df2["iteration"].dtype == "int64"
         assert all(dtype == "float64" for dtype in df2.dtypes[1:])
 
     @pytest.mark.unit
     def test_add_variable_values_to_dataframe(self):
         m = self.make_small_ContreteModel()
-        variables = [pyo.Reference(m.var1[:, "A"]), pyo.Reference(m.var1[:, "B"])]
+        variables = [pyo.Reference(m.var1[:, "A"]),
+                     pyo.Reference(m.var1[:, "B"])]
         str_cuids = [str(ComponentUID(var.referent)) for var in variables]
 
         # Case1: Neither optional argument is given.
@@ -122,11 +127,14 @@ class TestDataManager(object):
                                                iteration = 10,
                                                )
         assert len(df1.index) == 5
-        assert all(i1 == i2 for i1, i2 in zip(df1.index, [0.0, 1.0, 2.0, 3.0, 4.0]))
+        assert all(i1 == i2 for i1, i2 in
+                   zip(df1.index, [0.0, 1.0, 2.0, 3.0, 4.0]))
         assert len(df1.columns) == 3
         assert all(ele == 10 for ele in df1["iteration"])
-        assert all(ele == 0.1+ind*1. for ind, ele in enumerate(df1[str_cuids[0]]))
-        assert all(ele == 0.2+ind*1. for ind, ele in enumerate(df1[str_cuids[1]]))
+        assert all(ele == 0.1+ind*1. for ind, ele in
+                   enumerate(df1[str_cuids[0]]))
+        assert all(ele == 0.2+ind*1. for ind, ele in
+                   enumerate(df1[str_cuids[1]]))
 
         # Case2: time_subset is given
         df2 = empty_dataframe_from_variables(variables)
@@ -139,8 +147,10 @@ class TestDataManager(object):
         assert all(i1 == i2 for i1, i2 in zip(df2.index, [0.0,1.0]))
         assert len(df2.columns) == 3
         assert all(ele == 100 for ele in df2["iteration"])
-        assert all(ele == 0.1+ind*1. for ind, ele in enumerate(df2[str_cuids[0]]))
-        assert all(ele == 0.2+ind*1. for ind, ele in enumerate(df2[str_cuids[1]]))
+        assert all(ele == 0.1+ind*1. for ind, ele in
+                   enumerate(df2[str_cuids[0]]))
+        assert all(ele == 0.2+ind*1. for ind, ele in
+                   enumerate(df2[str_cuids[1]]))
 
         df2 = add_variable_values_to_dataframe(df2,
                                                variables,
@@ -148,12 +158,15 @@ class TestDataManager(object):
                                                time_subset = [2,3,4]
                                                )
         assert len(df2.index) == 5
-        assert all(i1 == i2 for i1, i2 in zip(df2.index, [0.0, 1.0, 3.0, 4.0, 5.0]))
+        assert all(i1 == i2 for i1, i2 in
+                   zip(df2.index, [0.0, 1.0, 3.0, 4.0, 5.0]))
         assert len(df2.columns) == 3
         assert all(ele == 100 for ele in df2["iteration"][0:2])
         assert all(ele == 200 for ele in df2["iteration"][2:])
-        assert all(ele == 0.1+ind*1. for ind, ele in enumerate(df2[str_cuids[0]]))
-        assert all(ele == 0.2+ind*1. for ind, ele in enumerate(df2[str_cuids[1]]))
+        assert all(ele == 0.1+ind*1. for ind, ele in
+                   enumerate(df2[str_cuids[0]]))
+        assert all(ele == 0.2+ind*1. for ind, ele in
+                   enumerate(df2[str_cuids[1]]))
 
         #Case3: rename_map is given
         rename_map = {var: str(ComponentUID(var.referent))+"_random"
@@ -168,8 +181,10 @@ class TestDataManager(object):
         assert all(i1 == i2 for i1, i2 in zip(df3.index, [0.0,1.0]))
         assert len(df3.columns) == 3
         assert all(ele == 300 for ele in df3["iteration"])
-        assert all(ele == 0.1+ind*1. for ind, ele in enumerate(df3[str_cuids[0]+"_random"]))
-        assert all(ele == 0.2+ind*1. for ind, ele in enumerate(df3[str_cuids[1]+"_random"]))
+        assert all(ele == 0.1+ind*1. for ind, ele in
+                   enumerate(df3[str_cuids[0]+"_random"]))
+        assert all(ele == 0.2+ind*1. for ind, ele in
+                   enumerate(df3[str_cuids[1]+"_random"]))
 
         #Case4: time_map is given
         df5 = empty_dataframe_from_variables(variables)
@@ -179,16 +194,20 @@ class TestDataManager(object):
                                                iteration = 500,
                                                time_map = time_map)
         assert len(df5.index) == 5
-        assert all(i1 == i2 for i1, i2 in zip(df5.index, [40.0, 41.0, 42.0, 43.0, 44.0]))
+        assert all(i1 == i2 for i1, i2 in
+                   zip(df5.index, [40.0, 41.0, 42.0, 43.0, 44.0]))
         assert len(df1.columns) == 3
         assert all(ele == 500 for ele in df5["iteration"])
-        assert all(ele == 0.1+ind*1. for ind, ele in enumerate(df5[str_cuids[0]]))
-        assert all(ele == 0.2+ind*1. for ind, ele in enumerate(df5[str_cuids[1]]))
+        assert all(ele == 0.1+ind*1. for ind, ele in
+                   enumerate(df5[str_cuids[0]]))
+        assert all(ele == 0.2+ind*1. for ind, ele in
+                   enumerate(df5[str_cuids[1]]))
 
     @pytest.mark.unit
     def test_add_variable_setpoints_to_dataframe(self):
         m = self.make_small_ContreteModel()
-        variables = [pyo.Reference(m.var1[:, "A"]), pyo.Reference(m.var1[:, "B"])]
+        variables = [pyo.Reference(m.var1[:, "A"]),
+                     pyo.Reference(m.var1[:, "B"])]
         str_cuids = [str(ComponentUID(var.referent)) for var in variables]
 
         # Manually create differential_vars, save differential varialbes and,
@@ -203,16 +222,18 @@ class TestDataManager(object):
         # Thus, they don't have setpoint attribute.
         # This mapping maps the user given variables to corresponding nmpc_vars.
         m.var_mapping = ComponentMap((original_ref, new_ref)
-                                     for original_ref, new_ref in zip(variables, m.differential_vars))
+                                     for original_ref, new_ref in
+                                     zip(variables, m.differential_vars))
 
 
         df1 = empty_dataframe_from_variables(variables)
-        df1 = add_variable_setpoints_to_dataframe(df1,
-                                                  variables,
-                                                  time_subset = [0.0, 1.0, 2.0],
-                                                  map_for_user_given_vars = m.var_mapping,
-                                                  iteration = 10,
-                                                  )
+        df1 = add_variable_setpoints_to_dataframe(
+                                    df1,
+                                    variables,
+                                    time_subset = [0.0, 1.0, 2.0],
+                                    map_for_user_given_vars = m.var_mapping,
+                                    iteration = 10,
+                                    )
 
         assert all(val == 10 for val in df1["iteration"])
         assert all(val == 10.0 for val in df1["var1[*,A]"])
@@ -222,12 +243,13 @@ class TestDataManager(object):
         for ind, var in enumerate(m.differential_vars):
             var.setpoint = 100.*(ind+1)
 
-        df1 = add_variable_setpoints_to_dataframe(df1,
-                                                  variables,
-                                                  time_subset = [3.0, 4.0],
-                                                  map_for_user_given_vars = m.var_mapping,
-                                                  iteration = 20,
-                                                  )
+        df1 = add_variable_setpoints_to_dataframe(
+                                    df1,
+                                    variables,
+                                    time_subset = [3.0, 4.0],
+                                    map_for_user_given_vars = m.var_mapping,
+                                    iteration = 20,
+                                    )
 
         assert all(val == 20 for val in df1["iteration"][3:])
         assert all(val == 100.0 for val in df1["var1[*,A]"][3:])
@@ -352,7 +374,8 @@ class TestDataManager(object):
         plant_datamanager = PlantDataManager(plant, states_of_interest)
 
 
-        assert id(plant_datamanager.get_plant_dataframe()) == id(plant_datamanager.plant_df)
+        assert id(plant_datamanager.get_plant_dataframe()) == \
+                    id(plant_datamanager.plant_df)
 
     @pytest.mark.unit
     def test_save_initial_plant_data(self):
@@ -478,7 +501,7 @@ class TestDataManager(object):
 
         assert hasattr(nmpc_data, "controller_states_of_interest")
         pred_controller_states_of_interest = controller.differential_vars + \
-                                                [pyo.Reference(c_model.rate[:, "A"])]
+                                        [pyo.Reference(c_model.rate[:, "A"])]
         assert all(i1[c_t0] is i2[c_t0] for i1, i2 in
                        zip(pred_controller_states_of_interest,
                            nmpc_data.controller_states_of_interest))
@@ -490,7 +513,8 @@ class TestDataManager(object):
         assert hasattr(nmpc_data, "user_given_vars_map_nmpcvar")
         vardata_map = controller.vardata_map
         for var in nmpc_data.extra_vars_user_interested:
-            assert nmpc_data.user_given_vars_map_nmpcvar[var] is vardata_map[var[c_t0]]
+            assert nmpc_data.user_given_vars_map_nmpcvar[var] is \
+                        vardata_map[var[c_t0]]
 
     @pytest.mark.unit
     def test_get_controller_dataframe(self):
@@ -509,7 +533,8 @@ class TestDataManager(object):
         nmpc_data = ControllerDataManager(controller,
                                           states_of_interest,)
 
-        assert id(nmpc_data.get_controller_dataframe()) == id(nmpc_data.controller_df)
+        assert id(nmpc_data.get_controller_dataframe()) == \
+                    id(nmpc_data.controller_df)
 
     @pytest.mark.unit
     def test_get_setpoint_dataframe(self):
@@ -528,7 +553,8 @@ class TestDataManager(object):
         nmpc_data = ControllerDataManager(controller,
                                           states_of_interest,)
 
-        assert id(nmpc_data.get_setpoint_dataframe()) == id(nmpc_data.setpoint_df)
+        assert id(nmpc_data.get_setpoint_dataframe()) == \
+                    id(nmpc_data.setpoint_df)
 
     @pytest.mark.unit
     def test_save_controller_data(self):
@@ -571,7 +597,8 @@ class TestDataManager(object):
             assert all(val == value for val in df[key])
 
         df_sp = nmpc_data.setpoint_df
-        assert all(i1 == i2 for i1, i2 in zip(pred_setpoint_result.keys(), df_sp.columns))
+        assert all(i1 == i2 for i1, i2 in
+                   zip(pred_setpoint_result.keys(), df_sp.columns))
         assert all(i1 == i2 for i1, i2 in zip(pred_index, df_sp.index))
         for key, value in pred_setpoint_result.items():
             assert all(val == value for val in df_sp[key])
@@ -702,7 +729,8 @@ class TestDataManager(object):
                                             ("mod.conc[*,B]", 200.),
                                             ("mod.rate[*,A]", 30.)])
         df = mhe_data.estimator_df
-        assert all(i1 == i2 for i1, i2 in zip(pred_column_results.keys(), df.columns))
+        assert all(i1 == i2 for i1, i2 in
+                   zip(pred_column_results.keys(), df.columns))
         assert df.index[0] == 5.5
         for key, value in pred_column_results.items():
             assert df[key][5.5] == value
@@ -720,7 +748,8 @@ class TestDataManager(object):
                                             ("mod.conc[*,B]", 400.),
                                             ("mod.rate[*,A]", 60.)])
         df = mhe_data.estimator_df
-        assert all(i1 == i2 for i1, i2 in zip(pred_column_results.keys(), df.columns))
+        assert all(i1 == i2 for i1, i2 in
+                   zip(pred_column_results.keys(), df.columns))
         assert df.index[1] == 10.5
         for key, value in pred_column_results.items():
             assert df[key][10.5] == value
