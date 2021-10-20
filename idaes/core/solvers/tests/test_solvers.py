@@ -103,10 +103,11 @@ def test_bonmin_idaes_solve():
     Make sure there is no issue with the solver class or default settings that
     break the solver object.  Passing a bad solver option will result in failure
     """
-    m, x = minlp()
+    m, x, i = minlp()
     solver = pyo.SolverFactory('bonmin')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
+    assert i == pyo.value(m.i)    
 
 @pytest.mark.unit
 def test_couenne_idaes_solve():
@@ -114,10 +115,12 @@ def test_couenne_idaes_solve():
     Make sure there is no issue with the solver class or default settings that
     break the solver object.  Passing a bad solver option will result in failure
     """
-    m, x = minlp()
+    m, x, i = minlp()
     solver = pyo.SolverFactory('couenne')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
+    assert i == pyo.value(m.i)
+
 
 @pytest.mark.unit
 def test_cbc_idaes_solve():

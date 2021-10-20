@@ -91,16 +91,16 @@ def minlp():
         None
 
     Returns:
-        (tuple): Pyomo ConcreteModel, correct solved value for m.x
+        (tuple): Pyomo ConcreteModel, correct solved value for m.x and m.i
     """
     m = pyo.ConcreteModel()
     m.x = pyo.Var(initialize=-0.1)
     m.y = pyo.Var(initialize=1)
-    m.i = pyo.Var(domain=pyo.Binary, initialize=1)
+    m.i = pyo.Var(domain=pyo.Binary, initialize=0)
     m.c = pyo.Constraint(expr=m.x >= 1)
     m.obj = pyo.Objective(
         expr=m.i * (m.x**2 + m.y**2) + (1 - m.i) * 4 *(m.x**2 + m.y**2))
-    return m, 1
+    return m, 1, 1
 
 @lru_cache(maxsize=10)
 def ipopt_has_linear_solver(linear_solver):
