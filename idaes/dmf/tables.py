@@ -49,8 +49,8 @@ import pandas as pd
 # Local
 from idaes.dmf.resource import Resource
 
-
-__author__ = "Dan Gunter"
+__authors__ = ["Dan Gunter (LBNL)"]
+__author__ = __authors__[0]
 
 
 class DataFormatError(Exception):
@@ -69,6 +69,7 @@ class Table:
             T [C], P [bar], G0/RT H2O [-], G0/RT NaCl [-], A phi [(kg/mol^0.5]
             0, 1, -23.4638, -13.836, 0.3767
     """
+
     def __init__(self):
         """Create new, empty, table.
 
@@ -81,20 +82,17 @@ class Table:
 
     @property
     def data(self) -> pd.DataFrame:
-        """Pandas dataframe for data.
-        """
+        """Pandas dataframe for data."""
         return self._data
 
     @property
     def units_dict(self) -> Dict[str, str]:
-        """Units as a dict keyed by table column name.
-        """
+        """Units as a dict keyed by table column name."""
         return self._units.copy()
 
     @property
     def units_list(self) -> List[str]:
-        """Units in order of table columns.
-        """
+        """Units in order of table columns."""
         return [self._units[c] for c in self._data.columns]
 
     #: Shorthand for getting list of units
@@ -202,6 +200,7 @@ class Table:
         if v[0] <= 1 and v[1] <= 1:  # version < 1.2.0
             from io import BufferedIOBase, RawIOBase
             import os
+
             # if it's a file and has xlsx extension, set engine
             if not isinstance(filepath, (BufferedIOBase, RawIOBase)):
                 ext = os.path.splitext(str(filepath))[-1]
@@ -210,9 +209,11 @@ class Table:
 
         data = pd.read_excel(filepath, **kwargs)
         if isinstance(data, dict):
-            raise ValueError(f"Read from excel file must return a single sheet, "
-                             f"but sheet_name='{kwargs.get('sheet_name', '?')}' "
-                             f"returned {len(data)} sheets: {list(data.keys())}")
+            raise ValueError(
+                f"Read from excel file must return a single sheet, "
+                f"but sheet_name='{kwargs.get('sheet_name', '?')}' "
+                f"returned {len(data)} sheets: {list(data.keys())}"
+            )
         self._data = data
         self._extract_units()
         self._filepath = filepath
@@ -239,8 +240,11 @@ class Table:
     def _split_units(cls, name) -> Tuple[str, str]:
         m = re.match(cls.UNITS_REGEX, name, flags=re.X)
         if m is None:
-            raise DataFormatError(name, "No recognized column name. Expected format "
-                                        "is 'name [units]', where [units] is optional")
+            raise DataFormatError(
+                name,
+                "No recognized column name. Expected format "
+                "is 'name [units]', where [units] is optional",
+            )
         new_name = m.group("name").strip()
         unit = m.group("units")
         if unit == "-" or unit is None:
@@ -287,7 +291,9 @@ class Table:
             tables = {}
             for idx, path in enumerate(rsrc.get_datafiles()):
                 table_ = cls.read_table(path, True, "infer")
-                table_.description = rsrc.v[Resource.DATAFILES_FIELD][idx].get("desc", "")
+                table_.description = rsrc.v[Resource.DATAFILES_FIELD][idx].get(
+                    "desc", ""
+                )
                 tables[path.name] = table_
             return tables
         else:
@@ -342,4 +348,3 @@ class Table:
             tbl._units[column] = info.get("units", "")
         tbl._data = pd.DataFrame(dataframe_dict)
         return tbl
-
