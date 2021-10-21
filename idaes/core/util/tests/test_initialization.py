@@ -16,10 +16,9 @@ Tests for math util methods.
 
 import pytest
 from pyomo.environ import (Block, ConcreteModel, Constraint, Expression, exp,
-                           Set, Var, value, Param, Reals,
+                           Set, Var, value, Param, Reals, units as pyunits,
                            TransformationFactory, TerminationCondition)
 from pyomo.network import Arc, Port
-from pyomo.core.base.units_container import UnitsError
 
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
@@ -32,7 +31,9 @@ from idaes.core import (FlowsheetBlock,
                         ReactionParameterBlock,
                         ReactionBlockBase,
                         ReactionBlockDataBase,
-                        MaterialFlowBasis)
+                        MaterialFlowBasis,
+                        Component,
+                        Phase)
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.unit_models import CSTR
@@ -62,19 +63,22 @@ class ParameterData(PhysicalParameterBlock):
         super(ParameterData, self).build()
 
         # all components are in the aqueous phase
-        self.phase_list = Set(initialize=['aq'])
-        self.component_list = Set(initialize=['S', 'E', 'C', 'P', 'Solvent'])
+        self.aq = Phase()
+        self.S = Component()
+        self.E = Component()
+        self.C = Component()
+        self.P = Component()
+        self.Solvent = Component()
 
-        self.state_block_class = AqueousEnzymeStateBlock
+        self._state_block_class = AqueousEnzymeStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 'min',
-                               'length': 'm',
-                               'amount': 'kmol',
-                               'temperature': 'K',
-                               'energy': 'kcal',
-                               'holdup': 'kmol'})
+        obj.add_default_units({'time': pyunits.minute,
+                               'length': pyunits.m,
+                               'amount': pyunits.kmol,
+                               'temperature': pyunits.K,
+                               'mass': pyunits.kg})
 
 
 class _AqueousEnzymeStateBlock(StateBlock):
@@ -144,7 +148,7 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
     def build(self):
         super(EnzymeReactionParameterData, self).build()
 
-        self.reaction_block_class = EnzymeReactionBlock
+        self._reaction_block_class = EnzymeReactionBlock
 
         self.rate_reaction_idx = Set(initialize=['R1', 'R2', 'R3'])
         self.rate_reaction_stoichiometry = {('R1', 'aq', 'S'): -1,
@@ -186,12 +190,11 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 'min',
-                               'length': 'm',
-                               'amount': 'kmol',
-                               'temperature': 'K',
-                               'energy': 'kcal',
-                               'holdup': 'kmol'})
+        obj.add_default_units({'time': pyunits.minute,
+                               'length': pyunits.m,
+                               'amount': pyunits.kmol,
+                               'temperature': pyunits.K,
+                               'mass': pyunits.kg})
 
 
 class _EnzymeReactionBlock(ReactionBlockBase):
@@ -571,16 +574,52 @@ def test_propagate_state():
         b.s = Set(initialize=[1, 2])
         b.v1 = Var()
         b.v2 = Var(b.s)
+        b.e1 = Expression(expr=b.v1)
+        @b.Expression(b.s)
+        def e2(blk, i):
+            return b.v2[i]*b.v1
+        b.p1 = Param(mutable=True, initialize=5)
+        b.p2 = Param(b.s, mutable=True, initialize=6)
 
-        b.p = Port()
-        b.p.add(b.v1, "V1")
-        b.p.add(b.v2, "V2")
+        b.port1 = Port()
+        b.port1.add(b.v1, "V1")
+        b.port1.add(b.v2, "V2")
+
+        b.port2 = Port()
+        b.port2.add(b.v1, "V1")
+        b.port2.add(b.e2, "V2")
+
+        b.port3 = Port()
+        b.port3.add(b.e1, "V1")
+        b.port3.add(b.v2, "V2")
+
+        b.port4 = Port()
+        b.port4.add(b.p1, "V1")
+        b.port4.add(b.v2, "V2")
+
+        b.port5 = Port()
+        b.port5.add(b.v1, "V1")
+        b.port5.add(b.p2, "V2")
+
+        b.port6 = Port()
+        b.port6.add(b.v1, "V1")
+        b.port6.add(b.v1, "V2")
         return
 
     m.b1 = Block(rule=block_rule)
     m.b2 = Block(rule=block_rule)
 
-    m.s1 = Arc(source=m.b1.p, destination=m.b2.p)
+    m.s1 = Arc(source=m.b1.port1, destination=m.b2.port1)
+    m.s2 = Arc(source=m.b1.port1, destination=m.b2.port2)
+    m.s3 = Arc(source=m.b1.port1, destination=m.b2.port3)
+    m.s4 = Arc(source=m.b1.port1, destination=m.b2.port4)
+    m.s5 = Arc(source=m.b1.port1, destination=m.b2.port5)
+    m.s6 = Arc(source=m.b1.port2, destination=m.b2.port1)
+    m.s7 = Arc(source=m.b1.port3, destination=m.b2.port1)
+    m.s8 = Arc(source=m.b1.port4, destination=m.b2.port1)
+    m.s9 = Arc(source=m.b1.port5, destination=m.b2.port1)
+    m.s10 = Arc(source=m.b1.port6, destination=m.b2.port1)
+    m.s11 = Arc(source=m.b2.port6, destination=m.b1.port1)
 
     # Set values on first block
     m.b1.v1.value = 10
@@ -605,6 +644,44 @@ def test_propagate_state():
     assert m.b2.v1.fixed is False
     assert m.b2.v2[1].fixed is False
     assert m.b2.v2[2].fixed is False
+
+    with pytest.raises(TypeError):
+        propagate_state(m.s2)
+
+    with pytest.raises(TypeError):
+        propagate_state(m.s3)
+
+    with pytest.raises(TypeError):
+        propagate_state(m.s4)
+
+    with pytest.raises(TypeError):
+        propagate_state(m.s5)
+
+    propagate_state(m.s6)
+    assert value(m.b1.v1) == value(m.b2.v1)
+    assert value(m.b1.e2[1]) == value(m.b2.v2[1])
+    assert value(m.b1.e2[2]) == value(m.b2.v2[2])
+
+    propagate_state(m.s7)
+    assert value(m.b1.e1) == value(m.b2.v1)
+    assert value(m.b1.v2[1]) == value(m.b2.v2[1])
+    assert value(m.b1.v2[2]) == value(m.b2.v2[2])
+
+    propagate_state(m.s8)
+    assert value(m.b1.p1) == value(m.b2.v1)
+    assert value(m.b1.v2[1]) == value(m.b2.v2[1])
+    assert value(m.b1.v2[2]) == value(m.b2.v2[2])
+
+    propagate_state(m.s9)
+    assert value(m.b1.v1) == value(m.b2.v1)
+    assert value(m.b1.p2[1]) == value(m.b2.v2[1])
+    assert value(m.b1.p2[2]) == value(m.b2.v2[2])
+
+    with pytest.raises(KeyError):
+        propagate_state(m.s10)
+
+    with pytest.raises(KeyError):
+        propagate_state(m.s11)
 
 
 @pytest.mark.unit
@@ -692,6 +769,13 @@ def test_propagate_state_indexed_fixed():
     assert m.b1.v1.fixed is False
     assert m.b2.v1.fixed is True
 
+    propagate_state(m.s1[1], overwrite_fixed=True)
+
+    # Check that values were propagated correctly
+    assert m.b2.v1.value == 10
+    assert m.b1.v1.fixed is False
+    assert m.b2.v1.fixed is True
+
     propagate_state(m.s1[2])
 
     # Check that values were propagated correctly
@@ -749,7 +833,7 @@ def test_propagate_state_Expression():
 
     m.s1 = Arc(source=m.b1.p, destination=m.b2.p)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         propagate_state(m.s1)
 
 
@@ -836,7 +920,8 @@ def test_initialize_by_time_element():
     ntcp = 2
     m = ConcreteModel(name='CSTR model for testing')
     m.fs = FlowsheetBlock(default={'dynamic': True,
-                                   'time_set': time_set})
+                                   'time_set': time_set,
+                                   'time_units': pyunits.minute})
 
     m.fs.properties = AqueousEnzymeParameterBlock()
     m.fs.reactions = EnzymeReactionParameterBlock(

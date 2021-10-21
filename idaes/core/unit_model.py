@@ -16,7 +16,7 @@ Base class for unit models
 
 from pyomo.environ import Reference
 from pyomo.network import Port
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData,
@@ -33,6 +33,8 @@ from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
+from idaes.core.util.config import DefaultBool
+
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -53,7 +55,7 @@ class UnitModelBlockData(ProcessBlockData):
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
 **default** = useDefault.
@@ -63,7 +65,7 @@ class UnitModelBlockData(ProcessBlockData):
 **False** - set as a steady-state model.}"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Holdup construction flag",
         doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
@@ -139,10 +141,8 @@ Must be True if dynamic = True,
                                      "StateBlocks.".format(blk.name))
 
         # Create empty Port
-        p = Port(noruleinit=True, doc=doc)
+        p = Port(doc=doc)
         setattr(blk, name, p)
-
-        p._state_block = (block, )
 
         # Get dict of Port members and names
         member_list = block[
@@ -215,7 +215,7 @@ Must be True if dynamic = True,
             doc = "Inlet Port"
 
         # Create empty Port
-        p = Port(noruleinit=True, doc=doc)
+        p = Port(doc=doc)
         setattr(blk, name, p)
 
         # Get dict of Port members and names
@@ -223,19 +223,12 @@ Must be True if dynamic = True,
             try:
                 member_list = (block.properties_in[
                                     block.flowsheet().time.first()]
-                               .define_port_members())
-                p._state_block = (block.properties_in, )
+                                .define_port_members())
             except AttributeError:
                 try:
                     member_list = (block.properties[
                                     block.flowsheet().time.first(), 0]
-                                   .define_port_members())
-                    if block._flow_direction == FlowDirection.forward:
-                        p._state_block = (block.properties,
-                                          block.length_domain.first())
-                    elif block._flow_direction == FlowDirection.backward:
-                        p._state_block = (block.properties,
-                                          block.length_domain.last())
+                                    .define_port_members())
                 except AttributeError:
                     raise PropertyPackageError(
                             "{} property package does not appear to have "
@@ -245,7 +238,6 @@ Must be True if dynamic = True,
         elif isinstance(block, StateBlock):
             member_list = block[
                     blk.flowsheet().time.first()].define_port_members()
-            p._state_block = (block, )
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "
@@ -370,7 +362,7 @@ Must be True if dynamic = True,
             doc = "Outlet Port"
 
         # Create empty Port
-        p = Port(noruleinit=True, doc=doc)
+        p = Port(doc=doc)
         setattr(blk, name, p)
 
         # Get dict of Port members and names
@@ -379,18 +371,11 @@ Must be True if dynamic = True,
                 member_list = (block.properties_out[
                                     block.flowsheet().time.first()]
                                .define_port_members())
-                p._state_block = (block.properties_out, )
             except AttributeError:
                 try:
                     member_list = (block.properties[
                                     block.flowsheet().time.first(), 0]
                                    .define_port_members())
-                    if block._flow_direction == FlowDirection.forward:
-                        p._state_block = (block.properties,
-                                          block.length_domain.last())
-                    elif block._flow_direction == FlowDirection.backward:
-                        p._state_block = (block.properties,
-                                          block.length_domain.first())
                 except AttributeError:
                     raise PropertyPackageError(
                             "{} property package does not appear to have "
@@ -400,7 +385,6 @@ Must be True if dynamic = True,
         elif isinstance(block, StateBlock):
             member_list = block[
                     blk.flowsheet().time.first()].define_port_members()
-            p._state_block = (block, )
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "

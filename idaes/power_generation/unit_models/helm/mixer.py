@@ -19,7 +19,7 @@ from pyomo.environ import (
     SolverFactory,
     value
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 
 from idaes.core import (
     declare_process_block_class,
@@ -27,8 +27,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.config import (
-    is_physical_parameter_block,
-    list_of_strings,
+    is_physical_parameter_block
 )
 from idaes.core.util.exceptions import ConfigurationError
 
@@ -104,7 +103,7 @@ see property package for documentation.}""",
     CONFIG.declare(
         "inlet_list",
         ConfigValue(
-            domain=list_of_strings,
+            domain=ListOf(str),
             description="List of inlet names",
             doc="""A list containing names of inlets,
 **default** - None.

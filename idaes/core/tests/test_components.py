@@ -34,6 +34,12 @@ class TestComponent():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -208,6 +214,12 @@ class TestSolute():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -316,6 +328,12 @@ class TestSovent():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -441,6 +459,12 @@ class TestIon():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -459,6 +483,12 @@ class TestAnion():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -475,6 +505,12 @@ class TestAnion():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -567,6 +603,12 @@ class TestCation():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -643,6 +685,12 @@ class TestApparent():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -660,6 +708,12 @@ class TestApparent():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -680,6 +734,12 @@ class TestApparent():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object

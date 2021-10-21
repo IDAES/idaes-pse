@@ -15,7 +15,7 @@ This module contains classes for reaction blocks and reaction parameter blocks.
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 from pyomo.environ import Var, Constraint, Expression
 
 # Import IDAES cores
@@ -24,7 +24,6 @@ from idaes.core import ProcessBlockData
 from idaes.core import property_meta
 from idaes.core import MaterialFlowBasis
 from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
 from idaes.core.util.config import (is_physical_parameter_block,
@@ -171,13 +170,6 @@ class ReactionParameterBlock(ProcessBlockData,
                 "with this reaction package. Please contact the developer of "
                 "the reaction package.".format(self.name))
 
-    @reaction_block_class.setter
-    def reaction_block_class(self, val):
-        _log.warning("DEPRECATED: reaction_block_class should not be set "
-                     "directly. Property package developers should set the "
-                     "_reaction_block_class attribute instead.")
-        self._reaction_block_class = val
-
     def build_reaction_block(self, *args, **kwargs):
         """
         Methods to construct a ReactionBlock assoicated with this
@@ -317,7 +309,7 @@ Block associated with this property package."""))
 which this reaction block should be associated."""))
     CONFIG.declare("has_equilibrium", ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Equilibrium constraint flag",
             doc="""Flag indicating whether equilibrium constraints
 should be constructed in this reaction block,

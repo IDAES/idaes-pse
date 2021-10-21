@@ -13,9 +13,16 @@
 """This module containts utility classes that allow users to tag model quantities
 and group them, for easy display, formatting, and input.
 """
+import xml.dom.minidom
+import collections
 
 import pyomo.environ as pyo
+from pyomo.common.deprecation import deprecation_warning
 from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
+
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 __Author__ = "John Eslick"
 
@@ -48,8 +55,8 @@ class ModelTag:
                 expression to tag. This can be a scalar or indexed.
             format_string: A formating string used to print an elememnt of the
                 tagged expression (e.g. '{:.3f}').
-            doc: A description of the tagged qunatity.
-            display_units: Pyomo units to display the qunatity in. If a string
+            doc: A description of the tagged quantity.
+            display_units: Pyomo units to display the quantity in. If a string
                 is provided it will be used to display as the unit, but will not
                 be used to convert units. If None, use native units of the
                 quantity.
@@ -75,6 +82,8 @@ class ModelTag:
     def __getitem__(self, k):
         """Returns a new ModelTag for a scalar element of a tagged indexed
         quantity or a ModelTag with a slice as the expression."""
+        if k is None and not self.is_indexed:
+            return self
         try:
             tag = ModelTag(
                 expr=self.expression[k],
@@ -96,6 +105,28 @@ class ModelTag:
             tag._root = self._root
         tag._index = k
         return tag
+
+    def __len__(self):
+        """Number of elements in a tag"""
+        return len(self.indexes)
+
+    def keys(self):
+        """Iterator of keys in the tag.  If scalar, is a single None."""
+        indx_set = self.indexes
+        for i in indx_set:
+            yield i
+
+    def values(self):
+        """Iterator for scalar elements in a tag (The elements are scalar tags)"""
+        indx_set = self.indexes
+        for i in indx_set:
+            yield self[i]
+
+    def items(self):
+        """Iterator for key scalar elements pairs in a tag"""
+        indx_set = self.indexes
+        for i in indx_set:
+            yield i, self[i]
 
     def __str__(self):
         """Returns the default string representation of a tagged quantity. If
@@ -122,12 +153,23 @@ class ModelTag:
         """
         val = self.get_display_value(index=index)
         if format_string is None:
-            return self.get_format(units=units, index=index).format(val)
+            format_string = self.get_format(units=False, index=index)
+        if callable(format_string):
+            format_string = format_string(val)
         if units:
-            return self._join_units(format_string=format_string, index=index).format(
-                val
-            )
-        return format_string.format(val)
+            format_string = self._join_units(index=index, format_string=format_string)
+        try:
+            return format_string.format(val)
+        except ValueError:
+            # Probably trying to put a string through the number format
+            # for various reasons, I'll allow it.
+            return str(val)
+        except TypeError:
+            # Probably trying to put None through the numeric format.  This
+            # can happen for example when variables don't have values.  I'll
+            # allow 'None' to be printed.  It's not uncommon to happen, and I
+            # don't want to raise an exception.
+            return str(val)
 
     def _join_units(self, index=None, format_string=None):
         """Private method to join the format string with the units of measure
@@ -146,6 +188,28 @@ class ModelTag:
     def expression(self):
         """The tagged expression"""
         return self._expression
+
+    @property
+    def value(self):
+        """The numeric value of the tagged expression in the display units"""
+        if not self.is_indexed:
+            return self.get_display_value()
+        else:
+            val_dict = dict.fromkeys(self.indexes)
+            for k, v in self.items():
+                val_dict[k] = v.get_display_value()
+            return val_dict
+
+    @property
+    def native_value(self):
+        """The numeric value of the tagged expression in the native units"""
+        if not self.is_indexed:
+            return self.get_display_value(convert=False)
+        else:
+            val_dict = dict.fromkeys(self.indexes)
+            for k, v in self.items():
+                val_dict[k] = v.get_display_value(convert=False)
+            return val_dict
 
     @property
     def doc(self):
@@ -189,8 +253,7 @@ class ModelTag:
         except KeyError as key_err:
             if self._name is None:
                 raise KeyError(f"{index} not a valid key for tag") from key_err
-            raise KeyError(
-                f"{index} not a valid key for tag {self._name}") from key_err
+            raise KeyError(f"{index} not a valid key for tag {self._name}") from key_err
         except TypeError:
             expr = self.expression
 
@@ -200,15 +263,34 @@ class ModelTag:
             or not convert
         ):
             # no display units, so display in original units, no convert opt
-            return pyo.value(expr)
+            try:
+                return pyo.value(expr, exception=False)
+            except ZeroDivisionError:
+                return "ZeroDivisionError"
+            except ValueError:  # no value
+                return None
 
-        val = pyo.value(expr)
+        try:
+            val = pyo.value(expr, exception=False)
+        except ZeroDivisionError:
+            return "ZeroDivisionError"
+        except ValueError:  # no value
+            return None
+
         cache_validate = self._cache_validation_value
         cache_value = self._cache_display_value
-        if val == cache_validate.get(index, None):
+        if index in cache_validate and val == cache_validate[index]:
             return cache_value[index]
         cache_validate[index] = val
-        cache_value[index] = pyo.value(pyo.units.convert(expr, self._display_units))
+        if self._display_units is None:
+            cache_value[index] = pyo.value(expr, exception=False)
+        else:
+            try:
+                cache_value[index] = pyo.value(
+                    pyo.units.convert(expr, self._display_units), exception=False
+                )
+            except ValueError:
+                return None
         return cache_value[index]
 
     def get_unit_str(self, index=None):
@@ -223,12 +305,6 @@ class ModelTag:
     def is_var(self):
         """Whether the tagged expression is a Pyomo Var. Tagged variables
         can be fixed or set, while expressions cannot.
-
-        Args:
-            None
-
-        Returns:
-            True if tagged expression is a variable
         """
         try:
             return issubclass(self._expression.ctype, pyo.Var)
@@ -237,14 +313,7 @@ class ModelTag:
 
     @property
     def is_slice(self):
-        """Whether the tagged expression is a Pyomo slice.
-
-        Args:
-            None
-
-        Returns:
-            True if tagged expression is a Pyomo component slice
-        """
+        """Whether the tagged expression is a Pyomo slice."""
         try:
             return isinstance(self._expression, IndexedComponent_slice)
         except AttributeError:
@@ -252,14 +321,7 @@ class ModelTag:
 
     @property
     def is_indexed(self):
-        """Returns whether the tagged expression is a indexed.
-
-        Args:
-            None
-
-        Returns:
-            True if tagged expression is a variable
-        """
+        """Returns whether the tagged expression is an indexed."""
         try:
             return self.expression.is_indexed()
         except AttributeError:
@@ -270,14 +332,7 @@ class ModelTag:
         """The index set of the tagged quantity"""
         if self.is_indexed:
             return list(self.expression.keys())
-        return None
-
-    @property
-    def indices(self):
-        """The index set of the tagged qunatity"""
-        if self.is_indexed:
-            return list(self.expression.keys())
-        return None
+        return (None,)
 
     @property
     def group(self):
@@ -314,7 +369,7 @@ class ModelTag:
     @property
     def set_in_display_units(self):
         """Default index to use in the tag's string representation, this
-        is required for indexed quntities if you want to automatically convert
+        is required for indexed quantities if you want to automatically convert
         to string. An example use it for a time indexed tag, to display a
         specific time point."""
         if self.group is not None:
@@ -326,7 +381,7 @@ class ModelTag:
     @set_in_display_units.setter
     def set_in_display_units(self, val):
         """Default index to use in the tag's string representation, this
-        is required for indexed quntities if you want to automatically convert
+        is required for indexed quantities if you want to automatically convert
         to string. An example use it for a time indexed tag, to display a
         specific time point."""
         if self.group is not None:
@@ -343,12 +398,19 @@ class ModelTag:
         """Set the value of a tagged variable.
 
         Args:
-            v: value
+            val: value
             in_display_units: if true assume the value is in the display units
 
         Returns:
             None
         """
+        # If tag is a common immutable then allow it to be set
+        if self.expression is None or isinstance(
+            self.expression, (str, float, int, tuple)
+        ):
+            self._expression = val
+            return
+
         if in_display_units is None:
             in_display_units = self.set_in_display_units
 
@@ -356,11 +418,10 @@ class ModelTag:
             if self._display_units is not None:
                 val *= self._display_units
 
-
         try:
             try:
                 self.expression.set_value(val)
-            except ValueError: # it's a indexed expression or slice
+            except ValueError:  # it's an indexed expression or slice
                 for index in self.expression:
                     self.expression[index].set_value(val)
         except AttributeError as attr_err:
@@ -368,9 +429,7 @@ class ModelTag:
                 raise AttributeError(
                     f"Tagged expression {self._name}, has no set_value()."
                 ) from attr_err
-            raise AttributeError(
-                "Tagged expression has no set_value()."
-            ) from attr_err
+            raise AttributeError("Tagged expression has no set_value().") from attr_err
 
     def setlb(self, val, in_display_units=None):
         """Set the lower bound of a tagged variable.
@@ -389,11 +448,10 @@ class ModelTag:
             if self._display_units is not None:
                 val *= self._display_units
 
-
         try:
             try:
                 self.expression.setlb(val)
-            except ValueError: # it's a indexed expression or slice
+            except ValueError:  # it's an indexed expression or slice
                 for index in self.expression:
                     self.expression[index].lb(val)
         except AttributeError as attr_err:
@@ -401,9 +459,7 @@ class ModelTag:
                 raise AttributeError(
                     f"Tagged expression {self._name}, has no setlb()."
                 ) from attr_err
-            raise AttributeError(
-                "Tagged expression has no setlb()."
-            ) from attr_err
+            raise AttributeError("Tagged expression has no setlb().") from attr_err
 
     def setub(self, val, in_display_units=None):
         """Set the value of a tagged variable.
@@ -425,7 +481,7 @@ class ModelTag:
         try:
             try:
                 self.expression.setub(val)
-            except ValueError: # it's a indexed expression or slice
+            except ValueError:  # it's an indexed expression or slice
                 for index in self.expression:
                     self.expression[index].setub(val)
         except AttributeError as attr_err:
@@ -433,9 +489,7 @@ class ModelTag:
                 raise AttributeError(
                     f"Tagged expression {self._name}, has no setub()."
                 ) from attr_err
-            raise AttributeError(
-                "Tagged expression has no setub()."
-            ) from attr_err
+            raise AttributeError("Tagged expression has no setub().") from attr_err
 
     def fix(self, val=None, in_display_units=None):
         """Fix the value of a tagged variable.
@@ -520,22 +574,90 @@ class ModelTagGroup(dict):
         else:
             self[name] = ModelTag(expr=expr, **kwargs)
 
-    def expr_dict(self, index=None):
-        """Get a dictionary of expressions with tag keys."""
-        expr_dict = {}
-        for name, tag in self.items():
-            if tag.expression.is_indexed:
-                expr_dict[name] = tag.expression[index]
-            else:
-                expr_dict[name] = tag.expression
-        return expr_dict
+    def _table_tagkey_index_lists(self, tags=None):
+        """PRIVATE utility function to take tags (list of tag keys or 2-element
+        list of a tag key and index) and turn it into a list of tag keys and list
+        of indexes. Indexed tags with no index will be expanded to include all
+        indexes.
+        """
 
-    def format_dict(self, units=True, index=None):
-        """Get a dictionary of format strings with tag keys."""
-        expr_dict = {}
-        for name, tag in self.items():
-            expr_dict[name] = tag.get_format(units=units, index=index)
-        return expr_dict
+        if tags is None:
+            tags = list(self.keys())
+
+        tag_list = []
+        indexes = []
+        for i, tag in enumerate(tags):
+            if not isinstance(tag, collections.Hashable) and len(tag) == 2:
+                tag_list.append(tag[0])
+                indexes.append(tag[1])
+            elif not isinstance(tag, collections.Hashable) and len(tag) != 2:
+                raise ValueError("Key-index pairs should be a list of length 2")
+            else:
+                if not self[tag].is_indexed:
+                    tag_list.append(tag)
+                    indexes.append(None)
+                else:
+                    for k in self[tag].keys():
+                        tag_list.append(tag)
+                        indexes.append(k)
+        return tag_list, indexes
+
+    def table_heading(self, tags=None, units=True):
+        """Create a table heading with a given set of tags, for tabulating model
+        results.
+
+        Args:
+            tags: List (not tuple, since a tuple can be a key) of tag keys or
+                2-element list of tags key and an index. If a key is for an
+                indexed value and no index is given with the key, it will be
+                flattened to create a column for each index.
+            units: If True, include the units of measure in the column heading
+                names.
+
+        Returns:
+            list of column headings
+        """
+        tag_list, indexes = self._table_tagkey_index_lists(tags)
+
+        row = [None] * len(tag_list)
+        for i, tag in enumerate(tag_list):
+            if indexes[i] is None:
+                name = tag
+            else:
+                name = f"{tag}[{indexes[i]}]"
+            if units:
+                row[i] = f"{name} ({self[tag].get_unit_str(index=indexes[i])})"
+            else:
+                row[i] = name
+        return row
+
+    def table_row(self, tags=None, units=True, numeric=False):
+        """Create a table row with a given set of tags, for tabulating model
+        results.  The row contains values of tagged quantities either as strings
+        of numeric values.
+
+        Args:
+            tags: List (not tuple, since a tuple can be a key) of tag keys or
+                2-element list of tags key and an index. If a key is for an
+                indexed value and no index is given with the key, it will be
+                flattened to create a column for each index.
+            units: If true include the units of measure in the value, if the
+                values are not numeric.
+            numeric: If true provide numeric values rather than a formatted
+                string.
+
+        Returns:
+            list of values for a table row either numeric or as formatted strings
+        """
+        tag_list, indexes = self._table_tagkey_index_lists(tags)
+
+        row = [None] * len(tag_list)
+        for i, tag in enumerate(tag_list):
+            if numeric:
+                row[i] = self[tag][indexes[i]].value
+            else:
+                row[i] = self[tag][indexes[i]].display(units=units)
+        return row
 
     @property
     def str_include_units(self):
@@ -564,3 +686,117 @@ class ModelTagGroup(dict):
         with a value that doesn't include units, assume the display units.
         """
         self._set_in_display_units = value
+
+
+def svg_tag(
+    tags=None,
+    svg=None,
+    tag_group=None,
+    outfile=None,
+    idx=None,
+    tag_map=None,
+    show_tags=False,
+    byte_encoding="utf-8",
+    tag_format=None,
+    tag_format_default="{:.4e}",
+):
+    """
+    Replace text in a SVG with tag values for the model. This works by looking
+    for text elements in the SVG with IDs that match the tags or are in tag_map.
+
+    Args:
+        svg: a file pointer or a string continaing svg contents
+        tag_group: a ModelTagGroup with tags to display in the SVG
+        outfile: a file name to save the results, if None don't save
+        idx: if None not indexed, otherwise an index in the indexing set of the
+            reference
+        tag_map: dictionary with svg id keys and tag values, to map svg ids to
+            tags, used in cases where tags contain characters that cannot be used
+            in the svg's xml
+        show_tags: Put tag labels of the diagram instead of numbers
+        byte_encoding: If svg is given as a byte-array, use this encoding to
+            convert it to a string.
+
+    Returns:
+        SVG String
+    """
+    if svg is None:
+        raise RuntimeError("svg string or file-like object required.")
+
+    # Deal with soon to be depricated input by converting it to new style
+    if tags is not None:
+        deprecation_warning(
+            "DEPRECATED: svg_tag, the tags, tag_format and "
+            "tag_format_default arguments are deprecated use tag_group instead.",
+            version=1.12,
+        )
+        # As a temporary measure, allow a tag and tag format dict.  To simplfy
+        # and make it easier to remove this option in the future, use the old
+        # style input to make a ModelTagGroup object.
+        tag_group = ModelTagGroup()
+        for key, tag in tags.items():
+            if tag_format is None:
+                tag_format = {}
+            format_string = tag_format.get(key, tag_format_default)
+            tag_group[key] = ModelTag(expr=tag, format_string=format_string)
+            tag_group.str_include_units = False
+
+    # get SVG content string
+    if isinstance(svg, str):  # already a string
+        pass
+    elif isinstance(svg, bytes):  # bytes to string
+        svg = svg.decode(byte_encoding)  # file-like to string
+    elif hasattr(svg, "read"):
+        svg = svg.read()
+    else:  # Can't handle whatever this is.
+        raise TypeError("SVG must either be a string or a file-like object")
+
+    # Make tag map here because the tags may not make valid XML IDs if no
+    # tag_map provided we'll go ahead and handle XML @ (maybe more in future)
+    if tag_map is None:
+        tag_map = dict()
+        for tag in tag_group:
+            new_tag = tag.replace("@", "_")
+            tag_map[new_tag] = tag
+
+    # Ture SVG string into XML document
+    doc = xml.dom.minidom.parseString(svg)
+    # Get the text elements of the SVG
+    texts = doc.getElementsByTagName("text")
+
+    # Add some text
+    for t in texts:
+        id = t.attributes["id"].value
+        if id in tag_map:
+            # if it's multiline change last line
+            try:
+                tspan = t.getElementsByTagName("tspan")[-1]
+            except IndexError:
+                _log.warning(f"Text object but no tspan for tag {tag_map[id]}.")
+                _log.warning(f"Skipping output for {tag_map[id]}.")
+                continue
+            try:
+                tspan = tspan.childNodes[0]
+            except IndexError:
+                # No child node means there is a line with no text, so add some.
+                tspan.appendChild(doc.createTextNode(""))
+                tspan = tspan.childNodes[0]
+
+            if show_tags:
+                val = tag_map[id]
+            else:
+                if tag_group[tag_map[id]].is_indexed:
+                    val = tag_group[tag_map[id]][idx]
+                else:
+                    val = tag_group[tag_map[id]]
+
+            tspan.nodeValue = str(val)
+
+    new_svg = doc.toxml()
+    # If outfile is provided save to a file
+    if outfile is not None:
+        with open(outfile, "w") as f:
+            f.write(new_svg)
+    # Return the SVG as a string.  This lets you take several passes at adding
+    # output without saving and loading files.
+    return new_svg
