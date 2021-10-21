@@ -27,6 +27,7 @@ To test there are two basic things:
 """
 
 __author__ = "John Eslick"
+
 import pytest
 import pyomo.environ as pyo
 from pyomo.network import Arc

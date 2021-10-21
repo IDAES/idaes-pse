@@ -60,13 +60,13 @@ If True, user need to set the lower and upper bound parameters"""))
 - PID: Proportional, integral and derivative
 Default is PI"""))
 
-    deprecation_warning(
-        "DEPRECATED: The idaes.power_generation.control.pid_controller.PIDController"
-        " model is deprecated and will be removed. Use"
-        " idaes.generic_models.control.PIDController instead.",
-        version=1.12,
-    )
     def __init__(self, *args, **kwargs):
+        deprecation_warning(
+            "DEPRECATED: The idaes.power_generation.control.pid_controller.PIDController"
+            " model is deprecated and will be removed. Use"
+            " idaes.generic_models.control.PIDController instead.",
+            version=1.12,
+        )
         super().__init__(*args, **kwargs)
 
     def build(self):

@@ -86,12 +86,12 @@ class PIDBlockData(ProcessBlockData):
     #           controller output from suddenly jumping in response to a set
     #           point change or transition from manual to automatic control.
 
-    deprecation_warning(
-        "DEPRECATED: The PIDBlock model is deprecated and will be removed.  Use"
-        " PIDController instead.",
-        version=1.12,
-    )
     def __init__(self, *args, **kwargs):
+        deprecation_warning(
+            "DEPRECATED: The PIDBlock model is deprecated and will be removed."
+            "Use PIDController instead.",
+            version=1.12,
+        )
         super().__init__(*args, **kwargs)
 
     def _build_standard(self, time_set, t0):

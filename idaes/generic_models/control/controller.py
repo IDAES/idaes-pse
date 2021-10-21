@@ -11,8 +11,7 @@
 # license information.
 #################################################################################
 """
-PID controller block, Revised to use pyomo.DAE
-to calculate integral and differential parts
+PID controller model module
 """
 
 __author__ = ["John Eslick", "Jinliang Ma"]
@@ -93,18 +92,13 @@ class PIDControllerData(UnitModelBlockData):
             description="Type of bounds to apply to the manipulated variable (mv)).",
             doc=(
                 """Type of bounds to apply to the manipulated variable output. If,
-bounds are applied, the model parameters mv_lb and mv_ub set the bounds."
-- ControllerMVBoundType.NONE: no bounds"
-- ControllerMVBoundType.SMOOTH_BOUND: use smoothed mv = min(max(mv_unbound, ub), lb)
-    the model parameter smooth_eps controls the amount of smoothing, with lower
-    values representing a closer approximation to the min and max functions.
-- ControllerMVBoundType.LOGISTIC: use a logistic function to keep mv between
-    it's bounds. This bounding type is smoother, but doesn't match the unbounded
-    output as well as the SMOOTH_BOUND option.  At the mid point between bounds,
-    the unbounded and bounded output match.  The parameter, logistic_bound_k
-    controls the steepness of the function and how fast it approachess the bounds,
-    with higher values approaching the bounds faster with a steeper curve.
-    this is mv = lb + (ub - lb)/(1 + exp(-k/(ub - lb)*(mv_unbound-(ub + lb)/2)))."""
+bounds are applied, the model parameters **mv_lb** and **mv_ub** set the bounds.
+The **default** is ControllerMVBoundType.NONE. See the controller documentation
+for details on the mathematical formulation. The options are:
+**ControllerMVBoundType.NONE** no bounds, **ControllerMVBoundType.SMOOTH_BOUND**
+smoothed mv = min(max(mv_unbound, ub), lb), and **ControllerMVBoundType.LOGISTIC**
+logistic function to enforce bounds.
+"""
             ),
         ),
     )
@@ -130,12 +124,12 @@ bounds are applied, the model parameters mv_lb and mv_ub set the bounds."
                 ]
             ),
             description="Control type",
-            doc="""Controller type options including
-- ControllerType.P: Proportional only
-- ControllerType.PI: Proportional and integral only
-- ControllerType.PD: Proportional and derivative only
-- ControllerType.PID: Proportional, integral and derivative
-Default is ControllerType.PI""",
+            doc="""Controller type. The **deafult** = ControllerType.PI and the
+options are: **ControllerType.P** Proportional, **ControllerType.PI**
+proportional and integral, **ControllerType.PD** proportional and derivative, and
+**ControllerType.PID** proportional, integral, and derivative
+
+""",
         ),
     )
 
