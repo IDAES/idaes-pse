@@ -36,10 +36,10 @@ By default, one file will be generated
 
 * riperesults.txt - a file containing the selected reactions and parameter estimates
 
-Reaction Stiochiometry and Mechanism Specification
+Reaction Stoichiometry and Mechanism Specification
 --------------------------------------------------
 
-Considered reaction stiochiometries are provided through keyword arguments.
+Considered reaction stoichiometries are provided through keyword arguments.
 
 **Stoichiometry**
 
@@ -74,7 +74,7 @@ Arguments relating to process conditions
 
 Arguments related to RIPE algorithmic function
 
-* tref - reference termpeature for reformulated Arrhenius models
+* tref - reference temperature for reformulated Arrhenius models
 * ccon - specified cardinality constraint instead of BIC objective
 * sigma - expected variance of noise, estimated if not provided
 * onemechper - one mechanism per stoichiometry in selected model, true by default 

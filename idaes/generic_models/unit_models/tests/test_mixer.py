@@ -26,20 +26,21 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           units)
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+                           units as pyunits)
+from pyomo.util.check_units import assert_units_consistent
+
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (FlowsheetBlock,
-                        StateBlock,
                         declare_process_block_class,
                         StateBlockData,
                         StateBlock,
                         PhysicalParameterBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType)
+                        EnergyBalanceType,
+                        Phase,
+                        Component)
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.generic_models.properties import iapws95
@@ -60,6 +61,10 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      TestStateBlock,
                                      initialization_tester)
+from idaes.generic_models.properties.core.generic.generic_property import (
+    GenericParameterBlock)
+from idaes.power_generation.properties.natural_gas_PR import get_prop
+import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 
 
@@ -823,25 +828,26 @@ class _NoPressureParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_NoPressureParameterBlock, self).build()
 
-        self.phase_list = Set(initialize=["p1", "p2"])
-        self.component_list = Set(initialize=["c1", "c2"])
+        self.p1 = Phase()
+        self.p2 = Phase()
+        self.c1 = Component()
+        self.c2 = Component()
+
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
 
         self.phase_equilibrium_list = \
             {"e1": ["c1", ("p1", "p2")],
              "e2": ["c2", ("p1", "p2")]}
 
-        self.state_block_class = NoPressureStateBlock
+        self._state_block_class = NoPressureStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.g,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
 @declare_process_block_class("NoPressureStateBlock",
@@ -1186,3 +1192,15 @@ class TestSaponification(object):
     @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
+
+@pytest.mark.component
+def test_construction_component_not_in_phase():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock()
+    m.fs.prop_params = GenericParameterBlock(
+        default=get_prop(["H2O", "H2"], ["Liq", "Vap"]))
+    m.fs.inject1 = Mixer(default={
+        "property_package": m.fs.prop_params,
+        "inlet_list":["in1", "in2"],
+        "momentum_mixing_type":MomentumMixingType.none})
+    iscale.calculate_scaling_factors(m)

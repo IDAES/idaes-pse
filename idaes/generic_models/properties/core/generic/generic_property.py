@@ -20,13 +20,15 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (Block,
                            Constraint,
+                           exp,
                            Expression,
+                           log,
                            Set,
                            Param,
                            value,
                            Var,
                            units as pyunits)
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.core.base.units_container import _PyomoUnit
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -174,7 +176,7 @@ class GenericParameterData(PhysicalParameterBlock):
     # Property package options
     CONFIG.declare("include_enthalpy_of_formation", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Include enthalpy of formation in property calculations",
         doc="Flag indiciating whether enthalpy of formation should be included"
         " when calculating specific enthalpies."))
@@ -204,32 +206,9 @@ class GenericParameterData(PhysicalParameterBlock):
         # Call super.build() to initialize Block
         super(GenericParameterData, self).build()
 
-        # Validate and set base units of measurement
+        # Set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)
         units_meta = self.get_metadata().default_units
-
-        for key, unit in self.config.base_units.items():
-            if key in ['time', 'length', 'mass', 'amount', 'temperature',
-                       "current", "luminous intensity"]:
-                if not isinstance(unit, _PyomoUnit):
-                    raise ConfigurationError(
-                        "{} recieved unexpected units for quantity {}: {}. "
-                        "Units must be instances of a Pyomo unit object."
-                        .format(self.name, key, unit))
-            else:
-                raise ConfigurationError(
-                    "{} defined units for an unexpected quantity {}. "
-                    "Generic property packages only support units for the 7 "
-                    "base SI quantities.".format(self.name, key))
-
-        # Check that main 5 base units are assigned
-        for k in ['time', 'length', 'mass', 'amount', 'temperature']:
-            if not isinstance(units_meta[k], _PyomoUnit):
-                raise ConfigurationError(
-                    "{} units for quantity {} were not assigned. "
-                    "Please make sure to provide units for all base units "
-                    "when configuring the property package."
-                    .format(self.name, k))
 
         # Call configure method to set construction arguments
         self.configure()
@@ -792,10 +771,16 @@ class GenericParameterData(PhysicalParameterBlock):
         for v in self.component_objects(Var, descend_into=True):
             for i in v:
                 if v[i].value is None:
-                    raise ConfigurationError(
-                        "{} parameter {} was not assigned"
-                        " a value. Please check your configuration "
-                        "arguments.".format(self.name, v.local_name))
+                    if i is None: # Scalar Var
+                        raise ConfigurationError(
+                            "{} parameter {} was not assigned"
+                            " a value. Please check your configuration "
+                            "arguments.".format(self.name, v.local_name))
+                    else: # Indexed Var
+                        raise ConfigurationError(
+                            "{} parameter {}[{}] was not assigned"
+                            " a value. Please check your configuration "
+                            "arguments.".format(self.name, v.local_name, i))
                 v[i].fix()
 
         self.config.state_definition.set_metadata(self)
@@ -861,15 +846,12 @@ class GenericParameterData(PhysicalParameterBlock):
              'pressure': {'method': None},
              'act_phase_comp': {'method': '_act_phase_comp'},
              'act_phase_comp_true': {'method': '_act_phase_comp_true'},
-             'act_phase_comp_appr': {'method': '_act_phase_comp_appr'},
-             'log_act_phase_comp': {'method': '_log_act_phase_comp'},
-             'log_act_phase_comp_true': {'method': '_log_act_phase_comp_true'},
-             'log_act_phase_comp_appr': {'method': '_log_act_phase_comp_appr'},
+             'act_phase_comp_apparent': {'method': '_act_phase_comp_apparent'},
              'act_coeff_phase_comp': {'method': '_act_coeff_phase_comp'},
              'act_coeff_phase_comp_true': {
                  'method': '_act_coeff_phase_comp_true'},
-             'act_coeff_phase_comp_appr': {
-                 'method': '_act_coeff_phase_comp_appr'},
+             'act_coeff_phase_comp_apparent': {
+                 'method': '_act_coeff_phase_comp_apparent'},
              'compress_fact_phase': {'method': '_compress_fact_phase'},
              'conc_mol_comp': {'method': '_conc_mol_comp'},
              'conc_mol_phase_comp': {'method': '_conc_mol_phase_comp'},
@@ -907,8 +889,24 @@ class GenericParameterData(PhysicalParameterBlock):
              'gibbs_mol_phase': {'method': '_gibbs_mol_phase'},
              'gibbs_mol_phase_comp': {'method': '_gibbs_mol_phase_comp'},
              'henry': {'method': '_henry'},
+             'mass_frac_phase_comp': {'method': '_mass_frac_phase_comp'},
+             'mass_frac_phase_comp_apparent': {
+                 'method': '_mass_frac_phase_comp_apparent'},
+             'mass_frac_phase_comp_true': {
+                 'method': '_mass_frac_phase_comp_true'},
+             'molality_phase_comp': {'method': '_molality_phase_comp'},
+             'molality_phase_comp_apparent': {
+                 'method': '_molality_phase_comp_apparent'},
+             'molality_phase_comp_true': {
+                 'method': '_molality_phase_comp_true'},
              'mw': {'method': '_mw'},
+             'mw_comp': {'method': '_mw_comp'},
              'mw_phase': {'method': '_mw_phase'},
+             'pressure_phase_comp': {'method': '_pressure_phase_comp'},
+             'pressure_phase_comp_true': {
+                 'method': '_pressure_phase_comp_true'},
+             'pressure_phase_comp_apparent': {
+                 'method': '_pressure_phase_comp_apparent'},
              'pressure_bubble': {'method': '_pressure_bubble'},
              'pressure_dew': {'method': '_pressure_dew'},
              'pressure_osm_phase': {'method': '_pressure_osm_phase'},
@@ -917,7 +915,40 @@ class GenericParameterData(PhysicalParameterBlock):
              'temperature_dew': {'method': '_temperature_dew'},
              'visc_d_phase': {'method': '_visc_d_phase'},
              'vol_mol_phase': {'method': '_vol_mol_phase'},
-             'dh_rxn': {'method': '_dh_rxn'}})
+             'dh_rxn': {'method': '_dh_rxn'},
+             'log_act_phase_comp': {'method': '_log_act_phase_comp'},
+             'log_act_phase_comp_true': {'method': '_log_act_phase_comp_true'},
+             'log_act_phase_comp_apparent': {
+                 'method': '_log_act_phase_comp_apparent'},
+             'log_conc_mol_phase_comp': {
+                 'method': '_log_conc_mol_phase_comp'},
+             'log_conc_mol_phase_comp_true': {
+                 'method': '_log_conc_mol_phase_comp_true'},
+             'log_mass_frac_phase_comp': {
+                 'method': '_log_mass_frac_phase_comp'},
+             'log_mass_frac_phase_comp_apparent': {
+                 'method': '_log_mass_frac_phase_comp_apparent'},
+             'log_mass_frac_phase_comp_true': {
+                 'method': '_log_mass_frac_phase_comp_true'},
+             'log_molality_phase_comp': {
+                 'method': '_log_molality_phase_comp'},
+             'log_molality_phase_comp_apparent': {
+                 'method': '_log_molality_phase_comp_apparent'},
+             'log_molality_phase_comp_true': {
+                 'method': '_log_molality_phase_comp_true'},
+             'log_mole_frac_phase_comp': {
+                 'method': '_log_mole_frac_phase_comp'},
+             'log_mole_frac_phase_comp_apparent': {
+                 'method': '_log_mole_frac_phase_comp_apparent'},
+             'log_mole_frac_phase_comp_true': {
+                 'method': '_log_mole_frac_phase_comp_true'},
+             'log_pressure_phase_comp': {
+                 'method': '_log_pressure_phase_comp'},
+             'log_pressure_phase_comp_apparent': {
+                 'method': '_log_pressure_phase_comp_apparent'},
+             'log_pressure_phase_comp_true': {
+                 'method': '_log_pressure_phase_comp_true'},
+             'log_k_eq': {'method': '_log_k_eq'}})
 
 
 class _GenericStateBlock(StateBlock):
@@ -1132,7 +1163,8 @@ class _GenericStateBlock(StateBlock):
                         calculate_variable_from_constraint(
                             blk[k].mole_frac_phase_comp_apparent[p, j],
                             blk[k].appr_mole_frac_constraint[p, j])
-                elif blk[k].params.config.state_components == StateIndex.apparent:
+                elif blk[k].params.config.state_components == \
+                        StateIndex.apparent:
                     # First calculate initial values for true species flows
                     for p, j in blk[k].params.true_phase_component_set:
                         calculate_variable_from_constraint(
@@ -1198,6 +1230,38 @@ class _GenericStateBlock(StateBlock):
                         blk[k].params.config
                         .state_definition.do_not_initialize):
                     c.activate()
+
+            # Initialize log-form variables
+            log_form_vars = [
+                "act_phase_comp",
+                "act_phase_comp_apparent",
+                "act_phase_comp_true",
+                "conc_mol_phase_comp",
+                "conc_mol_phase_comp_apparent",
+                "conc_mol_phase_comp_true",
+                "mass_frac_phase_comp",
+                "mass_frac_phase_comp_apparent",
+                "mass_frac_phase_comp_true",
+                "molality_phase_comp",
+                "molality_phase_comp_apparent",
+                "molality_phase_comp_true",
+                "mole_frac_phase_comp",
+                "mole_frac_phase_comp_apparent",
+                "mole_frac_phase_comp_true",
+                "pressure_phase_comp",
+                "pressure_phase_comp_apparent",
+                "pressure_phase_comp_true"]
+
+            for prop in log_form_vars:
+                if blk[k].is_property_constructed("log_"+prop):
+                    comp = getattr(blk[k], prop)
+                    lcomp = getattr(blk[k], "log_"+prop)
+                    for k2, v in lcomp.items():
+                        c = value(comp[k2])
+                        if c == 0:
+                            c = 1e-8
+                        lc = log(c)
+                        v.set_value(value(lc))
 
         n_cons = 0
         skip = False
@@ -1396,16 +1460,16 @@ class _GenericStateBlock(StateBlock):
                                     Tdew0*T_units,
                                     dT=True)
                              for j in raoult_comps) +
-                          sum(blk.mole_frac_comp[j] /
-                              blk.params.get_component(
-                                  j).config.henry_component[
-                                      l_phase].return_expression(
-                                          blk, l_phase, j, Tdew0*T_units)**2 *
-                              blk.params.get_component(
-                                  j).config.henry_component[
-                                      l_phase].dT_expression(
-                                          blk, l_phase, j, Tdew0*T_units)
-                              for j in henry_comps)))
+                         sum(blk.mole_frac_comp[j] /
+                             blk.params.get_component(
+                                 j).config.henry_component[
+                                     l_phase].return_expression(
+                                         blk, l_phase, j, Tdew0*T_units)**2 *
+                             blk.params.get_component(
+                                 j).config.henry_component[
+                                     l_phase].dT_expression(
+                                         blk, l_phase, j, Tdew0*T_units)
+                             for j in henry_comps)))
 
                 # Limit temperature step to avoid excessive overshoot
                 if f/df < -50:
@@ -1627,7 +1691,9 @@ class GenericStateBlockData(StateBlockData):
                     sf_rho = iscale.get_scaling_factor(
                         self.dens_mol_phase[p], default=1, warning=True)
                     sf_x = iscale.get_scaling_factor(
-                        self.mole_frac_phase_comp[p, j], default=1, warning=True)
+                        self.mole_frac_phase_comp[p, j],
+                        default=1,
+                        warning=True)
                     iscale.set_scaling_factor(v, sf_rho*sf_x)
 
         if self.is_property_constructed("_energy_density_term"):
@@ -1636,7 +1702,9 @@ class GenericStateBlockData(StateBlockData):
                     sf_rho = iscale.get_scaling_factor(
                         self.dens_mol_phase[k], default=1, warning=True)
                     sf_u = iscale.get_scaling_factor(
-                        self.energy_internal_mol_phase[k], default=1, warning=True)
+                        self.energy_internal_mol_phase[k],
+                        default=1,
+                        warning=True)
                     iscale.set_scaling_factor(v, sf_rho*sf_u)
 
         # Phase equilibrium constraint
@@ -1646,13 +1714,16 @@ class GenericStateBlockData(StateBlockData):
                 pe_form_config[pp].calculate_scaling_factors(self, pp)
 
             for k in self.equilibrium_constraint:
-                sf_fug = self.params.get_component(
-                    k[2]).config.phase_equilibrium_form[
-                        (k[0], k[1])].calculate_scaling_factors(
-                            self, k[0], k[1], k[2])
+                try:
+                    sf_fug = self.params.get_component(
+                        k[2]).config.phase_equilibrium_form[
+                            (k[0], k[1])].calculate_scaling_factors(
+                                self, k[0], k[1], k[2])
 
-                iscale.constraint_scaling_transform(
-                    self.equilibrium_constraint[k], sf_fug, overwrite=False)
+                    iscale.constraint_scaling_transform(
+                        self.equilibrium_constraint[k], sf_fug, overwrite=False)
+                except KeyError: # component not in phase
+                    pass
 
         # Inherent reactions
         if hasattr(self, "k_eq"):
@@ -1706,7 +1777,8 @@ class GenericStateBlockData(StateBlockData):
                 if iscale.get_scaling_factor(v) is None:
                     if self.params.config.phases[i[0]]["type"] is LiquidPhase:
                         p = i[0]
-                    elif self.params.config.phases[i[1]]["type"] is LiquidPhase:
+                    elif self.params.config.phases[i[1]]["type"] \
+                            is LiquidPhase:
                         p = i[1]
                     else:
                         p = i[0]
@@ -1738,6 +1810,157 @@ class GenericStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(v, sf_mf[i])
             self.params.config.bubble_dew_method.scale_pressure_dew(
                 self, overwrite=False)
+
+        # Scale log form constraints
+        if self.is_property_constructed("log_act_phase_comp"):
+            for (p, j), v in self.log_act_phase_comp_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp[p, j],
+                    default=1e-3,
+                    warning=True,
+                    hint="for log_mole_frac_phase_comp")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_act_phase_comp_apparent"):
+            for (p, j), v in self.log_act_phase_comp_apparent_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp_apparent[p, j],
+                    default=1e-3,
+                    warning=True,
+                    hint="for log_mole_frac_phase_comp_apparent")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_act_phase_comp_true"):
+            for (p, j), v in self.log_act_phase_comp_true_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp_true[p, j],
+                    default=1e-3,
+                    warning=True,
+                    hint="for log_mole_frac_phase_comp_true")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_conc_mol_phase_comp"):
+            for (p, j), v in self.log_conc_mol_phase_comp_eq.items():
+                sf_dens_mol = iscale.get_scaling_factor(
+                    self.dens_mol_phase[p],
+                    default=55e3,
+                    warning=True,
+                    hint="for log_conc_mol_phase_comp")
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp[p, j],
+                    default=1,
+                    warning=True,
+                    hint="for log_conc_mol_phase_comp")
+                iscale.constraint_scaling_transform(
+                    v, sf_dens_mol*sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_conc_mol_phase_comp_true"):
+            for (p, j), v in self.log_conc_mol_phase_comp_true_eq.items():
+                sf_dens_mol = iscale.get_scaling_factor(
+                    self.dens_mol_phase[p],
+                    default=55e3,
+                    warning=True,
+                    hint="for log_conc_mol_phase_comp_true")
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp_true[p, j],
+                    default=1,
+                    warning=True,
+                    hint="for log_conc_mol_phase_comp_true")
+                iscale.constraint_scaling_transform(
+                    v, sf_dens_mol*sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_mass_frac_phase_comp"):
+            for (p, j), v in self.log_mass_frac_phase_comp_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mass_frac_phase_comp[p, j],
+                    default=1e-3,
+                    warning=True,
+                    hint="for log_mass_frac_phase_comp")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_mass_frac_phase_comp_apparent"):
+            for (p, j), v in self.log_mass_frac_phase_comp_apparent_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mass_frac_phase_comp_apparent[p, j],
+                    default=1e-3,
+                    warning=True,
+                    hint="for log_mass_frac_phase_comp_apparent")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_mass_frac_phase_comp_true"):
+            for (p, j), v in self.log_mass_frac_phase_comp_true_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mass_frac_phase_comp_true[p, j],
+                    default=1e-3,
+                    warning=True,
+                    hint="for log_mass_frac_phase_comp_true")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_molality_phase_comp"):
+            for (p, j), v in self.log_molality_phase_comp_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.molality_phase_comp[p, j],
+                    default=1,
+                    warning=True,
+                    hint="for log_molality_phase_comp")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_molality_phase_comp_apparent"):
+            for (p, j), v in self.log_molality_phase_comp_apparent_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.molality_phase_comp_apparent[p, j],
+                    default=1,
+                    warning=True,
+                    hint="for log_molality_phase_comp_apparent")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_molality_phase_comp_true"):
+            for (p, j), v in self.log_molality_phase_comp_true_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.molality_phase_comp_true[p, j],
+                    default=1,
+                    warning=True,
+                    hint="for log_molality_phase_comp_true")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_mole_frac_phase_comp"):
+            for (p, j), v in self.log_mole_frac_phase_comp_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp[p, j],
+                    default=1e-3,
+                    warning=True,
+                    hint="for log_mole_frac_phase_comp")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_mole_frac_phase_comp_apparent"):
+            for (p, j), v in self.log_mole_frac_phase_comp_apparent_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp_apparent[p, j],
+                    default=1e-3,
+                    warning=True,
+                    hint="for log_mole_frac_phase_comp_apparent")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_mole_frac_phase_comp_true"):
+            for (p, j), v in self.log_mole_frac_phase_comp_true_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp_true[p, j],
+                    default=1e-3,
+                    warning=True,
+                    hint="for log_mole_frac_phase_comp_true")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
 
     def components_in_phase(self, phase):
         """
@@ -1913,58 +2136,18 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.act_phase_comp_true)
             raise
 
-    def _act_phase_comp_appr(self):
+    def _act_phase_comp_apparent(self):
         try:
-            def rule_act_phase_comp_appr(b, p, j):
+            def rule_act_phase_comp_apparent(b, p, j):
                 p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.act_phase_comp_appr(b, p, j)
-            self.act_phase_comp_appr = Expression(
+                return \
+                    p_config.equation_of_state.act_phase_comp_apparent(b, p, j)
+            self.act_phase_comp_apparent = Expression(
                     self.params.apparent_phase_component_set,
                     doc="Component activity in each phase",
-                    rule=rule_act_phase_comp_appr)
+                    rule=rule_act_phase_comp_apparent)
         except AttributeError:
-            self.del_component(self.act_phase_comp_appr)
-            raise
-
-    def _log_act_phase_comp(self):
-        try:
-            def rule_log_act_phase_comp(b, p, j):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.log_act_phase_comp(b, p, j)
-            self.log_act_phase_comp = Expression(
-                    self.phase_component_set,
-                    doc="Natural log of component activity in each phase",
-                    rule=rule_log_act_phase_comp)
-        except AttributeError:
-            self.del_component(self.log_act_phase_comp)
-            raise
-
-    def _log_act_phase_comp_true(self):
-        try:
-            def rule_log_act_phase_comp_true(b, p, j):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.log_act_phase_comp_true(
-                    b, p, j)
-            self.log_act_phase_comp_true = Expression(
-                    self.params.true_phase_component_set,
-                    doc="Natural log of component activity in each phase",
-                    rule=rule_log_act_phase_comp_true)
-        except AttributeError:
-            self.del_component(self.log_act_phase_comp_true)
-            raise
-
-    def _log_act_phase_comp_appr(self):
-        try:
-            def rule_log_act_phase_comp_appr(b, p, j):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.log_act_phase_comp_appr(
-                    b, p, j)
-            self.log_act_phase_comp_appr = Expression(
-                    self.params.apparent_phase_component_set,
-                    doc="Natural log of component activity in each phase",
-                    rule=rule_log_act_phase_comp_appr)
-        except AttributeError:
-            self.del_component(self.log_act_phase_comp_appr)
+            self.del_component(self.act_phase_comp_apparent)
             raise
 
     def _act_coeff_phase_comp(self):
@@ -1995,18 +2178,19 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.act_coeff_phase_comp_true)
             raise
 
-    def _act_coeff_phase_comp_appr(self):
+    def _act_coeff_phase_comp_apparent(self):
         try:
-            def rule_act_coeff_phase_comp_appr(b, p, j):
+            def rule_act_coeff_phase_comp_apparent(b, p, j):
                 p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.act_coeff_phase_comp_appr(
-                    b, p, j)
-            self.act_coeff_phase_comp_appr = Expression(
+                return \
+                    p_config.equation_of_state.act_coeff_phase_comp_apparent(
+                        b, p, j)
+            self.act_coeff_phase_comp_apparent = Expression(
                     self.params.apparent_phase_component_set,
                     doc="Component activity coefficient in each phase",
-                    rule=rule_act_coeff_phase_comp_appr)
+                    rule=rule_act_coeff_phase_comp_apparent)
         except AttributeError:
-            self.del_component(self.act_coeff_phase_comp_appr)
+            self.del_component(self.act_coeff_phase_comp_apparent)
             raise
 
     def _compress_fact_phase(self):
@@ -2046,14 +2230,14 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.conc_mol_phase_comp)
             raise
 
-    def _conc_mol_phase_comp_appr(self):
+    def _conc_mol_phase_comp_apparent(self):
         try:
-            def rule_conc_mol_phase_comp_appr(b, p, j):
+            def rule_conc_mol_phase_comp_apparent(b, p, j):
                 return (b.dens_mol_phase[p] *
                         b.mole_frac_phase_comp_apparent[p, j])
             self.conc_mol_phase_comp_apparent = Expression(
                 self.params.apparent_phase_component_set,
-                rule=rule_conc_mol_phase_comp_appr,
+                rule=rule_conc_mol_phase_comp_apparent,
                 doc="Molar concentration of apparent component by phase")
         except AttributeError:
             self.del_component(self.conc_mol_phase_comp_apparent)
@@ -2143,7 +2327,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             def rule_heat_capacity_ratio_phase(b, p):
                 p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.heat_capacity_ratio_phase(b, p)
+                return p_config.equation_of_state.heat_capacity_ratio_phase(
+                    b, p)
             self.heat_capacity_ratio_phase = Expression(
                 self.phase_list,
                 rule=rule_heat_capacity_ratio_phase,
@@ -2392,10 +2577,11 @@ class GenericStateBlockData(StateBlockData):
                         "material flow basis: {}"
                         .format(self.name, self.get_material_flow_basis()))
             self.flow_mass_phase_comp = Expression(
-                self.params.phase_component_set,
+                self.phase_component_set,
                 doc="Phase-component mass flow rate",
                 rule=rule_flow_mass_phase_comp)
-        except AttributeError:
+        except AttributeError as e:
+            print(e)
             self.del_component(self.flow_mass_phase_comp)
             raise
 
@@ -2474,7 +2660,7 @@ class GenericStateBlockData(StateBlockData):
                         "material flow basis: {}"
                         .format(self.name, self.get_material_flow_basis()))
             self.flow_mol_phase_comp = Expression(
-                self.params.phase_component_set,
+                self.phase_component_set,
                 doc="Phase-component molar flow rate",
                 rule=rule_flow_mol_phase_comp)
         except AttributeError:
@@ -2593,6 +2779,55 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.henry)
             raise
 
+    def _mass_frac_phase_comp(self):
+        # If this doesn't exist yet, assume it needs to be built from mole_frac
+        try:
+            def rule_mass_frac(b, p, j):
+                return (b.mw_comp[j]*b.mole_frac_phase_comp[p, j] /
+                        sum(b.mw_comp[k]*b.mole_frac_phase_comp[p, k]
+                            for k in b.component_list
+                            if (p, k) in b.phase_component_set))
+            self.mass_frac_phase_comp = Expression(
+                self.phase_component_set,
+                rule=rule_mass_frac,
+                doc="Phase-component mass fractions")
+        except AttributeError:
+            self.del_component(self.mass_frac_phase_comp)
+            raise
+
+    def _mass_frac_phase_comp_apparent(self):
+        # If this doesn't exist yet, assume it needs to be built from mole_frac
+        try:
+            def rule_mass_frac_apparent(b, p, j):
+                return (b.mw_comp[j]*b.mole_frac_phase_comp_apparent[p, j] /
+                        sum(b.mw_comp[k]*b.mole_frac_phase_comp_apparent[p, k]
+                            for k in b.params.apparent_species_set
+                            if (p, k) in
+                            b.params.apparent_phase_component_set))
+            self.mass_frac_phase_comp_apparent = Expression(
+                self.params.apparent_phase_component_set,
+                rule=rule_mass_frac_apparent,
+                doc="Phase-component mass fractions")
+        except AttributeError:
+            self.del_component(self.mass_frac_phase_comp_apparent)
+            raise
+
+    def _mass_frac_phase_comp_true(self):
+        # If this doesn't exist yet, assume it needs to be built from mole_frac
+        try:
+            def rule_mass_frac_true(b, p, j):
+                return (b.mw_comp[j]*b.mole_frac_phase_comp_true[p, j] /
+                        sum(b.mw_comp[k]*b.mole_frac_phase_comp_true[p, k]
+                            for k in b.params.true_species_set
+                            if (p, k) in b.paramas.ture_phase_component_set))
+            self.mass_frac_phase_comp_true = Expression(
+                self.params.true_phase_component_set,
+                rule=rule_mass_frac_true,
+                doc="Phase-component mass fractions")
+        except AttributeError:
+            self.del_component(self.mass_frac_phase_comp_true)
+            raise
+
     def _mw(self):
         try:
             self.mw = Expression(
@@ -2605,6 +2840,78 @@ class GenericStateBlockData(StateBlockData):
                              for p in self.phase_list))
         except AttributeError:
             self.del_component(self.mw)
+            raise
+
+    def _mw_comp(self):
+        try:
+            def rule_mw_comp(b, j):
+                return b.params.get_component(j).mw
+            self.mw_comp = Expression(self.component_list,
+                                      doc="Component molecular weight",
+                                      rule=rule_mw_comp)
+        except AttributeError:
+            self.del_component(self.mw_comp)
+            raise
+
+    def _molality_phase_comp(self):
+        try:
+            def rule_molality(b, p, j):
+                pobj = b.params.get_phase(p)
+                if not isinstance(pobj, LiquidPhase):
+                    # Molality is defined per mass of solvent so only makes
+                    # sense in liquid phases
+                    return Expression.Skip
+                else:
+                    return (b.mole_frac_phase_comp[p, j] /
+                            sum(b.mw_comp[k]*b.mole_frac_phase_comp[p, k]
+                                for k in b.params.solvent_set))
+            self.molality_phase_comp = Expression(
+                self.phase_component_set,
+                rule=rule_molality,
+                doc="Component molalitites")
+        except AttributeError:
+            self.del_component(self.molality_phase_comp)
+            raise
+
+    def _molality_phase_comp_apparent(self):
+        try:
+            def rule_molality_apparent(b, p, j):
+                pobj = b.params.get_phase(p)
+                if not isinstance(pobj, LiquidPhase):
+                    # Molality is defined per mass of solvent so only makes
+                    # sense in liquid phases
+                    return Expression.Skip
+                else:
+                    return (b.mole_frac_phase_comp_apparent[p, j] /
+                            sum(b.mw_comp[k] *
+                                b.mole_frac_phase_comp_apparent[p, k]
+                                for k in b.params.solvent_set))
+            self.molality_phase_comp_apparent = Expression(
+                self.phase_component_set,
+                rule=rule_molality_apparent,
+                doc="Component molalitites")
+        except AttributeError:
+            self.del_component(self.molality_phase_comp_apparent)
+            raise
+
+    def _molality_phase_comp_true(self):
+        try:
+            def rule_molality_true(b, p, j):
+                pobj = b.params.get_phase(p)
+                if not isinstance(pobj, LiquidPhase):
+                    # Molality is defined per mass of solvent so only makes
+                    # sense in liquid phases
+                    return Expression.Skip
+                else:
+                    return (b.mole_frac_phase_comp_true[p, j] /
+                            sum(b.mw_comp[k]*b.mole_frac_phase_comp_true[p, k]
+                                for k in b.params.solvent_set))
+            self.molality_phase_comp_true = Expression(
+                self.phase_component_set,
+                rule=rule_molality_true,
+                doc="Component molalitites")
+        except AttributeError:
+            self.del_component(self.molality_phase_comp_true)
             raise
 
     def _mole_frac_comp(self):
@@ -2621,6 +2928,19 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.mole_frac_comp)
             raise
 
+    def _mw_comp(self):
+        try:
+            def rule_mw_comp(b, j):
+                return b.params.get_component(j).mw
+
+            self.mw_comp = Expression(
+                    self.component_list,
+                    doc="Molecular weight of each component",
+                    rule=rule_mw_comp)
+        except AttributeError:
+            self.del_component(self.mw_comp)
+            raise
+
     def _mw_phase(self):
         try:
             def rule_mw_phase(b, p):
@@ -2634,6 +2954,42 @@ class GenericStateBlockData(StateBlockData):
                     rule=rule_mw_phase)
         except AttributeError:
             self.del_component(self.mw_phase)
+            raise
+
+    def _pressure_phase_comp(self):
+        try:
+            def rule_partial_pressure(b, p, i):
+                return b.mole_frac_phase_comp[p, i] * b.pressure
+            self.pressure_phase_comp = Expression(
+                    self.phase_component_set,
+                    doc="Component partial pressure in phase",
+                    rule=rule_partial_pressure)
+        except AttributeError:
+            self.del_component(self.pressure_phase_comp)
+            raise
+
+    def _pressure_phase_comp_true(self):
+        try:
+            def rule_partial_pressure(b, p, i):
+                return b.mole_frac_phase_comp_true[p, i] * b.pressure
+            self.pressure_phase_comp_true = Expression(
+                    self.phase_component_set,
+                    doc="Component partial pressure in phase",
+                    rule=rule_partial_pressure)
+        except AttributeError:
+            self.del_component(self.pressure_phase_comp_true)
+            raise
+
+    def _pressure_phase_comp_apparent(self):
+        try:
+            def rule_partial_pressure(b, p, i):
+                return b.mole_frac_phase_comp_apparent[p, i] * b.pressure
+            self.pressure_phase_comp_apparent = Expression(
+                    self.phase_component_set,
+                    doc="Component partial pressure in phase",
+                    rule=rule_partial_pressure)
+        except AttributeError:
+            self.del_component(self.pressure_phase_comp_apparent)
             raise
 
     def _pressure_osm_phase(self):
@@ -2719,6 +3075,405 @@ class GenericStateBlockData(StateBlockData):
             self.params.inherent_reaction_idx,
             doc="Specific heat of reaction for inherent reactions",
             rule=dh_rule)
+
+    def _log_act_phase_comp(self):
+        try:
+            self.log_act_phase_comp = Var(
+                self.phase_component_set,
+                initialize=1,
+                bounds=(-50, 1),
+                units=pyunits.dimensionless,
+                doc="Log of activity of component by phase")
+
+            def rule_log_act_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return exp(b.log_act_phase_comp[p, j]) == \
+                    p_config.equation_of_state.act_phase_comp(b, p, j)
+            self.log_act_phase_comp_eq = Constraint(
+                    self.phase_component_set,
+                    doc="Natural log of component activity in each phase",
+                    rule=rule_log_act_phase_comp)
+        except AttributeError:
+            self.del_component(self.log_act_phase_comp)
+            self.del_component(self.log_act_phase_comp_eq)
+            raise
+
+    def _log_act_phase_comp_true(self):
+        try:
+            self.log_act_phase_comp_true = Var(
+                self.params.true_phase_component_set,
+                initialize=1,
+                bounds=(-50, 1),
+                units=pyunits.dimensionless,
+                doc="Log of activity of component by phase")
+
+            def rule_log_act_phase_comp_true(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return exp(b.log_act_phase_comp_true[p, j]) == \
+                    p_config.equation_of_state.act_phase_comp_true(b, p, j)
+            self.log_act_phase_comp_true_eq = Constraint(
+                    self.params.true_phase_component_set,
+                    doc="Natural log of component activity in each phase",
+                    rule=rule_log_act_phase_comp_true)
+        except AttributeError:
+            self.del_component(self.log_act_phase_comp_true)
+            self.del_component(self.log_act_phase_comp_true_eq)
+            raise
+
+    def _log_act_phase_comp_apparent(self):
+        try:
+            self.log_act_phase_comp_apparent = Var(
+                self.params.apparent_phase_component_set,
+                initialize=1,
+                bounds=(-50, 1),
+                units=pyunits.dimensionless,
+                doc="Log of activity of component by phase")
+
+            def rule_log_act_phase_comp_apparent(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return exp(b.log_act_phase_comp_apparent[p, j]) == \
+                    p_config.equation_of_state.act_phase_comp_apparent(b, p, j)
+            self.log_act_phase_comp_apparent_eq = Constraint(
+                    self.params.apparent_phase_component_set,
+                    doc="Natural log of component activity in each phase",
+                    rule=rule_log_act_phase_comp_apparent)
+        except AttributeError:
+            self.del_component(self.log_act_phase_comp_apparent)
+            self.del_component(self.log_act_phase_comp_apparent_eq)
+            raise
+
+    def _log_conc_mol_phase_comp(self):
+        try:
+            self.log_conc_mol_phase_comp = Var(
+                self.phase_component_set,
+                initialize=1,
+                bounds=(-50, None),
+                units=pyunits.dimensionless,
+                doc="Log of molar concentration of component by phase")
+
+            def rule_log_conc_mol_phase_comp(b, p, j):
+                return exp(b.log_conc_mol_phase_comp[p, j]) == (
+                    b.conc_mol_phase_comp[p, j] /
+                    pyunits.get_units(b.conc_mol_phase_comp[p, j]))
+            self.log_conc_mol_phase_comp_eq = Constraint(
+                self.phase_component_set,
+                rule=rule_log_conc_mol_phase_comp,
+                doc="Constraint for log of molar concentration")
+        except AttributeError:
+            self.del_component(self.log_conc_mol_phase_comp)
+            self.del_component(self.log_conc_mol_phase_comp_eq)
+            raise
+
+    def _log_conc_mol_phase_comp_true(self):
+        try:
+            self.log_conc_mol_phase_comp_true = Var(
+                self.phase_component_set,
+                initialize=1,
+                bounds=(-50, None),
+                units=pyunits.dimensionless,
+                doc="Log of molar concentration of component by phase")
+
+            def rule_log_conc_mol_phase_comp_true(b, p, j):
+                return exp(b.log_conc_mol_phase_comp_true[p, j]) == (
+                    b.conc_mol_phase_comp_true[p, j] /
+                    pyunits.get_units(b.conc_mol_phase_comp_true[p, j]))
+            self.log_conc_mol_phase_comp_true_eq = Constraint(
+                self.phase_component_set,
+                rule=rule_log_conc_mol_phase_comp_true,
+                doc="Constraint for log of molar concentration")
+        except AttributeError:
+            self.del_component(self.log_conc_mol_phase_comp_true)
+            self.del_component(self.log_conc_mol_phase_comp_true_eq)
+            raise
+
+    def _log_mass_frac_phase_comp(self):
+        try:
+            self.log_mass_frac_phase_comp = Var(
+                self.phase_component_set,
+                initialize=0,
+                bounds=(-50, 0),
+                units=pyunits.dimensionless,
+                doc="Log of mass fractions of component by phase")
+
+            def rule_log_mass_frac_phase_comp(b, p, j):
+                return exp(b.log_mass_frac_phase_comp[p, j]) == (
+                    b.mass_frac_phase_comp[p, j])
+            self.log_mass_frac_phase_comp_eq = Constraint(
+                self.phase_component_set,
+                rule=rule_log_mass_frac_phase_comp,
+                doc="Constraint for log of mass fractions")
+        except AttributeError:
+            self.del_component(self.log_mass_frac_phase_comp)
+            self.del_component(self.log_mass_frac_phase_comp_eq)
+            raise
+
+    def _log_mass_frac_phase_comp_apparent(self):
+        try:
+            self.log_mass_frac_phase_comp_apparent = Var(
+                self.params.apparent_phase_component_set,
+                initialize=0,
+                bounds=(-50, 0),
+                units=pyunits.dimensionless,
+                doc="Log of mass fractions of component by phase")
+
+            def rule_log_mass_frac_phase_comp_appr(b, p, j):
+                return exp(b.log_mass_frac_phase_comp_apparent[p, j]) == (
+                    b.mass_frac_phase_comp_apparent[p, j])
+            self.log_mass_frac_phase_comp_apparent_eq = Constraint(
+                self.params.apparent_phase_component_set,
+                rule=rule_log_mass_frac_phase_comp_appr,
+                doc="Constraint for log of mass fractions")
+        except AttributeError:
+            self.del_component(self.log_mass_frac_phase_comp_apparent)
+            self.del_component(self.log_mass_frac_phase_comp_apparent_eq)
+            raise
+
+    def _log_mass_frac_phase_comp_true(self):
+        try:
+            self.log_mass_frac_phase_comp_true = Var(
+                self.params.true_phase_component_set,
+                initialize=0,
+                bounds=(-50, 0),
+                units=pyunits.dimensionless,
+                doc="Log of mass fractions of component by phase")
+
+            def rule_log_mass_frac_phase_comp_true(b, p, j):
+                return exp(b.log_mass_frac_phase_comp_true[p, j]) == (
+                    b.mass_frac_phase_comp_true[p, j])
+            self.log_mass_frac_phase_comp_true_eq = Constraint(
+                self.params.true_phase_component_set,
+                rule=rule_log_mass_frac_phase_comp_true,
+                doc="Constraint for log of mass fractions")
+        except AttributeError:
+            self.del_component(self.log_mass_frac_phase_comp_true)
+            self.del_component(self.log_mass_frac_phase_comp_true_eq)
+            raise
+
+    def _log_molality_phase_comp(self):
+        try:
+            self.log_molality_phase_comp = Var(
+                self.phase_component_set,
+                initialize=1,
+                bounds=(-50, None),
+                units=pyunits.dimensionless,
+                doc="Log of molality of component by phase")
+
+            def rule_log_molality_phase_comp(b, p, j):
+                pobj = b.params.get_phase(p)
+                if not isinstance(pobj, LiquidPhase):
+                    # Molality is defined per mass of solvent so only makes
+                    # sense in liquid phases
+                    return Expression.Skip
+                return exp(b.log_molality_phase_comp[p, j]) == (
+                    b.molality_phase_comp[p, j])
+            self.log_molality_phase_comp_eq = Constraint(
+                self.phase_component_set,
+                rule=rule_log_molality_phase_comp,
+                doc="Constraint for log of molality")
+        except AttributeError:
+            self.del_component(self.log_molality_phase_comp)
+            self.del_component(self.log_molality_phase_comp_eq)
+            raise
+
+    def _log_molality_phase_comp_apparent(self):
+        try:
+            self.log_molality_phase_comp_apparent = Var(
+                self.params.apparent_phase_component_set,
+                initialize=1,
+                bounds=(-50, None),
+                units=pyunits.dimensionless,
+                doc="Log of molality of component by phase")
+
+            def rule_log_molality_phase_comp_appr(b, p, j):
+                pobj = b.params.get_phase(p)
+                if not isinstance(pobj, LiquidPhase):
+                    # Molality is defined per mass of solvent so only makes
+                    # sense in liquid phases
+                    return Expression.Skip
+                return exp(b.log_molality_phase_comp_apparent[p, j]) == (
+                    b.molality_phase_comp_apparent[p, j])
+            self.log_molality_phase_comp_apparent_eq = Constraint(
+                self.params.apparent_phase_component_set,
+                rule=rule_log_molality_phase_comp_appr,
+                doc="Constraint for log of molality")
+        except AttributeError:
+            self.del_component(self.log_molality_phase_comp_apparent)
+            self.del_component(self.log_molality_phase_comp_apparent_eq)
+            raise
+
+    def _log_molality_phase_comp_true(self):
+        try:
+            self.log_molality_phase_comp_true = Var(
+                self.params.true_phase_component_set,
+                initialize=1,
+                units=pyunits.dimensionless,
+                doc="Log of molality of component by phase")
+
+            def rule_log_molality_phase_comp_true(b, p, j):
+                pobj = b.params.get_phase(p)
+                if not isinstance(pobj, LiquidPhase):
+                    # Molality is defined per mass of solvent so only makes
+                    # sense in liquid phases
+                    return Expression.Skip
+                return exp(b.log_molality_phase_comp_true[p, j]) == (
+                    b.molality_phase_comp_true[p, j])
+            self.log_molality_phase_comp_true_eq = Constraint(
+                self.params.true_phase_component_set,
+                rule=rule_log_molality_phase_comp_true,
+                doc="Constraint for log of molality")
+        except AttributeError:
+            self.del_component(self.log_molality_phase_comp_true)
+            self.del_component(self.log_molality_phase_comp_true_eq)
+            raise
+
+    def _log_mole_frac_phase_comp(self):
+        try:
+            self.log_mole_frac_phase_comp = Var(
+                self.phase_component_set,
+                initialize=0,
+                bounds=(-50, 0),
+                units=pyunits.dimensionless,
+                doc="Log of mole fractions of component by phase")
+
+            def rule_log_mole_frac_phase_comp(b, p, j):
+                return exp(b.log_mole_frac_phase_comp[p, j]) == (
+                    b.mole_frac_phase_comp[p, j])
+            self.log_mole_frac_phase_comp_eq = Constraint(
+                self.phase_component_set,
+                rule=rule_log_mole_frac_phase_comp,
+                doc="Constraint for log of mole fractions")
+        except AttributeError:
+            self.del_component(self.log_mole_frac_phase_comp)
+            self.del_component(self.log_mole_frac_phase_comp_eq)
+            raise
+
+    def _log_mole_frac_phase_comp_apparent(self):
+        try:
+            self.log_mole_frac_phase_comp_apparent = Var(
+                self.params.apparent_phase_component_set,
+                initialize=0,
+                bounds=(-50, 0),
+                units=pyunits.dimensionless,
+                doc="Log of mole fractions of component by phase")
+
+            def rule_log_mole_frac_phase_comp_appr(b, p, j):
+                return exp(b.log_mole_frac_phase_comp_apparent[p, j]) == (
+                    b.mole_frac_phase_comp_apparent[p, j])
+            self.log_mole_frac_phase_comp_apparent_eq = Constraint(
+                self.params.apparent_phase_component_set,
+                rule=rule_log_mole_frac_phase_comp_appr,
+                doc="Constraint for log of mole fractions")
+        except AttributeError:
+            self.del_component(self.log_mole_frac_phase_comp_apparent)
+            self.del_component(self.log_mole_frac_phase_comp_apparent_eq)
+            raise
+
+    def _log_mole_frac_phase_comp_true(self):
+        try:
+            self.log_mole_frac_phase_comp_true = Var(
+                self.params.true_phase_component_set,
+                initialize=0,
+                bounds=(-50, 0),
+                units=pyunits.dimensionless,
+                doc="Log of mole fractions of component by phase")
+
+            def rule_log_mole_frac_phase_comp_true(b, p, j):
+                return exp(b.log_mole_frac_phase_comp_true[p, j]) == (
+                    b.mole_frac_phase_comp_true[p, j])
+            self.log_mole_frac_phase_comp_true_eq = Constraint(
+                self.params.true_phase_component_set,
+                rule=rule_log_mole_frac_phase_comp_true,
+                doc="Constraint for log of mole fractions")
+        except AttributeError:
+            self.del_component(self.log_mole_frac_phase_comp_true)
+            self.del_component(self.log_mole_frac_phase_comp_true_eq)
+            raise
+
+    def _log_pressure_phase_comp(self):
+        try:
+            self.log_pressure_phase_comp = Var(
+                self.phase_component_set,
+                initialize=12,
+                bounds=(-50, None),
+                units=pyunits.dimensionless,
+                doc="Log of partial pressures of component by phase")
+
+            def rule_log_pressure_phase_comp(b, p, j):
+                return exp(b.log_pressure_phase_comp[p, j]) == (
+                    b.pressure_phase_comp[p, j])
+            self.log_pressure_phase_comp_eq = Constraint(
+                self.phase_component_set,
+                rule=rule_log_pressure_phase_comp,
+                doc="Constraint for log of partial pressures")
+        except AttributeError:
+            self.del_component(self.log_pressure_phase_comp)
+            self.del_component(self.log_pressure_phase_comp_eq)
+            raise
+
+    def _log_pressure_phase_comp_apparent(self):
+        try:
+            self.log_pressure_phase_comp_apparent = Var(
+                self.params.apparent_phase_component_set,
+                initialize=12,
+                bounds=(-50, None),
+                units=pyunits.dimensionless,
+                doc="Log of partial pressures of component by phase")
+
+            def rule_log_pressure_phase_comp_appr(b, p, j):
+                return exp(b.log_pressure_phase_comp_apparent[p, j]) == (
+                    b.pressure_phase_comp_apparent[p, j])
+            self.log_pressure_phase_comp_apparent_eq = Constraint(
+                self.params.apparent_phase_component_set,
+                rule=rule_log_pressure_phase_comp_appr,
+                doc="Constraint for log of partial pressures")
+        except AttributeError:
+            self.del_component(self.log_pressure_phase_comp_apparent)
+            self.del_component(self.log_pressure_phase_comp_apparent_eq)
+            raise
+
+    def _log_pressure_phase_comp_true(self):
+        try:
+            self.log_pressure_phase_comp_true = Var(
+                self.params.true_phase_component_set,
+                initialize=12,
+                bounds=(-50, None),
+                units=pyunits.dimensionless,
+                doc="Log of partial pressures of component by phase")
+
+            def rule_log_pressure_phase_comp_true(b, p, j):
+                return exp(b.log_pressure_phase_comp_true[p, j]) == (
+                    b.pressure_phase_comp_true[p, j])
+            self.log_pressure_phase_comp_true_eq = Constraint(
+                self.params.true_phase_component_set,
+                rule=rule_log_pressure_phase_comp_true,
+                doc="Constraint for log of partial pressures")
+        except AttributeError:
+            self.del_component(self.log_pressure_phase_comp_true)
+            self.del_component(self.log_pressure_phase_comp_true_eq)
+            raise
+
+    def _log_k_eq(self):
+        try:
+            self.log_k_eq = Var(
+                self.params.inherent_reaction_idx,
+                initialize=1,
+                doc="Log of equilibrium constant for inherent reactions")
+
+            def rule_log_k_eq(b, r):
+                rblock = getattr(b.params, "reaction_"+r)
+
+                carg = b.params.config.inherent_reactions[r]
+                return carg["equilibrium_constant"].return_log_expression(
+                    b, rblock, r, b.temperature)
+
+            self.log_k_eq_constraint = Constraint(
+                self.params.inherent_reaction_idx,
+                rule=rule_log_k_eq,
+                doc="Constraint for log of equilibrium constant")
+        except AttributeError:
+            self.del_component(self.log_k_eq)
+            self.del_component(self.log_k_eq_constraint)
+            raise
 
 
 def _valid_VL_component_list(blk, pp):

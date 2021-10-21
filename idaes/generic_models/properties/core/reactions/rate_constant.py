@@ -16,7 +16,7 @@ Methods for calculating rate constants
 from pyomo.environ import exp, Var, units as pyunits
 
 from idaes.core import MaterialFlowBasis
-from idaes.generic_models.properties.core.generic.generic_reaction import \
+from idaes.generic_models.properties.core.generic.utility import \
     ConcentrationForm
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants as c
@@ -50,15 +50,15 @@ class arrhenius():
                 "Please ensure that this argument is included in your "
                 "configuration dict.".format(rblock.name))
         elif (c_form == ConcentrationForm.moleFraction or
-              c_form == ConcentrationForm.massFraction):
+              c_form == ConcentrationForm.massFraction or
+              c_form == ConcentrationForm.activity):
             r_units = r_base*units["volume"]**-1*units["time"]**-1
         else:
             order = 0
             for p, j in parent.config.property_package._phase_component_set:
                 order += -rblock.reaction_order[p, j].value
 
-            if (c_form == ConcentrationForm.molarity or
-                    c_form == ConcentrationForm.activity):
+            if c_form == ConcentrationForm.molarity:
                 c_units = units["density_mole"]
             elif c_form == ConcentrationForm.molality:
                 c_units = units["amount"]*units["mass"]**-1
@@ -66,9 +66,9 @@ class arrhenius():
                 c_units = units["pressure"]
             else:
                 raise BurntToast(
-                    "{} get_concentration_term received unrecognised "
-                    "ConcentrationForm ({}). This should not happen - please "
-                    "contact the IDAES developers with this bug."
+                    "{} received unrecognised ConcentrationForm ({}). "
+                    "This should not happen - please contact the IDAES "
+                    "developers with this bug."
                     .format(rblock.name, c_form))
 
             r_units = (r_base *
