@@ -17,8 +17,7 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            TerminationCondition,
-                           value,
-                           units as pyunits)
+                           value)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
@@ -103,21 +102,54 @@ class TestStateBlock(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        model.props[1].mole_frac_phase_comp_true.display()
-        model.props[1].mole_frac_phase_comp_apparent.display()
+        # Values verified with older model
+        assert value(model.props[1].log_k_eq["carbamate"]) == pytest.approx(
+            -1.98499794, rel=1e-8)
+        assert value(model.props[1].log_k_eq["bicarbonate"]) == pytest.approx(
+            -7.5776101, rel=1e-8)
 
-        model.props[1].log_k_eq.display()
-        model.props[1].conc_mol_phase_comp_true.display()
+        assert pytest.approx(1346.056734, rel=1e-8) == value(
+            model.props[1].conc_mol_phase_comp_apparent["Liq", "CO2"])
+        assert pytest.approx(35464.0530, rel=1e-8) == value(
+            model.props[1].conc_mol_phase_comp_apparent["Liq", "H2O"])
+        assert pytest.approx(4479.97410, rel=1e-8) == value(
+            model.props[1].conc_mol_phase_comp_apparent["Liq", "MEA"])
 
-        model.props[1].cp_mol_phase.display()
-        model.props[1].enth_mol_phase.display()
-        model.props[1].henry.display()
-        model.props[1].pressure_sat_comp.display()
-        model.props[1].vol_mol_phase.display()
-        model.props[1].visc_d_phase.display()
-        model.props[1].mass_frac_phase_comp_apparent.display()
-        model.props[1].therm_cond_phase.display()
-        model.props[1].surf_tens_phase.display()
-        model.props[1].diffus_phase_comp_apparent.display()
+        assert pytest.approx(86.3982342, rel=1e-8) == value(
+            model.props[1].cp_mol_phase["Liq"])
 
-        assert False
+        assert pytest.approx(8842.75903, rel=1e-8) == value(
+            model.props[1].henry["Liq", "CO2"])
+
+        assert pytest.approx(194455.113, rel=1e-8) == value(
+            model.props[1].pressure_sat_comp["H2O"])
+        assert pytest.approx(15510.7449, rel=1e-8) == value(
+            model.props[1].pressure_sat_comp["MEA"])
+
+        assert pytest.approx(2.42188900e-05, rel=1e-8) == value(
+            model.props[1].vol_mol_phase["Liq"])
+
+        assert pytest.approx(5.26403457e-4, rel=1e-8) == value(
+            model.props[1].visc_d_phase["Liq"])
+
+        assert pytest.approx(0.657512692, rel=1e-8) == value(
+            model.props[1].mass_frac_phase_comp_apparent["Liq", "H2O"])
+        assert pytest.approx(0.281537026, rel=1e-8) == value(
+            model.props[1].mass_frac_phase_comp_apparent["Liq", "MEA"])
+        assert pytest.approx(6.095028209e-2, rel=1e-8) == value(
+            model.props[1].mass_frac_phase_comp_apparent["Liq", "CO2"])
+
+        assert pytest.approx(0.404942934, rel=1e-8) == value(
+            model.props[1].therm_cond_phase["Liq"])
+
+        assert pytest.approx(0.0533310121, rel=1e-8) == value(
+            model.props[1].surf_tens_phase["Liq"])
+
+        assert pytest.approx(9.83334347e-09, rel=1e-8) == value(
+            model.props[1].diffus_phase_comp_true["Liq", "CO2"])
+        assert pytest.approx(4.47017415e-09, rel=1e-8) == value(
+            model.props[1].diffus_phase_comp_true["Liq", "MEA"])
+        assert pytest.approx(2.27073817e-09, rel=1e-8) == value(
+            model.props[1].diffus_phase_comp_true["Liq", "MEACOO_-"])
+        assert pytest.approx(2.27073817e-09, rel=1e-8) == value(
+            model.props[1].diffus_phase_comp_true["Liq", "MEA_+"])

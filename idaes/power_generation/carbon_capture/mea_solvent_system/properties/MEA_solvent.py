@@ -132,6 +132,11 @@ class EnthMolSolvent():
         if not hasattr(cobj, "cp_mass_liq_comp_coeff_1"):
             CpMolSolvent.build_parameters(cobj)
 
+        cobj.dh_vap = Var(
+                doc="Heat of absorption of component @ Tref",
+                units=pyunits.J/pyunits.mol)
+        set_param_from_config(cobj, param="dh_vap")
+
     @staticmethod
     def return_expression(b, cobj, T):
         # Specific enthalpy
@@ -146,7 +151,8 @@ class EnthMolSolvent():
                 (cobj.cp_mass_liq_comp_coeff_4/4)*(T**4-Tr**4) +
                 (cobj.cp_mass_liq_comp_coeff_3/3)*(T**3-Tr**3) +
                 (cobj.cp_mass_liq_comp_coeff_2/2)*(T**2-Tr**2) +
-                cobj.cp_mass_liq_comp_coeff_1*(T-Tr)),
+                cobj.cp_mass_liq_comp_coeff_1*(T-Tr)) +
+            cobj.dh_vap,
             units["energy_mole"]))
 
         return h
@@ -350,17 +356,43 @@ class DiffusMEA():
     @staticmethod
     def return_expression(blk, p, j, T):
         cobj = blk.params.get_component(j)
-        cobj.display()
         C_MEA = blk.conc_mol_comp['MEA']
         return exp(cobj.diffus_phase_comp_coeff_1 +
                    cobj.diffus_phase_comp_coeff_2/T +
                    cobj.diffus_phase_comp_coeff_3*C_MEA)*pyunits.m**2/pyunits.s
 
 
+class DiffusIons():
+    @staticmethod
+    def build_parameters(cobj, phase):
+        cobj.diffus_phase_comp_coeff_1 = Var(
+                doc="Parameter 1 for liquid phase diffusivity model",
+                units=pyunits.dimensionless)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="1")
+        cobj.diffus_phase_comp_coeff_2 = Var(
+                doc="Parameter 2 for liquid phase diffusivity model",
+                units=pyunits.K)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="2")
+        cobj.diffus_phase_comp_coeff_3 = Var(
+                doc="Parameter 3 for liquid phase diffusivity model",
+                units=pyunits.dimensionless)
+        set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="3")
+
+    @staticmethod
+    def return_expression(blk, p, j, T):
+        cobj = blk.params.get_component(j)
+        return exp(cobj.diffus_phase_comp_coeff_1 +
+                   cobj.diffus_phase_comp_coeff_2/T +
+                   cobj.diffus_phase_comp_coeff_3 *
+                   log(blk.visc_d_phase[p] /
+                       pyunits.get_units(blk.visc_d_phase[p]))
+                   )*pyunits.m**2/pyunits.s
+
+
 class DiffusNone():
     # placeholder method for components where diffusivity is not required
     @staticmethod
-    def build_parameters(pobj):
+    def build_parameters(cobj, phase):
         pass
 
     @staticmethod
@@ -677,6 +709,7 @@ configuration = {
                         '1': (-3.2484e-6, pyunits.g/pyunits.mL/pyunits.K**2),  # [2]
                         '2': (0.00165, pyunits.g/pyunits.mL/pyunits.K),
                         '3': (0.793, pyunits.g/pyunits.mL)},
+                    "dh_vap": 43.99e3,
                     "pressure_sat_comp_coeff": {
                         '1': 72.55,
                         '2': -7206.70,
@@ -702,6 +735,7 @@ configuration = {
                         '1': (-5.35162e-7, pyunits.g/pyunits.mL/pyunits.K**2),  # [2]
                         '2': (-4.51417e-4, pyunits.g/pyunits.mL/pyunits.K),
                         '3': (1.19451, pyunits.g/pyunits.mL)},
+                    "dh_vap": 0,  # MEA is assumed to be non-volatile
                     "diffus_phase_comp_coeff": {
                             '1': -13.275,
                             '2': -2198.3,
@@ -736,10 +770,20 @@ configuration = {
                         'e': (-563.3701, pyunits.mL/pyunits.mol)}}},
         'MEA_+': {"type": Cation,
                   "charge": +1,
-                  "diffus_phase_comp": {"Liq": DiffusNone}},
+                  "diffus_phase_comp": {"Liq": DiffusIons},
+                  "parameter_data": {
+                      "diffus_phase_comp_coeff": {
+                          '1': -22.64,
+                          '2': -1000.0,
+                          '3': -0.7}}},
         'MEACOO_-': {"type": Anion,
                      "charge": -1,
-                     "diffus_phase_comp": {"Liq": DiffusNone}},
+                     "diffus_phase_comp": {"Liq": DiffusIons},
+                     "parameter_data": {
+                         "diffus_phase_comp_coeff": {
+                             '1': -22.64,
+                             '2': -1000.0,
+                             '3': -0.7}}},
         'HCO3_-': {"type": Anion,
                    "charge": -1,
                    "diffus_phase_comp": {"Liq": DiffusNone}}},
