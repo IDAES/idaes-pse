@@ -28,7 +28,7 @@ from pathlib import Path
 import pprint
 import re
 import sys
-from typing import List, Union, Iterator, Optional, IO
+from typing import List, Union, Iterator, Optional, IO, Any
 import uuid
 
 # third-party
@@ -330,7 +330,7 @@ class Resource:
         return self.v.get("codes", [])
 
     @property
-    def tables(self) -> Dict[str, "Table"]:
+    def tables(self) -> Dict[str, Any]:  # TODO: Really should be "Table"
         """Get all the 'tables' stored in the resource.
 
         The resource _should_ be of the type 'tabular' and this may be
