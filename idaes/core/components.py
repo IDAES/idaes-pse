@@ -89,6 +89,12 @@ class ComponentData(ProcessBlockData):
     CONFIG.declare("entr_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component molar entropies"))
 
+    CONFIG.declare("visc_d_comp", ConfigValue(
+        description="Method to calculate component dynamic viscosity"))
+
+    CONFIG.declare("therm_cond_comp", ConfigValue(
+        description="Method to calculate component thermal conductivity"))
+
     CONFIG.declare("diffus_phase_comp", ConfigValue(
         description="Method to calculate component diffusivities in each "
         "phase. Must be a dict with keys being phase names."))
@@ -156,7 +162,8 @@ class ComponentData(ProcessBlockData):
         # Create Vars for common parameters
         param_dict = {"pressure_crit": p_units,
                       "temperature_crit": base_units["temperature"],
-                      "omega": None}
+                      "omega": None,
+                      "diffus_volume":base_units["length"]**3/base_units["amount"]}
         for p, u in param_dict.items():
             if p in self.config.parameter_data:
                 self.add_component(p, Var(units=u))

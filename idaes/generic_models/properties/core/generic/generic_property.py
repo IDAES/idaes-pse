@@ -963,7 +963,9 @@ class GenericParameterData(PhysicalParameterBlock):
              'surf_tens_phase': {'method': '_surf_tens_phase'},
              'temperature_bubble': {'method': '_temperature_bubble'},
              'temperature_dew': {'method': '_temperature_dew'},
+             'therm_cond_comp': {'method': '_therm_cond_comp'},
              'therm_cond_phase': {'method': '_therm_cond_phase'},
+             'visc_d_comp': {'method': '_visc_d_comp'},
              'visc_d_phase': {'method': '_visc_d_phase'},
              'vol_mol_phase': {'method': '_vol_mol_phase'},
              'dh_rxn': {'method': '_dh_rxn'},
@@ -3162,6 +3164,25 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.surf_tens_phase)
             raise
 
+    def _therm_cond_comp(self):
+        try:
+            def rule_therm_cond_comp(b, p, j):
+                 pobj = b.params.get_phase(p)
+                 if pobj.is_vapor_phase():
+                    cobj = b.params.get_component(j)
+                    return get_method(b, "therm_cond_comp", j)(b,
+                           cobj , b.temperature)
+                 else:
+                    return Expression.Skip
+
+            self.therm_cond_comp = Expression(
+                    self.phase_component_set,
+                    doc="Thermal conductivity of each component",
+                    rule=rule_therm_cond_comp)
+        except AttributeError:
+            self.del_component(self.therm_cond_comp)
+            raise
+
     def _therm_cond_phase(self):
         try:
             def rule_therm_cond_phase(b, p):
@@ -3173,6 +3194,26 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.therm_cond_phase)
             raise
+
+    def _visc_d_comp(self):
+        try:
+            def rule_visc_d_comp(b, p, j):
+                 pobj = b.params.get_phase(p)
+                 if pobj.is_vapor_phase():
+                    cobj = b.params.get_component(j)
+                    return get_method(b, "visc_d_comp", j)(b,
+                           cobj , b.temperature)
+                 else:
+                    return Expression.Skip
+
+            self.visc_d_comp = Expression(
+                    self.phase_component_set,
+                    doc="Dynamic viscosity of each  component",
+                    rule=rule_visc_d_comp)
+        except AttributeError:
+            self.del_component(self.visc_d_comp)
+            raise
+
 
     def _visc_d_phase(self):
         try:
