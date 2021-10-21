@@ -69,6 +69,7 @@ class PublicationDataset(Dataset):
 
     PUBLICATION_KEY = "text"
     NAME_KEY = "name"
+    #  Allow picking a tab? SPREADSHEET_TAB_KEY = "tab"
     TABLES_KEY = "tables"
 
     copy_flag = True
@@ -131,6 +132,7 @@ class PublicationDataset(Dataset):
 
         # Create and add a resource for each table
         tables = self._conf.get(self.TABLES_KEY, None)
+        seen_datafiles = {}
         if tables:
             num = 0
             for table in tables:
@@ -144,6 +146,7 @@ class PublicationDataset(Dataset):
                 if "datafile" not in table:
                     _log.warning(f"Skipping table '{table_name}': no datafile")
                     continue
+                # set up datafile
                 table_datafile = table["datafile"]
                 table_path = directory / table_datafile
                 if not table_path.exists:
@@ -151,11 +154,14 @@ class PublicationDataset(Dataset):
                         f"Cannot find data file for table "
                         f"'{table_name}': {table_path}"
                     )
+                # create new resource
+                tbl_r = resource.Resource(type_=resource.ResourceTypes.tabular)
+                # populate resource
                 table_desc = table.get("description", None)
                 if table_desc is None:
                     _log.warning(f"No description given for table data "
                                  f"{table_datafile}")
-                tbl_r = resource.Resource(type_=resource.ResourceTypes.tabular)
+                _log.debug(f"Adding table: path={table_path} desc={table_desc}")
                 tbl_r.add_table(table_path, desc=table_desc, do_copy=self.copy_flag)
                 tbl_r.name = table_name  # set name for this table
                 tbl_r.add_tag(name)  # add tag shared with publication

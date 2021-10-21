@@ -281,6 +281,8 @@ class Resource:
     TABLE_FIELD = "table"  #: In data section, inline table
     TABLE_INFO_FIELD = "table_info"  #: In data section, info for tables
     DATA_FIELD = "data"  #: Extra data area
+    DATAFILES_FIELD = "datafiles"  #: Where datafiles are
+    DESCRIPTION_FIELD = "desc"  #: Description of resource
 
     def __init__(self, value: dict = None, type_: str = None, name: str = None):
         if type_ is None:

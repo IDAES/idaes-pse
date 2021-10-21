@@ -77,6 +77,7 @@ class Table:
         self._data = pd.DataFrame({})
         self._units = {}
         self._filepath = None
+        self._desc = ""
 
     @property
     def data(self) -> pd.DataFrame:
@@ -98,6 +99,14 @@ class Table:
 
     #: Shorthand for getting list of units
     units = units_list
+
+    @property
+    def description(self):
+        return self._desc
+
+    @description.setter
+    def description(self, value):
+        self._desc = value
 
     @staticmethod
     def read_table(filepath, inline: bool, file_format: str) -> "Table":
@@ -271,13 +280,15 @@ class Table:
         data = rsrc.v["data"]
         if Resource.TABLE_FIELD in data:
             # Single inline resource
-            return {"": cls.from_dict(data[Resource.TABLE_FIELD])}
+            table_ = cls.from_dict(data[Resource.TABLE_FIELD])
+            return {"": table_}
         elif Resource.TABLE_INFO_FIELD in data:
             # One or more files
             tables = {}
-            for path in rsrc.get_datafiles():
-                table = cls.read_table(path, True, "infer")
-                tables[path.name] = table
+            for idx, path in enumerate(rsrc.get_datafiles()):
+                table_ = cls.read_table(path, True, "infer")
+                table_.description = rsrc.v[Resource.DATAFILES_FIELD][idx].get("desc", "")
+                tables[path.name] = table_
             return tables
         else:
             raise KeyError("No table in resource")
