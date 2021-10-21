@@ -12,25 +12,25 @@
 # license information.
 #################################################################################
 """ Variable classes for time-indexed variables that can be treated specially
-by NMPC.
+by Plant, NMPC, and MHE.
 """
 
 from pyomo.core.base.var import IndexedVar
 from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
 
 
-class NmpcVar(IndexedVar):
+class DynamicVar(IndexedVar):
     """
     This class is meant to be used as a ctype for references to time-only
     slices. It provides attributes that we would like to store for each
     "variable," but not for different time-indices of the same "variable."
-    Consistent with the NMPC/DAE literature, a "variable" here is
+    Consistent with the NMPC/MHE/DAE literature, a "variable" here is
     something indexed only by time.
 
     Users may want to access these "time-only variables," and may do so
     by looping over `component_objects`. For example:
 
-    >>> for var in model.component_objects(NmpcVar):
+    >>> for var in model.component_objects(DynamicVar):
     >>>     var[:].set_value(var[0])
 
     """
@@ -46,48 +46,57 @@ class NmpcVar(IndexedVar):
         self.nominal = kwargs.pop('nominal', None)
         self.noise_bounds = kwargs.pop('noise_bounds', None)
         kwargs.setdefault('ctype', type(self))
-        super(NmpcVar, self).__init__(*args, **kwargs)
+        super(DynamicVar, self).__init__(*args, **kwargs)
 
 """
 The following classes serve as custom ctypes for references
 to time-only slices and calls to `component_objects` when
 the user or developer wants to specify a particular subset
-of the "NMPC variables."
+of the "Dynamic variables."
 """
 
-class DiffVar(NmpcVar):
+class DiffVar(DynamicVar):
     _attr = 'differential'
 
-class DerivVar(NmpcVar):
+class DerivVar(DynamicVar):
     _attr = 'derivative'
 
-class AlgVar(NmpcVar):
+class AlgVar(DynamicVar):
     _attr = 'algebraic'
 
-class InputVar(NmpcVar):
+class InputVar(DynamicVar):
     _attr = 'input'
 
-class FixedVar(NmpcVar):
+class FixedVar(DynamicVar):
     _attr = 'fixed'
 
-class MeasuredVar(NmpcVar):
+class MeasuredVar(DynamicVar):
     _attr = 'measurement'
+    
+class ActualMeasurementVar(DynamicVar):
+    _attr = 'actualmeasurement'
+    
+class MeasurementErrorVar(DynamicVar):
+    _attr = 'measurementerror'
+
+class ModelDisturbanceVar(DynamicVar):
+    _attr = 'modeldisturbance'
 
 
-class _NmpcVector(IndexedVar):
+class _DynamicVector(IndexedVar):
     """
-    This is a class used as a ctype for references to `NmpcVar` objects.
+    This is a class used as a ctype for references to `DynamicVar` objects.
     It is used to construct a "vector" of these variables with a
     "Pyomothonic" API. These "vectors" are indexed by an integer describing
     the "coordinate" of the variable within the vector and by time.
     In addition to accessing the underlying data objects with a 2-dimensional
-    index, this class adds methods to iterate over the underlying `NmpcVar`
+    index, this class adds methods to iterate over the underlying `DynamicVar`
     objects. This is necessary to access the special attributes on these
     variables that would not make sense to attach to a data object.
 
     For example:
 
-    >>> input_vars = Reference(INPUT_BLOCK[:].var[:], ctype=_NmpcVector)
+    >>> input_vars = Reference(INPUT_BLOCK[:].var[:], ctype=_DynamicVector)
     >>> input_vars[:, 0].fix()
     >>> input_vars.set_setpoint(input_setpoint_list)
 
@@ -105,7 +114,7 @@ class _NmpcVector(IndexedVar):
         _slice._call_stack.pop()
         _slice._len -= 1
         for var in _slice:
-            assert isinstance(var, NmpcVar)
+            assert isinstance(var, DynamicVar)
             yield var
 
     def set_setpoint(self, setpoint):

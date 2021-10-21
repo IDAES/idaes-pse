@@ -28,7 +28,7 @@ from idaes.apps.caprese.controller import (
         SimpleControllerBlock,
         IndexedControllerBlock,
         )
-from idaes.apps.caprese.nmpc_var import (
+from idaes.apps.caprese.dynamic_var import (
         DiffVar,
         AlgVar,
         InputVar,
@@ -112,6 +112,7 @@ class TestControllerBlock(object):
                 )
         controller.construct()
         controller.set_sample_time(sample_time)
+        controller.estimator_is_existing = False
         return controller
 
     @pytest.mark.unit
@@ -128,16 +129,16 @@ class TestControllerBlock(object):
         controller.mod.flow_in[:].set_value(3.0)
         initialize_t0(controller.mod)
 
-        controller.add_setpoint_objective(setpoint, weights)
+        controller.add_single_time_optimization_objective(setpoint, weights)
 
-        assert hasattr(controller, 'setpoint_objective')
+        assert hasattr(controller, 'single_time_optimization_objective')
 
         pred_obj_expr = (2.0*(controller.mod.flow_in[t0] - 3.0)**2)
-        obj_expr = controller.setpoint_objective.expr
+        obj_expr = controller.single_time_optimization_objective.expr
         assert pyo.value(pred_obj_expr) == pyo.value(obj_expr)
         assert pred_obj_expr.to_string() == obj_expr.to_string()
 
-        controller.del_component(controller.setpoint_objective)
+        controller.del_component(controller.single_time_optimization_objective)
 
         setpoint = [
                 (controller.mod.flow_in[t0], 3.0),
@@ -147,12 +148,12 @@ class TestControllerBlock(object):
                 (controller.mod.flow_in[t0], 1.0),
                 (controller.mod.conc[t0,'A'], 5.0),
                 ]
-        controller.add_setpoint_objective(setpoint, weights)
+        controller.add_single_time_optimization_objective(setpoint, weights)
         pred_obj_expr = (
                 1.0*(controller.mod.flow_in[t0] - 3.0)**2 + 
                 5.0*(controller.mod.conc[t0,'A'] - 1.5)**2
                 )
-        obj_expr = controller.setpoint_objective.expr
+        obj_expr = controller.single_time_optimization_objective.expr
         assert pyo.value(pred_obj_expr) == pyo.value(obj_expr)
         assert pred_obj_expr.to_string() == obj_expr.to_string()
 
@@ -168,7 +169,7 @@ class TestControllerBlock(object):
         weights = [
                 (controller.mod.flow_in[t0], 1.0),
                 ]
-        controller.add_setpoint_objective(setpoint, weights)
+        controller.add_single_time_optimization_objective(setpoint, weights)
         controller.mod.flow_in[:].set_value(3.0)
         initialize_t0(controller.mod)
 
@@ -205,7 +206,7 @@ class TestControllerBlock(object):
                 (controller.mod.flow_in[t0], 1.0),
                 (controller.mod.conc[t0,'A'], 1.0),
                 ]
-        controller.add_setpoint_objective(setpoint, weights)
+        controller.add_single_time_optimization_objective(setpoint, weights)
         controller.mod.flow_in[:].set_value(3.0)
         initialize_t0(controller.mod)
 
@@ -243,13 +244,13 @@ class TestControllerBlock(object):
         controller.mod.flow_in[:].set_value(3.0)
         initialize_t0(controller.mod)
         copy_values_forward(controller.mod)
-        controller.add_setpoint_objective(setpoint, weights)
+        controller.add_single_time_optimization_objective(setpoint, weights)
         controller.solve_setpoint(solver)
 
         # Re-initialize inputs so they are not at the setpoint
         # for objective evaluation.
         controller.mod.flow_in[:].set_value(2.5)
-        
+
         weights = [
                 (controller.mod.conc[t0,'A'], 1),
                 (controller.mod.conc[t0,'B'], 1),
@@ -327,3 +328,62 @@ class TestControllerBlock(object):
             inputs = controller.vectors.input
             pred_expr = (inputs[i, tn] == inputs[i, t])
             assert pwc_expr.to_string() == pred_expr.to_string()
+
+    @pytest.mark.unit
+    def test_load_estimates(self):
+        controller = self.make_controller()
+        time = controller.time
+        t0 = time.first()
+
+        estimates = [100., 200.]
+        controller.load_estimates(estimates)
+
+        assert controller.vectors.differential[0, t0].value == 100.
+        assert controller.vectors.differential[1, t0].value == 200.
+
+    @pytest.mark.unit
+    def test_load_initial_conditions(self):
+        model = make_model(horizon=1., nfe=2)
+        sample_time = 0.5
+        time = model.time
+        t0 = time.first()
+        inputs = [model.flow_in[t0]]
+        measurements = [model.flow_out[t0], model.conc[t0, "A"]]
+        controller = ControllerBlock(
+                model=model,
+                time=time,
+                inputs=inputs,
+                measurements=measurements,
+                )
+        controller.construct()
+        controller.set_sample_time(sample_time)
+
+        #case 1: estimator doesn't exist
+        controller.has_estimator = False
+        ics = [10., 20.]
+        controller.load_initial_conditions(ics)
+
+        assert controller.vectors.measurement[0, t0].value == 10.
+        assert controller.vectors.measurement[1, t0].value == 20.
+
+        #case 2: estimator does exist
+        controller.has_estimator = True
+        ics = [11., 21.]
+        controller.load_initial_conditions(ics)
+
+        assert controller.vectors.differential[0, t0].value == 11.
+        assert controller.vectors.differential[1, t0].value == 21.
+        
+        #case 3: type of ics is declared => "measurement"
+        ics = [12., 22.]
+        controller.load_initial_conditions(ics, "measurement")
+
+        assert controller.vectors.measurement[0, t0].value == 12.
+        assert controller.vectors.measurement[1, t0].value == 22.
+
+        #case 3: type of ics is declared => "estimates"
+        ics = [13., 23.]
+        controller.load_initial_conditions(ics, "estimate")
+
+        assert controller.vectors.differential[0, t0].value == 13.
+        assert controller.vectors.differential[1, t0].value == 23.

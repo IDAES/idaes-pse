@@ -22,20 +22,27 @@ from idaes.apps.caprese.util import initialize_by_element_in_range
 from idaes.apps.caprese.common.config import (
         InputOption,
         )
-from idaes.apps.caprese.common.config import VariableCategory as VC
+from idaes.apps.caprese.common.config import (
+        VariableCategory as VC,
+        ConstraintCategory as CC,
+        )
 from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
+        categorize_dae_variables_and_constraints,
         CATEGORY_TYPE_MAP,
         )
-from idaes.apps.caprese.nmpc_var import (
-        NmpcVar,
-        _NmpcVector,
+from idaes.apps.caprese.dynamic_var import (
+        DynamicVar,
+        _DynamicVector,
         DiffVar,
         DerivVar,
         AlgVar,
         InputVar,
         FixedVar,
         MeasuredVar,
+        ActualMeasurementVar,
+        MeasurementErrorVar,
+        ModelDisturbanceVar,
         )
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -44,6 +51,9 @@ from pyomo.environ import (
         Reference,
         TransformationFactory,
         Var,
+        Constraint,
+        Objective,
+        TerminationCondition,
         Set,
         ComponentUID,
         Suffix,
@@ -84,6 +94,7 @@ class _DynamicBlockData(_BlockData):
         """ Generates time-indexed references and categorizes them. """
         model = self.mod
         time = self.time
+        t0 = time.first()
         try:
             inputs = self._inputs
         except AttributeError:
@@ -93,14 +104,25 @@ class _DynamicBlockData(_BlockData):
         except AttributeError:
             measurements = self._measurements = None
 
-        # TODO: Give the user the option to provide their own
-        # category_dict (they know the structure of their model
-        # better than I do...)
-        if self._category_dict is not None:
-            category_dict = self.category_dict = self._category_dict
-            if (VC.INPUT not in category_dict and inputs is not None):
+        # TODO: The logic here is way too complicated
+        categorize_variables = False
+        categorize_constraints = False
+        if self._category_dict is None:
+            # User did not provide a category dict. We must categorize
+            # variables
+            categorize_variables = True
+        else:
+            # User provided a variable category dict
+            category_dict = self._category_dict
+            self.category_dict = self._category_dict
+            if VC.INPUT not in category_dict and inputs is not None:
+                # If the user provided inputs but did not put them in
+                # the category dict
                 self.category_dict[VC.INPUT] = inputs
-            if (VC.MEASUREMENT not in category_dict and measurements is not None):
+            if (VC.MEASUREMENT not in category_dict
+                    and measurements is not None):
+                # If the user provided measurements but did not put them
+                # in the category dict
                 self.category_dict[VC.MEASUREMENT] = measurements
             self.dae_vars = []
             for categ, varlist in category_dict.items():
@@ -108,31 +130,77 @@ class _DynamicBlockData(_BlockData):
                     # Assume that measurements are duplicates
                     self.dae_vars.extend(varlist)
 
+        if self._con_category_dict is None:
+            if self._categorize_constraints:
+                # User (a) requested constraint categorization and (b)
+                # did not provided a constraint category dict
+                categorize_constraints = True
         else:
+            # User provided a constraint category dict
+            con_category_dict = self._con_category_dict
+            self.con_category_dict = self._con_category_dict
+
+        if categorize_constraints and not categorize_variables:
+            raise RuntimeError(
+                "If constraint categorization is requested, both or "
+                "neither category dicts must be provided. \n"
+                "Variable category dict was provided but constraint "
+                "category dict was not."
+            )
+
+        if categorize_variables or categorize_constraints:
+            # Either way, we need flattened variables
             scalar_vars, dae_vars = flatten_dae_components(
-                    model,
-                    time,
-                    ctype=Var,
-                    )
+                model, time, ctype=Var
+            )
             self.scalar_vars = scalar_vars
             self.dae_vars = dae_vars
-            category_dict = categorize_dae_variables(
-                    dae_vars,
-                    time,
-                    inputs,
-                    measurements=measurements,
-                    )
-            self.category_dict = category_dict
+            if not categorize_constraints:
+                category_dict = categorize_dae_variables(
+                        dae_vars,
+                        time,
+                        inputs,
+                        measurements=measurements,
+                        )
+                self.category_dict = category_dict
+            else:
+                # Categorize variables and constraints
+                scalar_cons, dae_cons = flatten_dae_components(
+                    model, time, ctype=Constraint,
+                )
+                dae_map = ComponentMap((var[t0], var) for var in dae_vars)
+
+                # user-provided inputs should be inputs_at_t0
+                if inputs is None:
+                    input_vars = None
+                else:
+                    input_vars = [dae_map[var] for var in inputs]
+
+                # user-provided measurements should be measurements_at_t0
+                if measurements is None:
+                    meas_vars = []
+                else:
+                    meas_vars = [dae_map[var] for var in measurements]
+
+                var_cat, con_cat = categorize_dae_variables_and_constraints(
+                    model, dae_vars, dae_cons, time, input_vars=input_vars
+                )
+                self.category_dict = var_cat
+                # Local variable is defined here for compatibility with
+                # rest of routine.
+                category_dict = var_cat
+                self.con_category_dict = con_cat
+                self.category_dict[VC.MEASUREMENT] = meas_vars
 
         keys = list(category_dict)
         for categ in keys:
-            if not category_dict[categ]:
+            if not self.category_dict[categ]:
                 # Empty categories cause problems for us down the road
                 # due empty (unknown dimension) slices.
                 category_dict.pop(categ)
 
-        self._add_category_blocks()
-        self._add_category_references()
+        self._add_category_blocks(self.category_dict)
+        self._add_category_references(self.category_dict)
 
         self.categories = set(category_dict)
 
@@ -150,29 +218,35 @@ class _DynamicBlockData(_BlockData):
         if VC.FIXED in category_dict:
             self.fixed_vars = category_dict[VC.FIXED]
         if VC.MEASUREMENT in category_dict:
-            self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
+            #self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
+            # I comment this out because I want MEASUREMENT to be in the
+            # category dict for MHE. Is this necessary? Even though it has
+            # already been added to the category block/reference?
+            self.measurement_vars = category_dict[VC.MEASUREMENT]
 
         # The categories in category_dict now form a partition of the
         # time-indexed variables. This is necessary to have a well-defined
         # vardata map, which maps each vardata to a unique component indexed
         # only by time.
 
-        # Maps each vardata (of a time-indexed var) to the NmpcVar
+        # Maps each vardata (of a time-indexed var) to the DynamicVar
         # that contains it.
         self.vardata_map = ComponentMap((var[t], var) 
-                for var in self.component_objects(SubclassOf(NmpcVar))
+                for var in self.component_objects(SubclassOf(DynamicVar))
                 #for varlist in category_dict.values()
                 #for var in varlist
-                for t in time
+                for t in var.index_set()
                 if var.ctype is not MeasuredVar
                 )
         # NOTE: looking up var[t] instead of iterating over values() 
         # appears to be ~ 5x faster
 
-        # These should be overridden by a call to `set_sample_time`
-        # The defaults assume that the entire model is one sample.
-        self.sample_points = [time.first(), time.last()]
-        self.sample_point_indices = [1, len(time)]
+        if self._sample_time is None:
+            # Default is to assume that the entire model is one sample.
+            self.sample_points = [time.first(), time.last()]
+            self.sample_point_indices = [1, len(time)]
+        else: 
+            self.set_sample_time(self._sample_time)
 
     _var_name = 'var'
     _block_suffix = '_BLOCK'
@@ -188,14 +262,14 @@ class _DynamicBlockData(_BlockData):
         """ Gets set name from name of enum entry """
         return categ.name + cls._set_suffix
 
-    def _add_category_blocks(self):
+    def _add_category_blocks(self, category_dict):
         """ Adds an indexed block for each category of variable and
         attach a reference to each variable to one of the BlockDatas.
         """
-        category_dict = self.category_dict
+        #category_dict = self.category_dict
         var_name = self._var_name
         for categ, varlist in category_dict.items():
-            ctype = CATEGORY_TYPE_MAP.get(categ, NmpcVar)
+            ctype = CATEGORY_TYPE_MAP.get(categ, DynamicVar)
             # These names are e.g. 'DIFFERENTIAL_BLOCK', 'DIFFERENTIAL_SET'
             # They serve as a way to access all the "differential variables"
             block_name = self.get_category_block_name(categ)
@@ -231,19 +305,20 @@ class _DynamicBlockData(_BlockData):
 
     _vectors_name = 'vectors'
 
-    def _add_category_references(self):
+    def _add_category_references(self, category_dict):
         """ Create a "time-indexed vector" for each category of variables. """
-        category_dict = self.category_dict
+        #category_dict = self.category_dict
 
-        # Add a deactivated block to store all my `_NmpcVector`s
+        # Add a deactivated block to store all my `_DynamicVector`s
         # These be will vars, named by category, indexed by the index
         # into the list of that category and by time. E.g.
         # self.vectors.differential
-        self.add_component(self._vectors_name, Block())
+        if not hasattr(self, self._vectors_name):
+            self.add_component(self._vectors_name, Block())
         self.vectors.deactivate()
 
         for categ in category_dict:
-            ctype = CATEGORY_TYPE_MAP.get(categ, NmpcVar)
+            ctype = CATEGORY_TYPE_MAP.get(categ, DynamicVar)
             # Get the block that holds this category of var,
             # and the name of the attribute that holds the
             # custom-ctype var (this attribute is the same
@@ -268,7 +343,7 @@ class _DynamicBlockData(_BlockData):
             # `self.vectors.differential[i,t0]`
             # to get the "ith coordinate" of the vector of differential
             # variables at time t0.
-            ref = Reference(_slice, ctype=_NmpcVector)
+            ref = Reference(_slice, ctype=_DynamicVector)
             self.vectors.add_component(
                     categ.name.lower(), # Lowercase of the enum name
                     ref,
@@ -360,6 +435,181 @@ class _DynamicBlockData(_BlockData):
         self.sample_points = sample_points
         self.sample_point_indices = sample_indices
 
+    def add_single_time_optimization_objective(self,
+            setpoint,
+            weights,
+            ):
+        """ This method uses user-provided setpoints and weights
+        to directly construct a least-squares objective for the
+        specified variables at the first time point. The purpose
+        is to then use the first time point to solve for a "proper
+        setpoint" that provides a value for every variable.
+
+        Parameters:
+            setpoint: List of vardata, value tuples describing the
+                      setpoint values of these specified variables.
+            weights: List of vardata, value tuples describing the
+                     weight for each variable's term in the objective.
+
+        """
+        vardata_map = self.vardata_map
+        for vardata, weight in weights:
+            nmpc_var = vardata_map[vardata]
+            nmpc_var.weight = weight
+
+        weight_vector = []
+        for vardata, sp in setpoint:
+            nmpc_var = vardata_map[vardata]
+            if nmpc_var.weight is None:
+                self.logger.warning('Weight not supplied for %s' % var.name)
+                nmpc_var.weight = 1.0
+            weight_vector.append(nmpc_var.weight)
+
+        obj_expr = sum(
+            weight_vector[i]*(var - sp)**2 for
+            i, (var, sp) in enumerate(setpoint))
+        self.single_time_optimization_objective = Objective(expr=obj_expr)
+
+    def solve_single_time_optimization(self,
+                                       solver,
+                                       ic_type = "differential_var",
+                                       require_steady = True,
+                                       load_setpoints = False,
+                                       restore_ic_input_after_solve = True,
+                                       isMHE_block = False,
+                                       ):
+        """ This method performs a "real time optimization-type"
+        solve on the model, using only the variables and constraints
+        at the first point in time. The purpose is to calculate a
+        (possibly steady state) setpoint.
+
+        Parameters:
+            solver: A Pyomo solver object that will be used to solve
+                    the model with only variables and constraints at t0
+                    active.
+            require_steady: Whether derivatives should be fixed to zero
+                            for the solve. Default is `True`.
+
+        """
+
+        # I think if we re-define the measurements in the controller, we propbably 
+        # don't need this if statement.
+        if ic_type == "differential_var":
+            ics_vector_var = self.vectors.differential
+            ictype = VC.DIFFERENTIAL
+        elif ic_type == "measurement_var":
+            ics_vector_var = self.vectors.measurement
+            ictype = VC.MEASUREMENT
+        else:
+            raise RuntimeError("Not valid type of initial condition.")
+
+        model = self.mod
+        time = self.time
+        t0 = time.first()
+
+        was_originally_active = ComponentMap([(comp, comp.active) for comp in
+                model.component_data_objects((Constraint, Block))])
+        non_initial_time = list(time)[1:]
+        deactivated = deactivate_model_at(
+                model,
+                time,
+                non_initial_time,
+                allow_skip=True,
+                suppress_warnings=True,
+                )
+        was_fixed = ComponentMap() #I think we can delete this?
+
+        # Cache "important" values to re-load after solve
+        # TODO: Really we should cache all variable values
+        init_input = list(self.vectors.input[:, t0].value) \
+                if VC.INPUT in self.categories else []
+        init_ics = list(ics_vector_var[:, t0].value) \
+                if ictype in self.categories else []
+
+        # Fix/unfix variables as appropriate
+        # Order matters here. If a derivative is used as an IC, we still want
+        # it to be fixed if steady state is required.
+        if ictype in self.categories:
+            ics_vector_var[:,t0].unfix()
+
+        if VC.INPUT in self.categories:
+            input_vars = self.vectors.input
+            was_fixed = ComponentMap(
+                    (var, var.fixed) for var in input_vars[:,t0]
+                    )
+            input_vars[:,t0].unfix()
+        if VC.DERIVATIVE in self.categories:
+            if require_steady == True:
+                self.vectors.derivative[:,t0].fix(0.)
+
+        if isMHE_block:
+            self.MHE_VARS_CONS_BLOCK.deactivate()
+            # Activate the original/undisturbed differential equations at t0
+            for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
+                indexcon[t0].activate()
+
+        # TODO: Hard-coding the name of the objective here is not great.
+        self.single_time_optimization_objective.activate()
+
+        # Solve single-time point optimization problem
+        #
+        # If these sets do not necessarily exist, then I don't think
+        # I can make any assertion about the number of degrees of freedom
+        dof = degrees_of_freedom(model)
+        #I think we should at least keep this check
+        if require_steady:
+            assert dof == len(self.INPUT_SET)
+        else:
+            assert dof == (len(self.INPUT_SET) +
+                    len(self.DIFFERENTIAL_SET))
+        results = solver.solve(self, tee=True)
+        if results.solver.termination_condition == TerminationCondition.optimal:
+            pass
+        else:
+            msg = 'Failed to solve for full value of the single time optimization'
+            raise RuntimeError(msg)
+
+        self.single_time_optimization_objective.deactivate()
+
+        # Revert changes. Again, order matters
+        if isMHE_block:
+            self.MHE_VARS_CONS_BLOCK.activate()
+            # Deactivate the original/undisturbed differential equations at t0
+            for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
+                indexcon[t0].deactivate()
+
+        if VC.DERIVATIVE in self.categories:
+            if require_steady == True:
+                self.vectors.derivative[:,t0].unfix()
+        if ictype in self.categories:
+            ics_vector_var[:,t0].fix()
+
+        # Reactivate components that were deactivated
+        for t, complist in deactivated.items():
+            for comp in complist:
+                if was_originally_active[comp]:
+                    comp.activate()
+
+        # Fix inputs that were originally fixed
+        if VC.INPUT in self.categories:
+            for var in self.vectors.input[:,t0]:
+                if was_fixed[var]:
+                    var.fix()
+
+        # Load setpoints to vars' attribute "setpoint"
+        if load_setpoints:
+            setpoint_ctype = (DiffVar, AlgVar, InputVar,
+                              FixedVar, DerivVar, MeasuredVar)
+            for var in self.component_objects(setpoint_ctype):
+                var.setpoint = var[t0].value
+
+        if restore_ic_input_after_solve:
+            # Restore cached values
+            if VC.INPUT in self.categories:
+                self.vectors.input.values = init_input
+            if ictype in self.categories:
+                ics_vector_var.values = init_ics
+
     def initialize_sample_to_setpoint(self, 
             sample_idx,
             ctype=(DiffVar, AlgVar, InputVar, DerivVar),
@@ -372,7 +622,7 @@ class _DynamicBlockData(_BlockData):
         i_0 = sample_point_indices[sample_idx-1]
         i_s = sample_point_indices[sample_idx]
         for var in self.component_objects(ctype):
-            # `type(var)` is a subclass of `NmpcVar`, so I can
+            # `type(var)` is a subclass of `DynamicVar`, so I can
             # access the `setpoint` attribute.
             #
             # Would like:
@@ -389,17 +639,20 @@ class _DynamicBlockData(_BlockData):
             ):
         """ Set values to initial values for variables of the
         specified variable ctypes in the specified sample.
+        (This version can also handle vars that are indexed by 
+         SAMPLEPOINT_SET.)
         """
-        time = self.time
-        sample_point_indices = self.sample_point_indices
-        i_0 = sample_point_indices[sample_idx-1]
-        i_s = sample_point_indices[sample_idx]
-        t0 = time.at(i_0)
+        sample_points = self.sample_points
+        start = sample_points[sample_idx -1]
+        end = sample_points[sample_idx]
         for var in self.component_objects(ctype):
-            # Would be nice if I could use a slice with
-            # start/stop indices to make this more concise.
-            for i in range(i_0+1, i_s+1):
-                t = time.at(i)
+            indexset = var.index_set()
+            start_ind = indexset.find_nearest_index(start)
+            end_ind = indexset.find_nearest_index(end)
+            t0 = indexset.at(start_ind)
+            range_of_interest = range(start_ind+1, end_ind+1)
+            for i in range_of_interest:
+                t = indexset.at(i)
                 var[t].set_value(var[t0].value)
 
     def initialize_to_setpoint(self, 
@@ -419,6 +672,7 @@ class _DynamicBlockData(_BlockData):
         """ Sets values to initial values for specified variable
         ctypes for all time points.
         """
+        
         # There should be negligible overhead to initializing
         # in many small loops as opposed to one big loop here.
         for i in range(len(self.sample_points)):
@@ -503,7 +757,7 @@ class _DynamicBlockData(_BlockData):
                         )
 
     def set_variance(self, variance_list):
-        """ Set variance for corresponding NmpcVars to the values provided
+        """ Set variance for corresponding DynamicVars to the values provided
 
         Arguments:
             variance_list: List of vardata, value tuples. The vardatas
@@ -525,8 +779,9 @@ class _DynamicBlockData(_BlockData):
 
     def generate_inputs_at_time(self, t):
         if VC.INPUT in self.categories:
-            for val in self.vectors.input[:,t].value:
-                yield val
+            return [val for val in self.vectors.input[:,t].value]
+            # for val in self.vectors.input[:,t].value:
+            #     yield val
         else:
             raise RuntimeError(
                     "Trying to generate inputs but no input "
@@ -535,17 +790,19 @@ class _DynamicBlockData(_BlockData):
 
     def generate_measurements_at_time(self, t):
         if VC.MEASUREMENT in self.categories:
-            for val in self.vectors.measurement[:,t].value:
-                yield val
+            return [val for val in self.vectors.measurement[:,t].value]
+            # for val in self.vectors.measurement[:,t].value:
+            #     yield val
         else:
             raise RuntimeError(
                     "Trying to generate measurements but no measurement "
                     "category has been specified."
                     )
 
-    def inject_inputs(self, inputs):
+    def inject_inputs(self, inputs, time_subset = None):
         # To simulate computational delay, this function would 
         # need an argument for the start time of inputs.
+
         if VC.INPUT in self.categories:
             for var, val in zip(self.INPUT_BLOCK[:].var, inputs):
                 # Would like:
@@ -553,22 +810,14 @@ class _DynamicBlockData(_BlockData):
                 # This is an example of setting a matrix from a vector.
                 # Could even aspire towards:
                 # self.vectors.input[:,t0:t1].fix(inputs)
-                var[:].fix(val)
+                if time_subset is None:
+                    var[:].fix(val)
+                else:
+                    for tind in time_subset:
+                        var[tind].fix(val)
         else:
             raise RuntimeError(
                     "Trying to set input values but no input "
-                    "category has been specified."
-                    )
-
-    def load_measurements(self, measured):
-        t0 = self.time.first()
-        if VC.MEASUREMENT in self.categories:
-            # Want: self.measured_vars[:,t0].fix(measured)
-            for var, val in zip(self.MEASUREMENT_BLOCK[:].var, measured):
-                var[t0].fix(val)
-        else:
-            raise RuntimeError(
-                    "Trying to set measurement values but no measurement "
                     "category has been specified."
                     )
 
@@ -581,11 +830,13 @@ class _DynamicBlockData(_BlockData):
             ):
         """ Set values for the variables of the specified ctypes
         to their values `t_shift` in the future.
+        (This version can handle vars that are indexed by SAMPLEPOINT_SET.)
         """
         time = self.time
+        sps_set = self.sample_points
         # The outer loop is over time so we don't have to call
         # `find_nearest_index` for every variable.
-        # I am assuming that `find_nearest_index` is slower than
+        # Following Robby's assumption, assuming that `find_nearest_index` is slower than
         # accessing `component_objects`
         for t in time:
             ts = t + t_shift
@@ -595,7 +846,13 @@ class _DynamicBlockData(_BlockData):
                 continue
             ts = time.at(idx)
             for var in self.component_objects(ctype):
-                var[t].set_value(var[ts].value)
+                if var.index_set() is time:
+                    var[t].set_value(var[ts].value)
+                elif var.index_set() is not time:
+                    #Additional inner if statement because SimpleDynamicBlock doesn't have SAMPLEPOINT_SET
+                    if var.index_set() is self.SAMPLEPOINT_SET: 
+                        if idx in self.sample_point_indices:
+                            var[t].set_value(var[ts].value)
 
     def advance_one_sample(self,
             ctype=(DiffVar, DerivVar, AlgVar, InputVar, FixedVar),
@@ -604,6 +861,12 @@ class _DynamicBlockData(_BlockData):
         """ Set values for the variables of the specified ctypes
         to their values one sample time in the future.
         """
+        MHE_ctypes = [ActualMeasurementVar, MeasurementErrorVar, ModelDisturbanceVar]
+        Block_ctypes = self.collect_ctypes()
+        for MHEctype in MHE_ctypes:
+            if MHEctype in Block_ctypes:
+                ctype += (MHEctype,)
+        
         sample_time = self.sample_time
         self.advance_by_time(
                 sample_time,
@@ -762,8 +1025,18 @@ class DynamicBlock(Block):
                 treat_sequences_as_mappings=False)
         self._init_measurements = Initializer(kwds.pop('measurements', None),
                 treat_sequences_as_mappings=False)
+        self._init_sample_time = Initializer(kwds.pop('sample_time', None),
+                treat_sequences_as_mappings=False)
         self._init_category_dict = Initializer(kwds.pop('category_dict', None),
                 treat_sequences_as_mappings=False)
+        self._init_categorize_constraints = Initializer(
+                kwds.pop('categorize_constraints', False),
+                treat_sequences_as_mappings=False,
+                )
+        self._init_con_category_dict = Initializer(
+                kwds.pop('con_category_dict', None),
+                treat_sequences_as_mappings=False,
+                )
         Block.__init__(self, *args, **kwds)
 
     def _getitem_when_not_present(self, idx):
@@ -783,10 +1056,27 @@ class DynamicBlock(Block):
         if self._init_measurements is not None:
             block._measurements = self._init_measurements(parent, idx)
 
+        if self._init_sample_time is not None:
+            block._sample_time = self._init_sample_time(parent, idx)
+        else:
+            block._sample_time = None
+
         if self._init_category_dict is not None:
             block._category_dict = self._init_category_dict(parent, idx)
         else:
             block._category_dict = None
+
+        if self._init_categorize_constraints is not None:
+            block._categorize_constraints = self._init_categorize_constraints(
+                parent, idx
+            )
+        else:
+            block._categorize_constraints = False
+
+        if self._init_con_category_dict is not None:
+            block._con_category_dict = self._init_con_category_dict(parent, idx)
+        else:
+            block._con_category_dict = None
 
         block._construct()
 
@@ -852,7 +1142,6 @@ class SquareSolveContext(object):
                         time_indices.append(i)
                         already_visited.add(i)
             self.time_indices = time_indices
-            
 
     def __enter__(self):
         # Strip bounds:

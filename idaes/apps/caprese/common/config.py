@@ -62,6 +62,9 @@ class VariableCategory(enum.Enum):
     UNUSED = 7
     DISTURBANCE = 8
     MEASUREMENT = 9
+    ACTUALMEASUREMENT = 10
+    MEASUREMENTERROR = 11
+    MODELDISTURBANCE = 12
 
 
 class ConstraintCategory(enum.Enum):
