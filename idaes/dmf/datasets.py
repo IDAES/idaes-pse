@@ -1,5 +1,7 @@
 """
-Standard IDAES datasets
+DMF support for standard IDAES datasets.
+
+See :mod:`idaes.core.datasets` for user-facing API.
 """
 import json
 import logging
@@ -11,6 +13,9 @@ from typing import Tuple, Dict
 from idaes.dmf import DMF, resource
 from idaes.dmf.resource import Predicates
 from idaes.dmf.tables import Table
+
+__authors__ = ["Dan Gunter (LBNL)"]
+__author__ = __authors__[0]
 
 # Name of IDAES distribution, same as NAME in setup.py
 NAME = "idaes-pse"
