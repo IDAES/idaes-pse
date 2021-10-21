@@ -32,11 +32,6 @@ class SurrogateTrainer(object):
               list of labels corresponding to the inputs (in order)
            output_labels: list
               list of labels corresponding to the outputs (in order)
-           input_bounds: None, or dict of tuples
-              if None, these are set later from the provided data
-              if provided, it should be a dictionary where the keys correspond
-              to the input label, and the values are tuples of bounds
-              (lower, upper)
            training_dataframe: pandas DataFrame
               Pandas DataFrame corresponding to the training data. Columns must
               include all the labels in input_labels and output_labels
@@ -46,6 +41,14 @@ class SurrogateTrainer(object):
              None is passed, then no validation data will be used. Some
              derived surrogate trainers may require validation data, while
              others may not.
+           input_bounds: None, or dict of tuples
+              if None, these are set later from the provided data
+              if provided, it should be a dictionary where the keys correspond
+              to the input label, and the values are tuples of bounds
+              (lower, upper)
+           settings: additional keyword arguments
+              These are additional keyword arguments that are passed to the CONFIG
+              for the derived class.
         """
         # Set the config block from passed settings
         self.config = self.CONFIG(settings)
@@ -101,27 +104,53 @@ class SurrogateTrainer(object):
                 k: (mn[k], mx[k]) for k in self._input_labels}
 
     def n_inputs(self):
+        """
+        The number of inputs for the surrogate
+
+        Returns: float
+        """
         return len(self._input_labels)
 
     def n_outputs(self):
+        """
+        The number of outputs for the surrogate
+        
+        Returns: float
+        """
         return len(self._output_labels)
 
     def input_labels(self):
+        """
+        The ordered list of labels for the inputs
+
+        Returns: list of strings
+        """
         return self._input_labels
 
     def output_labels(self):
+        """
+        The ordered list of labels for the outputs
+
+        Returns: list of strings
+        """        
         return self._output_labels
 
     def input_bounds(self):
+        """
+        The dictionary of input bounds. The keys of the dictionary correspond
+        to the labels for the inputs. The values are tuples of (lower_bound, upper_bound)
+        
+        Returns: dict
+        """
         return self._input_bounds
 
     def train_surrogate(self):
         """
-        This method should be overridden by the derived classes.
-
         The ``train_surrogate`` method is used to train a surrogate model
         using data provided in set_training_data. This method should return an
         instance of a derived surrogate object (from SurrogateBase)
+
+        This method should be overridden by the derived classes.
 
         Returns:
            tuple : (bool, surrogate object, message) where bool indicates
@@ -158,24 +187,52 @@ class SurrogateBase():
         self._input_bounds = input_bounds
 
     def n_inputs(self):
+        """
+        The number of inputs for the surrogate
+
+        Returns: float
+        """
         return len(self._input_labels)
 
     def n_outputs(self):
+        """
+        The number of outputs for the surrogate
+
+        Returns: float
+        """
         return len(self._output_labels)
 
     def input_labels(self):
+        """
+        The ordered list of labels for the inputs
+
+        Returns: list of strings
+        """
         return self._input_labels
 
     def output_labels(self):
+        """
+        The ordered list of labels for the outputs
+
+        Returns: list of strings
+        """        
         return self._output_labels
 
     def input_bounds(self):
+        """
+        The dictionary of input bounds. The keys of the dictionary correspond
+        to the labels for the inputs. The values are tuples of (lower_bound, upper_bound)
+        
+        Returns: dict
+        """
         return self._input_bounds
 
     def populate_block(self, block, **kwargs):
         """
         Method to populate a Pyomo Block with surrogate model
         constraints and variables.
+
+        Derived classes must overload this method.
 
         Args:
             block: Pyomo Block component to be populated with constraints.
@@ -194,31 +251,85 @@ class SurrogateBase():
 
     def evaluate_surrogate(self, dataframe):
         """
-        Placeholder method to evaluate surrogate model at a set of user
+        Method to method to evaluate surrogate model at a set of user
         provided values.
 
+        Derived classes must overload this method
+
         Args:
-            inputs: numpy array of input values
+           dataframe: pandas DataFrame
+              The dataframe of input values to be used in the evaluation. The dataframe
+              needs to contain a column corresponding to each of the input labels. Additional
+              columns are fine, but are not used.
 
         Returns:
-            output: numpy array of output values evaluated at inputs
+            output: pandas Dataframe
+              Returns a dataframe of the the output values evaluated at the provided inputs.
+              The index of the output dataframe should match the index of the provided inputs.
         """
         raise NotImplementedError(
             "SurrogateModel class has not implemented an evaluate_surrogate "
             "method.")
 
-    # TODO: this should serialize to a stream instead of a file
-    def save(self, filename):
+    def save_to_file(self, filename, overwrite=False):
         """
-        Save an instance of this surrogate to be used in a model later
+        This method saves an instance of the surrogate to a file so the model
+        can be used later.
+
+        Args:
+           filename : str
+              The path of the filename where the model will be saved
+           overwrite : bool
+              If True, this method will overwrite the file if it exists. If False
+              and the file already exists, this will throw an error.
+        """
+        arg = 'x'
+        if overwrite:
+            arg = 'w'
+
+        with open(filename, arg) as fd:
+            self.save(fd)
+
+    def save(self, strm):
+        """
+        Save an instance of this surrogate to the strm so the model can be used later.
+        This method should be overloaded in derived surrogate classes.
+
+        Args:
+           strm: stream
+              This is the python stream that will be used to serialize the surrogate object.
+              This method will often write a string of json data to strm, but the format need
+              not be json.
         """
         raise NotImplementedError('"save" should be implemented in the derived'
                                   ' SurrogateObject class')
 
-    @staticmethod
-    def load(self, filename):
+    @classmethod
+    def load_from_file(cls, filename):
         """
-        Load an instance of this surrogate from a file
+        This method creates a new surrogate object by loading the model from the provided file.
+
+        Args:
+           filename : str
+              The name of the file from which to load the model.
+
+        Returns: an instance of the derived class or None if it failed to load
+        """
+        with open(filename, 'r') as fd:
+            return cls.load(fd)
+
+    @classmethod
+    def load(cls, strm):
+        """
+        Create an instance of a surrogate from a stream. This method should
+        be overloaded in derived surrogate classes.
+
+        Args:
+           strm: stream
+              This is the python stream containing the data required to load the surrogate.
+              This is often, but does not need to be a string of json data.
+
+        Returns: an instance of the derived class or None if it failed to load
         """
         raise NotImplementedError('"load" should be implemented in the derived'
-                                  ' SurrogateObject class')
+                                  ' class')

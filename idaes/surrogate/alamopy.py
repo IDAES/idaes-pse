@@ -911,16 +911,19 @@ class AlamoSurrogate(SurrogateBase):
 
     def evaluate_surrogate(self, inputs):
         """
-        Method to evaluate ALAMO surrogate at a set of input values.
+        Method to method to evaluate the ALAMO surrogate model at a set of user
+        provided values.
 
         Args:
-            inputs: Pandas dataframe of input values. Column headers must
-                include input labels.
+           dataframe: pandas DataFrame
+              The dataframe of input values to be used in the evaluation. The dataframe
+              needs to contain a column corresponding to each of the input labels. Additional
+              columns are fine, but are not used.
 
         Returns:
-            outputs: Pandas dataframe of values for all outputs evaluated at
-                input
-                points.
+            output: pandas Dataframe
+              Returns a dataframe of the the output values evaluated at the provided inputs.
+              The index of the output dataframe should match the index of the provided inputs.
         """
         # Create a set of lambda functions for evaluating the surrogate.
         fcn = dict()
