@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Test for ControlVolumeBlockData, and for initializing the
 bubbling fluidized bed module
@@ -36,21 +36,21 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_total_constraints,
                                               number_unused_variables,
                                               unused_variables_set)
-from idaes.core.util.testing import (get_default_solver,
-                                     initialization_tester)
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_solver
 
 from idaes.gas_solid_contactors.unit_models. \
     bubbling_fluidized_bed import BubblingFluidizedBed
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    gas_phase_thermo import GasPhaseThermoParameterBlock
+    gas_phase_thermo import GasPhaseParameterBlock
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    solid_phase_thermo import SolidPhaseThermoParameterBlock
+    solid_phase_thermo import SolidPhaseParameterBlock
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     hetero_reactions import HeteroReactionParameterBlock
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -60,8 +60,8 @@ def test_config():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     # Set up thermo props and reaction props
-    m.fs.gas_properties = GasPhaseThermoParameterBlock()
-    m.fs.solid_properties = SolidPhaseThermoParameterBlock()
+    m.fs.gas_properties = GasPhaseParameterBlock()
+    m.fs.solid_properties = SolidPhaseParameterBlock()
     m.fs.hetero_reactions = HeteroReactionParameterBlock(
             default={"solid_property_package": m.fs.solid_properties,
                      "gas_property_package": m.fs.gas_properties})
@@ -119,8 +119,8 @@ class TestIronOC(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         # Set up thermo props and reaction props
-        m.fs.gas_properties = GasPhaseThermoParameterBlock()
-        m.fs.solid_properties = SolidPhaseThermoParameterBlock()
+        m.fs.gas_properties = GasPhaseParameterBlock()
+        m.fs.solid_properties = SolidPhaseParameterBlock()
         m.fs.hetero_reactions = HeteroReactionParameterBlock(
                 default={"solid_property_package": m.fs.solid_properties,
                          "gas_property_package": m.fs.gas_properties})
@@ -210,9 +210,9 @@ class TestIronOC(object):
         assert isinstance(iron_oc.fs.unit.solid_emulsion_heat_transfer,
                           Constraint)
 
-        assert number_variables(iron_oc) == 1424
-        assert number_total_constraints(iron_oc) == 1382
-        assert number_unused_variables(iron_oc) == 16
+        assert number_variables(iron_oc) == 1436
+        assert number_total_constraints(iron_oc) == 1392
+        assert number_unused_variables(iron_oc) == 18
 
     @pytest.mark.unit
     def test_dof(self, iron_oc):
@@ -341,8 +341,8 @@ class TestIronOC_EnergyBalanceType(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         # Set up thermo props and reaction props
-        m.fs.gas_properties = GasPhaseThermoParameterBlock()
-        m.fs.solid_properties = SolidPhaseThermoParameterBlock()
+        m.fs.gas_properties = GasPhaseParameterBlock()
+        m.fs.solid_properties = SolidPhaseParameterBlock()
         m.fs.hetero_reactions = HeteroReactionParameterBlock(
                 default={"solid_property_package": m.fs.solid_properties,
                          "gas_property_package": m.fs.gas_properties})
@@ -417,9 +417,9 @@ class TestIronOC_EnergyBalanceType(object):
                           Constraint)
         assert isinstance(iron_oc.fs.unit.isothermal_bubble, Constraint)
 
-        assert number_variables(iron_oc) == 1144
-        assert number_total_constraints(iron_oc) == 1039
-        assert number_unused_variables(iron_oc) == 80
+        assert number_variables(iron_oc) == 1156
+        assert number_total_constraints(iron_oc) == 1049
+        assert number_unused_variables(iron_oc) == 82
         print(unused_variables_set(iron_oc))
 
     @pytest.mark.unit

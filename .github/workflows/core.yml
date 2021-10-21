@@ -1,0 +1,135 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+      - '*_rel'
+  schedule:
+    # run daily at 5:00 am UTC (12 am ET/9 pm PT)
+    - cron: '0 5 * * *'
+  repository_dispatch:
+    # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
+    # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=ci_run_tests`
+    types: [ci_run_tests]
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Git hash (optional)
+        required: false
+  pull_request:
+    types:
+      - opened
+      # ready_for_review occurs when a draft PR is turned to non-draft
+      - ready_for_review
+      # synchronize occurs whenever commits are pushed to the PR branch
+      - synchronize
+
+env:
+  # default Python version to use for checks that do not require multiple versions
+  DEFAULT_PYTHON_VERSION: '3.7'
+  IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
+
+defaults:
+  run:
+    # -l: login shell, needed when using Conda run:
+    shell: bash -l {0}
+
+jobs:
+  pytest:
+    # description: Run pytest with dev dependencies
+    name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.6'
+          - '3.7'
+          - '3.8'
+          - '3.9'
+        os:
+          - ubuntu-18.04
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/display-debug-info
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
+        with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
+          python-version: ${{ matrix.python-version }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+      - name: Run pytest (not integration) with coverage
+        run: |
+          which python
+          pytest -m "not integration" --cov
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@v1
+  build-docs:
+    name: Build Sphinx docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
+        with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+      - name: Build Sphinx docs
+        run: |
+          which python
+          cd docs/
+          python build.py
+      - name: Publish built docs
+        uses: actions/upload-artifact@v2
+        with:
+          name: idaes-pse-docs-html
+          path: docs/build/html/
+          retention-days: 7
+  pylint:
+    name: pylint (errors only)
+    runs-on: ubuntu-latest
+    env:
+      pylint_target_dir: idaes/
+      pylint_output_path: pylint.json
+      pylint_todo_sentinel: PYLINT-TODO
+    steps:
+      - uses: actions/checkout@v2
+      # NOTE: using Conda instead of actions/setup-python in this job is not strictly necessary
+      # as it doesn't need to run on Windows or use the setup-idaes local action,
+      # but we do it for consistency with the other jobs
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
+        with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+      - name: Run pylint
+        run: |
+          echo "::group::Display pylint version"
+          pip show pylint astroid
+          echo "::endgroup::"
+          pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_reporters.MultiReporter "$pylint_target_dir"
+      - name: Generate pylint report on failure
+        if: failure()
+        run: |
+          base_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blame/$GITHUB_SHA"
+          python .pylint/render_report.py --base-url="$base_url" "$pylint_output_path"
+      - name: Show PYLINT-TODO comments left in the codebase
+        if: always()
+        run: |
+          # use a bash array to save options containing quotes to a variable, then use the double-quoted array expansion "${arr[@]}"
+          grep_opts=( --recursive --include '*.py' --color=always --after-context=2 --line-number --initial-tab )
+
+          grep "$pylint_todo_sentinel" "${grep_opts[@]}" "$pylint_target_dir" || echo "No \"$pylint_todo_sentinel\" comments found in $pylint_target_dir"

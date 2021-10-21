@@ -1,23 +1,25 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
+
 from __future__ import division, print_function
 from six import string_types
-import random
 # from builtins import int, str
 import numpy as np
 import pandas as pd
 import warnings
 import itertools
+
+__author__ = "Oluwamayowa Amusat"
 
 
 class FeatureScaling:
@@ -353,6 +355,7 @@ class LatinHypercubeSampling(SamplingMethods):
             Exception: When **number_of_samples** is invalid (not an integer, too large, zero, or negative)
 
         """
+
         if sampling_type is None:
             sampling_type = 'creation'
             self.sampling_type = sampling_type
@@ -441,7 +444,7 @@ class LatinHypercubeSampling(SamplingMethods):
         var_samples = np.zeros((self.number_of_samples, 1))
         for i in range(self.number_of_samples):
             strata_lb = i * strata_size
-            sample_point = strata_lb + (random.random() * strata_size)
+            sample_point = strata_lb + (np.random.rand() * strata_size)
             var_samples[i, 0] = (sample_point * (variable_max - variable_min)) + variable_min
         return var_samples
 

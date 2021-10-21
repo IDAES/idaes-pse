@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains classes for property blocks and property parameter blocks.
 """
@@ -17,11 +17,11 @@ This module contains classes for property blocks and property parameter blocks.
 import sys
 
 # Import Pyomo libraries
-from pyomo.environ import Set, value, Var, Param, Expression, Constraint
+from pyomo.environ import Set, value, Var, Expression, Constraint
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.expression import _ExpressionData
-from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.core.base.misc import tabular_writer
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.formatting import tabular_writer
 
 # Import IDAES cores
 from idaes.core.process_block import ProcessBlock
@@ -95,6 +95,9 @@ class PhysicalParameterBlock(ProcessBlockData,
         if not hasattr(self, "_state_block_class"):
             self._state_block_class = None
 
+        # By default, property packages do not include inherent reactions
+        self._has_inherent_reactions = False
+
         # This is a dict to store default property scaling factors. They are
         # defined in the parameter block to provide a universal default for
         # quantities in a particular kind of state block.  For example, you can
@@ -165,12 +168,9 @@ class PhysicalParameterBlock(ProcessBlockData,
                 "with this property package. Please contact the developer of "
                 "the property package.".format(self.name))
 
-    @state_block_class.setter
-    def state_block_class(self, val):
-        _log.warning("DEPRECATED: state_block_class should not be set "
-                     "directly. Property package developers should set the "
-                     "_state_block_class attribute instead.")
-        self._state_block_class = val
+    @property
+    def has_inherent_reactions(self):
+        return self._has_inherent_reactions
 
     def build_state_block(self, *args, **kwargs):
         """
@@ -191,10 +191,12 @@ class PhysicalParameterBlock(ProcessBlockData,
             for i in initialize.keys():
                 initialize[i]["parameters"] = self
 
-        return self.state_block_class(*args,
-                                      **kwargs,
-                                      default=default,
-                                      initialize=initialize)
+        return self.state_block_class(  # pylint: disable=not-callable
+            *args,
+            **kwargs,
+            default=default,
+            initialize=initialize
+        )
 
     def get_phase_component_set(self):
         """
@@ -263,96 +265,42 @@ class PhysicalParameterBlock(ProcessBlockData,
                     .format(self.name, phase))
         return obj
 
-    # TODO : Deprecate this code at some point
     def _validate_parameter_block(self):
         """
-        Backwards compatability checks.
-
-        This is code to check for old-style property packages and create
-        the necessary Phase and Component objects.
-
-        It also tries to catch some possible mistakes and provide the user with
+        Tries to catch some possible mistakes and provide the user with
         useful error messages.
         """
         try:
             # Check names in component list have matching Component objects
             for c in self.component_list:
-                try:
-                    obj = getattr(self, str(c))
-                    if not isinstance(obj, ComponentData):
-                        raise TypeError(
-                                "Property package {} has an object {} whose "
-                                "name appears in component_list but is not an "
-                                "instance of Component".format(self.name, c))
-                except AttributeError:
-                    # No object with name c, must be old-style package
-                    self._make_component_objects()
-                    break
+                obj = getattr(self, str(c))
+                if not isinstance(obj, ComponentData):
+                    raise TypeError(
+                            "Property package {} has an object {} whose "
+                            "name appears in component_list but is not an "
+                            "instance of Component".format(self.name, c))
         except AttributeError:
             # No component list
-            raise PropertyPackageError("Property package {} has not defined a "
-                                       "component list.".format(self.name))
+            raise PropertyPackageError(
+                f"Property package {self.name} has not defined any "
+                f"Components.")
 
         try:
             # Valdiate that names in phase list have matching Phase objects
             for p in self.phase_list:
-                try:
-                    obj = getattr(self, str(p))
-                    if not isinstance(obj, PhaseData):
-                        raise TypeError(
-                                "Property package {} has an object {} whose "
-                                "name appears in phase_list but is not an "
-                                "instance of Phase".format(self.name, p))
-                except AttributeError:
-                    # No object with name p, must be old-style package
-                    self._make_phase_objects()
-                    break
+                obj = getattr(self, str(p))
+                if not isinstance(obj, PhaseData):
+                    raise TypeError(
+                            "Property package {} has an object {} whose "
+                            "name appears in phase_list but is not an "
+                            "instance of Phase".format(self.name, p))
         except AttributeError:
             # No phase list
-            raise PropertyPackageError("Property package {} has not defined a "
-                                       "phase list.".format(self.name))
+            raise PropertyPackageError(
+                f"Property package {self.name} has not defined any Phases.")
 
         # Also check that the phase-component set has been created.
         self.get_phase_component_set()
-
-    def _make_component_objects(self):
-        _log.warning("DEPRECATED: {} appears to be an old-style property "
-                     "package. It will be automatically converted to a "
-                     "new-style package, however users are strongly encouraged"
-                     " to convert their property packages to use phase and "
-                     "component objects."
-                     .format(self.name))
-        for c in self.component_list:
-            if hasattr(self, c):
-                # An object with this name already exists, raise exception
-                raise PropertyPackageError(
-                    "{} could not add Component object {} - an object with "
-                    "that name already exists.".format(self.name, c))
-
-            self.add_component(str(c), Component(
-                default={"_component_list_exists": True}))
-
-    def _make_phase_objects(self):
-        _log.warning("DEPRECATED: {} appears to be an old-style property "
-                     "package. It will be automatically converted to a "
-                     "new-style package, however users are strongly encouraged"
-                     " to convert their property packages to use phase and "
-                     "component objects."
-                     .format(self.name))
-        for p in self.phase_list:
-            if hasattr(self, p):
-                # An object with this name already exists, raise exception
-                raise PropertyPackageError(
-                    "{} could not add Phase object {} - an object with "
-                    "that name already exists.".format(self.name, p))
-
-            try:
-                pc_list = self.phase_comp[p]
-            except AttributeError:
-                pc_list = None
-            self.add_component(str(p), Phase(
-                default={"component_list": pc_list,
-                         "_phase_list_exists": True}))
 
 
 class StateBlock(ProcessBlock):
@@ -384,7 +332,29 @@ class StateBlock(ProcessBlock):
     def _return_phase_component_set(self):
         return self._get_parameter_block().get_phase_component_set()
 
+    @property
+    def has_inherent_reactions(self):
+        return self._has_inherent_reactions()
+
+    def _has_inherent_reactions(self):
+        return self._get_parameter_block().has_inherent_reactions
+
+    # Need to separate the existence of inherent reactions from whether they
+    # should be included in material balances
+    # For some cases, Using an apparent species basis means they can be ignored
+    @property
+    def include_inherent_reactions(self):
+        return self._include_inherent_reactions()
+
+    def _include_inherent_reactions(self):
+        return self._get_parameter_block().has_inherent_reactions
+
     def _get_parameter_block(self):
+        # PYLINT-WHY: self._block_data_config_default is set elsewhere,
+        # and is supposed to already exist as an attribute by the time
+        # (or, it will raise AttributeError at L410)
+        # this method is called, so the pylint errors here are false positives
+        # pylint: disable=no-member,access-member-before-definition
         try:
             return self._block_data_config_default["parameters"]
         except (KeyError, TypeError):
@@ -531,7 +501,7 @@ class StateBlockData(ProcessBlockData):
 Block associated with this property package."""))
     CONFIG.declare("defined_state", ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Flag indicating if incoming state is fully defined",
             doc="""Flag indicating whether the state should be considered fully
 defined, and thus whether constraints such as sum of mass/mole fractions should
@@ -542,7 +512,7 @@ be included,
 **False** - state variables will not be fully defined.}"""))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Phase equilibrium constraint flag",
             doc="""Flag indicating whether phase equilibrium constraints
 should be constructed in this state block,
@@ -577,15 +547,23 @@ should be constructed in this state block,
 
     @property
     def component_list(self):
-        return self.parent_component().component_list
+        return self.parent_component()._return_component_list()
 
     @property
     def phase_list(self):
-        return self.parent_component().phase_list
+        return self.parent_component()._return_phase_list()
 
     @property
     def phase_component_set(self):
-        return self.parent_component().phase_component_set
+        return self.parent_component()._return_phase_component_set()
+
+    @property
+    def has_inherent_reactions(self):
+        return self.parent_component()._has_inherent_reactions()
+
+    @property
+    def include_inherent_reactions(self):
+        return self.parent_component()._include_inherent_reactions()
 
     def build(self):
         """
@@ -860,7 +838,7 @@ should be constructed in this state block,
             raise PropertyNotSupportedError(
                     '{} {} is not supported by property package (property is '
                     'not listed in package metadata properties).'
-                    .format(self.name, attr, attr))
+                    .format(self.name, attr))
 
         # Get method name from resulting properties
         try:
@@ -941,9 +919,8 @@ should be constructed in this state block,
         super().calculate_scaling_factors()
         # Get scaling factor defaults, if no scaling factor set
         for v in self.component_data_objects(
-            (Constraint, Var, Expression),
-            descend_into=False):
-            if iscale.get_scaling_factor(v) is None: # don't replace if set
+                (Constraint, Var, Expression), descend_into=False):
+            if iscale.get_scaling_factor(v) is None:  # don't replace if set
                 name = v.getname().split("[")[0]
                 index = v.index()
                 sf = self.config.parameters.get_default_scaling(name, index)

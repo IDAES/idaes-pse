@@ -1,27 +1,26 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Generic template for a translator block.
 """
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.environ import SolverFactory
-
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
@@ -60,7 +59,7 @@ class TranslatorData(UnitModelBlockData):
         "outlet_state_defined",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Indicated whether outlet state will be fully defined",
             doc="""Indicates whether unit model will fully define outlet state.
 If False, the outlet property package will enforce constraints such as sum
@@ -76,7 +75,7 @@ constraints.}""",
         "has_phase_equilibrium",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Indicates whether outlet is in phase equilibrium",
             doc="""Indicates whether outlet property package should enforce
 phase equilibrium constraints.
@@ -164,7 +163,7 @@ see property package for documentation.}""",
 
         # Add State Blocks
         self.properties_in = self.config.inlet_property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties in incoming stream",
             default={
                 "defined_state": True,
@@ -174,7 +173,7 @@ see property package for documentation.}""",
         )
 
         self.properties_out = self.config.outlet_property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties in outgoing stream",
             default={
                 "defined_state": self.config.outlet_state_defined,
@@ -193,11 +192,11 @@ see property package for documentation.}""",
 
     def initialize(
         blk,
-        state_args_in={},
-        state_args_out={},
+        state_args_in=None,
+        state_args_out=None,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6},
+        solver=None,
+        optarg=None,
     ):
         """
         This method calls the initialization method of the state blocks.
@@ -206,24 +205,25 @@ see property package for documentation.}""",
             state_args_in : a dict of arguments to be passed to the inlet
                             property package (to provide an initial state for
                             initialization (see documentation of the specific
-                            property package) (default = {}).
+                            property package) (default = None).
             state_args_out : a dict of arguments to be passed to the outlet
                              property package (to provide an initial state for
                              initialization (see documentation of the specific
-                             property package) (default = {}).
+                             property package) (default = None).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
+
         # ---------------------------------------------------------------------
         # Initialize state block
         flags = blk.properties_in.initialize(

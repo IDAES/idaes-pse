@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Drum model
 The drum model consists of three main unit operations
@@ -48,7 +48,7 @@ are mixed before entering drum
 Created: August 19 2020
 """
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 import pyomo.environ as pyo
 # Import IDAES cores
 from idaes.core import (
@@ -62,10 +62,9 @@ from idaes.core import (
 )
 import idaes.logger as idaeslog
 
-from idaes.core.util.config import is_physical_parameter_block
-from idaes.generic_models.unit_models import Mixer
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 # Additional import for the unit operation
-from pyomo.environ import SolverFactory, Var, asin, cos
+from pyomo.environ import Var, asin, cos
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from pyomo.network import Port
@@ -76,6 +75,8 @@ from idaes.power_generation.unit_models.helm.phase_separator import \
     HelmPhaseSeparator
 from idaes.power_generation.unit_models.helm.mixer import HelmMixer
 from idaes.core.util.constants import Constants as const
+from idaes.core.util import get_solver
+
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"
 
@@ -87,7 +88,7 @@ class DrumData(UnitModelBlockData):
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
@@ -98,7 +99,7 @@ class DrumData(UnitModelBlockData):
 **False** - set as a steady-state model.}"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Holdup construction flag",
         doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
@@ -144,7 +145,7 @@ Must be True if dynamic = True,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -153,7 +154,7 @@ Must be True if dynamic = True,
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -243,7 +244,7 @@ see property package for documentation.}"""))
 
 
         # constraint to make pressures of two inlets of drum mixer the same
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Mixter pressure identical")
         def mixer_pressure_eqn(b, t):
             return b.mixer.SaturatedWater.pressure[t]*1e-6 == \
@@ -258,17 +259,17 @@ see property package for documentation.}"""))
 
         # connect internal units (Mixer to Water Tank Model)
         # Mixer Outlet (mixed_state) to unit control volume.properties_in
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def connection_material_balance(b, t):
             return 1e-4*b.mixer.mixed_state[t].flow_mol == \
                 b.control_volume.properties_in[t].flow_mol*1e-4
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def connection_enthalpy_balance(b, t):
             return b.mixer.mixed_state[t].enth_mol*1e-4 == \
                 b.control_volume.properties_in[t].enth_mol*1e-4
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def connection_pressure_balance(b, t):
             return b.mixer.mixed_state[t].pressure*1e-6 == \
                 b.control_volume.properties_in[t].pressure*1e-6
@@ -326,7 +327,7 @@ see property package for documentation.}"""))
 
         # Add performance variables
         self.drum_level = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 within=pyo.PositiveReals,
                 initialize=1.0,
                 doc='Water level from the bottom of the drum',
@@ -334,21 +335,21 @@ see property package for documentation.}"""))
 
         # Velocity of fluid inside downcomer pipe
         self.downcomer_velocity = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=10.0,
                 doc='Liquid water velocity at the top of downcomer',
                 units=units_meta.get_derived_units("velocity"))
 
         # Pressure change due to contraction
         self.deltaP_contraction = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=-1.0,
                 doc='Pressure change due to contraction',
                 units=units_meta.get_derived_units("pressure"))
 
         # Pressure change due to gravity
         self.deltaP_gravity = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=1.0,
                 doc='Pressure change due to gravity',
                 units=units_meta.get_derived_units("pressure"))
@@ -360,13 +361,13 @@ see property package for documentation.}"""))
 
         # Expression for the angle from the drum center
         # to the circumference point at water level
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="angle of water level")
         def alpha_drum(b, t):
-            return asin((b.drum_level[t]-b.drum_radius)/b.drum_radius)
+            return asin((b.drum_level[t]-b.drum_radius)/b.drum_radius)/pyo.units.rad
 
         # Constraint for volume liquid in drum
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="volume of liquid in drum")
         def volume_eqn(b, t):
             return b.volume[t] == \
@@ -376,7 +377,7 @@ see property package for documentation.}"""))
                        * b.drum_length
 
         # Equation for velocity at the entrance of downcomer
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Velocity at entrance of downcomer")
         def velocity_eqn(b, t):
             return b.downcomer_velocity[t] * 0.25 * const.pi \
@@ -385,7 +386,7 @@ see property package for documentation.}"""))
 
         # Pressure change equation for contraction
         # (acceleration pressure change)
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="pressure change due to contraction")
         def pressure_change_contraction_eqn(b, t):
             return 1e-3*b.deltaP_contraction[t] == -1e-3*0.75 \
@@ -394,7 +395,7 @@ see property package for documentation.}"""))
 
         # Pressure change equation for gravity, density*gravity*height
         g_units = units_meta.get_derived_units("acceleration")
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="pressure change due to gravity")
         def pressure_change_gravity_eqn(b, t):
             return 1e-3 * b.deltaP_gravity[t] == 1e-3 * \
@@ -403,7 +404,7 @@ see property package for documentation.}"""))
                                     to_units=g_units) * b.drum_level[t]
 
         # Total pressure change equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="pressure drop")
         def pressure_change_total_eqn(b, t):
             return 1e-3 * b.deltaP[t] == 1e-3 * (b.deltaP_contraction[t]
@@ -416,14 +417,18 @@ see property package for documentation.}"""))
             self.control_volume.material_accumulation[0, :, :].fix(0)
             self.control_volume.energy_accumulation[0, :].fix(0)
 
-    def initialize(blk, state_args_feedwater={}, state_args_water_steam={},
-                   outlvl=idaeslog.NOTSET, solver='ipopt',
-                   optarg={'tol': 1e-6}):
+    def initialize(blk, state_args_feedwater=None, state_args_water_steam=None,
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Drum initialization routine.
 
         Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
+            state_args_feedwater : a dict of arguments to be passed to the
+                           property package(s) for the control_volume of the
+                           model to provide an initial state for initialization
+                           (see documentation of the specific property package)
+                           (default = None).
+            state_args_steam : a dict of arguments to be passed to the property
                            package(s) for the control_volume of the model to
                            provide an initial state for initialization
                            (see documentation of the specific property package)
@@ -435,9 +440,10 @@ see property package for documentation.}"""))
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
 
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -445,8 +451,8 @@ see property package for documentation.}"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         init_log.info_low("Starting initialization...")
         # fix FeedWater Inlet
@@ -511,14 +517,14 @@ see property package for documentation.}"""))
         for t, c in self.pressure_change_contraction_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.deltaP_contraction[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.pressure_change_gravity_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.deltaP_gravity[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.pressure_change_total_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.deltaP[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

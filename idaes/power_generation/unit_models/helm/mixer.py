@@ -1,52 +1,42 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 General purpose mixer block for IDAES models
 """
 from pyomo.environ import (
-    Constraint,
     Param,
     PositiveReals,
-    Reals,
-    RangeSet,
     SolverFactory,
-    Var,
     value
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 
 from idaes.core import (
     declare_process_block_class,
     UnitModelBlockData,
     useDefault,
-    MaterialBalanceType,
 )
 from idaes.core.util.config import (
-    is_physical_parameter_block,
-    is_state_block,
-    list_of_strings,
+    is_physical_parameter_block
 )
-from idaes.core.util.exceptions import (
-    BurntToast,
-    ConfigurationError,
-    PropertyNotSupportedError,
-)
+from idaes.core.util.exceptions import ConfigurationError
+
 from idaes.core.util.math import smooth_min
-from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.generic_models.unit_models import MomentumMixingType
 from idaes.core.util import from_json, to_json, StoreSpec
 
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 
@@ -113,7 +103,7 @@ see property package for documentation.}""",
     CONFIG.declare(
         "inlet_list",
         ConfigValue(
-            domain=list_of_strings,
+            domain=ListOf(str),
             description="List of inlet names",
             doc="""A list containing names of inlets,
 **default** - None.
@@ -181,19 +171,21 @@ between flow and pressure driven simulations.}""",
         self._get_property_package()
 
         # Create list of inlet names
-        inlet_list = self.create_inlet_list()
+        # PYLINT-TODO: assigning the result of self.create_inlet_list() to unused local variable inlet_list
+        # causes pylint error assignment-from-no-return; check if removing assignment is OK
+        self.create_inlet_list()
 
         # Build StateBlocks
         self.add_inlet_state_blocks()
         self.add_mixed_state_block()
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def mass_balance(b, t):
             return self.mixed_state[t].flow_mol == sum(
                 self.inlet_blocks[i][t].flow_mol for i in self.inlet_list
             )
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def energy_balance(b, t):
             return self.mixed_state[t].enth_mol*self.mixed_state[t].flow_mol == \
                 sum(self.inlet_blocks[i][t].enth_mol
@@ -266,7 +258,7 @@ between flow and pressure driven simulations.}""",
         # Create an instance of StateBlock for all inlets
         for i in self.inlet_list:
             i_obj = self.config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="Material properties at inlet",
                 default=tmp_dict,
             )
@@ -286,7 +278,7 @@ between flow and pressure driven simulations.}""",
         tmp_dict["defined_state"] = False
 
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties of mixed stream",
             default=tmp_dict,
         )
@@ -310,7 +302,7 @@ between flow and pressure driven simulations.}""",
 
         # Calculate minimum inlet pressure
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             self.inlet_list,
             doc="Calculation for minimum inlet pressure",
         )
@@ -325,7 +317,7 @@ between flow and pressure driven simulations.}""",
 
         # Set inlet pressure to minimum pressure
         @self.Constraint(
-            self.flowsheet().config.time, doc="Link pressure to control volume")
+            self.flowsheet().time, doc="Link pressure to control volume")
         def minimum_pressure_constraint(b, t):
             return self.mixed_state[t].pressure == (
                 self.minimum_pressure[t, self.inlet_list[-1]]
@@ -340,7 +332,7 @@ between flow and pressure driven simulations.}""",
         """
         # Create equality constraints
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             self.inlet_list,
             doc="Calculation for minimum inlet pressure",
         )
@@ -397,15 +389,16 @@ between flow and pressure driven simulations.}""",
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg={}, solver="ipopt"):
+    def initialize(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
         """
-        Initialization routine for mixer (default solver ipopt)
+        Initialization routine for mixer.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -413,9 +406,8 @@ between flow and pressure driven simulations.}""",
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # This shouldn't require too much initializtion, just fixing inlets
         # and solving should always work.
@@ -455,16 +447,16 @@ between flow and pressure driven simulations.}""",
         super().calculate_scaling_factors()
         for t, c in self.mass_balance.items():
             s = iscale.get_scaling_factor(self.mixed_state[t].flow_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.energy_balance.items():
             s = iscale.get_scaling_factor(self.mixed_state[t].enth_mol)
             s *= iscale.get_scaling_factor(self.mixed_state[t].flow_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         if hasattr(self, "minimum_pressure_constraint"):
             for t, c in self.minimum_pressure_constraint.items():
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
-                iscale.constraint_scaling_transform(c, s)
+                iscale.constraint_scaling_transform(c, s, overwrite=False)
         if hasattr(self, "pressure_equality_constraints"):
             for (t, i), c in self.pressure_equality_constraints.items():
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
-                iscale.constraint_scaling_transform(c, s)
+                iscale.constraint_scaling_transform(c, s, overwrite=False)

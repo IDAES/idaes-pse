@@ -1,22 +1,22 @@
 # -*- coding: UTF-8 -*-
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import (Block, Var, TerminationCondition, SolverFactory,
-        Constraint)
+from pyomo.environ import (
+    Block, Constraint, Param, TerminationCondition, Var, value)
 from pyomo.network import Arc
 from pyomo.dae import ContinuousSet
 from pyomo.core.expr.visitor import identify_variables
@@ -24,16 +24,18 @@ from pyomo.core.expr.visitor import identify_variables
 from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.dyn_utils import (get_activity_dict,
-        deactivate_model_at, deactivate_constraints_unindexed_by,
-        fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time,
-        get_implicit_index_of_set)
+from idaes.core.util.dyn_utils import (
+    get_activity_dict,
+    deactivate_model_at, deactivate_constraints_unindexed_by,
+    fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time,
+    get_implicit_index_of_set)
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 
 __author__ = "Andrew Lee, John Siirola, Robert Parker"
 
 
-def fix_state_vars(blk, state_args={}):
+def fix_state_vars(blk, state_args=None):
     """
     Method for fixing state variables within StateBlocks. Method takes an
     optional argument of values to use when fixing variables.
@@ -121,43 +123,85 @@ def revert_state_vars(blk, flags):
                         'correct StateBlock.')
 
 
-def propagate_state(stream, direction="forward"):
+def propagate_state(destination=None, source=None, arc=None,
+        direction="forward", overwrite_fixed=False):
     """
     This method propagates values between Ports along Arcs. Values can be
     propagated in either direction using the direction argument.
 
     Args:
-        stream : Arc object along which to propagate values
-        direction: direction in which to propagate values. Default = 'forward'
-                Valid value: 'forward', 'backward'.
+        destination (Port): Port to copy values to or None if specifying arc
+        source (Port): Port to copy values from or None if specifying arc
+        arc (Arc): If arc is provided, use arc to define source and destination
+        direction (str): Direction in which to propagate values.
+                Default = 'forward' Valid values: 'forward', 'backward'.
+        overwrite_fixed (bool): If True overwrite fixed values, otherwise do not
+            overwrite fixed values.
 
     Returns:
         None
     """
-    if not isinstance(stream, Arc):
-        raise TypeError("Unexpected type of stream argument. Value must be "
-                        "a Pyomo Arc.")
+    _log = idaeslog.getLogger(__name__)
+    # Allow an arc to be passed as a positional arg
+    if destination is not None and source is None and destination.ctype is Arc:
+        arc = destination
+        if source in ("forward", "backward"):
+            direction = source
+        destination = None
+        source = None
+    # Check that only arc or source and destination are passed
+    if arc is None and (destination is None or source is None):
+        raise RuntimeError(
+            "In propagate_state(), must provide source and destination or arc")
+    if arc is not None:
+        if destination is not None or source is not None:
+            raise RuntimeError("In propagate_state(), provide only arc or "
+                    "source and destination")
+        try:
+            source = arc.src
+            destination = arc.dest
+        except AttributeError:
+            _log.error("In propagate_state(), unexpected type of arc "
+                    "argument. Value must be a Pyomo Arc")
+            raise
 
     if direction == "forward":
-        value_source = stream.source
-        value_dest = stream.destination
+        pass
     elif direction == "backward":
-        value_source = stream.destination
-        value_dest = stream.source
+        source, destination = destination, source
     else:
         raise ValueError("Unexpected value for direction argument: ({}). "
                          "Value must be either 'forward' or 'backward'."
                          .format(direction))
 
-    for v in value_source.vars:
-        for i in value_source.vars[v]:
-            if not isinstance(value_dest.vars[v], Var):
-                raise TypeError("Port contains one or more members which are "
-                                "not Vars. propogate_state works by assigning "
-                                "to the value attribute, thus can only be "
-                                "when Port members are Pyomo Vars.")
-            if not value_dest.vars[v][i].fixed:
-                value_dest.vars[v][i].value = value_source.vars[v][i].value
+    try:
+        destination_vars = destination.vars
+    except AttributeError:
+        _log.error("In propagate_state(), unexpected type of destination "
+                "port argument. Value must be a Pyomo Port")
+        raise
+    try:
+        source_vars = source.vars
+    except AttributeError:
+        _log.error("In propagate_state(), unexpected type of destination "
+                "source argument. Value must be a Pyomo Port")
+        raise
+
+    # Copy values
+    for k, v in destination_vars.items():
+        try:
+            for i in v:
+                if v[i].is_variable_type() and ((not v[i].fixed) or overwrite_fixed):
+                    v[i].value = value(source_vars[k][i])
+                elif not v[i].is_variable_type():
+                    raise TypeError(
+                        f"propagate_state() is can only change the value of "
+                        f"variables and cannot set a {v[i].ctype}.  This "
+                        f"likely indicates either a malformed port or a misuse "
+                        f"of propagate_state.")
+        except KeyError as e:
+            raise KeyError(
+                "In propagate_state, variables have incompatible index sets") from e
 
 
 # HACK, courtesy of J. Siirola
@@ -218,9 +262,9 @@ def solve_indexed_blocks(solver, blocks, **kwds):
 
 def initialize_by_time_element(fs, time, **kwargs):
     """
-    Function to initialize Flowsheet fs element-by-element along 
-    ContinuousSet time. Assumes sufficient initialization/correct degrees 
-    of freedom such that the first finite element can be solved immediately 
+    Function to initialize Flowsheet fs element-by-element along
+    ContinuousSet time. Assumes sufficient initialization/correct degrees
+    of freedom such that the first finite element can be solved immediately
     and each subsequent finite element can be solved by fixing differential
     and derivative variables at the initial time point of that finite element.
 
@@ -270,11 +314,11 @@ def initialize_by_time_element(fs, time, **kwargs):
 
     # Create logger objects
     outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
-    init_log = idaeslog.getInitLogger(__name__, level=outlvl) 
+    init_log = idaeslog.getInitLogger(__name__, level=outlvl)
     solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
 
     ignore_dof = kwargs.pop('ignore_dof', False)
-    solver = kwargs.pop('solver', SolverFactory('ipopt'))
+    solver = kwargs.pop('solver', get_solver())
     fix_diff_only = kwargs.pop('fix_diff_only', True)
     # This option makes the assumption that the only variables that
     # link constraints to previous points in time (which must be fixed)
@@ -290,7 +334,7 @@ def initialize_by_time_element(fs, time, **kwargs):
                   'check.')
             init_log.error(msg)
             raise ValueError('Nonzero degrees of freedom.')
- 
+
     # Get dict telling which constraints/blocks are already inactive:
     # dict: id(compdata) -> bool (is active?)
     was_originally_active = get_activity_dict(fs)
@@ -299,13 +343,13 @@ def initialize_by_time_element(fs, time, **kwargs):
     # of initial conditions.
     non_initial_time = [t for t in time]
     non_initial_time.remove(time.first())
-    deactivated = deactivate_model_at(fs, time, non_initial_time, 
+    deactivated = deactivate_model_at(fs, time, non_initial_time,
             outlvl=idaeslog.ERROR)
 
     if not ignore_dof:
         if degrees_of_freedom(fs) != 0:
             msg = ('Model has nonzero degrees of freedom at initial conditions.'
-                  ' This was unexpected. Use keyword arg igore_dof=True to skip' 
+                  ' This was unexpected. Use keyword arg igore_dof=True to skip'
                   ' this check.')
             init_log.error(msg)
             raise ValueError('Nonzero degrees of freedom.')
@@ -324,7 +368,7 @@ def initialize_by_time_element(fs, time, **kwargs):
                                         outlvl=idaeslog.ERROR)[time.first()]
 
     # Here, deactivate non-time-indexed components. Do this after solve
-    # for initial conditions in case these were used to specify initial 
+    # for initial conditions in case these were used to specify initial
     # conditions
     con_unindexed_by_time = deactivate_constraints_unindexed_by(fs, time)
     var_unindexed_by_time = fix_vars_unindexed_by(fs, time)
@@ -333,12 +377,12 @@ def initialize_by_time_element(fs, time, **kwargs):
 
     # For each timestep, we need to
     # 1. Activate model at points we're solving for
-    # 2. Fix initial conditions (differential variables at previous timestep) 
+    # 2. Fix initial conditions (differential variables at previous timestep)
     #    of finite element
     # 3. Solve the (now) square system
     # 4. Revert the model to its prior state
 
-    # This will make use of the following dictionaries mapping 
+    # This will make use of the following dictionaries mapping
     # time points -> time derivatives and time-differential variables
     derivs_at_time = get_derivatives_at(fs, time, [t for t in time])
     dvars_at_time = {t: [d.parent_component().get_state_var()[d.index()]
@@ -409,7 +453,7 @@ def initialize_by_time_element(fs, time, **kwargs):
                       'Use keyword arg igore_dof=True to skip this check.')
                 init_log.error(msg)
                 raise ValueError('Nonzero degrees of freedom')
-        
+
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(fs, tee=slc.tee)
         if results.solver.termination_condition == TerminationCondition.optimal:

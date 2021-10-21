@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for methods from NIST
 
@@ -25,7 +25,8 @@ Authors: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Block, value, Var, units as pyunits
+from pyomo.environ import \
+    ConcreteModel, Block, Expression, value, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_equivalent
 
@@ -43,7 +44,7 @@ def frame():
 
     m.params.config = ConfigBlock(implicit=True)
     m.params.config.parameter_data = {
-        "cp_mol_ig_comp_coeff": {'A': 30.09200,
+        "cp_mol_ig_comp_coeff": {'A': 30.09200,  # parameters for water
                                  'B': 6.832514,
                                  'C': 6.793435,
                                  'D': -2.534480,
@@ -54,6 +55,7 @@ def frame():
         "pressure_sat_comp_coeff": {'A': 3.55959,  # units bar, K
                                     'B': 643.748,
                                     'C': -198.043}}
+    m.params.config.include_enthalpy_of_formation = True
 
     m.meta_object = PropertyClassMetadata()
     m.meta_object.default_units["temperature"] = pyunits.K
@@ -64,6 +66,7 @@ def frame():
 
     def get_metadata(self):
         return m.meta_object
+    m.get_metadata = types.MethodType(get_metadata, m)
     m.params.get_metadata = types.MethodType(get_metadata, m.params)
 
     # Add necessary parameters to parameter block
@@ -101,14 +104,18 @@ def test_cp_mol_ig_comp(frame):
     assert isinstance(frame.params.cp_mol_ig_comp_coeff_H, Var)
     assert value(frame.params.cp_mol_ig_comp_coeff_H) == -241.8264
 
+    assert isinstance(frame.params.enth_mol_form_vap_comp_ref, Expression)
+    assert value(frame.params.enth_mol_form_vap_comp_ref) == -241.8264*1e3
+
     expr = cp_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(35.22, abs=1e-2)
+    assert value(expr) == pytest.approx(35.22, abs=1e-2)  # value from NIST
 
     frame.props[1].temperature.value = 600
-    assert value(expr) == pytest.approx(36.32, abs=1e-2)
+    assert value(expr) == pytest.approx(36.32, abs=1e-2)  # value from NIST
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
+
 
 @pytest.mark.unit
 def test_enth_mol_ig_comp(frame):
@@ -116,16 +123,33 @@ def test_enth_mol_ig_comp(frame):
 
     expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(-2130.5, rel=1e-3)
+    assert value(expr) == pytest.approx(6.92e3 - 241826.4, rel=1e-3)  # value from NIST
 
     frame.props[1].temperature.value = 600
-    assert value(expr) == pytest.approx(1445, rel=1e-3)
+    assert value(expr) == pytest.approx(10.5e3 - 241826.4, rel=1e-3)  # value from NIST
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol)
 
+
 @pytest.mark.unit
-def test_entr_mol_ig_comp(frame):
+def test_enth_mol_ig_comp_no_formation(frame):
+    enth_mol_ig_comp.build_parameters(frame.params)
+    frame.params.config.include_enthalpy_of_formation = False
+
+    expr = enth_mol_ig_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature)
+    assert value(expr) == pytest.approx(6.92e3, rel=1e-3)  # value from NIST
+
+    frame.props[1].temperature.value = 600
+    assert value(expr) == pytest.approx(10.5e3, rel=1e-3)  # value from NIST
+
+    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+
+
+@pytest.mark.unit
+def test_entr_mol_ig_comp_no_formation(frame):
     entr_mol_ig_comp.build_parameters(frame.params)
+    frame.params.config.include_entropy_of_formation = False
 
     expr = entr_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
@@ -135,6 +159,7 @@ def test_entr_mol_ig_comp(frame):
     assert value(expr) == pytest.approx(213.1, rel=1e-3)
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
+
 
 @pytest.mark.unit
 def test_pressure_sat_comp(frame):

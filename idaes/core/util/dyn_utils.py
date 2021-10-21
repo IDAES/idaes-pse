@@ -1,28 +1,26 @@
 # -*- coding: utf-8 -*-
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains utility functions for dynamic IDAES models.
 """
 
 from pyomo.environ import Block, Constraint, Var
-from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.dae.set_utils import (is_explicitly_indexed_by,
-        is_in_block_indexed_by, get_index_set_except)
+from pyomo.dae import DerivativeVar
+from pyomo.dae.set_utils import (
+    is_explicitly_indexed_by, is_in_block_indexed_by, get_index_set_except)
 from pyomo.common.collections import ComponentSet
 
-from idaes.core import FlowsheetBlock
-from collections import Counter
 import idaes.logger as idaeslog
 
 __author__ = "Robert Parker"
@@ -611,7 +609,7 @@ def copy_non_time_indexed_values(
 
         if var_src is None:
             # Log a warning
-            msg = ('Warning copying values: ' + varname + 
+            msg = ('Warning copying values: ' + var_src.name + 
                    ' does not exist in source block ' + fs_src.name)
             init_log = idaeslog.getInitLogger(__name__, outlvl)
             init_log.warning(msg)

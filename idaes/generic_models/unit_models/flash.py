@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Standard IDAES flash model.
 """
@@ -19,7 +19,7 @@ from pandas import DataFrame
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, value, Reference, Var, Block
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
 
 # Import IDAES cores
@@ -119,7 +119,7 @@ inlet,
 flows.}"""))
     CONFIG.declare("ideal_separation", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Ideal splitting flag",
         doc="""Argument indicating whether ideal splitting should be used.
 Ideal splitting assumes perfect separation of material, and attempts to
@@ -132,7 +132,7 @@ has_phase_equilibrium = True,
 **False** - use explicit splitting equations with split fractions.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -141,7 +141,7 @@ has_phase_equilibrium = True,
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -228,7 +228,7 @@ see property package for documentation.}"""))
         if not self.config.ideal_separation:
             def split_frac_rule(b, t, o):
                 return b.split.split_fraction[t, o, o] == 1
-            self.split_fraction_eq = Constraint(self.flowsheet().config.time,
+            self.split_fraction_eq = Constraint(self.flowsheet().time,
                                                 self.split.outlet_idx,
                                                 rule=split_frac_rule)
 
@@ -277,9 +277,7 @@ see property package for documentation.}"""))
 
         return DataFrame.from_dict(stream_attributes, orient="columns")
 
-    def get_costing(self, alignment='vertical', Mat_factor='carbon_steel',
-                    weight_limit='option1', L_D_range='option1', PL=True,
-                    year=None, module=costing):
+    def get_costing(self, year=None, module=costing, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)
 
@@ -293,8 +291,4 @@ see property package for documentation.}"""))
         self.diameter = Var(initialize=1,
                             doc='vessel diameter',
                             units=units_meta('length'))
-        module.flash_costing(self.costing, alignment=alignment,
-                             Mat_factor=Mat_factor,
-                             weight_limit=weight_limit,
-                             L_D_range=L_D_range,
-                             PL=PL)
+        module.flash_costing(self.costing, **kwargs)

@@ -1,22 +1,22 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Standard IDAES STOICHIOMETRIC reactor model
 """
 
 # Import Pyomo libraries
 from pyomo.environ import Reference, Var, Block
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -84,7 +84,7 @@ balance type
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_heat_of_reaction", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat of reaction term construction flag",
         doc="""Indicates whether terms for heat of reaction terms should be
 constructed,
@@ -94,7 +94,7 @@ constructed,
 **False** - exclude heat of reaction terms.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -103,7 +103,7 @@ constructed,
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -210,9 +210,7 @@ see reaction package for documentation.}"""))
 
         return {"vars": var_dict}
 
-    def get_costing(self, alignment='vertical', Mat_factor='carbon_steel',
-                    weight_limit='option1', L_D_range='option1', PL=True,
-                    year=None, module=costing):
+    def get_costing(self, year=None, module=costing, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)
 
@@ -225,8 +223,4 @@ see reaction package for documentation.}"""))
         self.diameter = Var(initialize=1,
                             units=units_meta('length'),
                             doc='vessel diameter')
-        module.rstoic_costing(self.costing, alignment=alignment,
-                              Mat_factor=Mat_factor,
-                              weight_limit=weight_limit,
-                              L_D_range=L_D_range,
-                              PL=PL)
+        module.rstoic_costing(self.costing)

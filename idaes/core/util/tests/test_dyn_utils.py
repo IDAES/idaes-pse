@@ -1,25 +1,24 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for dynamic utility methods.
 """
 
 import pytest
 from pyomo.environ import (ConcreteModel, Block, Constraint, Var, Set,
-        TransformationFactory)
+                           TransformationFactory)
 from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.dae.set_utils import (is_explicitly_indexed_by,
-        is_in_block_indexed_by, get_index_set_except)
+from pyomo.common.collections import ComponentSet
 import idaes.logger as idaeslog
 from idaes.core.util.dyn_utils import *
 
@@ -39,11 +38,11 @@ def test_fix_and_deactivate():
 
     @m.fs.Block()
     def b1(b):
-        b.v = Var(m.time, m.space, initialize=1) 
+        b.v = Var(m.time, m.space, initialize=1)
         b.dv = DerivativeVar(b.v, wrt=m.time)
 
-        b.con = Constraint(m.time, m.space, 
-                rule=lambda b, t, x: b.dv[t, x] == 7 - b.v[t, x])
+        b.con = Constraint(m.time, m.space,
+                           rule=lambda b, t, x: b.dv[t, x] == 7 - b.v[t, x])
 
         @b.Block(m.time)
         def b2(b, t):
@@ -59,7 +58,7 @@ def test_fix_and_deactivate():
 
             @b.Constraint(m.set2)
             def con(b, s):
-                return (5*b.v[s] == 
+                return (5*b.v[s] ==
                         m.fs.b2[m.time.first(), m.space.first()].v[c])
 
     @m.fs.Constraint(m.time)
@@ -70,7 +69,6 @@ def test_fix_and_deactivate():
     def con2(fs, x):
         return fs.b1.v[m.time.first(), x] == fs.v0[x]
 
-
     disc = TransformationFactory('dae.collocation') 
     disc.apply_to(m, wrt=m.time, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
     disc.apply_to(m, wrt=m.space, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
@@ -80,7 +78,7 @@ def test_fix_and_deactivate():
 
     active_dict = get_activity_dict(m.fs)
     for comp in m.fs.component_data_objects(Constraint, Block):
-        assert active_dict[id(comp)] == True
+        assert active_dict[id(comp)] is True
 
     deactivate_model_at(m, m.time, m.time[2])
     assert m.fs.con1[m.time[1]].active
@@ -90,8 +88,8 @@ def test_fix_and_deactivate():
     assert not m.fs.b2[m.time[2], m.space.last()].active
     assert m.fs.b2[m.time[2], m.space.last()].b3['a'].con['e'].active
 
-    deactivate_model_at(m, m.time, [m.time[1], m.time[3]], 
-            outlvl=idaeslog.ERROR)
+    deactivate_model_at(m, m.time, [m.time[1], m.time[3]],
+                        outlvl=idaeslog.ERROR)
     # Higher outlvl threshold as will encounter warning trying to deactivate
     # disc equations at time.first()
     assert not m.fs.con1[m.time[1]].active
@@ -117,8 +115,10 @@ def test_fix_and_deactivate():
 
     vars_unindexed = fix_vars_unindexed_by(m, m.time)
     cons_unindexed = deactivate_constraints_unindexed_by(m, m.time)
-    assert m.fs.v0[m.space[1]] in vars_unindexed
-    assert m.fs.b1.b2[m.time[1]].v not in vars_unindexed
+    
+    unindexed_vars = ComponentSet(vars_unindexed)
+    assert m.fs.v0[m.space[1]] in unindexed_vars
+    assert m.fs.b1.b2[m.time[1]].v not in unindexed_vars
     assert m.fs.con2[m.space[2]] in cons_unindexed
     assert m.fs.con1[m.time[1]] not in cons_unindexed
     assert not m.fs.con2[m.space[1]].active

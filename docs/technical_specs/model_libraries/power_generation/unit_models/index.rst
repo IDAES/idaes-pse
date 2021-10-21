@@ -6,6 +6,7 @@ Unit Models
 
     feedwater_heater_0D
     feedwater_heater_condensing_0D
+    turbine
     turbine_inlet
     turbine_outlet
     turbine_stage
@@ -16,3 +17,11 @@ Unit Models
     phase_separator
     drum
     downcomer
+    steamheater
+    boiler_fireside
+    watertank
+    boiler_heat_exchanger2D
+    drum1D
+    waterpipe
+    boiler_heat_exchanger_3streams
+    feedwater_heater_0D_dynamic

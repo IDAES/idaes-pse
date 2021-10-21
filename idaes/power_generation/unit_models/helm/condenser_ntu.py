@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 NTU Condenser model, for use with Helmholtz EOS property packages.
 """
@@ -18,16 +18,19 @@ __author__ = "Jinliang Ma"
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.environ import units as pyunits
+from pyomo.common.config import ConfigBlock, ConfigValue
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.util import get_solver, from_json, to_json, StoreSpec
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models.heater import (
     _make_heater_config_block, _make_heater_control_volume)
 import idaes.core.util.unit_costing as costing
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 
@@ -109,6 +112,11 @@ class HelmNtuCondenserData(UnitModelBlockData):
             # Allow access to hot_side_config under the cold_side_name
             setattr(config, config.cold_side_name, config.cold_side_config)
 
+        if config.cold_side_name in ["hot_side", "side_1"]:
+            raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_1'].")
+        if config.hot_side_name in ["cold_side", "side_2"]:
+            raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_2'].")
+
     def build(self):
         """
         Building model
@@ -124,25 +132,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         super().build()
         self._process_config()
         config = self.config
-        time = self.flowsheet().config.time
-
-        ########################################################################
-        # Add variables                                                        #
-        ########################################################################
-        units_meta = self.config.property_package.get_metadata()
-        self.overall_heat_transfer_coefficient = pyo.Var(
-            time,
-            domain=pyo.PositiveReals,
-            initialize=100.0,
-            doc="Overall heat transfer coefficient",
-            units=units_meta.get_derived_units("heat_trasnfer_coefficient")
-        )
-        self.area = pyo.Var(
-            domain=pyo.PositiveReals,
-            initialize=1000.0,
-            doc="Heat exchange area",
-            units=units_meta.get_derived_units("area")
-        )
+        time = self.flowsheet().time
 
         ########################################################################
         # Add control volumes                                                  #
@@ -176,23 +166,50 @@ class HelmNtuCondenserData(UnitModelBlockData):
             add_object_reference(self, "cold_side", cold_side)
 
         ########################################################################
+        # Add variables                                                        #
+        ########################################################################
+        # Use hot side units as basis
+        s1_metadata = config.hot_side_config.property_package.get_metadata()
+
+        f_units = s1_metadata.get_derived_units("flow_mole")
+        cp_units = s1_metadata.get_derived_units("heat_capacity_mole")
+        q_units = s1_metadata.get_derived_units("power")
+        u_units = s1_metadata.get_derived_units("heat_transfer_coefficient")
+        a_units = s1_metadata.get_derived_units("area")
+        temp_units = s1_metadata.get_derived_units("temperature")
+
+        self.overall_heat_transfer_coefficient = pyo.Var(
+            time,
+            domain=pyo.PositiveReals,
+            initialize=100.0,
+            doc="Overall heat transfer coefficient",
+            units=u_units,
+        )
+        self.area = pyo.Var(
+            domain=pyo.PositiveReals,
+            initialize=1000.0,
+            doc="Heat exchange area",
+            units=a_units,
+        )
+        self.heat_duty = pyo.Reference(cold_side.heat)
+        ########################################################################
         # Add ports                                                            #
         ########################################################################
         i1 = self.add_inlet_port(
             name=f"{config.hot_side_name}_inlet",
-            block=self.side_1,
+            block=hot_side,
             doc="Hot side inlet")
         i2 = self.add_inlet_port(
             name=f"{config.cold_side_name}_inlet",
-            block=self.side_2,
+            block=cold_side,
             doc="Cold side inlet")
         o1 = self.add_outlet_port(
             name=f"{config.hot_side_name}_outlet",
-            block=self.side_1,
+            block=hot_side,
             doc="Hot side outlet")
         o2 = self.add_outlet_port(
             name=f"{config.cold_side_name}_outlet",
-            block=self.side_2,
+            block=cold_side,
             doc="Cold side outlet")
 
         # Using Andrew's function for now.  I want these port names for backward
@@ -221,7 +238,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
         ########################################################################
         @self.Constraint(time, doc="Heat balance equation")
         def unit_heat_balance(b, t):
-            return 0 == self.side_1.heat[t] + self.side_2.heat[t]
+            return 0 == (hot_side.heat[t] +
+                pyunits.convert(cold_side.heat[t], to_units=q_units))
 
         ########################################################################
         # Add some useful expressions for condenser performance                #
@@ -229,24 +247,24 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         @self.Expression(time, doc="Inlet temperature difference")
         def delta_temperature_in(b, t):
-                return (b.side_1.properties_in[t].temperature
-                    - b.side_2.properties_in[t].temperature)
+                return (hot_side.properties_in[t].temperature -
+                    pyunits.convert(cold_side.properties_in[t].temperature, temp_units))
 
         @self.Expression(time, doc="Outlet temperature difference")
         def delta_temperature_out(b, t):
-                return (b.side_1.properties_out[t].temperature
-                    - b.side_2.properties_out[t].temperature)
+                return (hot_side.properties_out[t].temperature -
+                    pyunits.convert(cold_side.properties_out[t].temperature, temp_units))
 
         @self.Expression(time, doc="NTU Based temperature difference")
         def delta_temperature_ntu(b, t):
-                return (b.side_1.properties_in[t].temperature_sat -
-                    b.side_2.properties_in[t].temperature)
+                return (hot_side.properties_in[t].temperature_sat -
+                    pyunits.convert(cold_side.properties_in[t].temperature, temp_units))
 
         @self.Expression(time, doc="Minimum product of flow rate and heat "
             "capacity (always on tube side since shell side has phase change)")
         def mcp_min(b, t):
-            return (self.side_2.properties_in[t].flow_mol
-                * self.side_2.properties_in[t].cp_mol_phase['Liq'])
+            return pyunits.convert(cold_side.properties_in[t].flow_mol
+                * cold_side.properties_in[t].cp_mol_phase['Liq'], f_units*cp_units)
 
         @self.Expression(time, doc="Number of transfer units (NTU)")
         def ntu(b, t):
@@ -258,9 +276,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         @self.Expression(time, doc="Heat treansfer")
         def heat_transfer(b, t):
-            return b.effectiveness[t]*b.mcp_min[t] * (
-                b.side_1.properties_in[t].temperature_sat
-                - b.side_2.properties_in[t].temperature)
+            return b.effectiveness[t]*b.mcp_min[t] * b.delta_temperature_ntu[t]
 
         ########################################################################
         # Add Equations to calculate heat duty based on NTU method             #
@@ -268,33 +284,34 @@ class HelmNtuCondenserData(UnitModelBlockData):
         @self.Constraint(
             time, doc="Heat transfer rate equation based on NTU method")
         def heat_transfer_equation(b, t):
-            return self.side_2.heat[t] == self.heat_transfer[t]
+            return (pyunits.convert(cold_side.heat[t], q_units) ==
+                self.heat_transfer[t])
 
         @self.Constraint(
             time, doc="Shell side outlet enthalpy is saturated water enthalpy")
         def saturation_eqn(b, t):
-            return (self.side_1.properties_out[t].enth_mol ==
-                self.side_1.properties_in[t].enth_mol_sat_phase["Liq"])
+            return (hot_side.properties_out[t].enth_mol ==
+                hot_side.properties_in[t].enth_mol_sat_phase["Liq"])
 
     def set_initial_condition(self):
         if self.config.dynamic is True:
-            self.side_1.material_accumulation[:,:,:].value = 0
-            self.side_1.energy_accumulation[:,:].value = 0
-            self.side_1.material_accumulation[0,:,:].fix(0)
-            self.side_1.energy_accumulation[0,:].fix(0)
-            self.side_2.material_accumulation[:,:,:].value = 0
-            self.side_2.energy_accumulation[:,:].value = 0
-            self.side_2.material_accumulation[0,:,:].fix(0)
-            self.side_2.energy_accumulation[0,:].fix(0)
+            self.hot_side.material_accumulation[:, :, :].value = 0
+            self.hot_side.energy_accumulation[:, :].value = 0
+            self.hot_side.material_accumulation[0, :, :].fix(0)
+            self.hot_side.energy_accumulation[0, :].fix(0)
+            self.cold_side.material_accumulation[:, :, :].value = 0
+            self.cold_side.energy_accumulation[:, :].value = 0
+            self.cold_side.material_accumulation[0, :, :].fix(0)
+            self.cold_side.energy_accumulation[0, :].fix(0)
 
     def initialize(
-        blk,
+        self,
         state_args_1=None,
         state_args_2=None,
         unfix='hot_flow',
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6, "max_iter": 50},
+        solver=None,
+        optarg=None,
     ):
         """
         Condenser initialization method. The initialization routine assumes
@@ -303,14 +320,15 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         Args:
             state_args_1 : a dict of arguments to be passed to the property
-                initialization for side_1 (see documentation of the specific
+                initialization for hot side (see documentation of the specific
                 property package) (default = None).
             state_args_2 : a dict of arguments to be passed to the property
-                initialization for side_2 (see documentation of the specific
+                initialization for cold side (see documentation of the specific
                 property package) (default = None).
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -320,44 +338,46 @@ class HelmNtuCondenserData(UnitModelBlockData):
             raise Exception("Condenser free variable must be in 'hot_flow', "
                 "'cold_flow', or 'pressure'")
         # Set solver options
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        hot_side = getattr(self, self.config.hot_side_name)
+        cold_side = getattr(self, self.config.cold_side_name)
 
         # Store initial model specs, restored at the end of initializtion, so
         # the problem is not altered.  This can restore fixed/free vars,
         # active/inactive constraints, and fixed variable values.
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
-        istate = to_json(blk, return_dict=True, wts=sp)
+        istate = to_json(self, return_dict=True, wts=sp)
 
-        opt = pyo.SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
-        flags1 = blk.side_1.initialize(
+        flags1 = hot_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1)
-        flags2 = blk.side_2.initialize(
+        flags2 = cold_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_2)
         init_log.info_high("Initialization Step 1 Complete.")
 
         # Solve with all constraints activated
-        blk.saturation_eqn.activate()
+        self.saturation_eqn.activate()
         if unfix == 'pressure':
-            blk.hot_side.properties_in[0].pressure.unfix()
+            hot_side.properties_in[:].pressure.unfix()
         elif unfix == 'hot_flow':
-            blk.hot_side.properties_in[0].flow_mol.unfix()
+            hot_side.properties_in[:].flow_mol.unfix()
         elif unfix == 'cold_flow':
-            blk.cold_side.properties_in[0].flow_mol.unfix()
+            cold_side.properties_in[:].flow_mol.unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high(
             "Initialization Step 4 {}.".format(idaeslog.condition(res))
         )
 
         # Release Inlet state
-        blk.side_1.release_state(flags1, outlvl + 1)
-        blk.side_2.release_state(flags2, outlvl + 1)
-        from_json(blk, sd=istate, wts=sp)
-
+        hot_side.release_state(flags1, outlvl)
+        cold_side.release_state(flags2, outlvl)
+        from_json(self, sd=istate, wts=sp)
 
 
     def _get_performance_contents(self, time_point=0):
@@ -416,13 +436,13 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         for t, c in self.heat_transfer_equation.items():
             sf = iscale.get_scaling_factor(self.cold_side.heat[t])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.unit_heat_balance.items():
             sf = iscale.get_scaling_factor(self.cold_side.heat[t])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.saturation_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.hot_side.properties_out[t].enth_mol)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

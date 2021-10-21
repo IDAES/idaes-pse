@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for methods from Reid, Prausnitz and Poling
 
@@ -48,11 +48,17 @@ def frame():
                                  'B': 4.595e-4,
                                  'C': 2.521e-6,
                                  'D': -0.859e-9},
-        "enth_mol_form_vap_comp_ref": -57.797e3,
-        "entr_mol_form_vap_comp_ref": 45.13,
+        "enth_mol_form_vap_comp_ref": (-57.797e3, pyunits.cal/pyunits.mol),
+        "entr_mol_form_vap_comp_ref": (45.13,
+                                       pyunits.cal/pyunits.mol/pyunits.K),
         "pressure_sat_comp_coeff": {'A': 18.3036,
                                     'B': 3816.44,
                                     'C': -46.13}}
+    m.params.config.include_enthalpy_of_formation = True
+
+    # Also need to dummy configblock on the model for the test
+    m.config = ConfigBlock(implicit=True)
+    m.config.include_enthalpy_of_formation = True
 
     m.meta_object = PropertyClassMetadata()
     m.meta_object.default_units["temperature"] = pyunits.K
@@ -111,7 +117,8 @@ def test_enth_mol_ig_comp(frame):
     enth_mol_ig_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.enth_mol_form_vap_comp_ref, Var)
-    assert value(frame.params.enth_mol_form_vap_comp_ref) == -57797.0
+    assert value(frame.params.enth_mol_form_vap_comp_ref) == (
+        pytest.approx(-241822.6, abs=1e-1))
 
     expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
@@ -124,11 +131,30 @@ def test_enth_mol_ig_comp(frame):
 
 
 @pytest.mark.unit
+def test_enth_mol_ig_comp_no_form(frame):
+    frame.config.include_enthalpy_of_formation = False
+    frame.params.config.include_enthalpy_of_formation = False
+    enth_mol_ig_comp.build_parameters(frame.params)
+
+    assert not hasattr(frame.params, "enth_mol_form_vap_comp_ref")
+
+    expr = enth_mol_ig_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature)
+    assert value(expr) == pytest.approx(838.686, abs=1e-3)
+
+    frame.props[1].temperature.value = 400
+    assert value(expr) == pytest.approx(4304.680, abs=1e-3)
+
+    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+
+
+@pytest.mark.unit
 def test_entr_mol_ig_comp(frame):
     entr_mol_ig_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.entr_mol_form_vap_comp_ref, Var)
-    assert value(frame.params.entr_mol_form_vap_comp_ref) == 45.13
+    assert value(frame.params.entr_mol_form_vap_comp_ref) == (
+        pytest.approx(188.8, abs=1e-1))
 
     expr = entr_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)

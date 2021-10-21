@@ -1,22 +1,22 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Base class for unit models
 """
 
-from pyomo.environ import Reference, SolverFactory
+from pyomo.environ import Reference
 from pyomo.network import Port
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData,
@@ -30,7 +30,11 @@ from idaes.core.util.exceptions import (BurntToast,
                                         PropertyPackageError,
                                         BalanceTypeNotSupportedError)
 from idaes.core.util.tables import create_stream_table_dataframe
+import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
+from idaes.core.util.config import DefaultBool
+
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -51,7 +55,7 @@ class UnitModelBlockData(ProcessBlockData):
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
 **default** = useDefault.
@@ -61,7 +65,7 @@ class UnitModelBlockData(ProcessBlockData):
 **False** - set as a steady-state model.}"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Holdup construction flag",
         doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
@@ -137,14 +141,12 @@ Must be True if dynamic = True,
                                      "StateBlocks.".format(blk.name))
 
         # Create empty Port
-        p = Port(noruleinit=True, doc=doc)
+        p = Port(doc=doc)
         setattr(blk, name, p)
-
-        p._state_block = (block, )
 
         # Get dict of Port members and names
         member_list = block[
-                blk.flowsheet().config.time.first()].define_port_members()
+                blk.flowsheet().time.first()].define_port_members()
 
         # Create References for port members
         for s in member_list:
@@ -154,6 +156,7 @@ Must be True if dynamic = True,
                 slicer = block[:].component(member_list[s].local_name)[...]
 
             r = Reference(slicer)
+            setattr(blk, "_"+s+"_"+name+"_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -212,27 +215,20 @@ Must be True if dynamic = True,
             doc = "Inlet Port"
 
         # Create empty Port
-        p = Port(noruleinit=True, doc=doc)
+        p = Port(doc=doc)
         setattr(blk, name, p)
 
         # Get dict of Port members and names
         if isinstance(block, ControlVolumeBlockData):
             try:
                 member_list = (block.properties_in[
-                                    block.flowsheet().config.time.first()]
-                               .define_port_members())
-                p._state_block = (block.properties_in, )
+                                    block.flowsheet().time.first()]
+                                .define_port_members())
             except AttributeError:
                 try:
                     member_list = (block.properties[
-                                    block.flowsheet().config.time.first(), 0]
-                                   .define_port_members())
-                    if block._flow_direction == FlowDirection.forward:
-                        p._state_block = (block.properties,
-                                          block.length_domain.first())
-                    elif block._flow_direction == FlowDirection.backward:
-                        p._state_block = (block.properties,
-                                          block.length_domain.last())
+                                    block.flowsheet().time.first(), 0]
+                                    .define_port_members())
                 except AttributeError:
                     raise PropertyPackageError(
                             "{} property package does not appear to have "
@@ -241,8 +237,7 @@ Must be True if dynamic = True,
                             "package.".format(blk.name))
         elif isinstance(block, StateBlock):
             member_list = block[
-                    blk.flowsheet().config.time.first()].define_port_members()
-            p._state_block = (block, )
+                    blk.flowsheet().time.first()].define_port_members()
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "
@@ -308,6 +303,7 @@ Must be True if dynamic = True,
                             .format(blk.name))
 
             r = Reference(slicer)
+            setattr(blk, "_"+s+"_"+name+"_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -366,27 +362,20 @@ Must be True if dynamic = True,
             doc = "Outlet Port"
 
         # Create empty Port
-        p = Port(noruleinit=True, doc=doc)
+        p = Port(doc=doc)
         setattr(blk, name, p)
 
         # Get dict of Port members and names
         if isinstance(block, ControlVolumeBlockData):
             try:
                 member_list = (block.properties_out[
-                                    block.flowsheet().config.time.first()]
+                                    block.flowsheet().time.first()]
                                .define_port_members())
-                p._state_block = (block.properties_out, )
             except AttributeError:
                 try:
                     member_list = (block.properties[
-                                    block.flowsheet().config.time.first(), 0]
+                                    block.flowsheet().time.first(), 0]
                                    .define_port_members())
-                    if block._flow_direction == FlowDirection.forward:
-                        p._state_block = (block.properties,
-                                          block.length_domain.last())
-                    elif block._flow_direction == FlowDirection.backward:
-                        p._state_block = (block.properties,
-                                          block.length_domain.first())
                 except AttributeError:
                     raise PropertyPackageError(
                             "{} property package does not appear to have "
@@ -395,8 +384,7 @@ Must be True if dynamic = True,
                             "package.".format(blk.name))
         elif isinstance(block, StateBlock):
             member_list = block[
-                    blk.flowsheet().config.time.first()].define_port_members()
-            p._state_block = (block, )
+                    blk.flowsheet().time.first()].define_port_members()
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "
@@ -463,6 +451,7 @@ Must be True if dynamic = True,
                             .format(blk.name))
 
             r = Reference(slicer)
+            setattr(blk, "_"+s+"_"+name+"_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -506,7 +495,7 @@ Must be True if dynamic = True,
                     "once per UnitModel.".format(self.name))
 
         # Get a representative time point for testing
-        rep_time = self.flowsheet().config.time.first()
+        rep_time = self.flowsheet().time.first()
         if state_1[rep_time].params is not state_2[rep_time].params:
             raise ConfigurationError(
                     "{} add_state_material_balances method was provided with "
@@ -520,17 +509,17 @@ Must be True if dynamic = True,
                 state_1[rep_time].default_material_balance_type()
             )
 
-        phase_list = state_1[rep_time].params.phase_list
-        component_list = state_1[rep_time].params.component_list
+        phase_list = state_1.phase_list
+        component_list = state_1.component_list
+        pc_set = state_1.phase_component_set
 
         if balance_type == MaterialBalanceType.componentPhase:
             # TODO : Should we include an optional phase equilibrium term here
             # to allow for systems where a phase-transition may occur?
 
             @self.Constraint(
-                self.flowsheet().config.time,
-                phase_list,
-                component_list,
+                self.flowsheet().time,
+                pc_set,
                 doc="State material balances",
             )
             def state_material_balances(b, t, p, j):
@@ -541,38 +530,30 @@ Must be True if dynamic = True,
         elif balance_type == MaterialBalanceType.componentTotal:
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 component_list,
                 doc="State material balances",
             )
             def state_material_balances(b, t, j):
                 return sum(
                     state_1[t].get_material_flow_terms(p, j)
-                    for p in phase_list
+                    for p in phase_list if (p, j) in pc_set
                 ) == sum(
                     state_2[t].get_material_flow_terms(p, j)
-                    for p in phase_list
+                    for p in phase_list if (p, j) in pc_set
                 )
 
         elif balance_type == MaterialBalanceType.total:
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="State material balances",
             )
             def state_material_balances(b, t):
                 return sum(
-                    sum(
-                        state_1[t].get_material_flow_terms(p, j)
-                        for j in component_list
-                    )
-                    for p in phase_list
+                    state_1[t].get_material_flow_terms(p, j) for p, j in pc_set
                 ) == sum(
-                    sum(
-                        state_2[t].get_material_flow_terms(p, j)
-                        for j in component_list
-                    )
-                    for p in phase_list
+                    state_2[t].get_material_flow_terms(p, j) for p, j in pc_set
                 )
 
         elif balance_type == MaterialBalanceType.elementTotal:
@@ -609,7 +590,7 @@ Must be True if dynamic = True,
                     f"developer to develop a unit specific stream table.")
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   solver=None, optarg=None):
         '''
         This is a general purpose initialization routine for simple unit
         models. This method assumes a single ControlVolume block called
@@ -625,19 +606,22 @@ Must be True if dynamic = True,
                            initialization (see documentation of the specific
                            property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default IDAES solver)
 
         Returns:
             None
         '''
+        if optarg is None:
+            optarg = {}
+
         # Set solver options
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
@@ -652,6 +636,11 @@ Must be True if dynamic = True,
 
         # ---------------------------------------------------------------------
         # Solve unit
+
+        # if costing block exists, deactivate
+        if hasattr(blk, "costing"):
+            blk.costing.deactivate()
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
 
@@ -659,9 +648,13 @@ Must be True if dynamic = True,
             "Initialization Step 2 {}.".format(idaeslog.condition(results))
         )
 
+        # if costing block exists, activate and initialize
+        if hasattr(blk, "costing"):
+            blk.costing.activate()
+            idaes.core.util.unit_costing.initialize(blk.costing)
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl+1)
+        blk.control_volume.release_state(flags, outlvl)
 
         init_log.info('Initialization Complete: {}'
                       .format(idaeslog.condition(results)))

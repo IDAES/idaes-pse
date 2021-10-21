@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Flow splitter depending on a Helmholtz EOS property package.  This just
 multiplies the flow by the split fractions for the outlets and has a constraint
@@ -20,21 +20,18 @@ have n_outlets - 1 specified split fractions or outlet flows.
 This model is psuedo-steady-state when used in dynamic mode.
 """
 
-from pandas import DataFrame
-
-from pyomo.environ import Constraint, Set, SolverFactory, Var, value
-from pyomo.network import Port
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.environ import SolverFactory, Var, value
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 
 from idaes.core import (
     declare_process_block_class,
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.util.config import is_physical_parameter_block, list_of_strings
+from idaes.core.util.config import is_physical_parameter_block
 
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
@@ -102,7 +99,7 @@ see property package for documentation.}""",
     CONFIG.declare(
         "outlet_list",
         ConfigValue(
-            domain=list_of_strings,
+            domain=ListOf(str),
             description="List of outlet names",
             doc="""A list containing names of outlets,
 **default** - None.
@@ -137,7 +134,7 @@ from 1 to num_outlets).}""",
         Returns:
             None
         """
-        time = self.flowsheet().config.time
+        time = self.flowsheet().time
         super().build()
 
         self._get_property_package()
@@ -179,7 +176,7 @@ from 1 to num_outlets).}""",
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["defined_state"] = True
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties of mixed (inlet) stream",
             default=tmp_dict,
         )
@@ -239,13 +236,12 @@ from 1 to num_outlets).}""",
         # Create an instance of StateBlock for all outlets
         for o in self.outlet_list:
             o_obj = self.config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="Material properties at outlet",
                 default=tmp_dict,
             )
             setattr(self, o + "_state", o_obj)
             self.outlet_blocks[o] = o_obj
-
 
     def add_outlet_port_objects(self):
         """
@@ -262,16 +258,16 @@ from 1 to num_outlets).}""",
             self.add_port(name=p, block=self.outlet_blocks[p], doc="Outlet")
             self.outlet_ports[p] = getattr(self, p)
 
-
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg={}, solver="ipopt"):
+    def initialize(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
         """
         Initialization routine for splitter
 
         Keyword Arguments:
             outlvl: sets output level of initialization routine
-            optarg: solver options dictionary object (default=None)
-            solver: str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg: solver options dictionary object (default=None, use
+                    default solver options)
+            solver: str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             If hold_states is True, returns a dict containing flags for which
@@ -279,9 +275,9 @@ from 1 to num_outlets).}""",
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # sp is what to save to make sure state after init is same as the start
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
@@ -289,14 +285,14 @@ from 1 to num_outlets).}""",
 
         # check for fixed outlet flows and use them to calculate fixed split
         # fractions
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             for o in self.outlet_list:
                 if self.outlet_blocks[o][t].flow_mol.fixed:
                     self.split_fraction[t, o].fix(
                         value(self.mixed_state[t]/self.outlet_blocks[o][t].flow_mol))
 
         # fix or unfix split fractions so n - 1 are fixed
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             # see how many split fractions are fixed
             n = sum(1 for o in self.outlet_list if self.split_fraction[t, o].fixed)
             # if number of outlets - 1 we're good
@@ -332,12 +328,12 @@ from 1 to num_outlets).}""",
         for (t, i), c in self.pressure_eqn.items():
             o_block = getattr(self, "{}_state".format(i))
             s = iscale.get_scaling_factor(o_block[t].pressure)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for (t, i), c in self.enthalpy_eqn.items():
             o_block = getattr(self, "{}_state".format(i))
             s = iscale.get_scaling_factor(o_block[t].enth_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for (t, i), c in self.flow_eqn.items():
             o_block = getattr(self, "{}_state".format(i))
             s = iscale.get_scaling_factor(o_block[t].flow_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

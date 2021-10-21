@@ -43,8 +43,10 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinxarg.ext',
     'sphinx.ext.doctest',
-    #    'sphinx-jsonschema'
 ]
+
+# Put type hints in the description, not signature
+autodoc_typehints = "description"
 
 # Avoid duplicating heading labels across parallely constructed documentation
 autosectionlabel_prefix_document = True
@@ -62,8 +64,8 @@ source_suffix = '.rst'
 #
 # source_encoding = 'utf-8-sig'
 
-# The master toctree document.
-master_doc = 'index'
+# The main toctree document.
+main_doc = 'index'
 
 # General information about the project.
 project = u'IDAES'
@@ -173,26 +175,33 @@ html_title = u'IDAES v{}'.format(release)
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 #
-html_logo = "_images/idaes-logo-100x100.png"
+html_logo = "images/idaes-logo-100x100.png"
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
 #
-html_favicon = "_images/idaes-logo.ico"
+html_favicon = "images/idaes-logo.ico"
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static', '_images']
-html_style = 'theme_and_schema.css'
+html_static_path = ['static', 'images']
+html_css_files = [
+    'css/theme.css',
+    'css/custom.css',
+    'css/badge_only.css'
+]
+# html_style = 'theme_and_schema.css'
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
 # directly to the root of the documentation.
 #
-# html_extra_path = []
+html_extra_path = [
+    "static/extra/",
+]
 
 # If not None, a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.
@@ -289,7 +298,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'IDAES.tex', u'IDAES Documentation', u'IDAES team', 'manual')
+    (main_doc, 'IDAES.tex', u'IDAES Documentation', u'IDAES team', 'manual')
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -343,7 +352,7 @@ man_pages = [('dmf/cli', 'dmf', u'Data Management Framework', [author], 1)]
 #  dir menu entry, description, category)
 texinfo_documents = [
     (
-        master_doc,
+        main_doc,
         'IDAES',
         u'IDAES Documentation',
         author,

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Install IDAES example files locally.
 
@@ -22,6 +22,9 @@ directory into a package called "idaes_examples".
 Options let the user choose a different version, directory, and
 whether to actually download or install.
 """
+# Pyomo utility for delayed import
+from pyomo.common.dependencies import attempt_import
+
 # stdlib
 from collections import namedtuple
 from datetime import datetime
@@ -30,7 +33,6 @@ import logging
 from operator import attrgetter
 import os
 import re
-from setuptools import setup, find_packages
 from pathlib import Path
 import shutil
 import sys
@@ -39,13 +41,15 @@ from uuid import uuid4
 from zipfile import ZipFile
 import json
 
+
 # third-party
 import click
-from nbconvert.exporters import NotebookExporter
-from nbconvert.writers import FilesWriter
-from traitlets.config import Config
-import nbformat
-import requests
+# third-party slow
+nb_exporters= attempt_import("nbconvert.exporters")[0]
+nb_writers = attempt_import("nbconvert.writers")[0]
+traitlets_config = attempt_import("traitlets.config")[0]
+nbformat = attempt_import("nbformat")[0]
+requests = attempt_import("requests")[0]
 
 # package
 from idaes.commands import cb
@@ -399,7 +403,7 @@ def download_contents(target_dir, version):
     # move the REPO_DIR subdirectory into the target dir
     subdir = Path(tempdir.name) / f"{REPO_NAME}-{version}" / REPO_DIR
     _log.debug(f"move {subdir} -> {target_dir}")
-    os.rename(str(subdir), str(target_dir))
+    shutil.move(str(subdir), str(target_dir))
     zipf.close()
 
 
@@ -542,6 +546,7 @@ def install_src(version, target_dir):
     When done, name the directory back to 'src', and remove '__init__.py' files.
     Then clean up whatever cruft is left behind..
     """
+    from setuptools import setup, find_packages # import here due to slowness
     global g_egg
     orig_dir = Path(os.curdir).absolute()
     target_dir = Path(target_dir.absolute())
@@ -565,7 +570,7 @@ def install_src(version, target_dir):
         raise InstallError(f"error writing temporary __init__.py files: {err}")
     # temporarily rename target directory to the package name
     _log.info(f"rename {target_dir} -> {examples_dir}")
-    os.rename(target_dir, examples_dir)
+    shutil.move(target_dir, examples_dir)
     # if there is a 'build' directory, move it aside
     build_dir = root_dir / 'build'
     if build_dir.exists():
@@ -573,7 +578,7 @@ def install_src(version, target_dir):
         random_letters = str(uuid1())
         moved_build_dir = f"{build_dir}.{random_letters}"
         _log.debug(f"move existing build dir to {moved_build_dir}")
-        os.rename(str(build_dir), moved_build_dir)
+        shutil.move(str(build_dir), moved_build_dir)
     else:
         _log.debug("no existing build directory (nothing to do)")
         moved_build_dir = None
@@ -603,7 +608,7 @@ def install_src(version, target_dir):
             _log.debug(f"(setup) {line}")
     # name the target directory back to original
     _log.info(f"rename '{examples_dir}' to  '{target_dir}'")
-    os.rename(examples_dir, target_dir)
+    shutil.move(examples_dir, target_dir)
     # remove the empty __init__.py files
     _log.info("remove temporary __init__.py files")
     for d in pydirs:
@@ -618,7 +623,7 @@ def install_src(version, target_dir):
         _log.warning(f"failed to remove build directory {build_dir}: {err}")
     if moved_build_dir is not None:
         _log.info(f"restore build dir '{build_dir}' from '{moved_build_dir}'")
-        os.rename(moved_build_dir, build_dir)
+        shutil.move(moved_build_dir, build_dir)
     # restore previous args
     sys.argv = saved_args
     # change back to previous directory
@@ -713,16 +718,17 @@ def strip_tags(nb: Path) -> bool:
             _log.warning(f"cannot create new notebook '{target_nb}': file exists")
             continue
         # Set up configuration for removing specially tagged cells
-        conf = Config()
+        conf = traitlets_config.Config()
         conf.TagRemovePreprocessor.remove_cell_tags = remove_tags
         conf.NotebookExporter.preprocessors = [
             # this requires the full module path
             "nbconvert.preprocessors.TagRemovePreprocessor"
         ]
         # Convert from Notebook format to Notebook format, stripping tags
-        (body, resources) = NotebookExporter(config=conf).from_filename(str(nb))
+        (body, resources) = nb_exporters.NotebookExporter(
+            config=conf).from_filename(str(nb))
         # Set up output destination
-        wrt = FilesWriter()
+        wrt = nb_writers.FilesWriter()
         wrt.build_directory = str(target_nb.parent)
         # Write stripped notebook to output file
         wrt.write(body, resources, notebook_name=target_nb.stem)

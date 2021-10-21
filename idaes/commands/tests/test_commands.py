@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for idaes.commands
 """
@@ -28,9 +28,10 @@ from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.commands import examples
+from idaes.commands import examples, extensions, convergence, config, env_info
 from idaes.util.system import TemporaryDirectory
 from . import create_module_scratch, rmtree_scratch
+import idaes
 
 __author__ = "Dan Gunter"
 
@@ -118,7 +119,7 @@ def test_examples_cli_download(runner, tempdir):
 
 
 @pytest.mark.integration()
-def test_examples_cli_default_version(runner, tempdir):
+def test_examples_cli_explicit_version(runner, tempdir):
     dirname = str(tempdir / "examples")
     result = runner.invoke(examples.get_examples, ["-d", dirname, "-I", "-V", "1.5.0"])
     assert result.exit_code == 0
@@ -128,7 +129,7 @@ def test_examples_cli_default_version(runner, tempdir):
 def test_examples_cli_default_version(runner, tempdir):
     dirname = str(tempdir / "examples")
     result = runner.invoke(examples.get_examples, ["-d", dirname])
-    assert result.exit_code == -1
+    assert result.exit_code == 0
 
 
 @pytest.mark.integration()
@@ -149,7 +150,7 @@ def test_examples_cli_copy(runner, tempdir):
     assert result.exit_code == -1
     # local dir exists, no REPO_DIR in it
     src_dir = tempdir / "examples-dev"
-    src_dir.mkdir()
+    src_dir.mkdir(exist_ok=True)
     result = runner.invoke(
         examples.get_examples, ["-d", dirname, "--local", str(src_dir), "-I"]
     )
@@ -256,12 +257,12 @@ def test_examples_install_src():
     _log.debug(f"install_src: curdir={os.curdir}")
     # create fake package
     src_dir = tempdir / "src"
-    src_dir.mkdir()
+    src_dir.mkdir(exist_ok=True)
     m1_dir = src_dir / "module1"
-    m1_dir.mkdir()
+    m1_dir.mkdir(exist_ok=True)
     (m1_dir / "groot.py").open("w").write("print('I am groot')\n")
     m2_dir = m1_dir / "module1_1"
-    m2_dir.mkdir()
+    m2_dir.mkdir(exist_ok=True)
     (m2_dir / "groot.py").open("w").write("print('I am groot')\n")
     # install it
     examples.install_src("0.0.0", src_dir)
@@ -522,3 +523,155 @@ def test_strip_test_cells(remove_cells_notebooks):
                     if examples.REMOVE_CELL_TAG in tags:
                         n += 1
                 assert n > 0  # tag still there
+
+
+##################
+# get-extensions #
+##################
+
+
+@pytest.mark.unit
+def test_get_extensions(runner):
+    result = runner.invoke(extensions.get_extensions, ["--no-download"])
+    assert result.exit_code == 0
+
+
+@pytest.mark.unit
+def test_print_extensions_version(runner):
+    result = runner.invoke(extensions.get_extensions, ["--show-current-version"])
+    assert result.exit_code == 0
+
+
+@pytest.mark.unit
+def test_print_extensions_version(runner):
+    result = runner.invoke(extensions.get_extensions, ["--show-platforms"])
+    assert result.exit_code == 0
+
+#################
+# convergence  #
+################
+
+@pytest.mark.unit
+def test_conv_search(runner):
+    result = runner.invoke(convergence.convergence_search)
+    assert result.exit_code == 0
+
+
+@pytest.mark.unit
+def test_conv_sample(runner):
+    fname = os.path.join(idaes.testing_directory, "sample.json")
+    result = runner.invoke(
+        convergence.convergence_sample,
+        [
+            "-e",
+            "PressureChanger",
+            "-N",
+            "10",
+            "-s",
+            fname,
+        ])
+    assert result.exit_code == 0
+    if os.path.exists(fname):
+        os.remove(fname)
+
+@pytest.mark.integration
+def test_conv_eval(runner):
+    fname = os.path.join(idaes.testing_directory, "sample.json")
+    fname2 = os.path.join(idaes.testing_directory, "result.json")
+    result = runner.invoke(
+        convergence.convergence_sample,
+        [
+            "-e",
+            "PressureChanger",
+            "-N",
+            "10",
+            "-s",
+            fname,
+        ])
+    assert result.exit_code == 0
+    result = runner.invoke(
+        convergence.convergence_eval,
+        [
+            "-s",
+            fname,
+            "-j",
+            fname2
+        ])
+    assert result.exit_code == 0
+    with open(fname2, "r") as f:
+        d = json.load(f)
+    assert "inputs" in d
+    assert len(d["time_successful"]) == 10
+    if os.path.exists(fname):
+        os.remove(fname)
+    if os.path.exists(fname2):
+        os.remove(fname2)
+
+@pytest.mark.unit
+def test_conf_display(runner):
+    result = runner.invoke(config.config_display)
+    assert result.exit_code == 0
+
+@pytest.mark.unit
+def test_conf_file_paths(runner):
+    result = runner.invoke(config.config_file)
+    assert result.exit_code == 0
+    result = runner.invoke(config.config_file, ["--global"])
+    assert result.exit_code == 0
+    result = runner.invoke(config.config_file, ["--local"])
+    assert result.exit_code == 0
+
+@pytest.mark.unit
+def test_conf_file_paths(runner):
+    fname = os.path.join(idaes.testing_directory, "conf_test.json")
+    result = runner.invoke(config.config_write, ["--file", fname])
+    assert result.exit_code == 0
+    with open(fname, "r") as f:
+        d = json.load(f)
+        assert d["logger_capture_solver"] == True
+    if os.path.exists(fname):
+        os.remove(fname)
+
+@pytest.mark.unit
+def test_conf_set(runner):
+    fname = os.path.join(idaes.testing_directory, "conf_test.json")
+    def _tst(args):
+        result = runner.invoke(config.config_set, [
+            "logging:loggers:idaes.solver:handlers", "['console']"] + args)
+        assert result.exit_code == 0
+        with open(fname, "r") as f:
+            d = json.load(f)
+            assert len(d["logging"]["loggers"]["idaes.solver"]["handlers"]) == 1
+            assert d["logging"]["loggers"]["idaes.solver"]["handlers"][0] == 'console'
+        result = runner.invoke(config.config_set, [
+            "logging:loggers:idaes.solver:handlers", "'console'", "--del"] + args)
+        assert result.exit_code == 0
+        result = runner.invoke(config.config_set, [
+            "logging:loggers:idaes.solver:handlers", "'console'", "--add"] + args)
+        assert result.exit_code == 0
+        with open(fname, "r") as f:
+            d = json.load(f)
+            assert len(d["logging"]["loggers"]["idaes.solver"]["handlers"]) == 1
+            assert d["logging"]["loggers"]["idaes.solver"]["handlers"][0] == 'console'
+        result = runner.invoke(config.config_set, [
+            "ipopt_l1:options:max_iter", "100"] + args)
+        assert result.exit_code == 0
+        assert "ConfigDict" in str(type(idaes.cfg.ipopt_l1))
+        assert "ConfigDict" in str(type(idaes.cfg.ipopt_l1.options))
+        assert idaes.cfg.ipopt_l1.options.max_iter == 100
+        if os.path.exists(fname):
+            os.remove(fname)
+
+    _tst(["--global", "--file", fname, "--file_as_global"])
+    _tst(["--local", "--file", fname, "--file_as_local"])
+    _tst(["--file", fname])
+
+
+##############
+# env info   #
+##############
+
+@pytest.mark.unit
+def test_env_info1(runner):
+    result = runner.invoke(env_info.environment_info)
+    assert result.exit_code == 0

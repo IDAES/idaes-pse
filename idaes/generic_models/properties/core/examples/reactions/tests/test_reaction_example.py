@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Author: Andrew Lee
 """
@@ -20,12 +20,12 @@ from pyomo.environ import (Block,
                            SolverStatus,
                            TerminationCondition,
                            value)
-from pyomo.util.check_units import assert_units_equivalent
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
@@ -38,7 +38,7 @@ from idaes.generic_models.properties.core.examples.reactions.reaction_example \
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 class TestParamBlock(object):
@@ -83,7 +83,7 @@ class TestParamBlock(object):
         assert isinstance(model.rxn_params.reaction_R1, Block)
         assert isinstance(model.rxn_params.reaction_R2, Block)
 
-        assert_units_equivalent(model)
+        assert_units_consistent(model)
 
 
 class TestStateBlock(object):
@@ -106,7 +106,7 @@ class TestStateBlock(object):
                 default={"state_block": model.props,
                          "has_equilibrium": True})
 
-        assert_units_equivalent(model)
+        assert_units_consistent(model)
 
         return model
 

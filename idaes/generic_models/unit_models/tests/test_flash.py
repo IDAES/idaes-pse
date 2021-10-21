@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for Flash unit model.
 Author: Jaffer Ghouse
@@ -34,14 +34,15 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
+from idaes.core.util import get_solver
+import idaes.core.util.scaling as iscale
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -71,6 +72,16 @@ def test_config():
     assert m.fs.unit.config.property_package is m.fs.properties
     assert m.fs.unit.config.energy_split_basis == \
         EnergySplittingType.equal_temperature
+
+
+# -----------------------------------------------------------------------------
+@pytest.mark.unit
+def test_calc_scale():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = PhysicalParameterTestBlock()
+    m.fs.unit = Flash(default={"property_package": m.fs.properties})
+    iscale.calculate_scaling_factors(m)
 
 
 # -----------------------------------------------------------------------------
@@ -327,6 +338,12 @@ class TestIAPWS(object):
         assert isinstance(iapws.fs.unit.costing.purchase_cost, Var)
         iapws.fs.unit.diameter.fix(2)
         iapws.fs.unit.length.fix(4)
+        # initialize unit with costing block
+        iapws.fs.unit.initialize()
+        # check costing initialized correct
+        assert (pytest.approx(86957.195, abs=1e-3) ==
+                value(iapws.fs.unit.costing.purchase_cost))
+
         results = solver.solve(iapws)
         # Check for optimal solution
         assert results.solver.termination_condition == \
@@ -338,4 +355,3 @@ class TestIAPWS(object):
                 value(iapws.fs.unit.costing.purchase_cost))
 
         assert_units_consistent(iapws.fs.unit.costing)
-

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains data utility function tests.
 """
@@ -238,12 +238,16 @@ def test_unit_coversion():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         p, unit = da.unit_convert(p_psi, "MYPRESSURE", "atm")
-        assert len(w) == 1
-        assert issubclass(w[-1].category, UserWarning)
-        assert (
-            str(w[-1].message) == "In unit conversion, from unit 'MYPRESSURE'"
-            " is not defined. No conversion."
-        )
+        assert len(w) > 0
+        found = False
+        for wa in w:
+            if (issubclass(wa.category, UserWarning) and str(wa.message) ==
+                "In unit conversion, from unit 'MYPRESSURE'"
+                " is not defined. No conversion."):
+                found = True
+                break
+        if not found:
+            raise Exception("Expected warning about undefined unit not found.")
 
     assert p_psi[0] == pytest.approx(14.7, rel=1e-1)
     assert unit == "MYPRESSURE"

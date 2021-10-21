@@ -1,21 +1,21 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Standard IDAES PFR model.
 """
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Var, Reference, Block
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
@@ -26,8 +26,7 @@ from idaes.core import (ControlVolume1DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block,
-                                    list_of_floats)
+                                    is_reaction_parameter_block)
 from idaes.core.util.misc import add_object_reference
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.constants import Constants as const
@@ -83,7 +82,7 @@ balance type
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
 should be constructed,
@@ -93,7 +92,7 @@ should be constructed,
 **False** - exclude equilibrium reaction terms.}"""))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Phase equilibrium construction flag",
             doc="""Indicates whether terms for phase equilibrium should be
 constructed,
@@ -103,7 +102,7 @@ constructed,
 **False** - exclude phase equilibrium terms.}"""))
     CONFIG.declare("has_heat_of_reaction", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat of reaction term construction flag",
         doc="""Indicates whether terms for heat of reaction terms should be
 constructed,
@@ -113,7 +112,7 @@ constructed,
 **False** - exclude heat of reaction terms.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -122,7 +121,7 @@ constructed,
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -166,7 +165,7 @@ and used when constructing these,
 see reaction package for documentation.}"""))
     CONFIG.declare("length_domain_set", ConfigValue(
         default=[0.0, 1.0],
-        domain=list_of_floats,
+        domain=ListOf(float),
         description="List of points to use to initialize length domain",
         doc="""A list of values to be used when constructing the length domain
 of the reactor. Point must lie between 0.0 and 1.0,
@@ -255,7 +254,7 @@ domain,
         self.add_outlet_port()
 
         # Add PFR performance equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.control_volume.length_domain,
                          self.config.reaction_package.rate_reaction_idx,
                          doc="PFR performance equation")
@@ -290,9 +289,7 @@ domain,
 
         return {"vars": var_dict}
 
-    def get_costing(self, alignment='horizontal', Mat_factor='carbon_steel',
-                    weight_limit='option1', L_D_range='option1', PL=True,
-                    year=None, module=costing):
+    def get_costing(self, year=None, module=costing, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)
 
@@ -305,8 +302,4 @@ domain,
         self.diameter_eq = Constraint(expr=self.volume
                                       == (self.length*const.pi
                                           * self.diameter**2)/4)
-        module.pfr_costing(self.costing, alignment=alignment,
-                           Mat_factor=Mat_factor,
-                           weight_limit=weight_limit,
-                           L_D_range=L_D_range,
-                           PL=PL)
+        module.pfr_costing(self.costing, **kwargs)

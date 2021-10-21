@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for 0D heat exchanger models.
 
@@ -38,6 +38,8 @@ from idaes.generic_models.unit_models.heat_exchanger import (
     HeatExchanger,
     HeatExchangerFlowPattern)
 
+from idaes.generic_models.unit_models.heat_exchanger import (
+    delta_temperature_underwood_callback)
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.generic_models.properties import iapws95
@@ -51,9 +53,9 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
+from idaes.core.util import get_solver
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 
@@ -61,15 +63,15 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
-import idaes.generic_models.properties.core.pure.RPP as RPP
+import idaes.generic_models.properties.core.pure.RPP4 as RPP
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -167,16 +169,12 @@ def test_costing():
 
     assert degrees_of_freedom(m) == 0
 
+    m.fs.unit.get_costing()
+
     m.fs.unit.initialize()
 
-    m.fs.unit.get_costing()
-    calculate_variable_from_constraint(
-                m.fs.unit.costing.base_cost,
-                m.fs.unit.costing.base_cost_eq)
-
-    calculate_variable_from_constraint(
-                m.fs.unit.costing.purchase_cost,
-                m.fs.unit.costing.cp_cost_eq)
+    assert m.fs.unit.costing.purchase_cost.value == \
+        pytest.approx(529738.6793, 1e-5)
 
     assert_units_consistent(m.fs.unit.costing)
 
@@ -219,14 +217,14 @@ def test_costing_book():
     m.fs.costing.CE_index = 550
     m.fs.unit.costing.hx_os = 1.0
     calculate_variable_from_constraint(
-            m.fs.unit.costing.base_cost,
-            m.fs.unit.costing.base_cost_eq)
+            m.fs.unit.costing.base_cost_per_unit,
+            m.fs.unit.costing.base_cost_per_unit_eq)
 
     calculate_variable_from_constraint(
             m.fs.unit.costing.purchase_cost,
             m.fs.unit.costing.cp_cost_eq)
 
-    assert m.fs.unit.costing.base_cost.value == \
+    assert value(m.fs.unit.costing.base_cost) == \
         pytest.approx(78802.0518, 1e-5)
     assert m.fs.unit.costing.purchase_cost.value == \
         pytest.approx(417765.1377, 1e-5)
@@ -563,6 +561,32 @@ class TestIAPWS_countercurrent(object):
 
         return m
 
+    @pytest.fixture(scope="class")
+    def iapws_underwood(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = HeatExchanger(default={
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
+                "delta_temperature_callback": delta_temperature_underwood_callback,
+                "flow_pattern": HeatExchangerFlowPattern.countercurrent})
+
+        m.fs.unit.inlet_1.flow_mol[0].fix(100)
+        m.fs.unit.inlet_1.enth_mol[0].fix(4000)
+        m.fs.unit.inlet_1.pressure[0].fix(101325)
+
+        m.fs.unit.inlet_2.flow_mol[0].fix(100)
+        m.fs.unit.inlet_2.enth_mol[0].fix(3500)
+        m.fs.unit.inlet_2.pressure[0].fix(101325)
+
+        m.fs.unit.area.fix(1000)
+        m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        return m
+
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, iapws):
@@ -643,6 +667,23 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.component
     def test_solve(self, iapws):
         results = solver.solve(iapws)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_underwood(self, iapws_underwood):
+        initialization_tester(iapws_underwood)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve_underwood(self, iapws_underwood):
+        results = solver.solve(iapws_underwood)
 
         # Check for optimal solution
         assert results.solver.termination_condition == \
@@ -952,7 +993,7 @@ class TestBT_Generic_cocurrent(object):
             "temperature_ref": (298.15, pyunits.K),
             # Defining phase equilibria
             "phases_in_equilibrium": [("Vap", "Liq")],
-            "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+            "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
             "bubble_dew_method": LogBubbleDew,
             "parameter_data": {"PR_kappa": {("benzene", "benzene"): 0.000,
                                             ("benzene", "toluene"): 0.000,

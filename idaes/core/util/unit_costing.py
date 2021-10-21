@@ -1,28 +1,30 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 # =============================================================================
 
-from pyomo.environ import (
+from pyomo.environ import (Integers,
     Constraint, Var, Param, exp, log, NonNegativeReals, units as pyunits)
 from idaes.core.util.constants import Constants as const
 from idaes.core.util.exceptions import ConfigurationError
 from pyomo.core.base.units_container import _PyomoUnit
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from idaes.core.util import scaling as iscale
 
 # Some more information about this module
 __author__ = "Miguel Zamarripa"
 
 
-def global_costing_parameters(self, year=None):
+def global_costing_parameters(self, year=None, integer_n_units=False):
     if year is None:
         year = '2018'
     # Cost index $/year (method argument or 2018 default)
@@ -33,15 +35,38 @@ def global_costing_parameters(self, year=None):
     self.CE_index = Param(mutable=True, initialize=ce_index_dic[year],
                           doc='Chemical Engineering Plant Cost Index $ year')
 
+    if integer_n_units not in [True, False]:
+        raise ValueError('{} - integer_n_units must be'
+                         ' True or False'.format(self.name))
+    self.integer = integer_n_units
+
 
 def _make_vars(self):
     # build generic costing variables (all costing models need these vars)
-    self.base_cost = Var(initialize=1e5,
-                         domain=NonNegativeReals,
-                         doc='Unit Base Cost cost in $')
+    self.base_cost_per_unit = Var(initialize=1e5,
+                                  domain=NonNegativeReals,
+                                  doc='Unit Base Cost cost in $')
     self.purchase_cost = Var(initialize=1e4,
                              domain=NonNegativeReals,
                              doc='Unit Purchase Cost in $')
+    # check global costing argument to build an integer
+    # or a continuous variable
+    try:  # first check flowsheet(), then parent_blocks()
+        integer = self.parent_block().flowsheet().costing.integer
+    except AttributeError:
+        integer = self.parent_block().parent_block().costing.integer
+
+    if integer is True:
+        domain = Integers
+    else:
+        domain = NonNegativeReals
+    self.number_of_units = Var(initialize=1,
+                               domain=domain,
+                               bounds=(1, 100),
+                               doc="Number of units to install - "
+                               "economics of scale")
+    # fix number of units by default
+    self.number_of_units.fix(1)
 
 
 def hx_costing(self, hx_type='U-tube',
@@ -86,7 +111,7 @@ def hx_costing(self, hx_type='U-tube',
     _make_vars(self)
 
     self.L_factor = Param(mutable=True, initialize=1.12,
-                          doc='hx tube length correction factor, FL')
+                          doc='HX tube length correction factor, FL')
 
     self.pressure_factor = Var(initialize=1,
                                domain=NonNegativeReals,
@@ -94,11 +119,11 @@ def hx_costing(self, hx_type='U-tube',
 
     self.material_factor = Var(initialize=3.5,
                                domain=NonNegativeReals,
-                               doc='construction material correction'
+                               doc='Construction material correction'
                                'factor - Mat_factor')
 
     self.hx_os = Param(mutable=True, initialize=1.1,
-                       doc='hx oversize factor 1.1 to 1.5',
+                       doc='HX oversize factor 1.1 to 1.5',
                        units=pyunits.ft**-2)
 
     # select length correction factor
@@ -116,15 +141,20 @@ def hx_costing(self, hx_type='U-tube',
             'Kettle_vap': 0.09005}
 
     # checking units of self.parent_block().area
-    area = pyunits.convert(self.parent_block().area, to_units=pyunits.ft**2)
+    area = pyunits.convert(self.parent_block().area, to_units=pyunits.ft**2)\
+        / self.number_of_units
 
     def hx_cost_rule(self):
-        return self.base_cost == exp(alf1[hx_type]
-                                     - alf2[hx_type]
-                                     * log(area*self.hx_os)
-                                     + alf3[hx_type]
-                                     * log(area*self.hx_os)**2)
-    self.base_cost_eq = Constraint(rule=hx_cost_rule)
+        return self.base_cost_per_unit == exp(alf1[hx_type]
+                                              - alf2[hx_type]
+                                              * log(area*self.hx_os)
+                                              + alf3[hx_type]
+                                              * log(area*self.hx_os)**2)
+    self.base_cost_per_unit_eq = Constraint(rule=hx_cost_rule)
+
+    @self.Expression(doc="Base cost for all units installed")
+    def base_cost(self):
+        return self.base_cost_per_unit * self.number_of_units
 
     # ------------------------------------------------------
     # Material of construction factor Eq. 22.44 in the reference
@@ -250,25 +280,26 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
     _make_vars(self)
 
     self.material_factor = Param(mutable=True, initialize=3,
-                                 doc='construction material correction factor')
+                                 doc='Construction material correction factor')
 
     # checking units
     if self.parent_block().config.thermodynamic_assumption.name == 'pump':
         w = (self.parent_block().
              work_fluid[self.parent_block().
-                        flowsheet().config.time.first()])
+                        flowsheet().time.first()])
     else:
         w = (self.parent_block().
              work_mechanical[self.parent_block().
-                             flowsheet().config.time.first()])
+                             flowsheet().time.first()])
 
-    work_hp = pyunits.convert(w, to_units=pyunits.hp)
+    work_hp = pyunits.convert(w, to_units=pyunits.hp) / self.number_of_units
 
     # if compressor is == False, that means pressure changer is a Turbine
     if self.parent_block().config.compressor is False:
         #                           -1*work_hp because work is negative
         def CP_rule(self):
-            return self.purchase_cost == 530*(-1/pyunits.hp * work_hp)**0.81
+            return self.purchase_cost == self.number_of_units *\
+                530*(-1/pyunits.hp * work_hp)**0.81
         self.cp_cost_eq = Constraint(rule=CP_rule)
 
     # if compressor is True
@@ -278,7 +309,7 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
         if self.parent_block().config.thermodynamic_assumption.name == 'pump':
             # assign work fluid  = to w
             w = self.parent_block().work_fluid[self.parent_block().
-                                               flowsheet().config.time.first()]
+                                               flowsheet().time.first()]
 
             # new variables only used by pump costing
             self.pump_head = Var(
@@ -292,20 +323,21 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                 domain=NonNegativeReals,
                 doc='Pump size factor, f(Q,pump_head)')
 
-            self.motor_base_cost = Var(initialize=10000,
-                                       domain=NonNegativeReals,
-                                       doc='motor base purchase cost in $')
+            self.motor_base_cost_per_unit = Var(initialize=10000,
+                                                domain=NonNegativeReals,
+                                                doc='Motor base purchase'
+                                                ' cost in $ per unit')
 
             self.pump_purchase_cost = Var(initialize=100000,
                                           domain=NonNegativeReals,
-                                          doc='pump purchase cost in $')
+                                          doc='Pump purchase cost in $')
 
             self.motor_purchase_cost = Var(initialize=100000,
                                            domain=NonNegativeReals,
-                                           doc='motor purchase cost in $')
+                                           doc='Motor purchase cost in $')
 
             self.FT = Param(mutable=True, initialize=1,
-                            doc='pump-type factor')
+                            doc='Pump-type factor')
 
             # Pressure units required in lbf/ft^2
             deltaP_lb_ft2 = pyunits.convert(
@@ -320,7 +352,7 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
             # volumetric flow units required in gpm
             Q_gpm = pyunits.convert(
                 self.parent_block().control_volume.properties_in[0].flow_vol,
-                to_units=pyunits.gallon/pyunits.minute)
+                to_units=pyunits.gallon/pyunits.minute) / self.number_of_units
 
             # build pump_head equation
             def p_head_rule(self):
@@ -376,30 +408,44 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                     material_factor_reciprocal_pumps[Mat_factor]
                 self.FT = 1
             else:
-                raise Exception('pump type is not supported')
+                # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                raise ValueError('{} - pump type not supported. '  # pylint: disable=E1305
+                                 'Please see documentation for '
+                                 'supported options.'.format(self.name,
+                                                             pump_type))
 
             # pump cost correlations ---------------------------------
             def base_pump_rule(self):
                 if pump_type == 'centrifugal':
-                    return self.base_cost == exp(9.7171
-                                                 - 0.6019*log(self.size_factor)
-                                                 + 0.0519*log(self.
-                                                              size_factor)**2)
+                    return self.base_cost_per_unit == \
+                        exp(9.7171
+                            - 0.6019*log(self.size_factor)
+                            + 0.0519*log(self.size_factor)**2)
                 elif pump_type == 'external_gear':
-                    return self.base_cost == exp(7.6964
-                                                 + 0.1986*log(Q_gpm)
-                                                 + 0.0291*log(Q_gpm)**2)
+                    return self.base_cost_per_unit == \
+                        exp(7.6964
+                            + 0.1986*log(Q_gpm)
+                            + 0.0291*log(Q_gpm)**2)
 
                 elif pump_type == 'reciprocating':
                     # brake horsepower with efficiency np typically = 90%
                     PB = (Q_gpm*self.pump_head
                           * dens_mass_lb_ft3/7.48052)/(33000*0.90)
-                    return self.base_cost == exp(7.8103
-                                                 + 0.26986*log(PB)
-                                                 + 0.06718*log(PB)**2)
+                    return self.base_cost_per_unit == \
+                        exp(7.8103
+                            + 0.26986*log(PB)
+                            + 0.06718*log(PB)**2)
                 else:
-                    raise Exception('pump type not supported')
-            self.base_pump_cost_eq = Constraint(rule=base_pump_rule)
+                    # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                    raise ValueError('{} - pump type not supported. '  # pylint: disable=E1305
+                                     'Please see documentation for '
+                                     'supported options.'.format(self.name,
+                                                                 pump_type))
+            self.base_pump_cost_per_unit_eq = Constraint(rule=base_pump_rule)
+
+            @self.Expression(doc="Base cost for all units installed")
+            def base_cost(self):
+                return self.base_cost_per_unit * self.number_of_units
 
             def CP_pump_rule(self):
                 return self.pump_purchase_cost == \
@@ -415,7 +461,7 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
             self.motor_FT = Param(mutable=True,
                                   initialize=pump_motor_type_dic
                                   [pump_motor_type_factor],
-                                  doc='motor type factor')
+                                  doc='Motor type factor')
 
             # pump fractional efficiency
             np = (-0.316 + 0.24015*log(Q_gpm*pyunits.minute/pyunits.gallon) -
@@ -433,10 +479,14 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
             def base_motor_cost_rule(self):
                 pc_hp = (self.power_consumption_hp /
                          pyunits.get_units(self.power_consumption_hp))
-                return self.motor_base_cost == exp(
+                return self.motor_base_cost_per_unit == exp(
                     5.8259 + 0.13141*log(pc_hp) + 0.053255*log(pc_hp)**2 +
                     0.028628*log(pc_hp)**3 - 0.0035549*log(pc_hp)**4)
             self.base_motor_cost_eq = Constraint(rule=base_motor_cost_rule)
+
+            @self.Expression(doc="Base cost for all units installed")
+            def motor_base_cost(self):
+                return self.motor_base_cost_per_unit * self.number_of_units
 
             def CP_motor_rule(self):
                 return self.motor_purchase_cost == \
@@ -448,25 +498,21 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
             def cp_cost_rule(self):
                 return self.purchase_cost == self.motor_purchase_cost \
                     + self.pump_purchase_cost
-            self.total_cost_eq = Constraint(rule=cp_cost_rule)
+            self.cp_cost_eq = Constraint(rule=cp_cost_rule)
         # ends pump costing code
 
         # compressor = True, and using isothermal assumption
         # (costing not needed)
         elif (self.parent_block().config.
               thermodynamic_assumption.name) == 'isothermal':
-            raise Exception('compressors '
-                            'blowers/fan with isthoermal assmption '
-                            'are two simple to be costed')
-
+            # PYLINT-TODO-FIX fix exception message with correct number of arguments
+            raise ValueError('{} - pressure changers with isothermal '  # pylint: disable=E1305
+                             'assumption are too simple to be costed. '.
+                             format(self.name, mover_type))
         # if config.compressor is = True
         # if thermodynamic_assumption is not = Pump
         # (pressure changer could be a Fan, Blower, or Compressor)
         else:
-            w = self.parent_block().\
-                work_mechanical[self.parent_block().flowsheet().
-                                config.time.first()]
-
             # The user has to select mover_type [compressor or Fan or Blower]
             if mover_type == "compressor":
                 # Compressor Purchase Cost Correlation
@@ -474,7 +520,7 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                             'gas_turbine': 1.25}
                 self.FD = Param(mutable=True,
                                 initialize=FD_param[driver_mover_type],
-                                doc='drive factor')
+                                doc='Mover drive factor')
                 # compressor material factor dictionary
                 material_factor_dic = {'carbon_steel': 1, 'stain_steel': 2.5,
                                        'nickel_alloy': 5.0}
@@ -491,10 +537,14 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
 
                 # Purchase cost rule
                 def CB_rule(self):
-                    return self.base_cost == \
+                    return self.base_cost_per_unit == \
                         exp(c_alf1[compressor_type]
                             + c_alf2[compressor_type]*log(work_hp/pyunits.hp))
-                self.cb_cost_eq = Constraint(rule=CB_rule)
+                self.base_cost_per_unit_eq = Constraint(rule=CB_rule)
+
+                @self.Expression(doc="Base cost for all units installed")
+                def base_cost(self):
+                    return self.base_cost_per_unit * self.number_of_units
 
                 def CP_rule(self):
                     return self.purchase_cost == \
@@ -524,7 +574,12 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                         properties_in[0].flow_vol*60  # 1ft3/s*60s/min = ft3/m
                 # end volumetric flow units
                 else:
-                    raise Exception('volumetric flowrate units not supported')
+                    # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                    raise ValueError('{} - volumetric flowrate units '  # pylint: disable=E1305
+                                     'not supported. '
+                                     'Please see documentation for list of '
+                                     'supported units.'.format(self.name,
+                                                               mover_type))
 
                 # fan cost correlation
                 c_alf1 = {'centrifugal_backward': 11.0757,
@@ -553,10 +608,14 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
 
                 # Base cost
                 def CB_rule(self):
-                    return self.base_cost == \
+                    return self.base_cost_per_unit == \
                         exp(c_alf1[fan_type] - c_alf2[fan_type]*(log(Q_cfm))
                             + c_alf3[fan_type]*(log(Q_cfm)**2))
-                self.cb_cost_eq = Constraint(rule=CB_rule)
+                self.base_cost_per_unit_eq = Constraint(rule=CB_rule)
+
+                @self.Expression(doc="Base cost for all units installed")
+                def base_cost(self):
+                    return self.base_cost_per_unit * self.number_of_units
 
                 def CP_rule(self):
                     return self.purchase_cost == \
@@ -586,11 +645,15 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
 
                 # Base cost
                 def CB_rule(self):
-                    return self.base_cost == \
+                    return self.base_cost_per_unit == \
                         exp(c_alf1[blower_type]
                             + c_alf2[blower_type]*(log(work_hp))
                             - c_alf3[blower_type]*(log(work_hp)**2))
-                self.cb_cost_eq = Constraint(rule=CB_rule)
+                self.base_cost_per_unit_eq = Constraint(rule=CB_rule)
+
+                @self.Expression(doc="Base cost for all units installed")
+                def base_cost(self):
+                    return self.base_cost_per_unit * self.number_of_units
 
                 def CP_rule(self):
                     return self.purchase_cost == \
@@ -599,7 +662,11 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                             CE_index/500)*self.base_cost)
                 self.cp_cost_eq = Constraint(rule=CP_rule)
             else:
-                raise Exception('mover type not supported')
+                # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                raise ValueError('{} - mover type not supported. '  # pylint: disable=E1305
+                                 'Please see documentation for list of '
+                                 'supported mover types.'.format(self.name,
+                                                                 mover_type))
 
 
 def vessel_costing(self, alignment='horizontal',
@@ -654,23 +721,23 @@ def vessel_costing(self, alignment='horizontal',
     # new variables and parameters
     self.weight = Var(initialize=1000,
                       domain=NonNegativeReals,
-                      doc='weight of vessel in lb',
+                      doc='Weight of vessel in lb',
                       units=pyunits.pound)
 
     self.vessel_purchase_cost = Var(initialize=1e5,
                                     domain=NonNegativeReals,
-                                    doc='vessel cost in $')
+                                    doc='Vessel cost in $')
 
     # we recommend users to calculate the pressure design based shell thickness
     # shell thickness here already considers the pressure design
     self.shell_thickness = Param(mutable=True,
                                  initialize=1.25,
-                                 doc='shell thickness in in',
+                                 doc='Shell thickness in in',
                                  units=pyunits.inch)
     self.material_factor = Param(mutable=True, initialize=3,
-                                 doc='construction material correction factor')
+                                 doc='Construction material correction factor')
     self.material_density = Param(mutable=True, initialize=0.284,
-                                  doc='density of the metal in lb/in^3',
+                                  doc='Density of the metal in lb/in^3',
                                   units=pyunits.pound/pyunits.inch**3)
 
     if weight_limit == 'option1':
@@ -723,24 +790,28 @@ def vessel_costing(self, alignment='horizontal',
     # weight in lb --------------------------------------------------------
     # converting D in ft to inches, 0.8*D = accounts for two heads of vessel
     def weight_rule(self):
-        return self.weight == (
+        return self.weight * self.number_of_units == (
             const.pi * (D_in + self.shell_thickness) *
             (L_in + 0.8*D_in)*self.shell_thickness*self.material_density)
     self.weight_eq = Constraint(rule=weight_rule)
 
     # Base Vessel cost
     def CV_rule(self):
-        return self.base_cost == \
+        return self.base_cost_per_unit == \
             exp(c_alf1[alignment] +
                 c_alf2[alignment]*(log(self.weight/pyunits.pound)) +
                 c_alf3[alignment]*(log(self.weight/pyunits.pound)**2))
     self.cv_cost_eq = Constraint(rule=CV_rule)
 
+    @self.Expression(doc="Base cost for all units installed")
+    def base_cost(self):
+        return self.base_cost_per_unit * self.number_of_units
+
     # True if platform and ladder costs are incuded
     if PL is True:
         self.base_cost_platf_ladders = Var(initialize=1000,
                                            domain=NonNegativeReals,
-                                           doc='base cost of'
+                                           doc='Base cost of'
                                            ' platforms and ladders in $')
         platforms_ladders(self, alignment=alignment, L_D_range=L_D_range,
                           D=D, L=L)
@@ -750,21 +821,23 @@ def vessel_costing(self, alignment='horizontal',
         return self.vessel_purchase_cost == \
             (self.parent_block().parent_block().costing.CE_index/500) \
             * (self.material_factor*self.base_cost
-               + (self.base_cost_platf_ladders if PL else 0))
+               + (self.base_cost_platf_ladders
+                  * self.number_of_units if PL else 0))
     self.cp_vessel_eq = Constraint(rule=CP_vessel_rule)
 
     # True if platform and ladder costs are incuded
     if plates is True:
         self.purchase_cost_trays = Var(initialize=1e6,
                                        domain=NonNegativeReals,
-                                       doc='purchase cost of trays in $')
+                                       doc='Purchase cost of trays in $')
         plates_cost(self,
                     tray_mat_factor=tray_mat_factor,
                     tray_type=tray_type, D=D, number_tray=number_tray)
 
     def CP_cost_rule(self):
         return self.purchase_cost == self.vessel_purchase_cost \
-            + (self.purchase_cost_trays if plates else 0)
+            + (self.purchase_cost_trays
+               * self.number_of_units if plates else 0)
     self.cp_cost_eq = Constraint(rule=CP_cost_rule)
 
 
@@ -787,11 +860,19 @@ def platforms_ladders(self, alignment='horizontal', L_D_range='option1',
                     309.9*(D/pyunits.foot)**0.63316 *
                     (L/pyunits.foot)**0.80161)
             else:
-                raise Exception('L_D_range option not supported')
+                # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                raise ValueError('{} - L_D_range option not supported. '  # pylint: disable=E1305
+                                 'Please see documentation for list of '
+                                 'supported options.'.format(self.name,
+                                                             L_D_range))
         self.CPL_eq = Constraint(rule=CPL_rule)
 
     else:
-        raise Exception('alignment not supported')
+        # PYLINT-TODO-FIX fix exception message with correct number of arguments
+        raise ValueError('{} - vessel alignment type not supported. '  # pylint: disable=E1305
+                                 'Please see documentation for list of '
+                                 'supported options.'.format(self.name,
+                                                             alignment))
 
 
 def plates_cost(self,
@@ -800,14 +881,14 @@ def plates_cost(self,
 
     self.base_cost_trays = Var(initialize=1e4,
                                domain=NonNegativeReals,
-                               doc='base cost of trays in $')
+                               doc='Base cost of trays in $')
     self.type_tray_factor = Param(mutable=True, initialize=1.0,
-                                  doc='tray type factor')
+                                  doc='Tray type factor')
     self.number_tray_factor = Param(mutable=True,
                                     initialize=1.0,
-                                    doc='number of trays factor')
+                                    doc='Number of trays factor')
     self.number_trays = Param(mutable=True, initialize=15.0,
-                              doc='tray type factor')
+                              doc='Tray type factor')
     self.tray_material_factor = Var(initialize=1.0,
                                     doc='FTM material of construction'
                                     ' factor')
@@ -868,11 +949,11 @@ def fired_heater_costing(self,
     # (base cost, purchase cost)
     _make_vars(self)
     self.material_factor = Param(mutable=True, initialize=3,
-                                 doc='construction material correction factor')
+                                 doc='Construction material correction factor')
 
     self.pressure_factor = Var(initialize=1.1,
                                domain=NonNegativeReals,
-                               doc='pressure design factor')
+                               doc='Pressure design factor')
     if ref_parameter_pressure is None:
         # pressure in psig
         P = self.parent_block().control_volume.properties_in[0].pressure
@@ -887,7 +968,8 @@ def fired_heater_costing(self,
     else:
         Q = ref_parameter_heat_duty
 
-    Q = pyunits.convert(Q, to_units=pyunits.BTU/pyunits.hr)
+    Q = pyunits.convert(Q, to_units=pyunits.BTU/pyunits.hr)\
+        / self.number_of_units
 
     # material factor -------------------
     material_factor_dic = {'carbon_steel': 1.0,
@@ -905,35 +987,49 @@ def fired_heater_costing(self,
 
     def CB_rule(self):
         if fired_type == 'fuel':
-            return self.base_cost == exp(
+            return self.base_cost_per_unit == exp(
                 0.32325 + 0.766*log(Q/pyunits.BTU*pyunits.hr))
         elif fired_type == 'reformer':
-            return self.base_cost == 0.859*(Q/pyunits.BTU*pyunits.hr)**0.81
+            return self.base_cost_per_unit ==\
+                0.859*(Q/pyunits.BTU*pyunits.hr)**0.81
         elif fired_type == 'pyrolysis':
-            return self.base_cost == 0.650*(Q/pyunits.BTU*pyunits.hr)**0.81
+            return self.base_cost_per_unit ==\
+                0.650*(Q/pyunits.BTU*pyunits.hr)**0.81
         elif fired_type == 'hot_water':
-            return self.base_cost == exp(
+            return self.base_cost_per_unit == exp(
                 9.593-0.3769*log((Q/pyunits.BTU*pyunits.hr)) +
                 0.03434*log((Q/pyunits.BTU*pyunits.hr))**2)
         elif fired_type == 'salts':
-            return self.base_cost == 12.32*(Q/pyunits.BTU*pyunits.hr)**0.64
+            return self.base_cost_per_unit ==\
+                12.32*(Q/pyunits.BTU*pyunits.hr)**0.64
         elif fired_type == 'dowtherm_a':
-            return self.base_cost == 12.74*(Q/pyunits.BTU*pyunits.hr)**0.65
+            return self.base_cost_per_unit ==\
+                12.74*(Q/pyunits.BTU*pyunits.hr)**0.65
         elif fired_type == 'steam_boiler':
-            return self.base_cost == 0.367*(Q/pyunits.BTU*pyunits.hr)**0.77
+            return self.base_cost_per_unit ==\
+                0.367*(Q/pyunits.BTU*pyunits.hr)**0.77
         else:
-            raise Exception('fired heater type not supported')
-    self.cb_eq = Constraint(rule=CB_rule)
+            # PYLINT-TODO-FIX fix exception message with correct number of arguments
+            raise ValueError('{} - fired heater type not supported. '  # pylint: disable=E1305
+                                 'Please see documentation for list of '
+                                 'supported FH types.'.format(self.name,
+                                                              fired_type))
+    self.base_cost_per_unit_eq = Constraint(rule=CB_rule)
 
-    # # base cost fired heater
+    @self.Expression(doc="Base cost for all units installed")
+    def base_cost(self):
+        return self.base_cost_per_unit * self.number_of_units
+
+    # purchase cost fired heater
     def CP_rule(self):
         return self.purchase_cost == self.material_factor \
             * (self.parent_block().parent_block().costing.CE_index/500) \
             * self.pressure_factor * self.base_cost
-    self.cp_eq = Constraint(rule=CP_rule)
+    self.cp_cost_eq = Constraint(rule=CP_rule)
 
 
-def cstr_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
+def cstr_costing(self, alignment='vertical', Mat_factor='carbon_steel',
+                 weight_limit='option1', L_D_range='option1', PL=True):
     vessel_costing(self, alignment=alignment,
                    Mat_factor=Mat_factor,
                    weight_limit=weight_limit,
@@ -941,7 +1037,8 @@ def cstr_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
                    PL=PL)
 
 
-def flash_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
+def flash_costing(self, alignment='vertical', Mat_factor='carbon_steel',
+                  weight_limit='option1', L_D_range='option1', PL=True):
     vessel_costing(self, alignment=alignment,
                    Mat_factor=Mat_factor,
                    weight_limit=weight_limit,
@@ -949,7 +1046,8 @@ def flash_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
                    PL=PL)
 
 
-def rstoic_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
+def rstoic_costing(self, alignment='vertical', Mat_factor='carbon_steel',
+                    weight_limit='option1', L_D_range='option1', PL=True):
     vessel_costing(self, alignment=alignment,
                    Mat_factor=Mat_factor,
                    weight_limit=weight_limit,
@@ -957,9 +1055,138 @@ def rstoic_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
                    PL=PL)
 
 
-def pfr_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
+def pfr_costing(self, alignment='horizontal', Mat_factor='carbon_steel',
+                    weight_limit='option1', L_D_range='option1', PL=True):
     vessel_costing(self, alignment=alignment,
                    Mat_factor=Mat_factor,
                    weight_limit=weight_limit,
                    L_D_range=L_D_range,
                    PL=PL)
+
+
+def initialize(self):
+    '''
+    Section to initialize costing blocks for all unit models
+    '''
+    try:
+        # only heat exchanger and Fired heater calculate pressure factor
+        calculate_variable_from_constraint(self.pressure_factor,
+                                           self.p_factor_eq)
+    except AttributeError:
+        pass
+    if hasattr(self, "hx_material_eqn"):
+        # section to initialize heat exchanger costing block
+        calculate_variable_from_constraint(self.material_factor,
+                                           self.hx_material_eqn)
+
+    elif hasattr(self, "pump_head"):
+        # section to initialize pressure changer costing block
+        # only for pump and electric motor costing initialization
+        # all the other pressure changers only include purchase cost and/or
+        # base_cost_per_unit (compressors, turbines, fans, and blowers)
+        calculate_variable_from_constraint(
+            self.pump_head,
+            self.p_head_eq)
+
+        calculate_variable_from_constraint(
+            self.size_factor,
+            self.s_factor_eq)
+
+        calculate_variable_from_constraint(
+            self.base_cost_per_unit,
+            self.base_pump_cost_per_unit_eq
+              )
+
+        calculate_variable_from_constraint(
+            self.pump_purchase_cost,
+            self.cp_pump_cost_eq
+              )
+
+        calculate_variable_from_constraint(
+            self.motor_base_cost_per_unit,
+            self.base_motor_cost_eq
+              )
+        calculate_variable_from_constraint(
+            self.motor_purchase_cost,
+            self.cp_motor_cost_eq
+              )
+
+        calculate_variable_from_constraint(
+            self.motor_purchase_cost,
+            self.cp_motor_cost_eq
+              )
+
+        calculate_variable_from_constraint(
+            self.purchase_cost,
+            self.cp_cost_eq
+              )
+
+    elif hasattr(self, "vessel_purchase_cost"):
+        # section to initialize vessel costing block
+        calculate_variable_from_constraint(
+            self.weight,
+            self.weight_eq
+              )
+
+        calculate_variable_from_constraint(
+            self.base_cost_per_unit,
+            self.cv_cost_eq
+              )
+
+        if hasattr(self, "base_cost_platf_ladders "):
+            calculate_variable_from_constraint(
+                self.base_cost_platf_ladders,
+                self.CPL_eq
+                  )
+
+        if hasattr(self, "base_cost_trays"):
+            calculate_variable_from_constraint(
+                self.tray_material_factor,
+                self.mt_factor_eq
+                  )
+            calculate_variable_from_constraint(
+                self.base_cost_trays,
+                self.bc_tray_eq
+                  )
+            calculate_variable_from_constraint(
+                self.purchase_cost_trays,
+                self.cp_tray_eq
+                  )
+        # calculate CPL cost before vessel purchase cost eq
+        calculate_variable_from_constraint(
+            self.vessel_purchase_cost,
+            self.cp_vessel_eq
+              )
+
+    try:
+        # base_cost_units variable doesn't exist in turbine costing
+        calculate_variable_from_constraint(
+                self.base_cost_per_unit,
+                self.base_cost_per_unit_eq)
+    except AttributeError:
+        pass
+
+    # all costing methods use purchase cost
+    calculate_variable_from_constraint(
+            self.purchase_cost,
+            self.cp_cost_eq)
+
+
+def calculate_scaling_factors(self):
+    try:
+        # only turbine model doesn't include base cost
+        # scaling base_cost_per_unit
+        sf_a = iscale.get_scaling_factor(self.base_cost_per_unit,
+                                         default=1e-4,
+                                         warning=True)
+        iscale.constraint_scaling_transform(
+            self.base_cost_per_unit_eq, sf_a, overwrite=False)
+    except AttributeError:
+        pass
+    # scaling purchase cost (both var/eqn exist in all costing methods)
+    s_purchase_cost = iscale.get_scaling_factor(self.purchase_cost,
+                                                default=1e-4,
+                                                warning=True)
+
+    iscale.constraint_scaling_transform(
+        self.cp_cost_eq, s_purchase_cost, overwrite=False)

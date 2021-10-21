@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Heat Exchanger Models.
 """
@@ -29,7 +29,6 @@ from pyomo.environ import (
     Block,
     units as pyunits
 )
-
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -48,7 +47,8 @@ from idaes.generic_models.unit_models.heater import (
 
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util import scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 
 _log = idaeslog.getLogger(__name__)
 
@@ -133,7 +133,7 @@ def delta_temperature_lmtd_callback(b):
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
 
-    @b.Expression(b.flowsheet().config.time)
+    @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
         return (dT1[t] - dT2[t]) / log(dT1[t] / dT2[t])
 
@@ -148,7 +148,7 @@ def delta_temperature_amtd_callback(b):
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
 
-    @b.Expression(b.flowsheet().config.time)
+    @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
         return (dT1[t] + dT2[t]) * 0.5
 
@@ -162,19 +162,20 @@ def delta_temperature_underwood_callback(b):
     This uses a cube root function that works with negative numbers returning
     the real negative root. This should always evaluate successfully.
     """
+    dT1 = b.delta_temperature_in
+    dT2 = b.delta_temperature_out
+    temp_units = pyunits.get_units(dT1)
+
     # external function that ruturns the real root, for the cuberoot of negitive
     # numbers, so it will return without error for positive and negitive dT.
     b.cbrt = ExternalFunction(
         library=functions_lib(),
         function="cbrt",
-        units=pyunits.K**(1/3),
-        arg_units=[pyunits.K])
-    dT1 = b.delta_temperature_in
-    dT2 = b.delta_temperature_out
+        arg_units=[temp_units])
 
-    @b.Expression(b.flowsheet().config.time)
+    @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
-        return ((b.cbrt(dT1[t]) + b.cbrt(dT2[t])) / 2.0) ** 3
+        return ((b.cbrt(dT1[t]) + b.cbrt(dT2[t])) / 2.0) ** 3 * temp_units
 
 
 @declare_process_block_class("HeatExchanger", doc="Simple 0D heat exchanger model.")
@@ -217,6 +218,11 @@ class HeatExchangerData(UnitModelBlockData):
             # compatible with the tube and shell notation
             setattr(config, config.cold_side_name, config.cold_side_config)
 
+        if config.cold_side_name in ["hot_side", "side_1"]:
+            raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_1'].")
+        if config.hot_side_name in ["cold_side", "side_2"]:
+            raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_2'].")
+
     def build(self):
         """
         Building model
@@ -234,18 +240,49 @@ class HeatExchangerData(UnitModelBlockData):
         config = self.config
 
         ########################################################################
+        # Add control volumes                                                  #
+        ########################################################################
+        hot_side = _make_heater_control_volume(
+            self,
+            config.hot_side_name,
+            config.hot_side_config,
+            dynamic=config.dynamic,
+            has_holdup=config.has_holdup,
+        )
+        cold_side = _make_heater_control_volume(
+            self,
+            config.cold_side_name,
+            config.cold_side_config,
+            dynamic=config.dynamic,
+            has_holdup=config.has_holdup,
+        )
+        # Add references to the hot side and cold side, so that we have solid
+        # names to refer to internally.  side_1 and side_2 also maintain
+        # compatability with older models.  Using add_object_reference keeps
+        # these from showing up when you iterate through pyomo compoents in a
+        # model, so only the user specified control volume names are "seen"
+        if not hasattr(self, "side_1"):
+            add_object_reference(self, "side_1", hot_side)
+        if not hasattr(self, "side_2"):
+            add_object_reference(self, "side_2", cold_side)
+        if not hasattr(self, "hot_side"):
+            add_object_reference(self, "hot_side", hot_side)
+        if not hasattr(self, "cold_side"):
+            add_object_reference(self, "cold_side", cold_side)
+
+        ########################################################################
         # Add variables                                                        #
         ########################################################################
-        # Use side 1 units as basis
+        # Use hot side units as basis
         s1_metadata = config.hot_side_config.property_package.get_metadata()
 
         q_units = s1_metadata.get_derived_units("power")
         u_units = s1_metadata.get_derived_units("heat_transfer_coefficient")
         a_units = s1_metadata.get_derived_units("area")
-        t_units = s1_metadata.get_derived_units("temperature")
+        temp_units = s1_metadata.get_derived_units("temperature")
 
         u = self.overall_heat_transfer_coefficient = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             domain=PositiveReals,
             initialize=100.0,
             doc="Overall heat transfer coefficient",
@@ -258,112 +295,112 @@ class HeatExchangerData(UnitModelBlockData):
             units=a_units
         )
         self.delta_temperature_in = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=10.0,
             doc="Temperature difference at the hot inlet end",
-            units=t_units
+            units=temp_units
         )
         self.delta_temperature_out = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=10.1,
             doc="Temperature difference at the hot outlet end",
-            units=t_units
+            units=temp_units
         )
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=1.0,
                 doc="Factor to adjust coutercurrent flow heat "
                 "transfer calculation for cross flow.",
             )
             f = self.crossflow_factor
-        ########################################################################
-        # Add control volumes                                                  #
-        ########################################################################
-        _make_heater_control_volume(
-            self,
-            "side_1",
-            config.hot_side_config,
-            dynamic=config.dynamic,
-            has_holdup=config.has_holdup,
-        )
-        _make_heater_control_volume(
-            self,
-            "side_2",
-            config.cold_side_config,
-            dynamic=config.dynamic,
-            has_holdup=config.has_holdup,
-        )
-        # Add named references to side_1 and side_2, side 1 and 2 maintain
-        # backward compatability and are names the user doesn't need to worry
-        # about. The sign convention for duty is heat from side 1 to side 2 is
-        # positive
-        add_object_reference(self, config.hot_side_name, self.side_1)
-        add_object_reference(self, config.cold_side_name, self.side_2)
 
-        # Add convienient references to heat duty.
-        self.heat_duty = Reference(self.side_2.heat)
-        # Need to do this as Reference does not have units (Pyomo fixing this)
-        q = self.side_2.heat
+        self.heat_duty = Reference(cold_side.heat)
         ########################################################################
         # Add ports                                                            #
         ########################################################################
-        # Keep old port names, just for backward compatability
-        self.add_inlet_port(name="inlet_1", block=self.side_1, doc="Hot side inlet")
-        self.add_inlet_port(name="inlet_2", block=self.side_2, doc="Cold side inlet")
-        self.add_outlet_port(name="outlet_1", block=self.side_1, doc="Hot side outlet")
-        self.add_outlet_port(name="outlet_2", block=self.side_2, doc="Cold side outlet")
+        i1 = self.add_inlet_port(
+            name=f"{config.hot_side_name}_inlet",
+            block=hot_side,
+            doc="Hot side inlet")
+        i2 = self.add_inlet_port(
+            name=f"{config.cold_side_name}_inlet",
+            block=cold_side,
+            doc="Cold side inlet")
+        o1 = self.add_outlet_port(
+            name=f"{config.hot_side_name}_outlet",
+            block=hot_side,
+            doc="Hot side outlet")
+        o2 = self.add_outlet_port(
+            name=f"{config.cold_side_name}_outlet",
+            block=cold_side,
+            doc="Cold side outlet")
 
-        # Using Andrew's function for now, I think Pyomo's refrence has trouble
-        # with scalar (pyomo) components.
-        add_object_reference(self, config.hot_side_name + "_inlet", self.inlet_1)
-        add_object_reference(self, config.cold_side_name + "_inlet", self.inlet_2)
-        add_object_reference(self, config.hot_side_name + "_outlet", self.outlet_1)
-        add_object_reference(self, config.cold_side_name + "_outlet", self.outlet_2)
+        # Using Andrew's function for now.  I want these port names for backward
+        # compatablity, but I don't want them to appear if you iterate throught
+        # components and add_object_reference hides them from Pyomo.
+        if not hasattr(self, "inlet_1"):
+            add_object_reference(self, "inlet_1", i1)
+        if not hasattr(self, "inlet_2"):
+            add_object_reference(self, "inlet_2", i2)
+        if not hasattr(self, "outlet_1"):
+            add_object_reference(self, "outlet_1", o1)
+        if not hasattr(self, "outlet_2"):
+            add_object_reference(self, "outlet_2", o2)
+
+        if not hasattr(self, "hot_inlet"):
+            add_object_reference(self, "hot_inlet", i1)
+        if not hasattr(self, "cold_inlet"):
+            add_object_reference(self, "cold_inlet", i2)
+        if not hasattr(self, "hot_outlet"):
+            add_object_reference(self, "hot_outlet", o1)
+        if not hasattr(self, "cold_outlet"):
+            add_object_reference(self, "cold_outlet", o2)
         ########################################################################
-        # Add end temperature differnece constraints                            #
+        # Add end temperature differnece constraints                           #
         ########################################################################
-        @self.Constraint(self.flowsheet().config.time)
+
+        @self.Constraint(self.flowsheet().time)
         def delta_temperature_in_equation(b, t):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
                 return (
                     b.delta_temperature_in[t]
-                    == b.side_1.properties_in[t].temperature
-                    - pyunits.convert(b.side_2.properties_in[t].temperature,
-                                      to_units=t_units)
+                    == hot_side.properties_in[t].temperature
+                    - pyunits.convert(cold_side.properties_in[t].temperature,
+                                      to_units=temp_units)
                 )
             else:
                 return (
                     b.delta_temperature_in[t]
-                    == b.side_1.properties_in[t].temperature
-                    - pyunits.convert(b.side_2.properties_out[t].temperature,
-                                      to_units=t_units)
+                    == hot_side.properties_in[t].temperature
+                    - pyunits.convert(cold_side.properties_out[t].temperature,
+                                      to_units=temp_units)
                 )
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def delta_temperature_out_equation(b, t):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
                 return (
                     b.delta_temperature_out[t]
-                    == b.side_1.properties_out[t].temperature
-                    - pyunits.convert(b.side_2.properties_out[t].temperature,
-                                      to_units=t_units)
+                    == hot_side.properties_out[t].temperature
+                    - pyunits.convert(cold_side.properties_out[t].temperature,
+                                      to_units=temp_units)
                 )
             else:
                 return (
                     b.delta_temperature_out[t]
-                    == b.side_1.properties_out[t].temperature
-                    - pyunits.convert(b.side_2.properties_in[t].temperature,
-                                      to_units=t_units)
+                    == hot_side.properties_out[t].temperature
+                    - pyunits.convert(cold_side.properties_in[t].temperature,
+                                      to_units=temp_units)
                 )
 
         ########################################################################
         # Add a unit level energy balance                                      #
         ########################################################################
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def unit_heat_balance(b, t):
-            return 0 == (self.side_1.heat[t] +
-                         pyunits.convert(self.side_2.heat[t],
+            return 0 == (hot_side.heat[t] +
+                         pyunits.convert(cold_side.heat[t],
                                          to_units=q_units))
 
         ########################################################################
@@ -376,13 +413,13 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         deltaT = self.delta_temperature
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def heat_transfer_equation(b, t):
             if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
-                return pyunits.convert(q[t], to_units=q_units) == (
+                return pyunits.convert(self.heat_duty[t], to_units=q_units) == (
                     f[t] * u[t] * a * deltaT[t])
             else:
-                return pyunits.convert(q[t], to_units=q_units) == (
+                return pyunits.convert(self.heat_duty[t], to_units=q_units) == (
                     u[t] * a * deltaT[t])
 
         ########################################################################
@@ -390,8 +427,8 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         self.overall_heat_transfer_coefficient.latex_symbol = "U"
         self.area.latex_symbol = "A"
-        self.side_1.heat.latex_symbol = "Q_1"
-        self.side_2.heat.latex_symbol = "Q_2"
+        hot_side.heat.latex_symbol = "Q_1"
+        cold_side.heat.latex_symbol = "Q_2"
         self.delta_temperature.latex_symbol = "\\Delta T"
 
     def initialize(
@@ -399,8 +436,8 @@ class HeatExchangerData(UnitModelBlockData):
         state_args_1=None,
         state_args_2=None,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6},
+        solver=None,
+        optarg=None,
         duty=None,
     ):
         """
@@ -408,15 +445,16 @@ class HeatExchangerData(UnitModelBlockData):
 
         Args:
             state_args_1 : a dict of arguments to be passed to the property
-                initialization for side_1 (see documentation of the specific
+                initialization for the hot side (see documentation of the specific
                 property package) (default = {}).
             state_args_2 : a dict of arguments to be passed to the property
-                initialization for side_2 (see documentation of the specific
+                initialization for the cold side (see documentation of the specific
                 property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
             duty : an initial guess for the amount of heat transfered. This
                 should be a tuple in the form (value, units), (default
                 = (1000 J/s))
@@ -429,32 +467,34 @@ class HeatExchangerData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
-        flags1 = self.side_1.initialize(
+        hot_side = getattr(self, self.config.hot_side_name)
+        cold_side = getattr(self, self.config.cold_side_name)
+
+        # Create solver
+        opt = get_solver(solver, optarg)
+
+        flags1 = hot_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1
         )
 
-        init_log.info_high("Initialization Step 1a (side_1) Complete.")
+        init_log.info_high("Initialization Step 1a (hot side) Complete.")
 
-        flags2 = self.side_2.initialize(
+        flags2 = cold_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_2
         )
 
-        init_log.info_high("Initialization Step 1b (side_2) Complete.")
+        init_log.info_high("Initialization Step 1b (cold side) Complete.")
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
         # if costing block exists, deactivate
-        try:
+        if hasattr(self, "costing"):
             self.costing.deactivate()
-        except AttributeError:
-            pass
 
         self.heat_transfer_equation.deactivate()
 
         # Get side 1 and side 2 heat units, and convert duty as needed
-        s1_units = self.side_1.heat.get_units()
-        s2_units = self.side_2.heat.get_units()
+        s1_units = hot_side.heat.get_units()
+        s2_units = cold_side.heat.get_units()
 
         if duty is None:
             # Assume 1000 J/s and check for unitless properties
@@ -478,14 +518,14 @@ class HeatExchangerData(UnitModelBlockData):
                                             from_units=duty[1],
                                             to_units=s2_units)
 
-        self.side_2.heat.fix(s2_duty)
-        for i in self.side_1.heat:
-            self.side_1.heat[i].value = s1_duty
+        cold_side.heat.fix(s2_duty)
+        for i in hot_side.heat:
+            hot_side.heat[i].value = s1_duty
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
-        self.side_2.heat.unfix()
+        cold_side.heat.unfix()
         self.heat_transfer_equation.activate()
         # ---------------------------------------------------------------------
         # Solve unit
@@ -494,15 +534,14 @@ class HeatExchangerData(UnitModelBlockData):
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        self.side_1.release_state(flags1, outlvl=outlvl)
-        self.side_2.release_state(flags2, outlvl=outlvl)
+        hot_side.release_state(flags1, outlvl=outlvl)
+        cold_side.release_state(flags2, outlvl=outlvl)
 
         init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
-        # if costing block exists, activate
-        try:
+        # if costing block exists, activate and initialize
+        if hasattr(self, "costing"):
             self.costing.activate()
-        except AttributeError:
-            pass
+            costing.initialize(self.costing)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {
@@ -531,15 +570,12 @@ class HeatExchangerData(UnitModelBlockData):
             time_point=time_point,
         )
 
-    def get_costing(self, module=costing, hx_type='U-tube',
-                    Mat_factor='stainless steel/stainless steel',
-                    length_factor='12ft', year=None):
+    def get_costing(self, module=costing, year=None, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year)
 
         self.costing = Block()
-        module.hx_costing(self.costing, hx_type=hx_type, Mat_factor=Mat_factor,
-                          length_factor=length_factor)
+        module.hx_costing(self.costing, **kwargs)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -569,13 +605,19 @@ class HeatExchangerData(UnitModelBlockData):
         sf_a = iscale.get_scaling_factor(self.area, default=1, warning=True)
 
         for t, c in self.heat_transfer_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t]*sf_u[t]*sf_a)
+            iscale.constraint_scaling_transform(
+                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
 
         for t, c in self.unit_heat_balance.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t]*sf_u[t]*sf_a)
+            iscale.constraint_scaling_transform(
+                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
 
-        for t,c in self.delta_temperature_in_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t])
+        for t, c in self.delta_temperature_in_equation.items():
+            iscale.constraint_scaling_transform(c, sf_dT1[t], overwrite=False)
 
-        for t,c in self.delta_temperature_out_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT2[t])
+        for t, c in self.delta_temperature_out_equation.items():
+            iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
+
+        if hasattr(self, "costing"):
+            # import costing scaling factors
+            costing.calculate_scaling_factors(self.costing)

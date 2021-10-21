@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for Pressure Changer unit model.
 
@@ -52,16 +52,15 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
-from idaes.core.util import scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -82,7 +81,7 @@ class TestPressureChanger(object):
                 "property_package": m.fs.properties})
 
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -135,7 +134,6 @@ class TestPressureChanger(object):
                 "thermodynamic_assumption": ThermodynamicAssumption.adiabatic})
         iscale.calculate_scaling_factors(m)
 
-        assert isinstance(m.fs.unit.adiabatic, Constraint)
 
     @pytest.mark.unit
     def test_isentropic_comp_phase_balances(self):
@@ -306,11 +304,11 @@ class TestBTX_isothermal(object):
         assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
                          btx.fs.unit.outlet.flow_mol[0])) <= 1e-6
 
-        assert abs(btx.fs.unit.outlet.flow_mol[0] *
+        assert abs(value(btx.fs.unit.outlet.flow_mol[0] *
                    (btx.fs.unit.control_volume.properties_in[0]
                     .enth_mol_phase['Liq'] -
                     btx.fs.unit.control_volume.properties_out[0]
-                    .enth_mol_phase['Liq'])) <= 1e-6
+                    .enth_mol_phase['Liq']))) <= 1e-6
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -463,10 +461,10 @@ class TestIAPWS(object):
                          iapws.fs.unit.outlet.flow_mol[0])) <= 1e-6
 
         assert abs(value(
-                iapws.fs.unit.outlet.flow_mol[0] *
-                (iapws.fs.unit.inlet.enth_mol[0] -
-                 iapws.fs.unit.outlet.enth_mol[0]) +
-                iapws.fs.unit.work_mechanical[0])) <= 1e-6
+                   iapws.fs.unit.outlet.flow_mol[0] *
+                   (iapws.fs.unit.inlet.enth_mol[0] -
+                    iapws.fs.unit.outlet.enth_mol[0]) +
+                   iapws.fs.unit.work_mechanical[0])) <= 1e-6
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -474,9 +472,7 @@ class TestIAPWS(object):
     def test_verify(self, iapws_turb):
         iapws = iapws_turb
         # Verify the turbine results against 3 known test cases
-
         # Case Data (90% isentropic efficency)
-        # Run with Aspen Plus v10 using iapws-95
         cases = {
             "F": (1000, 1000, 1000),  # mol/s
             "Tin": (500, 800, 400),  # K
@@ -678,7 +674,7 @@ class TestTurbine(object):
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -709,7 +705,7 @@ class TestCompressor(object):
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -740,7 +736,7 @@ class TestPump(object):
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -777,24 +773,17 @@ class Test_costing(object):
         m.fs.unit.deltaP.fix(50000)
         m.fs.unit.efficiency_pump.fix(0.9)
         iscale.calculate_scaling_factors(m)
-        m.fs.unit.initialize()
 
         assert degrees_of_freedom(m) == 0
 
         m.fs.unit.get_costing(pump_type='centrifugal',
                               Mat_factor='nickel',
                               pump_motor_type_factor='enclosed')
-        calculate_variable_from_constraint(
-                    m.fs.unit.costing.motor_purchase_cost,
-                    m.fs.unit.costing.cp_motor_cost_eq)
 
-        calculate_variable_from_constraint(
-                m.fs.unit.costing.pump_purchase_cost,
-                m.fs.unit.costing.cp_pump_cost_eq)
-
-        calculate_variable_from_constraint(
-                m.fs.unit.costing.purchase_cost,
-                m.fs.unit.costing.total_cost_eq)
+        m.fs.unit.initialize()
+        # check costing block initialization
+        assert m.fs.unit.costing.purchase_cost.value == \
+            pytest.approx(70115.019, abs=1e-2)
 
         assert_units_consistent(m.fs.unit)
 
@@ -818,21 +807,29 @@ class Test_costing(object):
         m.fs.unit.inlet.pressure[0].fix(101325)
         m.fs.unit.deltaP.fix(500000)
         m.fs.unit.efficiency_isentropic.fix(0.9)
+        iscale.set_scaling_factor(m.fs.unit.control_volume.work[0], 1e-5)
         iscale.calculate_scaling_factors(m)
-
-        m.fs.unit.initialize()
 
         assert degrees_of_freedom(m) == 0
         m.fs.unit.get_costing(mover_type="compressor")
-        calculate_variable_from_constraint(
-                    m.fs.unit.costing.purchase_cost,
-                    m.fs.unit.costing.cp_cost_eq)
+        m.fs.unit.initialize()
+        results = solver.solve(m)
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        assert value(m.fs.unit.control_volume.work[0]) == \
+            pytest.approx(101410.4, rel=1e-5)
+
+        assert m.fs.unit.costing.purchase_cost.value == \
+            pytest.approx(334598, rel=1e-5)
 
         assert_units_consistent(m.fs.unit)
 
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
-            pytest.approx(334648, 1e-5)
+            pytest.approx(334598, rel=1e-5)
 
     @pytest.mark.component
     def test_turbine(self):
@@ -855,13 +852,14 @@ class Test_costing(object):
 
         m.fs.unit.deltaP.fix(Pout - Pin)
         m.fs.unit.efficiency_isentropic.fix(0.9)
+        # build costing block before initializing the unit
+        m.fs.unit.get_costing()
 
         m.fs.unit.initialize()
+        # check costing initialization is working
+        assert m.fs.unit.costing.purchase_cost.value ==\
+            pytest.approx(213199, 1e-5)
 
-        m.fs.unit.get_costing()
-        calculate_variable_from_constraint(
-                    m.fs.unit.costing.purchase_cost,
-                    m.fs.unit.costing.cp_cost_eq)
         assert degrees_of_freedom(m) == 0
 
         assert_units_consistent(m.fs.unit)
@@ -869,3 +867,87 @@ class Test_costing(object):
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value ==\
             pytest.approx(213199, 1e-5)
+
+    @pytest.mark.component
+    def test_turbine_performance_way1(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        def perf_callback(b):
+            unit_hd = units.J/units.kg
+            unit_vflw = units.m**3/units.s
+            @b.Constraint(m.fs.time)
+            def pc_isen_eff_eqn(b, t):
+                prnt = b.parent_block()
+                vflw = prnt.control_volume.properties_in[t].flow_vol
+                return prnt.efficiency_isentropic[t] == 0.9/3.975*vflw/unit_vflw
+            @b.Constraint(m.fs.time)
+            def pc_isen_head_eqn(b, t):
+                prnt = b.parent_block()
+                vflw = prnt.control_volume.properties_in[t].flow_vol
+                return b.head_isentropic[t]/1000 == \
+                    -75530.8/3.975/1000*vflw/unit_vflw*unit_hd
+
+        m.fs.unit = Turbine(default={
+            "property_package": m.fs.properties,
+            "support_isentropic_performance_curves":True,
+            "isentropic_performance_curves": {"build_callback": perf_callback}})
+
+        # set inputs
+        m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
+        Tin = 500  # K
+        Pin = 1000000  # Pa
+        Pout = 700000  # Pa
+        hin = iapws95.htpx(Tin*units.K, Pin*units.Pa)
+        m.fs.unit.inlet.enth_mol[0].fix(hin)
+        m.fs.unit.inlet.pressure[0].fix(Pin)
+
+        m.fs.unit.initialize()
+        assert degrees_of_freedom(m) == 0
+        assert_units_consistent(m.fs.unit)
+        solver.solve(m, tee=True)
+
+        assert value(m.fs.unit.efficiency_isentropic[0]) \
+            == pytest.approx(0.9, rel=1e-3)
+        assert value(m.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
+
+    @pytest.mark.component
+    def test_turbine_performance_way2(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+        m.fs.unit = Turbine(default={
+            "property_package": m.fs.properties,
+            "support_isentropic_performance_curves":True})
+        unit_hd = units.J/units.kg
+        unit_vflw = units.m**3/units.s
+        @m.fs.unit.performance_curve.Constraint(m.fs.time)
+        def pc_isen_eff_eqn(b, t):
+            prnt = b.parent_block()
+            vflw = prnt.control_volume.properties_in[t].flow_vol
+            return prnt.efficiency_isentropic[t] == 0.9/3.975*vflw/unit_vflw
+        @m.fs.unit.performance_curve.Constraint(m.fs.time)
+        def pc_isen_head_eqn(b, t):
+            prnt = b.parent_block()
+            vflw = prnt.control_volume.properties_in[t].flow_vol
+            return b.head_isentropic[t]/1000 == \
+                -75530.8/3.975/1000*vflw/unit_vflw*unit_hd
+
+        # set inputs
+        m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
+        Tin = 500  # K
+        Pin = 1000000  # Pa
+        Pout = 700000  # Pa
+        hin = iapws95.htpx(Tin*units.K, Pin*units.Pa)
+        m.fs.unit.inlet.enth_mol[0].fix(hin)
+        m.fs.unit.inlet.pressure[0].fix(Pin)
+
+        m.fs.unit.initialize()
+        assert degrees_of_freedom(m) == 0
+        assert_units_consistent(m.fs.unit)
+        solver.solve(m, tee=True)
+
+        assert value(m.fs.unit.efficiency_isentropic[0]) \
+            == pytest.approx(0.9, rel=1e-3)
+        assert value(m.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)

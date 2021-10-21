@@ -1,22 +1,22 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Test for Cappresse's module for NMPC.
 """
 
 import pytest
 from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
-                           Set, SolverFactory, Var, value, 
+                           Set, SolverFactory, Var, value, units as pyunits,
                            TransformationFactory, TerminationCondition)
 from pyomo.network import Arc
 from pyomo.common.collections import ComponentSet
@@ -56,7 +56,8 @@ def make_model(horizon=6, ntfe=60, ntcp=2,
         m.fs = FlowsheetBlock(default={'dynamic': False})
     else:
         m.fs = FlowsheetBlock(default={'dynamic': True,
-                                       'time_set': time_set})
+                                       'time_set': time_set,
+                                       'time_units': pyunits.minute})
 
     m.fs.properties = AqueousEnzymeParameterBlock()
     m.fs.reactions = EnzymeReactionParameterBlock(
@@ -112,13 +113,14 @@ def make_model(horizon=6, ntfe=60, ntcp=2,
 
     m.fs.inlet = Arc(source=m.fs.mixer.outlet, destination=m.fs.cstr.inlet)
 
-    # This constraint is in lieu of tracking the CSTR's level and allowing
-    # the outlet flow rate to be another degree of freedom.
-    # ^ Not sure how to do this in IDAES.
-    @m.fs.cstr.Constraint(m.fs.time,
-        doc='Total flow rate balance')
-    def total_flow_balance(cstr, t):
-        return (cstr.inlet.flow_vol[t] == cstr.outlet.flow_vol[t])
+    if not steady:
+        # This constraint is in lieu of tracking the CSTR's level and allowing
+        # the outlet flow rate to be another degree of freedom.
+        # ^ Not sure how to do this in IDAES.
+        @m.fs.cstr.Constraint(m.fs.time,
+            doc='Total flow rate balance')
+        def total_flow_balance(cstr, t):
+            return (cstr.inlet.flow_vol[t] == cstr.outlet.flow_vol[t])
 
     # Specify initial condition for energy
     if not steady:
@@ -149,4 +151,3 @@ if __name__ == '__main__':
 
     assert degrees_of_freedom(m_plant) == 0
     assert degrees_of_freedom(m_ss) == 0
-

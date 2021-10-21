@@ -1,0 +1,17 @@
+name: Display debug info
+description: Display information about the environment and event payload
+runs:
+  using: composite
+  steps:
+    - name: Display environment
+      shell: bash
+      run: |
+        echo "::group::Environment"
+        env
+        echo "::endgroup::"
+    - name: Display GitHub event payload
+      shell: bash
+      run: |
+        echo "::group::GitHub event payload"
+        jq . "$GITHUB_EVENT_PATH"
+        echo "::endgroup::"

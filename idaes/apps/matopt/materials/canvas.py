@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import numpy as np
 from copy import deepcopy
 
@@ -356,6 +356,51 @@ class Canvas(object):
             self.setNeighborsOfI(PNs, i)
         assert (self.isConsistentWithDesign())
 
+    def getNeighborsFromFunc(self, NeighborsFunc, layer=1):
+        """Get neighbors across the Canvas from a functor.
+
+        Args:
+            NeighborsFunc(function): Function that takes as input a point (numpy.ndarray) and returns a list of points.
+            layer(int): Target layer of neighbors.
+
+        Returns:
+            list<list<int>> Indexes matrix
+
+        """
+        result = [[] for _ in range(len(self.Points))]
+        for i, P in enumerate(self.Points):
+            PNs = NeighborsFunc(P, layer)
+            result[i] = [None] * len(PNs)
+            for j, PN in enumerate(PNs):
+                if self.hasPoint(PN):
+                    result[i][j] = self.getPointIndex(PN)
+        return result
+
+    def getNeighborsFromFuncAndTiling(self, NeighborsFunc, argTiling, layer=1):
+        """Get neighbors across the Canvas from a functor and Tiling.
+
+        Args:
+            NeighborsFunc(function): Function that takes as input a point (numpy.ndarray) and returns a list of points.
+            argTiling(Tiling): Tiling object that specifies the periodicity of the Canvas.
+            layer(int): Target layer of neighbors.
+
+        Returns:
+            list<list<int>> Indexes matrix
+        """
+        result = [[] for _ in range(len(self.Points))]
+        for i, P in enumerate(self.Points):
+            PNs = NeighborsFunc(P, layer)
+            result[i] = [None] * len(PNs)
+            for j, PN in enumerate(PNs):
+                if self.hasPoint(PN):
+                    result[i][j] = self.getPointIndex(PN)
+                else:
+                    for TilingDirection in argTiling.TilingDirections:
+                        PtoTry = PN + TilingDirection
+                        if self.hasPoint(PtoTry):
+                            result[i][j] = self.getPointIndex(PtoTry)
+        return result
+
     def makePeriodic(self, argTiling, NeighborsFunc):
         """Make connections periodic accross the edges of Tiling.
 
@@ -547,6 +592,24 @@ class Canvas(object):
                     result.append(Neigh)
         return result
 
+    def getNeighborhoodIndexes(self, Lat, layer=1, T=None):
+        """Wrapper of functions that returns neighbors across the Canvas
+
+        Args:
+            Lat(Lattice): Lattice of the Canvas
+            layer(int): optional, target layer of neighbors
+            T(Tiling): optional, Tiling object that specifies the periodicity
+
+        Returns:
+            list<list<int>> Indexes matrix
+        """
+        if layer == 1:
+            return self.NeighborhoodIndexes
+        elif T is None:
+            return self.getNeighborsFromFunc(Lat.getNeighbors, layer)
+        else:
+            return self.getNeighborsFromFuncAndTiling(Lat.getNeighbors, T, layer)
+
     # === BASIC QUERY METHODS
     @property
     def Points(self):
@@ -564,7 +627,7 @@ class Canvas(object):
         for i, P in enumerate(self.Points):
             print('{}: {}'.format(i, P))
 
-    def printNeighborhoodIndexes(self):
+    def printNeighborhoodIndexes(self, layer=1):
         """Pretty-print NeighborhoodIndexes."""
-        for i, Neighborhood in enumerate(self.NeighborhoodIndexes):
+        for i, Neighborhood in enumerate(self.getNeighborhoodIndexes(layer)):
             print('{}: {}'.format(i, Neighborhood))

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for turbine multistage model.
 
@@ -26,16 +26,10 @@ from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import (
     degrees_of_freedom, activated_equalities_generator)
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 
-
-prop_available = iapws95.iapws95_available()
-
-# See if ipopt is available and set up solver
-if pyo.SolverFactory('ipopt').available():
-    solver = pyo.SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6}
-else:
-    solver = None
+# Set up solver
+solver = get_solver()
 
 
 @pytest.mark.unit
@@ -65,8 +59,6 @@ def build_turbine_for_run_test():
 
 
 @pytest.mark.component
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize():
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine_for_run_test()
@@ -131,7 +123,7 @@ def test_initialize():
     def reheat_T_rule(b, t):
         return m.fs.reheat.control_volume.properties_out[t].temperature == 880
     m.fs.reheat.temperature_out_equation = pyo.Constraint(
-            m.fs.reheat.flowsheet().config.time,
+            m.fs.reheat.flowsheet().time,
             rule=reheat_T_rule)
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
@@ -148,8 +140,6 @@ def test_initialize():
 
 
 @pytest.mark.component
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_calc_cf():
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine_for_run_test()
@@ -213,7 +203,7 @@ def test_initialize_calc_cf():
     def reheat_T_rule(b, t):
         return m.fs.reheat.control_volume.properties_out[t].temperature == 880
     m.fs.reheat.temperature_out_equation = pyo.Constraint(
-            m.fs.reheat.flowsheet().config.time,
+            m.fs.reheat.flowsheet().time,
             rule=reheat_T_rule)
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)

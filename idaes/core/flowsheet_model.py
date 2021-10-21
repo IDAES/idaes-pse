@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains the base class for constructing flowsheet models in the
 IDAES modeling framework.
@@ -18,14 +18,15 @@ IDAES modeling framework.
 import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
 from pyomo.network import Arc
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue, ListOf
 from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core import (ProcessBlockData, declare_process_block_class,
                         UnitModelBlockData, useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_time_domain,
-                                    list_of_floats)
+                                    DefaultBool)
+from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import DynamicError, ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.ui.fsvis.fsvis import visualize
@@ -61,7 +62,7 @@ class FlowsheetBlockData(ProcessBlockData):
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic,
 **default** - useDefault.
@@ -79,7 +80,7 @@ search for a parent with a time domain or create a new time domain and
 reference it here."""))
     CONFIG.declare("time_set", ConfigValue(
         default=[0],
-        domain=list_of_floats,
+        domain=ListOf(float),
         description="Set of points for initializing time domain",
         doc="""Set of points for initializing time domain. This should be a
 list of floating point numbers,
@@ -119,6 +120,11 @@ within this flowsheet if not otherwise specified,
 
         # Set up dynamic flag and time domain
         self._setup_dynamics()
+
+    @property
+    def time(self):
+        # _time will be created by the _setup_dynamics method
+        return self._time
 
     @property
     def time_units(self):
@@ -187,7 +193,7 @@ within this flowsheet if not otherwise specified,
                                              orient=orient,
                                              true_state=true_state)
 
-    def visualize(self, model_name, browser=True, overwrite=False):
+    def visualize(self, model_name, **kwargs):
         """
         Starts up a flask server that serializes the model and pops up a 
         webpage with the visualization
@@ -195,20 +201,33 @@ within this flowsheet if not otherwise specified,
         Args:
             model_name : The name of the model that flask will use as an argument
                          for the webpage
-            browser : If True a browser window/tab will be opened with the 
-                      visualization. Defaults to True
-            overwrite : If True the visualization ignores any saved visualization 
-                        file
+        Keyword Args:
+            **kwargs: Additional keywords for :func:`idaes.ui.fsvis.visualize()`
 
         Returns:
             None
         """
-        visualize(self, model_name, browser, overwrite)
+        visualize(self, model_name, **kwargs)
 
-    def get_costing(self, module=costing, year=None):
+    def get_costing(self, module=costing, year=None, integer_n_units=False):
+        """
+        Creates a new block called 'costing' at the flowsheet level. This block
+        builds global parameters used in costing methods (power plant costing
+        and generic costing).
+
+        Args:
+            self - idaes flowsheet
+            year : used to build parameter CE_index (Chemical Engineering),
+            this parameter is the same for all costing blocks in the flowsheet
+            integer_n_units : flag to define variable domain (True: domain is
+            within Integer numbers, False: domain is NonNegativeReals).
+        Returns:
+            None
+        """
         self.costing = pe.Block()
 
-        module.global_costing_parameters(self.costing, year)
+        module.global_costing_parameters(self.costing, year=year,
+                                         integer_n_units=integer_n_units)
 
     def _get_stream_table_contents(self, time_point=0):
         """
@@ -246,14 +265,15 @@ within this flowsheet if not otherwise specified,
                         .format(self.name))
 
         # Validate units for time domain
-        if self.config.time_units is None and self.config.dynamic:
-            _log.warning("DEPRECATED: No units were specified for the time "
-                         "domain. Users should provide units via the "
-                         "time_units configuration argument.")
+        if self.config.time is None and fs is not None:
+            # We will get units from parent
+            pass
+        elif self.config.time_units is None and self.config.dynamic:
+            raise ConfigurationError(
+                f"{self.name} - no units were specified for the time domain. "
+                f"Units must be be specified for dynamic models.")
         elif self.config.time_units is None and not self.config.dynamic:
-            _log.info_high("DEPRECATED: No units were specified for the time "
-                            "domain. Users should provide units via the "
-                            "time_units configuration argument.")
+            _log.debug("No units specified for stady-state time domain.")
         elif not isinstance(self.config.time_units, _PyomoUnit):
             raise ConfigurationError(
                 "{} unrecognised value for time_units argument. This must be "
@@ -267,6 +287,7 @@ within this flowsheet if not otherwise specified,
                 raise DynamicError(
                         '{} was set as a dynamic flowsheet, but time domain '
                         'provided was not a ContinuousSet.'.format(self.name))
+            add_object_reference(self, "_time", self.config.time)
             self._time_units = self.config.time_units
         else:
             # If no parent flowsheet, set up time domain
@@ -286,16 +307,17 @@ within this flowsheet if not otherwise specified,
                                     "time_set attribute - must have at "
                                     "least two values (start and end).")
                     # For dynamics, need a ContinuousSet
-                    self.time = ContinuousSet(initialize=self.config.time_set)
+                    self._time = ContinuousSet(initialize=self.config.time_set)
                 else:
                     # For steady-state, use an ordered Set
-                    self.time = pe.Set(initialize=self.config.time_set,
-                                       ordered=True)
+                    self._time = pe.Set(initialize=self.config.time_set,
+                                        ordered=True)
                 self._time_units = self.config.time_units
 
                 # Set time config argument as reference to time domain
-                self.config.time = self.time
+                self.config.time = self._time
             else:
                 # Set time config argument to parent time
-                self.config.time = fs.config.time
+                self.config.time = fs.time
+                add_object_reference(self, "_time", fs.time)
                 self._time_units = fs._time_units

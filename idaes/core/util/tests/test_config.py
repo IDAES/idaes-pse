@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for config utility methods.
 
@@ -35,7 +35,8 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_port,
                                     is_time_domain,
                                     is_transformation_method,
-                                    is_transformation_scheme)
+                                    is_transformation_scheme,
+                                    DefaultBool)
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -150,13 +151,6 @@ def test_list_of_strings():
 
 
 @pytest.mark.unit
-def test_list_of_strings_errors():
-    # Test that list_of_strings fails correctly
-    with pytest.raises(ConfigurationError):
-        list_of_strings({"foo": "bar"})  # dict
-
-
-@pytest.mark.unit
 def test_list_of_floats():
     # Test list_of_floats returns correctly
     assert list_of_floats(1) == [1.0]  # int
@@ -258,7 +252,14 @@ def test_list_of_phase_types():
     assert list_of_phase_types([PT.liquidPhase]) == [PT.liquidPhase]
     assert list_of_phase_types([PT.liquidPhase, PT.vaporPhase]) == \
         [PT.liquidPhase, PT.vaporPhase]
-    with pytest.raises(ConfigurationError,
-                       match="valid_phase_types configuration argument must "
-                       "be a list of PhaseTypes."):
+    with pytest.raises(ValueError):
         list_of_phase_types("foo")
+
+
+@pytest.mark.unit
+def test_DefaultBool():
+    assert DefaultBool(useDefault) is useDefault
+    assert DefaultBool(True)
+    assert not DefaultBool(False)
+    with pytest.raises(ValueError):
+        DefaultBool("foo")

@@ -1,24 +1,31 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
+
+__author__ = "Oluwamayowa Amusat"
+
+# Imports from the python standard library
+import os.path
+import pprint
+# Imports from third parties
+from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
+import pickle
+from pyomo.core import Param, exp
 from scipy.optimize import basinhopping
 import scipy.optimize as opt
-import pandas as pd
-from pyomo.core import Param, exp
+# Imports from IDAES namespace
 from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
-import os.path, pickle
-from matplotlib import pyplot as plt
-
 
 class MyBounds(object):
     """
@@ -654,8 +661,7 @@ class KrigingModel:
         s = self._report()
         print(s)
 
-    def _repr_pretty_(self):
-        import pprint
+    def _repr_pretty_(self, p, cycle=False):
         s = self._report()
-        j = pprint.PrettyPrinter(width=80)
-        j.pprint(s)
+        p.text(s)
+

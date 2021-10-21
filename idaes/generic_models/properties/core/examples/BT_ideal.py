@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Benzene-Toluene phase equilibrium package using ideal liquid and vapor.
 
@@ -30,13 +30,13 @@ from idaes.core import LiquidPhase, VaporPhase, Component
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         IdealBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
+from idaes.generic_models.properties.core.pure import Perrys
+from idaes.generic_models.properties.core.pure import RPP4
 
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-import idaes.generic_models.properties.core.pure.RPP as RPP
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -59,8 +59,8 @@ configuration = {
                     "elemental_composition": {"C": 6, "H": 6},
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
-                    "enth_mol_ig_comp": RPP,
-                    "pressure_sat_comp": RPP,
+                    "enth_mol_ig_comp": RPP4,
+                    "pressure_sat_comp": RPP4,
                     "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
                     "parameter_data": {
                         "mw": (78.1136E-3, pyunits.kg/pyunits.mol),  # [1]
@@ -94,8 +94,8 @@ configuration = {
                     "elemental_composition": {"C": 7, "H": 8},
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
-                    "enth_mol_ig_comp": RPP,
-                    "pressure_sat_comp": RPP,
+                    "enth_mol_ig_comp": RPP4,
+                    "pressure_sat_comp": RPP4,
                     "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
                     "parameter_data": {
                         "mw": (92.1405E-3, pyunits.kg/pyunits.mol),  # [1]
@@ -149,5 +149,5 @@ configuration = {
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": IdealBubbleDew}

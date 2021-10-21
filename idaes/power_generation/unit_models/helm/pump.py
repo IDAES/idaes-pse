@@ -1,20 +1,20 @@
-#############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
 from idaes.power_generation.unit_models.balance import BalanceBlockData
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.generic_models.properties.helmholtz.helmholtz as hltz
 from idaes.generic_models.properties.helmholtz.helmholtz import (
     HelmholtzThermoExpressions as ThermoExpr
@@ -94,14 +94,14 @@ class HelmPumpData(BalanceBlockData):
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
         eff = self.efficiency_pump = pyo.Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=0.9,
             doc="Pump efficiency"
         )
         self.efficiency_isentropic = pyo.Reference(self.efficiency_pump[:])
 
         pratio = self.ratioP = pyo.Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=0.7,
             doc="Ratio of outlet to inlet pressure"
         )
@@ -111,24 +111,24 @@ class HelmPumpData(BalanceBlockData):
         properties_out = self.control_volume.properties_out
 
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Thermodynamic work"
         )
         def work_fluid(b, t):
             return properties_out[t].flow_vol*(self.deltaP[t])
 
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Work required to drive the pump."
         )
         def shaft_work(b, t): # Early access to the outlet enthalpy and work
             return self.work_fluid[t]/eff[t]
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def eq_work(b, t): # outlet enthalpy coens from energy balance
             return self.control_volume.work[t] == self.shaft_work[t]
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def eq_pressure_ratio(b, t):
             return (pratio[t]*properties_in[t].pressure ==
                 properties_out[t].pressure)
@@ -137,8 +137,8 @@ class HelmPumpData(BalanceBlockData):
     def initialize(
         self,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6},
+        solver=None,
+        optarg=None,
     ):
         """
         For simplicity this initialization requires you to set values for the
@@ -147,15 +147,16 @@ class HelmPumpData(BalanceBlockData):
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        # Set solver options
-        solver = pyo.SolverFactory(solver)
-        solver.options = optarg
+
+        # Create solver
+        slvr = get_solver(solver, optarg)
+
         # Store original specification so initialization doesn't change the model
         # This will only resore the values of varaibles that were originally fixed
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
         # Check for alternate pressure specs
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             if self.outlet.pressure[t].fixed:
                 self.ratioP[t] = pyo.value(
                     self.outlet.pressure[t]/self.inlet.pressure[t])
@@ -172,7 +173,7 @@ class HelmPumpData(BalanceBlockData):
         self.ratioP.fix()
         self.deltaP.unfix()
         self.efficiency_pump.fix()
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             self.outlet.pressure[t] = pyo.value(
                 self.inlet.pressure[t]*self.ratioP[t])
             self.deltaP[t] = pyo.value(
@@ -185,7 +186,7 @@ class HelmPumpData(BalanceBlockData):
             self.outlet.flow_mol[t] = pyo.value(self.inlet.flow_mol[t])
         # Solve the model (should be already solved from above)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self, tee=slc.tee)
+            res = slvr.solve(self, tee=slc.tee)
         from_json(self, sd=istate, wts=sp)
 
     def calculate_scaling_factors(self):
@@ -194,8 +195,8 @@ class HelmPumpData(BalanceBlockData):
         for t, c in self.eq_pressure_ratio.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].pressure)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.eq_work.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.work[t])
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

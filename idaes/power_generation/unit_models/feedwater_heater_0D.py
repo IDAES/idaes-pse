@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This file contains 0D feedwater heater models. These models are suitable for
 steady state calculations. For dynamic modeling 1D models are required. There
@@ -27,8 +27,8 @@ are two models included here.
 
 __author__ = "John Eslick"
 
-from pyomo.common.config import ConfigValue, In, ConfigBlock
-from pyomo.environ import SolverFactory, TransformationFactory, Var, value
+from pyomo.common.config import ConfigValue, In, ConfigBlock, Bool
+from pyomo.environ import TransformationFactory, Var, value
 from pyomo.network import Arc
 
 from idaes.core import (
@@ -39,7 +39,7 @@ from idaes.core import (
 from idaes.generic_models.unit_models.heat_exchanger import HeatExchangerData
 from idaes.generic_models.unit_models import (
     Mixer, MomentumMixingType, HeatExchanger)
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
 from idaes.core.util.config import is_physical_parameter_block
@@ -53,7 +53,7 @@ def _define_feedwater_heater_0D_config(config):
         "has_drain_mixer",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Add a mixer to the inlet of the condensing section",
             doc="""Add a mixer to the inlet of the condensing section to add
 water from the drain of another feedwaterheater to the steam, if True""",
@@ -63,7 +63,7 @@ water from the drain of another feedwaterheater to the steam, if True""",
         "has_desuperheat",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Add a mixer desuperheat section to the heat exchanger",
             doc="Add a mixer desuperheat section to the heat exchanger",
         ),
@@ -72,7 +72,7 @@ water from the drain of another feedwaterheater to the steam, if True""",
         "has_drain_cooling",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Add a section after condensing section cool condensate.",
             doc="Add a section after condensing section to cool condensate.",
         ),
@@ -154,13 +154,13 @@ class FWHCondensing0DData(HeatExchangerData):
     def build(self):
         super().build()
         units_meta = self.shell.config.property_package.get_metadata()
-        self.enth_sub = Var(self.flowsheet().config.time,
+        self.enth_sub = Var(self.flowsheet().time,
                             initialize=0,
                             units=units_meta.get_derived_units("energy_mole"))
         self.enth_sub.fix()
 
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Calculate steam extraction rate such that all steam condenses",
         )
         def extraction_rate_constraint(b, t):
@@ -175,7 +175,7 @@ class FWHCondensing0DData(HeatExchangerData):
         constraint deactivated; then it activates the constraint and calculates
         a steam inlet flow rate.
         """
-        solver = kwargs.get("solver", "ipopt")
+        solver = kwargs.get("solver", None)
         optarg = kwargs.get("oparg", {})
         outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
@@ -197,8 +197,8 @@ class FWHCondensing0DData(HeatExchangerData):
         self.extraction_rate_constraint.activate()
         self.inlet_1.flow_mol.unfix()
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
@@ -246,7 +246,7 @@ class FWH0DData(UnitModelBlockData):
             }
             self.drain_mix = Mixer(default=mix_cfg)
 
-            @self.drain_mix.Constraint(self.drain_mix.flowsheet().config.time)
+            @self.drain_mix.Constraint(self.drain_mix.flowsheet().time)
             def mixer_pressure_constraint(b, t):
                 """
                 Constraint to set the drain mixer pressure to the pressure of
@@ -364,9 +364,10 @@ class FWH0DData(UnitModelBlockData):
         if config.has_drain_cooling:
             _set_port(self.cooling.inlet_1, self.condense.outlet_1)
             self.cooling.initialize(*args, **kwargs)
+
         # Solve all together
-        opt = SolverFactory(kwargs.get("solver", "ipopt"))
-        opt.options = kwargs.get("oparg", {})
+        opt = get_solver(kwargs.get("solver"), kwargs.get("oparg", {}))
+
         assert degrees_of_freedom(self) == 0
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)

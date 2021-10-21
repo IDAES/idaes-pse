@@ -1,22 +1,22 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Base class for control volumes.
 """
 __author__ = "Andrew Lee"
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Param, Reals, units as pyunits, Var
+from pyomo.environ import Constraint, Reals, units as pyunits, Var, value
 from pyomo.dae import DerivativeVar
 
 # Import IDAES cores
@@ -60,6 +60,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
+
     def build(self):
         """
         Build method for ControlVolume0DBlock blocks.
@@ -82,7 +83,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         """
         units = self.config.property_package.get_metadata().get_derived_units
 
-        self.volume = Var(self.flowsheet().config.time, initialize=1.0,
+        self.volume = Var(self.flowsheet().time, initialize=1.0,
                           doc='Volume of material in control volume',
                           units=units('volume'))
 
@@ -130,7 +131,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         self.properties_in = (
                 self.config.property_package.build_state_block(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         doc="Material properties at inlet",
                         default=tmp_dict))
 
@@ -140,7 +141,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         self.properties_out = (
                 self.config.property_package.build_state_block(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         doc="Material properties at outlet",
                         default=tmp_dict_2))
 
@@ -173,7 +174,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         self.reactions = (
                 self.config.reaction_package.build_reaction_block(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         doc="Reaction properties in control volume",
                         default=tmp_dict))
 
@@ -206,7 +207,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         if has_equilibrium_reactions:
             # Check that reaction block is set to calculate equilibrium
-            for t in self.flowsheet().config.time:
+            for t in self.flowsheet().time:
                 if self.reactions[t].config.has_equilibrium is False:
                     raise ConfigurationError(
                             "{} material balance was set to include "
@@ -218,7 +219,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         if has_phase_equilibrium:
             # Check that state blocks are set to calculate equilibrium
-            for t in self.flowsheet().config.time:
+            for t in self.flowsheet().time:
                 if not self.properties_out[t].config.has_phase_equilibrium:
                     raise ConfigurationError(
                             "{} material balance was set to include phase "
@@ -239,10 +240,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Get units from property package
         units = self.config.property_package.get_metadata().get_derived_units
 
-        if (self.properties_in[self.flowsheet().config.time.first()]
+        if (self.properties_in[self.flowsheet().time.first()]
                 .get_material_flow_basis() == MaterialFlowBasis.molar):
             flow_units = units("flow_mole")
-        elif (self.properties_in[self.flowsheet().config.time.first()]
+        elif (self.properties_in[self.flowsheet().time.first()]
               .get_material_flow_basis() == MaterialFlowBasis.mass):
             flow_units = units("flow_mass")
         else:
@@ -250,7 +251,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Get units for accumulation term if required
         if self.config.dynamic:
-            f_time_units = self.flowsheet().config.time_units
+            f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units('time') is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
@@ -259,10 +260,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
             if f_time_units is None:
                 acc_units = None
-            elif (self.properties_in[self.flowsheet().config.time.first()]
+            elif (self.properties_in[self.flowsheet().time.first()]
                   .get_material_flow_basis() == MaterialFlowBasis.molar):
                 acc_units = units('amount')/f_time_units
-            elif (self.properties_in[self.flowsheet().config.time.first()]
+            elif (self.properties_in[self.flowsheet().time.first()]
                   .get_material_flow_basis() == MaterialFlowBasis.mass):
                 acc_units = units('mass')/f_time_units
             else:
@@ -279,7 +280,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Material holdup and accumulation
         if has_holdup:
-            self.material_holdup = Var(self.flowsheet().config.time,
+            self.material_holdup = Var(self.flowsheet().time,
                                        pc_set,
                                        domain=Reals,
                                        initialize=1.0,
@@ -288,7 +289,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if dynamic:
             self.material_accumulation = DerivativeVar(
                     self.material_holdup,
-                    wrt=self.flowsheet().config.time,
+                    wrt=self.flowsheet().time,
                     doc="Material accumulation in control volume",
                     units=acc_units)
 
@@ -301,7 +302,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "reactions (rate_reaction_idx), thus does not support "
                     "rate-based reactions.".format(self.name))
             self.rate_reaction_generation = Var(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         pc_set,
                         domain=Reals,
                         initialize=0.0,
@@ -319,12 +320,30 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "does not support equilibrium-based reactions."
                     .format(self.name))
             self.equilibrium_reaction_generation = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 pc_set,
                 domain=Reals,
                 initialize=0.0,
                 doc="Amount of component generated in control volume "
                     "by equilibrium reactions",
+                units=flow_units)
+
+        # Inherent reaction generation
+        if self.properties_out.include_inherent_reactions:
+            if not hasattr(self.config.property_package,
+                           "inherent_reaction_idx"):
+                raise PropertyNotSupportedError(
+                    "{} Property package does not contain a list of "
+                    "inherent reactions (inherent_reaction_idx), but "
+                    "include_inherent_reactions is True."
+                    .format(self.name))
+            self.inherent_reaction_generation = Var(
+                self.flowsheet().time,
+                pc_set,
+                domain=Reals,
+                initialize=0.0,
+                doc="Amount of component generated in control volume "
+                    "by inherent reactions",
                 units=flow_units)
 
         # Phase equilibrium generation
@@ -337,7 +356,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "equilibrium reactions (phase_equilibrium_idx), thus does "
                     "not support phase equilibrium.".format(self.name))
             self.phase_equilibrium_generation = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.config.property_package.phase_equilibrium_idx,
                 domain=Reals,
                 initialize=0.0,
@@ -347,7 +366,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Material transfer term
         if has_mass_transfer:
             self.mass_transfer_term = Var(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         pc_set,
                         domain=Reals,
                         initialize=0.0,
@@ -367,6 +386,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         def equilibrium_term(b, t, p, j):
             return (b.equilibrium_reaction_generation[t, p, j]
                     if has_equilibrium_reactions else 0)
+
+        def inherent_term(b, t, p, j):
+            return (b.inherent_reaction_generation[t, p, j]
+                    if b.properties_out.include_inherent_reactions else 0)
 
         def phase_equilibrium_term(b, t, p, j):
             if has_phase_equilibrium and \
@@ -403,7 +426,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             if not hasattr(self, "phase_fraction"):
                 self._add_phase_fractions()
 
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              pc_set,
                              doc="Material holdup calculations")
             def material_holdup_calculation(b, t, p, j):
@@ -415,14 +438,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_rate_reactions:
             # Add extents of reaction and stoichiometric constraints
             self.rate_reaction_extent = Var(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     self.config.reaction_package.rate_reaction_idx,
                     domain=Reals,
                     initialize=0.0,
                     doc="Extent of kinetic reactions",
                     units=flow_units)
 
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              pc_set,
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, p, j):
@@ -439,14 +462,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_equilibrium_reactions:
             # Add extents of reaction and stoichiometric constraints
             self.equilibrium_reaction_extent = Var(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     self.config.reaction_package.equilibrium_reaction_idx,
                     domain=Reals,
                     initialize=0.0,
                     doc="Extent of equilibrium reactions",
                     units=flow_units)
 
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              pc_set,
                              doc="Equilibrium reaction stoichiometry")
             def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
@@ -457,6 +480,30 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                 b.equilibrium_reaction_extent[t, r]
                                 for r in b.config.reaction_package.
                                 equilibrium_reaction_idx))
+                else:
+                    return Constraint.Skip
+
+        if self.properties_out.include_inherent_reactions:
+            # Add extents of reaction and stoichiometric constraints
+            self.inherent_reaction_extent = Var(
+                    self.flowsheet().time,
+                    self.config.property_package.inherent_reaction_idx,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc="Extent of inherent reactions",
+                    units=flow_units)
+
+            @self.Constraint(self.flowsheet().time,
+                             pc_set,
+                             doc="Inherent reaction stoichiometry")
+            def inherent_reaction_stoichiometry_constraint(b, t, p, j):
+                if (p, j) in pc_set:
+                    return b.inherent_reaction_generation[t, p, j] == (
+                            sum(b.properties_out[t].params.
+                                inherent_reaction_stoichiometry[r, p, j] *
+                                b.inherent_reaction_extent[t, r]
+                                for r in b.config.property_package.
+                                inherent_reaction_idx))
                 else:
                     return Constraint.Skip
 
@@ -512,7 +559,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 else:
                     return 0
 
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              pc_set,
                              doc="Material balances")
             def material_balances(b, t, p, j):
@@ -523,6 +570,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             kinetic_term(b, t, p, j) *
                             b._rxn_rate_conv(t, j, has_rate_reactions) +
                             equilibrium_term(b, t, p, j) +
+                            inherent_term(b, t, p, j) +
                             phase_equilibrium_term(b, t, p, j) +
                             transfer_term(b, t, p, j) +
                             user_term_mol(b, t, p, j) +
@@ -581,7 +629,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 else:
                     return 0
 
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              component_list,
                              doc="Material balances")
             def material_balances(b, t, j):
@@ -598,6 +646,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     sum(kinetic_term(b, t, p, j) for p in cplist) *
                     b._rxn_rate_conv(t, j, has_rate_reactions) +
                     sum(equilibrium_term(b, t, p, j) for p in cplist) +
+                    sum(inherent_term(b, t, p, j) for p in cplist) +
                     sum(transfer_term(b, t, p, j) for p in cplist) +
                     user_term_mol(b, t, j) + user_term_mass(b, t, j))
         else:
@@ -778,7 +827,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Get units for accumulation term if required
         if self.config.dynamic:
-            f_time_units = self.flowsheet().config.time_units
+            f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units('time') is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
@@ -796,7 +845,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         linearly_dependent = []
 
         # Get a representative time point
-        rtime = self.flowsheet().config.time.first()
+        rtime = self.flowsheet().time.first()
 
         # For each component in the material, search for elements which are
         # unique to it
@@ -840,7 +889,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Add Material Balance terms
         if has_holdup:
             self.element_holdup = Var(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     self.config.property_package.element_list,
                     domain=Reals,
                     initialize=1.0,
@@ -850,7 +899,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if dynamic:
             self.element_accumulation = DerivativeVar(
                     self.element_holdup,
-                    wrt=self.flowsheet().config.time,
+                    wrt=self.flowsheet().time,
                     doc="Elemental accumulation in control volume",
                     units=acc_units)
 
@@ -867,7 +916,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "automatically generate elemental balances."
                     .format(self.name))
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          phase_list,
                          self.config.property_package.element_list,
                          doc="Inlet elemental flow terms")
@@ -877,7 +926,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                        b.properties_out[t].params.element_comp[j][e]
                        for j in component_list)
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          phase_list,
                          self.config.property_package.element_list,
                          doc="Outlet elemental flow terms")
@@ -890,7 +939,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Create material balance terms as needed
         if has_mass_transfer:
             self.elemental_mass_transfer_term = Var(
-                            self.flowsheet().config.time,
+                            self.flowsheet().time,
                             e_index,
                             domain=Reals,
                             initialize=0.0,
@@ -900,8 +949,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Create rules to substitute material balance terms
         # Accumulation term
         def accumulation_term(b, t, e):
-            return pyunits.convert(b.element_accumulation[t, e],
-                                   to_units=units('flow_mole'))if dynamic else 0
+            return pyunits.convert(
+                b.element_accumulation[t, e],
+                to_units=units('flow_mole'))if dynamic else 0
 
         # Mass transfer term
         def transfer_term(b, t, e):
@@ -916,7 +966,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 return 0
 
         # Element balances
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          e_index,
                          doc="Elemental material balances")
         def element_balances(b, t, e):
@@ -933,7 +983,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             if not hasattr(self, "phase_fraction"):
                 self._add_phase_fractions()
 
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.config.property_package.element_list,
                              doc="Elemental holdup calculation")
             def elemental_holdup_calculation(b, t, e):
@@ -972,7 +1022,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     included in enthalpy balances
             has_enthalpy_transfer - whether terms for enthalpy transfer due to
                     mass transfer should be included in enthalpy balance. This
-                    should generally be the same as the has_mas_trasnfer
+                    should generally be the same as the has_mass_transfer
                     argument in the material balance methods
             custom_term - a Pyomo Expression representing custom terms to
                     be included in enthalpy balances.
@@ -1009,7 +1059,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Get units for accumulation term if required
         if self.config.dynamic:
-            f_time_units = self.flowsheet().config.time_units
+            f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units('time') is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
@@ -1024,7 +1074,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Create variables
         if has_holdup:
             self.energy_holdup = Var(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         phase_list,
                         domain=Reals,
                         initialize=1.0,
@@ -1034,40 +1084,40 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if dynamic is True:
             self.energy_accumulation = DerivativeVar(
                         self.energy_holdup,
-                        wrt=self.flowsheet().config.time,
+                        wrt=self.flowsheet().time,
                         doc="Energy accumulation in control volume",
                         units=acc_units)
 
         # Create energy balance terms as needed
         # Heat transfer term
         if has_heat_transfer:
-            self.heat = Var(self.flowsheet().config.time,
+            self.heat = Var(self.flowsheet().time,
                             domain=Reals,
                             initialize=0.0,
-                            doc="Heat transfered into control volume",
+                            doc="Heat transferred into control volume",
                             units=units('power'))
 
         # Work transfer
         if has_work_transfer:
-            self.work = Var(self.flowsheet().config.time,
+            self.work = Var(self.flowsheet().time,
                             domain=Reals,
                             initialize=0.0,
-                            doc="Work transfered into control volume",
+                            doc="Work transferred into control volume",
                             units=units('power'))
 
         # Enthalpy transfer
         if has_enthalpy_transfer:
             self.enthalpy_transfer = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 domain=Reals,
                 initialize=0.0,
-                doc="Enthalpy transfered into control volume due to "
+                doc="Enthalpy transferred into control volume due to "
                     "mass transfer",
                 units=units('power'))
 
         # Heat of Reaction
         if has_heat_of_reaction:
-            @self.Expression(self.flowsheet().config.time,
+            @self.Expression(self.flowsheet().time,
                              doc="Heat of reaction term")
             def heat_of_reaction(b, t):
                 if hasattr(self, "rate_reaction_extent"):
@@ -1116,23 +1166,25 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 return 0
 
         # Energy balance equation
-        @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
+        @self.Constraint(self.flowsheet().time, doc="Energy balances")
         def enthalpy_balances(b, t):
             return sum(accumulation_term(b, t, p) for p in phase_list) == (
-                sum(b.properties_in[t].get_enthalpy_flow_terms(p) for p in phase_list)
-                - sum(self.properties_out[t].get_enthalpy_flow_terms(p) for p in phase_list)
-                + heat_term(b, t)
-                + work_term(b, t)
-                + enthalpy_transfer_term(b, t)
-                + rxn_heat_term(b, t)
-                + user_term(t))
+                sum(b.properties_in[t].get_enthalpy_flow_terms(p)
+                    for p in phase_list) -
+                sum(b.properties_out[t].get_enthalpy_flow_terms(p)
+                    for p in phase_list) +
+                heat_term(b, t) +
+                work_term(b, t) +
+                enthalpy_transfer_term(b, t) +
+                rxn_heat_term(b, t) +
+                user_term(t))
 
         # Energy Holdup
         if has_holdup:
             if not hasattr(self, "phase_fraction"):
                 self._add_phase_fractions()
 
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              phase_list,
                              doc="Enthalpy holdup constraint")
             def energy_holdup_calculation(b, t, p):
@@ -1161,7 +1213,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 .format(self.name))
 
     def add_total_pressure_balances(
-        self, has_pressure_change=False, custom_term=None):
+            self, has_pressure_change=False, custom_term=None):
         """
         This method constructs a set of 0D pressure balances indexed by time.
 
@@ -1180,7 +1232,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Add Momentum Balance Variables as necessary
         if has_pressure_change:
-            self.deltaP = Var(self.flowsheet().config.time,
+            self.deltaP = Var(self.flowsheet().time,
                               domain=Reals,
                               initialize=0.0,
                               doc="Pressure difference across unit",
@@ -1199,7 +1251,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 return 0
 
         # Momentum balance equation
-        @self.Constraint(self.flowsheet().config.time, doc='Momentum balance')
+        @self.Constraint(self.flowsheet().time, doc='Momentum balance')
         def pressure_balance(b, t):
             return 0 == (
                 b.properties_in[t].pressure
@@ -1241,7 +1293,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             None
         """
         # Try property block model check
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             try:
                 blk.properties_in[t].model_check()
             except AttributeError:
@@ -1266,9 +1318,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              'ReactionBlock class.'.format(blk.name))
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg=None,
-                   solver='ipopt', hold_state=True):
+                   solver=None, hold_state=True):
         '''
-        Initialization routine for 0D control volume (default solver ipopt)
+        Initialization routine for 0D control volume.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -1276,9 +1328,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output log level of initialization routine
-            optarg : solver options dictionary object (default=None)
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None)
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
                      initialization, **default** - True. **Valid values:**
@@ -1293,12 +1346,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             states were fixed during initialization.
         '''
         # Get inlet state if not provided
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
+        init_log = idaeslog.getInitLogger(
+            blk.name, outlvl, tag="control_volume")
         if state_args is None:
             state_args = {}
             state_dict = (
                 blk.properties_in[
-                    blk.flowsheet().config.time.first()]
+                    blk.flowsheet().time.first()]
                 .define_port_members())
 
             for k in state_dict.keys():
@@ -1379,18 +1433,18 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         phase_list = self.properties_in.phase_list
         if len(phase_list) > 1:
             self.phase_fraction = Var(
-                            self.flowsheet().config.time,
+                            self.flowsheet().time,
                             phase_list,
                             initialize=1 / len(phase_list),
                             doc='Volume fraction of holdup by phase')
 
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              doc='Sum of phase fractions == 1')
             def sum_of_phase_fractions(self, t):
                 return 1 == sum(self.phase_fraction[t, p]
                                 for p in phase_list)
         else:
-            @self.Expression(self.flowsheet().config.time,
+            @self.Expression(self.flowsheet().time,
                              phase_list,
                              doc='Volume fraction of holdup by phase')
             def phase_fraction(self, t, p):
@@ -1531,91 +1585,224 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        # If the paraent component of an indexed component has a scale factor, but
-        # some of the data objects don't, propogate the indexed component scale
-        # factor to the missing scaling factors.
+        # If the parent component of an indexed component has a scale factor,
+        # but some of the data objects don't, propagate the indexed component
+        # scale factor to the missing scaling factors.
         iscale.propagate_indexed_component_scaling_factors(self)
 
         phase_list = self.properties_in.phase_list
+        phase_component_set = self.properties_in.phase_component_set
 
-        # Default scale factors
-        heat_sf_default = 1e-6
-        work_sf_default = 1e-6
-        volume_sf_default = 1e-3
-        phase_frac_sf_default = 10
+        # Set scaling for geometry variables
+        if hasattr(self, "volume"):
+            for t, v in self.volume.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.volume, default=1e-2, warning=True)
+                    iscale.set_scaling_factor(v, sf)
 
-        # Function to set defaults so I don't need to reproduce the same code
-        def _fill_miss_with_default(name, s):
-            try:
-                c = getattr(self, name)
-            except AttributeError:
-                return # it's okay if the attribute doesn't exist, spell carefully
-            if iscale.get_scaling_factor(c) is None:
-                for ci in c.values():
-                    if iscale.get_scaling_factor(ci) is None:
-                        iscale.set_scaling_factor(ci, s)
+        if hasattr(self, "phase_fraction"):
+            for v in self.phase_fraction.values():
+                if iscale.get_scaling_factor(v) is None:
+                    # phase fraction typically between 0.1 and 1
+                    iscale.set_scaling_factor(v, 10)
 
-        # Set defaults where scale factors are missing
-        _fill_miss_with_default("volume", heat_sf_default)
-        _fill_miss_with_default("heat", heat_sf_default)
-        _fill_miss_with_default("work", work_sf_default)
-        _fill_miss_with_default("phase_fraction", phase_frac_sf_default)
-
-        if hasattr(self, "energy_holdup"):
-            for (t, p), v in self.energy_holdup.items():
-                sf = iscale.get_scaling_factor(
-                    self.volume[t], default=1, warning=True)
-                sf *= iscale.get_scaling_factor(
-                    self.properties_out[t].get_energy_density_terms(p),
-                    default=1,
-                    warning=True)
-                iscale.set_scaling_factor(v, sf)
-
+        # Set scaling factors for common material balance variables
         if hasattr(self, "material_holdup"):
-            for (t, p, i), v in self.material_holdup.items():
-                sf = iscale.get_scaling_factor(
-                    self.volume[t], default=1, warning=True)
-                sf *= iscale.get_scaling_factor(
-                    self.properties_out[t].get_material_density_terms(p, i),
-                    default=1,
-                    warning=True)
-                iscale.set_scaling_factor(v, sf)
+            for (t, p, j), v in self.material_holdup.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(self.volume[t])
+                    sf *= iscale.get_scaling_factor(self.phase_fraction[t, p])
+                    sf *= iscale.get_scaling_factor(
+                        self.properties_out[t].get_material_density_terms(p, j),
+                        default=1,
+                        warning=True)
+                    iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "material_accumulation"):
-            for i, v in self.material_accumulation.items():
-                sf = 100*iscale.get_scaling_factor(
-                    self.material_holdup[i], default=1, warning=True)
+            for (t, p, j), v in self.material_accumulation.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.properties_out[t].get_material_flow_terms(p, j),
+                        default=1,
+                        warning=True)
+                    iscale.set_scaling_factor(v, sf)
+
+        # Control Volume has no way of knowing how best to scale
+        # reaction extents - this is something only the unit model can provide
+        # This also applies to the phase_equilibrium_generation term.
+
+        if hasattr(self, "rate_reaction_generation"):
+            for (t, p, j), v in self.rate_reaction_generation.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.min_scaling_factor(
+                        self.rate_reaction_extent[t, :])
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "equilibrium_reaction_generation"):
+            for (t, p, j), v in self.equilibrium_reaction_generation.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.min_scaling_factor(
+                        self.equilibrium_reaction_extent[t, ...])
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "inherent_reaction_generation"):
+            for (t, p, j), v in self.inherent_reaction_generation.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.min_scaling_factor(
+                        self.inherent_reaction_extent[t, ...])
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "mass_transfer_term"):
+            for (t, p, j), v in self.mass_transfer_term.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.properties_out[t].get_material_flow_terms(p, j),
+                        default=1,
+                        warning=True)
+                    iscale.set_scaling_factor(v, sf)
+
+        # Set scaling factors for element balance variables
+        if hasattr(self, "elemental_flow_out"):
+            for (t, p, e), v in self.elemental_flow_out.items():
+                flow_basis = self.properties_out[t].get_material_flow_basis()
+
+                sf = iscale.min_scaling_factor(
+                    [self.properties_out[t].get_material_density_terms(p, j)
+                     for (p, j) in phase_component_set],
+                    default=1,
+                    warning=True)
+                if flow_basis == MaterialFlowBasis.molar:
+                    sf *= 1
+                elif flow_basis == MaterialFlowBasis.mass:
+                    # MW scaling factor is the inverse of its value
+                    sf *= value(self.properties_out[t].mw_comp[j])
+
                 iscale.set_scaling_factor(v, sf)
+                iscale.set_scaling_factor(self.elemental_flow_in[t, p, e], sf)
+
+        if hasattr(self, "element_holdup"):
+            for (t, e), v in self.element_holdup.items():
+                flow_basis = self.properties_out[t].get_material_flow_basis()
+                sf_list = []
+                for p, j in phase_component_set:
+                    if flow_basis == MaterialFlowBasis.molar:
+                        sf = 1
+                    elif flow_basis == MaterialFlowBasis.mass:
+                        # MW scaling factor is the inverse of its value
+                        sf = value(self.properties_out[t].mw_comp[j])
+                    sf *= iscale.get_scaling_factor(self.phase_fraction[t, p])
+                    sf *= iscale.get_scaling_factor(
+                        self.properties_out[t].get_material_density_terms(p, j),
+                        default=1,
+                        warning=True)
+                    sf *= value(
+                        self.properties_out[t].params.element_comp[j][e])**-1
+                    sf_list.append(sf)
+                sf_h = min(sf_list)*iscale.get_scaling_factor(self.volume[t])
+                iscale.set_scaling_factor(v, sf_h)
+
+        if hasattr(self, "element_accumulation"):
+            for (t, e), v in self.element_accumulation.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.min_scaling_factor(
+                        self.elemental_flow_out[t, ...],
+                        default=1,
+                        warning=True)
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "elemental_mass_transfer_term"):
+            for (t, e), v in self.elemental_mass_transfer_term.items():
+                # minimum scaling factor for elemental_flow terms
+                sf_list = []
+                flow_basis = self.properties_out[t].get_material_flow_basis()
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.min_scaling_factor(
+                        self.elemental_flow_out[t, ...],
+                        default=1,
+                        warning=True)
+                    iscale.set_scaling_factor(v, sf)
+
+        # Set scaling factors for enthalpy balance variables
+        if hasattr(self, "energy_holdup"):
+            for (t, p), v in self.energy_holdup.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(self.volume[t])
+                    sf = iscale.get_scaling_factor(self.phase_fraction[t, p])
+                    sf *= iscale.get_scaling_factor(
+                        self.properties_out[t].get_energy_density_terms(p),
+                        default=1,
+                        warning=True)
+                    iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "energy_accumulation"):
-            for i, v in self.energy_accumulation.items():
-                sf = 100*iscale.get_scaling_factor(
-                    self.energy_holdup[i], default=1, warning=True)
-                iscale.set_scaling_factor(v, sf)
+            for (t, p), v in self.energy_accumulation.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.properties_out[t].get_enthalpy_flow_terms(p),
+                        default=1,
+                        warning=True)
+                    iscale.set_scaling_factor(v, sf)
 
+        if hasattr(self, "heat"):
+            for v in self.heat.values():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.heat, default=1e-6, warning=True)
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "work"):
+            for v in self.work.values():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.work, default=1e-6, warning=True)
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "enthalpy_transfer"):
+            for t, v in self.enthalpy_transfer.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.min_scaling_factor(
+                        [self.properties_out[t].get_enthalpy_flow_terms(p)
+                         for p in phase_list])
+                    iscale.set_scaling_factor(v, sf)
+
+        # Set scaling for momentum balance variables
         if hasattr(self, "deltaP"):
             for t, v in self.deltaP.items():
                 if iscale.get_scaling_factor(v) is None:
-                    s = iscale.get_scaling_factor(
+                    sf = 10 * iscale.get_scaling_factor(
                         self.properties_in[t].pressure,
                         default=1,
                         warning=True)
-                    iscale.set_scaling_factor(v, 10*s)
+                    iscale.set_scaling_factor(v, sf)
 
-        # Material Holdup Constraints
+        # Transform constraints in order of appearance
         if hasattr(self, "material_holdup_calculation"):
-            for i, c in self.material_holdup_calculation.items():
-                iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.material_holdup[i], default=1, warning=True))
+            for (t, p, j), c in self.material_holdup_calculation.items():
+                sf = iscale.get_scaling_factor(self.material_holdup[t, p, j])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
-        if hasattr(self, "pressure_balance"):
-            for t, c in self.pressure_balance.items():
-                iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.properties_in[t].pressure, default=1, warning=True))
+        if hasattr(self, "rate_reaction_stoichiometry_constraint"):
+            for (t, p, j), c in \
+                    self.rate_reaction_stoichiometry_constraint.items():
+                sf = iscale.get_scaling_factor(
+                        self.rate_reaction_generation[t, p, j])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
-        # Material Balance Constraints
+        if hasattr(self, "equilibrium_reaction_stoichiometry_constraint"):
+            for (t, p, j), c in \
+                    self.equilibrium_reaction_stoichiometry_constraint.items():
+                sf = iscale.get_scaling_factor(
+                        self.equilibrium_reaction_generation[t, p, j])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if hasattr(self, "inherent_reaction_stoichiometry_constraint"):
+            for (t, p, j), c in \
+                    self.inherent_reaction_stoichiometry_constraint.items():
+                sf = iscale.get_scaling_factor(
+                        self.inherent_reaction_generation[t, p, j])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
         if hasattr(self, "material_balances"):
             mb_type = self._constructed_material_balance_type
             if mb_type == MaterialBalanceType.componentPhase:
@@ -1624,67 +1811,75 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.properties_in[t].get_material_flow_terms(p, j),
                         default=1,
                         warning=True)
-                    iscale.constraint_scaling_transform(c, sf)
+                    iscale.constraint_scaling_transform(c, sf, overwrite=False)
             elif mb_type == MaterialBalanceType.componentTotal:
-                for (t , j), c in self.material_balances.items():
+                for (t, j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
                         [self.properties_in[t].get_material_flow_terms(p, j)
-                            for p in phase_list])
-                    iscale.constraint_scaling_transform(c, sf)
+                         for p in phase_list if (p, j) in phase_component_set])
+                    iscale.constraint_scaling_transform(c, sf, overwrite=False)
             else:
                 # There are some other material balance types but they create
                 # constraints with different names.
-                _log.warning(f"Unknow material balance type {mb_type}")
+                _log.warning(f"Unknown material balance type {mb_type}")
 
-        # Energy Balance Constraints
+        if hasattr(self, "element_balances"):
+            for (t, e), c in self.element_balances.items():
+                sf = iscale.min_scaling_factor(
+                    [self.elemental_flow_out[t, p, e]
+                     for p in phase_list])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if hasattr(self, "elemental_holdup_calculation"):
+            for (t, e), c in self.elemental_holdup_calculation.items():
+                sf = iscale.get_scaling_factor(self.element_holdup[t, e])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
         if hasattr(self, "enthalpy_balances"):
             for t, c in self.enthalpy_balances.items():
                 sf = iscale.min_scaling_factor(
                     [self.properties_in[t].get_enthalpy_flow_terms(p)
-                        for p in phase_list])
-                iscale.constraint_scaling_transform(c, sf)
+                     for p in phase_list], hint="enthalpy_flow_terms")
+                if hasattr(self, "work"):
+                    sf = min(sf, iscale.get_scaling_factor(
+                        self.work[t], default=1, warning=True))
+                if hasattr(self, "heat"):
+                    sf = min(sf, iscale.get_scaling_factor(
+                        self.heat[t], default=1, warning=True))
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "energy_holdup_calculation"):
-            for i, c in self.energy_holdup_calculation.items():
-                iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.energy_holdup[i], default=1, warning=True))
+            for (t, p), c in self.energy_holdup_calculation.items():
+                sf = iscale.get_scaling_factor(self.energy_holdup[t, p])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
-        if hasattr(self, "meterial_holdup_calculation"):
-            for i, c in self.material_holdup_calculation.items():
-                iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.material_holdup[i], default=1, warning=True))
+        if hasattr(self, "pressure_balance"):
+            for t, c in self.pressure_balance.items():
+                sf = iscale.get_scaling_factor(
+                    self.properties_in[t].pressure, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
-        if hasattr(self, "rate_reaction_stoichiometry_constraint"):
-            for i, c in self.rate_reaction_stoichiometry_constraint.items():
-                iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.rate_reaction_generation[i], default=1, warning=True))
+        if hasattr(self, "sum_of_phase_fractions"):
+            for t, c in self.sum_of_phase_fractions.items():
+                sf = iscale.min_scaling_factor(
+                    [self.phase_fraction[t, p] for p in phase_list])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
-        if hasattr(self, "equilibrium_reaction_stoichiometry_constraint"):
-            for i, c in self.equilibrium_reaction_stoichiometry_constraint.items():
-                iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.equilibrium_reaction_generation[i], default=1, warning=True))
+        # Scaling for discretization equations
+        if hasattr(self, "material_accumulation_disc_eq"):
+            for (t, p, j), c in self.material_accumulation_disc_eq.items():
+                sf = iscale.get_scaling_factor(
+                    self.material_accumulation[t, p, j])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
-        if hasattr(self, "element_balances"):
-            for (t, e), c in self.element_balances.items():
-                sf = iscale.min_scaling_factor([self.elemental_flow_in[t, p, e]
-                    for p in phase_list])
-                iscale.constraint_scaling_transform(c, sf)
+        if hasattr(self, "energy_accumulation_disc_eq"):
+            for (t, p), c in self.energy_accumulation_disc_eq.items():
+                sf = iscale.get_scaling_factor(
+                    self.energy_accumulation[t, p])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
-        if hasattr(self, "elemental_holdup_calculation"):
-            for (t, e), c in self.elemental_holdup_calculation.items():
-                flow_basis = self.properties_out[t].get_material_flow_basis()
-                if flow_basis == MaterialFlowBasis.molar:
-                    sf = 10.0 # start with 10 for phase fraction
-                else:
-                    sf = 10.0/iscale.get_scaling_factor(
-                        self.properties_out[t].mw_comp[j],
-                        default=1,
-                        warning=True)
-                sf *= iscale.min_scaling_factor(
-                    [self.properties_out[t].get_material_density_terms(p, j)
-                        for p in phase_list])
-                iscale.constraint_scaling_transform(c, sf)
+        if hasattr(self, "element_accumulation_disc_eq"):
+            for (t, e), c in self.element_accumulation_disc_eq.items():
+                sf = iscale.get_scaling_factor(
+                    self.element_accumulation[t, e])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)

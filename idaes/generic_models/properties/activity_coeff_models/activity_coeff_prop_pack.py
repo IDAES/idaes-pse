@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Ideal gas + Ideal/Non-ideal liquid property package.
 
@@ -62,6 +62,7 @@ from idaes.core.util.initialization import (fix_state_vars,
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants as const
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 
@@ -224,9 +225,9 @@ class _ActivityCoeffStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, state_args={}, hold_state=False,
+    def initialize(blk, state_args=None, hold_state=False,
                    state_vars_fixed=False, outlvl=idaeslog.NOTSET,
-                   solver="ipopt", optarg={"tol": 1e-8}):
+                   solver=None, optarg=None):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -246,9 +247,10 @@ class _ActivityCoeffStateBlock(StateBlock):
                          flow_mol_comp, temperature, pressure.
 
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
-            solver : str indicating whcih solver to use during
-                     initialization (default = "ipopt")
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solve)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -292,13 +294,8 @@ class _ActivityCoeffStateBlock(StateBlock):
                                     "for state block is not zero during "
                                     "initialization.")
 
-        if optarg is None:
-            sopt = {"tol": 1e-8}
-        else:
-            sopt = optarg
-
-        opt = SolverFactory("ipopt")
-        opt.options = sopt
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialization sequence: Deactivating certain constraints

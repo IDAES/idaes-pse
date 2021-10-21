@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for flowsheet_model.
 
@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 import inspect
-from pyomo.environ import ConcreteModel, Constraint, Set, Var
+from pyomo.environ import ConcreteModel, Constraint, Set, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 from idaes.core import (declare_process_block_class, ReactionParameterBlock,
                         ReactionBlockBase, ReactionBlockDataBase,
@@ -38,13 +38,11 @@ class _PropertyParameterBlock(PhysicalParameterBlock):
     def define_metadata(cls, obj):
         obj.add_properties({'prop1': {'method': None, 'units': 'm'},
                             'prop3': {'method': False}})
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.g,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
 @declare_process_block_class("ReactionParameterTestBlock")
@@ -86,13 +84,11 @@ class _ReactionParameterBlock2(ReactionParameterBlock):
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties({'rxn1': {'method': None}})
-        obj.add_default_units({'time': 'hr',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.hr,
+                               'length': pyunits.m,
+                               'mass': pyunits.g,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 @pytest.mark.unit
 def test_validate_state_block_invalid_units():
@@ -113,13 +109,11 @@ class _ReactionParameterBlock3(ReactionParameterBlock):
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties({'rxn1': {'method': None}})
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.g,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
         obj.add_required_properties({'prop2': 'some'})
 
 
@@ -142,13 +136,11 @@ class _ReactionParameterBlock4(ReactionParameterBlock):
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties({'rxn1': {'method': None}})
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.g,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
         obj.add_required_properties({'prop3': 'some'})
 
 
@@ -171,13 +163,11 @@ class _ReactionParameterBlock5(ReactionParameterBlock):
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties({'rxn1': {'method': None}})
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.g,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
         obj.add_required_properties({'prop1': 'km'})
 
 
@@ -200,13 +190,11 @@ class _ReactionParameterBlock6(ReactionParameterBlock):
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties({'rxn1': {'method': None}})
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.g,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
         obj.add_required_properties({'prop1': 'm'})
 
 

@@ -1,19 +1,19 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
-from abc import abstractmethod
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
+from abc import abstractmethod, ABC
 import numpy as np
 
-from .geometry import Parallelepiped
+from .geometry import Parallelepiped, Cylinder, CylindricalSector
 from .design import Design
 
 
@@ -59,6 +59,49 @@ class Tiling(object):
 
         """
         raise NotImplementedError
+
+
+class LinearTiling(Tiling, ABC):
+    """ Class to manage linear periodicity. """
+    DBL_TOL = 1e-5
+
+    # === STANDARD CONSTRUCTOR
+    def __init__(self, TilingDirections_, argShape=None):
+        super().__init__()
+        self._TileShape = argShape
+        self._TilingDirections = TilingDirections_
+
+    # === CONSTRUCTOR - From Parallelepiped
+    @classmethod
+    def fromParallelepiped(cls, argShape):
+        assert (type(argShape) == Parallelepiped), 'The input shape is not an instance of Parallelepiped.'
+        TilingDirections_ = [argShape.Vz, -argShape.Vz]
+        return cls(TilingDirections_, argShape)
+
+    # === CONSTRUCTOR - From Cylinder or CylindricalSector
+    @classmethod
+    def fromCylindricalShape(cls, argShape):
+        assert (type(argShape) == Cylinder or CylindricalSector), 'The input shape is not an instance of Cylinder or CylindricalSector.'
+        TilingDirections_ = [argShape.Vh, -argShape.Vh]
+        return cls(TilingDirections_, argShape)
+
+    # === CONSTRUCTOR - From POSCAR files
+    @classmethod
+    def fromPOSCAR(cls, filename):
+        return cls.fromParallelepiped(Parallelepiped.fromPOSCAR(filename))
+
+    # === BASIC QUERY METHODS
+    @property
+    def TileShape(self):
+        return self._TileShape
+
+    @property
+    def TilingDirections(self):
+        return self._TilingDirections
+
+    @property
+    def V(self):
+        return self._TilingDirections[0]
 
 
 class PlanarTiling(Tiling):

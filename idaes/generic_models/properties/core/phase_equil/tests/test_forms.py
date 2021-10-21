@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Library of common forms for phase equilibrium constraints
 """
@@ -63,7 +63,7 @@ def test_fugacity():
                        "amount": pyunits.mol,
                        "temperature": pyunits.K}})
 
-    assert str(fugacity(m, "Vap", "Liq", "H2O")) == str(
+    assert str(fugacity.return_expression(m, "Vap", "Liq", "H2O")) == str(
         m.x["Vap", "H2O"] == m.x["Liq", "H2O"])
 
 
@@ -92,5 +92,5 @@ def test_log_fugacity():
                        "amount": pyunits.mol,
                        "temperature": pyunits.K}})
 
-    assert str(log_fugacity(m, "Vap", "Liq", "H2O")) == str(
+    assert str(log_fugacity.return_expression(m, "Vap", "Liq", "H2O")) == str(
         42*m.x["Vap", "H2O"] == 42*m.x["Liq", "H2O"])

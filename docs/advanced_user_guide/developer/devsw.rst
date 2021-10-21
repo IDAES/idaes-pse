@@ -65,7 +65,7 @@ and summarized below:
     * - :ref:`sw-wf-develop`: Make local changes
     * - :ref:`sw-wf-collaborate`: Push the changes to Github, get feedback and merge
 
-.. figure:: ../../_images/sw-overview-workflow.png
+.. figure:: /images/sw-overview-workflow.png
     :align: center
     :width: 500px
 
@@ -105,7 +105,7 @@ You should first visit the repo on Github
 by pointing your browser to https://github.com/IDAES/idaes-dev/. Then you should
 fork the repo into a repo of the same name under your name.
 
-.. figure:: ../../_images/github-fork-repo.png
+.. figure:: /images/github-fork-repo.png
     :align: right
     :width: 500px
 
@@ -192,7 +192,7 @@ We will call a set of changes that belong together, e.g. because they depend on
 each other to work, a "topic". This section describes how to start work on a new
 topic. The workflow for initiating a topic is shown in Figure 3 below.
 
-.. figure:: ../../_images/sw-init-workflow.png
+.. figure:: /images/sw-init-workflow.png
     :align: right
     :height: 400px
 
@@ -212,7 +212,7 @@ There is one more important step to take, that will allow the rest of the projec
 to easily notice your issue: add the issue to the "Priorities" project. The screenshot
 below shows where you need to click to do this.
 
-.. figure:: ../../_images/github-issue-priority.png
+.. figure:: /images/github-issue-priority.png
     :align: right
     :width: 500px
 
@@ -220,7 +220,7 @@ below shows where you need to click to do this.
 
 Create a branch on your fork
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-It is certainly possible to do your work on your fork in the "master"
+It is certainly possible to do your work on your fork in the "main"
 branch. The problem that can arise here is if you need to do two unrelated
 things at the same time, for example working on a new feature and fixing
 a bug in the current code. This can be quite tricky to manage as a single set
@@ -273,7 +273,7 @@ Finally, you are ready to initiate the pull request. Right after you perform the
 URL in Github (https://github.com/IDAES/idaes-dev) and you should see a highlighted
 bar below the tabs, as in Figure 5 below, asking if you want to start a pull-request.
 
-.. figure:: ../../_images/github-start-pullrequest.png
+.. figure:: /images/github-start-pullrequest.png
     :align: right
     :width: 500px
 
@@ -304,7 +304,7 @@ debugging, and committing and pushing to Github. You may go through many (many!)
 iterations of this loop before the code is ready for review. This workflow is
 illustrated in Figure 6.
 
-.. figure:: ../../_images/sw-dev-workflow.png
+.. figure:: /images/sw-dev-workflow.png
     :align: right
     :height: 400px
 
@@ -353,7 +353,7 @@ A typical workflow goes like this:
     M  file1
     A  file3
     $ git commit -m "made some changes"
-    [master 067c16e] made some changes
+    [main 067c16e] made some changes
     2 files changed, 2 insertions(+)
     create mode 100644 file3
 
@@ -374,7 +374,7 @@ commands::
     git pull
     # OR -- explicit
     git fetch --all
-    git merge upstream/master
+    git merge upstream/main
 
 You'll notice that this merge command is using the name of the "upstream" remote
 that you :ref:`created earlier <sw-add-upstream>`.
@@ -413,11 +413,11 @@ did to the other developers. Through the Github "review" mechanism, people will
 be able to suggest changes and improvements. You can make changes to the code (other
 people can also make changes, see :ref:`sw-share-forks`), and then push those
 changes up into the same Pull Request. When you get enough approving reviews,
-the code is merged into the master repository. At this point, you can delete the
+the code is merged into the main repository. At this point, you can delete the
 "topic branch" used for the pull request, and go back to :ref:`initiate <sw-wf-initiate>` your
 next set of changes.
 
-.. figure:: ../../_images/sw-collaborate-workflow.png
+.. figure:: /images/sw-collaborate-workflow.png
     :align: right
     :height: 400px
 
@@ -480,16 +480,16 @@ big green "merge" button.
 Before you close the laptop and go down to the pub, you should tidy up. First,
 delete your local branch (you can also delete that branch on Github)::
 
-    git checkout master # switch back to master branch
+    git checkout main # switch back to main branch
     git branch -d mychanges-issue3000
 
-Next, you should make sure your master reflects the current state of the main
-master branch, i.e. go back and :ref:`synchronize with the upstream remote <sw-sync-upstream>`,
+Next, you should make sure your main reflects the current state of the upstream
+main branch, i.e. go back and :ref:`synchronize with the upstream remote <sw-sync-upstream>`,
 i.e. run ``git pull``.
 
 Now you can go and enjoy a tasty beverage. Cheers!
 
-.. image:: ../../_images/beer-coffee-cheers-small.png
+.. image:: /images/beer-coffee-cheers-small.png
 
 
  

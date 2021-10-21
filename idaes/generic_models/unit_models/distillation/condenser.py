@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Condenser model for distillation.
 
@@ -26,7 +26,8 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var, Constraint, value, Set
+from pyomo.environ import \
+    Reference, Expression, Var, Constraint, value, Set, SolverFactory
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -41,7 +42,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import PropertyPackageError, \
     ConfigurationError, PropertyNotSupportedError
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 
 _log = idaeslog.getLogger(__name__)
 
@@ -111,28 +112,6 @@ user specified temperature.}"""))
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    CONFIG.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
-        domain=In(MomentumBalanceType),
-        description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
-**default** - MomentumBalanceType.pressureTotal.
-**Valid values:** {
-**MomentumBalanceType.none** - exclude momentum balances,
-**MomentumBalanceType.pressureTotal** - single pressure balance for material,
-**MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-**MomentumBalanceType.momentumTotal** - single momentum balance for material,
-**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -196,9 +175,8 @@ see property package for documentation.}"""))
             balance_type=self.config.energy_balance_type,
             has_heat_transfer=True)
 
-        self.control_volume.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change)
+        # Note: No momentum balance added for the condenser as the condenser
+        # outlet pressure is a spec set by the user.
 
         # Get liquid and vapor phase objects from the property package
         # to be used below. Avoids repition.
@@ -233,10 +211,20 @@ see property package for documentation.}"""))
                 # Option 2: if this is false, then user has selected
                 # custom temperature spec and needs to fix an outlet
                 # temperature.
+
+                # Get index for bubble point temperature and and assume it
+                # will have only a single phase equilibrium pair. This is to
+                # support the generic property framework where the T_bubble
+                # is indexed by the phases_in_equilibrium. In distillation,
+                # the assumption is that there will only be a single pair
+                # i.e. vap-liq. 
+                idx = next(iter(self.control_volume.properties_out[
+                    self.flowsheet().time.first()].temperature_bubble))
+
                 def rule_total_cond(self, t):
                     return self.control_volume.properties_out[t].\
                         temperature == self.control_volume.properties_out[t].\
-                        temperature_bubble
+                        temperature_bubble[idx]
                 self.eq_total_cond_spec = Constraint(self.flowsheet().time,
                                                      rule=rule_total_cond)
 
@@ -247,9 +235,8 @@ see property package for documentation.}"""))
         # Reference to the heat duty
         self.heat_duty = Reference(self.control_volume.heat[:])
 
-        # Reference to the pressure drop (if set to True)
-        if self.config.has_pressure_change:
-            self.deltaP = Reference(self.control_volume.deltaP[:])
+        self.condenser_pressure = Reference(
+            self.control_volume.properties_out[:].pressure)
 
     def _make_ports(self):
 
@@ -706,7 +693,8 @@ see property package for documentation.}"""))
                         "while building ports for the condenser. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, solver=None, outlvl=idaeslog.NOTSET):
+    def initialize(self, state_args=None, solver=None, optarg=None,
+                   outlvl=idaeslog.NOTSET):
 
         # TODO: Fix the inlets to the condenser to the vapor flow from
         # the top tray or take it as an argument to this method.
@@ -723,32 +711,44 @@ see property package for documentation.}"""))
                     "selected for temperature_spec config argument."
                 )
 
+        solverobj = get_solver(solver, optarg)
+
+        if state_args is None:
+            state_args = {}
+            state_dict = (
+                self.control_volume.properties_in[
+                    self.flowsheet().time.first()]
+                .define_port_members())
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = value(state_dict[k][m])
+                else:
+                    state_args[k] = value(state_dict[k])
+
         if self.config.condenser_type == CondenserType.totalCondenser:
             self.eq_total_cond_spec.deactivate()
 
         # Initialize the inlet and outlet state blocks
-        self.control_volume.initialize(outlvl=outlvl)
+        flags = self.control_volume.initialize(state_args=state_args,
+                                               solver=solver,
+                                               optarg=optarg,
+                                               outlvl=outlvl,
+                                               hold_state=True)
 
         # Activate the total condenser spec
         if self.config.condenser_type == CondenserType.totalCondenser:
             self.eq_total_cond_spec.activate()
 
-        if solver is not None:
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solver.solve(self, tee=slc.tee)
-            init_log.info(
-                "Initialization Complete, {}.".format(idaeslog.condition(res))
-            )
-        else:
-            init_log.warning(
-                "Solver not provided during initialization, proceeding"
-                " with deafult solver in idaes.")
-            solver = get_default_solver()
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solver.solve(self, tee=slc.tee)
-            init_log.info(
-                "Initialization Complete, {}.".format(idaeslog.condition(res))
-            )
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solverobj.solve(self, tee=slc.tee)
+        init_log.info(
+            "Initialization Complete, {}.".format(idaeslog.condition(res))
+        )
+
+        self.control_volume.release_state(flags=flags)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}

@@ -2,9 +2,9 @@ Turbine (Multistage)
 ====================
 
 .. index::
-  pair: idaes.power_generation.unit_models.turbine_multistage;TurbineMultistage
+  pair: idaes.power_generation.unit_models.helm.turbine_multistage;HelmTurbineMultistage
 
-.. module:: idaes.power_generation.unit_models.turbine_multistage
+.. module:: idaes.power_generation.unit_models.helm.turbine_multistage
 
 This is a composite model for a power plant turbine with high, intermediate and
 low pressure sections. This model contains an inlet stage with throttle valves
@@ -28,7 +28,7 @@ Example
 This example sets up a turbine multistage turbine model similar to what could be
 found in a power plant steam cycle.  There are 7 high-pressure stages, 14
 intermediate-pressure stages, and 11 low-pressure stages. Steam extractions
-are provided after stages hp4,  hp7, ip5, ip14, lp4, lp7, lp9, lp11.  The
+are provided after stages hp4, hp7, ip5, ip14, lp4, lp7, lp9, lp11.  The
 extraction at ip14 uses a splitter with three outlets, one for the main steam,
 one for the boiler feed pump, and one for a feedwater heater.  There is a
 disconnection between the HP and IP sections so that steam can be sent to a
@@ -42,8 +42,7 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
 
   from idaes.core import FlowsheetBlock
   from idaes.unit_models import Heater
-  from idaes.power_generation.unit_models import (
-      TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
+  from idaes.power_generation.unit_models.helm import HelmTurbineMultistage
   from idaes.generic_models.properties import iapws95
 
   solver = SolverFactory('ipopt')
@@ -52,7 +51,7 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
   m = ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": False})
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.turb = TurbineMultistage(default={
+  m.fs.turb = HelmTurbineMultistage(default={
       "property_package": m.fs.properties,
       "num_hp": 7,
       "num_ip": 14,
@@ -142,7 +141,7 @@ The multistage turbine model contains the models in the table below.  The splitt
 Unit                        Index Sets           Doc
 =========================== ==================== ======================================================================================================================================================
 ``inlet_split``             None                 Splitter to split the main steam feed into steams for each arc (:ref:`Separator <technical_specs/model_libraries/generic/unit_models/separator:Separator>`)
-``throttle_valve``          Admission Arcs       Throttle valves for each admission arc (:ref:`SteamValve <technical_specs/model_libraries/power_generation/unit_models/steam_valve:Steam/Water Valve>`)
+``throttle_valve``          Admission Arcs       Throttle valves for each admission arc (:ref:`HelmValve <technical_specs/model_libraries/power_generation/unit_models/steam_valve:HelmValve>`)
 ``inlet_stage``             Admission Arcs       Parallel inlet turbine stages that represent admission arcs (:ref:`TurbineInlet <technical_specs/model_libraries/power_generation/unit_models/turbine_inlet:Turbine (Inlet Stage)>`)
 ``inlet_mix``               None                 Mixer to combine the streams from each arc back to one stream (:ref:`Mixer <technical_specs/model_libraries/generic/unit_models/mixer:Mixer>`)
 ``hp_stages``               HP stages            Turbine stages in the high-pressure section (:ref:`TurbineStage <technical_specs/model_libraries/power_generation/unit_models/turbine_stage:Turbine (Stage)>`)
@@ -165,14 +164,20 @@ Valve coefficients should also be specified.  A reasonable guess for split fract
 for any extraction splitters present. The most likely cause of initialization failure is flow coefficients
 in inlet stage, outlet stage, or valves that do not pair well with the specified flow rates.
 
+The flow coefficients for the inlet and outlet stage can be difficult to determine, therefore the
+initialization arguments ``calculate_outlet_cf`` and ``calculate_outlet_cf`` are provided. If these are
+True, the first stage flow coefficient is calculated from the flow and pressure ratio guesses, and the
+outlet flow coefficient is calculated from the exhaust pressure and flow. 
+
+
 TurbineMultistage Class
 -----------------------
 
-.. autoclass:: TurbineMultistage
+.. autoclass:: HelmTurbineMultistage
   :members:
 
 TurbineMultistageData Class
 ---------------------------
 
-.. autoclass:: TurbineMultistageData
+.. autoclass:: HelmTurbineMultistageData
   :members:

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for Component objects
 
@@ -24,7 +24,7 @@ from idaes.core.components import (Component, Solute, Solvent,
                                    Ion, Anion, Cation, Apparent)
 from idaes.core.phases import (LiquidPhase, VaporPhase, SolidPhase, Phase,
                                PhaseType, AqueousPhase)
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.core.property_meta import PropertyClassMetadata
 
 
@@ -34,6 +34,12 @@ class TestComponent():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -49,7 +55,8 @@ class TestComponent():
         assert m.comp.config.valid_phase_types is None
         assert m.comp.config.elemental_composition is None
         assert not m.comp.config._component_list_exists
-        assert m.config.henry_components is None
+        assert m.comp.config.henry_component is None
+        assert m.comp.config.has_vapor_pressure
 
     @pytest.mark.unit
     def test_populate_component_list(self, m):
@@ -76,7 +83,8 @@ class TestComponent():
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
-        assert m.comp._is_phase_valid("foo")
+        with pytest.raises(TypeError):
+            m.comp._is_phase_valid("foo")
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
@@ -206,6 +214,12 @@ class TestSolute():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -227,6 +241,11 @@ class TestSolute():
         for j in m.component_list:
             assert j in ["comp"]
 
+        assert isinstance(m.solute_set, Set)
+
+        for j in m.solute_set:
+            assert j in ["comp"]
+
     @pytest.mark.unit
     def test_is_solute(self, m):
         assert m.comp.is_solute()
@@ -237,7 +256,8 @@ class TestSolute():
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
-        assert m.comp._is_phase_valid("foo")
+        with pytest.raises(TypeError):
+            m.comp._is_phase_valid("foo")
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
@@ -308,6 +328,12 @@ class TestSovent():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
@@ -329,6 +355,11 @@ class TestSovent():
         for j in m.component_list:
             assert j in ["comp"]
 
+        assert isinstance(m.solvent_set, Set)
+
+        for j in m.solvent_set:
+            assert j in ["comp"]
+
     @pytest.mark.unit
     def test_is_solute(self, m):
         assert not m.comp.is_solute()
@@ -339,7 +370,8 @@ class TestSovent():
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
-        assert m.comp._is_phase_valid("foo")
+        with pytest.raises(TypeError):
+            m.comp._is_phase_valid("foo")
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
@@ -405,8 +437,8 @@ class TestSovent():
 
 
 class TestIon():
-    @pytest.fixture(scope="class")
-    def m(self):
+    @pytest.mark.unit
+    def test_electrolye(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -415,63 +447,78 @@ class TestIon():
             return m.meta_object
         m.get_metadata = types.MethodType(get_metadata, m)
 
-        m.comp = Ion()
-
-        return m
-
-    @pytest.mark.unit
-    def test_config(self, m):
-        assert "valid_phase_types" not in m.comp.config
-        assert m.comp.config.charge is None
-        assert not m.comp.config._component_list_exists
+        with pytest.raises(
+                NotImplementedError,
+                match="comp The IonData component class is intended as a base "
+                "class for the AnionData and CationData classes, and should "
+                "not be used directly"):
+            m.comp = Ion(default={"_electrolyte": True})
 
     @pytest.mark.unit
-    def test_populate_component_list(self, m):
-        assert isinstance(m.component_list, Set)
+    def test_not_electrolye(self):
+        m = ConcreteModel()
 
-        for j in m.component_list:
-            assert j in ["comp"]
+        m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
-    @pytest.mark.unit
-    def test_is_solute(self, m):
-        assert m.comp.is_solute()
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
 
-    @pytest.mark.unit
-    def test_is_solvent(self, m):
-        assert not m.comp.is_solvent()
-
-    @pytest.mark.unit
-    def test_is_phase_valid_no_assignment(self, m):
-        with pytest.raises(AttributeError):
-            m.comp._is_phase_valid("foo")
-
-    @pytest.mark.unit
-    def test_is_phase_valid_liquid(self, m):
-        m.Liq = LiquidPhase()
-        m.Sol = SolidPhase()
-        m.Vap = VaporPhase()
-        m.Aqu = AqueousPhase()
-        m.Phase = Phase()
-
-        assert not m.comp._is_phase_valid(m.Liq)
-        assert not m.comp._is_phase_valid(m.Sol)
-        assert not m.comp._is_phase_valid(m.Vap)
-        assert m.comp._is_phase_valid(m.Aqu)
-        assert not m.comp._is_phase_valid(m.Phase)
+        with pytest.raises(
+                PropertyPackageError,
+                match="comp Ion Component types should only be used with "
+                "Aqueous Phases"):
+            m.comp = Ion(default={"_electrolyte": False})
 
 
 class TestAnion():
-    @pytest.fixture(scope="class")
-    def m(self):
+    @pytest.mark.unit
+    def test_not_electrolye(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
         m.get_metadata = types.MethodType(get_metadata, m)
 
-        m.comp = Anion(default={"charge": -1})
+        with pytest.raises(
+                PropertyPackageError,
+                match="comp Ion Component types should only be used with "
+                "Aqueous Phases"):
+            m.comp = Anion(default={"_electrolyte": False})
+
+    @pytest.fixture(scope="class")
+    def m(self):
+        m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+
+        m.anion_set = Set()
+
+        m.comp = Anion(default={"charge": -1, "_electrolyte": True})
 
         return m
 
@@ -480,12 +527,15 @@ class TestAnion():
         assert "valid_phase_types" not in m.comp.config
         assert m.comp.config.charge == -1
         assert not m.comp.config._component_list_exists
+        assert not m.comp.config.has_vapor_pressure
+        with pytest.raises(ValueError):
+            m.comp.config.has_vapor_pressure = True
 
     @pytest.mark.unit
     def test_populate_component_list(self, m):
-        assert isinstance(m.component_list, Set)
+        assert isinstance(m.anion_set, Set)
 
-        for j in m.component_list:
+        for j in m.anion_set:
             assert j in ["comp"]
 
     @pytest.mark.unit
@@ -502,14 +552,14 @@ class TestAnion():
                            match="an received invalid value for charge "
                            "configuration argument."
                            " Anions must have a negative charge."):
-            m.an = Anion(default={"charge": +1})
+            m.an = Anion(default={"charge": +1, "_electrolyte": True})
 
     @pytest.mark.unit
     def test_no_charge(self, m):
         with pytest.raises(ConfigurationError,
                            match="an was not provided with a value "
                            "for charge."):
-            m.an = Anion()
+            m.an = Anion(default={"_electrolyte": True})
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
@@ -532,8 +582,8 @@ class TestAnion():
 
 
 class TestCation():
-    @pytest.fixture(scope="class")
-    def m(self):
+    @pytest.mark.unit
+    def test_not_electrolye(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -542,7 +592,31 @@ class TestCation():
             return m.meta_object
         m.get_metadata = types.MethodType(get_metadata, m)
 
-        m.comp = Cation(default={"charge": +1})
+        with pytest.raises(
+                PropertyPackageError,
+                match="comp Ion Component types should only be used with "
+                "Aqueous Phases"):
+            m.comp = Cation(default={"_electrolyte": False})
+
+    @pytest.fixture(scope="class")
+    def m(self):
+        m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+
+        m.cation_set = Set()
+
+        m.comp = Cation(default={"charge": +1, "_electrolyte": True})
 
         return m
 
@@ -551,12 +625,15 @@ class TestCation():
         assert "valid_phase_types" not in m.comp.config
         assert m.comp.config.charge == +1
         assert not m.comp.config._component_list_exists
+        assert not m.comp.config.has_vapor_pressure
+        with pytest.raises(ValueError):
+            m.comp.config.has_vapor_pressure = True
 
     @pytest.mark.unit
     def test_populate_component_list(self, m):
-        assert isinstance(m.component_list, Set)
+        assert isinstance(m.cation_set, Set)
 
-        for j in m.component_list:
+        for j in m.cation_set:
             assert j in ["comp"]
 
     @pytest.mark.unit
@@ -573,14 +650,14 @@ class TestCation():
                            match="cat received invalid value for charge "
                            "configuration argument."
                            " Cations must have a positive charge."):
-            m.cat = Cation(default={"charge": -1})
+            m.cat = Cation(default={"charge": -1, "_electrolyte": True})
 
     @pytest.mark.unit
     def test_no_charge(self, m):
         with pytest.raises(ConfigurationError,
                            match="cat was not provided with a value "
                            "for charge."):
-            m.cat = Cation()
+            m.cat = Cation(default={"_electrolyte": True})
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
@@ -608,14 +685,72 @@ class TestApparent():
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
 
         def get_metadata(self):
             return m.meta_object
         m.get_metadata = types.MethodType(get_metadata, m)
 
-        m.comp = Apparent()
+        m._apparent_set = Set()
+
+        m.comp = Apparent(default={"dissociation_species": {"comp": 1},
+                                   "_electrolyte": True})
 
         return m
+
+    @pytest.mark.unit
+    def test_not_electrolye(self):
+        m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+
+        m.comp = Apparent(default={"dissociation_species": {"comp": 1},
+                                   "_electrolyte": False})
+
+        for j in m.component_list:
+            assert j in ["comp"]
+        for j in m.solute_set:
+            assert j in ["comp"]
+
+        assert m.comp.config.dissociation_species == {"comp": 1}
+
+    @pytest.mark.unit
+    def test_no_dissociation_species(self):
+        m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+        m.meta_object.add_default_units({
+            'time': pyunits.s,
+            'length': pyunits.m,
+            'mass': pyunits.kg,
+            'amount': pyunits.mol,
+            'temperature': pyunits.K})
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+
+        with pytest.raises(
+                ConfigurationError,
+                match="dissoication_species argument was not set. "
+                "Apparent components require the dissociation species to be "
+                "defined."):
+            m.comp = Apparent(default={"_electrolyte": False})
 
     @pytest.mark.unit
     def test_config(self, m):
@@ -624,9 +759,9 @@ class TestApparent():
 
     @pytest.mark.unit
     def test_populate_component_list(self, m):
-        assert isinstance(m.component_list, Set)
+        assert isinstance(m._apparent_set, Set)
 
-        for j in m.component_list:
+        for j in m._apparent_set:
             assert j in ["comp"]
 
     @pytest.mark.unit
@@ -639,12 +774,15 @@ class TestApparent():
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
-        assert m.comp._is_phase_valid("foo")
+        with pytest.raises(TypeError):
+            m.comp._is_phase_valid("foo")
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
         m.comp3 = Apparent(default={
-            "valid_phase_types": PhaseType.liquidPhase})
+            "valid_phase_types": PhaseType.liquidPhase,
+            "dissociation_species": {"comp": 1},
+            "_electrolyte": True})
 
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
@@ -661,7 +799,9 @@ class TestApparent():
     @pytest.mark.unit
     def test_is_phase_valid_vapor(self, m):
         m.comp4 = Apparent(default={
-            "valid_phase_types": PhaseType.vaporPhase})
+            "valid_phase_types": PhaseType.vaporPhase,
+            "dissociation_species": {"comp": 1},
+            "_electrolyte": True})
 
         assert not m.comp4._is_phase_valid(m.Liq)
         assert not m.comp4._is_phase_valid(m.Sol)
@@ -672,7 +812,9 @@ class TestApparent():
     @pytest.mark.unit
     def test_is_phase_valid_solid(self, m):
         m.comp5 = Apparent(default={
-            "valid_phase_types": PhaseType.solidPhase})
+            "valid_phase_types": PhaseType.solidPhase,
+            "dissociation_species": {"comp": 1},
+            "_electrolyte": True})
 
         assert not m.comp5._is_phase_valid(m.Liq)
         assert m.comp5._is_phase_valid(m.Sol)
@@ -683,7 +825,9 @@ class TestApparent():
     @pytest.mark.unit
     def test_is_phase_valid_aqueous(self, m):
         m.comp6 = Apparent(default={
-            "valid_phase_types": PhaseType.aqueousPhase})
+            "valid_phase_types": PhaseType.aqueousPhase,
+            "dissociation_species": {"comp": 1},
+            "_electrolyte": True})
 
         assert not m.comp6._is_phase_valid(m.Liq)
         assert not m.comp6._is_phase_valid(m.Sol)
@@ -695,7 +839,9 @@ class TestApparent():
     def test_is_phase_valid_LV(self, m):
         m.comp7 = Apparent(default={
             "valid_phase_types": [PhaseType.liquidPhase,
-                                  PhaseType.vaporPhase]})
+                                  PhaseType.vaporPhase],
+            "dissociation_species": {"comp": 1},
+            "_electrolyte": True})
 
         assert m.comp7._is_phase_valid(m.Liq)
         assert not m.comp7._is_phase_valid(m.Sol)

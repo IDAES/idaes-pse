@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for Separator unit model.
 
@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
                            Set,
                            SolverStatus,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
@@ -31,11 +32,12 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (FlowsheetBlock,
                         declare_process_block_class,
-                        StateBlock,
                         MaterialBalanceType,
                         StateBlockData,
                         StateBlock,
-                        PhysicalParameterBlock)
+                        PhysicalParameterBlock,
+                        Phase,
+                        Component)
 from idaes.generic_models.unit_models.separator import (Separator,
                                                         SeparatorData,
                                                         SplittingType,
@@ -53,15 +55,16 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      TestStateBlock,
                                      initialization_tester)
+from idaes.core.util import get_solver
+import idaes.core.util.scaling as iscale
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -285,6 +288,33 @@ class TestBaseConstruction(object):
 
 
 # -----------------------------------------------------------------------------
+# Tests of Separator unit model scaling factors
+@pytest.mark.unit
+class TestBaseScaling(object):
+    """ Test scaling calculations.  For now they just make sure there are no
+    exceptions. This can be expanded in the future.
+    """
+    @pytest.fixture(scope="function")
+    def m(self):
+        b = ConcreteModel()
+        b.fs = FlowsheetBlock(default={"dynamic": False})
+        b.fs.pp = PhysicalParameterTestBlock()
+        return b
+
+    def test_no_exception_scaling_calc_external_mixed_state(self, m):
+        m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+        m.fs.sep1 = Separator(
+            default={
+                "property_package": m.fs.pp,
+                "mixed_state_block": m.fs.sb})
+        iscale.calculate_scaling_factors(m)
+
+    def test_no_exception_scaling_calc_internal_mixed_state(self, m):
+        m.fs.sep1 = Separator(default={"property_package": m.fs.pp})
+        iscale.calculate_scaling_factors(m)
+
+
+# -----------------------------------------------------------------------------
 # Tests of Separator unit model non-ideal construction methods
 @pytest.mark.build
 class TestSplitConstruction(object):
@@ -332,7 +362,7 @@ class TestSplitConstruction(object):
         for t in build.fs.time:
             for o in build.fs.sep.outlet_idx:
                 for p in build.fs.sep.config.property_package.phase_list:
-                    assert build.fs.sep.split_fraction[t, o, p] == 0.5
+                    assert build.fs.sep.split_fraction[t, o, p].value == 0.5
 
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 2
@@ -352,7 +382,7 @@ class TestSplitConstruction(object):
         for t in build.fs.time:
             for o in build.fs.sep.outlet_idx:
                 for j in build.fs.sep.config.property_package.component_list:
-                    assert build.fs.sep.split_fraction[t, o, j] == 0.5
+                    assert build.fs.sep.split_fraction[t, o, j].value == 0.5
 
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 2
@@ -373,7 +403,8 @@ class TestSplitConstruction(object):
             for o in build.fs.sep.outlet_idx:
                 for p in build.fs.sep.config.property_package.phase_list:
                     for j in build.fs.sep.config.property_package.component_list:
-                        assert build.fs.sep.split_fraction[t, o, p, j] == 0.5
+                        assert 0.5 == \
+                            build.fs.sep.split_fraction[t, o, p, j].value
 
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 4
@@ -1275,23 +1306,23 @@ class _IdealParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_IdealParameterBlock, self).build()
 
-        self.phase_list = Set(initialize=["p1", "p2"])
-        self.component_list = Set(initialize=["c1", "c2"],
-                                  ordered=True)
+        self.p1 = Phase()
+        self.p2 = Phase()
+        self.c1 = Component()
+        self.c2 = Component()
+
         self._phase_component_set = Set(initialize=[
             ("p1", "c1"), ("p1", "c2"), ("p2", "c1"), ("p2", "c2")])
 
-        self.state_block_class = IdealStateBlock
+        self._state_block_class = IdealStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.g,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
 @declare_process_block_class("IdealStateBlock", block_class=StateBlock)

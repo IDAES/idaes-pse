@@ -1,31 +1,60 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 """
 This module contains miscellaneous utility functions for use in IDAES models.
 """
-import xml.dom.minidom
+from pyomo.common.deprecation import deprecated
 
 import pyomo.environ as pyo
 from pyomo.core.base.expression import _GeneralExpressionData
-from pyomo.core.base.plugin import ModelComponentFactory
+from pyomo.core.base.component import ModelComponentFactory
 from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
-from pyomo.core.base.util import disable_methods
+from pyomo.core.base.disable_methods import disable_methods
+from pyomo.common.config import ConfigBlock
 
 import idaes.logger as idaeslog
+import idaes.core.solvers
+from idaes.core.util.tags import svg_tag as svg_tag_new
 
 _log = idaeslog.getLogger(__name__)
+
+
+# Author: Andrew Lee
+def get_solver(solver=None, options=None):
+    """
+    General method for getting a solver object which defaults to the standard
+    IDAES solver (defined in the IDAES configuration).
+
+    Args:
+        solver: string name for desired solver. Default=None, use default solver
+        options: dict of solver options to use, overwrites any settings
+                 provided by IDAES configuration. Default = None, use default
+                 solver options.
+
+    Returns:
+        A Pyomo solver object
+    """
+    if solver is None:
+        solver = "default"
+    solver_obj = idaes.core.solvers.SolverWrapper(solver, register=False)()
+
+    if options is not None:
+        solver_obj.options.update(options)
+
+    return solver_obj
+
 
 # Author: Andrew Lee
 def add_object_reference(self, local_name, remote_object):
@@ -89,128 +118,117 @@ def TagReference(s, description=""):
     return r
 
 
-# Author John Eslick
-def svg_tag(
-    tags,
-    svg,
-    outfile=None,
-    idx=None,
-    tag_map=None,
-    show_tags=False,
-    byte_encoding="utf-8",
-    tag_format={},
-    tag_format_default="{:.4e}"
-):
+def copy_port_values(destination=None, source=None, arc=None,
+        direction="forward"):
     """
-    Replace text in a SVG with tag values for the model. This works by looking
-    for text elements in the SVG with IDs that match the tags or are in tag_map.
+    Moved to idaes.core.util.initialization.propagate_state.
+    Leaving redirection function here for deprecation warning.
+    """
+    _log.warning("DEPRECATED: copy_port_values has been deprecated. "
+            "The same functionality can be found in "
+            "idaes.core.util.initialization.propagate_state.")
+    from idaes.core.util.initialization import propagate_state
+    propagate_state(destination=destination, source=source, arc=arc,
+            direction=direction)
+
+@deprecated(
+    "idaes.core.util.misc.svg_tag has moved to idaes.core.util.tags.svg_tag",
+    version=1.12
+)
+def svg_tag(*args, **kwargs):
+    """
+    Moved to idaes.core.util.tags.svg_tag
+    Leaving redirection function here for deprecation warning.
+    """
+    return svg_tag_new(*args, **kwargs)
+
+
+def set_param_from_config(b, param, config=None, index=None):
+    """
+    Utility method to set parameter value from a config block. This allows for
+    converting units if required. This method directly sets the value of the
+    parameter.
 
     Args:
-        tags: A dictionary where the key is the tag and the value is a Pyomo
-            Reference.  The reference could be indexed. In typical IDAES
-            applications the references would be indexed by time.
-        svg: a file pointer or a string continaing svg contents
-        outfile: a file name to save the results, if None don't save
-        idx: if None not indexed, otherwise an index in the indexing set of the
-            reference
-        tag_map: dictionary with svg id keys and tag values, to map svg ids to
-            tags
-        show_tags: Put tag labels of the diagram instead of numbers
-        byte_encoding: If svg is given as a byte-array, use this encoding to
-            convert it to a string.
-        tag_format: A dictionary of formatting strings.  If the formatting
-            string is a callable, it should be a function that takes the value
-            to display and returns a formatting string.
-        tag_format_default: The default formatting if not explicitly by
-            tag_format. If the formatting string is a callable, it should be a
-            function that takes the value to display and returns a formatting
-            string.
-
-    Returns:
-        SVG String
-    """
-    if isinstance(svg, str):  # assume this is svg content string
-        pass
-    elif isinstance(svg, bytes):
-        svg = svg.decode(byte_encoding)
-    elif hasattr(svg, "read"):  # file-like object to svg
-        svg = svg.read()
-    else:
-        raise TypeError("SVG must either be a string or a file-like object")
-    # Make tag map here because the tags may not make valid XML IDs if no
-    # tag_map provided we'll go ahead and handle XML @ (maybe more in future)
-    if tag_map is None:
-        tag_map = dict()
-        for tag in tags:
-            new_tag = tag.replace("@", "_")
-            tag_map[new_tag] = tag
-    # Search for text in the svg that has an id in tags
-    doc = xml.dom.minidom.parseString(svg)
-    texts = doc.getElementsByTagName("text")
-    for t in texts:
-        id = t.attributes["id"].value
-        if id in tag_map:
-            # if it's multiline change last line
-            try:
-                tspan = t.getElementsByTagName("tspan")[-1]
-            except IndexError:
-                _log.warning(f"Text object but no tspan for tag {tag_map[id]}.")
-                _log.warning(f"Skipping output for {tag_map[id]}.")
-                continue
-            try:
-                tspan = tspan.childNodes[0]
-            except IndexError:
-                # No child node means there is a line with no text, so add some.
-                tspan.appendChild(doc.createTextNode(""))
-                tspan = tspan.childNodes[0]
-            try:
-                if show_tags:
-                    val = tag_map[id]
-                elif idx is None:
-                    val = pyo.value(tags[tag_map[id]], exception=False)
-                else:
-                    val = pyo.value(tags[tag_map[id]][idx], exception=False)
-            except ZeroDivisionError:
-                val = "Divide_by_0"
-            tf = tag_format.get(tag_map[id], tag_format_default)
-            try:
-                if callable(tf): # conditional formatting
-                    tspan.nodeValue = tf(val).format(val)
-                else:
-                    tspan.nodeValue = tf.format(val)
-            except ValueError:
-                # whatever it is, it doesn't match the format.  Usually this
-                # happens when a string is given, but it is using a default
-                # number format
-                tspan.nodeValue = val
-
-    new_svg = doc.toxml()
-    # If outfile is provided save to a file
-    if outfile is not None:
-        with open(outfile, "w") as f:
-            f.write(new_svg)
-    # Return the SVG as a string.  This lets you take several passes at adding
-    # output without saving and loading files.
-    return new_svg
-
-
-# Author: John Eslick
-def copy_port_values(destination, source):
-    """
-    Copy the variable values in the source port to the destination port. The
-    ports must containt the same variables.
-
-    Args:
-        (pyomo.Port): Copy values from this port
-        (pyomo.Port): Copy values to this port
+        b - block on which parameter and config block are defined
+        param - name of parameter as str. Used to find param and config arg
+        units - units of param object (used if conversion required)
+        config - (optional) config block to get parameter data from. If
+                unset, assumes b.config.
+        index - (optional) used for pure component properties where a single
+                property may have multiple parameters associated with it.
 
     Returns:
         None
     """
-    for k, v in destination.vars.items():
-        if isinstance(v, pyo.Var):
-            for i in v:
-                v[i].value = pyo.value(source.vars[k][i])
+    if config is None:
+        try:
+            config = b.config
+        except AttributeError:
+            raise AttributeError(
+                "{} - set_param_from_config method was not provided with a "
+                "config argument, but no default Config block exists. Please "
+                "specify the Config block to use via the config argument."
+                .format(b.name))
+
+    # Check that config is an instance of a Config Block
+    if not isinstance(config, ConfigBlock):
+        raise TypeError(
+            "{} - set_param_from_config - config argument provided is not an "
+            "instance of a Config Block.".format(b.name))
+
+    if index is None:
+        try:
+            param_obj = getattr(b, param)
+        except AttributeError:
+            raise AttributeError(
+                "{} - set_param_from_config method was provided with param "
+                "argument {}, but no attribute of that name exists."
+                .format(b.name, param))
+
+        try:
+            p_data = config.parameter_data[param]
+        except (KeyError, AttributeError):
+            raise KeyError(
+                "{} - set_param_from_config method was provided with param "
+                "argument {}, but the config block does not contain a "
+                "value for this parameter.".format(b.name, param))
+    else:
+        try:
+            param_obj = getattr(b, param+"_"+index)
+        except AttributeError:
+            raise AttributeError(
+                "{} - set_param_from_config method was provided with param and"
+                " index arguments {} {}, but no attribute with that "
+                "combination ({}_{}) exists."
+                .format(b.name, param, index, param, index))
+
+        try:
+            p_data = config.parameter_data[param][index]
+        except (KeyError, AttributeError):
+            raise KeyError(
+                "{} - set_param_from_config method was provided with param and"
+                " index arguments {} {}, but the config block does not contain"
+                " a value for this parameter and index."
+                .format(b.name, param, index))
+
+    units = param_obj.get_units()
+
+    if isinstance(p_data, tuple):
+        # 11 Dec 2020 - There is currently a bug in Pyomo where trying to
+        # convert the units of a unitless quantity results in a TypeError.
+        # To avoid this, we check here for cases where both the parameter and
+        # user provided value are unitless and bypass unit conversion.
+        if ((units is None or units is pyo.units.dimensionless) and
+                (p_data[1] is None or p_data[1] is pyo.units.dimensionless)):
+            param_obj.value = p_data[0]
+        else:
+            param_obj.value = pyo.units.convert_value(
+                p_data[0], from_units=p_data[1], to_units=units)
+    else:
+        _log.debug("{} no units provided for parameter {} - assuming default "
+                   "units".format(b.name, param))
+        param_obj.value = p_data
 
 
 # -----------------------------------------------------------------------------
@@ -236,14 +254,39 @@ class _GeneralVarLikeExpressionData(_GeneralExpressionData):
 
     # Define methods for common APIs on Vars in case user mistakes
     # an Expression for a Var
+    def set_value(self, value, force=False):
+        """
+        Overload set_value method to provide meaningful error if user attempts
+        to set the value of the Expression. In order to support changing the
+        expression (and setting it originally), if self._expr is None or
+        force=True, the value of the expression will be updated, otherwise a
+        TypeError will be raised.
+
+        Args:
+            value: value to set for _expr
+            force: force updating of _expr if True (default = False)
+
+        Returns:
+            None
+
+        Raises:
+            TypeError if _expr is not None and force=False
+        """
+        if self._expr is None or force:
+            super().set_value(value)
+        else:
+            raise TypeError(
+                f"{self.name} is an Expression and does not have a value "
+                f"which can be set.")
+
     @property
     def value(self):
-        # Overload value so it behaves like a Var
-        return pyo.value(self.expr)
+        raise TypeError(
+            f"{self.name} is an Expression and does not have a value "
+            f"attribute. Use the 'value()' method instead.")
 
     @value.setter
     def value(self, expr):
-        # Overload value seter to prevent users changing the expression body
         raise TypeError(
             "%s is an Expression and does not have a value which can be set."
             % (self.name))

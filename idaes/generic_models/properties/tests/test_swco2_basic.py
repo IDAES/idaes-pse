@@ -1,20 +1,20 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 __author__ = "John Eslick"
 
 import pytest
-from pyomo.environ import ConcreteModel, value, SolverFactory, units as pyunits
+from pyomo.environ import ConcreteModel, value, units as pyunits
 from pyomo.common.fileutils import this_file_dir
 from pyomo.core.base.external import AMPLExternalFunction
 import idaes.generic_models.properties.swco2 as swco2
@@ -25,13 +25,6 @@ import idaes
 
 # Mark module as an integration test
 pytestmark = pytest.mark.integration
-
-
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6}
-else:
-    solver = None
 
 
 def read_data(fname, mw):
@@ -201,6 +194,16 @@ class TestHelm(object):
     pparam_construct = swco2.SWCO2ParameterBlock
     pdata = "prop_swco2_nist_webbook.txt"
     pdata_sat = "sat_prop_swco2_nist_webbook.txt"
+
+    @pytest.fixture(scope="class")
+    def model_transport(self):
+        # This model is used to test transport properties
+        model = ConcreteModel()
+        model.prop_param = swco2.SWCO2ParameterBlock()
+        model.prop_in = swco2.SWCO2StateBlock(
+            default={"parameters": model.prop_param}
+        )
+        return model
 
     @pytest.fixture(scope="class")
     def model(self):
@@ -468,3 +471,20 @@ class TestHelm(object):
             binary_derivative_test(f=model.func_w, x0=delta(rho), x1=tau(T))
             binary_derivative_test(f=model.func_f, x0=delta(rho), x1=tau(T))
             binary_derivative_test(f=model.func_g, x0=delta(rho), x1=tau(T))
+
+    def test_transport(self, model_transport):
+        """ Test transport properties.  The tolerances are pretty forgiving here.
+        The values are closer for the most part, but the estimation methods
+        aren't the same or are super sensitive near the critical point.  Just
+        want a sanity check not for high accuracy.
+        """
+        m = model_transport
+        data = read_data(self.pdata, self.mw)
+        for i, T in enumerate(data["T"]):
+            m.prop_in.temperature.set_value(T)
+            m.prop_in.pressure = data["P"][i]
+            ph = {"vapor":"Vap", "liquid":"Liq", "supercritical":"Liq"}[data["phase"][i]]
+            mu = value(m.prop_in.visc_d_phase[ph])
+            tc = value(m.prop_in.therm_cond_phase[ph])
+            assert tc == pytest.approx(data["tc"][i], rel=2.5e-1)
+            assert mu == pytest.approx(data["visc"][i], rel=2.5e-1)

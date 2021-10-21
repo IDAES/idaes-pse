@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for ControlVolumeBlockData.
 
@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import inspect
 import pytest
-from pyomo.environ import ConcreteModel, Block, Set
+from pyomo.environ import ConcreteModel, Block, Set, units
 from pyomo.common.config import ConfigBlock, ConfigValue
 from idaes.core import (ControlVolumeBlockData, CONFIG_Template,
                         MaterialBalanceType, EnergyBalanceType,
@@ -39,7 +39,7 @@ def test_material_balance_type():
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
-        MaterialBalanceType.foo
+        MaterialBalanceType.foo  # pylint: disable=no-member
 
 
 @pytest.mark.unit
@@ -48,7 +48,7 @@ def test_energy_balance_type():
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
-        EnergyBalanceType.foo
+        EnergyBalanceType.foo  # pylint: disable=no-member
 
 
 @pytest.mark.unit
@@ -57,7 +57,7 @@ def test_momentum_balance_type():
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
-        MomentumBalanceType.foo
+        MomentumBalanceType.foo  # pylint: disable=no-member
 
 @pytest.mark.unit
 def testflow_direction():
@@ -65,7 +65,7 @@ def testflow_direction():
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
-        FlowDirection.foo
+        FlowDirection.foo  # pylint: disable=no-member
 
 
 # -----------------------------------------------------------------------------
@@ -241,7 +241,8 @@ def test_setup_dynamics_dynamic_in_ss():
 @pytest.mark.unit
 def test_setup_dynamics_dynamic_holdup_inconsistent():
     # Test that dynamic = None works correctly
-    fs = Flowsheet(default={"dynamic": True}, concrete=True)
+    fs = Flowsheet(default={"dynamic": True, "time_units": units.s},
+                   concrete=True)
 
     # Create a Block (with no dynamic attribute)
     fs.b = Block()

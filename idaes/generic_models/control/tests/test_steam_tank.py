@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Basic PID control test using a tank with steam flowing through it.  The
 controller is set up to maintain a tank pressure by adjusting the inlet valve
@@ -30,16 +30,40 @@ __author__ = "John Eslick"
 import pytest
 import pyomo.environ as pyo
 from pyomo.network import Arc
-from idaes.power_generation.unit_models import SteamValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
-from idaes.generic_models.unit_models import Heater
+from idaes.generic_models.unit_models import Heater, Valve
 from idaes.generic_models.properties import iapws95
 from idaes.core.util import copy_port_values as _set_port
 from idaes.core.util.plot import stitch_dynamic
 from idaes.generic_models.control import PIDBlock, PIDForm
+import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 
-solver_available = pyo.SolverFactory('ipopt').available()
-prop_available = iapws95.iapws95_available()
+
+def _valve_pressure_flow_cb(b):
+    """
+    For vapor F = Cv*sqrt(Pi**2 - Po**2)*f(x)
+    """
+    umeta = b.config.property_package.get_metadata().get_derived_units
+
+    b.Cv = pyo.Var(
+        initialize=0.1,
+        doc="Valve flow coefficent",
+        units=umeta("amount")/umeta("time")/umeta("pressure")
+    )
+    b.Cv.fix()
+
+    b.flow_var = pyo.Reference(b.control_volume.properties_in[:].flow_mol)
+    b.pressure_flow_equation_scale = lambda x: x**2
+
+    @b.Constraint(b.flowsheet().time)
+    def pressure_flow_equation(b2, t):
+        Po = b2.control_volume.properties_out[t].pressure
+        Pi = b2.control_volume.properties_in[t].pressure
+        F = b2.control_volume.properties_in[t].flow_mol
+        Cv = b2.Cv
+        fun = b2.valve_function[t]
+        return F ** 2 == Cv ** 2 * (Pi ** 2 - Po ** 2) * fun ** 2
 
 
 def _add_inlet_pressure_step(m, time=1, value=6.0e5):
@@ -60,11 +84,12 @@ def _add_inlet_pressure_step(m, time=1, value=6.0e5):
 
 def create_model(
     steady_state=True,
-    time_set=[0, 3],
+    time_set=None,
     time_units=pyo.units.s,
     nfe=5,
     calc_integ=True,
-    form=PIDForm.standard
+    form=PIDForm.standard,
+    tee=False
 ):
     """ Create a test model and solver
 
@@ -93,24 +118,29 @@ def create_model(
             "dynamic": True, "time_set": time_set, "time_units": time_units}
         model_name = "Steam Tank, Dynamic"
 
+    if time_set is None:
+        time_set = [0, 3]
+
     m = pyo.ConcreteModel(name=model_name)
     m.fs = FlowsheetBlock(default=fs_cfg)
     # Create a property parameter block
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
         default={"phase_presentation": iapws95.PhaseType.LG})
     # Create the valve and tank models
-    m.fs.valve_1 = SteamValve(default={
+    m.fs.valve_1 = Valve(default={
         "dynamic": False,
         "has_holdup": False,
+        "pressure_flow_callback": _valve_pressure_flow_cb,
         "material_balance_type": MaterialBalanceType.componentTotal,
         "property_package": m.fs.prop_water})
     m.fs.tank = Heater(default={
         "has_holdup": True,
         "material_balance_type": MaterialBalanceType.componentTotal,
         "property_package": m.fs.prop_water})
-    m.fs.valve_2 = SteamValve(default={
+    m.fs.valve_2 = Valve(default={
         "dynamic": False,
         "has_holdup": False,
+        "pressure_flow_callback": _valve_pressure_flow_cb,
         "material_balance_type": MaterialBalanceType.componentTotal,
         "property_package": m.fs.prop_water})
 
@@ -167,37 +197,42 @@ def create_model(
     m.fs.ctrl.setpoint.fix(3e5)
 
     # Initialize the model
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {'tol': 1e-6,
-                      'linear_solver': "ma27",
-                      'max_iter': 100}
-    for t in m.fs.time:
-        m.fs.valve_1.inlet.flow_mol = 100  # initial guess on flow
-    # simple initialize
-    m.fs.valve_1.initialize(outlvl=1)
-    _set_port(m.fs.tank.inlet, m.fs.valve_1.outlet)
-    m.fs.tank.initialize(outlvl=1)
-    _set_port(m.fs.valve_2.inlet, m.fs.tank.outlet)
-    m.fs.valve_2.initialize(outlvl=1)
-    solver.solve(m, tee=True)
+    solver = get_solver(options={"max_iter":50})
 
+    for t in m.fs.time:
+        m.fs.valve_1.inlet.flow_mol[t] = 100  # initial guess on flow
+    # simple initialize
+    m.fs.valve_1.initialize()
+    _set_port(m.fs.tank.inlet, m.fs.valve_1.outlet)
+    m.fs.tank.initialize()
+    _set_port(m.fs.valve_2.inlet, m.fs.tank.outlet)
+    # Can't specify both flow and outlet pressure so free the outlet pressure
+    # for initialization and refix it after.  Inlet flow gets fixed in init
+    op = {}
+    for t in m.fs.time:
+        op[t] = pyo.value(m.fs.valve_2.outlet.pressure[t])
+        m.fs.valve_2.outlet.pressure[t].unfix()
+    m.fs.valve_2.initialize()
+    for t in m.fs.time:
+        m.fs.valve_2.outlet.pressure[t].fix(op[t])
+    solver.solve(m, tee=tee)
     # Return the model and solver
     return m, solver
 
 
-def tpid(form):
+def tpid(form, tee=False):
     """This test is pretty course-grained, but it should cover everything"""
 
     # First calculate the two steady states that should be achieved in the test
     # don't worry these steady state problems solve super fast
-    m_steady, solver = create_model()
+    m_steady, solver = create_model(tee=tee)
     m_steady.fs.tank_pressure[0].fix(3e5)
     m_steady.fs.valve_1.valve_opening[0].unfix()
-    solver.solve(m_steady, tee=True)
+    solver.solve(m_steady, tee=tee)
     s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
-    solver.solve(m_steady, tee=True)
+    solver.solve(m_steady, tee=tee)
     m_steady.fs.valve_1.inlet.pressure.fix(5.5e5)
-    solver.solve(m_steady, tee=True)
+    solver.solve(m_steady, tee=tee)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
     # Next create a model for the 0 to 5 sec time period
@@ -207,8 +242,8 @@ def tpid(form):
         nfe=10,
         calc_integ=True,
         form=form,
+        tee=tee
     )
-
     # Turn on control and solve since the setpoint is different than the
     # steady-state solution, stuff happens, also pressure step at t=5
     m_dynamic.fs.ctrl.activate()
@@ -218,7 +253,8 @@ def tpid(form):
     # Add a step change right at the end of the interval, to make sure we can
     # get a continuous solution across the two models
     _add_inlet_pressure_step(m_dynamic, time=4.5, value=5.5e5)
-    solver.solve(m_dynamic, tee=True)
+    iscale.calculate_scaling_factors(m_dynamic)
+    solver.solve(m_dynamic, tee=tee)
 
     # Now create a model for the 5 to 10 second interval and set the inital
     # conditions of the first model to the final (unsteady) state of the
@@ -248,15 +284,16 @@ def tpid(form):
     m_dynamic2.fs.ctrl.err_d0.fix(pyo.value(m_dynamic.fs.ctrl.err_d[5]))
     m_dynamic2.fs.ctrl.err_i0.fix(pyo.value(m_dynamic.fs.ctrl.err_i_end))
 
+    iscale.calculate_scaling_factors(m_dynamic2)
     # As a lazy form of initialization, solve the steady state problem before
     # turning on the controller.
-    solver.solve(m_dynamic2, tee=True)
+    solver.solve(m_dynamic2, tee=tee)
 
     # Now turn on control and solve again.
     m_dynamic2.fs.ctrl.activate()
     m_dynamic2.fs.valve_1.valve_opening.unfix()
     m_dynamic2.fs.valve_1.valve_opening[5].fix()
-    solver.solve(m_dynamic2, tee=True)
+    solver.solve(m_dynamic2, tee=tee)
 
     # Check that the model hit steady state about. The tolerance is loose
     # because I used a low nfe in an attempt to speed it up
@@ -278,26 +315,25 @@ def tpid(form):
     # the two models
     for i, t in enumerate(m_dynamic.fs.time):
         assert t == stitch_time[i]
-        assert m_dynamic.fs.valve_1.valve_opening[t] == stitch_valve[i]
+        assert m_dynamic.fs.valve_1.valve_opening[t].value == stitch_valve[i]
     for j, t in enumerate(m_dynamic2.fs.time):
         i = j + len(m_dynamic.fs.time)
         assert t == stitch_time[i]
-        assert m_dynamic2.fs.valve_1.valve_opening[t] == stitch_valve[i]
+        assert m_dynamic2.fs.valve_1.valve_opening[t].value == stitch_valve[i]
+    return m_dynamic, m_dynamic2, solver
+
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_pid_velocity():
     """This test is pretty course-grained, but it should cover everything"""
     tpid(PIDForm.velocity)
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_pid_standard():
     """This test is pretty course-grained, but it should cover everything"""
     tpid(PIDForm.standard)
+
+if __name__ == '__main__':
+    m, m2, solver = tpid(PIDForm.velocity, tee=True)

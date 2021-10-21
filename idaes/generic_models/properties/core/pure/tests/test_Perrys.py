@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for methods from Perry's
 
@@ -55,6 +55,11 @@ def frame():
                                   '5': 9.3701e-06},
         "enth_mol_form_liq_comp_ref": -285.83e3,
         "entr_mol_form_liq_comp_ref": 69.95}
+    m.params.config.include_enthalpy_of_formation = True
+
+    # Also need to dummy configblock on the model for the test
+    m.config = ConfigBlock(implicit=True)
+    m.config.include_enthalpy_of_formation = True
 
     m.meta_object = PropertyClassMetadata()
     m.meta_object.default_units["temperature"] = pyunits.K
@@ -119,6 +124,25 @@ def test_enth_mol_liq_comp(frame):
 
     frame.props[1].temperature.value = 533.15
     assert value(expr) == pytest.approx(-265423, rel=1e-3)
+
+    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+
+
+@pytest.mark.unit
+def test_enth_mol_liq_comp_no_formation(frame):
+    frame.config.include_enthalpy_of_formation = False
+    frame.params.config.include_enthalpy_of_formation = False
+
+    enth_mol_liq_comp.build_parameters(frame.params)
+
+    assert not hasattr(frame.params, "enth_mol_form_liq_comp_ref")
+
+    expr = enth_mol_liq_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature)
+    assert value(expr) == 0
+
+    frame.props[1].temperature.value = 533.15
+    assert value(expr) == pytest.approx(-265423 + 285830, rel=1e-3)
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol)
 

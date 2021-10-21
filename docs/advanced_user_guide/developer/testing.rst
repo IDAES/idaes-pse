@@ -21,7 +21,7 @@ which run very quickly and test a focused amount of functionality. But sometimes
 you need something more involved (e.g. running solvers, using data on disk), and here
 we will label that kind of test "integration tests".
 
-.. figure:: ../../_images/testing-conceptual.png
+.. figure:: /images/testing-conceptual.png
     :align: right
     :width: 400px
 

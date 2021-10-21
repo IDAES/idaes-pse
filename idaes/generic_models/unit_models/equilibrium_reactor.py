@@ -1,21 +1,21 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Standard IDAES Equilibrium Reactor model.
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import Reference
 
 # Import IDAES cores
@@ -93,7 +93,7 @@ balance type
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_rate_reactions", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Rate reaction construction flag",
         doc="""Indicates whether terms for rate controlled reactions
 should be constructed, along with constraints equating these to zero,
@@ -103,7 +103,7 @@ should be constructed, along with constraints equating these to zero,
 **False** - exclude rate reaction terms.}"""))
     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
 should be constructed,
@@ -113,7 +113,7 @@ should be constructed,
 **False** - exclude equilibrium reaction terms.}"""))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Phase equilibrium term construction flag",
         doc="""Indicates whether terms for phase equilibrium should be
 constructed, **default** - True.
@@ -122,7 +122,7 @@ constructed, **default** - True.
 **False** - exclude phase equlibirum terms.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -131,7 +131,7 @@ constructed, **default** - True.
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_heat_of_reaction", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat of reaction term construction flag",
         doc="""Indicates whether terms for heat of reaction terms should be
 constructed,
@@ -141,7 +141,7 @@ constructed,
 **False** - exclude heat of reaction terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -235,7 +235,7 @@ see reaction package for documentation.}"""))
 
         if self.config.has_rate_reactions:
             # Add equilibrium reactor performance equation
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.config.reaction_package.rate_reaction_idx,
                              doc="Rate reaction equilibrium constraint")
             def rate_reaction_constraint(b, t, r):

@@ -1,26 +1,26 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Common methods used by generic framework
 
 Author: A Lee
 """
-
-import types
+from enum import Enum
 
 from pyomo.environ import units as pyunits
 
-from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.util.exceptions import \
+    BurntToast, ConfigurationError, PropertyPackageError
 import idaes.logger as idaeslog
 
 # Set up logger
@@ -40,7 +40,7 @@ class GenericPropertyPackageError(PropertyPackageError):
                f"in the property parameter configuration."
 
 
-def get_method(self, config_arg, comp=None):
+def get_method(self, config_arg, comp=None, phase=None):
     """
     Method to inspect configuration argument and return the user-defined
     construction method associated with it.
@@ -53,6 +53,8 @@ def get_method(self, config_arg, comp=None):
 
     Args:
         config_arg : the configuration argument to look up
+        comp : component name for which argument is to be retrieved
+        phase : phase name indexing argument
 
     Returns:
         A callable method or a ConfigurationError
@@ -73,14 +75,21 @@ def get_method(self, config_arg, comp=None):
     if c_arg is None:
         raise GenericPropertyPackageError(self, config_arg)
 
-    if isinstance(c_arg, types.ModuleType):
+    # Check to see if c_arg has an attribute with the name of the config_arg
+    # If so, assume c_arg is a class or module holding property subclasses
+    if hasattr(c_arg, config_arg):
         c_arg = getattr(c_arg, config_arg)
+    if phase is not None:
+        c_arg = c_arg[phase]
 
+    # Try to get the return_expression method from c_arg
+    # Otherwise assume c_arg is the return_expression method
     try:
         mthd = c_arg.return_expression
     except AttributeError:
         mthd = c_arg
 
+    # Call the return_expression method
     if callable(mthd):
         return mthd
     else:
@@ -89,6 +98,56 @@ def get_method(self, config_arg, comp=None):
                 "for argument {}. Value must be a method, a class with a "
                 "method named expression or a module containing one of the "
                 "previous.".format(self.name, config_arg))
+
+
+def get_phase_method(self, config_arg, phase):
+    """
+    General method for finding and returning phase-specific configuration
+    arguments.
+
+    Args:
+        config_arg : argument to find in Config block
+        phase : phase in which to search for config_arg
+
+    Returns:
+        Pointer to method in Config block
+    """
+    p_config = self.params.get_phase(phase).config
+
+    try:
+        c_arg = getattr(p_config, config_arg)
+    except AttributeError:
+        raise AttributeError("{} Generic Property Package called for invalid "
+                             "configuration option {}. Please contact the "
+                             "developer of the property package."
+                             .format(self.name, config_arg))
+
+    if c_arg is None:
+        raise GenericPropertyPackageError(self, config_arg)
+
+    # Check to see if c_arg has an attribute with the name of the config_arg
+    # If so, assume c_arg is a class or module holding property subclasses
+    if hasattr(c_arg, config_arg):
+        c_arg = getattr(c_arg, config_arg)
+
+    # Try to get the return_expression method from c_arg
+    # Otherwise assume c_arg is the return_expression method
+    try:
+        mthd = c_arg.return_expression
+    except AttributeError:
+        mthd = c_arg
+
+    # Check if method is callable
+    if callable(mthd):
+        return mthd
+    else:
+        raise ConfigurationError(
+                "{} Generic Property Package received invalid value "
+                "for argument {}. Value must be a method, a class with a "
+                "method named expression or a module containing one of the "
+                "previous.".format(self.name, config_arg))
+
+    return mthd
 
 
 def get_component_object(self, comp):
@@ -110,7 +169,7 @@ def get_component_object(self, comp):
 def get_bounds_from_config(b, state, base_units):
     """
     Method to take a 3- or 4-tuple state definition config argument and return
-    tupels for the bounds and default value of the Var object.
+    tuples for the bounds and default value of the Var object.
 
     Expects the form (lower, default, upper, units) where units is optional
 
@@ -147,41 +206,59 @@ def get_bounds_from_config(b, state, base_units):
     return bounds, default_val
 
 
-def set_param_value(b, param, units, config=None, index=None):
-    """
-    Utility method to set parameter value from a config block. This allows for
-    converting units if required. This method directly sets the value of the
-    parameter.
+# Enumerate concentration form options
+class ConcentrationForm(Enum):
+    molarity = 1
+    activity = 2
+    molality = 3
+    moleFraction = 4
+    massFraction = 5
+    partialPressure = 6
 
-    Args:
-        b - block on which parameter and config block are defined
-        param - name of parameter as str. Used to find param and config arg
-        units - units of param object (used if conversion required)
-        config - (optional) config block to get parameter data from. If
-                unset, assumes b.config.
-        index - (optional) used for pure component properties where a single
-                property may have multiple parameters associated with it.
 
-    Returns:
-        None
-    """
-    if config is None:
-        config = b.config
-
-    if index is None:
-        param_obj = getattr(b, param)
-        p_data = config.parameter_data[param]
+def get_concentration_term(blk, r_idx, log=False):
+    cfg = blk.params.config
+    if "rate_reactions" in cfg:
+        try:
+            conc_form = cfg.rate_reactions[r_idx].concentration_form
+        except KeyError:
+            conc_form = cfg.equilibrium_reactions[r_idx].concentration_form
+        state = blk.state_ref
     else:
-        param_obj = getattr(b, param+"_"+index)
-        p_data = config.parameter_data[param][index]
+        conc_form = cfg.inherent_reactions[r_idx].concentration_form
+        state = blk
 
-    if isinstance(p_data, tuple):
-        if units is None and p_data[1] is None:
-            param_obj.value = p_data[0]
-        else:
-            param_obj.value = pyunits.convert_value(
-                p_data[0], from_units=p_data[1], to_units=units)
+    if hasattr(state.params, "_electrolyte") and state.params._electrolyte:
+        sub = "_true"
     else:
-        _log.debug("{} no units provided for parameter {} - assuming default "
-                   "units".format(b.name, param))
-        param_obj.value = p_data
+        sub = ""
+
+    if log:
+        pre = "log_"
+    else:
+        pre = ""
+
+    if conc_form is None:
+        raise ConfigurationError(
+            "{} concentration_form configuration argument was not set. "
+            "Please ensure that this argument is included in your "
+            "configuration dict.".format(blk.name))
+    elif conc_form == ConcentrationForm.molarity:
+        conc_term = getattr(state, pre+"conc_mol_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.activity:
+        conc_term = getattr(state, pre+"act_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.molality:
+        conc_term = getattr(state, pre+"molality_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.moleFraction:
+        conc_term = getattr(state, pre+"mole_frac_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.massFraction:
+        conc_term = getattr(state, pre+"mass_frac_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.partialPressure:
+        conc_term = (getattr(state, pre+"pressure_phase_comp"+sub))
+    else:
+        raise BurntToast(
+            "{} get_concentration_term received unrecognised "
+            "ConcentrationForm ({}). This should not happen - please contact "
+            "the IDAES developers with this bug.".format(blk.name, conc_form))
+
+    return conc_term
