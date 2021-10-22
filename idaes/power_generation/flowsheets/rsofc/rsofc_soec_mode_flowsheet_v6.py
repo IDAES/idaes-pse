@@ -28,6 +28,7 @@ from pyomo.common.fileutils import this_file_dir
 
 # Import modules from core
 from idaes.core import FlowsheetBlock
+from idaes.core.util import homotopy
 import idaes.core.util as iutil
 import idaes.core.util.tables as tables
 import idaes.core.util.scaling as iscale
@@ -249,7 +250,7 @@ def add_preheater(fs):
     fs.preheat_split = gum.Separator(
         default={
             "property_package": fs.air_prop,
-            "outlet_list": ["air", "ng"],
+            "outlet_list": ["oxygen", "ng"],
         }
     )
 
@@ -257,12 +258,12 @@ def add_preheater(fs):
     #  Specify performance variables of unit operations
     ###########################################################################
     fs.oxygen_preheater.overall_heat_transfer_coefficient.fix(100)
-    fs.oxygen_preheater.delta_temperature_in.fix(30)  # fix DT for pinch side
+    fs.oxygen_preheater.delta_temperature_in.fix(10)  # fix DT for pinch side
 
     fs.ng_preheater.overall_heat_transfer_coefficient.fix(100)
-    fs.ng_preheater.delta_temperature_in.fix(30)  # fix DT for pinch side
+    fs.ng_preheater.delta_temperature_in.fix(10)  # fix DT for pinch side
 
-    fs.preheat_split.split_fraction[:, "air"].fix(0.9)
+    fs.preheat_split.split_fraction[:, "oxygen"].fix(0.9)
 
     ###########################################################################
     #  Add stream connections
@@ -272,7 +273,7 @@ def add_preheater(fs):
         destination=fs.ng_preheater.shell_inlet
     )
     fs.o05 = Arc(
-        source=fs.preheat_split.air,
+        source=fs.preheat_split.oxygen,
         destination=fs.oxygen_preheater.shell_inlet
     )
     fs.ba02 = Arc(
@@ -431,7 +432,7 @@ def add_aux_boiler_steam(fs):
     fs.bhx2.outlet.enth_mol.fix(h_bhx2)  # K (100 F) # unfix after initalize and spec Q from cmb
 
     fs.bhx1.overall_heat_transfer_coefficient.fix(100)
-    fs.bhx1.delta_temperature_out.fix(100)  # fix DT for pinch side
+    fs.bhx1.delta_temperature_out.fix(10)  # fix DT for pinch side
 
     fs.aux_boiler_feed_pump.outlet.pressure.fix(1.1e5)
     fs.aux_boiler_feed_pump.efficiency_isentropic.fix(0.85)
@@ -486,7 +487,7 @@ def add_soec_air_side_units(fs):
     fs.air_blower.efficiency_isentropic.fix(0.8)
 
     fs.air_preheater_1.overall_heat_transfer_coefficient.fix(100)
-    fs.air_preheater_1.delta_temperature_in.fix(50)  # fix DT for pinch side
+    fs.air_preheater_1.delta_temperature_in.fix(10)  # fix DT for pinch side
 
     fs.air_preheater_2.tube_outlet.temperature[0].fix(1073.15)  # Known value
     fs.air_preheater_2.overall_heat_transfer_coefficient.fix(100)
@@ -1316,7 +1317,7 @@ def set_guess(fs):
 
 def set_inputs(fs):
     # Set combustor outlet temperature and soec steam temperature
-    fs.cmb_temperature.fix(1300)
+    fs.cmb_temperature.fix(1500)
     fs.soec_steam_temperature.fix(1073.15)
 
     # Set feed conditions of input fuel and utilities
@@ -1372,7 +1373,7 @@ def set_inputs(fs):
 
     fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.10)  # why not unfixed later
     fs.soec.fc.flow_mol[:, 0].fix(1e-5)
-    fs.soec.ac.flow_mol[:, 0].fix(8e-6)
+    fs.soec.ac.flow_mol[:, 0].fix(1e-5)
 
 
 def initialize_plant(fs, solver):
@@ -1542,6 +1543,12 @@ def initialize_bop(fs, solver):
     iscale.constraint_autoscale_large_jac(fs)
 
     solver.solve(fs, tee=True,
+                 options={
+                       "max_iter": 200,
+                       "tol": 1e-7,
+                       "bound_push": 1e-12,
+                       "linear_solver": "ma27"
+                           },
                  symbolic_solver_labels=True)
 
 
@@ -1686,8 +1693,9 @@ def get_solver():
     # bound push result in much longer solve times, so set it low.
     # idaes.cfg.ipopt["options"]["halt_on_ampl_error"] = 'yes'
     idaes.cfg.ipopt["options"]["bound_push"] = 1e-12
-    idaes.cfg.ipopt["options"]["linear_solver"] = "ma57"
+    idaes.cfg.ipopt["options"]["linear_solver"] = "ma27"
     idaes.cfg.ipopt["options"]["max_iter"] = 200
+    idaes.cfg.ipopt["options"]["ma27_pivtol"] = 1e-3
     # idaes.cfg.ipopt["options"]["ma27_pivtol"] = 1e-1
     # idaes.cfg.ipopt["options"]["ma57_pivtol"] = 1e-1
     # idaes.cfg.ipopt["options"]["ma57_pivtolmax"] = 1e-1
@@ -1738,8 +1746,8 @@ def tag_inputs_opt_vars(fs):
         display_units=pyo.units.K,
         doc="Combustor temperature",
     )
-    tags["preheat_fg_split_to_air"] = iutil.ModelTag(
-        expr=fs.preheat_split.split_fraction[0, "air"],
+    tags["preheat_fg_split_to_oxygen"] = iutil.ModelTag(
+        expr=fs.preheat_split.split_fraction[0, "oxygen"],
         format_string="{:.3f}",
         display_units=None,
         doc="Split frac. of soec air to air preheater, rest goes to NG heater",
@@ -2284,12 +2292,95 @@ def variables_generator(
             continue
         if v.value is not None:
             yield v
+def check_heat_exchanger_DT(fs):
+    print('')
+    print("-----------------------------------------------------------")  
+    print("check_heat_exchanger_DT and details")
+    # print("-----------------------------------------------------------")
+    # print('')
+    # print('hxh2 DT')
+    # print('DT_out = ',pyo.value(fs.hxh2.delta_temperature_out[0]))
+    # print('DT_in = ', pyo.value(fs.hxh2.delta_temperature_in[0]))
+    # print('')
+    # print('Tube side_in T = ', pyo.value(fs.hxh2.cold_side.properties_in[0].temperature))
+    # print('Tube side_out T = ', pyo.value(fs.hxh2.cold_side.properties_out[0].temperature))
+    # print('Shell side_in T = ', pyo.value(fs.hxh2.hot_side.properties_in[0].temperature))
+    # print('Shell side_out T = ', pyo.value(fs.hxh2.hot_side.properties_out[0].temperature))
+    # print('')
+    # print('Area = ', pyo.value(fs.hxh2.area))
+    # print('HTC = ', pyo.value(fs.hxh2.overall_heat_transfer_coefficient[0]))
+    # print('')
+    print("-----------------------------------------------------------")    
+    print('bhx1 DT')
+    print('DT_out = ',pyo.value(fs.bhx1.delta_temperature_out[0]))
+    print('DT_in = ',pyo.value(fs.bhx1.delta_temperature_in[0]))
+    print('')
+    print('Tube side_in T = ', pyo.value(fs.bhx1.cold_side.properties_in[0].temperature))
+    print('Tube side_out T = ', pyo.value(fs.bhx1.cold_side.properties_out[0].temperature))
+    print('Shell side_in T = ', pyo.value(fs.bhx1.hot_side.properties_in[0].temperature))
+    print('Shell side_out T = ', pyo.value(fs.bhx1.hot_side.properties_out[0].temperature))
+    print('')
+    print('Area = ', pyo.value(fs.bhx1.area))
+    print('HTC = ', pyo.value(fs.bhx1.overall_heat_transfer_coefficient[0]))
+    print('')
+    print("-----------------------------------------------------------")    
+    print('air_preheater_1 DT')
+    print('DT_out = ',pyo.value(fs.air_preheater_1.delta_temperature_out[0]))
+    print('DT_in = ',pyo.value(fs.air_preheater_1.delta_temperature_in[0]))
+    print('')
+    print('Tube side_in T = ', pyo.value(fs.air_preheater_1.cold_side.properties_in[0].temperature))
+    print('Tube side_out T = ', pyo.value(fs.air_preheater_1.cold_side.properties_out[0].temperature))
+    print('Shell side_in T = ', pyo.value(fs.air_preheater_1.hot_side.properties_in[0].temperature))
+    print('Shell side_out T = ', pyo.value(fs.air_preheater_1.hot_side.properties_out[0].temperature))
+    print('')
+    print('Area = ', pyo.value(fs.air_preheater_1.area))
+    print('HTC = ', pyo.value(fs.air_preheater_1.overall_heat_transfer_coefficient[0]))
+    print('')
+    print("-----------------------------------------------------------")    
+    print('air_preheater_2 DT')
+    print('DT_out = ',pyo.value(fs.air_preheater_2.delta_temperature_out[0]))
+    print('DT_in = ',pyo.value(fs.air_preheater_2.delta_temperature_in[0]))
+    print('')
+    print('Tube side_in T = ', pyo.value(fs.air_preheater_2.cold_side.properties_in[0].temperature))
+    print('Tube side_out T = ', pyo.value(fs.air_preheater_2.cold_side.properties_out[0].temperature))
+    print('Shell side_in T = ', pyo.value(fs.air_preheater_2.hot_side.properties_in[0].temperature))
+    print('Shell side_out T = ', pyo.value(fs.air_preheater_2.hot_side.properties_out[0].temperature))
+    print('')
+    print('Area = ', pyo.value(fs.air_preheater_2.area))
+    print('HTC = ', pyo.value(fs.air_preheater_2.overall_heat_transfer_coefficient[0]))
+    print('')
+    print("-----------------------------------------------------------")    
+    print('oxygen_preheater DT')
+    print('DT_out = ',pyo.value(fs.oxygen_preheater.delta_temperature_out[0]))
+    print('DT_in = ',pyo.value(fs.oxygen_preheater.delta_temperature_in[0]))
+    print('')
+    print('Tube side_in T = ', pyo.value(fs.oxygen_preheater.cold_side.properties_in[0].temperature))
+    print('Tube side_out T = ', pyo.value(fs.oxygen_preheater.cold_side.properties_out[0].temperature))
+    print('Shell side_in T = ', pyo.value(fs.oxygen_preheater.hot_side.properties_in[0].temperature))
+    print('Shell side_out T = ', pyo.value(fs.oxygen_preheater.hot_side.properties_out[0].temperature))
+    print('')
+    print('Area = ', pyo.value(fs.oxygen_preheater.area))
+    print('HTC = ', pyo.value(fs.oxygen_preheater.overall_heat_transfer_coefficient[0]))
+    print('')
+    print("-----------------------------------------------------------")    
+    print('ng_preheater DT')
+    print('DT_out = ',pyo.value(fs.ng_preheater.delta_temperature_out[0]))
+    print('DT_in = ',pyo.value(fs.ng_preheater.delta_temperature_in[0]))
+    print('')
+    print('Tube side_in T = ', pyo.value(fs.ng_preheater.cold_side.properties_in[0].temperature))
+    print('Tube side_out T = ', pyo.value(fs.ng_preheater.cold_side.properties_out[0].temperature))
+    print('Shell side_in T = ', pyo.value(fs.ng_preheater.hot_side.properties_in[0].temperature))
+    print('Shell side_out T = ', pyo.value(fs.ng_preheater.hot_side.properties_out[0].temperature))
+    print('')
+    print('Area = ', pyo.value(fs.ng_preheater.area))
+    print('HTC = ', pyo.value(fs.ng_preheater.overall_heat_transfer_coefficient[0]))
+    print('')
 
 if __name__ == "__main__":
     m = pyo.ConcreteModel()
     m, solver = get_model(m)
     # check_scaling(m)
-    write_pfd_results(m, "rsofc_soec_mode_template_2.svg")
+    # write_pfd_results(m, "rsofc_soec_mode_template_2.svg")
   
 
     # Did not fix area of air preheater 2 as that it uses the outlet T as the dof instead
@@ -2297,27 +2388,28 @@ if __name__ == "__main__":
     m.soec_fs.air_preheater_2.overall_heat_transfer_coefficient.unfix()
     m.soec_fs.air_preheater_2.area.fix()
 
-    # m.soec_fs.bhx1.delta_temperature_out.unfix()
-    m.soec_fs.bhx1.overall_heat_transfer_coefficient.unfix()
+    m.soec_fs.bhx1.delta_temperature_out.unfix()
+    # m.soec_fs.bhx1.overall_heat_transfer_coefficient.unfix()
     m.soec_fs.bhx1.area.fix()
 
-    # m.soec_fs.air_preheater_1.delta_temperature_in.unfix()
-    m.soec_fs.air_preheater_1.overall_heat_transfer_coefficient.unfix()
+    m.soec_fs.air_preheater_1.delta_temperature_in.unfix()
+    # m.soec_fs.air_preheater_1.overall_heat_transfer_coefficient.unfix()
     m.soec_fs.air_preheater_1.area.fix()
 
-    # m.soec_fs.oxygen_preheater.delta_temperature_in.unfix()
-    m.soec_fs.oxygen_preheater.overall_heat_transfer_coefficient.unfix() 
+    m.soec_fs.oxygen_preheater.delta_temperature_in.unfix()
+    # m.soec_fs.oxygen_preheater.overall_heat_transfer_coefficient.unfix() 
     m.soec_fs.oxygen_preheater.area.fix()
 
-    m.soec_fs.ng_preheater.overall_heat_transfer_coefficient.unfix()   
+    m.soec_fs.ng_preheater.delta_temperature_in.unfix()
+    # m.soec_fs.ng_preheater.overall_heat_transfer_coefficient.unfix()   
     m.soec_fs.ng_preheater.area.fix()
 
-    print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
+    # print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
 
     # TODO - use the homotopy tool to figure out pinch points in the model
     m.soec_fs.tag_input["hydrogen_product_rate"].fix()
     m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].unfix()
-    solver.solve(m, tee=True)
+    # solver.solve(m, tee=True)
 
     # m.soec_fs.visualize("rSOEC Flowsheet")  # visualize flowsheet
 
@@ -2334,8 +2426,23 @@ if __name__ == "__main__":
     # m.fs.costing.display()
     # m.soec_fs.H2_costing.display()
 
-    import sys
-    sys.exit('stop')
+
+    # print("\n")
+    # print("----------------------------------------------------------")
+    # print("homotopy solver")
+    # print("----------------------------------------------------------")
+
+    # homotopy.homotopy(m, [m.soec_fs.hydrogen_product_rate[0]], [0.5],
+    #           # max_solver_iterations=50, max_solver_time=10,
+    #           # step_init=0.1, step_cut=0.5, iter_target=4, step_accel=0.5,
+    #           # max_step=1, min_step=0.05, max_eval=200
+    #           )
+    
+
+    # check_heat_exchanger_DT(m.soec_fs)
+    
+    # import sys
+    # sys.exit('stop')
     # strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
     # strip_bounds.apply_to(m, reversible=False)
 
@@ -2345,7 +2452,12 @@ if __name__ == "__main__":
         1e2* m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].expression
     )
     m.soec_fs.tag_input["single_cell_sweep_flow"].unfix()
-    m.soec_fs.tag_input["sweep_air_flow"].unfix()
+    m.soec_fs.tag_input["single_cell_sweep_flow"].setlb(4e-6)
+    
+    m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].setlb(4e-6)
+
+
+    # m.soec_fs.tag_input["sweep_air_flow"].unfix()   # redundant as already unfixed
     m.soec_fs.tag_input["sweep_air_flow"].setlb(1000)
     m.soec_fs.tag_input["sweep_air_flow"].setub(20000)
 
@@ -2353,31 +2465,31 @@ if __name__ == "__main__":
     # m.soec_fs.tag_input["feed_water_flow"].setlb(1000)
     # m.soec_fs.tag_input["feed_water_flow"].setub(10000)
 
-    # # TODO - is the sum of mole frac needed for this constraint?
-    # m.soec_fs.tag_input["feed_h2_frac"].unfix()
-    # m.soec_fs.tag_input["feed_h2_frac"].setlb(0.001)
-    # m.soec_fs.tag_input["feed_h2_frac"].setub(0.98)
+    # TODO - is the sum of mole frac needed for this constraint?
+    m.soec_fs.tag_input["feed_h2_frac"].unfix()  # Unfix for optimization
+    m.soec_fs.tag_input["feed_h2_frac"].setlb(0.001)
+    m.soec_fs.tag_input["feed_h2_frac"].setub(0.999)
 
-    # m.soec_fs.tag_input["preheat_fg_split_to_air"].unfix()
-    # m.soec_fs.tag_input["preheat_fg_split_to_air"].setlb(0.85)
-    # m.soec_fs.tag_input["preheat_fg_split_to_air"].setub(0.95)
-
-    # m.soec_fs.tag_input["recover_split_to_hxh2"].unfix()
-    # m.soec_fs.tag_input["recover_split_to_hxh2"].setlb(0.20)
-    # m.soec_fs.tag_input["recover_split_to_hxh2"].setub(0.80)
+    m.soec_fs.tag_input["preheat_fg_split_to_oxygen"].unfix()
+    m.soec_fs.tag_input["preheat_fg_split_to_oxygen"].setlb(0.55)
+    m.soec_fs.tag_input["preheat_fg_split_to_oxygen"].setub(0.99)
 
     m.soec_fs.spltf1.split_fraction[:, "out"].setlb(0.001)
     m.soec_fs.spltf1.split_fraction[:, "out"].setub(0.999)
 
-    # m.soec_fs.splta1.split_fraction[:, "out"].setlb(0.001)
-    # m.soec_fs.splta1.split_fraction[:, "out"].setub(0.95)
+    m.soec_fs.splta1.split_fraction[:, "out"].setlb(0.001)
+    m.soec_fs.splta1.split_fraction[:, "out"].setub(0.99)
 
     # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.fix(20e5)
     # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setlb(1.1e5)
     # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setub(40e5)
 
-    # m.soec_fs.obj = pyo.Objective(
-    #     expr=m.soec_fs.ng_preheater.tube_inlet.flow_mol[0] / 10)
+    # m.soec_fs.cmb_temperature.unfix()
+    # m.soec_fs.cmb_temperature.setlb(1300)
+    # m.soec_fs.cmb_temperature.setub(2000)
+
+    m.soec_fs.obj = pyo.Objective(
+        expr=m.soec_fs.ng_preheater.tube_inlet.flow_mol[0] / 10)
     # m.soec_fs.obj = pyo.Objective(expr=-m.soec_fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"]*10)
     # m.soec_fs.obj = pyo.Objective(expr=m.soec_fs.H2_costing.total_variable_OM_cost[0])
 
@@ -2387,6 +2499,17 @@ if __name__ == "__main__":
     #     display_units=pyo.units.USD / pyo.units.kg,
     #     doc="Variable Hydrogen Production Cost",
     # )
+
+    options={
+        # "nlp_scaling_method": "user-scaling",
+          "max_iter": 100,
+          # "tol": 1e-3,
+          # "bound_push": 1e-16,
+          # "linear_solver": "ma27",
+          # "ma27_pivtol": 1e-3,
+            # "ma57_pivtol": 1e-3,
+            # "mu_init": 1e-5
+              }
 
     cols_input = ("hydrogen_product_rate",)
     cols_pfd = (
@@ -2409,33 +2532,39 @@ if __name__ == "__main__":
     with open("opt_res.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(head_1 + head_2)
-    for h in np.linspace(2.5, 0.1, 25):  # Generate 25 points btw 2.5 to 0.1
+    # for h in np.linspace(2.5, 0.1, 25):  # Generate 25 points btw 2.5 to 0.1
+    for h in np.linspace(2.5, 1.5, 20):  # Generate 25 points btw 2.5 to 0.1
         m.soec_fs.tag_input["hydrogen_product_rate"].fix(
             float(h) * pyo.units.kmol / pyo.units.s
         )
+        print()
+        print()
+        print()
         print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
         # idaes.cfg.ipopt["options"]["max_iter"] = 5
         res = solver.solve(m.soec_fs, tee=True, symbolic_solver_labels=True,
-                           options={"max_iter":100})
+                           options=options)
 
-        # generator=variables_generator(m.soec_fs.soec)
-        # # generator2=variables_near_bounds_generator(m, tol=1e-6)
-               
+    # generator=variables_generator(m.soec_fs)
+    # # generator2=variables_near_bounds_generator(m, tol=1e-6)
+           
+
+    # sourceFile = open('model_variables.txt', 'w')          
+    # for v in generator:
+    #     print("var_name: %a, var_lb: %a, var_value: %a, var_ub: %a" %(
+    #             v.name, pyo.value(v.lb), v.value, pyo.value(v.ub)),
+    #             file=sourceFile)  
+    # sourceFile.close()
+
+
+
+    # # m.soec_fs.soec.fe.mole_frac_comp.display()
+    # # m.soec_fs.soec.ae.mole_frac_comp.display()
+    # residual_checker(m.soec_fs)
+    # check_heat_exchanger_DT(m.soec_fs)
     
-        # sourceFile = open('model_variables.txt', 'w')          
-        # for v in generator:
-        #     print("var_name: %a, var_lb: %a, var_value: %a, var_ub: %a" %(
-        #             v.name, pyo.value(v.lb), v.value, pyo.value(v.ub)),
-        #             file=sourceFile)  
-        # sourceFile.close()
-
-
-
-        # # m.soec_fs.soec.fe.mole_frac_comp.display()
-        # # m.soec_fs.soec.ae.mole_frac_comp.display()
-        # residual_checker(m.soec_fs.soec)
-        # import sys
-        # sys.exit('stop')
+    # import sys
+    # sys.exit('stop')
         
         stat = idaeslog.condition(res)
         m.soec_fs.tag_pfd["status"].set(stat)
