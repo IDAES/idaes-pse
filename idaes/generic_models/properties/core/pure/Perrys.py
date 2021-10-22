@@ -235,26 +235,25 @@ class dens_mol_liq_comp():  # dens_mol_liq_comp_eqn_1, dens_mol_liq_comp_eqn_2
         try:
             set_param_from_config(cobj, param="dens_mol_liq_comp_coeff",
                                   index="eqn_type")
-            eqn_type = cobj.dens_mol_liq_comp_coeff_eqn_type.value
         except KeyError:
-            _log.info("DEPRECATED - {} dens_mol_liq_comp_coeff index "
-                      "'eqn_type' should be specified, defaulting to "
-                      "equation form 1.".format(cobj))
-            eqn_type = 1  # default to equation form 1 if not specified
+            _log.warning("DEPRECATED - {} dens_mol_liq_comp_coeff index "
+                         "'eqn_type' should be specified, defaulting to "
+                         "equation form 1.".format(cobj))
+            # default to equation form 1 if not specified
+            cobj.dens_mol_liq_comp_coeff_eqn_type.value = 1
 
-        if eqn_type == 1:
+        if cobj.dens_mol_liq_comp_coeff_eqn_type.value == 1:
             dens_mol_liq_comp_eqn_1.build_parameters(cobj)
-        elif eqn_type == 2:
+        elif cobj.dens_mol_liq_comp_coeff_eqn_type.value == 2:
             dens_mol_liq_comp_eqn_2.build_parameters(cobj)
         else:
             raise BurntToast(f"{cobj.name} unrecognized value for "
                              "dens_mol_liq_comp equation type: {eqn_type}")
 
     def return_expression(b, cobj, T):
-        eqn_type = cobj.dens_mol_liq_comp_coeff_eqn_type.value
-        if eqn_type == 1:
+        if cobj.dens_mol_liq_comp_coeff_eqn_type.value == 1:
             rho = dens_mol_liq_comp_eqn_1.return_expression(b, cobj, T)
-        elif eqn_type == 2:
+        elif cobj.dens_mol_liq_comp_coeff_eqn_type.value == 2:
             rho = dens_mol_liq_comp_eqn_2().return_expression(b, cobj, T)
         else:
             raise ConfigurationError("No expression for eqn_type of "
