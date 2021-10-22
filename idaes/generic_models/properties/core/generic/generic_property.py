@@ -3123,7 +3123,7 @@ class GenericStateBlockData(StateBlockData):
                         return exp(b.log_act_phase_solvents[p]) == \
                                sum(p_config.equation_of_state.act_phase_comp(b, p, j) for j in b.params.solvent_set)
                     elif len(b.params.solvent_set) == 1:
-                        return exp(b.log_act_phase_solvents[p]) == p_config.equation_of_state.act_phase_comp[p,b.params.solvent_set.first()]
+                        return exp(b.log_act_phase_solvents[p]) == p_config.equation_of_state.act_phase_comp(b, p, b.params.solvent_set.first())
 
             self.log_act_phase_solvents_eq = Constraint(
                     self.phase_list,
