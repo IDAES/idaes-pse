@@ -129,6 +129,15 @@ def smooth_bound(val, lb, ub, eps=1e-4, eps_lb=None, eps_ub=None):
 
     ..math:: smooth_min(smooth_max(val, lb, eps_lb), ub, eps_ub)
 
+    **Example Usage** This function is useful when calculating the value of a
+    quantitiy with physical limitations that may not be otherwise captured. A
+    good example of this is using a controller to manipulate a valve to maintain,
+    for example, a set flow rate. Under some process conditions the controller
+    may indicate the valve should be more than fully opened or closed. In this
+    example, the smooth_bound expression can be applied to the unbounded
+    controller output to get a bounded controller output, ensuring the valve
+    opening stays in the feasible region, while maintaining smoothness.
+
     Args:
         val: an expression for a bounded version of this value is returned
         lb: lower bound
@@ -138,7 +147,7 @@ def smooth_bound(val, lb, ub, eps=1e-4, eps_lb=None, eps_ub=None):
         eps_ub: (optional) upper bound smoothing parameter if not provided use eps
 
     Returns:
-        expression: bounded version of val.
+        expression: smooth bounded version of val.
     """
     if eps_lb is None:
         eps_lb = eps

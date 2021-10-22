@@ -38,7 +38,7 @@ from idaes.core.util.initialization import propagate_state
 from idaes.generic_models.control.controller import (
     PIDController,
     ControllerType,
-    ControllerMVBoundType
+    ControllerMVBoundType,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
@@ -88,7 +88,12 @@ def _add_inlet_pressure_step(m, time=1, value=6.0e5):
 
 
 def create_model(
-    steady_state=True, time_set=None, time_units=pyo.units.s, nfe=5, tee=False, calc_integ=True
+    steady_state=True,
+    time_set=None,
+    time_units=pyo.units.s,
+    nfe=5,
+    tee=False,
+    calc_integ=True,
 ):
     """Create a test model and solver
 
@@ -153,11 +158,11 @@ def create_model(
         # Add a controller
         m.fs.ctrl = PIDController(
             default={
-                "pv": m.fs.tank.control_volume.properties_out[:].pressure,
-                "mv": m.fs.valve_1.valve_opening,
+                "process_var": m.fs.tank.control_volume.properties_out[:].pressure,
+                "manipulated_var": m.fs.valve_1.valve_opening,
                 "calculate_initial_integral": calc_integ,
                 "mv_bound_type": ControllerMVBoundType.SMOOTH_BOUND,
-                "type": ControllerType.PID, #rather use PI, but testing all terms
+                "type": ControllerType.PID,  # rather use PI, but testing all terms
             }
         )
 
@@ -176,8 +181,6 @@ def create_model(
     # Connect the models
     m.fs.v1_to_tank = Arc(source=m.fs.valve_1.outlet, destination=m.fs.tank.inlet)
     m.fs.tank_to_v2 = Arc(source=m.fs.tank.outlet, destination=m.fs.valve_2.inlet)
-
-
 
     # Add the stream constraints and do the DAE transformation
     pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
@@ -241,49 +244,45 @@ def create_model(
     return m, solver
 
 
-def tpid(tee=False):
+@pytest.mark.integration
+def test_pid():
     """This test is pretty course-grained, but it should cover everything"""
 
     # First calculate the two steady states that should be achieved in the test
     # don't worry these steady state problems solve super fast
-    m_steady, solver = create_model(tee=tee)
+    m_steady, solver = create_model(tee=False)
     m_steady.fs.valve_1.inlet.pressure.fix(5.0e5)
     m_steady.fs.tank.control_volume.properties_out[0].pressure.fix(3e5)
     m_steady.fs.valve_1.valve_opening[0].unfix()
-    solver.solve(m_steady, tee=tee)
+    solver.solve(m_steady, tee=False)
     s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
     m_steady.fs.valve_1.inlet.pressure.fix(5.5e5)
-    solver.solve(m_steady, tee=tee)
+    solver.solve(m_steady, tee=False)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
-
-
 
     # Next create a model for the 0 to 5 sec time period
     m_dynamic, solver = create_model(
-        steady_state=False, time_set=[0, 12], nfe=30, calc_integ=True, tee=tee
+        steady_state=False, time_set=[0, 12], nfe=30, calc_integ=True, tee=False
     )
 
     # Add a step change right in inlet pressure
     _add_inlet_pressure_step(m_dynamic, time=6, value=5.5e5)
-    solver.solve(m_dynamic, tee=tee)
+    solver.solve(m_dynamic, tee=False)
 
     # Check that we reach the expected steady state (almost) by t = 5.6 and t=12
-    assert pyo.value(m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(15)]) == pytest.approx(s1_valve, abs=0.001)
-    assert pyo.value(m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.last()]) == pytest.approx(s2_valve, abs=0.001)
-
+    assert pyo.value(
+        m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(15)]
+    ) == pytest.approx(s1_valve, abs=0.001)
+    assert pyo.value(
+        m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.last()]
+    ) == pytest.approx(s2_valve, abs=0.001)
 
     return m_dynamic, solver
 
 
-@pytest.mark.integration
-def test_pid():
-    """This test is pretty course-grained, but it should cover everything"""
-    tpid()
-
-
 if __name__ == "__main__":
-    m, solver = tpid(tee=True)
+    m, solver = test_pid()
 
     plot_grid_dynamic(
         x=m.fs.time,
@@ -305,5 +304,5 @@ if __name__ == "__main__":
         ],
         cols=3,
         rows=1,
-        to_file="pid_steam_tank_pressure.pdf"
+        to_file="pid_steam_tank_pressure.pdf",
     )

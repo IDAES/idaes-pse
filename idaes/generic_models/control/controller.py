@@ -57,24 +57,26 @@ class ControllerMVBoundType(enum.Enum):
 class PIDControllerData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
-        "pv",
+        "process_var",
         ConfigValue(
             default=None,
             description="Process variable to be controlled",
             doc=(
                 "A Pyomo Var, Expression, or Reference for the measured"
-                " process variable. Should be indexed by time, slices are okay."
+                " process variable. Should be indexed by time. Slices are okay."
             ),
         ),
     )
     CONFIG.declare(
-        "mv",
+        "manipulated_var",
         ConfigValue(
             default=None,
-            description="Manipulated process variable",
+            description="Manipulated variable",
             doc=(
-                "A Pyomo Var, Expression, or Reference for the controlled"
-                " process variable. Should be indexed by time, slices are okay."
+                "A Pyomo Var, Reference to a Var, or something that can be"
+                " used to construct a Reference to a Var for the controlled"
+                " variable. The finial Refernce should be indexed by time."
+                " Slices are okay."
             ),
         ),
     )
@@ -140,27 +142,30 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
         super().build()
 
         # Check for required config
-        if self.config.pv is None or self.config.mv is None:
+        if self.config.process_var is None or self.config.manipulated_var is None:
             raise ConfigurationError("Controller config requires 'pv' and 'mv'")
-
-        # Make local references to the measured process varaible (pv) and the
-        # manipulated variable (mv)
-        self.pv = pyo.Reference(self.config.pv)
-        self.mv = pyo.Reference(self.config.mv)
+        self.process_var = pyo.Reference(self.config.process_var)
+        self.manipulated_var = pyo.Reference(self.config.manipulated_var)
 
         # Shorter pointers to time set information
         time_set = self.flowsheet().time
         time_units = self.flowsheet().time_units
+        time_0 = time_set.first()
+
+        #Type Check
+        if not issubclass(self.process_var[time_0].ctype, (pyo.Var, pyo.Expression)):
+            raise TypeError(f"process_var must reference a Var or Expression not {self.process_var[time_0].ctype}")
+        if not issubclass(self.process_var[time_0].ctype, pyo.Var):
+            raise TypeError(f"manipulated_var must reference a Var not {self.process_var[time_0].ctype}")
+
 
         # Get the appropriate units for various contoller varaibles
-        mv_units = pyo.units.get_units(self.mv[time_set.first()])
-        pv_units = pyo.units.get_units(self.pv[time_set.first()])
+        mv_units = pyo.units.get_units(self.manipulated_var[time_0])
+        pv_units = pyo.units.get_units(self.process_var[time_0])
         if mv_units is None:
             mv_units = pyo.units.dimensionless
         if pv_units is None:
             pv_units = pyo.units.dimensionless
-        if time_units is None:
-            time_units = pyo.units.dimensionless
         gain_p_units = mv_units / pv_units
 
         # Parameters
@@ -231,7 +236,7 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
 
             @self.Constraint(time_set, doc="Error constraint")
             def error_eqn(b, t):
-                return b.error[t] == b.setpoint[t] - b.pv[t]
+                return b.error[t] == b.setpoint[t] - b.process_var[t]
 
             self.derivative_of_error = pyodae.DerivativeVar(
                 self.error,
@@ -244,7 +249,7 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
 
             @self.Expression(time_set, doc="Error expression")
             def error(b, t):
-                return b.setpoint[t] - b.pv[t]
+                return b.setpoint[t] - b.process_var[t]
 
         # integral term written de_i(t)/dt = e(t)
         if self.config.type in [ControllerType.PI, ControllerType.PID]:
@@ -257,18 +262,18 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
 
             @self.Constraint(time_set, doc="Error calculated by derivative of integral")
             def error_from_integral_eqn(b, t):
-                if t == time_set.first():
+                if t == time_0:
                     if self.config.calculate_initial_integral:
                         if self.config.type == ControllerType.PI:
                             return (
                                 self.integral_of_error[t]
-                                == (b.mv[t] - b.mv_ref[t] - b.gain_p[t] * b.error[t])
+                                == (b.manipulated_var[t] - b.mv_ref[t] - b.gain_p[t] * b.error[t])
                                 / b.gain_i[t]
                             )
                         return (
                             self.integral_of_error[t]
                             == (
-                                b.mv[t]
+                                b.manipulated_var[t]
                                 - b.mv_ref[t]
                                 - b.gain_p[t] * b.error[t]
                                 - b.gain_d[t] * b.derivative_of_error[t]
@@ -278,7 +283,7 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
                     return pyo.Constraint.Skip
                 return b.error[t] == b.integral_of_error_dot[t]
 
-        @self.Expression(time_set, doc="Unbounded output for manimulated variable")
+        @self.Expression(time_set, doc="Unbounded output for manipulated variable")
         def mv_unbounded(b, t):
             if self.config.type == ControllerType.PID:
                 return (
@@ -308,16 +313,16 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
 
         @self.Constraint(time_set, doc="Bounded output of manipulated variable")
         def mv_eqn(b, t):
-            if t == time_set.first():
+            if t == time_0:
                 return pyo.Constraint.Skip
             else:
                 if self.config.mv_bound_type == ControllerMVBoundType.SMOOTH_BOUND:
-                    return b.mv[t] == smooth_bound(
+                    return b.manipulated_var[t] == smooth_bound(
                         b.mv_unbounded[t], lb=b.mv_lb, ub=b.mv_ub, eps=b.smooth_eps
                     )
                 elif self.config.mv_bound_type == ControllerMVBoundType.LOGISTIC:
                     return (
-                        (b.mv[t] - b.mv_lb)
+                        (b.manipulated_var[t] - b.mv_lb)
                         * (
                             1
                             + pyo.exp(
@@ -327,4 +332,4 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
                             )
                         )
                     ) == b.mv_ub - b.mv_lb
-                return b.mv[t] == b.mv_unbounded[t]
+                return b.manipulated_var[t] == b.mv_unbounded[t]

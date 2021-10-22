@@ -113,8 +113,8 @@ file "pid_steam_tank_pressure.pdf."
       # Add a controller
       m.fs.ctrl = PIDController(
           default={
-              "pv": m.fs.tank.control_volume.properties_out[:].pressure,
-              "mv": m.fs.valve_1.valve_opening,
+              "process_var": m.fs.tank.control_volume.properties_out[:].pressure,
+              "manipulated_var": m.fs.valve_1.valve_opening,
               "calculate_initial_integral": True,
               "mv_bound_type": ControllerMVBoundType.SMOOTH_BOUND,
               "type": ControllerType.PI,
@@ -257,9 +257,9 @@ Variables, Parameters, and Expressions
 +===========================+=============================+=============================================+
 | :math:`v_{sp}(t)`         | ``setpoint[t]``             | Setpoint variable (usually fixed)           |
 +---------------------------+-----------------------------+---------------------------------------------+
-| :math:`v(t)`              | ``pv[t]``                   | Measured process variable (Reference)       |
+| :math:`v(t)`              | ``process_var[t]``          | Measured process variable (Reference)       |
 +---------------------------+-----------------------------+---------------------------------------------+
-| :math:`u(t)`              | ``mv[t]``                   | Manipulated variable (Reference)            |
+| :math:`u(t)`              | ``manipulated_var[t]``      | Manipulated variable (Reference)            |
 +---------------------------+-----------------------------+---------------------------------------------+
 | :math:`K_p(t)`            | ``gain_p[t]``               | Controller gain  (usually fixed)            |
 +---------------------------+-----------------------------+---------------------------------------------+

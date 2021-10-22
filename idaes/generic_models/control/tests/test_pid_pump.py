@@ -59,8 +59,8 @@ def set_scaling_factors(m):
     # Calculate calculated scaling factors
     iscale.calculate_scaling_factors(m)
 
-
-def main():
+@pytest.fixture
+def m():
     m_ss = get_model(dynamic=False)
     m_dyn = get_model(dynamic=True)
     copy_non_time_indexed_values(m_dyn.fs, m_ss.fs, copy_fixed=True)
@@ -121,10 +121,9 @@ def get_model(dynamic=False):
     if dynamic:
         m.fs.controller = PIDController(
             default={
-                "pv": m.fs.tank.tank_level,
-                "mv": m.fs.valve.valve_opening,
+                "process_var": m.fs.tank.tank_level,
+                "manipulated_var": m.fs.valve.valve_opening,
                 "type": ControllerType.PI,
-                "bounded_output": True,
             }
         )
 
@@ -202,8 +201,7 @@ def run_dynamic(m):
 
 
 @pytest.mark.integration
-def test_pid():
-    m = main()
+def test_pid(m):
     assert 0.5000 == pytest.approx(pyo.value(m.fs.valve.valve_opening[0.0]), abs=1e-3)
     assert 0.6156 == pytest.approx(
         pyo.value(m.fs.valve.valve_opening[406.25]), abs=1e-3
@@ -219,39 +217,3 @@ def test_pid():
     assert 8436.87597 == pytest.approx(
         pyo.value(m.fs.tank.outlet.flow_mol[1000]), abs=1e-3
     )
-
-
-if __name__ == "__main__":
-    m = main()
-
-    import matplotlib.pyplot as plt
-
-
-    opening = []
-    level = []
-    outflow= []
-    time=[]
-
-    for t in m.fs.time:
-        time.append(t)
-        opening.append(pyo.value(m.fs.valve.valve_opening[t]))
-        level.append(pyo.value(m.fs.tank.tank_level[t]))
-        outflow.append(pyo.value(m.fs.tank.outlet.flow_mol[t]))
-
-    plt.subplot(131)
-    plt.plot(time, opening)
-    plt.title('opening')
-    plt.xlabel('time')
-
-    plt.subplot(132)
-    plt.plot(time, level)
-    plt.title('level')
-    plt.xlabel('time')
-
-    plt.subplot(133)
-    plt.plot(time, outflow)
-    plt.title('outlet flow')
-    plt.xlabel('time')
-    
-    plt.tight_layout()
-    plt.show()

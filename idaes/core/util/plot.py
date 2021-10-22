@@ -22,10 +22,11 @@ import pyomo.environ as pyo
 from pyomo.common.deprecation import deprecated
 from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
 
+
 @deprecated(
     "idaes.core.util.plot.stitch_dynamic is deprecated use"
-        " idaes.core.util.plot.dynamic_value_list instead",
-    version=1.12
+    " idaes.core.util.plot.dynamic_value_list instead",
+    version=1.12,
 )
 def stitch_dynamic(*args):
     """
@@ -38,7 +39,7 @@ def stitch_dynamic(*args):
             time sets
 
     Returns:
-        (list) with the time indexed Pyomo compoent values concatonated for
+        (list) with the time indexed Pyomo component values concatenated for
             plotting
     """
 
@@ -50,25 +51,26 @@ def stitch_dynamic(*args):
             l += [pyo.value(v[t]) for t in v]
     return l
 
+
 def dynamic_value_list(*args, units=None):
     """
-    Create a list of values from a Pyomo component. Multiple model reperesnting
+    Create a list of values from a Pyomo component. Multiple models represnting
     different time periods can also be combined by providing multiple arguments
     to assemble into one time series.
 
     Args:
         Positional arguments (): Multiple Pyomo components indexed by time, or
-            time sets.  Slices are ok.
+            time sets. Slices are ok.
 
     Returns:
-        (list) with the time indexed Pyomo compoent values concatonated for
+        (list) with the time indexed Pyomo component values concatenated for
             plotting
     """
     l = []
     for v in args:
         if isinstance(v, pyo.Set):
             l += [t for t in v]
-        elif isinstance(v,  IndexedComponent_slice):
+        elif isinstance(v, IndexedComponent_slice):
             if units is None:
                 l += [pyo.value(sv) for sv in v]
             else:
@@ -81,8 +83,10 @@ def dynamic_value_list(*args, units=None):
     return l
 
 
-def plot_grid(x, y, xlabel, ylabel, cols=1, rows=1, same_x=False, ylabel_title=True, to_file=None):
-    """ Make a grid of plots.
+def plot_grid(
+    x, y, xlabel, ylabel, cols=1, rows=1, same_x=False, ylabel_title=True, to_file=None
+):
+    """Make a grid of plots.
 
     Args:
         x: values for x-axis. If all plots have the same x-axis the same_x arg
@@ -102,7 +106,7 @@ def plot_grid(x, y, xlabel, ylabel, cols=1, rows=1, same_x=False, ylabel_title=T
     Returns:
         matplotlib.pyplot
     """
-    assert cols*rows >= len(y)
+    assert cols * rows >= len(y)
     for i, yi in enumerate(y):
         yilabel = ylabel[i]
         if same_x:
@@ -112,10 +116,13 @@ def plot_grid(x, y, xlabel, ylabel, cols=1, rows=1, same_x=False, ylabel_title=T
             xi = x[i]
             xilabel = xlabel[i]
 
-        plt.subplot(rows, cols, i+1)
+        plt.subplot(rows, cols, i + 1)
         plt.xlabel(xilabel)
         plt.plot(xi, yi)
-        plt.title(yilabel)
+        if ylabel_title:
+            plt.title(yilabel)
+        else:
+            plt.ylabel(yilabel)
 
     plt.tight_layout()
     if to_file:
@@ -124,8 +131,11 @@ def plot_grid(x, y, xlabel, ylabel, cols=1, rows=1, same_x=False, ylabel_title=T
         plt.show()
     return plt
 
-def plot_grid_dynamic(x, y, xlabel, ylabel, yunits=None, cols=1, rows=1, ylabel_title=True, to_file=None):
-    """ Make a grid of dynamic plots, where the x-axices are time.
+
+def plot_grid_dynamic(
+    x, y, xlabel, ylabel, yunits=None, cols=1, rows=1, ylabel_title=True, to_file=None
+):
+    """Make a grid of dynamic plots, where the x-axices are time.
 
     Args:
         x: time set or list of time values
@@ -165,7 +175,7 @@ def plot_grid_dynamic(x, y, xlabel, ylabel, yunits=None, cols=1, rows=1, ylabel_
         rows=rows,
         same_x=True,
         ylabel_title=ylabel_title,
-        to_file=to_file
+        to_file=to_file,
     )
 
 
@@ -189,7 +199,7 @@ def plot_dynamic(time, y, ylabel, xlabel="time (s)", title=None, legend=None):
     Returns:
         None
     """
-    y2 = [None]*len(y)
+    y2 = [None] * len(y)
     for i, z in enumerate(y):
         if isinstance(z, (list, tuple)):
             y2[i] = y[i]

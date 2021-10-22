@@ -404,7 +404,7 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     kaug.options["print_kkt"] = ""
     results = ipopt.solve(model,tee=tee)
 
-    # Rasie Exception if ipopt fails
+    # Raise Exception if ipopt fails
     if (results.solver.status == SolverStatus.warning):
         raise Exception(results.solver.Message)
 
