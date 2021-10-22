@@ -845,6 +845,8 @@ class TestProperties(object):
 
         # Need to set a value of T for checking expressions later
         m.state[1].temperature.set_value(300)
+        # Need to set a value of log_act_phase_solvents for checking osmotic pressure calculation
+        m.state[1].log_act_phase_solvents["Liq"].set_value(-1.789578)
 
         return m
 

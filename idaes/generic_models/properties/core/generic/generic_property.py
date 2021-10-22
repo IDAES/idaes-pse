@@ -1842,7 +1842,7 @@ class GenericStateBlockData(StateBlockData):
                     hint="for log_mole_frac_phase_comp_true")
                 iscale.constraint_scaling_transform(
                     v, sf_x, overwrite=False)
-        #TODO: Revisit scaling factor for log_act_phase_solvents
+
         if self.is_property_constructed("log_act_phase_solvents"):
             for p, v in self.log_act_phase_solvents_eq.items():
                 sf_x = iscale.get_scaling_factor(
@@ -3111,18 +3111,27 @@ class GenericStateBlockData(StateBlockData):
     def _log_act_phase_solvents(self):
         try:
             self.log_act_phase_solvents = Var(
-                self.phase_set,
+                self.phase_list,
                 initialize=1,
                 bounds=(-50, 1),
                 units=pyunits.dimensionless,
                 doc="Log of activities summed across solvents by phase")
 
             def rule_log_act_phase_solvents(b, p):
-                p_config = b.params.get_phase(p).config
-                return exp(b.log_act_phase_solvents[p]) == \
-                       sum(p_config.equation_of_state.act_phase_comp(b, p, j) for j in b.params.solvent_set)
+                p_obj = b.params.get_phase(p)
+                if not isinstance(p_obj, LiquidPhase):
+                    return Expression.Skip
+                else:
+                    if len(b.params.solvent_set) > 1:
+                        return exp(b.log_act_phase_solvents[p]) == \
+                               sum(p_config.equation_of_state.act_phase_comp(b, p, j) for j in b.params.solvent_set)
+                    elif len(b.params.solvent_set) == 1:
+                        return exp(b.log_act_phase_solvents[p]) == b.act_phase_comp[p,b.params.solvent_set.first()]
+                    else:
+                        raise
+
             self.log_act_phase_solvents_eq = Constraint(
-                    self.phase_set,
+                    self.phase_list,
                     doc="Natural log of summed solvent activity in each phase",
                     rule=rule_log_act_phase_solvents)
         except AttributeError:
