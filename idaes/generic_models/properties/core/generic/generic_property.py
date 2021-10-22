@@ -3115,6 +3115,7 @@ class GenericStateBlockData(StateBlockData):
 
             def rule_log_act_phase_solvents(b, p):
                 p_obj = b.params.get_phase(p)
+                p_config = b.params.get_phase(p).config
                 if not isinstance(p_obj, LiquidPhase):
                     return Expression.Skip
                 else:
