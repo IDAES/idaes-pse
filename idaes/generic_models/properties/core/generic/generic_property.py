@@ -1844,13 +1844,9 @@ class GenericStateBlockData(StateBlockData):
                     v, sf_x, overwrite=False)
 
         if self.is_property_constructed("log_act_phase_solvents"):
-            for p, v in self.log_act_phase_solvents_eq.items():
-                sf_x = iscale.get_scaling_factor(
-                    sum(self.mole_frac_phase[p,j] for j in self.params.solvent_set),
-                    default=1e-3,
-                    warning=True)
+            for v in self.log_act_phase_solvents_eq.items():
                 iscale.constraint_scaling_transform(
-                    v, sf_x, overwrite=False)
+                    v, 1e-3, overwrite=False)
 
         if self.is_property_constructed("log_conc_mol_phase_comp"):
             for (p, j), v in self.log_conc_mol_phase_comp_eq.items():
