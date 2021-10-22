@@ -1844,7 +1844,7 @@ class GenericStateBlockData(StateBlockData):
                     v, sf_x, overwrite=False)
 
         if self.is_property_constructed("log_act_phase_solvents"):
-            for v in self.log_act_phase_solvents_eq.items():
+            for p, v in self.log_act_phase_solvents_eq.items():
                 iscale.constraint_scaling_transform(
                     v, 1e-3, overwrite=False)
 
