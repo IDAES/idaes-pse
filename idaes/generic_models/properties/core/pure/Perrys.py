@@ -228,6 +228,7 @@ class dens_mol_liq_comp_eqn_2():
 
 class dens_mol_liq_comp():  # dens_mol_liq_comp_eqn_1, dens_mol_liq_comp_eqn_2
 
+    @staticmethod
     def build_parameters(cobj):
         cobj.dens_mol_liq_comp_coeff_eqn_type = Param(
             mutable=True, doc="Liquid molar density equation form")
@@ -251,6 +252,7 @@ class dens_mol_liq_comp():  # dens_mol_liq_comp_eqn_1, dens_mol_liq_comp_eqn_2
                              f"dens_mol_liq_comp equation type: "
                              f"{cobj.dens_mol_liq_comp_coeff_eqn_type}")
 
+    @staticmethod
     def return_expression(b, cobj, T):
         if cobj.dens_mol_liq_comp_coeff_eqn_type.value == 1:
             rho = dens_mol_liq_comp_eqn_1.return_expression(b, cobj, T)
