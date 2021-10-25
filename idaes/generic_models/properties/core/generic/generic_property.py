@@ -3246,7 +3246,8 @@ class GenericStateBlockData(StateBlockData):
 
     def _log_act_phase_solvents(self):
         if len(self.params.solvent_set) == 1:
-            self.log_act_phase_solvents = Reference(self.log_act_phase_comp[:, self.params.solvent_set.first()])
+            self.log_act_phase_solvents = \
+                Reference(self.log_act_phase_comp[:, self.params.solvent_set.first()])
         else:
             try:
                 self.log_act_phase_solvents = Var(
@@ -3263,7 +3264,8 @@ class GenericStateBlockData(StateBlockData):
                         return Expression.Skip
                     else:
                         return exp(b.log_act_phase_solvents[p]) == \
-                               sum(p_config.equation_of_state.act_phase_comp(b, p, j) for j in b.params.solvent_set)
+                               sum(p_config.equation_of_state.act_phase_comp(b, p, j)
+                                   for j in b.params.solvent_set)
 
                 self.log_act_phase_solvents_eq = Constraint(
                         self.phase_list,
