@@ -25,9 +25,9 @@ from pyomo.environ import value, Integers, RangeSet, TransformationFactory, \
     Block, Reference
 
 # Import IDAES cores
-from idaes.generic_models.unit_models.distillation import Tray, Condenser, \
+from idaes.generic_models.unit_models.column_models import Tray, Condenser, \
     Reboiler
-from idaes.generic_models.unit_models.distillation.condenser \
+from idaes.generic_models.unit_models.column_models.condenser \
     import CondenserType, TemperatureSpec
 from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
