@@ -279,9 +279,6 @@ documentation for supported schemes,
                 balance_type=MomentumBalanceType.pressureTotal,
                 has_pressure_change=self.config.vapor_side.has_pressure_change)
 
-            # TO DO : remove this warning when there is support for deltaP
-            _log.warn("Constraint for deltaP must be provided if "
-                      "has_pressure_change is set to True")
         # consistency check
         if (self.config.vapor_side.has_pressure_change and
                 self.config.fix_column_pressure):
@@ -427,6 +424,33 @@ documentation for supported schemes,
                 mutable=True,
                 units=pyunits.Pa,
                 doc='Fixed operating pressure of column')
+        else:
+            self.column_top_pressure = Var(
+                initialize=self.config.column_pressure,
+                units=pyunits.Pa,
+                doc='Operating pressure of column at the topmost stage')
+            self.deltaP = Var(
+                initialize=0.001,
+                units=pyunits.Pa,
+                doc='Pressure drop across the column')
+
+            # Irrigated packing pressure drop calculation
+            # Add reference
+
+            # Particle diameter
+            self.dp = Param(initialize=6*(1-self.eps_ref)/self.a_ref,
+                            units=pyunits.m,
+                            doc='Packing particle diameter')
+
+            # Reynolds number for gas
+            def rule_Re_g(blk, t, x):
+                return blk.vapor_phase.properties[t, x].dens_mass*\
+                blk.velocity_vap[t,x]*blk.dp/blk.vapor_phase.properties[t, x].visc_d
+
+            self.Re_g = Expression(self.flowsheet().time,
+                                   self.vapor_phase.length_domain,
+                                   rule=rule_Re_g,
+                                   doc='Reynolds number for gas')
 
         # Interfacial area  parameters
         self.area_interfacial_parA = Var(initialize=0.6486,
@@ -478,6 +502,10 @@ documentation for supported schemes,
                                 domain=NonNegativeReals,
                                 initialize=0.01,
                                 doc='Liquid superficial velocity')
+        
+        # Kister and Gill flooding correlation
+        # confirm and add
+        
         # mass and heat transfer terms
         # mass transfer
         self.pressure_equil = Var(
@@ -502,7 +530,7 @@ documentation for supported schemes,
                                       mutable=True,
                                       initialize=160,
                                       doc='Enhancement factor')
-        
+
         self.yi_solvent = Var(self.flowsheet().time,
                           self.liquid_phase.length_domain,
                           solvent_comp_list,
