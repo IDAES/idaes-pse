@@ -21,8 +21,8 @@ from pyomo.environ import (ConcreteModel, TerminationCondition,
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models.distillation import TrayColumn
-from idaes.generic_models.unit_models.distillation.condenser \
+from idaes.generic_models.unit_models.column_models import TrayColumn
+from idaes.generic_models.unit_models.column_models.condenser \
     import CondenserType, TemperatureSpec
 from idaes.generic_models.properties.activity_coeff_models.\
     BTX_activity_coeff_VLE import BTXParameterBlock
