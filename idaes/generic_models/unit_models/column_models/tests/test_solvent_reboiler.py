@@ -39,7 +39,7 @@ from idaes.core.util import get_solver
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
 
-from idaes.generic_models.unit_models.distillation.solvent_reboiler import (
+from idaes.generic_models.unit_models.column_models.solvent_reboiler import (
     SolventReboiler)
 from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_solvent \
     import configuration as aqueous_mea
@@ -66,18 +66,14 @@ class TestAbsorber(object):
             "liquid_property_package": m.fs.liquid_properties,
             "vapor_property_package": m.fs.vapor_properties})
 
-        # m.fs.unit.inlet.flow_vol.fix(1.0e-03)
-        # m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        # m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        # m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        # m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        # m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.inlet.flow_mol[0].fix(83.89)
+        m.fs.unit.inlet.temperature[0].fix(392.5)
+        m.fs.unit.inlet.pressure[0].fix(183700)
+        m.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix(0.0326)
+        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(0.8589)
+        m.fs.unit.inlet.mole_frac_comp[0, "MEA"].fix(0.1085)
 
-        # m.fs.unit.inlet.temperature.fix(303.15)
-        # m.fs.unit.inlet.pressure.fix(101325.0)
-
-        m.fs.unit.heat_duty.fix(0)
-        m.fs.unit.deltaP.fix(0)
+        m.fs.unit.heat_duty.fix(430.61)
 
         return m
 
@@ -95,26 +91,26 @@ class TestAbsorber(object):
         assert hasattr(model.fs.unit, "bottoms")
         assert len(model.fs.unit.bottoms.vars) == 4
         assert hasattr(model.fs.unit.bottoms, "flow_mol")
-        assert hasattr(model.fs.unit.bottoms, "mole_frac")
+        assert hasattr(model.fs.unit.bottoms, "mole_frac_comp")
         assert hasattr(model.fs.unit.bottoms, "temperature")
         assert hasattr(model.fs.unit.bottoms, "pressure")
 
         assert hasattr(model.fs.unit, "vapor_reboil")
         assert len(model.fs.unit.vapor_reboil.vars) == 4
         assert hasattr(model.fs.unit.vapor_reboil, "flow_mol")
-        assert hasattr(model.fs.unit.vapor_reboil, "mole_frac")
+        assert hasattr(model.fs.unit.vapor_reboil, "mole_frac_comp")
         assert hasattr(model.fs.unit.vapor_reboil, "temperature")
         assert hasattr(model.fs.unit.vapor_reboil, "pressure")
 
         assert isinstance(model.fs.unit.unit_material_balance, Constraint)
         assert isinstance(model.fs.unit.unit_enthalpy_balance, Constraint)
-        assert isinstance(model.fs.unit.unit_temeprature_equality, Constraint)
+        assert isinstance(model.fs.unit.unit_temperature_equality, Constraint)
         assert isinstance(model.fs.unit.unit_pressure_balance, Constraint)
         assert isinstance(model.fs.unit.zero_flow_param, Param)
 
-        # assert number_variables(model) == 27
-        # assert number_total_constraints(model) == 16
-        # assert number_unused_variables(model) == 0
+        assert number_variables(model.fs.unit) == 84
+        assert number_total_constraints(model.fs.unit) == 77
+        assert number_unused_variables(model.fs.unit) == 0
 
     @pytest.mark.component
     def test_units(self, model):
@@ -123,9 +119,9 @@ class TestAbsorber(object):
         # assert_units_equivalent(model.fs.unit.heat_duty[0], units.W)
         # assert_units_equivalent(model.fs.unit.deltaP[0], units.Pa)
 
-    # @pytest.mark.unit
-    # def test_dof(self, model):
-    #     assert degrees_of_freedom(model) == 0
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model) == 0
 
     # @pytest.mark.solver
     # @pytest.mark.skipif(solver is None, reason="Solver not available")

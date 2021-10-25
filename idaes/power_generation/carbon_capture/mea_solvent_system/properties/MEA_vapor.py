@@ -29,7 +29,7 @@ References:
     [2] Morgan et.al (2015)
 """
 # Import Pyomo units
-from pyomo.environ import sqrt, units as pyunits, Var, value
+from pyomo.environ import sqrt, units as pyunits, Var
 
 # Import IDAES cores
 from idaes.core import VaporPhase, Component
@@ -87,7 +87,7 @@ class EnthMol():
     @staticmethod
     def return_expression(b, cobj, T):
         # Specific enthalpy
-        Tref = b.temperature_ref
+        Tref = b.params.temperature_ref
         return ((cobj.cp_mol_vap_comp_coeff_1*(T-Tref) +
                  0.5*cobj.cp_mol_vap_comp_coeff_2*(T**2 - Tref**2) -
                  cobj.cp_mol_vap_comp_coeff_3*(T**-1 - Tref**-1)) *
@@ -280,6 +280,14 @@ class ThermalCond():
 class Viscosity():
     @staticmethod
     def build_parameters(pobj):
+        # Viscosity parameters are required for thermal conductivity, and
+        # have likely already been built by the time this is triggered
+        # for viscosity.
+        # To avoid implict replacement, check to see if parameters already
+        # exist
+        if hasattr(pobj, "visc_d_h2o_coeff_1"):
+            return None
+
         # Viscosity constants
         # CO2 & H2O calculated from:
         # Perry and Green Handbook; McGraw Hill, 8th edition 2008
