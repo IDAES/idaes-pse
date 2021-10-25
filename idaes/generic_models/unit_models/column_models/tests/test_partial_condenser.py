@@ -22,8 +22,8 @@ from pyomo.environ import (ConcreteModel, TerminationCondition,
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock, MaterialBalanceType, EnergyBalanceType
-from idaes.generic_models.unit_models.distillation import Condenser
-from idaes.generic_models.unit_models.distillation.condenser import \
+from idaes.generic_models.unit_models.column_models import Condenser
+from idaes.generic_models.unit_models.column_models.condenser import \
     CondenserType, TemperatureSpec
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
