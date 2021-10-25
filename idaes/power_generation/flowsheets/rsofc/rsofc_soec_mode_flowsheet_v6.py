@@ -1891,11 +1891,11 @@ def tag_for_pfd_and_tables(fs):
         format_string="{:.3f}",
         display_units=pyo.units.kg / pyo.units.s,
     )
-    # tag_group["co2_product_rate"] = iutil.ModelTag(
-    #     expr=fs.co2_product_rate[0],
-    #     format_string="{:.3f}",
-    #     display_units=pyo.units.kmol / pyo.units.s,
-    # )
+    tag_group["co2_product_rate"] = iutil.ModelTag(
+        expr=fs.CPU.pureco2.flow_mol[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.kmol / pyo.units.s,
+    )
     tag_group["co2_product_rate_mass"] = iutil.ModelTag(
         expr=fs.CO2_captured[0],
         format_string="{:.3f}",
@@ -1921,7 +1921,31 @@ def tag_for_pfd_and_tables(fs):
         format_string="{:.3f}",
         display_units=pyo.units.MWh/pyo.units.kg,
     )
-
+    tag_group["soec_power"] = iutil.ModelTag(
+        expr=fs.soec.total_power[0],
+        format_string="{:.2f}",
+        display_units=pyo.units.MW
+    )
+    tag_group["h2_compressor_power"] = iutil.ModelTag(
+        expr=fs.h2_compressor_power[0],
+        format_string="{:.2f}",
+        display_units=pyo.units.MW,
+    )
+    tag_group["feed_pump_power"] = iutil.ModelTag(
+        expr=fs.aux_boiler_feed_pump.control_volume.work[0],
+        format_string="{:.4f}",
+        display_units=pyo.units.MW,
+    )
+    tag_group["fuel_rate"] = iutil.ModelTag(
+        expr=fs.ng_preheater.shell.properties_in[0].flow_mol,
+        format_string="{:.3f}",
+        display_units=pyo.units.kmol / pyo.units.s,
+    )
+    tag_group["fuel_rate_mass"] = iutil.ModelTag(
+        expr=fs.ng_preheater.shell.properties_in[0].flow_mass,
+        format_string="{:.3f}",
+        display_units=pyo.units.kg / pyo.units.s,
+    )
     # sd = tables.stream_states_dict(streams, 0)
     # sdf = tables.generate_table(
     #     blocks=sd,
@@ -2082,11 +2106,11 @@ def tag_for_pfd_and_tables(fs):
 #         except (KeyError, AttributeError):
 #             pass
 
-#     tag_group["soec_power"] = iutil.ModelTag(
-#         expr=fs.soec.total_power[0],
-#         format_string="{:.2f}",
-#         display_units=pyo.units.MW
-#     )
+    # tag_group["soec_power"] = iutil.ModelTag(
+    #     expr=fs.soec.total_power[0],
+    #     format_string="{:.2f}",
+    #     display_units=pyo.units.MW
+    # )
 #     tag_group["soec_n_cells"] = iutil.ModelTag(
 #         expr=fs.soec.n_cells,
 #         format_string="{:,.0f}",
@@ -2108,11 +2132,11 @@ def tag_for_pfd_and_tables(fs):
 #     #     format_string="{:.3f}",
 #     #     display_units=pyo.units.kmol / pyo.units.s,
 #     # )
-#     # tag_group["co2_product_rate_mass"] = iutil.ModelTag(
-#     #     expr=fs.co2_product_rate_mass[0],
-#     #     format_string="{:.3f}",
-#     #     display_units=pyo.units.kg / pyo.units.s,
-#     # )
+    # tag_group["co2_product_rate_mass"] = iutil.ModelTag(
+    #     expr=fs.CO2_captured[0],
+    #     format_string="{:.3f}",
+    #     display_units=pyo.units.kg / pyo.units.s,
+    # )
 #     # tag_group["fuel_rate"] = iutil.ModelTag(
 #     #     expr=fs.ng_preheater.shell.properties_in[0].flow_mol,
 #     #     format_string="{:.3f}",
@@ -2123,6 +2147,11 @@ def tag_for_pfd_and_tables(fs):
 #     #     format_string="{:.3f}",
 #     #     display_units=pyo.units.kg / pyo.units.s,
 #     # )
+    # tag_group["h2_compressor_power"] = iutil.ModelTag(
+    #     expr=m.fs.h2_compressor_power[0],
+    #     format_string="{:.2f}",
+    #     display_units=pyo.units.MW,
+    # )
 #     # tag_group["electric_power"] = iutil.ModelTag(
 #     #     expr=fs.electric_power[0],
 #     #     format_string="{:.3f}",
@@ -2416,10 +2445,10 @@ if __name__ == "__main__":
     # rsofc_cost.get_rsofc_capital_costing(m)
     # rsofc_cost.lock_capital_cost(m)
     # rsofc_cost.get_rsofc_fixed_OM_costing(m, 650)
-    # rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
+    rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
 
     # iscale.calculate_scaling_factors(m.fs.costing)
-    # iscale.calculate_scaling_factors(m.soec_fs.costing)
+    iscale.calculate_scaling_factors(m.soec_fs.costing)
 
     # solver.solve(m, tee=True)
 
@@ -2446,15 +2475,15 @@ if __name__ == "__main__":
     # strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
     # strip_bounds.apply_to(m, reversible=False)
 
-    m.soec_fs.sweep_constraint = pyo.Constraint(
-        expr=1e2* m.soec_fs.tag_input["single_cell_sweep_flow"].expression
-        ==
-        1e2* m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].expression
-    )
-    m.soec_fs.tag_input["single_cell_sweep_flow"].unfix()
-    m.soec_fs.tag_input["single_cell_sweep_flow"].setlb(4e-6)
+    # m.soec_fs.sweep_constraint = pyo.Constraint(
+    #     expr=1e2* m.soec_fs.tag_input["single_cell_sweep_flow"].expression
+    #     ==
+    #     1e2* m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].expression
+    # )
+    # m.soec_fs.tag_input["single_cell_sweep_flow"].unfix()
+    # m.soec_fs.tag_input["single_cell_sweep_flow"].setlb(4e-6)
     
-    m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].setlb(4e-6)
+    # m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].setlb(4e-6)
 
 
     # m.soec_fs.tag_input["sweep_air_flow"].unfix()   # redundant as already unfixed
@@ -2468,21 +2497,25 @@ if __name__ == "__main__":
     # TODO - is the sum of mole frac needed for this constraint?
     m.soec_fs.tag_input["feed_h2_frac"].unfix()  # Unfix for optimization
     m.soec_fs.tag_input["feed_h2_frac"].setlb(0.001)
-    m.soec_fs.tag_input["feed_h2_frac"].setub(0.999)
+    m.soec_fs.tag_input["feed_h2_frac"].setub(0.95)
 
     m.soec_fs.tag_input["preheat_fg_split_to_oxygen"].unfix()
     m.soec_fs.tag_input["preheat_fg_split_to_oxygen"].setlb(0.55)
     m.soec_fs.tag_input["preheat_fg_split_to_oxygen"].setub(0.99)
 
     m.soec_fs.spltf1.split_fraction[:, "out"].setlb(0.001)
-    m.soec_fs.spltf1.split_fraction[:, "out"].setub(0.999)
+    m.soec_fs.spltf1.split_fraction[:, "out"].setub(0.95)
 
     m.soec_fs.splta1.split_fraction[:, "out"].setlb(0.001)
-    m.soec_fs.splta1.split_fraction[:, "out"].setub(0.99)
+    m.soec_fs.splta1.split_fraction[:, "out"].setub(0.95)
 
     # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.fix(20e5)
     # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setlb(1.1e5)
     # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setub(40e5)
+
+    # m.soec_fs.tag_input["n_cells"].unfix()  # Unfix for optimization
+    # m.soec_fs.tag_input["n_cells"].setlb(1e6)
+    # m.soec_fs.tag_input["n_cells"].setub(400e6)
 
     # m.soec_fs.cmb_temperature.unfix()
     # m.soec_fs.cmb_temperature.setlb(1300)
@@ -2493,12 +2526,12 @@ if __name__ == "__main__":
     # m.soec_fs.obj = pyo.Objective(expr=-m.soec_fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"]*10)
     # m.soec_fs.obj = pyo.Objective(expr=m.soec_fs.H2_costing.total_variable_OM_cost[0])
 
-    # m.soec_fs.tag_pfd["total_variable_OM_cost"] = iutil.ModelTag(
-    #     expr=m.soec_fs.H2_costing.total_variable_OM_cost[0],
-    #     format_string="{:.3f}",
-    #     display_units=pyo.units.USD / pyo.units.kg,
-    #     doc="Variable Hydrogen Production Cost",
-    # )
+    m.soec_fs.tag_pfd["total_variable_OM_cost"] = iutil.ModelTag(
+        expr=m.soec_fs.H2_costing.total_variable_OM_cost[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.USD / pyo.units.kg,
+        doc="Variable Hydrogen Production Cost",
+    )
 
     options={
         # "nlp_scaling_method": "user-scaling",
@@ -2514,16 +2547,17 @@ if __name__ == "__main__":
     cols_input = ("hydrogen_product_rate",)
     cols_pfd = (
         "status",
-        # "total_variable_OM_cost",
+        "total_variable_OM_cost",
+        "soec_n_cells",
         "h2_product_rate_mass",
-        # "co2_product_rate",
-        # "co2_product_rate_mass",
-        # "soec_power",
-        # "h2_compressor_power",
-        # "feed_pump_power",
-        # "fuel_rate",
-        # "fuel_rate_mass",
-        # "electric_power",
+        "fuel_rate",
+        "fuel_rate_mass",
+        "co2_product_rate",
+        "co2_product_rate_mass",
+        "soec_power",
+        "h2_compressor_power",
+        "feed_pump_power",
+        "net_power",
         "net_power_per_mass_h2",
     )
 
@@ -2533,7 +2567,7 @@ if __name__ == "__main__":
         w = csv.writer(f)
         w.writerow(head_1 + head_2)
     # for h in np.linspace(2.5, 0.1, 25):  # Generate 25 points btw 2.5 to 0.1
-    for h in np.linspace(2.5, 1.5, 20):  # Generate 25 points btw 2.5 to 0.1
+    for h in np.linspace(2.5, 2.0, 10):  # Generate 25 points btw 2.5 to 0.1
         m.soec_fs.tag_input["hydrogen_product_rate"].fix(
             float(h) * pyo.units.kmol / pyo.units.s
         )
