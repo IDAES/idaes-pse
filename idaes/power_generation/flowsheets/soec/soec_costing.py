@@ -190,7 +190,7 @@ def get_soec_capital_costing(m):
     get_PP_costing(m.fs.aux_load_block, auxilliary_load_accounts, aux_load, "kW", 6)
 
     # build constraint summing total plant costs
-    get_total_TPC(m)
+    get_total_TPC(m.fs)
 
     # costing initialization
     calculate_variable_from_constraint(
@@ -236,7 +236,7 @@ def lock_capital_cost(m):
 
 def get_soec_OM_costing(m, design_h2_production=2.5 * pyo.units.kg / pyo.units.s):
     # fixed O&M costs
-    get_fixed_OM_costs(m, design_h2_production, tech=6)
+    get_fixed_OM_costs(m.fs, design_h2_production, tech=6)
 
     @m.fs.Constraint()
     def stack_replacement_cost(fs):
@@ -255,7 +255,7 @@ def get_soec_OM_costing(m, design_h2_production=2.5 * pyo.units.kg / pyo.units.s
     calculate_variable_from_constraint(
         m.fs.costing.other_fixed_costs, m.fs.stack_replacement_cost
     )
-    initialize_fixed_OM_costs(m)
+    initialize_fixed_OM_costs(m.fs)
 
     # variable O&M costs
 
@@ -308,10 +308,10 @@ def get_soec_OM_costing(m, design_h2_production=2.5 * pyo.units.kg / pyo.units.s
 
     print(pyo.units.convert(m.fs.h2_product_rate_mass[0], pyo.units.g / pyo.units.s))
     m.fs.h2_product_rate_mass.display()
-    get_variable_OM_costs(m, m.fs.h2_product_rate_mass, resources, rates, prices=prices)
+    get_variable_OM_costs(m.fs, m.fs.h2_product_rate_mass, resources, rates, prices=prices)
 
     # initialize variable costs
-    initialize_variable_OM_costs(m)
+    initialize_variable_OM_costs(m.fs)
 
 
 def display_soec_costing(m):

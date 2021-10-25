@@ -1396,7 +1396,7 @@ def add_costing(m):
     # fixed O&M costs
     NGFC_TPC = 693.019  # MM$
 
-    get_fixed_OM_costs(m, 650, tech=6, fixed_TPC=NGFC_TPC)
+    get_fixed_OM_costs(m.fs, 650, tech=6, fixed_TPC=NGFC_TPC)
 
     m.fs.costing.stack_replacement_cost = pyo.Var(
         initialize=13.26,
@@ -1547,7 +1547,7 @@ def add_costing(m):
     prices = {"desulfur adsorbent": 6.0297*pyunits.USD/pyunits.lb,
               "methanation catalyst": 601.765*pyunits.USD/pyunits.m**3}
 
-    get_variable_OM_costs(m, m.fs.net_power, resources, rates, prices)
+    get_variable_OM_costs(m.fs, m.fs.net_power, resources, rates, prices)
 
 
 def initialize_costing(m):
@@ -1583,8 +1583,8 @@ def initialize_costing(m):
         for t in m.fs.time:
             calculate_variable_from_constraint(v[t], c[t])
 
-    initialize_fixed_OM_costs(m)
-    initialize_variable_OM_costs(m)
+    initialize_fixed_OM_costs(m.fs)
+    initialize_variable_OM_costs(m.fs)
 
 
 def make_stream_dict(m):

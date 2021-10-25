@@ -609,7 +609,7 @@ def get_ASU_cost(self, scaled_param):
 # -----------------------------------------------------------------------------
 
 
-def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
+def get_fixed_OM_costs(b, nameplate_capacity, labor_rate=38.50,
                        labor_burden=30, operators_per_shift=6, tech=1,
                        fixed_TPC=None):
     """
@@ -624,7 +624,7 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
     These costs apply to the project as a whole and are scaled based on the
     total TPC.
     Args:
-        m: pyomo concrete model
+        b: pyomo concrete model or flowsheet block
         nameplate_capacity: rated plant output in MW
         labor_rate: hourly rate of plant operators in project dollar year
         labor_burden: a percentage multiplier used to estimate non-salary
@@ -639,35 +639,35 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
     Returns:
         None
     """
-    # check if flowsheet level costing block exists
-    if not hasattr(m.fs, "costing"):
-        m.fs.get_costing(year='2018')
+    # check if costing block exists
+    if not hasattr(b, "costing"):
+        b.get_costing(year='2018')
 
     # create and fix total_TPC if it does not exist yet
-    if not hasattr(m.fs.costing, "total_TPC"):
-        m.fs.costing.total_TPC = Var(initialize=0,
-                                     bounds=(0, 1e4),
-                                     doc="total TPC in $MM")
+    if not hasattr(b.costing, "total_TPC"):
+        b.costing.total_TPC = Var(initialize=0,
+                                  bounds=(0, 1e4),
+                                  doc="total TPC in $MM")
         if fixed_TPC is None:
-            m.fs.costing.total_TPC.fix(100)
-            _log.warning("m.fs.costing.total_TPC does not exist and a value "
+            b.costing.total_TPC.fix(100)
+            _log.warning("b.costing.total_TPC does not exist and a value "
                          "for fixed_TPC was not specified, total_TPC will be "
                          "fixed to 100 MM$")
         else:
-            m.fs.costing.total_TPC.fix(fixed_TPC)
+            b.costing.total_TPC.fix(fixed_TPC)
     else:
         if fixed_TPC is not None:
-            _log.warning("m.fs.costing.total_TPC already exists, the value "
+            _log.warning("b.costing.total_TPC already exists, the value "
                          "passed for fixed_TPC will be ignored.")
 
     # make params
-    m.fs.costing.labor_rate = Param(
+    b.costing.labor_rate = Param(
         initialize=labor_rate,
         mutable=True)
-    m.fs.costing.labor_burden = Param(
+    b.costing.labor_burden = Param(
         initialize=labor_burden,
         mutable=True)
-    m.fs.costing.operators_per_shift = Param(
+    b.costing.operators_per_shift = Param(
         initialize=operators_per_shift,
         mutable=True)
 
@@ -679,85 +679,85 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
                                6: [0.4, 0.019],
                                7: [0.4, 0.016]}
 
-    m.fs.costing.maintenance_labor_TPC_split = Param(
+    b.costing.maintenance_labor_TPC_split = Param(
         initialize=maintenance_percentages[tech][0],
         mutable=True)
-    m.fs.costing.maintenance_labor_percent = Param(
+    b.costing.maintenance_labor_percent = Param(
         initialize=maintenance_percentages[tech][1],
         mutable=True)
-    m.fs.costing.maintenance_material_TPC_split = Param(
+    b.costing.maintenance_material_TPC_split = Param(
         initialize=(1 - maintenance_percentages[tech][0]),
         mutable=True)
-    m.fs.costing.maintenance_material_percent = Param(
+    b.costing.maintenance_material_percent = Param(
         initialize=maintenance_percentages[tech][1],
         mutable=True)
 
     # make vars
-    m.fs.costing.annual_operating_labor_cost = Var(
+    b.costing.annual_operating_labor_cost = Var(
         initialize=1,
         bounds=(0, 100),
         doc="annual labor cost in $MM/yr")
-    m.fs.costing.maintenance_labor_cost = Var(
+    b.costing.maintenance_labor_cost = Var(
         initialize=1,
         bounds=(0, 100),
         doc="maintenance labor cost in $MM/yr")
-    m.fs.costing.admin_and_support_labor_cost = Var(
+    b.costing.admin_and_support_labor_cost = Var(
         initialize=1,
         bounds=(0, 100),
         doc="admin and support labor cost in $MM/yr")
-    m.fs.costing.property_taxes_and_insurance = Var(
+    b.costing.property_taxes_and_insurance = Var(
         initialize=1,
         bounds=(0, 100),
         doc="property taxes and insurance cost in $MM/yr")
-    m.fs.costing.total_fixed_OM_cost = Var(
+    b.costing.total_fixed_OM_cost = Var(
         initialize=4,
         bounds=(0, 100),
         doc="total fixed O&M costs in $MM/yr")
 
     # variable for user to assign other fixed costs to, fixed to 0 by default
-    m.fs.costing.other_fixed_costs = Var(
+    b.costing.other_fixed_costs = Var(
         initialize=0,
         bounds=(0, 100),
         doc="other fixed costs in $MM/yr")
-    m.fs.costing.other_fixed_costs.fix(0)
+    b.costing.other_fixed_costs.fix(0)
 
     # maintenance material cost is technically a variable cost, but it makes
     # more sense to include with the fixed costs becuase it uses TPC
-    m.fs.costing.maintenance_material_cost = Var(
+    b.costing.maintenance_material_cost = Var(
         initialize=5,
         bounds=(0, 100),
         doc="cost of maintenance materials in $/MWh")
 
     # create constraints
-    TPC = m.fs.costing.total_TPC  # quick reference to total_TPC
+    TPC = b.costing.total_TPC  # quick reference to total_TPC
 
     # calculated from labor rate, labor burden, and operators per shift
-    @m.fs.costing.Constraint()
+    @b.costing.Constraint()
     def annual_labor_cost_rule(c):
         return c.annual_operating_labor_cost*1e6 == \
             (c.operators_per_shift *
              c.labor_rate*(1 + c.labor_burden/100)*8760)
 
     # technology specific percentage of TPC
-    @m.fs.costing.Constraint()
+    @b.costing.Constraint()
     def maintenance_labor_cost_rule(c):
         return c.maintenance_labor_cost == (TPC *
                                             c.maintenance_labor_TPC_split
                                             * c.maintenance_labor_percent)
 
     # 25% of the sum of annual operating labor and maintenance labor
-    @m.fs.costing.Constraint()
+    @b.costing.Constraint()
     def admin_and_support_labor_cost_rule(c):
         return c.admin_and_support_labor_cost == \
             (0.25 * (c.annual_operating_labor_cost + c.maintenance_labor_cost))
 
     # 2% of TPC
-    @m.fs.costing.Constraint()
+    @b.costing.Constraint()
     def taxes_and_insurance_cost_rule(c):
         return c.property_taxes_and_insurance == 0.02*TPC
 
     # sum of fixed O&M costs
-    @m.fs.costing.Constraint()
+    @b.costing.Constraint()
     def total_fixed_OM_cost_rule(c):
         return c.total_fixed_OM_cost == (c.annual_operating_labor_cost +
                                          c.maintenance_labor_cost +
@@ -766,7 +766,7 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
                                          c.other_fixed_costs)
 
     # technology specific percentage of TPC
-    @m.fs.costing.Constraint()
+    @b.costing.Constraint()
     def maintenance_material_cost_rule(c):
         return c.maintenance_material_cost == \
             (TPC * 1e6 * c.maintenance_material_TPC_split *
@@ -782,7 +782,7 @@ def get_variable_OM_costs(fs, production_rate, resources, rates,
     at once. A total variable cost is created for each point in fs.time.
 
     Args:
-        m: pyomo concrete model
+        fs: pyomo flowsheet block
         production_rate: pyomo var indexed by fs.time representing the net
         system power or the hydrogen production rate
         resources: a list of strings for the resorces to be costed
@@ -921,35 +921,37 @@ def get_variable_OM_costs(fs, production_rate, resources, rates,
                          " called before get_variable_OM_costs")
 
 
-def initialize_fixed_OM_costs(m):
-    if hasattr(m.fs, "costing") and hasattr(m.fs.costing, "total_fixed_OM_cost"):
+def initialize_fixed_OM_costs(b):
+    # This method accepts either a concrete model or a flowsheet block
+    if hasattr(b, "costing") and hasattr(b.costing, "total_fixed_OM_cost"):
 
         calculate_variable_from_constraint(
-            m.fs.costing.annual_operating_labor_cost,
-            m.fs.costing.annual_labor_cost_rule)
+            b.costing.annual_operating_labor_cost,
+            b.costing.annual_labor_cost_rule)
 
         calculate_variable_from_constraint(
-            m.fs.costing.maintenance_labor_cost,
-            m.fs.costing.maintenance_labor_cost_rule)
+            b.costing.maintenance_labor_cost,
+            b.costing.maintenance_labor_cost_rule)
 
         calculate_variable_from_constraint(
-            m.fs.costing.admin_and_support_labor_cost,
-            m.fs.costing.admin_and_support_labor_cost_rule)
+            b.costing.admin_and_support_labor_cost,
+            b.costing.admin_and_support_labor_cost_rule)
 
         calculate_variable_from_constraint(
-            m.fs.costing.property_taxes_and_insurance,
-            m.fs.costing.taxes_and_insurance_cost_rule)
+            b.costing.property_taxes_and_insurance,
+            b.costing.taxes_and_insurance_cost_rule)
 
         calculate_variable_from_constraint(
-            m.fs.costing.total_fixed_OM_cost,
-            m.fs.costing.total_fixed_OM_cost_rule)
+            b.costing.total_fixed_OM_cost,
+            b.costing.total_fixed_OM_cost_rule)
 
         calculate_variable_from_constraint(
-            m.fs.costing.maintenance_material_cost,
-            m.fs.costing.maintenance_material_cost_rule)
+            b.costing.maintenance_material_cost,
+            b.costing.maintenance_material_cost_rule)
 
 
 def initialize_variable_OM_costs(fs):
+    # This method accepts only a flowsheet block
     # initialization for power generation costs
     if hasattr(fs, "costing") and hasattr(fs.costing, "variable_operating_costs"):
 
@@ -1051,27 +1053,28 @@ def display_equipment_costs(fs):
                                          value(o.costing.equipment_cost)))
 
 
-def get_total_TPC(m):
+def get_total_TPC(b):
+    # This method accepts either a concrete model or a flowsheet block
     TPC_list = []
-    for o in m.component_objects(descend_into=True):
+    for o in b.component_objects(descend_into=True):
         # look for costing blocks
         if hasattr(o, 'costing') and hasattr(o.costing, "total_plant_cost"):
             for key in o.costing.total_plant_cost.keys():
                 TPC_list.append(o.costing.total_plant_cost[key])
 
-    m.fs.costing.total_TPC = Var(initialize=0,
-                                 bounds=(0, 1e4),
-                                 doc='total TPC in $MM')
+    b.costing.total_TPC = Var(initialize=0,
+                              bounds=(0, 1e4),
+                              doc='total TPC in $MM')
 
-    @m.fs.costing.Constraint()
+    @b.costing.Constraint()
     def total_TPC_eq(c):
         return c.total_TPC == sum(TPC_list)
 
 
-def display_flowsheet_cost(m):
+def display_flowsheet_cost(b):
     print('\n')
     print('Total flowsheet cost: $%.3f Million' %
-          value(m.fs.flowsheet_cost))
+          value(b.flowsheet_cost))
 
 
 def check_sCO2_costing_bounds(fs):

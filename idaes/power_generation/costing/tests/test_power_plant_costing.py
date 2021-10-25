@@ -118,7 +118,7 @@ def test_PP_costing():
                    m.fs.ash_handling.ash_mass_flow, 'lb/hr', 2)
 
     # add total cost
-    get_total_TPC(m)
+    get_total_TPC(m.fs)
 
     # add initialize
     costing_initialization(m.fs)
@@ -280,7 +280,7 @@ def test_power_plant_costing():
                    'lb/hr', 7)
 
     # add total cost
-    get_total_TPC(m)
+    get_total_TPC(m.fs)
 
     # add initialize
     costing_initialization(m.fs)
@@ -479,7 +479,7 @@ def test_sCO2_costing():
                        n_equip=4.0)
 
     # add total cost
-    get_total_TPC(m)
+    get_total_TPC(m.fs)
 
     # add initialize
     costing_initialization(m.fs)
@@ -564,7 +564,7 @@ def test_OM_costing():
     tech = 1
     fixed_TPC = 800  # MM$
 
-    get_fixed_OM_costs(m,
+    get_fixed_OM_costs(m.fs,
                        nameplate_capacity,
                        labor_rate=labor_rate,
                        labor_burden=labor_burden,
@@ -572,7 +572,7 @@ def test_OM_costing():
                        tech=tech,
                        fixed_TPC=fixed_TPC)
 
-    initialize_fixed_OM_costs(m)
+    initialize_fixed_OM_costs(m.fs)
 
     # build variable costs
     m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)

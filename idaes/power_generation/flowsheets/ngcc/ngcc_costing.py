@@ -463,7 +463,7 @@ def get_ngcc_costing(m, evaluate_cost=False):
         get_PP_costing(m.fs.b16, gasturbine_accounts, gt_power, "kW", 6)
 
     # Build cost constraints
-    get_total_TPC(m)
+    get_total_TPC(m.fs)
 
     # Initialize costing
     costing_initialization(m.fs)
@@ -572,9 +572,9 @@ def ngcc_costing_validation(m):
 def build_ngcc_OM_costs(m):
     # testing fixed OM costs
     get_fixed_OM_costs(
-        m, 650, operators_per_shift=5, tech=6, fixed_TPC=555.35  # MW
+        m.fs, 650, operators_per_shift=5, tech=6, fixed_TPC=555.35  # MW
     )  # MW
-    initialize_fixed_OM_costs(m)
+    initialize_fixed_OM_costs(m.fs)
 
     # fixed cost is required to estimate variable O&M costs
     # testing variable OM costs
@@ -603,7 +603,7 @@ def build_ngcc_OM_costs(m):
     m.fs.water_use.fix()
     #
     get_variable_OM_costs(
-        m,
+        m.fs,
         m.fs.net_power_cost,
         ["natural gas", "water"],
         [m.fs.natural_gas, m.fs.water_use],
@@ -613,7 +613,7 @@ def build_ngcc_OM_costs(m):
     #                       [m.fs.natural_gas])
     # [m.fs.flow_mass]
 
-    initialize_variable_OM_costs(m)
+    initialize_variable_OM_costs(m.fs)
 
 
 if __name__ == "__main__":
