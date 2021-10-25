@@ -129,3 +129,7 @@ class DummyEoS(EoSBase):
     @staticmethod
     def log_act_phase_comp(b, p, j):
         return 1
+
+    @staticmethod
+    def log_act_phase_solvents(b, p):
+        return 1

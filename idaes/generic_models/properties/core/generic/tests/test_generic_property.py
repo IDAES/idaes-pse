@@ -28,7 +28,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 
 from idaes.core import (declare_process_block_class, Component,
-                        Phase, LiquidPhase, VaporPhase, MaterialFlowBasis)
+                        Phase, LiquidPhase, VaporPhase, MaterialFlowBasis, Solvent)
 from idaes.core.phases import PhaseType as PT
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 import idaes.logger as idaeslog
@@ -981,7 +981,8 @@ class TestGenericStateBlock(object):
         m = ConcreteModel()
         m.params = DummyParameterBlock(default={
                 "components": {
-                    "a": {"pressure_sat_comp": dummy_method},
+                    "a": {"type": Solvent,
+                          "pressure_sat_comp": dummy_method},
                     "b": {"pressure_sat_comp": dummy_method},
                     "c": {"pressure_sat_comp": dummy_method}},
                 "phases": {

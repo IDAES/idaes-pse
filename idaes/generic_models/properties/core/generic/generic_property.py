@@ -27,7 +27,8 @@ from pyomo.environ import (Block,
                            Param,
                            value,
                            Var,
-                           units as pyunits)
+                           units as pyunits,
+                           Reference)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.core.base.units_container import _PyomoUnit
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -2572,7 +2573,7 @@ class GenericStateBlockData(StateBlockData):
             def rule_flow_mass_phase_comp(b, p, i):
                 if b.get_material_flow_basis() == MaterialFlowBasis.mass:
                     raise PropertyPackageError(
-                        "{} Generic proeprty Package set to use material flow "
+                        "{} Generic property Package set to use material flow "
                         "basis {}, but flow_mass_phase_comp was not created "
                         "by state definition.")
                 elif b.get_material_flow_basis() == MaterialFlowBasis.molar:
@@ -3105,34 +3106,34 @@ class GenericStateBlockData(StateBlockData):
             raise
 
     def _log_act_phase_solvents(self):
-        try:
-            self.log_act_phase_solvents = Var(
-                self.phase_list,
-                initialize=1,
-                bounds=(-50, 1),
-                units=pyunits.dimensionless,
-                doc="Log of activities summed across solvents by phase")
+        if len(self.params.solvent_set) == 1:
+            self.log_act_phase_solvents = Reference(self.log_act_phase_comp[:, self.params.solvent_set.first()])
+        elif len(self.params.solvent_set) > 1:
+            try:
+                self.log_act_phase_solvents = Var(
+                    self.phase_list,
+                    initialize=1,
+                    bounds=(-50, 1),
+                    units=pyunits.dimensionless,
+                    doc="Log of activities summed across solvents by phase")
 
-            def rule_log_act_phase_solvents(b, p):
-                p_obj = b.params.get_phase(p)
-                p_config = b.params.get_phase(p).config
-                if not isinstance(p_obj, LiquidPhase):
-                    return Expression.Skip
-                else:
-                    if len(b.params.solvent_set) > 1:
+                def rule_log_act_phase_solvents(b, p):
+                    p_obj = b.params.get_phase(p)
+                    p_config = b.params.get_phase(p).config
+                    if not isinstance(p_obj, LiquidPhase):
+                        return Expression.Skip
+                    else:
                         return exp(b.log_act_phase_solvents[p]) == \
                                sum(p_config.equation_of_state.act_phase_comp(b, p, j) for j in b.params.solvent_set)
-                    elif len(b.params.solvent_set) == 1:
-                        return exp(b.log_act_phase_solvents[p]) == p_config.equation_of_state.act_phase_comp(b, p, b.params.solvent_set.first())
 
-            self.log_act_phase_solvents_eq = Constraint(
-                    self.phase_list,
-                    doc="Natural log of summed solvent activity in each phase",
-                    rule=rule_log_act_phase_solvents)
-        except AttributeError:
-            self.del_component(self.log_act_phase_solvents)
-            self.del_component(self.log_act_phase_solvents_eq)
-            raise
+                self.log_act_phase_solvents_eq = Constraint(
+                        self.phase_list,
+                        doc="Natural log of summed solvent activity in each phase",
+                        rule=rule_log_act_phase_solvents)
+            except AttributeError:
+                self.del_component(self.log_act_phase_solvents)
+                self.del_component(self.log_act_phase_solvents_eq)
+                raise
 
     def _log_act_phase_comp_true(self):
         try:
