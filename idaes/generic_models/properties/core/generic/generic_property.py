@@ -1897,7 +1897,7 @@ class GenericStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(
                     v, sf_x, overwrite=False)
 
-        if self.is_property_constructed("log_act_phase_solvents"):
+        if self.is_property_constructed("log_act_phase_solvents") and len(self.params.solvent_set) > 1:
             for p, v in self.log_act_phase_solvents_eq.items():
                 iscale.constraint_scaling_transform(
                     v, 1e-3, overwrite=False)
@@ -3247,7 +3247,7 @@ class GenericStateBlockData(StateBlockData):
     def _log_act_phase_solvents(self):
         if len(self.params.solvent_set) == 1:
             self.log_act_phase_solvents = Reference(self.log_act_phase_comp[:, self.params.solvent_set.first()])
-        elif len(self.params.solvent_set) > 1:
+        else:
             try:
                 self.log_act_phase_solvents = Var(
                     self.phase_list,
