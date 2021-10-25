@@ -13,11 +13,10 @@
 """
 Deprecation path for renamed Condenser model.
 """
-from pyomo.common.deprecation import RenamedClass
-from idaes.generic_models.unit_models.column_models.condenser import \
-    Condenser as NewCondenser
+from pyomo.common.deprecation import relocated_module_attribute
 
 
-class Condenser(metaclass=RenamedClass):
-    __renamed__new_class__ = NewCondenser
-    __renamed__version__ = '1.12'
+relocated_module_attribute(
+    'Condenser',
+    'idaes.generic_models.unit_models.column_models.condenser.Condenser',
+    version='1.12')

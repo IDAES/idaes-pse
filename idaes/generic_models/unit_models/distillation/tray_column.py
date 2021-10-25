@@ -13,11 +13,10 @@
 """
 Deprecation path for renamed TrayColumn model.
 """
-from pyomo.common.deprecation import RenamedClass
-from idaes.generic_models.unit_models.column_models.tray_column import \
-    TrayColumn as NewTrayColumn
+from pyomo.common.deprecation import relocated_module_attribute
 
 
-class TrayColumn(metaclass=RenamedClass):
-    __renamed__new_class__ = NewTrayColumn
-    __renamed__version__ = '1.12'
+relocated_module_attribute(
+    'TrayColumn',
+    'idaes.generic_models.unit_models.column_models.tray_column.TrayColumn',
+    version='1.12')
