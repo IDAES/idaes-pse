@@ -982,15 +982,23 @@ class TestGenericStateBlock(object):
         m.params = DummyParameterBlock(default={
                 "components": {
                     "a": {"type": Solvent,
+                          "diffus_phase_comp": {"p1": dummy_method,
+                                                "p2": dummy_method},
                           "pressure_sat_comp": dummy_method},
-                    "b": {"pressure_sat_comp": dummy_method},
-                    "c": {"pressure_sat_comp": dummy_method}},
+                    "b": {"diffus_phase_comp": {"p1": dummy_method,
+                                                "p2": dummy_method},
+                          "pressure_sat_comp": dummy_method},
+                    "c": {"diffus_phase_comp": {"p1": dummy_method,
+                                                "p2": dummy_method},
+                          "pressure_sat_comp": dummy_method}},
                 "phases": {
                     "p1": {"equation_of_state": DummyEoS,
-                           "diffus_phase_comp": dummy_method,
+                           "therm_cond_phase": dummy_method,
+                           "surf_tens_phase": dummy_method,
                            "visc_d_phase": dummy_method},
                     "p2": {"equation_of_state": DummyEoS,
-                           "diffus_phase_comp": dummy_method,
+                           "therm_cond_phase": dummy_method,
+                           "surf_tens_phase": dummy_method,
                            "visc_d_phase": dummy_method}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
@@ -1083,6 +1091,9 @@ class TestGenericStateBlock(object):
                     frame.props[1],
                     frame.params.get_metadata().properties[p]["method"])
                 continue
+            elif p in ["diffus_phase_comp"]:
+                # phase indexed properties - these will be tested separately.
+                continue
             else:
                 assert hasattr(frame.props[1], p)
 
@@ -1140,13 +1151,37 @@ class TestGenericStateBlock(object):
 
     @pytest.mark.unit
     def test_diffus_phase_comp(self, frame):
-        frame.params.p1.config.diffus_phase_comp = \
+        frame.params.a.config.diffus_phase_comp = {
+            "p1": TestGenericStateBlock.dummy_prop,
+            "p2": TestGenericStateBlock.dummy_prop}
+        frame.params.b.config.diffus_phase_comp = {
+            "p2": TestGenericStateBlock.dummy_prop}
+        frame.params.c.config.diffus_phase_comp = {
+            "p1": TestGenericStateBlock.dummy_prop}
+
+        # There should be two skipped indices, so length should be 4
+        assert len(frame.props[1].diffus_phase_comp) == 4
+        assert value(frame.props[1].diffus_phase_comp["p1", "a"]) == 4
+        assert value(frame.props[1].diffus_phase_comp["p2", "a"]) == 4
+        assert value(frame.props[1].diffus_phase_comp["p2", "b"]) == 4
+        assert value(frame.props[1].diffus_phase_comp["p1", "c"]) == 4
+
+    @pytest.mark.unit
+    def test_surf_tens_phase(self, frame):
+        # Surface tension is only built for Liquid Phases, and we have none.
+        # All values should be None.
+        for p in frame.props[1].phase_list:
+            assert value(frame.props[1].surf_tens_phase[p]) is None
+
+    @pytest.mark.unit
+    def test_therm_cond_phase(self, frame):
+        frame.params.p1.config.therm_cond_phase = \
             TestGenericStateBlock.dummy_prop
-        frame.params.p2.config.diffus_phase_comp = \
+        frame.params.p2.config.therm_cond_phase = \
             TestGenericStateBlock.dummy_prop
 
-        for p, j in frame.props[1].phase_component_set:
-            assert value(frame.props[1].diffus_phase_comp[p, j]) == 4
+        for p in frame.props[1].phase_list:
+            assert value(frame.props[1].therm_cond_phase[p]) == 4
 
     @pytest.mark.unit
     def test_visc_d_phase(self, frame):
