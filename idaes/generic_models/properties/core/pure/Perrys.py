@@ -248,7 +248,8 @@ class dens_mol_liq_comp():  # dens_mol_liq_comp_eqn_1, dens_mol_liq_comp_eqn_2
             dens_mol_liq_comp_eqn_2.build_parameters(cobj)
         else:
             raise BurntToast(f"{cobj.name} unrecognized value for "
-                             "dens_mol_liq_comp equation type: {eqn_type}")
+                             f"dens_mol_liq_comp equation type: "
+                             f"{cobj.dens_mol_liq_comp_coeff_eqn_type}")
 
     def return_expression(b, cobj, T):
         if cobj.dens_mol_liq_comp_coeff_eqn_type.value == 1:

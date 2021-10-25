@@ -34,6 +34,7 @@ from pyomo.util.check_units import assert_units_equivalent
 from idaes.generic_models.properties.core.pure.Perrys import *
 from idaes.core.util.misc import add_object_reference
 from idaes.core.property_meta import PropertyClassMetadata
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
 
 
 @pytest.fixture()
@@ -297,3 +298,18 @@ def test_dens_mol_liq_comp_deprecated(frame_deprecated):
     assert value(expr) == pytest.approx(54.703e3, rel=1e-4)
 
     assert_units_equivalent(expr, pyunits.mol/pyunits.m**3)
+
+
+@pytest.mark.unit
+def test_dens_mol_liq_comp_exceptions(frame):
+    frame.params.config.parameter_data["dens_mol_liq_comp_coeff"]["eqn_type"] \
+        = 3
+    with pytest.raises(BurntToast):
+        dens_mol_liq_comp.build_parameters(frame.params)
+
+    assert isinstance(frame.params.dens_mol_liq_comp_coeff_eqn_type, Param)
+    assert value(frame.params.dens_mol_liq_comp_coeff_eqn_type) == 3
+
+    with pytest.raises(ConfigurationError):
+        dens_mol_liq_comp.return_expression(
+            frame.props[1], frame.params, frame.props[1].temperature)
