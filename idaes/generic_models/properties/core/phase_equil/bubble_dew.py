@@ -10,22 +10,20 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from pyomo.environ import Constraint, log
+from pyomo.environ import Constraint
 
 from idaes.generic_models.properties.core.generic.utility import \
         get_method, get_component_object as cobj
 import idaes.core.util.scaling as iscale
-from idaes.core.util.exceptions import ConfigurationError
 
 
 class IdealBubbleDew():
     # -------------------------------------------------------------------------
     # Bubble temperature methods
     # This approach can only be used when both liquid and vapor phases use
-    # Ideal properties and no Henry's Law components are present
-    # Strictly speaking, Henry's Law components only cause an issue for the
-    # dew temeprature calculation, but for simplicity we will preclude using
-    # this approach if any Henry components are present.
+    # Ideal properties
+    # Henry's Law components also cause issues due to the need to (potentially)
+    # calcualte concentrations at the bubble and dew points
     @staticmethod
     def temperature_bubble(b):
         try:
@@ -49,8 +47,10 @@ class IdealBubbleDew():
                                 b, cobj(b, j), b.temperature_bubble[p1, p2])
                             for j in vl_comps) +
                         sum(b.mole_frac_comp[j] *
-                            get_method(b, "henry_component", j, l_phase)(
-                                b, l_phase, j, b.temperature_bubble[p1, p2])
+                            b.params.get_component(j).config.henry_component[
+                                l_phase]["method"].return_expression(
+                                    b, l_phase, j,
+                                    b.temperature_bubble[p1, p2])
                             for j in henry_comps) -
                         b.pressure) == 0
             b.eq_temperature_bubble = Constraint(b.params._pe_pairs,
@@ -83,8 +83,9 @@ class IdealBubbleDew():
             elif j in henry_comps:
                 return b._mole_frac_tbub[p1, p2, j]*b.pressure == (
                     b.mole_frac_comp[j] *
-                    get_method(b, "henry_component", j, l_phase)(
-                        b, l_phase, j, b.temperature_bubble[p1, p2]))
+                    b.params.get_component(j).config.henry_component[
+                        l_phase]["method"].return_expression(
+                            b, l_phase, j, b.temperature_bubble[p1, p2]))
             else:
                 return b._mole_frac_tbub[p1, p2, j] == 0
         b.eq_mole_frac_tbub = Constraint(b.params._pe_pairs,
@@ -151,8 +152,9 @@ class IdealBubbleDew():
                             b, cobj(b, j), b.temperature_dew[p1, p2])
                         for j in vl_comps) +
                     sum(b.mole_frac_comp[j] /
-                        get_method(b, "henry_component", j, l_phase)(
-                            b, l_phase, j, b.temperature_dew[p1, p2])
+                        b.params.get_component(j).config.henry_component[
+                            l_phase]["method"].return_expression(
+                                b, l_phase, j, b.temperature_dew[p1, p2])
                         for j in henry_comps)) - 1 == 0)
             b.eq_temperature_dew = Constraint(b.params._pe_pairs,
                                               rule=rule_dew_temp)
@@ -183,8 +185,9 @@ class IdealBubbleDew():
                         b.mole_frac_comp[j]*b.pressure)
             elif j in henry_comps:
                 return (b._mole_frac_tdew[p1, p2, j] *
-                        get_method(b, "henry_component", j, l_phase)(
-                            b, l_phase, j, b.temperature_dew[p1, p2]) ==
+                        b.params.get_component(j).config.henry_component[
+                            l_phase]["method"].return_expression(
+                                b, l_phase, j, b.temperature_dew[p1, p2]) ==
                         b.mole_frac_comp[j]*b.pressure)
             else:
                 return b._mole_frac_tdew[p1, p2, j] == 0

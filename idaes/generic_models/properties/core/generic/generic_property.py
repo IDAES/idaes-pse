@@ -29,7 +29,6 @@ from pyomo.environ import (Block,
                            Var,
                            units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.core.base.units_container import _PyomoUnit
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES cores
@@ -48,7 +47,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_constraints)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
-                                        PropertyPackageError)
+                                        PropertyPackageError,
+                                        PropertyNotSupportedError)
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver
 import idaes.logger as idaeslog
@@ -60,7 +60,8 @@ from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_phase_method, GenericPropertyPackageError)
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
     LogBubbleDew
-
+from idaes.generic_models.properties.core.phase_equil.henry import \
+    HenryType
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -656,7 +657,7 @@ class GenericParameterData(PhysicalParameterBlock):
 
             # Validate and construct Henry parameters (indexed by phase)
             if cobj.config.henry_component is not None:
-                for p, meth in cobj.config.henry_component.items():
+                for p, d in cobj.config.henry_component.items():
                     # First validate that p is a phase
                     if p not in self.phase_list:
                         raise ConfigurationError(
@@ -669,8 +670,39 @@ class GenericParameterData(PhysicalParameterBlock):
                             "component in phase {}, but this is not a Liquid "
                             "phase.".format(self.name, c, p))
                     else:
+                        # Check that dict has necessary information
+                        if "method" not in d.keys():
+                            raise ConfigurationError(
+                                f"{self.name} component {c} was marked as a "
+                                f"Henry's Law component in phase {p}, but no "
+                                f"method argument was provided.")
+                        elif "type" not in d.keys():
+                            raise ConfigurationError(
+                                f"{self.name} component {c} was marked as a "
+                                f"Henry's Law component in phase {p}, but no "
+                                f"type argument was provided.")
+                        elif not isinstance(d["type"], HenryType):
+                            raise ConfigurationError(
+                                f"{self.name} component {c} was marked as a "
+                                f"Henry's Law component in phase {p}, but "
+                                f"type argument was not an instance of "
+                                f"HenryType.")
+                        elif (self.config.phases_in_equilibrium is not None and
+                                  d["type"] != HenryType.Kpx):
+                            raise PropertyNotSupportedError(
+                                f"{self.name} currently only Kpx type Henry's "
+                                f"constants are supported with full phase "
+                                f"equilibrium. Support for other forms is a "
+                                f"work-in-progress.")
+                        elif self._electrolyte and "basis" not in d.keys():
+                            raise ConfigurationError(
+                                f"{self.name} component {c} was marked as a "
+                                f"Henry's Law component in phase {p}, but no "
+                                f"basis argument was provided. Property "
+                                f"packages using electrolytes must provide a "
+                                f"basis in addition to a method and type.")
                         try:
-                            meth.build_parameters(cobj, p)
+                            d["method"].build_parameters(cobj, p, d["type"])
                         except AttributeError:
                             # Method provided has no build_parameters method
                             # Assume it is not needed and continue
@@ -1110,8 +1142,11 @@ class _GenericStateBlock(StateBlock):
                 except AttributeError:
                     pass
 
-                # if hasattr(blk[k], "inherent_equilibrium_constraint"):
-                #     blk[k].inherent_equilibrium_constraint.deactivate()
+                if (hasattr(blk[k], "inherent_equilibrium_constraint") and
+                        (not blk[k].params._electrolyte or
+                         blk[k].params.config.state_components ==
+                         StateIndex.true)):
+                    blk[k].inherent_equilibrium_constraint.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
@@ -1403,7 +1438,7 @@ class _GenericStateBlock(StateBlock):
                     sum(blk.mole_frac_comp[j] *
                         blk.params.get_component(
                             j).config.henry_component[
-                                l_phase].return_expression(
+                                l_phase]["method"].return_expression(
                                     blk, l_phase, j, Tbub0*T_units)
                         for j in henry_comps) -
                     blk.pressure)
@@ -1417,8 +1452,8 @@ class _GenericStateBlock(StateBlock):
                        for j in raoult_comps) +
                            sum(blk.mole_frac_comp[j] *
                                blk.params.get_component(
-                                   j).config.henry_component[
-                                       l_phase].dT_expression(
+                                   j).config.henry_component[l_phase][
+                                       "method"].dT_expression(
                                     blk, l_phase, j, Tbub0*T_units)
                                for j in henry_comps))
 
@@ -1449,7 +1484,7 @@ class _GenericStateBlock(StateBlock):
                     blk.mole_frac_comp[j] *
                     blk.params.get_component(
                         j).config.henry_component[
-                            l_phase].return_expression(
+                            l_phase]["method"].return_expression(
                                 blk, l_phase, j, Tbub0*T_units) /
                     blk.pressure)
 
@@ -1497,7 +1532,7 @@ class _GenericStateBlock(StateBlock):
                          for j in raoult_comps) +
                      sum(blk.mole_frac_comp[j] /
                          blk.params.get_component(j).config.henry_component[
-                             l_phase].return_expression(
+                             l_phase]["method"].return_expression(
                                  blk, l_phase, j, Tdew0*T_units)
                          for j in henry_comps)) - 1)
                 df = -value(
@@ -1516,11 +1551,11 @@ class _GenericStateBlock(StateBlock):
                          sum(blk.mole_frac_comp[j] /
                              blk.params.get_component(
                                  j).config.henry_component[
-                                     l_phase].return_expression(
+                                     l_phase]["method"].return_expression(
                                          blk, l_phase, j, Tdew0*T_units)**2 *
                              blk.params.get_component(
                                  j).config.henry_component[
-                                     l_phase].dT_expression(
+                                     l_phase]["method"].dT_expression(
                                          blk, l_phase, j, Tdew0*T_units)
                              for j in henry_comps)))
 
@@ -1549,7 +1584,7 @@ class _GenericStateBlock(StateBlock):
                 blk._mole_frac_tdew[pp, j].value = value(
                     blk.mole_frac_comp[j]*blk.pressure /
                     blk.params.get_component(j).config.henry_component[
-                        l_phase].return_expression(
+                        l_phase]["method"].return_expression(
                             blk, l_phase, j, Tdew0*T_units))
 
     def _init_Pbub(self, blk, T_units):
@@ -2878,8 +2913,8 @@ class GenericStateBlockData(StateBlockData):
                 cobj = b.params.get_component(j)
                 if (cobj.config.henry_component is not None and
                         p in cobj.config.henry_component):
-                    return cobj.config.henry_component[p].return_expression(
-                        b, p, j, b.temperature)
+                    return cobj.config.henry_component[p][
+                        "method"].return_expression(b, p, j, b.temperature)
                 else:
                     return Expression.Skip
             self.henry = Expression(

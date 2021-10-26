@@ -41,6 +41,7 @@ import idaes.generic_models.properties.core.pure.Perrys as Perrys
 import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         IdealBubbleDew
+from idaes.generic_models.properties.core.phase_equil.henry import HenryType
 
 import idaes.logger as idaeslog
 
@@ -321,7 +322,8 @@ configuration = {
                                               'C': -2.83433,
                                               'D': -2.79168}}},
         "C": {"type": Component,
-              "henry_component": {"Liq": ConstantH},
+              "henry_component": {"Liq": {"method": ConstantH,
+                                          "type": HenryType.Kpx}},
               "enth_mol_liq_comp": Perrys,
               "enth_mol_ig_comp": RPP4,
               "phase_equilibrium_form": {("Vap", "Liq"): fugacity},

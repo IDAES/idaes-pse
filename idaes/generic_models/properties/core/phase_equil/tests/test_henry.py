@@ -20,7 +20,7 @@ from idaes.generic_models.properties.core.generic.generic_property import \
 from idaes.generic_models.properties.core.state_definitions import FTPx
 
 from idaes.generic_models.properties.core.phase_equil.henry import \
-    ConstantH
+    ConstantH, HenryType
 from idaes.generic_models.properties.core.phase_equil.forms import \
     fugacity
 import pytest
@@ -119,7 +119,8 @@ def test_constant_H():
                                                   "henry_ref": {
                                                       "Liq": 86}},
                                "henry_component": {
-                                   "Liq": ConstantH},
+                                   "Liq": {"method": ConstantH,
+                                           "type": HenryType.Kpx}},
                                "phase_equilibrium_form": {
                                    ("Vap", "Liq"): fugacity}}},
         "phases": {"Liq": {"equation_of_state": DummyEoS},
