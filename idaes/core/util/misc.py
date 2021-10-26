@@ -98,7 +98,10 @@ def extract_data(data_dict):
     return _rule_initialize
 
 
-# Author: John Eslick
+@deprecated(
+    "idaes.core.util.misc.TagReference will be removed in a future version",
+    version=1.12
+)
 def TagReference(s, description=""):
     """
     Create a Pyomo reference with an added description string attribute to

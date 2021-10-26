@@ -52,6 +52,7 @@ def test_add_object_reference_fail():
 # Author: John Eslick
 @pytest.mark.unit
 def test_port_copy():
+    """DEPRECATED function test"""
     m = ConcreteModel()
     m.b1 = Block()
     m.b2 = Block()
@@ -122,6 +123,7 @@ def test_port_copy():
 # Author: John Eslick
 @pytest.mark.unit
 def test_tag_reference():
+    """DEPRECATED function test"""
     m = ConcreteModel()
     m.z = Var([0, 1], ["A", "B"], initialize={
         (0, "A"): 6, (0, "B"): 7, (1, "A"): 8, (1, "B"): 9})

@@ -11,6 +11,9 @@
 # license information.
 #################################################################################
 """
+DEPRECATED this module provides tests for functions that have been deprecated,
+and will be removed.
+
 This module contains miscalaneous utility functions for use in IDAES models.
 """
 __author__ = "John Eslick"
