@@ -48,6 +48,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
     log_power_law_equil
 from idaes.generic_models.properties.core.generic.utility import (
     ConcentrationForm)
+from idaes.generic_models.properties.core.phase_equil.henry import HenryType
 
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
@@ -181,8 +182,7 @@ class N2OAnalogy():
 
         return ((exp(wt_MEA * log(H_CO2_MEA) + wt_H2O * log(H_CO2_H2O) +
                      wt_MEA * wt_H2O * lwm)) *
-                pyunits.Pa*pyunits.m**3*pyunits.mol**-1 *
-                b.dens_mol_phase["Liq"])  # Multiply by density to convert C to x
+                pyunits.Pa*pyunits.m**3*pyunits.mol**-1)
 
 
 class PressureSatSolvent():
@@ -752,7 +752,9 @@ configuration = {
                 "cp_mol_liq_comp": CpMolCO2,
                 "diffus_phase_comp": {"Liq": DiffusCO2},
                 "enth_mol_liq_comp": EnthMolCO2,
-                "henry_component": {"Liq": N2OAnalogy},
+                "henry_component": {"Liq": {"method": N2OAnalogy,
+                                            "type": HenryType.Kpc,
+                                            "basis": StateIndex.true}},
                 "vol_mol_liq_comp": VolMolCO2,
                 "parameter_data": {
                     "mw": (0.04401, pyunits.kg/pyunits.mol),
