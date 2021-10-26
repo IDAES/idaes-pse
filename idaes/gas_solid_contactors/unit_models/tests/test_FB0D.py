@@ -192,7 +192,7 @@ class TestIronOC(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iron_oc):  # need to update these values
-        assert (pytest.approx(1795.6616, abs=1e-2) ==
+        assert (pytest.approx(1798.8532, abs=1e-2) ==
                 iron_oc.fs.unit.mass_solids[3600].value)
         assert (pytest.approx(0.1955, abs=1e-2) ==
                 iron_oc.fs.unit.solids[3600].particle_porosity.value)
@@ -210,39 +210,36 @@ class TestIronOC(object):
     @pytest.mark.component
     def test_conservation(self, iron_oc):
         # Conservation of material check
+        dt, T = 36, 3600  # size of time interval and time domain
         # first, check if Final Mass - Initial Mass = Total Amount Reacted
-        dt = 36  # time step in seconds, used in time point discretization
         mbal_solid_total = value(
-                (iron_oc.fs.unit.mass_solids[3600] -
+                (iron_oc.fs.unit.mass_solids[T] -
                  iron_oc.fs.unit.mass_solids[0]) -
-                (sum(iron_oc.fs.unit.config.reaction_package.
-                     rate_reaction_stoichiometry[r, "Sol", j] *
-                     iron_oc.fs.unit.reactions[t].reaction_rate[r] *
-                     iron_oc.fs.unit.volume_solid[t] *
-                     dt * iron_oc.fs.unit.solids[t]._params.mw_comp[j]
-                     for r in iron_oc.fs.unit.config.reaction_package.
-                     rate_reaction_idx
+                (sum(iron_oc.fs.unit.reactions[t].reaction_rate[r] *
+                     iron_oc.fs.unit.config.reaction_package
+                     .rate_reaction_stoichiometry[r, "Sol", j] *
+                     iron_oc.fs.unit.solids[t]._params.mw_comp[j] *
+                     iron_oc.fs.unit.volume_solid[t] * dt
+                     for t in list(iron_oc.fs.time)[1:]
                      for j in ('Al2O3', 'Fe2O3', 'Fe3O4')
-                     for t in iron_oc.fs.time)))
+                     for r in iron_oc.fs.unit.config.reaction_package
+                     .rate_reaction_idx)))
         assert abs(mbal_solid_total) <= 1e-2
 
         # second, check if Change in Mass = Amount Reacted at each time t
         mbal_solid = []
-        for t in iron_oc.fs.time:
-            if t == 0:
-                continue
-            else:
-                mbal_solid.append(value(
-                    (iron_oc.fs.unit.mass_solids[t] -
-                     iron_oc.fs.unit.mass_solids[t - dt]) -
-                    (iron_oc.fs.unit.config.reaction_package.
-                     rate_reaction_stoichiometry[r, "Sol", j] *
-                     iron_oc.fs.unit.reactions[t - dt].reaction_rate[r] *
-                     iron_oc.fs.unit.volume_solid[t - dt] *
-                     dt * iron_oc.fs.unit.solids[t]._params.mw_comp[j]
-                     for r in iron_oc.fs.unit.config.reaction_package.
-                     rate_reaction_idx
-                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4'))))
+        for t in list(iron_oc.fs.time)[1:]:  # skip t = 0
+            mbal_solid.append(value(
+                (iron_oc.fs.unit.mass_solids[t] -
+                 iron_oc.fs.unit.mass_solids[t - dt]) -
+                (sum(iron_oc.fs.unit.reactions[t].reaction_rate[r] *
+                     iron_oc.fs.unit.config.reaction_package
+                     .rate_reaction_stoichiometry[r, "Sol", j] *
+                     iron_oc.fs.unit.solids[t]._params.mw_comp[j] *
+                     iron_oc.fs.unit.volume_solid[t] * dt
+                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4')
+                     for r in iron_oc.fs.unit.config.reaction_package
+                     .rate_reaction_idx))))
         for val in mbal_solid:
             assert abs(val) <= 1e-2
 
@@ -252,12 +249,12 @@ class TestIronOC(object):
         fe2o3_reacted = value(
             (iron_oc.fs.unit.mass_solids[0] *
              iron_oc.fs.unit.solids[0].mass_frac_comp['Fe2O3'] -
-             iron_oc.fs.unit.mass_solids[3600] *
-             iron_oc.fs.unit.solids[3600].mass_frac_comp['Fe2O3']) /
+             iron_oc.fs.unit.mass_solids[T] *
+             iron_oc.fs.unit.solids[T].mass_frac_comp['Fe2O3']) /
             iron_oc.fs.unit.solids[0]._params.mw_comp['Fe2O3'])
         fe3o4_produced = value(
-            (iron_oc.fs.unit.mass_solids[3600] *
-             iron_oc.fs.unit.solids[3600].mass_frac_comp['Fe3O4'] -
+            (iron_oc.fs.unit.mass_solids[T] *
+             iron_oc.fs.unit.solids[T].mass_frac_comp['Fe3O4'] -
              iron_oc.fs.unit.mass_solids[0] *
              iron_oc.fs.unit.solids[0].mass_frac_comp['Fe3O4']) /
             iron_oc.fs.unit.solids[0]._params.mw_comp['Fe3O4'])
@@ -267,34 +264,31 @@ class TestIronOC(object):
         # Conservation of energy check
         # first, check if Final Energy - Initial Energy = Reaction Enthalpy
         ebal_solid_total = value(
-                (iron_oc.fs.unit.mass_solids[3600] *
-                 iron_oc.fs.unit.solids[3600].enth_mass -
+                (iron_oc.fs.unit.mass_solids[T] *
+                 iron_oc.fs.unit.solids[T].enth_mass -
                  iron_oc.fs.unit.mass_solids[0] *
                  iron_oc.fs.unit.solids[0].enth_mass) -
-                (sum(iron_oc.fs.unit.reactions[t].reaction_rate[r] *
-                     iron_oc.fs.unit.volume_solid[t] *
-                     dt * iron_oc.fs.unit.reactions[t].dh_rxh[r]
-                     for r in iron_oc.fs.unit.config.reaction_package.
-                     rate_reaction_idx
-                     for t in iron_oc.fs.time)))
+                (-sum(iron_oc.fs.unit.reactions[t].reaction_rate[r] *
+                      iron_oc.fs.unit.reactions[t].dh_rxn[r] *
+                      iron_oc.fs.unit.volume_solid[t] * dt
+                      for t in list(iron_oc.fs.time)[1:]
+                      for r in iron_oc.fs.unit.config.reaction_package.
+                      rate_reaction_idx)))
         assert abs(ebal_solid_total) <= 1e-2
 
         # second, check if Change in Energy = Change in Holdup at each time t
         ebal_solid = []
-        for t in iron_oc.fs.time:
-            if t == 0:
-                continue
-            else:
-                ebal_solid.append(value(
-                    (iron_oc.fs.unit.mass_solids[t] *
-                     iron_oc.fs.unit.solids[t].enth_mass -
-                     iron_oc.fs.unit.mass_solids[t - dt] *
-                     iron_oc.fs.unit.solids[t - dt].enth_mass) -
-                    (iron_oc.fs.unit.reactions[t - dt].reaction_rate[r] *
-                     iron_oc.fs.unit.volume_solid[t - dt] *
-                     dt * iron_oc.fs.unit.reactions[t - dt].dh_rxh[r]
-                     for r in iron_oc.fs.unit.config.reaction_package.
-                     rate_reaction_idx)))
+        for t in list(iron_oc.fs.time)[1:]:  # skip t = 0
+            ebal_solid.append(value(
+                (iron_oc.fs.unit.mass_solids[t] *
+                 iron_oc.fs.unit.solids[t].enth_mass -
+                 iron_oc.fs.unit.mass_solids[t - dt] *
+                 iron_oc.fs.unit.solids[t - dt].enth_mass) -
+                (-sum(iron_oc.fs.unit.reactions[t].reaction_rate[r] *
+                      iron_oc.fs.unit.reactions[t].dh_rxn[r] *
+                      iron_oc.fs.unit.volume_solid[t] * dt
+                      for r in iron_oc.fs.unit.config.reaction_package.
+                      rate_reaction_idx))))
         for val in ebal_solid:
             assert abs(val) <= 1e-2
 
@@ -343,7 +337,6 @@ class TestIronOC_EnergyBalanceType(object):
         m.fs.unit.solids[0].mass_frac_comp['Fe2O3'].fix(0.45)
         m.fs.unit.solids[0].mass_frac_comp['Fe3O4'].fix(0)
         m.fs.unit.solids[0].mass_frac_comp['Al2O3'].fix(0.55)
-        m.fs.unit.solids[0].temperature.fix(1273.15)
 
         # Set conditions of the gas phase (this is all fixed as gas side
         # assumption is excess gas flowrate which means all state variables
@@ -354,6 +347,7 @@ class TestIronOC_EnergyBalanceType(object):
             m.fs.unit.gas[t].mole_frac_comp['CO2'].fix(0.4)
             m.fs.unit.gas[t].mole_frac_comp['H2O'].fix(0.5)
             m.fs.unit.gas[t].mole_frac_comp['CH4'].fix(0.1)
+            m.fs.unit.solids[t].temperature.fix(1273.15)
 
         return m
 
@@ -383,7 +377,17 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, iron_oc):
+        optarg = {
+                 "bound_push": 1e-8,
+                 'halt_on_ampl_error': 'yes',
+                 'linear_solver': 'ma27'
+                  }
+
         initialization_tester(iron_oc)
+
+        solver = get_solver('ipopt', optarg)  # create solver
+
+        initialize_by_time_element(iron_oc.fs, iron_oc.fs.time, solver=solver)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -400,7 +404,7 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iron_oc):  # need to update these values
-        assert (pytest.approx(1798.5462, abs=1e-2) ==
+        assert (pytest.approx(1798.8281, abs=1e-2) ==
                 iron_oc.fs.unit.mass_solids[3600].value)
         assert (pytest.approx(0.1955, abs=1e-2) ==
                 iron_oc.fs.unit.solids[3600].particle_porosity.value)
@@ -418,39 +422,36 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.component
     def test_conservation(self, iron_oc):
         # Conservation of material check
+        dt, T = 36, 3600  # size of time interval and time domain
         # first, check if Final Mass - Initial Mass = Total Amount Reacted
-        dt = 36  # time step in seconds, used in time point discretization
         mbal_solid_total = value(
-                (iron_oc.fs.unit.mass_solids[3600] -
+                (iron_oc.fs.unit.mass_solids[T] -
                  iron_oc.fs.unit.mass_solids[0]) -
-                (sum(iron_oc.fs.unit.config.reaction_package.
-                     rate_reaction_stoichiometry[r, "Sol", j] *
-                     iron_oc.fs.unit.reactions[t].reaction_rate[r] *
-                     iron_oc.fs.unit.volume_solid[t] *
-                     dt * iron_oc.fs.unit.solids[t]._params.mw_comp[j]
-                     for r in iron_oc.fs.unit.config.reaction_package.
-                     rate_reaction_idx
+                (sum(iron_oc.fs.unit.reactions[t].reaction_rate[r] *
+                     iron_oc.fs.unit.config.reaction_package
+                     .rate_reaction_stoichiometry[r, "Sol", j] *
+                     iron_oc.fs.unit.solids[t]._params.mw_comp[j] *
+                     iron_oc.fs.unit.volume_solid[t] * dt
+                     for t in list(iron_oc.fs.time)[1:]
                      for j in ('Al2O3', 'Fe2O3', 'Fe3O4')
-                     for t in iron_oc.fs.time)))
+                     for r in iron_oc.fs.unit.config.reaction_package
+                     .rate_reaction_idx)))
         assert abs(mbal_solid_total) <= 1e-2
 
         # second, check if Change in Mass = Amount Reacted at each time t
         mbal_solid = []
-        for t in iron_oc.fs.time:
-            if t == 0:
-                continue
-            else:
-                mbal_solid.append(value(
-                    (iron_oc.fs.unit.mass_solids[t] -
-                     iron_oc.fs.unit.mass_solids[t - dt]) -
-                    (iron_oc.fs.unit.config.reaction_package.
-                     rate_reaction_stoichiometry[r, "Sol", j] *
-                     iron_oc.fs.unit.reactions[t - dt].reaction_rate[r] *
-                     iron_oc.fs.unit.volume_solid[t - dt] *
-                     dt * iron_oc.fs.unit.solids[t]._params.mw_comp[j]
-                     for r in iron_oc.fs.unit.config.reaction_package.
-                     rate_reaction_idx
-                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4'))))
+        for t in list(iron_oc.fs.time)[1:]:  # skip t = 0
+            mbal_solid.append(value(
+                (iron_oc.fs.unit.mass_solids[t] -
+                 iron_oc.fs.unit.mass_solids[t - dt]) -
+                (sum(iron_oc.fs.unit.reactions[t].reaction_rate[r] *
+                     iron_oc.fs.unit.config.reaction_package
+                     .rate_reaction_stoichiometry[r, "Sol", j] *
+                     iron_oc.fs.unit.solids[t]._params.mw_comp[j] *
+                     iron_oc.fs.unit.volume_solid[t] * dt
+                     for j in ('Al2O3', 'Fe2O3', 'Fe3O4')
+                     for r in iron_oc.fs.unit.config.reaction_package
+                     .rate_reaction_idx))))
         for val in mbal_solid:
             assert abs(val) <= 1e-2
 
@@ -460,12 +461,12 @@ class TestIronOC_EnergyBalanceType(object):
         fe2o3_reacted = value(
             (iron_oc.fs.unit.mass_solids[0] *
              iron_oc.fs.unit.solids[0].mass_frac_comp['Fe2O3'] -
-             iron_oc.fs.unit.mass_solids[3600] *
-             iron_oc.fs.unit.solids[3600].mass_frac_comp['Fe2O3']) /
+             iron_oc.fs.unit.mass_solids[T] *
+             iron_oc.fs.unit.solids[T].mass_frac_comp['Fe2O3']) /
             iron_oc.fs.unit.solids[0]._params.mw_comp['Fe2O3'])
         fe3o4_produced = value(
-            (iron_oc.fs.unit.mass_solids[3600] *
-             iron_oc.fs.unit.solids[3600].mass_frac_comp['Fe3O4'] -
+            (iron_oc.fs.unit.mass_solids[T] *
+             iron_oc.fs.unit.solids[T].mass_frac_comp['Fe3O4'] -
              iron_oc.fs.unit.mass_solids[0] *
              iron_oc.fs.unit.solids[0].mass_frac_comp['Fe3O4']) /
             iron_oc.fs.unit.solids[0]._params.mw_comp['Fe3O4'])

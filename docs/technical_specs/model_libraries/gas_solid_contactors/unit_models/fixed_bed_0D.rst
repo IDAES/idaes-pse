@@ -64,10 +64,12 @@ FixedBed0D units write the following Constraints:
 Reaction and Mass/Heat Transfer Constraints
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Volume of the bed
+Volume of the bed:
+
 .. math:: V_{bed} = \pi L_{bed} (0.5 D_{bed})^2
 
-Volume of the solid
+Volume of the solid:
+
 .. math:: V_{s,t} = V_{bed} (1 - \epsilon_{s})
 
 Solid material holdup:
@@ -78,11 +80,11 @@ Solid material accumulation:
 
 .. math:: {\dot{j}}_{mass,s,t,j} = V_{s} {MW}_{s,j} {\Sigma}_{r} {r_{s,t,r} \nu_{s,j,r}}
 
-Total mass of solids
+Total mass of solids:
 
 .. math:: M_{s,t} = V_{s} {\Sigma_{j} {\rho_{mass,s,t,j}}}
 
-Sum of component mass fractions
+Sum of component mass fractions:
 
 .. math:: {\Sigma_{j}} {x_{mass,s,t,j}} = 1 \space \space \space \forall \space t
 
