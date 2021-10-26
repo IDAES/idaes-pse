@@ -308,83 +308,79 @@ see property package for documentation.}"""))
                 self.config.momentum_balance_type != MomentumBalanceType.none):
             self.deltaP = Reference(self.liquid_phase.deltaP[:])
 
-    # def initialize(self, state_args=None, solver=None, optarg=None,
-    #                outlvl=idaeslog.NOTSET):
+    def initialize(blk, liquid_state_args=None, vapor_state_args=None,
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
+        '''
+        Initialization routine for solvent reboiler unit model.
 
-    #     init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
-    #     solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+        Keyword Arguments:
+            liquid_state_args : a dict of arguments to be passed to the
+                liquid property packages to provide an initial state for
+                initialization (see documentation of the specific property
+                package) (default = none).
+            vapor_state_args : a dict of arguments to be passed to the
+                vapor property package to provide an initial state for
+                initialization (see documentation of the specific property
+                package) (default = none).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default IDAES solver)
 
-    #     solverobj = get_solver(solver, optarg)
+        Returns:
+            None
+        '''
+        if optarg is None:
+            optarg = {}
 
-    #     # Initialize the inlet and outlet state blocks. Calling the state
-    #     # blocks initialize methods directly so that custom set of state args
-    #     # can be passed to the inlet and outlet state blocks as control_volume
-    #     # initialize method initializes the state blocks with the same
-    #     # state conditions.
-    #     flags = self.control_volume.properties_in. \
-    #         initialize(state_args=state_args,
-    #                    solver=solver,
-    #                    optarg=optarg,
-    #                    outlvl=outlvl,
-    #                    hold_state=True)
+        # Set solver options
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-    #     # Initialize outlet state block at same conditions of inlet except
-    #     # the temperature. Set the temperature to a temperature guess based
-    #     # on the desired boilup_ratio.
+        solverobj = get_solver(solver, optarg)
 
-    #     # Get index for bubble point temperature and and assume it
-    #     # will have only a single phase equilibrium pair. This is to
-    #     # support the generic property framework where the T_bubble
-    #     # is indexed by the phases_in_equilibrium. In distillation,
-    #     # the assumption is that there will only be a single pair
-    #     # i.e. vap-liq. 
-    #     idx = next(iter(self.control_volume.properties_in[0].
-    #                     temperature_bubble))
-    #     temp_guess = 0.5 * (
-    #         value(self.control_volume.properties_in[0].temperature_dew[idx]) -
-    #         value(self.control_volume.properties_in[0].
-    #               temperature_bubble[idx])) + \
-    #         value(self.control_volume.properties_in[0].temperature_bubble[idx])
+        # ---------------------------------------------------------------------
+        # Initialize liquid phase control volume block
+        flags = blk.liquid_phase.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=liquid_state_args,
+            hold_state=True
+        )
 
-    #     state_args_outlet = {}
-    #     state_dict_outlet = (
-    #         self.control_volume.properties_in[
-    #             self.flowsheet().time.first()]
-    #         .define_port_members())
+        init_log.info_high('Initialization Step 1 Complete.')
+        # ---------------------------------------------------------------------
+        # Initialize vapor phase state block
+        if vapor_state_args is None:
+            # TODO : Need to come up with state guesses...
+            pass
 
-    #     for k in state_dict_outlet.keys():
-    #         if state_dict_outlet[k].is_indexed():
-    #             state_args_outlet[k] = {}
-    #             for m in state_dict_outlet[k].keys():
-    #                 state_args_outlet[k][m] = value(state_dict_outlet[k][m])
-    #         else:
-    #             if k != "temperature":
-    #                 state_args_outlet[k] = value(state_dict_outlet[k])
-    #             else:
-    #                 state_args_outlet[k] = temp_guess
+        blk.vapor_phase.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=vapor_state_args,
+            hold_state=False
+        )
 
-    #     self.control_volume.properties_out.initialize(
-    #         state_args=state_args_outlet,
-    #         solver=solver,
-    #         optarg=optarg,
-    #         outlvl=outlvl,
-    #         hold_state=False)
+        init_log.info_high('Initialization Step 2 Complete.')
+        # ---------------------------------------------------------------------
+        # Solve unit model
+        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        #     results = solverobj.solve(blk, tee=slc.tee)
 
-    #     if degrees_of_freedom(self) == 0:
-    #         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-    #             res = solverobj.solve(self, tee=slc.tee)
-    #         init_log.info(
-    #             "Initialization Complete, {}.".format(idaeslog.condition(res))
-    #         )
-    #     else:
-    #         raise ConfigurationError(
-    #             "State vars fixed but degrees of freedom "
-    #             "for reboiler is not zero during "
-    #             "initialization. Please ensure that the boilup_ratio "
-    #             "or the outlet temperature is fixed.")
+        # init_log.info_high(
+        #     "Initialization Step 3 {}.".format(idaeslog.condition(results))
+        # )
 
-    #     self.control_volume.properties_in.\
-    #         release_state(flags=flags, outlvl=outlvl)
+        # ---------------------------------------------------------------------
+        # Release Inlet state
+        # blk.liquid_phase.release_state(flags, outlvl)
+
+        # init_log.info('Initialization Complete: {}'
+        #               .format(idaeslog.condition(results)))
 
     # def _get_performance_contents(self, time_point=0):
     #     var_dict = {}

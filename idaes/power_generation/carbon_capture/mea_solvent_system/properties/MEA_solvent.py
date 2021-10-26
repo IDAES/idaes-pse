@@ -181,7 +181,8 @@ class N2OAnalogy():
 
         return ((exp(wt_MEA * log(H_CO2_MEA) + wt_H2O * log(H_CO2_H2O) +
                      wt_MEA * wt_H2O * lwm)) *
-                pyunits.Pa*pyunits.m**-3*pyunits.mol**-1)
+                pyunits.Pa*pyunits.m**3*pyunits.mol**-1 *
+                b.dens_mol_phase["Liq"])  # Multiply by density to convert C to x
 
 
 class PressureSatSolvent():

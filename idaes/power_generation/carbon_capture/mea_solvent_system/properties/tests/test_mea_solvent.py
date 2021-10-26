@@ -118,8 +118,17 @@ class TestStateBlock(object):
         assert pytest.approx(86.3982342, rel=1e-8) == value(
             model.props[1].cp_mol_phase["Liq"])
 
+        # Henery's constant is 8842.8 Pa*m^3/mol * 41290 mol/m^3
         assert pytest.approx(8842.75903, rel=1e-8) == value(
             model.props[1].henry["Liq", "CO2"])
+        
+        model.props[1].conc_mol_phase_comp_true.display()
+        print(value(model.props[1].henry["Liq", "CO2"] *
+                    model.props[1].conc_mol_phase_comp_true["Liq", "CO2"]))
+        print(value(model.props[1].henry["Liq", "CO2"] *
+                    model.props[1].mole_frac_phase_comp_true["Liq", "CO2"] *
+                    model.props[1].dens_mol_phase["Liq"]))
+        assert False
 
         assert pytest.approx(194455.113, rel=1e-8) == value(
             model.props[1].pressure_sat_comp["H2O"])

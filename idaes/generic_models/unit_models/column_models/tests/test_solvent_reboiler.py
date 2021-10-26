@@ -115,19 +115,38 @@ class TestAbsorber(object):
     @pytest.mark.component
     def test_units(self, model):
         assert_units_consistent(model)
-        # assert_units_equivalent(model.fs.unit.volume[0], units.m**3)
-        # assert_units_equivalent(model.fs.unit.heat_duty[0], units.W)
-        # assert_units_equivalent(model.fs.unit.deltaP[0], units.Pa)
+        assert_units_equivalent(model.fs.unit.heat_duty[0], units.W)
 
     @pytest.mark.unit
     def test_dof(self, model):
         assert degrees_of_freedom(model) == 0
 
-    # @pytest.mark.solver
-    # @pytest.mark.skipif(solver is None, reason="Solver not available")
-    # @pytest.mark.component
-    # def test_initialize(self, model):
-    #     initialization_tester(model)
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, model):
+        initialization_tester(model,
+                              liquid_state_args={"pressure": 183700,
+                                                 "temperature": 393.8,
+                                                 "flow_mol": 74.33,
+                                                 "mole_frac_comp": {
+                                                     "CO2": 0.0285,
+                                                     "H2O": 0.8491,
+                                                     "MEA": 0.1224}},
+                              vapor_state_args={"pressure": 183700,
+                                                "temperature": 393.8,
+                                                "flow_mol": 9.56,
+                                                "mole_frac_comp": {
+                                                    "CO2": 0.0645,
+                                                    "H2O": 0.9355,
+                                                    "N2": 1e-8,
+                                                    "O2": 1e-8}})
+        # model.fs.unit.display()
+        model.fs.unit.liquid_phase.properties_out[0].fug_phase_comp.display()
+        model.fs.unit.vapor_phase[0].fug_phase_comp.display()
+        model.fs.unit.liquid_phase.properties_out[0].mole_frac_phase_comp_true.display()
+        model.fs.unit.liquid_phase.properties_out[0].mole_frac_phase_comp_apparent.display()
+        assert False
 
     # @pytest.mark.solver
     # @pytest.mark.skipif(solver is None, reason="Solver not available")
