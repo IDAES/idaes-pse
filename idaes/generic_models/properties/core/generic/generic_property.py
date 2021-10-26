@@ -1110,8 +1110,8 @@ class _GenericStateBlock(StateBlock):
                 except AttributeError:
                     pass
 
-                if hasattr(blk[k], "inherent_equilibrium_constraint"):
-                    blk[k].inherent_equilibrium_constraint.deactivate()
+                # if hasattr(blk[k], "inherent_equilibrium_constraint"):
+                #     blk[k].inherent_equilibrium_constraint.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
