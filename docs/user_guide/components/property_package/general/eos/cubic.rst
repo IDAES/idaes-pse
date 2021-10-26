@@ -119,7 +119,7 @@ The ideal molar isobaric heat capcity term is calculated from the weighted sum o
 The residual molar isobaric heat capcity term is given by:
 
 .. math:: C_p^r = R \left[ T \left(\frac{\partial Z}{\partial T}\right)_P + Z - 1 \right] +  \frac{ T \frac{d^2a_m}{dT^2}}{\sqrt{u^2 - 4w} \cdot b_m} \ln \left[ \frac{2Z + uB + \sqrt{u^2 - 4w} B}{2Z + uB - \sqrt{u^2 - 4w} B} \right]
-.. math:: + \frac{a_m - T \frac{da_m}{dT}}{\sqrt{u^2 - 4w} \cdot b_m} \left[ \frac{2 \left(\frac{\partial Z}{\partial T}\right)_P + \left\{u - \sqrt{u^2 - 4w}  \right\} \left(\frac{\partial B}{\partial T}\right)_P }{2Z + uB - \sqrt{u^2 - 4w} B} - \frac{2 \left(\frac{\partial Z}{\partial T}\right)_P + \left\{ u + \sqrt{u^2 - 4w} \right\} \left(\frac{\partial B}{\partial T}\right)_P }{2Z + uB + \sqrt{u^2-4w} B } \right]
+.. math:: + \left(a_m - T \frac{da_m}{dT}\right) \cdot \frac{B}{b_m} \cdot \frac{\left(\frac{\partial Z}{\partial T}\right)_P + \frac{Z}{T}}{Z^2 + Z uB + wB^2}
 .. math:: \frac{da_m}{dT}\sqrt{T} = -\frac{R}{2}\sqrt{\Omega_A}\sum_i{\sum_j{y_iy_j(1-k_{ij})\left(f_{w,j}\sqrt{a_i\frac{T_{c,j}}{P_{c,j}}}+f_{w,i}\sqrt{a_j\frac{T_{c,i}}{P_{c,i}}}\right)}}
 .. math:: \frac{d^2a_m}{dT^2} = - \frac{1}{2T} \frac{da_m}{dT} + \frac{R^2 \Omega_A }{2T} \sum_i\sum_j y_iy_j(1-k_{ij}) f(\omega_i)f(\omega_j) \sqrt{\frac{T_{c,i} T_{c,j}}{P_{c,i} P_{c,j}}}
 .. math:: \left(\frac{\partial B}{\partial T}\right)_P = - \frac{b_m P}{R T^2} = - \frac{B}{T}
