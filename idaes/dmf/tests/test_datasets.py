@@ -130,3 +130,19 @@ def test_publication_dataset_load_and_retrieve(workspace_path, pub_conf_path):
     df_val = df.iloc[0].values
     for i, v in enumerate(dx_val):
         assert df_val[i] == v
+
+
+@pytest.mark.unit
+def test_publication_unknown():
+    # random, unknown publication
+    with pytest.raises(KeyError):
+        pub = datasets.Publication("test")
+
+
+@pytest.mark.unit
+def test_publication_known():
+    # known publication
+    pub = datasets.Publication("Pitzer:1984")
+    assert pub
+    assert pub.list_tables()
+    assert pub.get_table(pub.list_tables()[0])

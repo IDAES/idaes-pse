@@ -3,11 +3,13 @@ DMF support for standard IDAES datasets.
 
 See :mod:`idaes.core.datasets` for user-facing API.
 """
+# stdlib
+from collections import namedtuple
 import json
 import logging
 from pathlib import Path
 from pkg_resources import get_distribution
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Union, List
 
 # package
 from idaes.dmf import DMF, resource
@@ -125,11 +127,17 @@ class PublicationDataset(Dataset):
         meta = {
             "date": pub.get("date", ""),
             "doi": pub.get("doi", ""),
+            "isbn": pub.get("isbn", ""),
             "language": pub.get("language", "english"),
-            "source": f"{pub.get('authors', 'Anon.')}, "
-            f"\"{pub.get('title', 'no title')}\". "
-            f"{pub.get('venue', '')} ({pub.get('date', '')})",
         }
+        if "isbn" in pub:
+            meta["source"] = f"{pub.get('authors', 'Anon.')}, "
+            f"\"{pub.get('title', 'no title')}\". "
+            f"{pub.get('publisher', '')} ({pub.get('date', '')})"
+        else:
+            meta["source"] = f"{pub.get('authors', 'Anon.')}, "\
+                             f"\"{pub.get('title', 'no title')}\". "\
+                             f"{pub.get('venue', '')} ({pub.get('date', '')})"
         pub_r.add_data_file(directory / file_, do_copy=self.copy_flag)
         pub_r.sources.append(meta)
         self._dmf.add(pub_r)
@@ -179,3 +187,26 @@ class PublicationDataset(Dataset):
             _log.debug("dmf_update.begin")
             self._dmf.update()
             _log.debug("dmf_update.end")
+
+AvailableResult = namedtuple("AvailableResult", "Class description")
+
+class Publication:
+    """Abstract superclass for the public interface to a publication-derived dataset.
+
+    Do not instantiate directly. Instead, subclass and pass the appropriate
+    name of the dataset (i.e., its name in the DMF) to this constructor.
+    See :class:`idaes.core.datasets.Pitzer` for an example.
+    """
+
+    def __init__(self, name, workspace=None):
+        self._ds = PublicationDataset(workspace=workspace)
+        self._name = name
+        self._pub, self._tables = self._ds.retrieve(name)
+
+    def list_tables(self) -> List[str]:
+        return list(self._tables.keys())
+
+    def get_table(self, name) -> Union[Table, None]:
+        return self._tables.get(name, None)
+
+

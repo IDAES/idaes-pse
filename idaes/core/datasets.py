@@ -8,33 +8,41 @@ Usage, e.g., for the Pitzer(1984) data::
     gibbs_data = pitzer.get_table("Standard G").data
 
 """
-from typing import Union, List
-from idaes.dmf import datasets
-from idaes.dmf.tables import Table
+import re
+from typing import Dict
+
+# package
+from idaes.dmf.datasets import Publication, AvailableResult
 
 __authors__ = ["Dan Gunter (LBNL)"]
 __author__ = __authors__[0]
 
 
-class _Publication:
-    """Abstract superclass for all publication-derived datasets.
+class Pitzer(Publication):
+    """Pitzer(1984) publication and related tables."""
 
-    Do not instantiate directly.
-    """
-
-    def __init__(self, name, workspace=None):
-        self._ds = datasets.PublicationDataset(workspace=workspace)
-        self._pub, self._tables = self._ds.retrieve(name)
-
-    def list_tables(self) -> List[str]:
-        return list(self._tables.keys())
-
-    def get_table(self, name) -> Union[Table, None]:
-        return self._tables.get(name, None)
-
-
-class Pitzer(_Publication):
-    """Pitzer(1984) publication and related tables.
-    """
     def __init__(self, workspace=None):
         super().__init__("Pitzer:1984", workspace=workspace)
+
+
+def available() -> Dict[str, AvailableResult]:
+    """Find and return all available datasets.
+
+    Returns:
+        Mapping of dataset class name to its class and description
+    """
+
+    def doc_desc(cls):
+        """Get description from docstring."""
+        docstr = cls.__doc__
+        # find first blank line or line ending in period (or whole string)
+        m = re.search(r"[.]$|^$", docstr, flags=re.M)
+        pos = m.start() if m else len(docstr)
+        # return text as a single line
+        return " ".join([x.strip() for x in docstr[:pos].strip().split("\n")])
+
+    result = {}
+    for obj in globals().copy():
+        if isinstance(obj, type) and issubclass(obj, Publication):
+            result[obj.__name__] = AvailableResult(obj, doc_desc(obj))
+    return result
