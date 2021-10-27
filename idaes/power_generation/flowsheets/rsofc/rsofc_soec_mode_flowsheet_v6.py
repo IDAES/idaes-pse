@@ -2411,29 +2411,39 @@ if __name__ == "__main__":
     # check_scaling(m)
     # write_pfd_results(m, "rsofc_soec_mode_template_2.svg")
   
+    # import sys
+    # sys.exit('stop')
 
-    # Did not fix area of air preheater 2 as that it uses the outlet T as the dof instead
-    # m.soec_fs.air_preheater_2.tube_outlet.temperature[0].unfix()
-    m.soec_fs.air_preheater_2.overall_heat_transfer_coefficient.unfix()
-    m.soec_fs.air_preheater_2.area.fix()
+    # # Did not fix area of air preheater 2 as that it uses the outlet T as the dof instead
+    # # m.soec_fs.air_preheater_2.tube_outlet.temperature[0].unfix()
+    # m.soec_fs.air_preheater_2.overall_heat_transfer_coefficient.unfix()
+    # m.soec_fs.air_preheater_2.area.fix()
 
-    m.soec_fs.bhx1.delta_temperature_out.unfix()
-    # m.soec_fs.bhx1.overall_heat_transfer_coefficient.unfix()
-    m.soec_fs.bhx1.area.fix()
+    # m.soec_fs.bhx1.delta_temperature_out.unfix()
+    # # m.soec_fs.bhx1.overall_heat_transfer_coefficient.unfix()
+    # # m.soec_fs.bhx1.area.fix()
+    # m.soec_fs.bhx1.hot_side.properties_out[0].temperature.fix(330)
 
-    m.soec_fs.air_preheater_1.delta_temperature_in.unfix()
-    # m.soec_fs.air_preheater_1.overall_heat_transfer_coefficient.unfix()
-    m.soec_fs.air_preheater_1.area.fix()
+    # m.soec_fs.air_preheater_1.delta_temperature_in.unfix()
+    # # m.soec_fs.air_preheater_1.overall_heat_transfer_coefficient.unfix()
+    # # m.soec_fs.air_preheater_1.area.fix()
+    # m.soec_fs.air_preheater_1.hot_side.properties_out[0].temperature.fix(650)
 
-    m.soec_fs.oxygen_preheater.delta_temperature_in.unfix()
-    # m.soec_fs.oxygen_preheater.overall_heat_transfer_coefficient.unfix() 
-    m.soec_fs.oxygen_preheater.area.fix()
+    # m.soec_fs.oxygen_preheater.delta_temperature_in.unfix()
+    # # m.soec_fs.oxygen_preheater.overall_heat_transfer_coefficient.unfix() 
+    # # m.soec_fs.oxygen_preheater.area.fix()
+    # m.soec_fs.oxygen_preheater.cold_side.properties_out[0].temperature.fix(535)
 
-    m.soec_fs.ng_preheater.delta_temperature_in.unfix()
-    # m.soec_fs.ng_preheater.overall_heat_transfer_coefficient.unfix()   
-    m.soec_fs.ng_preheater.area.fix()
+    # m.soec_fs.ng_preheater.delta_temperature_in.unfix()
+    # # m.soec_fs.ng_preheater.overall_heat_transfer_coefficient.unfix()   
+    # # m.soec_fs.ng_preheater.area.fix()
+    # m.soec_fs.ng_preheater.cold_side.properties_out[0].temperature.fix(535)
 
-    # print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
+    # m.soec_fs.air_preheater_1.delta_temperature_in.fix(10)  #10
+    # m.soec_fs.ng_preheater.delta_temperature_in.fix(10)  #10
+    # m.soec_fs.oxygen_preheater.delta_temperature_in.fix(10)  #10
+    
+    print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
 
     # TODO - use the homotopy tool to figure out pinch points in the model
     m.soec_fs.tag_input["hydrogen_product_rate"].fix()
@@ -2442,13 +2452,13 @@ if __name__ == "__main__":
 
     # m.soec_fs.visualize("rSOEC Flowsheet")  # visualize flowsheet
 
-    # rsofc_cost.get_rsofc_capital_costing(m)
-    # rsofc_cost.lock_capital_cost(m)
+    rsofc_cost.get_rsofc_capital_costing(m)
+    rsofc_cost.lock_capital_cost(m)
     # rsofc_cost.get_rsofc_fixed_OM_costing(m, 650)
     rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
 
     # iscale.calculate_scaling_factors(m.fs.costing)
-    iscale.calculate_scaling_factors(m.soec_fs.costing)
+    # iscale.calculate_scaling_factors(m.soec_fs.costing)
 
     # solver.solve(m, tee=True)
 
@@ -2469,62 +2479,70 @@ if __name__ == "__main__":
     
 
     # check_heat_exchanger_DT(m.soec_fs)
-    
+
+    iscale.calculate_scaling_factors(m)
+    iscale.constraint_autoscale_large_jac(m)
+    # check_scaling(m)
+    # check_heat_exchanger_DT(m.soec_fs)
     # import sys
     # sys.exit('stop')
     # strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
     # strip_bounds.apply_to(m, reversible=False)
 
-    # m.soec_fs.sweep_constraint = pyo.Constraint(
-    #     expr=1e2* m.soec_fs.tag_input["single_cell_sweep_flow"].expression
-    #     ==
-    #     1e2* m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].expression
-    # )
-    # m.soec_fs.tag_input["single_cell_sweep_flow"].unfix()
-    # m.soec_fs.tag_input["single_cell_sweep_flow"].setlb(4e-6)
-    
-    # m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].setlb(4e-6)
+    m.soec_fs.sweep_constraint = pyo.Constraint(
+        expr=1e6* m.soec_fs.tag_input["single_cell_sweep_flow"].expression
+        ==
+        1e6* m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].expression
+    )
+    m.soec_fs.tag_input["single_cell_sweep_flow"].unfix()
+    m.soec_fs.tag_input["single_cell_sweep_flow"].setlb(8e-6)
+    m.soec_fs.tag_input["single_cell_sweep_flow"].setub(3e-5)
 
+    m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].setlb(8e-6)
+    m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].setub(3e-5)
 
-    # m.soec_fs.tag_input["sweep_air_flow"].unfix()   # redundant as already unfixed
-    m.soec_fs.tag_input["sweep_air_flow"].setlb(1000)
-    m.soec_fs.tag_input["sweep_air_flow"].setub(20000)
+    # # m.soec_fs.tag_input["sweep_air_flow"].unfix()   # redundant as already unfixed
+    # m.soec_fs.tag_input["sweep_air_flow"].setlb(500)
+    # m.soec_fs.tag_input["sweep_air_flow"].setub(10000)
 
-    # m.soec_fs.tag_input["feed_water_flow"].unfix()  # redundant as already unfixed
-    # m.soec_fs.tag_input["feed_water_flow"].setlb(1000)
-    # m.soec_fs.tag_input["feed_water_flow"].setub(10000)
+    # # m.soec_fs.tag_input["feed_water_flow"].unfix()  # redundant as already unfixed
+    # # m.soec_fs.tag_input["feed_water_flow"].setlb(1000)
+    # # m.soec_fs.tag_input["feed_water_flow"].setub(10000)
 
     # TODO - is the sum of mole frac needed for this constraint?
     m.soec_fs.tag_input["feed_h2_frac"].unfix()  # Unfix for optimization
     m.soec_fs.tag_input["feed_h2_frac"].setlb(0.001)
-    m.soec_fs.tag_input["feed_h2_frac"].setub(0.95)
+    m.soec_fs.tag_input["feed_h2_frac"].setub(0.999)
 
     m.soec_fs.tag_input["preheat_fg_split_to_oxygen"].unfix()
     m.soec_fs.tag_input["preheat_fg_split_to_oxygen"].setlb(0.55)
     m.soec_fs.tag_input["preheat_fg_split_to_oxygen"].setub(0.99)
 
-    m.soec_fs.spltf1.split_fraction[:, "out"].setlb(0.001)
-    m.soec_fs.spltf1.split_fraction[:, "out"].setub(0.95)
+    m.soec_fs.spltf1.split_fraction[:, "out"].setlb(0.00001)
+    m.soec_fs.spltf1.split_fraction[:, "out"].setub(0.99999)
 
-    m.soec_fs.splta1.split_fraction[:, "out"].setlb(0.001)
-    m.soec_fs.splta1.split_fraction[:, "out"].setub(0.95)
-
-    # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.fix(20e5)
-    # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setlb(1.1e5)
-    # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setub(40e5)
+    # # m.soec_fs.splta1.split_fraction[:, "out"].setlb(0.001)
+    # # m.soec_fs.splta1.split_fraction[:, "out"].setub(0.95)
+    
+    # m.soec_fs.ng_preheater.tube_inlet.flow_mol.setlb(10)
+    # m.soec_fs.ng_preheater.tube_inlet.flow_mol.setub(600)
+    
+    # # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.fix(20e5)
+    # # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setlb(1.1e5)
+    # # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setub(40e5)
 
     # m.soec_fs.tag_input["n_cells"].unfix()  # Unfix for optimization
-    # m.soec_fs.tag_input["n_cells"].setlb(1e6)
+    # m.soec_fs.tag_input["n_cells"].setlb(100e6)
     # m.soec_fs.tag_input["n_cells"].setub(400e6)
 
-    # m.soec_fs.cmb_temperature.unfix()
-    # m.soec_fs.cmb_temperature.setlb(1300)
-    # m.soec_fs.cmb_temperature.setub(2000)
+    # # m.soec_fs.cmb_temperature.unfix()
+    # # m.soec_fs.cmb_temperature.setlb(1300)
+    # # m.soec_fs.cmb_temperature.setub(2000)
 
-    m.soec_fs.obj = pyo.Objective(
-        expr=m.soec_fs.ng_preheater.tube_inlet.flow_mol[0] / 10)
-    # m.soec_fs.obj = pyo.Objective(expr=-m.soec_fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"]*10)
-    # m.soec_fs.obj = pyo.Objective(expr=m.soec_fs.H2_costing.total_variable_OM_cost[0])
+    # m.soec_fs.obj = pyo.Objective(
+    #     expr=m.soec_fs.ng_preheater.tube_inlet.flow_mol[0] / 10)
+    # # m.soec_fs.obj = pyo.Objective(expr=-m.soec_fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"]*10)
+    m.soec_fs.obj = pyo.Objective(expr=m.soec_fs.H2_costing.total_variable_OM_cost[0])
 
     m.soec_fs.tag_pfd["total_variable_OM_cost"] = iutil.ModelTag(
         expr=m.soec_fs.H2_costing.total_variable_OM_cost[0],
@@ -2536,10 +2554,10 @@ if __name__ == "__main__":
     options={
         # "nlp_scaling_method": "user-scaling",
           "max_iter": 100,
-          # "tol": 1e-3,
-          # "bound_push": 1e-16,
-          # "linear_solver": "ma27",
-          # "ma27_pivtol": 1e-3,
+           "tol": 1e-7,
+           "bound_push": 1e-6,
+           "linear_solver": "ma27",
+           "ma27_pivtol": 1e-3,
             # "ma57_pivtol": 1e-3,
             # "mu_init": 1e-5
               }
@@ -2567,15 +2585,21 @@ if __name__ == "__main__":
         w = csv.writer(f)
         w.writerow(head_1 + head_2)
     # for h in np.linspace(2.5, 0.1, 25):  # Generate 25 points btw 2.5 to 0.1
-    for h in np.linspace(2.5, 2.0, 10):  # Generate 25 points btw 2.5 to 0.1
+    for h in np.linspace(2.5, 0.1, 25):  # Generate 25 points btw 2.5 to 0.1
         m.soec_fs.tag_input["hydrogen_product_rate"].fix(
             float(h) * pyo.units.kmol / pyo.units.s
         )
+    # for h in np.linspace(375e6, 30e6, 24):  # Generate 24 points from 375 to 30
+    #     m.soec_fs.tag_input["n_cells"].fix(
+    #         float(h)
+    #     )
         print()
         print()
         print()
         print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
+        print(f"Number of soec cells {m.soec_fs.tag_input['n_cells']}.")
         # idaes.cfg.ipopt["options"]["max_iter"] = 5
+        iscale.constraint_autoscale_large_jac(m.soec_fs)
         res = solver.solve(m.soec_fs, tee=True, symbolic_solver_labels=True,
                            options=options)
 
@@ -2611,3 +2635,4 @@ if __name__ == "__main__":
         # write_pfd_results(
         #     m, f"soec_{m.tag_input['hydrogen_product_rate'].display(units=False)}.svg"
         # )
+    display_input_tags(m.soec_fs)
