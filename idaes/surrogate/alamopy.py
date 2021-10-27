@@ -1005,35 +1005,35 @@ class AlamoSurrogate(SurrogateBase):
 
         block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
 
-    def to_json(self, stream):
+    def save(self, strm):
         """
-        Method to serialize surrogate object data in json form and write to a
-        stream.
+        Save an instance of this surrogate to the strm so the model can be used later.
 
         Args:
-            stream - output stream for json string
-
-        Retruns:
-            stream
+           strm: IO.TextIO
+              This is the python stream like a file object or StringIO that will be used
+              to serialize the surrogate object. This method writes a string
+              of json data to the stream.
         """
         json.dump({"surrogate": self._surrogate_expressions,
                    "input_labels": self._input_labels,
                    "output_labels": self._output_labels,
                    "input_bounds": self._input_bounds},
-                  stream)
+                  strm)
 
-        return stream
-
-    @staticmethod
-    def create_from_json(js):
+    @classmethod
+    def load(cls, strm):
         """
-        Method to create an AlamoSurrogate based on data stored in
-        a json string.
+        Create an instance of a surrogate from a stream.
 
         Args:
-            js - string with json representation of surrogate object
+           strm: stream
+              This is the python stream containing the data required to load the surrogate.
+              This is often, but does not need to be a string of json data.
+
+        Returns: an instance of the derived class or None if it failed to load
         """
-        d = json.loads(js)
+        d = json.load(strm)
 
         surrogate_expressions = d["surrogate"]
         input_labels = d["input_labels"]
@@ -1045,33 +1045,6 @@ class AlamoSurrogate(SurrogateBase):
             input_bounds[k] = tuple(v)
 
         return AlamoSurrogate(surrogate_expressions=surrogate_expressions,
-                           input_labels=input_labels,
-                           output_labels=output_labels,
-                           input_bounds=input_bounds)
-
-    def save(self, strm):
-        """
-        Save an instance of this surrogate to the strm so the model can be used later.
-
-        Args:
-           strm: stream
-              This is the python stream that will be used to serialize the surrogate object.
-              This method will often write a string of json data to strm, but the format need
-              not be json.
-        """
-        self.to_json(strm)
-
-    @classmethod
-    def load(cls, strm):
-        """
-        Create an instance of a surrogate from a stream. This method should
-        be overloaded in derived surrogate classes.
-
-        Args:
-           strm: stream
-              This is the python stream containing the data required to load the surrogate.
-              This is often, but does not need to be a string of json data.
-
-        Returns: an instance of the derived class or None if it failed to load
-        """
-        return AlamoSurrogate.create_from_json(strm)
+                              input_labels=input_labels,
+                              output_labels=output_labels,
+                              input_bounds=input_bounds)

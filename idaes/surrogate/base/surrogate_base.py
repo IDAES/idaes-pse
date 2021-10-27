@@ -296,13 +296,13 @@ class SurrogateBase():
         This method should be overloaded in derived surrogate classes.
 
         Args:
-           strm: stream
-              This is the python stream that will be used to serialize the surrogate object.
-              This method will often write a string of json data to strm, but the format need
-              not be json.
+           strm: IO.TextIO
+              This is the python stream like a file object or StringIO that will be used
+              to serialize the surrogate object. This methods will often write a string
+              of json data to the stream, but hte format for derived classes need not be json.
         """
-        raise NotImplementedError('"save" should be implemented in the derived'
-                                  ' SurrogateObject class')
+        raise NotImplementedError('"save" should be implemented in the'
+                                  ' class derived from SurrogateBase')
 
     @classmethod
     def load_from_file(cls, filename):
@@ -316,7 +316,7 @@ class SurrogateBase():
         Returns: an instance of the derived class or None if it failed to load
         """
         with open(filename, 'r') as fd:
-            return cls.load(fd.read())
+            return cls.load(fd)
 
     @classmethod
     def load(cls, strm):
@@ -325,11 +325,12 @@ class SurrogateBase():
         be overloaded in derived surrogate classes.
 
         Args:
-           strm: stream
-              This is the python stream containing the data required to load the surrogate.
-              This is often, but does not need to be a string of json data.
+           strm: IO.TextIO
+              This is the python stream like a file object or StringIO containing 
+              the data required to load the surrogate. This is often, but does not
+              need to be json data.
 
         Returns: an instance of the derived class or None if it failed to load
         """
-        raise NotImplementedError('"load" should be implemented in the derived'
-                                  ' class')
+        raise NotImplementedError('"load" should be implemented in the'
+                                  ' class derived from SurrogateBase')

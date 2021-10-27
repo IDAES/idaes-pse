@@ -235,13 +235,13 @@ class TestSurrogateBase:
     @pytest.mark.unit
     def test_save(self, surrogate):
         with pytest.raises(NotImplementedError,
-                           match='"save" should be implemented in the derived'
-                           ' SurrogateObject class'):
-            surrogate.save("foo")
+                           match='"save" should be implemented in the'
+                                  ' class derived from SurrogateBase'):
+            surrogate.save(None)
 
     @pytest.mark.unit
-    def test_load(self, surrogate):
+    def test_load(self):
         with pytest.raises(NotImplementedError,
-                           match='"load" should be implemented in the derived'
-                           ' SurrogateObject class'):
-            surrogate.load(surrogate, "foo")
+                           match='"load" should be implemented in the'
+                                  ' class derived from SurrogateBase'):
+            SurrogateBase.load(None)

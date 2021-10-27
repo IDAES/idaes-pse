@@ -1083,14 +1083,14 @@ class TestAlamoSurrogate():
             "4*log(_inputs[x1]**4) + 5*exp(_inputs[x2]**5))")
 
     @pytest.mark.unit
-    def test_to_json(self, alm_surr1):
+    def test_save(self, alm_surr1):
         stream = StringIO()
-        alm_surr1.to_json(stream)
+        alm_surr1.save(stream)
         assert stream.getvalue() == jstring
 
     @pytest.mark.unit
-    def test_create_from_json(self):
-        alm_surr = AlamoSurrogate.create_from_json(jstring)
+    def test_load(self):
+        alm_surr = AlamoSurrogate.load(StringIO(jstring))
 
         assert alm_surr._surrogate_expressions == {
             "z1": ' z1 == 3.9999999999925446303450 * x1**2 - '
@@ -1107,7 +1107,7 @@ class TestAlamoSurrogate():
     def test_save_load(self, alm_surr1):
         with TempfileManager as tf:
             fname = tf.create_tempfile(suffix=".json")
-            alm_surr1.save(fname, overwrite=True)
+            alm_surr1.save_to_file(fname, overwrite=True)
 
             assert os.path.isfile(fname)
 
@@ -1115,7 +1115,7 @@ class TestAlamoSurrogate():
                 js = f.read()
             f.close()
 
-            alm_load = AlamoSurrogate.load(fname)
+            alm_load = AlamoSurrogate.load_from_file(fname)
 
         # Check file contents
         assert js == jstring
@@ -1142,7 +1142,7 @@ class TestAlamoSurrogate():
             fname = tf.create_tempfile(suffix=".json")
 
             with pytest.raises(FileExistsError):
-                alm_surr1.save(fname)
+                alm_surr1.save_to_file(fname)
 
         # Check for clean up
         assert not os.path.isfile(fname)
