@@ -5,5 +5,6 @@ Data Management Framework Examples
     :maxdepth: 1
 
     resources
+    data_tables
 ..    workspaces
 ..    etc.
