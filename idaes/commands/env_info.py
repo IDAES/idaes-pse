@@ -16,7 +16,6 @@
 __author__ = "John Eslick"
 
 import click
-from idaes.core.util.env_info import EnvironmentInfo
 from idaes.commands import cb
 
 
@@ -34,6 +33,7 @@ from idaes.commands import cb
     help="Write output ot a file"
 )
 def environment_info(solver, json):
+    from idaes.core.util.env_info import EnvironmentInfo
     info = EnvironmentInfo(additional_solvers=solver)
     d = info.to_dict()
     if json is None:
