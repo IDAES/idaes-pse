@@ -20,15 +20,54 @@ from enum import Enum
 
 from pyomo.environ import log, Var
 
+from idaes.generic_models.properties.core.generic.utility import (
+    StateIndex)
 from idaes.core.util.exceptions import BurntToast
 
 
 class HenryType(Enum):
-    # TODO: ADd more forms as needed
+    """
+    'Henry Constant' types are numbered 1-50 (i.e. H = conc/pressure)
+    'Henry Volatiltiy' types are numbered 51-100 (i.e. K = pressure/conc)
+    We use this fact to simplify determining wheterh to multiply or divide
+    by Henry's constant
+    Any differnt forms can use values 101+, but will need ot add the custom
+    code in if branches where necessary
+    """
+    # TODO: Add more forms as needed
     Hcp = 1
-    Kpc = 2
-    Hxp = 3
-    Kpx = 4
+    Kpc = 51
+    Hxp = 2
+    Kpx = 52
+
+
+# Define a method for getting the correct concentration term
+# TODO : Look to see if this can be unified with get_concentration_term
+# in generic/utilties
+def get_henry_concentration_term(blk, henry_dict, log=False):
+    if log:
+        pre = "log_"
+    else:
+        pre = ""
+
+    if hasattr(blk.params, "_electrolyte") and blk.params._electrolyte:
+        if henry_dict["basis"] == StateIndex.true:
+            sub = "_true"
+        else:
+            sub = "_apparent"
+    else:
+        sub = ""
+
+    henry_type = henry_dict["type"]
+    if henry_type == HenryType.Hcp or henry_type == HenryType.Kpc:
+        conc_type = "conc_mol_phase_comp"
+    elif henry_type == HenryType.Hxp or henry_type == HenryType.Kpx:
+        conc_type = "mole_frac_phase_comp"
+    else:
+        raise BurntToast(
+            f"Unrecognized value for HenryType {henry_type}")
+
+    return getattr(blk, pre+conc_type+sub)
 
 
 # Define a method for returning vapor pressure of Henry components
@@ -38,21 +77,21 @@ def henry_pressure(b, p, j, T=None):
     if T is None:
         henry = b.henry[p, j]
     else:
-        henry = henry_def["method"](b, p, j, T)
+        henry = henry_def["method"].return_expression(b, p, j, T)
     # Need to get the appropriate concentration term
     # TODO: Add support for true and apparent bases
 
-    if henry_def["type"] == HenryType.Hcp:
-        h_press = b.conc_mole_phase_comp[p, j]/henry
-    elif henry_def["type"] == HenryType.Kpc:
-        h_press = b.conc_mole_phase_comp[p, j]*henry
-    elif henry_def["type"] == HenryType.Hxp:
-        h_press = b.mole_frac_phase_comp[p, j]/henry
-    elif henry_def["type"] == HenryType.Kpx:
-        h_press = b.mole_frac_phase_comp[p, j]*henry
+    h_conc = get_henry_concentration_term(b, henry_def, log=False)[p, j]
+
+    if henry_def["type"].value <= 50:
+        # H = c/P type
+        h_press = h_conc/henry
+    elif henry_def["type"].value <= 100:
+        # K = P/c type
+        h_press = h_conc*henry
     else:
         raise BurntToast(
-            f"Unrecognized value for HenryType {henry_def['type']}")
+            f"Unrecognized value for HenryType Enum {henry_def['type']}.")
 
     return h_press
 
@@ -60,27 +99,28 @@ def henry_pressure(b, p, j, T=None):
 def log_henry_pressure(b, p, j, T=None):
     henry_def = b.params.get_component(j).config.henry_component[p]
 
+    # TODO: Should use a log henry var/expression
     if T is None:
         henry = b.henry[p, j]
     else:
-        henry = henry_def["method"](b, p, j, T)
+        henry = henry_def["method"].return_expression(b, p, j, T)
 
     # Need to get the appropriate concentration term
     # TODO: Add support for true and apparent bases
 
-    if henry_def["type"] == HenryType.Hcp:
-        h_press = b.log_conc_mole_phase_comp[p, j] - log(henry)
-    elif henry_def["type"] == HenryType.Kpc:
-        h_press = b.log_conc_mole_phase_comp[p, j] + log(henry)
-    elif henry_def["type"] == HenryType.Hxp:
-        h_press = b.log_mole_frac_phase_comp[p, j] - log(henry)
-    elif henry_def["type"] == HenryType.Kpx:
-        h_press = b.log_mole_frac_phase_comp[p, j] + log(henry)
+    h_conc = get_henry_concentration_term(b, henry_def, log=True)[p, j]
+
+    if henry_def["type"].value <= 50:
+        # H = c/P type
+        log_h_press = h_conc - log(henry)
+    elif henry_def["type"].value <= 100:
+        # K = P/c type
+        log_h_press = h_conc + log(henry)
     else:
         raise BurntToast(
-            f"Unrecognized value for HenryType {henry_def['type']}")
+            f"Unrecognized value for HenryType Enum {henry_def['type']}.")
 
-    return h_press
+    return log_h_press
 
 
 # Define units for Henry's constant
@@ -120,6 +160,8 @@ class ConstantH():
         H = getattr(cobj, "henry_ref_"+p)
 
         return H
+
+    # TODO: Need a return log expression method too
 
     @staticmethod
     def dT_expression(b, p, j, T=None):

@@ -57,7 +57,7 @@ import idaes.core.util.scaling as iscale
 from idaes.generic_models.properties.core.generic.generic_reaction import \
     equil_rxn_config
 from idaes.generic_models.properties.core.generic.utility import (
-    get_method, get_phase_method, GenericPropertyPackageError)
+    get_method, get_phase_method, GenericPropertyPackageError, StateIndex)
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
     LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.henry import \
@@ -65,11 +65,6 @@ from idaes.generic_models.properties.core.phase_equil.henry import \
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-
-
-class StateIndex(Enum):
-    true = 1
-    apparent = 2
 
 
 def set_param_value(b, param, units):
