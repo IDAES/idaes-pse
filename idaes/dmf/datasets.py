@@ -97,8 +97,7 @@ class PublicationDataset(Dataset):
         return pub, tables
 
     def load(self, directory):
-        """Load publication from the provided directory.
-        """
+        """Load publication from the provided directory."""
         directory = Path(directory)
         self._load_conf(directory)
 
@@ -135,9 +134,11 @@ class PublicationDataset(Dataset):
             f"\"{pub.get('title', 'no title')}\". "
             f"{pub.get('publisher', '')} ({pub.get('date', '')})"
         else:
-            meta["source"] = f"{pub.get('authors', 'Anon.')}, "\
-                             f"\"{pub.get('title', 'no title')}\". "\
-                             f"{pub.get('venue', '')} ({pub.get('date', '')})"
+            meta["source"] = (
+                f"{pub.get('authors', 'Anon.')}, "
+                f"\"{pub.get('title', 'no title')}\". "
+                f"{pub.get('venue', '')} ({pub.get('date', '')})"
+            )
         pub_r.add_data_file(directory / file_, do_copy=self.copy_flag)
         pub_r.sources.append(meta)
         self._dmf.add(pub_r)
@@ -172,8 +173,9 @@ class PublicationDataset(Dataset):
                 # populate resource
                 table_desc = table.get("description", None)
                 if table_desc is None:
-                    _log.warning(f"No description given for table data "
-                                 f"{table_datafile}")
+                    _log.warning(
+                        f"No description given for table data " f"{table_datafile}"
+                    )
                 _log.debug(f"Adding table: path={table_path} desc={table_desc}")
                 tbl_r.add_table(table_path, desc=table_desc, do_copy=self.copy_flag)
                 tbl_r.name = table_name  # set name for this table
@@ -181,14 +183,17 @@ class PublicationDataset(Dataset):
                 self._dmf.add(tbl_r)
                 resource.create_relation(pub_r, resource.Predicates.derived, tbl_r)
                 num += 1
-                _log.debug(f"publication_table_resource.create.end id={tbl_r.id} "
-                           f"num={num}")
+                _log.debug(
+                    f"publication_table_resource.create.end id={tbl_r.id} " f"num={num}"
+                )
             # update all the derivation relationships
             _log.debug("dmf_update.begin")
             self._dmf.update()
             _log.debug("dmf_update.end")
 
+
 AvailableResult = namedtuple("AvailableResult", "Class description")
+
 
 class Publication:
     """Abstract superclass for the public interface to a publication-derived dataset.
@@ -208,5 +213,3 @@ class Publication:
 
     def get_table(self, name) -> Union[Table, None]:
         return self._tables.get(name, None)
-
-
