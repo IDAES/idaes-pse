@@ -1049,38 +1049,29 @@ class AlamoSurrogate(SurrogateBase):
                            output_labels=output_labels,
                            input_bounds=input_bounds)
 
-    def save(self, filename, overwrite=False):
+    def save(self, strm):
         """
-        Method to save surrogate object data to file in json format.
+        Save an instance of this surrogate to the strm so the model can be used later.
 
         Args:
-            filename - path of destination file
-            overwrite - wheterh to overwrite existing files (default = False)
+           strm: stream
+              This is the python stream that will be used to serialize the surrogate object.
+              This method will often write a string of json data to strm, but the format need
+              not be json.
         """
-        if overwrite:
-            arg = "w"
-        else:
-            arg = "x"
+        self.to_json(strm)
 
-        f = open(filename, arg)
-        self.to_json(f)
-        f.close()
-
-    @staticmethod
-    def load(filename):
+    @classmethod
+    def load(cls, strm):
         """
-        Static method to create an AlamoSurrogate from contents of a json file.
-
-        Useage: surrogate = AlamoSurrogate.load(filename)
+        Create an instance of a surrogate from a stream. This method should
+        be overloaded in derived surrogate classes.
 
         Args:
-            filename - path of json file to load
+           strm: stream
+              This is the python stream containing the data required to load the surrogate.
+              This is often, but does not need to be a string of json data.
 
-        Returns:
-            AlamoSurrogate with data loaded from json file
+        Returns: an instance of the derived class or None if it failed to load
         """
-        with open(filename, "r") as f:
-            js = f.read()
-        f.close()
-
-        return AlamoSurrogate.create_from_json(js)
+        return AlamoSurrogate.create_from_json(strm)

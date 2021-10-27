@@ -316,7 +316,7 @@ class SurrogateBase():
         Returns: an instance of the derived class or None if it failed to load
         """
         with open(filename, 'r') as fd:
-            return cls.load(fd)
+            return cls.load(fd.read())
 
     @classmethod
     def load(cls, strm):
