@@ -336,3 +336,14 @@ input:checked + .slider:before {
 .dropdown-item:active {
   background-color: white;
 }
+
+/* Styling the Variables column in the Stream Table */
+.streamtable-variable {
+  display: block;
+}
+
+/* Styling the units in the Variables column in the Stream Table */
+.streamtable-units {
+  opacity: 0.6;
+  float: right;
+}

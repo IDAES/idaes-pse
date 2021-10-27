@@ -48,8 +48,8 @@ def get_default_solver():
     Move to idaes.core.util.misc - leaving redirection method here for
     deprecation warning
     """
-    _log.warn("Deprecated: get_default_solve has been moved and can now be "
-              "imported from idaes.core.util")
+    _log.warn("Deprecated: get_default_solver has been moved and renamed. It "
+              "can now be imported from idaes.core.util as get_solver")
     return default_solver()
 
 

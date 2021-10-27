@@ -16,7 +16,7 @@ Methods for calculating rate constants
 from pyomo.environ import exp, Var, units as pyunits
 
 from idaes.core import MaterialFlowBasis
-from idaes.generic_models.properties.core.generic.generic_reaction import \
+from idaes.generic_models.properties.core.generic.utility import \
     ConcentrationForm
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants as c
@@ -66,9 +66,9 @@ class arrhenius():
                 c_units = units["pressure"]
             else:
                 raise BurntToast(
-                    "{} get_concentration_term received unrecognised "
-                    "ConcentrationForm ({}). This should not happen - please "
-                    "contact the IDAES developers with this bug."
+                    "{} received unrecognised ConcentrationForm ({}). "
+                    "This should not happen - please contact the IDAES "
+                    "developers with this bug."
                     .format(rblock.name, c_form))
 
             r_units = (r_base *
