@@ -4,7 +4,7 @@
 .. toctree::
     :maxdepth: 1
 
-    process_block 
+    process_block
     flowsheet_block
     control_volume_0d
     control_volume_1d
@@ -14,3 +14,4 @@
     comp
     phase
     util/index
+    solvers
