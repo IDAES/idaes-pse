@@ -1170,7 +1170,7 @@ class TestGenericStateBlock(object):
         # Surface tension is only built for Liquid Phases, and we have none.
         # All values should be None.
         for p in frame.props[1].phase_list:
-            assert value(frame.props[1].surf_tens_phase[p]) is None
+            assert p not in frame.props[1].surf_tens_phase
 
     @pytest.mark.unit
     def test_therm_cond_phase(self, frame):
