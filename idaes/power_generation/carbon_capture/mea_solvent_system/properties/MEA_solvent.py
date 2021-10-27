@@ -153,7 +153,7 @@ class EnthMolSolvent():
                 (cobj.cp_mass_liq_comp_coeff_3/3)*(T**3-Tr**3) +
                 (cobj.cp_mass_liq_comp_coeff_2/2)*(T**2-Tr**2) +
                 cobj.cp_mass_liq_comp_coeff_1*(T-Tr)),
-            units["energy_mole"]) +
+            units["energy_mole"]) -
             cobj.dh_vap)
 
         return h

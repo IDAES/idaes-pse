@@ -22,7 +22,7 @@ Assumptions:
      * Liquid and vapor phase proeprtes need not have the same component lists
 """
 
-__author__ = "andrew Lee, Paul Akula"
+__author__ = "Andrew Lee, Paul Akula"
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Param, Reference
@@ -201,7 +201,8 @@ see property package for documentation.}"""))
         tmp_dict = dict(**self.config.vapor_property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["defined_state"] = False
-        self.vapor_phase = self.config.vapor_property_package.build_state_block(
+        self.vapor_phase = \
+            self.config.vapor_property_package.build_state_block(
                 self.flowsheet().time,
                 doc="Vapor phase properties",
                 default=tmp_dict)
@@ -240,7 +241,7 @@ see property package for documentation.}"""))
             if j in common_comps:
                 # Component is in equilibrium
                 # Mass transfer equals vapor flowrate
-                return (blk.liquid_phase.mass_transfer_term[t, "Liq", j] ==
+                return (-blk.liquid_phase.mass_transfer_term[t, "Liq", j] ==
                         blk.vapor_phase[t].get_material_flow_terms("Vap", j))
             elif j in self.vapor_phase.component_list:
                 # Non-condensable component
@@ -269,7 +270,7 @@ see property package for documentation.}"""))
             self.flowsheet().time,
             common_comps,
             rule=rule_phase_equilibrium,
-            doc="Unit levelphase equilibrium constraints")
+            doc="Unit level phase equilibrium constraints")
 
         # Temperature equality constraint
         def rule_temperature_balance(blk, t):
@@ -285,7 +286,7 @@ see property package for documentation.}"""))
         # transfer from liquid phase
         # TODO: How does this need to account for dynamics?
         def rule_energy_balance(blk, t):
-            return (blk.liquid_phase.enthalpy_transfer[t] ==
+            return (-blk.liquid_phase.enthalpy_transfer[t] ==
                     blk.vapor_phase[t].get_enthalpy_flow_terms("Vap"))
         self.unit_enthalpy_balance = Constraint(
             self.flowsheet().time,
@@ -307,6 +308,8 @@ see property package for documentation.}"""))
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != MomentumBalanceType.none):
             self.deltaP = Reference(self.liquid_phase.deltaP[:])
+
+    # TODO :Scaling methods
 
     def initialize(blk, liquid_state_args=None, vapor_state_args=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
@@ -333,6 +336,8 @@ see property package for documentation.}"""))
         '''
         if optarg is None:
             optarg = {}
+
+        # TODO : Check DOF, get vapor phase gueses
 
         # Set solver options
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
@@ -368,50 +373,18 @@ see property package for documentation.}"""))
         init_log.info_high('Initialization Step 2 Complete.')
         # ---------------------------------------------------------------------
         # Solve unit model
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     results = solverobj.solve(blk, tee=slc.tee)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solverobj.solve(blk, tee=slc.tee)
 
-        # init_log.info_high(
-        #     "Initialization Step 3 {}.".format(idaeslog.condition(results))
-        # )
+        init_log.info_high(
+            "Initialization Step 3 {}.".format(idaeslog.condition(results))
+        )
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        # blk.liquid_phase.release_state(flags, outlvl)
+        blk.liquid_phase.release_state(flags, outlvl)
 
-        # init_log.info('Initialization Complete: {}'
-        #               .format(idaeslog.condition(results)))
+        init_log.info('Initialization Complete: {}'
+                      .format(idaeslog.condition(results)))
 
-    # def _get_performance_contents(self, time_point=0):
-    #     var_dict = {}
-    #     if hasattr(self, "heat_duty"):
-    #         var_dict["Heat Duty"] = self.heat_duty[time_point]
-
-    #     return {"vars": var_dict}
-
-    # def _get_stream_table_contents(self, time_point=0):
-    #     stream_attributes = {}
-
-    #     stream_dict = {"Inlet": "inlet",
-    #                    "Vapor Reboil": "vapor_reboil",
-    #                    "Bottoms": "bottoms"}
-
-    #     for n, v in stream_dict.items():
-    #         port_obj = getattr(self, v)
-
-    #         stream_attributes[n] = {}
-
-    #         for k in port_obj.vars:
-    #             for i in port_obj.vars[k].keys():
-    #                 if isinstance(i, float):
-    #                     stream_attributes[n][k] = value(
-    #                         port_obj.vars[k][time_point])
-    #                 else:
-    #                     if len(i) == 2:
-    #                         kname = str(i[1])
-    #                     else:
-    #                         kname = str(i[1:])
-    #                     stream_attributes[n][k + " " + kname] = \
-    #                         value(port_obj.vars[k][time_point, i[1:]])
-
-    #     return DataFrame.from_dict(stream_attributes, orient="columns")
+    # TODO : performance and stream table methods
