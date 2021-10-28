@@ -52,6 +52,7 @@ def test_add_object_reference_fail():
 # Author: John Eslick
 @pytest.mark.unit
 def test_port_copy():
+    """DEPRECATED function test"""
     m = ConcreteModel()
     m.b1 = Block()
     m.b2 = Block()
@@ -122,6 +123,7 @@ def test_port_copy():
 # Author: John Eslick
 @pytest.mark.unit
 def test_tag_reference():
+    """DEPRECATED function test"""
     m = ConcreteModel()
     m.z = Var([0, 1], ["A", "B"], initialize={
         (0, "A"): 6, (0, "B"): 7, (1, "A"): 8, (1, "B"): 9})
@@ -152,7 +154,16 @@ def test_SimpleVarLikeExpression():
 
     assert m.e.type() is Expression
     assert not m.e.is_indexed()
-    assert m.e.value == 42
+
+    with pytest.raises(TypeError,
+                       match="e is an Expression and does not have a value "
+                       "attribute. Use the 'value\(\)' method instead."):
+        assert m.e.value == 42
+
+    with pytest.raises(TypeError,
+                       match="e is an Expression and does not have a value "
+                       "which can be set."):
+        m.e.set_value(10)
 
     with pytest.raises(TypeError,
                        match="e is an Expression and does not have a value "
@@ -174,6 +185,9 @@ def test_SimpleVarLikeExpression():
     with pytest.raises(TypeError,
                        match="e is an Expression and can not be unfixed."):
         m.e.unfix()
+
+    m.e.set_value(10, force=True)
+    assert m.e._expr == 10
 
 
 @pytest.mark.unit
@@ -206,7 +220,16 @@ def test_IndexedVarLikeExpression():
         m.e.unfix()
 
     for i in m.e:
-        assert m.e[i].value == 42
+        with pytest.raises(TypeError,
+                           match=f"e\[{i}\] is an Expression and does not have"
+                           f" a value attribute. Use the 'value\(\)' method "
+                           "instead"):
+            assert m.e[i].value == 42
+
+        with pytest.raises(TypeError,
+                           match=f"e\[{i}\] is an Expression and does not "
+                           f"have a value which can be set."):
+            m.e[i].set_value(10)
 
         with pytest.raises(TypeError,
                            match="e\[{}\] is an Expression and does not have "
@@ -232,6 +255,9 @@ def test_IndexedVarLikeExpression():
                            match="e\[{}\] is an Expression and can not be "
                            "unfixed.".format(i)):
             m.e[i].unfix()
+
+        m.e[i].set_value(i, force=True)
+        assert m.e[i]._expr == i
 
 
 @pytest.mark.unit

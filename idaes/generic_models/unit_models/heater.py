@@ -18,7 +18,7 @@ __author__ = "John Eslick"
 
 # Import Pyomo libraries
 from pyomo.environ import Reference
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -118,7 +118,7 @@ balance type
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     config.declare("has_phase_equilibrium", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Phase equilibrium construction flag",
         doc="""Indicates whether terms for phase equilibrium should be
 constructed, **default** = False.
@@ -127,7 +127,7 @@ constructed, **default** = False.
 **False** - exclude phase equilibrium terms.}"""))
     config.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,

@@ -32,11 +32,22 @@ export class StreamTable {
         for (let col in columns) {
             // There is an empty column because of the way that the pandas dataframe was oriented so 
             // only add the columns that don't have an empty column header
+            // Also ignore the "Units" column header
             let column_header = columns[col]
-            if (column_header !== "") {
+            if (column_header !== "" && column_header !== "Units") {
                 // If the column_header is Variable then we don't want the column to be right-aligned and we want the column to be pinned to the left so when the user scrolls the column scrolls with them
                 if (column_header === "Variable") {
-                    column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true, resizable: true, pinned: 'left',});
+                    column_defs.push({
+                        headerName: column_header,
+                        field: column_header,
+                        filter: 'agTextColumnFilter',
+                        sortable: true,
+                        resizable: true,
+                        pinned: 'left',
+                        cellRenderer: (params) => {
+                            return '<span class="streamtable-variable">' + params.value + '</span>';
+                        }
+                    });
                 }
                 // If the column header isn't "Variable" then we assume that the contents of the column are numbers so they should be right aligned
                 else {
@@ -56,11 +67,23 @@ export class StreamTable {
         let variables = stream_table_data["index"];
         let data_arrays = stream_table_data["data"];
         let row_data = [];
+        let variable_col = "Variable";
         for (let var_index in variables) {
             let row_object = {};
             let data = data_arrays[var_index];
             for (let col_index in columns) {
-                row_object[columns[col_index]] = data[col_index];
+                if (columns[col_index] === "Units") {
+                    console.log("data[col_index]:", data[col_index]);
+                    if (data[col_index] && data[col_index] !== 'None') {
+                        row_object[variable_col] = row_object[variable_col] + '<span class="streamtable-units">' + data[col_index].html + '</span>';
+                    }
+                    else {
+                        row_object[variable_col] = row_object[variable_col] + '<span class="streamtable-units">&ndash;</span>';
+                    }
+                }
+                else {
+                    row_object[columns[col_index]] = data[col_index];
+                }
             };
             row_data.push(row_object);
         };

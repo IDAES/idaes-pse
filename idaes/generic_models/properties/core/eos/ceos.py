@@ -150,7 +150,7 @@ class Cubic(EoSBase):
             try:
                 rule = m.params.get_phase(p).config.equation_of_state_options[
                     "mixing_rule_a"]
-            except KeyError:
+            except (KeyError, TypeError):
                 rule = MixingRuleA.default
 
             a = getattr(m, cname+"_a")
@@ -168,7 +168,7 @@ class Cubic(EoSBase):
             try:
                 rule = m.params.get_phase(p).config.equation_of_state_options[
                     "mixing_rule_b"]
-            except KeyError:
+            except (KeyError, TypeError):
                 rule = MixingRuleB.default
 
             b = getattr(m, cname+"_b")
@@ -253,7 +253,7 @@ class Cubic(EoSBase):
                 try:
                     rule = m.params.get_phase(p3).config.equation_of_state_options[
                         "mixing_rule_a"]
-                except KeyError:
+                except (KeyError, TypeError):
                     rule = MixingRuleA.default
 
                 a = getattr(m, "_"+cname+"_a_eq")

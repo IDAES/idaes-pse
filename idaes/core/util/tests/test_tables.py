@@ -19,9 +19,10 @@ from pyomo.environ import (
     Expression,
     TransformationFactory,
     Var,
-    value
+    value,
+    units as pyunits
 )
-from pyomo.network import Arc
+from pyomo.network import Arc, Port
 from idaes.core import (
     FlowsheetBlock,
     StateBlock,
@@ -38,8 +39,12 @@ from idaes.core.util.tables import (
 )
 import idaes.generic_models.properties.examples.saponification_thermo as thermo_props
 import idaes.generic_models.properties.examples.saponification_reactions as rxn_props
-from idaes.generic_models.unit_models import CSTR
-
+from idaes.generic_models.unit_models import CSTR, Flash
+from idaes.generic_models.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
+from idaes.core.util.testing import PhysicalParameterTestBlock
+from idaes.generic_models.unit_models.column_models import TrayColumn
+from idaes.generic_models.unit_models.column_models.condenser import CondenserType, TemperatureSpec
+from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import BTXParameterBlock
 
 @pytest.fixture()
 def m():
@@ -448,3 +453,138 @@ def test_tag_states(gtmodel):
     tags["a_enth_mol_differ"].value = 1200
     assert value(m.state_a[0].enth_mol) == 1200
     assert value(m.state_a[0].temperature) == 1200*2
+
+@pytest.fixture()
+def HX1D_array_model():
+    # An example of maximum perversity. Dynamics, 1D control volumes, and 
+    # an indexed unit
+    unit_set = range(3)
+    time_set = [0,5]
+    time_units=pyunits.s
+    fs_cfg = {
+        "dynamic": True, "time_set": time_set, "time_units": time_units}
+    
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default=fs_cfg)
+
+    m.fs.properties = thermo_props.SaponificationParameterBlock()
+
+    m.fs.unit_array = HX1D(unit_set,default={
+            "shell_side": {"property_package": m.fs.properties},
+            "tube_side": {"property_package": m.fs.properties}})
+
+    def tube_stream_array_rule(b, i):
+        return {'source':b.unit_array[i].tube_outlet, 
+                'destination':b.unit_array[i+1].tube_inlet}
+    m.fs.tube_stream_array = Arc(range(2), rule=tube_stream_array_rule)
+    
+    def shell_stream_array_rule(b, i):
+        return {'source':b.unit_array[i+1].shell_outlet, 
+                'destination':b.unit_array[i].shell_inlet}
+    m.fs.shell_stream_array = Arc(range(1,-1,-1), rule=shell_stream_array_rule)
+
+    TransformationFactory("network.expand_arcs").apply_to(m)
+    return m
+
+@pytest.mark.unit
+def test_create_stream_table_dataframe_from_Port_HX1D(HX1D_array_model):
+    m = HX1D_array_model
+    df = create_stream_table_dataframe({
+            "state": m.fs.unit_array[0].tube_inlet})
+    
+    assert df.loc["Pressure"]["state"] == pytest.approx(101325)
+    assert df.loc["Temperature"]["state"] == pytest.approx(298.15)
+    assert df.loc["Volumetric Flowrate"]["state"] == pytest.approx(1.0)
+    assert df.loc["Molar Concentration H2O"]["state"] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration NaOH"]["state"] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration EthylAcetate"]["state"] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration SodiumAcetate"]["state"] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration Ethanol"]["state"] == pytest.approx(100.0)
+
+    df = create_stream_table_dataframe({
+            "state": m.fs.unit_array[0].tube_outlet})
+    
+    assert df.loc["Pressure"]["state"] == pytest.approx(101325)
+    assert df.loc["Temperature"]["state"] == pytest.approx(298.15)
+    assert df.loc["Volumetric Flowrate"]["state"] == pytest.approx(1.0)
+    assert df.loc["Molar Concentration H2O"]["state"] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration NaOH"]["state"] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration EthylAcetate"]["state"] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration SodiumAcetate"]["state"] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration Ethanol"]["state"] == pytest.approx(100.0)
+
+@pytest.mark.unit
+def test_create_stream_table_dataframe_from_Arc_HX1D(HX1D_array_model):
+    m = HX1D_array_model
+    df = create_stream_table_dataframe({
+            "state": m.fs.tube_stream_array},time_point=5)
+
+    for i in range(2):
+        stg = f"state[{i}]"
+    assert df.loc["Pressure"][stg] == pytest.approx(101325)
+    assert df.loc["Temperature"][stg] == pytest.approx(298.15)
+    assert df.loc["Volumetric Flowrate"][stg] == pytest.approx(1.0)
+    assert df.loc["Molar Concentration H2O"][stg] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration NaOH"][stg] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration EthylAcetate"][stg] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration SodiumAcetate"][stg] == pytest.approx(100.0)
+    assert df.loc["Molar Concentration Ethanol"][stg] == pytest.approx(100.0)
+        
+@pytest.fixture()
+def flash_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = PhysicalParameterTestBlock()#default={"valid_phase": 
+                                                 # ('Liq', 'Vap')})
+    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    
+    return m
+
+@pytest.mark.unit
+def test_state_block_retrieval_fail(flash_model):
+    # The flash unit does not have real state blocks associated with the
+    # outlet ports. There is a mixture of references, expressions, and multiple
+    # state blocks. Therefore we don't want any state block getting through.
+    m = flash_model
+    with pytest.raises(RuntimeError,
+           match="No block could be retrieved from Port fs.flash.liq_outlet "
+           "because components are derived from multiple blocks."
+           ):
+        df = create_stream_table_dataframe({"state": m.fs.flash.liq_outlet})
+
+@pytest.mark.unit
+def test_state_block_retrieval_empty_port():
+    m = ConcreteModel()
+    m.p = Port()
+    with pytest.raises(ValueError,
+           match="No block could be retrieved from Port p because it contains "
+           "no components."
+           ):
+        df = create_stream_table_dataframe({"state": m.p})
+@pytest.fixture()
+def distillation_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = BTXParameterBlock(default={"valid_phase": ('Liq', 'Vap'),
+                                            "activity_coeff_model": "Ideal",
+                                            "state_vars": "FTPz"})
+    m.fs.unit = TrayColumn(default={
+                        "number_of_trays": 3,
+                        "feed_tray_location": 2,
+                        "condenser_type":
+                            CondenserType.totalCondenser,
+                        "condenser_temperature_spec":
+                            TemperatureSpec.atBubblePoint,
+                        "property_package": m.fs.properties})
+    return m
+
+@pytest.mark.unit
+def test_extended_port_retrieval(distillation_model):
+    m = distillation_model
+    df = create_stream_table_dataframe({"state": m.fs.unit.feed})
+    stg = "state"
+    assert df.loc["pressure"][stg] == pytest.approx(101325)
+    assert df.loc["temperature"][stg] == pytest.approx(298.15)
+    assert df.loc["mole_frac_comp benzene"][stg] == pytest.approx(0.5)
+    assert df.loc["mole_frac_comp toluene"][stg] == pytest.approx(0.5)
+    assert df.loc["flow_mol"][stg] == pytest.approx(1)

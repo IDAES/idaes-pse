@@ -26,20 +26,21 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           units)
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+                           units as pyunits)
+from pyomo.util.check_units import assert_units_consistent
+
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (FlowsheetBlock,
-                        StateBlock,
                         declare_process_block_class,
                         StateBlockData,
                         StateBlock,
                         PhysicalParameterBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType)
+                        EnergyBalanceType,
+                        Phase,
+                        Component)
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.generic_models.properties import iapws95
@@ -827,25 +828,26 @@ class _NoPressureParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_NoPressureParameterBlock, self).build()
 
-        self.phase_list = Set(initialize=["p1", "p2"])
-        self.component_list = Set(initialize=["c1", "c2"])
+        self.p1 = Phase()
+        self.p2 = Phase()
+        self.c1 = Component()
+        self.c2 = Component()
+
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
 
         self.phase_equilibrium_list = \
             {"e1": ["c1", ("p1", "p2")],
              "e2": ["c2", ("p1", "p2")]}
 
-        self.state_block_class = NoPressureStateBlock
+        self._state_block_class = NoPressureStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.g,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
 @declare_process_block_class("NoPressureStateBlock",

@@ -15,7 +15,7 @@ Standard IDAES Equilibrium Reactor model.
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import Reference
 
 # Import IDAES cores
@@ -93,7 +93,7 @@ balance type
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_rate_reactions", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Rate reaction construction flag",
         doc="""Indicates whether terms for rate controlled reactions
 should be constructed, along with constraints equating these to zero,
@@ -103,7 +103,7 @@ should be constructed, along with constraints equating these to zero,
 **False** - exclude rate reaction terms.}"""))
     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
 should be constructed,
@@ -113,7 +113,7 @@ should be constructed,
 **False** - exclude equilibrium reaction terms.}"""))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Phase equilibrium term construction flag",
         doc="""Indicates whether terms for phase equilibrium should be
 constructed, **default** - True.
@@ -122,7 +122,7 @@ constructed, **default** - True.
 **False** - exclude phase equlibirum terms.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -131,7 +131,7 @@ constructed, **default** - True.
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_heat_of_reaction", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat of reaction term construction flag",
         doc="""Indicates whether terms for heat of reaction terms should be
 constructed,
@@ -141,7 +141,7 @@ constructed,
 **False** - exclude heat of reaction terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,

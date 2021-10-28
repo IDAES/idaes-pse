@@ -16,7 +16,7 @@ Tests for rate forms
 
 import pytest
 
-from pyomo.environ import ConcreteModel, Var, units as pyunits, value
+from pyomo.environ import ConcreteModel, log, Var, units as pyunits, value
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.generic_models.properties.core.generic.generic_reaction import \
@@ -26,6 +26,7 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 from idaes.core import MaterialFlowBasis
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.constants import Constants as c
 
 
 @pytest.fixture
@@ -247,11 +248,25 @@ class TestVanTHoff(object):
         assert model.rparams.reaction_r1.T_eq_ref.value == 500
 
         # Check expression
-        rform = van_t_hoff.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        units = model.rparams.get_metadata().derived_units
 
-        assert value(rform) == pytest.approx(0.99984, rel=1e-3)
-        assert_units_equivalent(rform, None)
+        model.rxn[1].log_k_eq = Var(["r1"], initialize=0)
+        rform1 = van_t_hoff.return_log_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert str(rform1) == str(
+            (model.rxn[1].log_k_eq["r1"] -
+             log(model.rparams.reaction_r1.k_eq_ref)) == (
+                 -model.rxn[1].dh_rxn["r1"] /
+                 pyunits.convert(c.gas_constant,
+                                 to_units=units["gas_constant"]) *
+                 (1/(300*pyunits.K) -
+                  1/model.rparams.reaction_r1.T_eq_ref)))
+
+        rform2 = van_t_hoff.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert value(rform2) == pytest.approx(1, rel=1e-3)
+        assert_units_equivalent(rform1, None)
+        assert_units_equivalent(rform2, None)
 
     @pytest.mark.unit
     def test_van_t_hoff_mole_frac_convert(self, model):
@@ -271,11 +286,25 @@ class TestVanTHoff(object):
         assert model.rparams.reaction_r1.T_eq_ref.value == 500
 
         # Check expression
-        rform = van_t_hoff.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        units = model.rparams.get_metadata().derived_units
 
-        assert value(rform) == pytest.approx(0.99984, rel=1e-3)
-        assert_units_equivalent(rform, None)
+        model.rxn[1].log_k_eq = Var(["r1"], initialize=0)
+        rform1 = van_t_hoff.return_log_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert str(rform1) == str(
+            (model.rxn[1].log_k_eq["r1"] -
+             log(model.rparams.reaction_r1.k_eq_ref)) == (
+                 -model.rxn[1].dh_rxn["r1"] /
+                 pyunits.convert(c.gas_constant,
+                                 to_units=units["gas_constant"]) *
+                 (1/(300*pyunits.K) -
+                  1/model.rparams.reaction_r1.T_eq_ref)))
+
+        rform2 = van_t_hoff.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert value(rform2) == pytest.approx(1, rel=1e-3)
+        assert_units_equivalent(rform1, None)
+        assert_units_equivalent(rform2, None)
 
     @pytest.mark.unit
     def test_van_t_hoff_molarity(self, model):
@@ -297,11 +326,26 @@ class TestVanTHoff(object):
         assert model.rparams.reaction_r1.T_eq_ref.value == 500
 
         # Check expression
-        rform = van_t_hoff.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        units = model.rparams.get_metadata().derived_units
 
-        assert value(rform) == pytest.approx(0.99984, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.mol/pyunits.m**3)
+        model.rxn[1].log_k_eq = Var(["r1"], initialize=0)
+        rform1 = van_t_hoff.return_log_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert str(rform1) == str(
+            (model.rxn[1].log_k_eq["r1"] -
+             log(1/(pyunits.mol/pyunits.m**3) *
+                 model.rparams.reaction_r1.k_eq_ref)) == (
+                 -model.rxn[1].dh_rxn["r1"] /
+                 pyunits.convert(c.gas_constant,
+                                 to_units=units["gas_constant"]) *
+                 (1/(300*pyunits.K) -
+                  1/model.rparams.reaction_r1.T_eq_ref)))
+
+        rform2 = van_t_hoff.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert value(rform2) == pytest.approx(1, rel=1e-3)
+        assert_units_equivalent(rform1, None)
+        assert_units_equivalent(rform2, pyunits.mol/pyunits.m**3)
 
     @pytest.mark.unit
     def test_van_t_hoff_molarity_convert(self, model):
@@ -323,11 +367,26 @@ class TestVanTHoff(object):
         assert model.rparams.reaction_r1.T_eq_ref.value == 500
 
         # Check expression
-        rform = van_t_hoff.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        units = model.rparams.get_metadata().derived_units
 
-        assert value(rform) == pytest.approx(0.99984, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.mol/pyunits.m**3)
+        model.rxn[1].log_k_eq = Var(["r1"], initialize=0)
+        rform1 = van_t_hoff.return_log_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert str(rform1) == str(
+            (model.rxn[1].log_k_eq["r1"] -
+             log(1/(pyunits.mol/pyunits.m**3) *
+                 model.rparams.reaction_r1.k_eq_ref)) == (
+                 -model.rxn[1].dh_rxn["r1"] /
+                 pyunits.convert(c.gas_constant,
+                                 to_units=units["gas_constant"]) *
+                 (1/(300*pyunits.K) -
+                  1/model.rparams.reaction_r1.T_eq_ref)))
+
+        rform2 = van_t_hoff.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert value(rform2) == pytest.approx(1, rel=1e-3)
+        assert_units_equivalent(rform1, None)
+        assert_units_equivalent(rform2, pyunits.mol/pyunits.m**3)
 
     @pytest.mark.unit
     def test_van_t_hoff_molality(self, model):
@@ -349,11 +408,26 @@ class TestVanTHoff(object):
         assert model.rparams.reaction_r1.T_eq_ref.value == 500
 
         # Check expression
-        rform = van_t_hoff.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        units = model.rparams.get_metadata().derived_units
 
-        assert value(rform) == pytest.approx(0.99984, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.mol/pyunits.kg)
+        model.rxn[1].log_k_eq = Var(["r1"], initialize=0)
+        rform1 = van_t_hoff.return_log_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert str(rform1) == str(
+            (model.rxn[1].log_k_eq["r1"] -
+             log(1/(pyunits.mol/pyunits.kg) *
+                 model.rparams.reaction_r1.k_eq_ref)) == (
+                 -model.rxn[1].dh_rxn["r1"] /
+                 pyunits.convert(c.gas_constant,
+                                 to_units=units["gas_constant"]) *
+                 (1/(300*pyunits.K) -
+                  1/model.rparams.reaction_r1.T_eq_ref)))
+
+        rform2 = van_t_hoff.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert value(rform2) == pytest.approx(1, rel=1e-3)
+        assert_units_equivalent(rform1, None)
+        assert_units_equivalent(rform2, pyunits.mol/pyunits.kg)
 
     @pytest.mark.unit
     def test_van_t_hoff_molality_convert(self, model):
@@ -375,11 +449,26 @@ class TestVanTHoff(object):
         assert model.rparams.reaction_r1.T_eq_ref.value == 500
 
         # Check expression
-        rform = van_t_hoff.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        units = model.rparams.get_metadata().derived_units
 
-        assert value(rform) == pytest.approx(0.99984, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.mol/pyunits.kg)
+        model.rxn[1].log_k_eq = Var(["r1"], initialize=0)
+        rform1 = van_t_hoff.return_log_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert str(rform1) == str(
+            (model.rxn[1].log_k_eq["r1"] -
+             log(1/(pyunits.mol/pyunits.kg) *
+                 model.rparams.reaction_r1.k_eq_ref)) == (
+                 -model.rxn[1].dh_rxn["r1"] /
+                 pyunits.convert(c.gas_constant,
+                                 to_units=units["gas_constant"]) *
+                 (1/(300*pyunits.K) -
+                  1/model.rparams.reaction_r1.T_eq_ref)))
+
+        rform2 = van_t_hoff.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert value(rform2) == pytest.approx(1, rel=1e-3)
+        assert_units_equivalent(rform1, None)
+        assert_units_equivalent(rform2, pyunits.mol/pyunits.kg)
 
     @pytest.mark.unit
     def test_van_t_hoff_partial_pressure(self, model):
@@ -401,11 +490,26 @@ class TestVanTHoff(object):
         assert model.rparams.reaction_r1.T_eq_ref.value == 500
 
         # Check expression
-        rform = van_t_hoff.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        units = model.rparams.get_metadata().derived_units
 
-        assert value(rform) == pytest.approx(0.99984, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.Pa)
+        model.rxn[1].log_k_eq = Var(["r1"], initialize=0)
+        rform1 = van_t_hoff.return_log_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert str(rform1) == str(
+            (model.rxn[1].log_k_eq["r1"] -
+             log(1/(pyunits.kg/pyunits.m/pyunits.s**2) *
+                 model.rparams.reaction_r1.k_eq_ref)) == (
+                 -model.rxn[1].dh_rxn["r1"] /
+                 pyunits.convert(c.gas_constant,
+                                 to_units=units["gas_constant"]) *
+                 (1/(300*pyunits.K) -
+                  1/model.rparams.reaction_r1.T_eq_ref)))
+
+        rform2 = van_t_hoff.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert value(rform2) == pytest.approx(1, rel=1e-3)
+        assert_units_equivalent(rform1, None)
+        assert_units_equivalent(rform2, pyunits.Pa)
 
     @pytest.mark.unit
     def test_van_t_hoff_partial_pressure_convert(self, model):
@@ -427,11 +531,26 @@ class TestVanTHoff(object):
         assert model.rparams.reaction_r1.T_eq_ref.value == 500
 
         # Check expression
-        rform = van_t_hoff.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        units = model.rparams.get_metadata().derived_units
 
-        assert value(rform) == pytest.approx(0.99984, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.Pa)
+        model.rxn[1].log_k_eq = Var(["r1"], initialize=0)
+        rform1 = van_t_hoff.return_log_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert str(rform1) == str(
+            (model.rxn[1].log_k_eq["r1"] -
+             log(1/(pyunits.kg/pyunits.m/pyunits.s**2) *
+                 model.rparams.reaction_r1.k_eq_ref)) == (
+                 -model.rxn[1].dh_rxn["r1"] /
+                 pyunits.convert(c.gas_constant,
+                                 to_units=units["gas_constant"]) *
+                 (1/(300*pyunits.K) -
+                  1/model.rparams.reaction_r1.T_eq_ref)))
+
+        rform2 = van_t_hoff.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        assert value(rform2) == pytest.approx(1, rel=1e-3)
+        assert_units_equivalent(rform1, None)
+        assert_units_equivalent(rform2, pyunits.Pa)
 
 
 class TestGibbsEnergy(object):
@@ -445,20 +564,39 @@ class TestGibbsEnergy(object):
         model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
                                                    units=pyunits.J/pyunits.mol)
 
-        with pytest.raises(
-                ConfigurationError,
-                match="rparams.reaction_r1 calculation of equilibrium constant"
-                " based on Gibbs energy is only supported for molarity or"
-                " activity forms. Currently selected form: "
-                "ConcentrationForm.moleFraction"):
-            gibbs_energy.build_parameters(
-                model.rparams.reaction_r1,
-                model.rparams.config.equilibrium_reactions["r1"])
+        gibbs_energy.build_parameters(
+            model.rparams.reaction_r1,
+            model.rparams.config.equilibrium_reactions["r1"])
+
+        # Check parameter construction
+        assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
+        assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
+
+        assert isinstance(model.rparams.reaction_r1.T_eq_ref, Var)
+        assert model.rparams.reaction_r1.T_eq_ref.value == 500
+
+        # Check expression
+        model.rxn[1].log_k_eq = Var(["r1"], initialize=0)
+
+        rform1 = gibbs_energy.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+        rform2 = gibbs_energy.return_log_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+
+        assert str(rform1) == ('exp(rxn[1].log_k_eq[r1])')
+        assert str(rform2) == (
+            'rxn[1].log_k_eq[r1]  ==  '
+            '- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
+            '(8.314462618*(J)/mol/K)*(300*K)) + '
+            '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))'
+            '*rparams.reaction_r1.ds_rxn_ref')
+
+        assert value(rform1) == pytest.approx(1, rel=1e-3)
+        assert_units_equivalent(rform1, pyunits.dimensionless)
+        assert_units_equivalent(rform2, pyunits.dimensionless)
 
     @pytest.mark.unit
     def test_gibbs_energy_invalid_dh_rxn(self, model):
-        model.rparams.config.equilibrium_reactions.r1.concentration_form = \
-            ConcentrationForm.molarity
         model.rparams.config.equilibrium_reactions.r1.parameter_data = {
             "ds_rxn_ref": 1,
             "T_eq_ref": 500}
@@ -486,71 +624,15 @@ class TestGibbsEnergy(object):
         model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
                                                    units=pyunits.J/pyunits.mol)
 
-        gibbs_energy.build_parameters(
-            model.rparams.reaction_r1,
-            model.rparams.config.equilibrium_reactions["r1"])
-
-        # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
-        assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
-
-        assert isinstance(model.rparams.reaction_r1.T_eq_ref, Var)
-        assert model.rparams.reaction_r1.T_eq_ref.value == 500
-
-        assert_units_equivalent(model.rparams.reaction_r1._keq_units,
-                                pyunits.mol*pyunits.m**-3)
-
-        # Check expression
-        rform = gibbs_energy.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
-
-        assert str(rform) == (
-            'exp(- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
-            '(8.314462618*(J)/mol/K)*(300*K)) + '
-            '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))*'
-            'rparams.reaction_r1.ds_rxn_ref)*'
-            '(999.9999999999999*l/m**3*(mol/l))')
-        assert value(rform) == pytest.approx(1.1269e3, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.mol*pyunits.m**-3)
-
-    @pytest.mark.unit
-    def test_gibbs_energy_molarity_convert(self, model):
-        model.rparams.config.equilibrium_reactions.r1.concentration_form = \
-            ConcentrationForm.molarity
-        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
-            constant_dh_rxn
-        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "ds_rxn_ref": (1000, pyunits.J/pyunits.kmol/pyunits.K),
-            "T_eq_ref": (900, pyunits.degR)}
-        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
-                                                   units=pyunits.J/pyunits.mol)
-
-        gibbs_energy.build_parameters(
-            model.rparams.reaction_r1,
-            model.rparams.config.equilibrium_reactions["r1"])
-
-        # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
-        assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
-
-        assert isinstance(model.rparams.reaction_r1.T_eq_ref, Var)
-        assert model.rparams.reaction_r1.T_eq_ref.value == 500
-
-        assert_units_equivalent(model.rparams.reaction_r1._keq_units,
-                                pyunits.mol/pyunits.m**3)
-
-        # Check expression
-        rform = gibbs_energy.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
-
-        assert str(rform) == (
-            'exp(- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
-            '(8.314462618*(J)/mol/K)*(300*K)) + '
-            '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))*'
-            'rparams.reaction_r1.ds_rxn_ref)*'
-            '(999.9999999999999*l/m**3*(mol/l))')
-        assert value(rform) == pytest.approx(1.1269e3, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.mol*pyunits.m**-3)
+        with pytest.raises(
+                ConfigurationError,
+                match="rparams.reaction_r1 calculation of equilibrium constant"
+                " based on Gibbs energy is only supported for mole fraction or"
+                " activity forms. Currently selected form: "
+                "ConcentrationForm.molarity"):
+            gibbs_energy.build_parameters(
+                model.rparams.reaction_r1,
+                model.rparams.config.equilibrium_reactions["r1"])
 
     @pytest.mark.unit
     def test_gibbs_energy_molality(self, model):
@@ -567,7 +649,7 @@ class TestGibbsEnergy(object):
         with pytest.raises(
                 ConfigurationError,
                 match="rparams.reaction_r1 calculation of equilibrium constant"
-                " based on Gibbs energy is only supported for molarity or"
+                " based on Gibbs energy is only supported for mole fraction or"
                 " activity forms. Currently selected form: "
                 "ConcentrationForm.molality"):
             gibbs_energy.build_parameters(
@@ -589,7 +671,7 @@ class TestGibbsEnergy(object):
         with pytest.raises(
                 ConfigurationError,
                 match="rparams.reaction_r1 calculation of equilibrium constant"
-                " based on Gibbs energy is only supported for molarity or"
+                " based on Gibbs energy is only supported for mole fraction or"
                 " activity forms. Currently selected form: "
                 "ConcentrationForm.partialPressure"):
             gibbs_energy.build_parameters(

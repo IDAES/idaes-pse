@@ -13,9 +13,9 @@
 """
 Methods for calculating equilibrium constants
 """
-from pyomo.environ import exp, Var, units as pyunits, value
+from pyomo.environ import exp, log, Var, units as pyunits, value
 
-from idaes.generic_models.properties.core.generic.generic_reaction import \
+from idaes.generic_models.properties.core.generic.utility import \
     ConcentrationForm
 from .dh_rxn import constant_dh_rxn
 from idaes.core.util.misc import set_param_from_config
@@ -39,8 +39,9 @@ class ConstantKeq():
                 "Please ensure that this argument is included in your "
                 "configuration dict.".format(rblock.name))
         elif (c_form == ConcentrationForm.moleFraction or
-              c_form == ConcentrationForm.massFraction):
-            e_units = None
+              c_form == ConcentrationForm.massFraction or
+              c_form == ConcentrationForm.activity):
+            e_units = pyunits.dimensionless
         else:
             order = 0
 
@@ -59,8 +60,7 @@ class ConstantKeq():
             for p, j in pc_set:
                 order += rblock.reaction_order[p, j].value
 
-            if (c_form == ConcentrationForm.molarity or
-                    c_form == ConcentrationForm.activity):
+            if c_form == ConcentrationForm.molarity:
                 c_units = units["density_mole"]
             elif c_form == ConcentrationForm.molality:
                 c_units = units["amount"]*units["mass"]**-1
@@ -68,9 +68,9 @@ class ConstantKeq():
                 c_units = units["pressure"]
             else:
                 raise BurntToast(
-                    "{} get_concentration_term received unrecognised "
-                    "ConcentrationForm ({}). This should not happen - please "
-                    "contact the IDAES developers with this bug."
+                    "{} received unrecognised ConcentrationForm ({}). "
+                    "This should not happen - please contact the IDAES "
+                    "developers with this bug."
                     .format(rblock.name, c_form))
 
             e_units = c_units**order
@@ -83,6 +83,15 @@ class ConstantKeq():
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
         return rblock.k_eq_ref
+
+    @staticmethod
+    def return_log_expression(b, rblock, r_idx, T):
+        units = pyunits.get_units(rblock.k_eq_ref)
+        if units is None or units == pyunits.dimensionless:
+            expr = rblock.k_eq_ref
+        else:
+            expr = rblock.k_eq_ref/units
+        return b.log_k_eq[r_idx] == log(expr)
 
     @staticmethod
     def calculate_scaling_factors(b, rblock):
@@ -105,8 +114,9 @@ class van_t_hoff():
                 "Please ensure that this argument is included in your "
                 "configuration dict.".format(rblock.name))
         elif (c_form == ConcentrationForm.moleFraction or
-              c_form == ConcentrationForm.massFraction):
-            e_units = None
+              c_form == ConcentrationForm.massFraction or
+              c_form == ConcentrationForm.activity):
+            e_units = pyunits.dimensionless
         else:
             order = 0
 
@@ -125,8 +135,7 @@ class van_t_hoff():
             for p, j in pc_set:
                 order += rblock.reaction_order[p, j].value
 
-            if (c_form == ConcentrationForm.molarity or
-                    c_form == ConcentrationForm.activity):
+            if c_form == ConcentrationForm.molarity:
                 c_units = units["density_mole"]
             elif c_form == ConcentrationForm.molality:
                 c_units = units["amount"]*units["mass"]**-1
@@ -134,9 +143,9 @@ class van_t_hoff():
                 c_units = units["pressure"]
             else:
                 raise BurntToast(
-                    "{} get_concentration_term received unrecognised "
-                    "ConcentrationForm ({}). This should not happen - please "
-                    "contact the IDAES developers with this bug."
+                    "{} received unrecognised ConcentrationForm ({}). "
+                    "This should not happen - please contact the IDAES "
+                    "developers with this bug."
                     .format(rblock.name, c_form))
 
             e_units = c_units**order
@@ -153,13 +162,29 @@ class van_t_hoff():
 
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
+        units = pyunits.get_units(rblock.k_eq_ref)
+        if units is None or units is pyunits.dimensionless:
+            return exp(b.log_k_eq[r_idx])
+        else:
+            return exp(b.log_k_eq[r_idx]) * units
+
+    @staticmethod
+    def return_log_expression(b, rblock, r_idx, T):
         units = rblock.parent_block().get_metadata().derived_units
 
-        return rblock.k_eq_ref * exp(
-            -(b.dh_rxn[r_idx] /
-              pyunits.convert(c.gas_constant,
-                              to_units=units["gas_constant"])) *
-            (1/T - 1/rblock.T_eq_ref))
+        k_units = pyunits.get_units(rblock.k_eq_ref)
+
+        if (k_units is None or
+                k_units is pyunits.dimensionless):
+            l_keq_ref = log(rblock.k_eq_ref)
+        else:
+            l_keq_ref = log(rblock.k_eq_ref/k_units)
+
+        return (b.log_k_eq[r_idx] - l_keq_ref) == (
+                -b.dh_rxn[r_idx] /
+                pyunits.convert(c.gas_constant,
+                                to_units=units["gas_constant"]) *
+                (1/T - 1/rblock.T_eq_ref))
 
     @staticmethod
     def calculate_scaling_factors(b, rblock):
@@ -181,31 +206,11 @@ class gibbs_energy():
                 "{} concentration_form configuration argument was not set. "
                 "Please ensure that this argument is included in your "
                 "configuration dict.".format(rblock.name))
-        elif (c_form == ConcentrationForm.molarity or
-              c_form == ConcentrationForm.activity):
-
-            order = 0
-            try:
-                # This will work for Reaction Packages
-                pc_set = parent.config.property_package._phase_component_set
-            except AttributeError:
-                # Need to allow for inherent reactions in Property Packages
-                if not parent._electrolyte:
-                    # In most cases ,should have _phase_component_set
-                    pc_set = parent._phase_component_set
-                else:
-                    # However, for electrolytes need true species set
-                    pc_set = parent.true_phase_component_set
-
-            for p, j in pc_set:
-                order += rblock.reaction_order[p, j].value
-
-            rblock._keq_units = (pyunits.convert(1*pyunits.mol/pyunits.L,
-                                                 units["density_mole"]))**order
-        else:
+        elif not (c_form == ConcentrationForm.moleFraction or
+                  c_form == ConcentrationForm.activity):
             raise ConfigurationError(
                 "{} calculation of equilibrium constant based on Gibbs energy "
-                "is only supported for molarity or activity forms. "
+                "is only supported for mole fraction or activity forms. "
                 "Currently selected form: {}".format(rblock.name, c_form))
 
         # Check that heat of reaction is constant
@@ -228,13 +233,16 @@ class gibbs_energy():
 
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
-        units = rblock.parent_block().get_metadata().derived_units
+        return exp(b.log_k_eq[r_idx])
 
+    @staticmethod
+    def return_log_expression(b, rblock, r_idx, T):
+        units = rblock.parent_block().get_metadata().derived_units
         R = pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
 
-        return (exp(
+        return b.log_k_eq[r_idx] == (
             (-rblock.dh_rxn_ref / (R*T)) +
-            (rblock.ds_rxn_ref / R)) * rblock._keq_units)
+            (rblock.ds_rxn_ref / R))
 
     @staticmethod
     def calculate_scaling_factors(b, rblock):

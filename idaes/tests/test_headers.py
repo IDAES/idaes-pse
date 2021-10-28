@@ -39,7 +39,7 @@ def patterns(package_root):
         print(f"Cannot load configuration file from '{conf_file}'. Perhaps this is not development mode?")
         return None
     with open(conf_file) as f:
-        conf_data = yaml.load(f)
+        conf_data = yaml.safe_load(f)
     print(f"Patterns for finding files with headers: {conf_data['patterns']}")
     return conf_data["patterns"]
 

@@ -282,11 +282,12 @@ def populate_default_scaling_factors(c):
                 "mole_frac_comp": (0.001*pyo.units.dimensionless, None),
                 "mole_frac_phase_comp": (0.001*pyo.units.dimensionless, None),
                 "mw": (1e-3*pyo.units.kg/pyo.units.mol, "molecular_weight"),
+                "mw_comp": (1e-3 * pyo.units.kg / pyo.units.mol, "molecular_weight"),
                 "mw_phase": (1e-3*pyo.units.kg/pyo.units.mol,
                              "molecular_weight")}
 
     for p, f in si_scale.items():
-        # If a defautl scaling factor exists, do not over write it
+        # If a default scaling factor exists, do not over write it
         if p not in c.default_scaling_factor.keys():
             if f[1] is not None:
                 v = pyo.units.convert(f[0], to_units=units[f[1]])

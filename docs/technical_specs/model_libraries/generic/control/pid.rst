@@ -40,7 +40,7 @@ variables, expressions, and parameters in the PIDBlock, model see :ref:`PIDVarsS
   import pyomo.environ as pyo
 
   m = pyo.ConcreteModel(name="PID Example")
-  m.fs = FlowsheetBlock(default={"dynamic":True, "time_set":[0,10]})
+  m.fs = FlowsheetBlock(default={"dynamic":True, "time_set":[0,10], "time_units":pyo.units.s})
 
   m.fs.valve_opening = pyo.Var(m.fs.time, doc="Valve opening")
   m.fs.pressure = pyo.Var(m.fs.time, [1,2], doc="Pressure in unit 1 and 2")
