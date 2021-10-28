@@ -60,7 +60,26 @@ class SurrogateBlockData(_BlockData):
         they are not provided)
 
         Args:
-           surrogate_object: Class 
+           surrogate_object: class derived from SurrogateBase (e.g., AlamoSurrogate)
+              This is the surrogate object that is used to build the equations.
+           input_vars : None or list of scalar or indexed variables
+              If None, then the input variables are automatically created as block.inputs with keys
+              coming from the input_labels of the surrogate_object. If a list is provided, that list
+              can contain Var objects (indexed, scalar, or VarData) where the order must match the order
+              of the inputs on the surrogate model. If input_vars are provided (not None), then
+              block.inputs will not be created on the model.
+           output_vars : None or list of scalar or indexed variables
+              If None, then the output variables are automatically created as block.outputs with keys
+              coming from the output_labels of the surrogate_object. If a list is provided, that list
+              can contain Var objects (indexed, scalar, or VarData) where the order must match the order
+              of the outputs on the surrogate model.  If output_vars are provided (not None), then
+              block.outputs will not be created on the model.
+           use_surrogate_bounds : bool
+              If True, then the bounds on the input variables are updated using the bounds
+              in the surrogate object. If False, then the bounds on the input variables are not overwritten.
+
+        Any additional keyword arguments are passed to the populate_block method of the underlying surrogate object.
+        Please see the documentation for the specific surrogate object for details.
         """
         self._setup_inputs_outputs(
             n_inputs=surrogate_object.n_inputs(),
@@ -163,34 +182,22 @@ class SurrogateBlockData(_BlockData):
         return self._output_vars
 
     def input_vars_as_dict(self):
+        """
+        Returns a dictionary of the input variables (VarData objects) with
+        the labels as the keys
+        """
         return {self._input_labels[i]: v
                 for i, v in enumerate(self._input_vars)}
 
     def output_vars_as_dict(self):
+        """
+        Returns a dictionary of the output variables (VarData objects) with
+        the labels as the keys
+        """
         return {self._output_labels[i]: v
                 for i, v in enumerate(self._output_vars)}
 
-"""
-def _extract_var_data(vars):
-    if vars is None:
-        return None
-    elif isinstance(vars, _GeneralVarData) or isinstance(vars, ScalarVar):
-        return [vars]
-    elif isinstance(vars, IndexedVar):
-        if vars.index_set().isordered():
-            return list(vars.values())
-        raise ValueError(
-            'Expected IndexedVar: {} to be indexed over an ordered set.'
-            .format(vars))
-    elif isinstance(vars, list):
-        varlist = list()
-        for v in vars:
-            varlist.extend(_extract_var_data(v))
-        return varlist
-    else:
-        raise ValueError("Unknown variable type of {} for {}".format(type(vars), vars))
-"""
-
+    
 def _extract_var_data_gen(vars):
     if vars is None:
         return
@@ -210,4 +217,6 @@ def _extract_var_data_gen(vars):
         raise ValueError("Unknown variable type of {} for {}".format(type(vars), vars))
     
 def _extract_var_data(vars):
+    if vars is None:
+        return None
     return list(_extract_var_data_gen(vars))

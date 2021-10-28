@@ -65,7 +65,7 @@ def test_extract_var_data_multiple():
 def test_extract_var_data_not_var():
     m = ConcreteModel()
     with pytest.raises(ValueError,
-                       match="Unknown variable type unknown"):
+                       match="Unknown variable type of <class 'pyomo.core.base.PyomoModel.ConcreteModel'> for unknown"):
         _extract_var_data(m)
 
 
