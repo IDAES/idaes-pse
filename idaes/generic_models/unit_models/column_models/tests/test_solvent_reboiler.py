@@ -130,15 +130,7 @@ class TestAbsorberVaporFlow(object):
                                                  "mole_frac_comp": {
                                                      "CO2": 0.0285,
                                                      "H2O": 0.8491,
-                                                     "MEA": 0.1224}},
-                              vapor_state_args={"pressure": 183700,
-                                                "temperature": 393.8,
-                                                "flow_mol": 9.56,
-                                                "mole_frac_comp": {
-                                                    "CO2": 0.0645,
-                                                    "H2O": 0.9355,
-                                                    "N2": 1e-8,
-                                                    "O2": 1e-8}})
+                                                     "MEA": 0.1224}})
 
     # @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -303,15 +295,7 @@ class TestAbsorberHeatDuty(object):
                                                  "mole_frac_comp": {
                                                      "CO2": 0.0285,
                                                      "H2O": 0.8491,
-                                                     "MEA": 0.1224}},
-                              vapor_state_args={"pressure": 183700,
-                                                "temperature": 393.8,
-                                                "flow_mol": 9.56,
-                                                "mole_frac_comp": {
-                                                    "CO2": 0.0645,
-                                                    "H2O": 0.9355,
-                                                    "N2": 1e-8,
-                                                    "O2": 1e-8}})
+                                                     "MEA": 0.1224}})
 
     # @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
