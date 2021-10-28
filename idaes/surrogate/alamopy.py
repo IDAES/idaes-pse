@@ -977,8 +977,8 @@ class AlamoSurrogate(SurrogateBase):
         # TODO: do we need to add the index_set stuff back in?
         output_set = Set(initialize=self._output_labels, ordered=True)
         def alamo_rule(b, o):
-            lvars = block._input_vars_as_dict()
-            lvars.update(block._output_vars_as_dict())
+            lvars = block.input_vars_as_dict()
+            lvars.update(block.output_vars_as_dict())
             return eval(self._surrogate_expressions[o], GLOBAL_FUNCS, lvars)
 
         block.alamo_constraint = Constraint(output_set, rule=alamo_rule)

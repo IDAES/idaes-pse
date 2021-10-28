@@ -12,16 +12,75 @@
 #################################################################################
 from pyomo.core.base.block import declare_custom_block, _BlockData
 from pyomo.environ import Var, Set
-from pyomo.core.base.var import ScalarVar, IndexedVar
+import collections
+from pyomo.core.base.var import ScalarVar, IndexedVar, _GeneralVarData
 
 
 @declare_custom_block(name='SurrogateBlock')
 class SurrogateBlockData(_BlockData):
     def __init__(self, component):
+        """
+        This custom block is used for importing surrogates into IDAES
+        
+        Example usage without specifying inputs and outputs:
+        > # Load the surrogate object
+        > alamo_surrogate = AlamoSurrogate.load_from_file('alamo_reformer.json')
+        >
+        > # create the Pyomo/IDAES model
+        > m = ConcreteModel()
+        >
+        > # create the Pyomo/IDAES block that corresponds to the surrogate
+        > m.reformer = SurrogateBlock()
+        > m.reformer.build_model(alamo_surrogate)
+        >
+        > # maximize the concentration of H2
+        > m.obj = Objective(expr=m.reformer.outputs['H2'], sense=maximize)
+        >
+        > # constrain the outlet concentration of N2
+        > m.reformer.outputs['N2'].setub(0.34)
+        >
+        > status = SolverFactory('ipopt').solve(m, tee=True)
+        > m.reformer.display()
+
+        Note that you can also provide variables from your IDAES model as inputs
+        and outputs. For example:
+        > m.reformer.build_model(alamo_surrogate, \
+        >     input_vars=[m.fs.reformer_duty, m.fs.product.inlet.flow_mol],
+        >     output_vars=[m.fs.total_cost])
+
+        See the specific methods for more documentation.
+        """
         super(SurrogateBlockData, self).__init__(component)
 
     def build_model(self, surrogate_object, input_vars=None, output_vars=None,
                     use_surrogate_bounds=True, **kwargs):
+        """
+        Build an EO model of the surrogate on the block. This method will build the 
+        necessary equations, and will construct inputs and outputs if necessary (i.e.,
+        they are not provided)
+
+        Args:
+           surrogate_object: class derived from SurrogateBase (e.g., AlamoSurrogate)
+              This is the surrogate object that is used to build the equations.
+           input_vars : None or list of scalar or indexed variables
+              If None, then the input variables are automatically created as block.inputs with keys
+              coming from the input_labels of the surrogate_object. If a list is provided, that list
+              can contain Var objects (indexed, scalar, or VarData) where the order must match the order
+              of the inputs on the surrogate model. If input_vars are provided (not None), then
+              block.inputs will not be created on the model.
+           output_vars : None or list of scalar or indexed variables
+              If None, then the output variables are automatically created as block.outputs with keys
+              coming from the output_labels of the surrogate_object. If a list is provided, that list
+              can contain Var objects (indexed, scalar, or VarData) where the order must match the order
+              of the outputs on the surrogate model.  If output_vars are provided (not None), then
+              block.outputs will not be created on the model.
+           use_surrogate_bounds : bool
+              If True, then the bounds on the input variables are updated using the bounds
+              in the surrogate object. If False, then the bounds on the input variables are not overwritten.
+
+        Any additional keyword arguments are passed to the populate_block method of the underlying surrogate object.
+        Please see the documentation for the specific surrogate object for details.
+        """
         self._setup_inputs_outputs(
             n_inputs=surrogate_object.n_inputs(),
             n_outputs=surrogate_object.n_outputs(),
@@ -33,7 +92,7 @@ class SurrogateBlockData(_BlockData):
         # set the input bounds if desired
         input_bounds = surrogate_object.input_bounds()
         if use_surrogate_bounds is True and input_bounds is not None:
-            input_vars_as_dict = self._input_vars_as_dict()
+            input_vars_as_dict = self.input_vars_as_dict()
             for k, bnd in input_bounds.items():
                 v = input_vars_as_dict[k]
                 lb = bnd[0]
@@ -79,9 +138,9 @@ class SurrogateBlockData(_BlockData):
         # create or extract the variables
         if input_vars is None:
             # we need to create our own inputs
-            self._inputs_set = Set(initialize=self._input_labels, ordered=True)
-            self._inputs = Var(self._inputs_set, initialize=0)
-            self._input_vars = list(self._inputs.values())
+            self.inputs_set = Set(initialize=self._input_labels, ordered=True)
+            self.inputs = Var(self.inputs_set, initialize=0)
+            self._input_vars = list(self.inputs.values())
         else:
             # we were provided vars
             self._input_vars = _extract_var_data(input_vars)
@@ -103,10 +162,10 @@ class SurrogateBlockData(_BlockData):
         # create or extract the output variables
         if output_vars is None:
             # we need to create our own outputs
-            self._outputs_set = Set(
+            self.outputs_set = Set(
                 initialize=self._output_labels, ordered=True)
-            self._outputs = Var(self._outputs_set, initialize=0)
-            self._output_vars = list(self._outputs.values())
+            self.outputs = Var(self.outputs_set, initialize=0)
+            self._output_vars = list(self.outputs.values())
         else:
             # we were provided vars
             self._output_vars = _extract_var_data(output_vars)
@@ -122,30 +181,42 @@ class SurrogateBlockData(_BlockData):
     def _output_vars_as_list(self):
         return self._output_vars
 
-    def _input_vars_as_dict(self):
+    def input_vars_as_dict(self):
+        """
+        Returns a dictionary of the input variables (VarData objects) with
+        the labels as the keys
+        """
         return {self._input_labels[i]: v
                 for i, v in enumerate(self._input_vars)}
 
-    def _output_vars_as_dict(self):
+    def output_vars_as_dict(self):
+        """
+        Returns a dictionary of the output variables (VarData objects) with
+        the labels as the keys
+        """
         return {self._output_labels[i]: v
                 for i, v in enumerate(self._output_vars)}
 
-
+    
+def _extract_var_data_gen(vars):
+    if vars is None:
+        return
+    elif getattr(vars, 'ctype', None) is Var:
+        if vars.is_indexed():
+            if not vars.index_set().isordered():
+                raise ValueError(
+                    'Expected IndexedVar: {} to be indexed over an ordered set.'
+                    .format(vars))
+            yield from vars.values()
+        else:
+            yield vars
+    elif isinstance(vars, collections.abc.Sequence):
+        for v in vars:
+            yield from _extract_var_data_gen(v)
+    else:
+        raise ValueError("Unknown variable type of {} for {}".format(type(vars), vars))
+    
 def _extract_var_data(vars):
     if vars is None:
         return None
-    elif isinstance(vars, ScalarVar):
-        return [vars]
-    elif isinstance(vars, IndexedVar):
-        if vars.index_set().isordered():
-            return list(vars.values())
-        raise ValueError(
-            'Expected IndexedVar: {} to be indexed over an ordered set.'
-            .format(vars))
-    elif isinstance(vars, list):
-        varlist = list()
-        for v in vars:
-            varlist.extend(_extract_var_data(v))
-        return varlist
-    else:
-        raise ValueError("Unknown variable type {}".format(vars))
+    return list(_extract_var_data_gen(vars))

@@ -65,7 +65,7 @@ def test_extract_var_data_multiple():
 def test_extract_var_data_not_var():
     m = ConcreteModel()
     with pytest.raises(ValueError,
-                       match="Unknown variable type unknown"):
+                       match="Unknown variable type of <class 'pyomo.core.base.PyomoModel.ConcreteModel'> for unknown"):
         _extract_var_data(m)
 
 
@@ -101,23 +101,23 @@ def test_setup_inputs_outputs_no_vars_or_labels():
     m.sb._setup_inputs_outputs(4, 5)
 
     assert m.sb._input_labels == [0, 1, 2, 3]
-    assert isinstance(m.sb._inputs_set, Set)
-    assert isinstance(m.sb._inputs, Var)
-    for i in m.sb._inputs_set:
+    assert isinstance(m.sb.inputs_set, Set)
+    assert isinstance(m.sb.inputs, Var)
+    for i in m.sb.inputs_set:
         assert i in m.sb._input_labels
-        assert m.sb._inputs[i].value == 0
+        assert m.sb.inputs[i].value == 0
     assert m.sb._input_vars == [
-        m.sb._inputs[0], m.sb._inputs[1], m.sb._inputs[2], m.sb._inputs[3]]
+        m.sb.inputs[0], m.sb.inputs[1], m.sb.inputs[2], m.sb.inputs[3]]
 
     assert m.sb._output_labels == [0, 1, 2, 3, 4]
-    assert isinstance(m.sb._outputs_set, Set)
-    assert isinstance(m.sb._outputs, Var)
-    for i in m.sb._outputs_set:
+    assert isinstance(m.sb.outputs_set, Set)
+    assert isinstance(m.sb.outputs, Var)
+    for i in m.sb.outputs_set:
         assert i in m.sb._output_labels
-        assert m.sb._outputs[i].value == 0
+        assert m.sb.outputs[i].value == 0
     assert m.sb._output_vars == [
-        m.sb._outputs[0], m.sb._outputs[1], m.sb._outputs[2],
-        m.sb._outputs[3], m.sb._outputs[4]]
+        m.sb.outputs[0], m.sb.outputs[1], m.sb.outputs[2],
+        m.sb.outputs[3], m.sb.outputs[4]]
 
 
 @pytest.mark.unit
@@ -154,24 +154,24 @@ def test_setup_inputs_outputs_w_labels_no_vars():
                                output_labels=["z1", "z2", "z3", "z4", "z5"])
 
     assert m.sb._input_labels == ["x1", "x2", "x3", "x4"]
-    assert isinstance(m.sb._inputs_set, Set)
-    assert isinstance(m.sb._inputs, Var)
-    for i in m.sb._inputs_set:
+    assert isinstance(m.sb.inputs_set, Set)
+    assert isinstance(m.sb.inputs, Var)
+    for i in m.sb.inputs_set:
         assert i in m.sb._input_labels
-        assert m.sb._inputs[i].value == 0
+        assert m.sb.inputs[i].value == 0
     assert m.sb._input_vars == [
-        m.sb._inputs["x1"], m.sb._inputs["x2"],
-        m.sb._inputs["x3"], m.sb._inputs["x4"]]
+        m.sb.inputs["x1"], m.sb.inputs["x2"],
+        m.sb.inputs["x3"], m.sb.inputs["x4"]]
 
     assert m.sb._output_labels == ["z1", "z2", "z3", "z4", "z5"]
-    assert isinstance(m.sb._outputs_set, Set)
-    assert isinstance(m.sb._outputs, Var)
-    for i in m.sb._outputs_set:
+    assert isinstance(m.sb.outputs_set, Set)
+    assert isinstance(m.sb.outputs, Var)
+    for i in m.sb.outputs_set:
         assert i in m.sb._output_labels
-        assert m.sb._outputs[i].value == 0
+        assert m.sb.outputs[i].value == 0
     assert m.sb._output_vars == [
-        m.sb._outputs["z1"], m.sb._outputs["z2"], m.sb._outputs["z3"],
-        m.sb._outputs["z4"], m.sb._outputs["z5"]]
+        m.sb.outputs["z1"], m.sb.outputs["z2"], m.sb.outputs["z3"],
+        m.sb.outputs["z4"], m.sb.outputs["z5"]]
 
 
 @pytest.fixture(scope="module")
@@ -194,15 +194,15 @@ def surr_block():
 @pytest.mark.unit
 def test_setup_inputs_outputs_w_vars_no_labels(surr_block):
     assert surr_block.sb._input_labels == [0, 1, 2, 3]
-    assert not hasattr(surr_block.sb, "_inputs_set")
-    assert not hasattr(surr_block.sb, "_inputs")
+    assert not hasattr(surr_block.sb, "inputs_set")
+    assert not hasattr(surr_block.sb, "inputs")
     assert surr_block.sb._input_vars == [
         surr_block.inputs["x1"], surr_block.inputs["x2"],
         surr_block.inputs["x3"], surr_block.inputs["x4"]]
 
     assert surr_block.sb._output_labels == [0, 1, 2, 3, 4]
-    assert not hasattr(surr_block.sb, "_outputs_set")
-    assert not hasattr(surr_block.sb, "_outputs")
+    assert not hasattr(surr_block.sb, "outputs_set")
+    assert not hasattr(surr_block.sb, "outputs")
     assert surr_block.sb._output_vars == [
         surr_block.outputs["z1"], surr_block.outputs["z2"],
         surr_block.outputs["z3"], surr_block.outputs["z4"],
@@ -264,7 +264,7 @@ def test_output_vars_as_list(surr_block):
 
 @pytest.mark.unit
 def test_input_vars_as_dict(surr_block):
-    assert surr_block.sb._input_vars_as_dict() == {
+    assert surr_block.sb.input_vars_as_dict() == {
         0: surr_block.inputs["x1"],
         1: surr_block.inputs["x2"],
         2: surr_block.inputs["x3"],
@@ -273,7 +273,7 @@ def test_input_vars_as_dict(surr_block):
 
 @pytest.mark.unit
 def test_output_vars_as_dict(surr_block):
-    assert surr_block.sb._output_vars_as_dict() == {
+    assert surr_block.sb.output_vars_as_dict() == {
         0: surr_block.outputs["z1"],
         1: surr_block.outputs["z2"],
         2: surr_block.outputs["z3"],
@@ -317,26 +317,26 @@ def test_build_model():
 
     # Check variables and bounds
     assert m.sb._input_labels == ["x1", "x2", "x3", "x4"]
-    assert isinstance(m.sb._inputs_set, Set)
-    assert isinstance(m.sb._inputs, Var)
-    for i in m.sb._inputs_set:
+    assert isinstance(m.sb.inputs_set, Set)
+    assert isinstance(m.sb.inputs, Var)
+    for i in m.sb.inputs_set:
         assert i in m.sb._input_labels
-        assert m.sb._inputs[i].value == 0
-        assert m.sb._inputs[i]._lb is None
-        assert m.sb._inputs[i]._ub is None
+        assert m.sb.inputs[i].value == 0
+        assert m.sb.inputs[i]._lb is None
+        assert m.sb.inputs[i]._ub is None
     assert m.sb._input_vars == [
-        m.sb._inputs["x1"], m.sb._inputs["x2"],
-        m.sb._inputs["x3"], m.sb._inputs["x4"]]
+        m.sb.inputs["x1"], m.sb.inputs["x2"],
+        m.sb.inputs["x3"], m.sb.inputs["x4"]]
 
     assert m.sb._output_labels == ["z1", "z2", "z3", "z4", "z5"]
-    assert isinstance(m.sb._outputs_set, Set)
-    assert isinstance(m.sb._outputs, Var)
-    for i in m.sb._outputs_set:
+    assert isinstance(m.sb.outputs_set, Set)
+    assert isinstance(m.sb.outputs, Var)
+    for i in m.sb.outputs_set:
         assert i in m.sb._output_labels
-        assert m.sb._outputs[i].value == 0
+        assert m.sb.outputs[i].value == 0
     assert m.sb._output_vars == [
-        m.sb._outputs["z1"], m.sb._outputs["z2"], m.sb._outputs["z3"],
-        m.sb._outputs["z4"], m.sb._outputs["z5"]]
+        m.sb.outputs["z1"], m.sb.outputs["z2"], m.sb.outputs["z3"],
+        m.sb.outputs["z4"], m.sb.outputs["z5"]]
 
 
 @pytest.mark.unit
@@ -354,26 +354,26 @@ def test_build_model_w_bounds():
 
     # Check variables and bounds
     assert m.sb._input_labels == ["x1", "x2", "x3", "x4"]
-    assert isinstance(m.sb._inputs_set, Set)
-    assert isinstance(m.sb._inputs, Var)
-    for i in m.sb._inputs_set:
+    assert isinstance(m.sb.inputs_set, Set)
+    assert isinstance(m.sb.inputs, Var)
+    for i in m.sb.inputs_set:
         assert i in m.sb._input_labels
-        assert m.sb._inputs[i].value == 0
-        assert m.sb._inputs[i]._lb == m.dummy.input_bounds()[i][0]
-        assert m.sb._inputs[i]._ub == m.dummy.input_bounds()[i][1]
+        assert m.sb.inputs[i].value == 0
+        assert m.sb.inputs[i]._lb == m.dummy.input_bounds()[i][0]
+        assert m.sb.inputs[i]._ub == m.dummy.input_bounds()[i][1]
     assert m.sb._input_vars == [
-        m.sb._inputs["x1"], m.sb._inputs["x2"],
-        m.sb._inputs["x3"], m.sb._inputs["x4"]]
+        m.sb.inputs["x1"], m.sb.inputs["x2"],
+        m.sb.inputs["x3"], m.sb.inputs["x4"]]
 
     assert m.sb._output_labels == ["z1", "z2", "z3", "z4", "z5"]
-    assert isinstance(m.sb._outputs_set, Set)
-    assert isinstance(m.sb._outputs, Var)
-    for i in m.sb._outputs_set:
+    assert isinstance(m.sb.outputs_set, Set)
+    assert isinstance(m.sb.outputs, Var)
+    for i in m.sb.outputs_set:
         assert i in m.sb._output_labels
-        assert m.sb._outputs[i].value == 0
+        assert m.sb.outputs[i].value == 0
     assert m.sb._output_vars == [
-        m.sb._outputs["z1"], m.sb._outputs["z2"], m.sb._outputs["z3"],
-        m.sb._outputs["z4"], m.sb._outputs["z5"]]
+        m.sb.outputs["z1"], m.sb.outputs["z2"], m.sb.outputs["z3"],
+        m.sb.outputs["z4"], m.sb.outputs["z5"]]
 
 
 @pytest.mark.unit

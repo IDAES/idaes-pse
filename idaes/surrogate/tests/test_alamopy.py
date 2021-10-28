@@ -864,21 +864,21 @@ class TestAlamoSurrogate():
         blk.build_model(alm_surr1)
         blk.display()
 
-        assert isinstance(blk._inputs, Var)
-        assert blk._inputs["x1"].bounds == (0, 5)
-        assert blk._inputs["x2"].bounds == (0, 10)
-        assert isinstance(blk._outputs, Var)
-        assert blk._outputs["z1"].bounds == (None, None)
+        assert isinstance(blk.inputs, Var)
+        assert blk.inputs["x1"].bounds == (0, 5)
+        assert blk.inputs["x2"].bounds == (0, 10)
+        assert isinstance(blk.outputs, Var)
+        assert blk.outputs["z1"].bounds == (None, None)
         assert isinstance(blk.alamo_constraint, Constraint)
         assert len(blk.alamo_constraint) == 1
         assert str(blk.alamo_constraint["z1"].body) == (
-            "_outputs[z1] - ("
-            "3.9999999999925446*_inputs[x1]**2 - "
-            "4.000000000002077*_inputs[x2]**2 - "
-            "2.099999999985938*_inputs[x1]**4 + "
-            "4.000000000004311*_inputs[x2]**4 + "
-            "0.33333333332782633*_inputs[x1]**6 + "
-            "0.9999999999997299*_inputs[x1]*_inputs[x2])")
+            "outputs[z1] - ("
+            "3.9999999999925446*inputs[x1]**2 - "
+            "4.000000000002077*inputs[x2]**2 - "
+            "2.099999999985938*inputs[x1]**4 + "
+            "4.000000000004311*inputs[x2]**4 + "
+            "0.33333333332782633*inputs[x1]**6 + "
+            "0.9999999999997299*inputs[x1]*inputs[x2])")
 
     # @pytest.mark.unit
     # def test_populate_block_indexed(self, alm_surr1):
@@ -972,33 +972,33 @@ class TestAlamoSurrogate():
 
         blk.build_model(alm_surr2)
 
-        assert isinstance(blk._inputs, Var)
-        assert blk._inputs["x1"].bounds == (None, None)
-        assert blk._inputs["x2"].bounds == (None, None)
-        assert isinstance(blk._outputs, Var)
-        assert blk._outputs["z1"].bounds == (None, None)
-        assert blk._outputs["z2"].bounds == (None, None)
+        assert isinstance(blk.inputs, Var)
+        assert blk.inputs["x1"].bounds == (None, None)
+        assert blk.inputs["x2"].bounds == (None, None)
+        assert isinstance(blk.outputs, Var)
+        assert blk.outputs["z1"].bounds == (None, None)
+        assert blk.outputs["z2"].bounds == (None, None)
         assert isinstance(blk.alamo_constraint, Constraint)
         assert len(blk.alamo_constraint) == 2
         assert str(blk.alamo_constraint["z1"].body) == (
-            "_outputs[z1] - ("
-            "3.9999999999925446*_inputs[x1]**2 - "
-            "4.000000000002077*_inputs[x2]**2 - "
-            "2.099999999985938*_inputs[x1]**4 + "
-            "4.000000000004311*_inputs[x2]**4 + "
-            "0.33333333332782633*_inputs[x1]**6 + "
-            "0.9999999999997299*_inputs[x1]*_inputs[x2])")
+            "outputs[z1] - ("
+            "3.9999999999925446*inputs[x1]**2 - "
+            "4.000000000002077*inputs[x2]**2 - "
+            "2.099999999985938*inputs[x1]**4 + "
+            "4.000000000004311*inputs[x2]**4 + "
+            "0.33333333332782633*inputs[x1]**6 + "
+            "0.9999999999997299*inputs[x1]*inputs[x2])")
         assert str(blk.alamo_constraint["z2"].body) == (
-            "_outputs[z2] - ("
-            "0.07226779984920294*_inputs[x1] + "
-            "0.06845168475391271*_inputs[x2] + "
-            "1.0677896915911471*_inputs[x1]**2 - "
-            "0.7057646480622435*_inputs[x2]**2 - "
-            "0.04028628356655499*_inputs[x1]**3 + "
-            "0.006778566802168481*_inputs[x2]**5 - "
-            "0.14017881460354553*_inputs[x1]**6 + "
-            "0.7720704944157665*_inputs[x2]**6 + "
-            "0.4214330995151807*_inputs[x1]*_inputs[x2] - "
+            "outputs[z2] - ("
+            "0.07226779984920294*inputs[x1] + "
+            "0.06845168475391271*inputs[x2] + "
+            "1.0677896915911471*inputs[x1]**2 - "
+            "0.7057646480622435*inputs[x2]**2 - "
+            "0.04028628356655499*inputs[x1]**3 + "
+            "0.006778566802168481*inputs[x2]**5 - "
+            "0.14017881460354553*inputs[x1]**6 + "
+            "0.7720704944157665*inputs[x2]**6 + "
+            "0.4214330995151807*inputs[x1]*inputs[x2] - "
             "0.041818729807213094)")
 
     # @pytest.mark.unit
@@ -1074,13 +1074,13 @@ class TestAlamoSurrogate():
 
         blk.build_model(alm_surr3)
 
-        assert isinstance(blk._inputs, Var)
-        assert isinstance(blk._outputs, Var)
+        assert isinstance(blk.inputs, Var)
+        assert isinstance(blk.outputs, Var)
         assert isinstance(blk.alamo_constraint, Constraint)
         assert len(blk.alamo_constraint) == 1
         assert str(blk.alamo_constraint["z1"].body) == (
-            "_outputs[z1] - (2*sin(_inputs[x1]**2) - 3*cos(_inputs[x2]**3) - "
-            "4*log(_inputs[x1]**4) + 5*exp(_inputs[x2]**5))")
+            "outputs[z1] - (2*sin(inputs[x1]**2) - 3*cos(inputs[x2]**3) - "
+            "4*log(inputs[x1]**4) + 5*exp(inputs[x2]**5))")
 
     @pytest.mark.unit
     def test_save(self, alm_surr1):
@@ -1239,11 +1239,11 @@ class TestWorkflow():
 
         blk.build_model(alamo_object)
 
-        assert isinstance(blk._inputs, Var)
-        assert blk._inputs["x1"].bounds == (-1.5, 1.5)
-        assert blk._inputs["x2"].bounds == (-1.5, 1.5)
-        assert isinstance(blk._outputs, Var)
-        assert blk._outputs["z1"].bounds == (None, None)
+        assert isinstance(blk.inputs, Var)
+        assert blk.inputs["x1"].bounds == (-1.5, 1.5)
+        assert blk.inputs["x2"].bounds == (-1.5, 1.5)
+        assert isinstance(blk.outputs, Var)
+        assert blk.outputs["z1"].bounds == (None, None)
         assert isinstance(blk.alamo_constraint, Constraint)
         assert len(blk.alamo_constraint) == 1
 
