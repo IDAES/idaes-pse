@@ -25,15 +25,15 @@ Main Package
 ~~~~~~~~~~~~
 
 - `ipopt <https://coin-or.github.io/Ipopt/>`_ with `HSL linear solvers <http://www.hsl.rl.ac.uk>`_.
-- ipopt_sens, sIpopt solver with `HSL linear solvers <http://www.hsl.rl.ac.uk>`_.
-- ipopt_l1, Ipopt with a modified restoration phase algorithm with `HSL linear solvers <http://www.hsl.rl.ac.uk>`_.
+- `ipopt_sens <https://projects.coin-or.org/Ipopt/wiki/sIpopt>`_, sIpopt solver with `HSL linear solvers <http://www.hsl.rl.ac.uk>`_.
+- `ipopt_l1 <https://github.com/IDAES/Ipopt/tree/restoration_mod>`_, Ipopt with a modified restoration phase algorithm with `HSL linear solvers <http://www.hsl.rl.ac.uk>`_.
 - shared ipopt library intended for `cyipopt <https://cyipopt.readthedocs.io/en/stable/>`_ with `HSL linear solvers <http://www.hsl.rl.ac.uk>`_.
 - `dot_sens <https://github.com/dthierry/k_aug>`_
 - `k_aug <https://github.com/dthierry/k_aug>`_
 - `pynumero <https://pyomo.readthedocs.io/en/stable/contributed_packages/pynumero/index.html>`_
 - `clp <https://projects.coin-or.org/Clp>`_
 - `cbc <https://projects.coin-or.org/Cbc>`_
-- `bonmin, <https://petsc.org/release/>`_ (used Ipopt with HSL)
+- `bonmin, <https://petsc.org/release/>`_ (uses Ipopt with HSL)
 - `couenne <https://projects.coin-or.org/Couenne/>`_ (uses Ipopt with HSL)
 - iapws95_external, function for the IAPWS95 EoS water
 - swco2_external, functions for the Span-Wagner EoS for CO2
