@@ -18,6 +18,12 @@ from pyomo.core.base.var import ScalarVar, IndexedVar
 @declare_custom_block(name='SurrogateBlock')
 class SurrogateBlockData(_BlockData):
     def __init__(self, component):
+        """
+        This custom block is used for importing surrogates into IDAES
+        
+        Example Usage:
+           >  
+        """
         super(SurrogateBlockData, self).__init__(component)
 
     def build_model(self, surrogate_object, input_vars=None, output_vars=None,
@@ -33,7 +39,7 @@ class SurrogateBlockData(_BlockData):
         # set the input bounds if desired
         input_bounds = surrogate_object.input_bounds()
         if use_surrogate_bounds is True and input_bounds is not None:
-            input_vars_as_dict = self._input_vars_as_dict()
+            input_vars_as_dict = self.input_vars_as_dict()
             for k, bnd in input_bounds.items():
                 v = input_vars_as_dict[k]
                 lb = bnd[0]
@@ -79,9 +85,9 @@ class SurrogateBlockData(_BlockData):
         # create or extract the variables
         if input_vars is None:
             # we need to create our own inputs
-            self._inputs_set = Set(initialize=self._input_labels, ordered=True)
-            self._inputs = Var(self._inputs_set, initialize=0)
-            self._input_vars = list(self._inputs.values())
+            self.inputs_set = Set(initialize=self._input_labels, ordered=True)
+            self.inputs = Var(self.inputs_set, initialize=0)
+            self._input_vars = list(self.inputs.values())
         else:
             # we were provided vars
             self._input_vars = _extract_var_data(input_vars)
@@ -103,10 +109,10 @@ class SurrogateBlockData(_BlockData):
         # create or extract the output variables
         if output_vars is None:
             # we need to create our own outputs
-            self._outputs_set = Set(
+            self.outputs_set = Set(
                 initialize=self._output_labels, ordered=True)
-            self._outputs = Var(self._outputs_set, initialize=0)
-            self._output_vars = list(self._outputs.values())
+            self.outputs = Var(self.outputs_set, initialize=0)
+            self._output_vars = list(self.outputs.values())
         else:
             # we were provided vars
             self._output_vars = _extract_var_data(output_vars)
@@ -122,11 +128,11 @@ class SurrogateBlockData(_BlockData):
     def _output_vars_as_list(self):
         return self._output_vars
 
-    def _input_vars_as_dict(self):
+    def input_vars_as_dict(self):
         return {self._input_labels[i]: v
                 for i, v in enumerate(self._input_vars)}
 
-    def _output_vars_as_dict(self):
+    def output_vars_as_dict(self):
         return {self._output_labels[i]: v
                 for i, v in enumerate(self._output_vars)}
 
