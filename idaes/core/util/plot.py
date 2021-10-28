@@ -54,7 +54,7 @@ def stitch_dynamic(*args):
 
 def dynamic_value_list(*args, units=None):
     """
-    Create a list of values from a Pyomo component. Multiple models represnting
+    Create a list of values from a Pyomo component. Multiple models representing
     different time periods can also be combined by providing multiple arguments
     to assemble into one time series.
 

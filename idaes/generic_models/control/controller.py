@@ -75,7 +75,7 @@ class PIDControllerData(UnitModelBlockData):
             doc=(
                 "A Pyomo Var, Reference to a Var, or something that can be"
                 " used to construct a Reference to a Var for the controlled"
-                " variable. The finial Refernce should be indexed by time."
+                " variable. The final Reference should be indexed by time."
                 " Slices are okay."
             ),
         ),
