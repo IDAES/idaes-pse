@@ -2438,10 +2438,6 @@ if __name__ == "__main__":
     # # m.soec_fs.ng_preheater.overall_heat_transfer_coefficient.unfix()   
     # # m.soec_fs.ng_preheater.area.fix()
     # m.soec_fs.ng_preheater.cold_side.properties_out[0].temperature.fix(535)
-
-    # m.soec_fs.air_preheater_1.delta_temperature_in.fix(10)  #10
-    # m.soec_fs.ng_preheater.delta_temperature_in.fix(10)  #10
-    # m.soec_fs.oxygen_preheater.delta_temperature_in.fix(10)  #10
     
     print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
 
@@ -2526,18 +2522,7 @@ if __name__ == "__main__":
     
     # m.soec_fs.ng_preheater.tube_inlet.flow_mol.setlb(10)
     # m.soec_fs.ng_preheater.tube_inlet.flow_mol.setub(600)
-    
-    # # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.fix(20e5)
-    # # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setlb(1.1e5)
-    # # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setub(40e5)
 
-    # m.soec_fs.tag_input["n_cells"].unfix()  # Unfix for optimization
-    # m.soec_fs.tag_input["n_cells"].setlb(100e6)
-    # m.soec_fs.tag_input["n_cells"].setub(400e6)
-
-    # # m.soec_fs.cmb_temperature.unfix()
-    # # m.soec_fs.cmb_temperature.setlb(1300)
-    # # m.soec_fs.cmb_temperature.setub(2000)
 
     # m.soec_fs.obj = pyo.Objective(
     #     expr=m.soec_fs.ng_preheater.tube_inlet.flow_mol[0] / 10)
@@ -2585,7 +2570,7 @@ if __name__ == "__main__":
         w = csv.writer(f)
         w.writerow(head_1 + head_2)
     # for h in np.linspace(2.5, 0.1, 25):  # Generate 25 points btw 2.5 to 0.1
-    for h in np.linspace(2.5, 0.1, 25):  # Generate 25 points btw 2.5 to 0.1
+    for h in np.linspace(2.5, 0.2, 24):  # Generate 25 points btw 2.5 to 0.1
         m.soec_fs.tag_input["hydrogen_product_rate"].fix(
             float(h) * pyo.units.kmol / pyo.units.s
         )
@@ -2599,7 +2584,7 @@ if __name__ == "__main__":
         print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
         print(f"Number of soec cells {m.soec_fs.tag_input['n_cells']}.")
         # idaes.cfg.ipopt["options"]["max_iter"] = 5
-        iscale.constraint_autoscale_large_jac(m.soec_fs)
+        # iscale.constraint_autoscale_large_jac(m.soec_fs)
         res = solver.solve(m.soec_fs, tee=True, symbolic_solver_labels=True,
                            options=options)
 
