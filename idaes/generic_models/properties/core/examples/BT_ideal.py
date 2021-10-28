@@ -19,14 +19,12 @@ phase equilibrium in the generic framework using ideal liquid and vapor
 assumptions along with methods drawn from the pre-built IDAES property
 libraries.
 """
-# Import Python libraries
-import logging
-
 # Import Pyomo units
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component
+import idaes.logger as idaeslog
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
@@ -39,7 +37,7 @@ from idaes.generic_models.properties.core.pure import RPP4
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------

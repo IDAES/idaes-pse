@@ -89,6 +89,10 @@ class ComponentData(ProcessBlockData):
     CONFIG.declare("entr_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component molar entropies"))
 
+    CONFIG.declare("diffus_phase_comp", ConfigValue(
+        description="Method to calculate component diffusivities in each "
+        "phase. Must be a dict with keys being phase names."))
+
     CONFIG.declare("has_vapor_pressure", ConfigValue(
         default=True,
         domain=Bool,

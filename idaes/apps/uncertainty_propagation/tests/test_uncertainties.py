@@ -46,16 +46,16 @@ class TestUncertaintyPropagation:
         def SSE(model, data):
             expr = sum((data.y[i] - model.response_function[data.hour[i]])**2 for i in data.index)
             return expr
-    
+
         results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE)
 
         assert results.obj == approx(4.331711213656886)
-        np.testing.assert_array_almost_equal(np.fromiter(results.theta.values(), dtype=float), [19.142575284617866, 0.53109137696521])
+        np.testing.assert_array_almost_equal(results.theta, [19.142575284617866, 0.53109137696521])
         assert list(results.theta.keys()) == ['asymptote', 'rate_constant']
         np.testing.assert_array_almost_equal(results.gradient_f, [0.99506259, 0.945148])
         assert list(results.propagation_c) == []
         np.testing.assert_array_almost_equal(results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
-        np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]])) 
+        np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
         assert results.propagation_f == pytest.approx(5.45439337747349)
 
     @pytest.mark.component
@@ -80,7 +80,7 @@ class TestUncertaintyPropagation:
         results =  quantify_propagate_uncertainty(rooney_biegler_model,model_uncertain, data, variable_name, SSE)
 
         assert results.obj == approx(4.331711213656886)
-        np.testing.assert_array_almost_equal(np.fromiter(results.theta.values(), dtype=float), [19.142575284617866, 0.53109137696521])
+        np.testing.assert_array_almost_equal(results.theta, [19.142575284617866, 0.53109137696521])
         assert list(results.theta.keys()) == ['asymptote', 'rate_constant']
         np.testing.assert_array_almost_equal(results.gradient_f, [0.99506259, 0.945148])
         assert list(results.propagation_c) == []
@@ -109,7 +109,7 @@ class TestUncertaintyPropagation:
         model_uncertain.obj = Objective(expr = model_uncertain.asymptote*( 1 - exp(-model_uncertain.rate_constant*10  )  ), sense=minimize)
 
         propagate_results=  propagate_uncertainty(model_uncertain, theta, cov, variable_name)
-       
+
         np.testing.assert_array_almost_equal(propagate_results.gradient_f, [0.9950625870024135,0.9451480001755206])
         assert list(propagate_results.gradient_c) == []
         np.testing.assert_array_almost_equal(propagate_results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
@@ -170,13 +170,13 @@ class TestUncertaintyPropagation:
         x2_ = (v1_ + v2_)/(2 * m.p2())
         x1_ = m.p1() - x2_
         x3_ = m.p2() - x2_
-          
+
         ### Analytic sensitivity
         '''
         Using the analytic solution above, we can compute the sensitivies of x and v to
         perturbations in p1 and p2.
         The matrix dx_dp constains the sensitivities of x to perturbations in p
-        ''' 
+        '''
 
         # Initialize sensitivity matrix Nx x Np
         # Rows: variables x
@@ -262,7 +262,7 @@ class TestUncertaintyPropagation:
 
         ## Run package
         results = propagate_uncertainty(m, theta, sigma_p, theta_names)
-        
+
         ## Check results
 
         tmp_f = (df_dp + df_dx @ dx_dp)
@@ -284,22 +284,22 @@ class TestUncertaintyPropagation:
 
         # Check the gradient of the objective w.r.t. x matches
         np.testing.assert_array_almost_equal(results.gradient_f[var_idx], np.array(df_dx))
-        
+
         # Check the gradient of the objective w.r.t. p (parameters) matches
         np.testing.assert_array_almost_equal(results.gradient_f[theta_idx], np.array(df_dp))
-        
+
         # Check the Jacobian of the constraints w.r.t. x matches
         np.testing.assert_array_almost_equal(results.gradient_c.toarray()[:, var_idx], np.array(dc_dx))
-        
+
         # Check the Jacobian of the constraints w.r.t. p (parameters) matches
         np.testing.assert_array_almost_equal(results.gradient_c.toarray()[:, theta_idx], np.array(dc_dp))
-        
+
         # Check the NLP sensitivity results for the variables (x) matches
         np.testing.assert_array_almost_equal(results.dsdp.toarray()[var_idx,:], np.array(dx_dp))
-        
+
         # Check the NLP sensitivity results for the parameters (p) matches
         np.testing.assert_array_almost_equal(results.dsdp.toarray()[theta_idx,:], np.array([[1,0],[0,1]]))
-        
+
         # Check the uncertainty propagation results for the constrains matches
         np.testing.assert_array_almost_equal(results.propagation_c,np.sum(sigma_c))
 
@@ -427,12 +427,12 @@ class TestUncertaintyPropagation:
         '''
         It tests the function clean_variable_name when variable names contain ' and spaces.
         '''
-        theta_names = ["fs.properties.tau['benzene', 'toluene']", "fs.properties.tau['toluene', 'benzene' ]"] 
+        theta_names = ["fs.properties.tau['benzene', 'toluene']", "fs.properties.tau['toluene', 'benzene' ]"]
         theta_names_new, var_dic, clean = clean_variable_name(theta_names)
         theta_names_expected = ["fs.properties.tau[benzene,toluene]", "fs.properties.tau[toluene,benzene]"]
         assert len(theta_names_expected) == len(theta_names_new)
-        assert all([a == b for a, b in zip(theta_names_expected, theta_names_new)]) 
-        
+        assert all([a == b for a, b in zip(theta_names_expected, theta_names_new)])
+
         assert len(theta_names_expected) == len(var_dic.keys())
         assert all([a == b for a, b in zip(sorted(theta_names_expected), sorted(var_dic.keys()))])
 
