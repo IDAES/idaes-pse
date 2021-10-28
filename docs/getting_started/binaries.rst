@@ -54,17 +54,17 @@ it can be found with the command line command ``idaes bin-directory``.
 Manual Installation
 -------------------
 
-The install location is not configurable, but the installation step can easily
+The install location is not configurable, but the installation step can easily be
 done manually. This is occasionally necessary when, for example, a firewall
 blocks downloading the binary file from GitHub.
 
-The first set for a manual install is to determine the location of the IDAES
+The first step for a manual install is to determine the location of the IDAES
 binary directory, which can be done with the command ``idaes bin-directory``.
 
 Download the IDAES binary release files from
 `the binary releases page <https://github.com/IDAES/idaes-ext/releases>`_.
 You will need ``idaes-lib-{platform}.tar.gz``, ``idaes-solvers-{platform}.tar.gz``,
-and ``idaes-{optional package}-{platform}.tar.gz``. Extract the tar file in the
+and ``idaes-{optional package}-{platform}.tar.gz``. Extract the tar files in the
 IDAES binary directory.
 
 Using Solvers Without IDAES
