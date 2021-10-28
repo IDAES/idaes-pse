@@ -966,52 +966,14 @@ class AlamoSurrogate(SurrogateBase):
 
         Args:
             block: Pyomo Block component to be populated with constraints.
-        """
-        # TODO: Let's discuss the use of variables and index_set - this should
-        # be promoted to the SurrogateBlock if needed?
-        """
             variables: dict mapping surrogate variable labels to existing
                 Pyomo Vars (default=None). If no mapping provided,
                 construct_variables will be called to create a set of new Vars.
-            index_set: (optional) if provided, this will be used to index the
-                Constraints created. This must match the indexing set of the
-                Vars provided in the variables argument.
 
         Returns:
             None
         """
-        # TODO: Let's discuss the use of index_set
-        """
-        variables = kwargs.pop('variables', None)
-        index_set = kwargs.pop('index_set', None)
 
-        if index_set is None:
-            var_index_set = UnindexedComponent_set
-            con_index_set = Set(initialize=self._output_labels)
-        else:
-            var_index_set = index_set
-            con_index_set = Set(initialize=self._output_labels)*index_set
-
-        if variables is None:
-            variables = self._construct_variables(
-                block, index_set=var_index_set)
-
-        def alamo_rule(b, o, *args):
-            # If we have more than 1 argument, it means we have an index_set
-            # Need to get the var_data from the indexed vars
-    
-            # ** TODO ** This deepcopy was breaking things
-            lvars = deepcopy(variables)
-            if len(args) > 0:
-                for k, v in variables.items():
-                    lvars[k] = v[args]
-            return eval(self._surrogate_expressions[o], GLOBAL_FUNCS, lvars)
-
-        block.add_component(
-            "alamo_constraint",
-            Constraint(con_index_set,
-                       rule=alamo_rule))
-        """
         # TODO: do we need to add the index_set stuff back in?
         output_set = Set(initialize=self._output_labels, ordered=True)
         def alamo_rule(b, o):
