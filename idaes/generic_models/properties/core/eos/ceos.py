@@ -492,9 +492,12 @@ class Cubic(EoSBase):
                  dadT*safe_log((2*Z + B*(EoS_u + EoS_p)) /
                                (2*Z + B*(EoS_u - EoS_p)),
                                eps=1e-6)) /
-                (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
-                                 get_method(blk, "entr_mol_ig_comp", j)(
+                (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] 
+                                 * (get_method(blk, "entr_mol_ig_comp", j)(
                                      blk, cobj(blk, j), blk.temperature)
+                                     - Cubic.gas_constant(blk)
+                                     * safe_log(blk.mole_frac_phase_comp[p, j],
+                                                eps=1e-6))
                                  for j in blk.components_in_phase(p)))
 
     @staticmethod
