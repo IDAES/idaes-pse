@@ -17,7 +17,7 @@ import pytest
 import pandas as pd
 
 from idaes.surrogate.metrics import compute_fit_metrics
-from idaes.surrogate import AlamoObject
+from idaes.surrogate import AlamoSurrogate
 
 # For this test we will use a simple z = x function and calcuate metrics
 # Measured (test) data will include a fixed offset (i.e. z = x + Err)
@@ -39,7 +39,7 @@ def metrics():
     dataset = pd.DataFrame({"x1": x, "z1": z})
 
     # Create a dummy ALAMO surrogate to use for testing
-    alm_obj = AlamoObject(surrogate_expressions={"z1": "z1 == x1"},
+    alm_obj = AlamoSurrogate(surrogate_expressions={"z1": "z1 == x1"},
                           input_labels=["x1"],
                           output_labels=["z1"])
 

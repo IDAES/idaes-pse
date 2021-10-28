@@ -17,7 +17,7 @@ import pytest
 
 import pandas as pd
 
-from idaes.surrogate.surrogate_base import SurrogateTrainer, SurrogateBase
+from idaes.surrogate.base.surrogate_base import SurrogateTrainer, SurrogateBase
 
 tdata = {'x1': [1, 2, 3, 4], 'x2': [10, 20, 30, 40], 'z1': [11, 22, 33, 44]}
 training_data = pd.DataFrame.from_dict(tdata)
@@ -235,13 +235,13 @@ class TestSurrogateBase:
     @pytest.mark.unit
     def test_save(self, surrogate):
         with pytest.raises(NotImplementedError,
-                           match='"save" should be implemented in the derived'
-                           ' SurrogateObject class'):
-            surrogate.save("foo")
+                           match='"save" should be implemented in the'
+                                  ' class derived from SurrogateBase'):
+            surrogate.save(None)
 
     @pytest.mark.unit
-    def test_load(self, surrogate):
+    def test_load(self):
         with pytest.raises(NotImplementedError,
-                           match='"load" should be implemented in the derived'
-                           ' SurrogateObject class'):
-            surrogate.load(surrogate, "foo")
+                           match='"load" should be implemented in the'
+                                  ' class derived from SurrogateBase'):
+            SurrogateBase.load(None)

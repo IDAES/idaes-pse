@@ -25,7 +25,7 @@ from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
 
-from idaes.surrogate.surrogate_base import SurrogateTrainer, SurrogateBase
+from idaes.surrogate.base.surrogate_base import SurrogateTrainer, SurrogateBase
 from idaes.core.util.exceptions import ConfigurationError
 
 # TODO: Adaptive sampling
@@ -474,15 +474,15 @@ class AlamoTrainer(SurrogateTrainer):
         General workflow method for training an ALAMO surrogate.
 
         Takes the existing data set and executes the ALAMO workflow to create
-        an AlamoObject based on the current configuration arguments.
+        an AlamoSurrogate based on the current configuration arguments.
 
         Args:
             None
 
         Returns:
-            tuple : (success, AlamoObject, message) where success indicates
+            tuple : (success, AlamoSurrogate, message) where success indicates
             whether ALAMO was usccessfully executed, an instance of an
-            AlamoObject representing the trained surrogate, and message is the
+            AlamoSurrogate representing the trained surrogate, and message is the
             final status line from the ALAMO output log.
         """
         # Get paths for temp files
@@ -500,7 +500,7 @@ class AlamoTrainer(SurrogateTrainer):
             rc, almlog = self._call_alamo()
 
             # Read back results
-            trace_dict = self._read_trace_file()
+            trace_dict = self._read_trace_file(self._trcfile, self.output_labels())
 
             # Populate results and SurrogateModel object
             self._populate_results(trace_dict)
@@ -767,19 +767,23 @@ class AlamoTrainer(SurrogateTrainer):
 
         return rc, almlog
 
-    def _read_trace_file(self):
+    @staticmethod
+    def _read_trace_file(trcfile, output_labels):
         """
         Method to read the results of an ALAMO run from a trace (.trc) file.
         The name location of the trace file is tored on the AlamoModelTrainer
         object and is generally set automatically.
 
         Args:
-            None
+            trcfile : str
+               Path to the trcfile to read
+            output_labels : list of str
+               List of strings of the output_labels (in order)
 
         Returns:
             trace_dict: contents of trace file as a dict
         """
-        with open(self._trcfile, "r") as f:
+        with open(trcfile, "r") as f:
             lines = f.readlines()
         f.close()
 
@@ -796,8 +800,8 @@ class AlamoTrainer(SurrogateTrainer):
         # Get trace output from final line(s) of file
         # ALAMO will append new lines to existing trace files
         # For multiple outputs, each output has its own line in trace file
-        for j in range(len(self._output_labels)):
-            trace = lines[-len(self._output_labels)+j].split(", ")
+        for j in range(len(output_labels)):
+            trace = lines[-len(output_labels)+j].split(", ")
 
             for i in range(len(headers)):
                 header = headers[i].strip("#\n")
@@ -821,7 +825,7 @@ class AlamoTrainer(SurrogateTrainer):
                                 f"file. Values for {header}: "
                                 f"{trace_read[header]}, {header}")
                 else:
-                    trace_read[header][self._output_labels[j]] = trace_val
+                    trace_read[header][output_labels[j]] = trace_val
 
                 # Do some final sanity checks
                 if header == "OUTPUT":
@@ -833,12 +837,12 @@ class AlamoTrainer(SurrogateTrainer):
                 elif header == "Model":
                     # Var label on LHS should match output label
                     vlabel = trace_val.split("==")[0].strip()
-                    if vlabel != self._output_labels[j]:
+                    if vlabel != output_labels[j]:
                         raise RuntimeError(
                             f"Mismatch when reading ALAMO trace file. "
                             f"Label of output variable in expression "
                             f"({vlabel}) does not match expected label "
-                            f"({self._output_labels[j]}).")
+                            f"({output_labels[j]}).")
 
         return trace_read
 
@@ -863,9 +867,9 @@ class AlamoTrainer(SurrogateTrainer):
             None
 
         Returns:
-            AlamoObject
+            AlamoSurrogate
         """
-        return AlamoObject(
+        return AlamoSurrogate(
             surrogate_expressions=self._results["Model"],
             input_labels=self._input_labels,
             output_labels=self._output_labels,
@@ -891,7 +895,7 @@ class AlamoTrainer(SurrogateTrainer):
         self._temp_context = None
 
 
-class AlamoObject(SurrogateBase):
+class AlamoSurrogate(SurrogateBase):
     """
     Standard SurrogateObject for surrogates trained using ALAMO.
 
@@ -902,21 +906,24 @@ class AlamoObject(SurrogateBase):
 
     def __init__(
             self, surrogate_expressions, input_labels, output_labels, input_bounds=None):
-        super(AlamoObject, self).__init__(input_labels, output_labels, input_bounds)
+        super(AlamoSurrogate, self).__init__(input_labels, output_labels, input_bounds)
         self._surrogate_expressions = surrogate_expressions
 
     def evaluate_surrogate(self, inputs):
         """
-        Method to evaluate ALAMO surrogate at a set of input values.
+        Method to method to evaluate the ALAMO surrogate model at a set of user
+        provided values.
 
         Args:
-            inputs: Pandas dataframe of input values. Column headers must
-                include input labels.
+           dataframe: pandas DataFrame
+              The dataframe of input values to be used in the evaluation. The dataframe
+              needs to contain a column corresponding to each of the input labels. Additional
+              columns are fine, but are not used.
 
         Returns:
-            outputs: Pandas dataframe of values for all outputs evaluated at
-                input
-                points.
+            output: pandas Dataframe
+              Returns a dataframe of the the output values evaluated at the provided inputs.
+              The index of the output dataframe should match the index of the provided inputs.
         """
         # Create a set of lambda functions for evaluating the surrogate.
         fcn = dict()
@@ -998,35 +1005,35 @@ class AlamoObject(SurrogateBase):
 
         block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
 
-    def to_json(self, stream):
+    def save(self, strm):
         """
-        Method to serialize surrogate object data in json form and write to a
-        stream.
+        Save an instance of this surrogate to the strm so the model can be used later.
 
         Args:
-            stream - output stream for json string
-
-        Retruns:
-            stream
+           strm: IO.TextIO
+              This is the python stream like a file object or StringIO that will be used
+              to serialize the surrogate object. This method writes a string
+              of json data to the stream.
         """
         json.dump({"surrogate": self._surrogate_expressions,
                    "input_labels": self._input_labels,
                    "output_labels": self._output_labels,
                    "input_bounds": self._input_bounds},
-                  stream)
+                  strm)
 
-        return stream
-
-    @staticmethod
-    def create_from_json(js):
+    @classmethod
+    def load(cls, strm):
         """
-        Method to create an AlamoObject based on data stored in
-        a json string.
+        Create an instance of a surrogate from a stream.
 
         Args:
-            js - string with json representation of surrogate object
+           strm: stream
+              This is the python stream containing the data required to load the surrogate.
+              This is often, but does not need to be a string of json data.
+
+        Returns: an instance of the derived class or None if it failed to load
         """
-        d = json.loads(js)
+        d = json.load(strm)
 
         surrogate_expressions = d["surrogate"]
         input_labels = d["input_labels"]
@@ -1037,43 +1044,7 @@ class AlamoObject(SurrogateBase):
         for k, v in d["input_bounds"].items():
             input_bounds[k] = tuple(v)
 
-        return AlamoObject(surrogate_expressions=surrogate_expressions,
-                           input_labels=input_labels,
-                           output_labels=output_labels,
-                           input_bounds=input_bounds)
-
-    def save(self, filename, overwrite=False):
-        """
-        Method to save surrogate object data to file in json format.
-
-        Args:
-            filename - path of destination file
-            overwrite - wheterh to overwrite existing files (default = False)
-        """
-        if overwrite:
-            arg = "w"
-        else:
-            arg = "x"
-
-        f = open(filename, arg)
-        self.to_json(f)
-        f.close()
-
-    @staticmethod
-    def load(filename):
-        """
-        Static method to create an AlamoObject from contents of a json file.
-
-        Useage: surrogate = AlamoObject.load(filename)
-
-        Args:
-            filename - path of json file to load
-
-        Returns:
-            AlamoObject with data loaded from json file
-        """
-        with open(filename, "r") as f:
-            js = f.read()
-        f.close()
-
-        return AlamoObject.create_from_json(js)
+        return AlamoSurrogate(surrogate_expressions=surrogate_expressions,
+                              input_labels=input_labels,
+                              output_labels=output_labels,
+                              input_bounds=input_bounds)

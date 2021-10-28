@@ -26,7 +26,7 @@ from pyomo.environ import Var, Constraint
 from pyomo.common.tempfiles import TempfileManager
 
 from idaes.surrogate.alamopy import \
-    AlamoTrainer, AlamoObject, Modelers, Screener, alamo
+    AlamoTrainer, AlamoSurrogate, Modelers, Screener, alamo
 from idaes.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.surrogate.metrics import compute_fit_metrics
@@ -528,7 +528,7 @@ class TestAlamoTrainer:
     @pytest.mark.unit
     def test_read_trace_single(self, alamo_trainer):
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alamo_trainer._read_trace_file()
+        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
 
         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
                         '4.0000000000020765611453 * x2**2 - '
@@ -610,7 +610,7 @@ class TestAlamoTrainer:
         alamo_trainer._output_labels = ["z1", "z2"]
 
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace2.trc")
-        trc = alamo_trainer._read_trace_file()
+        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
 
         mdict = {
             'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
@@ -704,7 +704,8 @@ class TestAlamoTrainer:
         with pytest.raises(RuntimeError,
                            match="Mismatch when reading ALAMO trace file. "
                            "Expected OUTPUT = 1, found 2."):
-            alamo_trainer._read_trace_file()
+            alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
+            
 
     @pytest.mark.unit
     def test_read_trace_label_mismatch(self, alamo_trainer):
@@ -715,12 +716,12 @@ class TestAlamoTrainer:
                            match="Mismatch when reading ALAMO trace file. "
                            "Label of output variable in expression "
                            "\(z2\) does not match expected label \(z3\)."):
-            alamo_trainer._read_trace_file()
+            alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
 
     @pytest.mark.unit
     def test_populate_results(self, alamo_trainer):
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alamo_trainer._read_trace_file()
+        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
         alamo_trainer._populate_results(trc)
 
         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
@@ -801,11 +802,11 @@ class TestAlamoTrainer:
     @pytest.mark.unit
     def test_build_surrogate_object(self, alamo_trainer):
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alamo_trainer._read_trace_file()
+        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
         alamo_trainer._populate_results(trc)
         alamo_object = alamo_trainer._build_surrogate_object()
 
-        assert isinstance(alamo_object, AlamoObject)
+        assert isinstance(alamo_object, AlamoSurrogate)
         assert alamo_object._surrogate_expressions == {
             'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
                    '4.0000000000020765611453 * x2**2 - '
@@ -819,7 +820,7 @@ class TestAlamoTrainer:
             "x1": (0, 5), "x2": (0, 10)}
 
 
-class TestAlamoObject():
+class TestAlamoSurrogate():
     @pytest.fixture
     def alm_surr1(self):
         surrogate_expressions = {
@@ -833,7 +834,7 @@ class TestAlamoObject():
         output_labels = ["z1"]
         input_bounds = {"x1": (0, 5), "x2": (0, 10)}
 
-        alm_surr1 = AlamoObject(
+        alm_surr1 = AlamoSurrogate(
             surrogate_expressions, input_labels, output_labels, input_bounds)
 
         return alm_surr1
@@ -932,7 +933,7 @@ class TestAlamoObject():
         input_labels = ["x1", "x2"]
         output_labels = ["z1", "z2"]
 
-        alm_surr2 = AlamoObject(surrogate_expressions, input_labels, output_labels)
+        alm_surr2 = AlamoSurrogate(surrogate_expressions, input_labels, output_labels)
 
         return alm_surr2
 
@@ -1050,7 +1051,7 @@ class TestAlamoObject():
         input_labels = ["x1", "x2"]
         output_labels = ["z1"]
 
-        alm_surr3 = AlamoObject(surrogate_expressions, input_labels, output_labels)
+        alm_surr3 = AlamoSurrogate(surrogate_expressions, input_labels, output_labels)
 
         return alm_surr3
 
@@ -1082,14 +1083,14 @@ class TestAlamoObject():
             "4*log(_inputs[x1]**4) + 5*exp(_inputs[x2]**5))")
 
     @pytest.mark.unit
-    def test_to_json(self, alm_surr1):
+    def test_save(self, alm_surr1):
         stream = StringIO()
-        alm_surr1.to_json(stream)
+        alm_surr1.save(stream)
         assert stream.getvalue() == jstring
 
     @pytest.mark.unit
-    def test_create_from_json(self):
-        alm_surr = AlamoObject.create_from_json(jstring)
+    def test_load(self):
+        alm_surr = AlamoSurrogate.load(StringIO(jstring))
 
         assert alm_surr._surrogate_expressions == {
             "z1": ' z1 == 3.9999999999925446303450 * x1**2 - '
@@ -1106,7 +1107,7 @@ class TestAlamoObject():
     def test_save_load(self, alm_surr1):
         with TempfileManager as tf:
             fname = tf.create_tempfile(suffix=".json")
-            alm_surr1.save(fname, overwrite=True)
+            alm_surr1.save_to_file(fname, overwrite=True)
 
             assert os.path.isfile(fname)
 
@@ -1114,13 +1115,13 @@ class TestAlamoObject():
                 js = f.read()
             f.close()
 
-            alm_load = AlamoObject.load(fname)
+            alm_load = AlamoSurrogate.load_from_file(fname)
 
         # Check file contents
         assert js == jstring
 
         # Check loaded object
-        assert isinstance(alm_load, AlamoObject)
+        assert isinstance(alm_load, AlamoSurrogate)
         assert alm_load._surrogate_expressions == {
             "z1": ' z1 == 3.9999999999925446303450 * x1**2 - '
             '4.0000000000020765611453 * x2**2 - '
@@ -1141,7 +1142,7 @@ class TestAlamoObject():
             fname = tf.create_tempfile(suffix=".json")
 
             with pytest.raises(FileExistsError):
-                alm_surr1.save(fname)
+                alm_surr1.save_to_file(fname)
 
         # Check for clean up
         assert not os.path.isfile(fname)
@@ -1220,7 +1221,7 @@ class TestWorkflow():
 
     def test_alamo_object(self, alamo_trainer):
         alamo_object = alamo_trainer.alamo_object
-        assert isinstance(alamo_object, AlamoObject)
+        assert isinstance(alamo_object, AlamoSurrogate)
         assert alamo_object._surrogate_expressions == {
             'z1': ' z1 == 3.9999999999925432980774 * x1**2 - '
             '4.0000000000020792256805 * x2**2 - '
