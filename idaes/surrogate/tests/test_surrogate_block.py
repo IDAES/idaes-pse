@@ -64,8 +64,10 @@ def test_extract_var_data_multiple():
 @pytest.mark.unit
 def test_extract_var_data_not_var():
     m = ConcreteModel()
-    with pytest.raises(ValueError,
-                       match="Unknown variable type of <class 'pyomo.core.base.PyomoModel.ConcreteModel'> for unknown"):
+    with pytest.raises(
+            ValueError,
+            match="Unknown variable type of <class "
+            "'pyomo.core.base.PyomoModel.ConcreteModel'> for unknown"):
         _extract_var_data(m)
 
 
@@ -229,6 +231,23 @@ def test_setup_inputs_outputs_input_vars_mismatch():
 
 
 @pytest.mark.unit
+def test_setup_inputs_outputs_input_vars_empty_list():
+    m = ConcreteModel()
+    m.output_set = ["z1", "z2", "z3", "z4", "z5"]
+    m.outputs = Var(m.output_set)
+
+    m.sb = SurrogateBlock()
+
+    with pytest.raises(ValueError,
+                       match='Specifying input_vars to a SurrogateBlock, but '
+                       'the length of the input_vars \(after extracting all'
+                       ' the VarData objects\) does not match n_inputs'):
+        m.sb._setup_inputs_outputs(4, 5,
+                                   input_vars=[],
+                                   output_vars=m.outputs)
+
+
+@pytest.mark.unit
 def test_setup_inputs_outputs_output_vars_mismatch():
     m = ConcreteModel()
     m.input_set = Set(initialize=["x1", "x2", "x3", "x4"])
@@ -245,6 +264,23 @@ def test_setup_inputs_outputs_output_vars_mismatch():
         m.sb._setup_inputs_outputs(4, 5,
                                    input_vars=m.inputs,
                                    output_vars=m.outputs)
+
+
+@pytest.mark.unit
+def test_setup_inputs_outputs_output_vars_empty_list():
+    m = ConcreteModel()
+    m.input_set = Set(initialize=["x1", "x2", "x3", "x4"])
+    m.inputs = Var(m.input_set)
+
+    m.sb = SurrogateBlock()
+
+    with pytest.raises(ValueError,
+                       match='Specifying output_vars to a SurrogateBlock, but '
+                       'the length of the output_vars \(after extracting all'
+                       ' the VarData objects\) does not match n_outputs'):
+        m.sb._setup_inputs_outputs(4, 5,
+                                   input_vars=m.inputs,
+                                   output_vars=[])
 
 
 @pytest.mark.unit

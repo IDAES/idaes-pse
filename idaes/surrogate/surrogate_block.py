@@ -197,7 +197,7 @@ class SurrogateBlockData(_BlockData):
         return {self._output_labels[i]: v
                 for i, v in enumerate(self._output_vars)}
 
-    
+
 def _extract_var_data_gen(vars):
     if vars is None:
         return
@@ -214,8 +214,10 @@ def _extract_var_data_gen(vars):
         for v in vars:
             yield from _extract_var_data_gen(v)
     else:
-        raise ValueError("Unknown variable type of {} for {}".format(type(vars), vars))
-    
+        raise ValueError(
+            "Unknown variable type of {} for {}".format(type(vars), vars))
+
+
 def _extract_var_data(vars):
     if vars is None:
         return None

@@ -492,13 +492,18 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
-    def test_call_alamo_empty(self, alamo_trainer):
+    def test_call_alamo_empty(self, alamo_trainer, caplog):
         alamo_trainer._almfile = "test"
-        with pytest.raises(RuntimeError,
-                           match="ALAMO executable returned non-zero return "
-                           "code. Check the ALAMO output for more "
-                           "information."):
-            alamo_trainer._call_alamo()
+
+        # To be safe, clear the logger record before test
+        caplog.clear()
+
+        alamo_trainer._call_alamo()
+
+        for record in caplog.records:
+            assert record.levelname == "WARNING"
+        assert ("ALAMO executable returned non-zero return code. Check the "
+                "ALAMO output for more information.") in caplog.text
 
         assert alamo_trainer._temp_context is None
 

@@ -27,6 +27,11 @@ from pyomo.common.tempfiles import TempfileManager
 
 from idaes.surrogate.base.surrogate_base import SurrogateTrainer, SurrogateBase
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
+
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 # TODO: Adaptive sampling
 
@@ -432,9 +437,9 @@ class AlamoTrainer(SurrogateTrainer):
     CONFIG.declare("filename", ConfigValue(
         default=None,
         domain=str,
-        description="File name to use for ALAMO files - must be full path of a .alm file."
-        " Other files will be defined from this pattern. If this option is not None,"
-        " then working files will not be deleted."))
+        description="File name to use for ALAMO files - must be full path of a"
+        " .alm file. Other files will be defined from this pattern. If this "
+        "option is not None, then working files will not be deleted."))
     CONFIG.declare("working_directory", ConfigValue(
         default=None,
         domain=str,
@@ -446,8 +451,11 @@ class AlamoTrainer(SurrogateTrainer):
         description="Flag indicating whether existing files can be "
         "overwritten."))
 
-    #TODO: We need to do some processing of the labels since ALAMO is restrictive about the labels
-    #TODO: We need to think more carefully about "input_bounds". Alamo uses bounds during training, but we also want to consider "valid" bounds for the surrogate
+    # TODO: We need to do some processing of the labels since ALAMO is
+    # restrictive about the labels
+    # TODO: We need to think more carefully about "input_bounds".
+    # Alamo uses bounds during training, but we also want to consider
+    # "valid" bounds for the surrogate
     def __init__(self, **settings):
         super().__init__(**settings)
 
@@ -473,8 +481,8 @@ class AlamoTrainer(SurrogateTrainer):
         Returns:
             tuple : (success, AlamoSurrogate, message) where success indicates
             whether ALAMO was usccessfully executed, an instance of an
-            AlamoSurrogate representing the trained surrogate, and message is the
-            final status line from the ALAMO output log.
+            AlamoSurrogate representing the trained surrogate, and message is
+            the final status line from the ALAMO output log.
         """
         # Get paths for temp files
         self._get_files()
@@ -491,7 +499,8 @@ class AlamoTrainer(SurrogateTrainer):
             return_code, alamo_log = self._call_alamo()
 
             # Read back results
-            trace_dict = self._read_trace_file(self._trcfile, self.output_labels())
+            trace_dict = self._read_trace_file(
+                self._trcfile, self.output_labels())
 
             # Populate results and SurrogateModel object
             self._populate_results(trace_dict)
@@ -503,7 +512,8 @@ class AlamoTrainer(SurrogateTrainer):
 
         success = False
         if return_code == 0:
-            # non-zero return code implies an error (specifics returned in the msg
+            # Non-zero return code implies an error
+            # specifics returned in the msg
             success = True
         alamo_msg = alamo_log.split("\n")[-3]
 
@@ -526,7 +536,8 @@ class AlamoTrainer(SurrogateTrainer):
         Returns:
             None
         """
-        self._temp_context = TempfileManager.new_context()
+        if self._temp_context is None:
+            self._temp_context = TempfileManager.new_context()
 
         if self.config.filename is None:
             # Get a temporary file from the manager
@@ -670,8 +681,9 @@ class AlamoTrainer(SurrogateTrainer):
                 float_format=lambda x: str(x).format(":g"),
                 **kwargs
             )
-            # this is only needed to remove the extra spaces (from `justify`?) on python 3.6
-            # since on 3.7 and up pandas.to_string() returns already the proper format without any further string processing needed
+            # This is only needed to remove the extra spaces (from `justify`?)
+            # on python 3.6 since on 3.7 and up pandas.to_string() returns
+            # already the proper format without any further processing needed
             return _trim_extra_whitespace(text, sep=' ')
 
         stream.write("\nBEGIN_DATA\n")
@@ -739,13 +751,13 @@ class AlamoTrainer(SurrogateTrainer):
         cwd = os.getcwd()
         os.chdir(self._wrkdir)
 
-        # Add lst file to temp file manager
-        lstfname = os.path.splitext(
-            os.path.basename(self._almfile))[0] + ".lst"
-        lstpath = os.path.join(cwd, lstfname)
-        self._temp_context.add_tempfile(lstpath, exists=False)
-
         try:
+            # Add lst file to temp file manager
+            lstfname = os.path.splitext(
+                os.path.basename(self._almfile))[0] + ".lst"
+            lstpath = os.path.join(cwd, lstfname)
+            self._temp_context.add_tempfile(lstpath, exists=False)
+
             with TeeStream(*ostreams) as t:
                 results = subprocess.run(
                     [alamo.executable, str(self._almfile)],
@@ -761,8 +773,9 @@ class AlamoTrainer(SurrogateTrainer):
             alamo_log = ostreams[0].getvalue()
 
         except OSError:
-            logger.error( f'Could not execute the command: alamo {str(self._almfile)}. ',
-                          f'Error message: {sys.exc_info()[1]}.')
+            _log.error(
+                f'Could not execute the command: alamo {str(self._almfile)}. ',
+                f'Error message: {sys.exc_info()[1]}.')
             raise
 
         finally:
@@ -771,9 +784,8 @@ class AlamoTrainer(SurrogateTrainer):
 
         if "ALAMO terminated with termination code " in alamo_log:
             self._remove_temp_files()
-            raise RuntimeError(
-                "ALAMO executable returned non-zero return code. Check "
-                "the ALAMO output for more information.")
+            _log.warn("ALAMO executable returned non-zero return code. Check "
+                      "the ALAMO output for more information.")
 
         return return_code, alamo_log
 
