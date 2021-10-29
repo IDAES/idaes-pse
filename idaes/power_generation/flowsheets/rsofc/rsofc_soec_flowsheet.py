@@ -28,7 +28,6 @@ from pyomo.common.fileutils import this_file_dir
 
 # Import modules from core
 from idaes.core import FlowsheetBlock
-from idaes.core.util import homotopy
 import idaes.core.util as iutil
 import idaes.core.util.tables as tables
 import idaes.core.util.scaling as iscale
@@ -329,7 +328,7 @@ def add_combustor(fs):
         return b.inlet.pressure[t] == b.outlet.pressure[t]
 
     @fs.pre_oxycombustor_translator.Constraint(fs.time,
-                                                 fs.air_prop.component_list)
+                                               fs.air_prop.component_list)
     def pre_oxycombustor_translator_x(b, t, j):
         return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
 
@@ -365,7 +364,7 @@ def add_combustor(fs):
         return b.inlet.pressure[t] == b.outlet.pressure[t]
 
     @fs.post_oxycombustor_translator.Constraint(fs.time,
-                                                  fs.air_prop.component_list)
+                                                fs.air_prop.component_list)
     def post_oxycombustor_translator_x(b, t, j):
         return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
 
@@ -391,7 +390,7 @@ def add_combustor(fs):
         destination=fs.post_oxycombustor_translator.inlet
     )
     fs.fg01 = Arc(source=fs.post_oxycombustor_translator.outlet,
-                    destination=fs.air_preheater_2.shell_inlet)
+                  destination=fs.air_preheater_2.shell_inlet)
 
 
 def add_aux_boiler_steam(fs):
@@ -497,9 +496,9 @@ def add_soec_air_side_units(fs):
     #  Add stream connections
     ###########################################################################
     fs.a01 = Arc(source=fs.air_blower.outlet,
-                   destination=fs.air_preheater_1.tube_inlet)
+                 destination=fs.air_preheater_1.tube_inlet)
     fs.a02 = Arc(source=fs.air_preheater_1.tube_outlet,
-                   destination=fs.air_preheater_2.tube_inlet)
+                 destination=fs.air_preheater_2.tube_inlet)
 
 
 def add_soec_unit(fs):
@@ -575,9 +574,9 @@ def add_soec_unit(fs):
     #  Add stream connections
     ###########################################################################
     fs.h01 = Arc(source=fs.soec.outlet_fc_mult,
-                   destination=fs.spltf1.inlet)
+                 destination=fs.spltf1.inlet)
     fs.o01 = Arc(source=fs.soec.outlet_ac_mult,
-                   destination=fs.splta1.inlet)
+                 destination=fs.splta1.inlet)
 
 
 def add_soec_inlet_mix(fs):
@@ -645,9 +644,9 @@ def add_soec_inlet_mix(fs):
     )
 
     fs.s05 = Arc(source=fs.mxf1.outlet,
-                   destination=fs.soec.inlet_fc_mult)
+                 destination=fs.soec.inlet_fc_mult)
     fs.s06 = Arc(source=fs.mxa1.outlet,
-                   destination=fs.soec.inlet_ac_mult)
+                 destination=fs.soec.inlet_ac_mult)
 
     fs.a03 = Arc(
         source=fs.air_preheater_2.tube_outlet,
@@ -731,19 +730,19 @@ def add_h2_compressor(fs):
         destination=fs.hcmp_ic01.inlet
     )
     fs.h04 = Arc(source=fs.hcmp_ic01.outlet,
-                   destination=fs.hcmp01.inlet)
+                 destination=fs.hcmp01.inlet)
     fs.h05 = Arc(source=fs.hcmp01.outlet,
-                   destination=fs.hcmp_ic02.inlet)
+                 destination=fs.hcmp_ic02.inlet)
     fs.h06 = Arc(source=fs.hcmp_ic02.outlet,
-                   destination=fs.hcmp02.inlet)
+                 destination=fs.hcmp02.inlet)
     fs.h07 = Arc(source=fs.hcmp02.outlet,
-                   destination=fs.hcmp_ic03.inlet)
+                 destination=fs.hcmp_ic03.inlet)
     fs.h08 = Arc(source=fs.hcmp_ic03.outlet,
-                   destination=fs.hcmp03.inlet)
+                 destination=fs.hcmp03.inlet)
     fs.h09 = Arc(source=fs.hcmp03.outlet,
-                   destination=fs.hcmp_ic04.inlet)
+                 destination=fs.hcmp_ic04.inlet)
     fs.h10 = Arc(source=fs.hcmp_ic04.outlet,
-                   destination=fs.hcmp04.inlet)
+                 destination=fs.hcmp04.inlet)
 
 
 def add_hrsg_and_cpu(fs):
@@ -820,13 +819,13 @@ def add_hrsg_and_cpu(fs):
         destination=fs.HRSG_3.inlet
     )
     fs.fg02 = Arc(source=fs.air_preheater_2.shell_outlet,
-                    destination=fs.HRSG_1.inlet)
+                  destination=fs.HRSG_1.inlet)
     fs.CPU_translator_in = Arc(source=fs.HRSG_1.outlet,
-                    destination=fs.CPU_translator.inlet)
+                               destination=fs.CPU_translator.inlet)
     fs.fg03 = Arc(source=fs.CPU_translator.outlet,
-                    destination=fs.condenser.inlet)
+                  destination=fs.condenser.inlet)
     fs.fg04 = Arc(source=fs.condenser.outlet,
-                    destination=fs.flash.inlet)
+                  destination=fs.flash.inlet)
 
     # TODO - copy_port method used instead of propagate_state because of issue
     # TODO - noticed in tags with propagating flash.vap_outlet to CPU.inlet
@@ -855,9 +854,9 @@ def add_hrsg_and_cpu(fs):
 
 def add_more_hx_connections(fs):
     fs.h02 = Arc(source=fs.spltf1.out,
-                   destination=fs.bhx1.shell_inlet)
+                 destination=fs.bhx1.shell_inlet)
     fs.o02 = Arc(source=fs.splta1.out,
-                   destination=fs.air_preheater_1.shell_inlet)
+                 destination=fs.air_preheater_1.shell_inlet)
     fs.o03 = Arc(
         source=fs.air_preheater_1.shell_outlet,
         destination=fs.preheat_split.inlet
@@ -872,14 +871,14 @@ def add_design_constraints(fs):
         return b.soec.heat_duty[t] == b.soec_heat_duty[t]
 
     fs.cmb_temperature = pyo.Var(fs.time, initialize=2000,
-                                   units=pyo.units.K)
+                                 units=pyo.units.K)
 
     @fs.Constraint(fs.time)
     def cmb_temperature_eqn(b, t):
         return fs.cmb.outlet.temperature[t] == fs.cmb_temperature[t]
 
     fs.soec_steam_temperature = pyo.Var(fs.time, initialize=1073.15,
-                                          units=pyo.units.K)
+                                        units=pyo.units.K)
 
     @fs.Constraint(fs.time)
     def soec_steam_temperature_eqn(b, t):
@@ -912,7 +911,7 @@ def add_design_constraints(fs):
 
 def add_result_constraints(fs):
     fs.soec_power = pyo.Var(fs.time,
-                              units=pyo.units.MW)
+                            units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def soec_power_constraint(b, t):
@@ -927,7 +926,7 @@ def add_result_constraints(fs):
         )
 
     fs.hydrogen_product_rate = pyo.Var(fs.time,
-                                         units=pyo.units.mol / pyo.units.s)
+                                       units=pyo.units.mol / pyo.units.s)
 
     @fs.Constraint(fs.time)
     def hydrogen_product_rate_constraint(b, t):
@@ -956,7 +955,7 @@ def add_result_constraints(fs):
         )
 
     fs.h2_compressor_power = pyo.Var(fs.time,
-                                       units=pyo.units.MW)
+                                     units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def h2_compressor_power_constraint(b, t):
@@ -965,7 +964,7 @@ def add_result_constraints(fs):
 
     # total heat supplied to HRSG
     fs.HRSG_heat_duty = pyo.Var(fs.time,
-                                  initialize=300, units=pyo.units.MW)
+                                initialize=300, units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def HRSG_heat_duty_constraint(fs, t):
@@ -978,7 +977,7 @@ def add_result_constraints(fs):
 
     # steam required for ASU
     fs.ASU_HP_steam_heat = pyo.Var(fs.time,
-                                     initialize=4, units=pyo.units.MW)
+                                   initialize=4, units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def ASU_HP_steam_constraint(fs, t):
@@ -988,7 +987,7 @@ def add_result_constraints(fs):
 
     # HRSG heat applied toward steam cycle
     fs.steam_cycle_heat = pyo.Var(fs.time,
-                                    initialize=300, units=pyo.units.MW)
+                                  initialize=300, units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def steam_cycle_heat_constraint(fs, t):
@@ -998,9 +997,9 @@ def add_result_constraints(fs):
     # power generated by steam cycle
     fs.steam_cycle_efficiency = pyo.Param(initialize=0.381, mutable=True)
     fs.steam_cycle_power = pyo.Var(fs.time,
-                                     initialize=100, units=pyo.units.MW)
+                                   initialize=100, units=pyo.units.MW)
     fs.steam_cycle_loss = pyo.Var(fs.time,
-                                    initialize=200, units=pyo.units.MW)
+                                  initialize=200, units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def steam_cycle_power_constraint(fs, t):
@@ -1022,7 +1021,7 @@ def add_result_constraints(fs):
 
     # boiler feedwater pump load - steam cycle not modeled, scaled from BB
     fs.feedwater_pump_work = pyo.Var(fs.time,
-                                       initialize=2, units=pyo.units.MW)
+                                     initialize=2, units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def feedwater_pump_work_constraint(fs, t):
@@ -1033,7 +1032,7 @@ def add_result_constraints(fs):
 
     # condensate pump load - steam cycle not modeled, scaled from BB
     fs.condensate_pump_work = pyo.Var(fs.time,
-                                        initialize=0.1, units=pyo.units.MW)
+                                      initialize=0.1, units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def condensate_pump_work_constraint(fs, t):
@@ -1044,7 +1043,7 @@ def add_result_constraints(fs):
 
     # steam turbine auxiliary load - steam cycle not modeled, scaled from BB
     fs.steam_turbine_auxiliary = pyo.Var(fs.time,
-                                           initialize=0.1, units=pyo.units.MW)
+                                         initialize=0.1, units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def steam_turbine_auxiliary_constraint(fs, t):
@@ -1067,9 +1066,9 @@ def add_result_constraints(fs):
 
     # calculate cooling water flowrate
     fs.cooling_water_duty = pyo.Var(fs.time,
-                                      initialize=450, units=pyo.units.MW)
+                                    initialize=450, units=pyo.units.MW)
     fs.cooling_water_flowrate = pyo.Var(fs.time, initialize=3000,
-                                          units=pyo.units.lb/pyo.units.s)
+                                        units=pyo.units.lb/pyo.units.s)
 
     @fs.Constraint(fs.time)
     def cooling_water_duty_constraint(fs, t):
@@ -1102,7 +1101,7 @@ def add_result_constraints(fs):
 
     # circulating pump work - not modeled, scaled from NGFC pathways study
     fs.circulating_pump_work = pyo.Var(fs.time,
-                                         initialize=1, units=pyo.units.MW)
+                                       initialize=1, units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def circulating_pump_work_constraint(fs, t):
@@ -1113,7 +1112,7 @@ def add_result_constraints(fs):
 
     # cooling tower fan load - not modeled, scaled from NGFC pathways study
     fs.cooling_tower_load = pyo.Var(fs.time,
-                                      initialize=1, units=pyo.units.MW)
+                                    initialize=1, units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def cooling_tower_load_constraint(fs, t):
@@ -1145,7 +1144,7 @@ def add_result_constraints(fs):
     # TODO - should the soec have transformer losses i.e. no power sent to grid
     # transformer losses
     fs.transformer_losses = pyo.Var(fs.time,
-                                      initialize=2, units=pyo.units.MW)
+                                    initialize=2, units=pyo.units.MW)
 
     @fs.Constraint(fs.time)
     def transformer_losses_constraint(fs, t):
@@ -1199,7 +1198,7 @@ def add_result_constraints(fs):
 
     # CO2 captured in kg/hr
     fs.CO2_captured = pyo.Var(fs.time, initialize=300,
-                                units=pyo.units.kg/pyo.units.hr)
+                              units=pyo.units.kg/pyo.units.hr)
 
     @fs.Constraint(fs.time)
     def CO2_captured_constraint(fs, t):
@@ -1210,7 +1209,7 @@ def add_result_constraints(fs):
                             mass_flow, pyo.units.kg/pyo.units.hr)
     # CO2 emissions in kg/hr
     fs.CO2_emissions = pyo.Var(fs.time, initialize=300,
-                                 units=pyo.units.kg/pyo.units.hr)
+                               units=pyo.units.kg/pyo.units.hr)
 
     @fs.Constraint(fs.time)
     def CO2_emission_constraint(fs, t):
@@ -1823,7 +1822,7 @@ def tag_for_pfd_and_tables(fs):
     )
     stream_states = tables.stream_states_dict(streams)
 
-    for i, s in stream_states.items():  # create the tags for steam quantities
+    for i, s in stream_states.items():  # create the tags for stream quantities
         tag_group[f"{i}_Fmol"] = iutil.ModelTag(
             expr=s.flow_mol,
             format_string="{:.3f}",
@@ -1901,16 +1900,6 @@ def tag_for_pfd_and_tables(fs):
         format_string="{:.3f}",
         display_units=pyo.units.kg / pyo.units.s,
     )
-    # tag_group["fuel_rate"] = iutil.ModelTag(
-    #     expr=fs.ng_preheater.shell.properties_in[0].flow_mol,
-    #     format_string="{:.3f}",
-    #     display_units=pyo.units.kmol / pyo.units.s,
-    # )
-    # tag_group["fuel_rate_mass"] = iutil.ModelTag(
-    #     expr=fs.ng_preheater.shell.properties_in[0].flow_mass,
-    #     format_string="{:.3f}",
-    #     display_units=pyo.units.kg / pyo.units.s,
-    # )
     tag_group["net_power"] = iutil.ModelTag(
         expr=fs.net_power[0],
         format_string="{:.3f}",
@@ -2009,178 +1998,9 @@ def tag_for_pfd_and_tables(fs):
 
     # sdf.sort_index(inplace=True)
     # sdf.to_csv("streams_2.csv")
-    
+
     tag_group["status"] = iutil.ModelTag(expr=None, format_string="{}")
     fs.tag_pfd = tag_group
-
-
-# def tag_for_pfd_and_tables(fs):
-#     tag_group = iutil.ModelTagGroup()
-
-#     CPU_streams = {"out05": fs.CPU.water,
-#                    "out06": fs.CPU.pureco2,
-#                    "out07": fs.CPU.vent,
-#                    "out04": fs.flash.liq_outlet}
-#     for i, s in CPU_streams.items():
-#         tag_group[f"{i}_Fmol"] = iutil.ModelTag(
-#             expr=s.flow_mol,
-#             format_string="{:.3f}",
-#             display_units=pyo.units.kmol/pyo.units.s
-#         )
-#         tag_group[f"{i}_P"] = iutil.ModelTag(
-#             expr=s.pressure,
-#             format_string="{:.1f}",
-#             display_units=pyo.units.kPa
-#         )
-#         tag_group[f"{i}_T"] = iutil.ModelTag(
-#             expr=s.temperature,
-#             format_string="{:.2f}",
-#             display_units=pyo.units.K
-#         )
-
-
-#     stream_states = tables.stream_states_dict(
-#         tables.arcs_to_stream_dict(
-#             fs,
-#             descend_into=False,
-#             additional={
-#                 # TODO - include all inlet streams
-#                 "ba00": fs.air_compressor_s1.inlet,
-#                 "a00": fs.air_blower.inlet,
-#                 "s00": fs.aux_boiler_feed_pump.inlet,
-#                 "out01": fs.ASU.N2_outlet,
-#                 "out02": fs.HRSG_2.outlet,
-#                 "out03": fs.HRSG_3.outlet,
-#                 # "out04": fs.flash.liq_outlet,
-#                 # "out05": fs.CPU.water,
-#                 # "out06": fs.CPU.pureco2,
-#                 # "out07": fs.CPU.vent,
-#                 "out08": fs.hcmp04.outlet,
-#             },
-#         )
-#     )
-#     for i, s in stream_states.items():  # create the tags for steam quantities
-#         tag_group[f"{i}_Fmol"] = iutil.ModelTag(
-#             expr=s.flow_mol,
-#             format_string="{:.3f}",
-#             display_units=pyo.units.kmol/pyo.units.s
-#         )
-#         tag_group[f"{i}_Fmass"] = iutil.ModelTag(
-#             expr=s.flow_mass,
-#             format_string="{:.3f}",
-#             display_units=pyo.units.kg/pyo.units.s
-#         )
-#         tag_group[f"{i}_P"] = iutil.ModelTag(
-#             expr=s.pressure,
-#             format_string="{:.1f}",
-#             display_units=pyo.units.kPa
-#         )
-#         tag_group[f"{i}_T"] = iutil.ModelTag(
-#             expr=s.temperature,
-#             format_string="{:.2f}",
-#             display_units=pyo.units.K
-#         )
-#         try:
-#             tag_group[f"{i}_vf"] = iutil.ModelTag(
-#                 expr=s.phase_frac["Vap"],
-#                 format_string="{:.3f}",
-#                 display_units=None
-#                 )
-#         except (KeyError, AttributeError):
-#             pass
-#         try:
-#             for c in s.mole_frac_comp:
-#                 tag_group[f"{i}_y{c}"] = iutil.ModelTag(
-#                     expr=s.mole_frac_comp[c]*100,
-#                     format_string="{:.3f}",
-#                     display_units="%"
-#                 )
-#         except (KeyError, AttributeError):
-#             pass
-#         try:
-#             tag_group[f"{i}_y"] = iutil.ModelTag(
-#                 expr=s.mole_frac_comp,
-#                 format_string="{:.3f}",
-#                 display_units=None
-#             )
-#         except (KeyError, AttributeError):
-#             pass
-
-    # tag_group["soec_power"] = iutil.ModelTag(
-    #     expr=fs.soec.total_power[0],
-    #     format_string="{:.2f}",
-    #     display_units=pyo.units.MW
-    # )
-#     tag_group["soec_n_cells"] = iutil.ModelTag(
-#         expr=fs.soec.n_cells,
-#         format_string="{:,.0f}",
-#         display_units=None
-#     )
-#     tag_group["E_cell"] = iutil.ModelTag(
-#         expr=fs.soec.E_cell[0],
-#         format_string="{:.4f}",
-#         display_units=pyo.units.V
-#     )
-
-#     tag_group["h2_product_rate_mass"] = iutil.ModelTag(
-#         expr=fs.h2_product_rate_mass[0],
-#         format_string="{:.3f}",
-#         display_units=pyo.units.kg / pyo.units.s,
-#     )
-#     # tag_group["co2_product_rate"] = iutil.ModelTag(
-#     #     expr=fs.co2_product_rate[0],
-#     #     format_string="{:.3f}",
-#     #     display_units=pyo.units.kmol / pyo.units.s,
-#     # )
-    # tag_group["co2_product_rate_mass"] = iutil.ModelTag(
-    #     expr=fs.CO2_captured[0],
-    #     format_string="{:.3f}",
-    #     display_units=pyo.units.kg / pyo.units.s,
-    # )
-#     # tag_group["fuel_rate"] = iutil.ModelTag(
-#     #     expr=fs.ng_preheater.shell.properties_in[0].flow_mol,
-#     #     format_string="{:.3f}",
-#     #     display_units=pyo.units.kmol / pyo.units.s,
-#     # )
-#     # tag_group["fuel_rate_mass"] = iutil.ModelTag(
-#     #     expr=fs.ng_preheater.shell.properties_in[0].flow_mass,
-#     #     format_string="{:.3f}",
-#     #     display_units=pyo.units.kg / pyo.units.s,
-#     # )
-    # tag_group["h2_compressor_power"] = iutil.ModelTag(
-    #     expr=m.fs.h2_compressor_power[0],
-    #     format_string="{:.2f}",
-    #     display_units=pyo.units.MW,
-    # )
-#     # tag_group["electric_power"] = iutil.ModelTag(
-#     #     expr=fs.electric_power[0],
-#     #     format_string="{:.3f}",
-#     #     display_units=pyo.units.MW,
-#     # )
-#     # tag_group["electric_power_per_mass_h2"] = iutil.ModelTag(
-#     #     expr=fs.electric_power_per_mass_h2[0],
-#     #     format_string="{:.3f}",
-#     #     display_units=pyo.units.MWh/pyo.units.kg,
-#     # )
-
-#     sd = tables.stream_states_dict(stream_states, 0)
-#     sdf = tables.generate_table(
-#         blocks=sd,
-#         attributes=[
-#             "flow_mass",
-#             "flow_mol",
-#             "temperature",
-#             "pressure",
-#             # "vapor_frac",
-#         ],
-#         exception=False,
-#     )
-
-#     sdf.sort_index(inplace=True)
-#     sdf.to_csv("streams.csv")
-
-#     tag_group["status"] = iutil.ModelTag(expr=None, format_string="{}")
-#     fs.tag_pfd = tag_group
 
 
 def display_input_tags(fs):
@@ -2242,7 +2062,8 @@ def write_pfd_results(m, filename, infilename=None):
         None
     """
     if infilename is None:
-        infilename = os.path.join(this_file_dir(), "rsofc_soec_mode_template_2.svg")
+        infilename = os.path.join(this_file_dir(),
+                                  "rsofc_soec_mode_template.svg")
     with open(infilename, "r") as f:
         iutil.svg_tag(svg=f, tag_group=m.soec_fs.tag_pfd, outfile=filename)
 
@@ -2286,110 +2107,6 @@ def get_model(m=None, name="SOEC Module"):
 
     return m, solver
 
-def residual_checker(m):
-    # Print model constraints - residual checker
-    with open('model_residuals.txt','w') as f:
-        for v in m.component_data_objects(pyo.Constraint, descend_into=True, active=True):
-            residual_value = abs(v.body() - v.lower())
-            if residual_value >= 1e-6:
-                a = " FAIL"
-            else:
-                a = " PASS"
-            residual_print = [str(v.name), ": value = ", str(residual_value), a, " \n"]
-            f.writelines(residual_print)
-def variables_generator(
-        block, tol=1e-6, relative=True, skip_lb=False, skip_ub=False):
-    """
-    Generator which returns all Var components in a model which have a value
-    within tol (default: relative) of a bound.
-
-    Args:
-        block : model to be studied
-        tol : (relative) tolerance for inclusion in generator (default = 1e-4)
-        relative : Boolean, use relative tolerance (default = True)
-        skip_lb: Boolean to skip lower bound (default = False)
-        skip_ub: Boolean to skip upper bound (default = False)
-
-    Returns:
-        A generator which returns all Var components block that are close to a
-        bound
-    """
-    for v in block.component_data_objects(
-            ctype=pyo.Var, active=True, descend_into=True):
-        # To avoid errors, check that v has a value
-        if v.value is None:
-            continue
-        if v.value is not None:
-            yield v
-def check_heat_exchanger_DT(fs):
-    print('')
-    print("-----------------------------------------------------------")  
-    print("check_heat_exchanger_DT and details")
-    print("-----------------------------------------------------------")    
-    print('bhx1 DT')
-    print('DT_out = ',pyo.value(fs.bhx1.delta_temperature_out[0]))
-    print('DT_in = ',pyo.value(fs.bhx1.delta_temperature_in[0]))
-    print('')
-    print('Tube side_in T = ', pyo.value(fs.bhx1.cold_side.properties_in[0].temperature))
-    print('Tube side_out T = ', pyo.value(fs.bhx1.cold_side.properties_out[0].temperature))
-    print('Shell side_in T = ', pyo.value(fs.bhx1.hot_side.properties_in[0].temperature))
-    print('Shell side_out T = ', pyo.value(fs.bhx1.hot_side.properties_out[0].temperature))
-    print('')
-    print('Area = ', pyo.value(fs.bhx1.area))
-    print('HTC = ', pyo.value(fs.bhx1.overall_heat_transfer_coefficient[0]))
-    print('')
-    print("-----------------------------------------------------------")    
-    print('air_preheater_1 DT')
-    print('DT_out = ',pyo.value(fs.air_preheater_1.delta_temperature_out[0]))
-    print('DT_in = ',pyo.value(fs.air_preheater_1.delta_temperature_in[0]))
-    print('')
-    print('Tube side_in T = ', pyo.value(fs.air_preheater_1.cold_side.properties_in[0].temperature))
-    print('Tube side_out T = ', pyo.value(fs.air_preheater_1.cold_side.properties_out[0].temperature))
-    print('Shell side_in T = ', pyo.value(fs.air_preheater_1.hot_side.properties_in[0].temperature))
-    print('Shell side_out T = ', pyo.value(fs.air_preheater_1.hot_side.properties_out[0].temperature))
-    print('')
-    print('Area = ', pyo.value(fs.air_preheater_1.area))
-    print('HTC = ', pyo.value(fs.air_preheater_1.overall_heat_transfer_coefficient[0]))
-    print('')
-    print("-----------------------------------------------------------")    
-    print('air_preheater_2 DT')
-    print('DT_out = ',pyo.value(fs.air_preheater_2.delta_temperature_out[0]))
-    print('DT_in = ',pyo.value(fs.air_preheater_2.delta_temperature_in[0]))
-    print('')
-    print('Tube side_in T = ', pyo.value(fs.air_preheater_2.cold_side.properties_in[0].temperature))
-    print('Tube side_out T = ', pyo.value(fs.air_preheater_2.cold_side.properties_out[0].temperature))
-    print('Shell side_in T = ', pyo.value(fs.air_preheater_2.hot_side.properties_in[0].temperature))
-    print('Shell side_out T = ', pyo.value(fs.air_preheater_2.hot_side.properties_out[0].temperature))
-    print('')
-    print('Area = ', pyo.value(fs.air_preheater_2.area))
-    print('HTC = ', pyo.value(fs.air_preheater_2.overall_heat_transfer_coefficient[0]))
-    print('')
-    print("-----------------------------------------------------------")    
-    print('oxygen_preheater DT')
-    print('DT_out = ',pyo.value(fs.oxygen_preheater.delta_temperature_out[0]))
-    print('DT_in = ',pyo.value(fs.oxygen_preheater.delta_temperature_in[0]))
-    print('')
-    print('Tube side_in T = ', pyo.value(fs.oxygen_preheater.cold_side.properties_in[0].temperature))
-    print('Tube side_out T = ', pyo.value(fs.oxygen_preheater.cold_side.properties_out[0].temperature))
-    print('Shell side_in T = ', pyo.value(fs.oxygen_preheater.hot_side.properties_in[0].temperature))
-    print('Shell side_out T = ', pyo.value(fs.oxygen_preheater.hot_side.properties_out[0].temperature))
-    print('')
-    print('Area = ', pyo.value(fs.oxygen_preheater.area))
-    print('HTC = ', pyo.value(fs.oxygen_preheater.overall_heat_transfer_coefficient[0]))
-    print('')
-    print("-----------------------------------------------------------")    
-    print('ng_preheater DT')
-    print('DT_out = ',pyo.value(fs.ng_preheater.delta_temperature_out[0]))
-    print('DT_in = ',pyo.value(fs.ng_preheater.delta_temperature_in[0]))
-    print('')
-    print('Tube side_in T = ', pyo.value(fs.ng_preheater.cold_side.properties_in[0].temperature))
-    print('Tube side_out T = ', pyo.value(fs.ng_preheater.cold_side.properties_out[0].temperature))
-    print('Shell side_in T = ', pyo.value(fs.ng_preheater.hot_side.properties_in[0].temperature))
-    print('Shell side_out T = ', pyo.value(fs.ng_preheater.hot_side.properties_out[0].temperature))
-    print('')
-    print('Area = ', pyo.value(fs.ng_preheater.area))
-    print('HTC = ', pyo.value(fs.ng_preheater.overall_heat_transfer_coefficient[0]))
-    print('')
 
 if __name__ == "__main__":
     m = pyo.ConcreteModel()
@@ -2399,41 +2116,17 @@ if __name__ == "__main__":
     rsofc_cost.lock_capital_cost(m)
     # rsofc_cost.get_rsofc_fixed_OM_costing(m, 650)
     rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
-
-    iscale.calculate_scaling_factors(m)
-    iscale.constraint_autoscale_large_jac(m)
     # check_scaling(m)
-    # write_pfd_results(m, "rsofc_soec_mode_template_2.svg")
-
-    # # Did not fix area of air preheater 2 as that it uses the outlet T as the dof instead
-    # # m.soec_fs.air_preheater_2.tube_outlet.temperature[0].unfix()
-    # m.soec_fs.air_preheater_2.overall_heat_transfer_coefficient.unfix()
-    # m.soec_fs.air_preheater_2.area.fix()
-
-    # m.soec_fs.bhx1.delta_temperature_out.unfix()
-    # # m.soec_fs.bhx1.overall_heat_transfer_coefficient.unfix()
-    # # m.soec_fs.bhx1.area.fix()
-    # m.soec_fs.bhx1.hot_side.properties_out[0].temperature.fix(330)
-
-    # m.soec_fs.air_preheater_1.delta_temperature_in.unfix()
-    # # m.soec_fs.air_preheater_1.overall_heat_transfer_coefficient.unfix()
-    # # m.soec_fs.air_preheater_1.area.fix()
-    # m.soec_fs.air_preheater_1.hot_side.properties_out[0].temperature.fix(650)
-
-    # m.soec_fs.oxygen_preheater.delta_temperature_in.unfix()
-    # # m.soec_fs.oxygen_preheater.overall_heat_transfer_coefficient.unfix() 
-    # # m.soec_fs.oxygen_preheater.area.fix()
-    # m.soec_fs.oxygen_preheater.cold_side.properties_out[0].temperature.fix(535)
-
-    # m.soec_fs.ng_preheater.delta_temperature_in.unfix()
-    # # m.soec_fs.ng_preheater.overall_heat_transfer_coefficient.unfix()   
-    # # m.soec_fs.ng_preheater.area.fix()
-    # m.soec_fs.ng_preheater.cold_side.properties_out[0].temperature.fix(535)
-
+    write_pfd_results(m, "rsofc_soec_results.svg")
 
     # strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
     # strip_bounds.apply_to(m, reversible=False)
 
+    #############################
+    # Omptimization #
+    #############################
+    iscale.calculate_scaling_factors(m)
+    iscale.constraint_autoscale_large_jac(m)
     print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
     m.soec_fs.tag_input["hydrogen_product_rate"].fix()
 
@@ -2509,11 +2202,11 @@ if __name__ == "__main__":
     with open("opt_res.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(head_1 + head_2)
-    # for h in np.linspace(375e6, 30e6, 24):  # Generate 24 points from 375 to 30
+    # for h in np.linspace(375e6, 30e6, 24):
     #     m.soec_fs.tag_input["n_cells"].fix(
     #         float(h)
     #     )
-    for h in np.linspace(2.5, 0.2, 24):  # Generate 25 points btw 2.5 to 0.1
+    for h in np.linspace(2.5, 0.2, 24):
         m.soec_fs.tag_input["hydrogen_product_rate"].fix(
             float(h) * pyo.units.kmol / pyo.units.s
         )
@@ -2533,5 +2226,5 @@ if __name__ == "__main__":
             w = csv.writer(f)
             w.writerow(row_1 + row_2)
         # write_pfd_results(
-        #     m, f"soec_{m.tag_input['hydrogen_product_rate'].display(units=False)}.svg"
+        #     m, f"rsofc_soec_{m.soec_fs.tag_input['hydrogen_product_rate'].display(units=False)}.svg"
         # )
