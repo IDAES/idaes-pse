@@ -77,22 +77,26 @@ class SurrogateTrainer(object):
         self._validation_dataframe = validation_dataframe
 
         # check that all input labels and output labels are in the dataframes
-        if set(self._input_labels) - set(self._training_dataframe.columns):
-            raise ValueError('An input label was specified that was not '
-                             'found in the training data.')
-        if (self._validation_dataframe is not None and
-                set(self._input_labels) -
-                set(self._validation_dataframe.columns)):
-            raise ValueError('An input label was specified that was not '
-                             'found in the validation data.')
-        if set(self._output_labels) - set(self._training_dataframe.columns):
-            raise ValueError('An output label was specified that was not '
-                             'found in the training data.')
-        if (self._validation_dataframe is not None and
-                set(self._output_labels) -
-                set(self._validation_dataframe.columns)):
-            raise ValueError('An output label was specified that was not '
-                             'found in the validation data.')
+        diff = set(self._input_labels) - set(self._training_dataframe.columns) 
+        if diff:
+            raise ValueError('The following input labels were not found in '
+                             'the training data columns: {}.'.format(diff))
+        if self._validation_dataframe is not None:
+            diff = set(self._input_labels) - set(self._validation_dataframe.columns)
+            if diff:
+                raise ValueError('The following input labels were not found in '
+                                 'the validation data columns: {}.'.format(diff))
+
+        diff = set(self._output_labels) - set(self._training_dataframe.columns) 
+        if diff:
+            raise ValueError('The following output labels were not found in '
+                             'the training data columns: {}.'.format(diff))
+
+        if self._validation_dataframe is not None:
+            diff = set(self._output_labels) - set(self._validation_dataframe.columns)
+            if diff:
+                raise ValueError('The following output labels were not found in '
+                                 'the validation data columns: {}.'.format(diff))
 
         if input_bounds is not None:
             self._input_bounds = dict(input_bounds)
@@ -125,7 +129,7 @@ class SurrogateTrainer(object):
 
         Returns: list of strings
         """
-        return self._input_labels
+        return list(self._input_labels)
 
     def output_labels(self):
         """
@@ -133,7 +137,7 @@ class SurrogateTrainer(object):
 
         Returns: list of strings
         """        
-        return self._output_labels
+        return list(self._output_labels)
 
     def input_bounds(self):
         """
@@ -142,8 +146,10 @@ class SurrogateTrainer(object):
         
         Returns: dict
         """
-        return self._input_bounds
-
+        if self._input_bounds:
+            return dict(self._input_bounds)
+        return None
+    
     def train_surrogate(self):
         """
         The ``train_surrogate`` method is used to train a surrogate model
@@ -186,6 +192,14 @@ class SurrogateBase():
         self._output_labels = output_labels
         self._input_bounds = input_bounds
 
+        # check that the input and output labels do not overlap
+        all_labels = set(self._input_labels)
+        all_labels.update(self._output_labels)
+        if len(all_labels) != (
+                len(self._input_labels) + len(self._output_labels)):
+            raise ValueError(
+                'Duplicate label found in input_labels and/or output_labels.')
+
     def n_inputs(self):
         """
         The number of inputs for the surrogate
@@ -208,7 +222,7 @@ class SurrogateBase():
 
         Returns: list of strings
         """
-        return self._input_labels
+        return list(self._input_labels)
 
     def output_labels(self):
         """
@@ -216,7 +230,7 @@ class SurrogateBase():
 
         Returns: list of strings
         """        
-        return self._output_labels
+        return list(self._output_labels)
 
     def input_bounds(self):
         """
@@ -225,8 +239,10 @@ class SurrogateBase():
         
         Returns: dict
         """
-        return self._input_bounds
-
+        if self._input_bounds:
+            return dict(self._input_bounds)
+        return None
+    
     def populate_block(self, block, **kwargs):
         """
         Method to populate a Pyomo Block with surrogate model

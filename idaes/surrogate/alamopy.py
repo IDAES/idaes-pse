@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import json
 
-from pyomo.environ import Constraint, value, sin, cos, log, exp, Set
+from pyomo.environ import Constraint, value, sin, cos, log, exp, Set, Integers
 from pyomo.common.config import ConfigValue, In, Path, ListOf, Bool
 from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
@@ -116,15 +116,6 @@ common_trace = [
     "GREEDYBACK", "REGULARIZER", "SOLVEMIP"]
 
 
-# Validator for list of ints that are not 0 or 1
-def IntNot01(val):
-    ans = int(val)
-    if ans != val or ans in {0, 1}:
-        raise ValueError(
-            f"Value must be an integer other than 0 or 1; received {val}")
-    return ans
-
-
 class AlamoTrainer(SurrogateTrainer):
     """
     Standard SurrogateTrainer for ALAMO.
@@ -165,7 +156,7 @@ class AlamoTrainer(SurrogateTrainer):
     # Basis function options
     CONFIG.declare('monomialpower', ConfigValue(
         default=None,
-        domain=ListOf(int, IntNot01),
+        domain=ListOf(int, In(Integers - {0,1})), # allow any integer except for 0 and 1
         description="Vector of monomial powers considered in basis "
         "functions."))
     CONFIG.declare('multi2power', ConfigValue(
@@ -488,8 +479,8 @@ class AlamoTrainer(SurrogateTrainer):
         # Get paths for temp files
         self._get_files()
 
-        rc = None
-        almlog = None
+        return_code = None
+        alamo_log = None
         alamo_object = None
 
         try:
@@ -497,7 +488,7 @@ class AlamoTrainer(SurrogateTrainer):
             self._write_alm_file()
 
             # Call ALAMO executable
-            rc, almlog = self._call_alamo()
+            return_code, alamo_log = self._call_alamo()
 
             # Read back results
             trace_dict = self._read_trace_file(self._trcfile, self.output_labels())
@@ -511,11 +502,12 @@ class AlamoTrainer(SurrogateTrainer):
             self._remove_temp_files()
 
         success = False
-        if rc == 0:
+        if return_code == 0:
+            # non-zero return code implies an error (specifics returned in the msg
             success = True
-        almmsg = almlog.split("\n")[-3]
+        alamo_msg = alamo_log.split("\n")[-3]
 
-        return success, alamo_object, almmsg
+        return success, alamo_object, alamo_msg
 
     # TODO: let's generalize this under the metrics?
     def get_alamo_results(self):
@@ -765,23 +757,25 @@ class AlamoTrainer(SurrogateTrainer):
                 t.STDOUT.flush()
                 t.STDERR.flush()
 
-            rc = results.returncode
-            almlog = ostreams[0].getvalue()
+            return_code = results.returncode
+            alamo_log = ostreams[0].getvalue()
+
         except OSError:
-            raise OSError(
-                f'Could not execute the command: alamo {str(self._almfile)}. '
-                f'Error message: {sys.exc_info()[1]}.')
+            logger.error( f'Could not execute the command: alamo {str(self._almfile)}. ',
+                          f'Error message: {sys.exc_info()[1]}.')
+            raise
+
         finally:
             # Revert cwd to where it started
             os.chdir(cwd)
 
-        if "ALAMO terminated with termination code " in almlog:
+        if "ALAMO terminated with termination code " in alamo_log:
             self._remove_temp_files()
             raise RuntimeError(
                 "ALAMO executable returned non-zero return code. Check "
                 "the ALAMO output for more information.")
 
-        return rc, almlog
+        return return_code, alamo_log
 
     @staticmethod
     def _read_trace_file(trcfile, output_labels):
@@ -922,8 +916,9 @@ class AlamoSurrogate(SurrogateBase):
 
     def __init__(
             self, surrogate_expressions, input_labels, output_labels, input_bounds=None):
-        super(AlamoSurrogate, self).__init__(input_labels, output_labels, input_bounds)
+        super().__init__(input_labels, output_labels, input_bounds)
         self._surrogate_expressions = surrogate_expressions
+        self._fcn = None
 
     def evaluate_surrogate(self, inputs):
         """
@@ -942,12 +937,14 @@ class AlamoSurrogate(SurrogateBase):
               The index of the output dataframe should match the index of the provided inputs.
         """
         # Create a set of lambda functions for evaluating the surrogate.
-        fcn = dict()
-        for o in self._output_labels:
-            fcn[o] = eval(
-                f"lambda {', '.join(self._input_labels)}: "
-                f"{self._surrogate_expressions[o].split('==')[1]}",
-                GLOBAL_FUNCS)
+        if self._fcn is None:
+            fcn = dict()
+            for o in self._output_labels:
+                fcn[o] = eval(
+                    f"lambda {', '.join(self._input_labels)}: "
+                    f"{self._surrogate_expressions[o].split('==')[1]}",
+                    GLOBAL_FUNCS)
+            self._fcn = fcn
 
         # Use numpy to do the calculations as it is faster
         inputdata = inputs[self._input_labels].to_numpy()
