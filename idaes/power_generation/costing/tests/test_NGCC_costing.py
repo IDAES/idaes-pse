@@ -329,7 +329,7 @@ def test_units3_costing(build_costing):
 def test_flowsheet_costing(build_costing):
     m = build_costing
     # Build cost constraints
-    get_total_TPC(m)
+    get_total_TPC(m.fs)
 
     # Initialize costing
     costing_initialization(m.fs)
