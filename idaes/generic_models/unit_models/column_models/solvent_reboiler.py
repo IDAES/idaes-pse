@@ -13,13 +13,14 @@
 """
 Reboiler model for solvent columns.
 
-This is a simple model for a rboiler in the case where liquid and vapor phases
-have separate proeprty packages, suchas the case of solvent columns.
+This is a simple model for a reboiler in the case where liquid and vapor phases
+have separate proeprty packages, such as the case of solvent columns.
 
 Assumptions:
-     * Liquid phase property pakcage has a single phase named Liq
-     * Vapor phase property pakcagehas a single phase named Vap
-     * Liquid and vapor phase proeprtes need not have the same component lists
+     * Steady-state only
+     * Liquid phase property package has a single phase named Liq
+     * Vapor phase property package has a single phase named Vap
+     * Liquid and vapor phase properties need not have the same component lists
 """
 
 __author__ = "Andrew Lee, Paul Akula"
