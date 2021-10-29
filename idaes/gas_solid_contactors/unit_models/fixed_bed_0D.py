@@ -107,7 +107,7 @@ property block(s) and used when constructing these,
 see property package for documentation.}"""))
     CONFIG.declare("reaction_package", ConfigValue(
         default=None,
-        # TODO: Had to remove domain due to limitations in ReactionBase for
+        # Removed domain argument due to limitations in ReactionBase for
         # heterogeneous systems
         description="Reaction package to use for unit",
         doc="""Reaction parameter object used to define reaction calculations,
@@ -281,6 +281,19 @@ see reaction package for documentation.}"""))
                           for r in b.config.reaction_package.
                           rate_reaction_idx)
 
+        if self.config.energy_balance_type == EnergyBalanceType.none:
+            # Fix solids temperature to initial value for isothermal conditions
+            @self.Constraint(
+                    self.flowsheet().config.time,
+                    doc="Isothermal solid phase constraint")
+            def isothermal_solid_phase(b, t):
+                if t == b.flowsheet().config.time.first():
+                    return Constraint.Skip
+                else:
+                    return (
+                            b.solids[t].temperature ==
+                            b.solids[0].temperature)
+
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
         """
@@ -339,12 +352,6 @@ see reaction package for documentation.}"""))
         blk.reactions.initialize(outlvl=outlvl,
                                  optarg=optarg,
                                  solver=solver)
-
-        # TODO - maybe set this up in a nicer way
-        # Fix the solids temperature to initial value if isothermal conditions
-        if blk.config.energy_balance_type == EnergyBalanceType.none:
-            for t in blk.flowsheet().config.time:
-                blk.solids[t].temperature.fix(blk.solids[0].temperature.value)
 
         init_log.info_high("Initialization Step 1 Complete.")
 
