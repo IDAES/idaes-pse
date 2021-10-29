@@ -200,10 +200,6 @@ class Diffus():
     @staticmethod
     def return_expression(blk, p, i, T):
         # Diffusion Coefficient(binary) constants - Ref: #3
-        # Diffusion volumes in Fuller-Schettler-Giddings correlation
-        # for estimating binary diffusivities of components in vapor phase
-        # Reference: Table 3.1 pp 71 Seader Henley (2006)
-
         pobj = blk.params.get_phase(p)
 
         binary_set = []
