@@ -58,7 +58,7 @@ frequently fixed are two of:
 * heat transfer coefficient, or
 * temperature approach.
 
-The user may also provide constants to calculate the heat transfer coefficient.
+The user may also provide constraints to calculate the heat transfer coefficient.
 
 Model Structure
 ---------------
@@ -140,9 +140,17 @@ Defined Callbacks for the ``delta_temperature_callback`` Option
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These callbacks provide expressions for the temperature difference used in the
-heat transfer equations.
+heat transfer equations. There is a choice of three forms for the LMTD
+calculation.  Depending on the expected approach temperatures, one form may be
+more favorable.  The first two forms do not require one side or the other to
+be the hot side, while the third form requires the hot side to be the hot side
+to avoid an evaluation error in the log function.
 
 .. autofunction:: delta_temperature_lmtd_callback
+
+.. autofunction:: delta_temperature_lmtd2_callback
+
+.. autofunction:: delta_temperature_lmtd3_callback
 
 .. autofunction:: delta_temperature_amtd_callback
 
