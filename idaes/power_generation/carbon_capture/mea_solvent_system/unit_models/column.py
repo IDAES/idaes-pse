@@ -165,6 +165,25 @@ The momentum balances are not added when this is True.
         domain=float,
         description="fixed column pressure in Pa",
         doc="Fixed column operating pressure in Pa"))
+    CONFIG.declare("fix_column_pressure_drop", ConfigValue(
+        default=True,
+        domain=Bool,
+        description="Indicates whether the column pressure drop should be fixed or not",
+        doc=""""Indicates whether the column pressure drop should be fixed or not.
+If this is fixed, the column pressure profile will be calculated accordingly.
+If this is not fixed, pressure drop will be calculated based on the inbuilt correlation."""))
+    CONFIG.declare("simple_flooding_velocity_calculation", ConfigValue(
+        default=True,
+        domain=Bool,
+        description="Indicates whether the simple flooding velocity calculation is to be used",
+        doc="""Indicates whether the simple flooding velocity calculation is to be used.
+If this is true, the gas flooding velocity will be calculated based on a simplified correlation.
+If this is not true, gas flooding velocity will be calculated based on the inbuilt correlation."""))
+    CONFIG.declare("column_pressure_drop", ConfigValue(
+        default=200,
+        domain=float,
+        description="Column pressure drop per unit length in Pa/m",
+        doc="Column pressure drop per unit length in Pa/m"))
     # Populate the phase side template to default values
     _PhaseCONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
@@ -351,7 +370,7 @@ documentation for supported schemes,
         """
 
         # ======================================================================
-        # Aliases for  Sets
+        # Custom Sets
         vap_comp = self.config.vapor_side.property_package.component_list
         liq_comp = self.config.liquid_side.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
@@ -359,8 +378,6 @@ documentation for supported schemes,
             self.config.liquid_side.property_package.solvent_set
         solute_comp_list = self.config.liquid_side.property_package.solute_set
         vap_comp_non_diffus = vap_comp - equilibrium_comp
-        electrolyte_comp_diffus = self.config.liquid_side.property_package.component_list_diffus\
-            - (self.config.liquid_side.property_package.component_list_diffus & liq_comp)
         vapor_phase_list_ref = \
             self.config.vapor_side.property_package.phase_list
         liquid_phase_list_ref = \
@@ -382,8 +399,8 @@ documentation for supported schemes,
                            units=pyunits.m,
                            doc="Packing channel size (m)")
 
-        # specific constants for volumetric mass transfer coefficients
-        # reference:  Billet and Schultes, 1999
+        # Specific constants for volumetric mass transfer coefficients
+        # Reference:  Billet and Schultes, 1999
         self.Cv_ref = Var(initialize=0.357,
                           doc='''Vapor packing specific constant in
                                 Billet and Schultes' (1999) volumetric
@@ -403,7 +420,7 @@ documentation for supported schemes,
         self.zi = Param(self.vapor_phase.length_domain, mutable=True,
                         doc='''Integer indexing parameter required for transfer
                              across boundaries of a given volume element''')
-        # Set the integer  indices
+        # Set the integer indices along vapor phase length domain
         for i, x in enumerate(self.vapor_phase.length_domain, 1):
             self.zi[x] = i
 
@@ -417,42 +434,7 @@ documentation for supported schemes,
             doc='Continuation parameter to turn on heat transfer '
             'terms gradually')
 
-        # fixed column pressure
-        if self.config.fix_column_pressure:
-            self.column_pressure = Param(
-                initialize=self.config.column_pressure,
-                mutable=True,
-                units=pyunits.Pa,
-                doc='Fixed operating pressure of column')
-        else:
-            self.column_top_pressure = Var(
-                initialize=self.config.column_pressure,
-                units=pyunits.Pa,
-                doc='Operating pressure of column at the topmost stage')
-            self.deltaP = Var(
-                initialize=0.001,
-                units=pyunits.Pa,
-                doc='Pressure drop across the column')
-
-            # Irrigated packing pressure drop calculation
-            # Add reference
-
-            # Particle diameter
-            self.dp = Param(initialize=6*(1-self.eps_ref)/self.a_ref,
-                            units=pyunits.m,
-                            doc='Packing particle diameter')
-
-            # Reynolds number for gas
-            def rule_Re_g(blk, t, x):
-                return blk.vapor_phase.properties[t, x].dens_mass*\
-                blk.velocity_vap[t,x]*blk.dp/blk.vapor_phase.properties[t, x].visc_d
-
-            self.Re_g = Expression(self.flowsheet().time,
-                                   self.vapor_phase.length_domain,
-                                   rule=rule_Re_g,
-                                   doc='Reynolds number for gas')
-
-        # Interfacial area  parameters
+        # Interfacial area parameters
         self.area_interfacial_parA = Var(initialize=0.6486,
                                          units=None,
                                          doc='Interfacial area parameter A')
@@ -503,19 +485,229 @@ documentation for supported schemes,
                                 initialize=0.01,
                                 doc='Liquid superficial velocity')
         
-        # Kister and Gill flooding correlation
-        # confirm and add
+        # Liquid holdup model    
+        if self.config.fix_column_pressure or self.config.fix_column_pressure_drop:
+            # reference: Tsai correlation,regressed by Chinen et al. 2018
+            def rule_holdup_liq(blk, t, x):
+                return (blk.holdup_parA * (
+                    (blk.velocity_liq[t, x]*blk.area_column/\
+                     (CONST.pi*blk.dh_ref*(blk.S_ref)**(2)*(g_ref)**(2/3))) *
+                    (blk.liquid_phase.properties[t, x].visc_d_phase['Liq'] /
+                     (blk.liquid_phase.properties[t, x].mw/\
+                        blk.liquid_phase.properties[t, x].vol_mol_phase['Liq']))**(0.333)
+                    )**blk.holdup_parB)
+    
+            self.holdup_liq = Expression(self.flowsheet().time,
+                                         self.liquid_phase.length_domain,
+                                         rule=rule_holdup_liq,
+                                         doc='Volumetric liquid holdup [-]')
+        else:
+            # Reference: Stichlmair correlation 
+            def rule_holdup_liq(blk, t, x):
+                x_t = blk.liquid_phase.length_domain.at(blk.zi[x].value - 1)
+                Fr_l = ((blk.velocity_liq[t, x])**2)*blk.a_ref/(g_ref*(blk.eps_ref)**4.65)
+                h0 = 0.555*(Fr_l)**(1/3)
+                return h0*(1 + 20*(blk.config.vapor_side.property_package.deltaP[t, 1-x]*(x - x_t)/\
+                            ((blk.liquid_phase.properties[t, x].mw/\
+                        blk.liquid_phase.properties[t, x].vol_mol_phase['Liq'])*g_ref)**2))
+    
+            self.holdup_liq = Expression(self.flowsheet().time,
+                                         self.liquid_phase.length_domain,
+                                         rule=rule_holdup_liq,
+                                         doc='Volumetric liquid holdup [-]')
+
+        # Vapor holdup model
+        # reference: Tsai correlation,regressed by Chinen et al. 2018
+        def rule_holdup_vap(blk, t, x):
+            return blk.eps_ref - blk.holdup_liq[t, x]
+
+        self.holdup_vap = Expression(self.flowsheet().time,
+                                     self.vapor_phase.length_domain,
+                                     rule=rule_holdup_vap,
+                                     doc='Volumetric vapor holdup [-]')
         
-        # mass and heat transfer terms
-        # mass transfer
+        # Column pressure profile
+        if self.config.fix_column_pressure:
+            self.column_pressure = Param(
+                initialize=self.config.column_pressure,
+                mutable=True,
+                units=pyunits.Pa,
+                doc='Fixed operating pressure of column')
+        else:
+            if self.config.fix_column_pressure_drop:
+                
+                def rule_deltaP(blk, t, x):
+                return blk.vapor_phase.deltaP[t, x] == self.config.column_pressure_drop
+                    
+                self.deltaP_constr = Constraint(self.flowsheet().time,
+                                    self.vapor_phase.length_domain,
+                                    rule=rule_deltaP,
+                                    doc='Irrigated packing pressure drop (per unit length)
+                                         'constraint with user defined value for deltaP')
+            else:   
+                # Irrigated packing pressure drop calculation
+                # Stichlmair correlation
+    
+                # Particle diameter
+                self.dp = Param(initialize=6*(1-self.eps_ref)/self.a_ref,
+                                units=pyunits.m,
+                                doc='Packing particle diameter')
+    
+                # Reynolds number for gas
+                def rule_Re_g(blk, t, x):
+                    return blk.vapor_phase.properties[t, x].mw/\
+                        blk.vapor_phase.properties[t, x].vol_mol_phase['Vap']*\
+                    blk.velocity_vap[t,x]*blk.dp/blk.vapor_phase.properties[t, x].visc_d_phase['Vap']
+    
+                self.Re_g = Expression(self.flowsheet().time,
+                                       self.vapor_phase.length_domain,
+                                       rule=rule_Re_g,
+                                       doc='Reynolds number for gas')
+                
+                # Friction factor for flow past a single particle
+                # Parameter Reference - Chinen et al 2018
+                self.C1 = Param(initialize=0.207843,
+                                units=None,
+                                doc='Constant C1 based on packing type')
+                self.C2 = Param(initialize=11.45,
+                                units=None,
+                                doc='Constant C2 based on packing type')
+                self.C3 = Param(initialize=0.6471,
+                                units=None,
+                                doc='Constant C3 based on packing type')
+    
+                def rule_f0(blk, t, x):
+                    return (self.C1/self.Re_g[t, x]) + (self.C2/(self.Re_g[t, x])**0.5) + self.C3
+    
+                self.f0 = Expression(self.flowsheet().time,
+                                       self.vapor_phase.length_domain,
+                                       rule=rule_f0,
+                                       doc='Friction factor for flow past a single particle')
+                
+                # Particle diameter in an irrigated column 
+                def rule_dp_wet(blk, t, x):
+                    return blk.dp*((1 - blk.eps_ref + blk.holdup_liq[t, x])/(1 - blk.eps_ref))**(1/3)
+                
+                self.dp_wet = Expression(self.flowsheet().time,
+                                       self.liquid_phase.length_domain,
+                                       rule=rule_dp_wet,
+                                       doc='Packing particle diameter in an irrigated column')
+                
+                # Friction factor for flow past a single particle in an irrigated column
+                def rule_c(blk, t, x):
+                    return ((-blk.C1/blk.Re_g[t, x]) - (blk.C2/(2*(blk.Re_g[t, x])**0.5))) /\
+                        blk.f0[t, x]
+                        
+                self.c = Expression(self.flowsheet().time,
+                                    self.vapor_phase.length_domain,
+                                    rule=rule_c,
+                                    doc='Constant for calculating wet friction factor')
+                
+                def rule_f0_wet(blk, t, x):
+                    return blk.f0[t, 1-x]*(blk.dp_wet[t, x]/blk.dp)**blk.c[t, 1-x]
+                
+                self.f0_wet = Expression(self.flowsheet().time,
+                                    self.liquid_phase.length_domain,
+                                    rule=rule_f0_wet,
+                                    doc='Friction factor for flow past a' 
+                                    'single particle in an irrigated column')
+                
+                def rule_deltaP(blk, t, x):
+                    xb = blk.vapor_phase.length_domain.at(blk.zi[x].value - 1)
+                    return (blk.vapor_phase.deltaP[t, x]*(x - xb)) - ((3/4)*blk.f0_wet[t, 1-x]*((1-blk.holdup_vap[t, x])/\
+                        (blk.holdup_vap[t, x])**4.65)*blk.vapor_phase.properties[t, x].mw/\
+                        blk.vapor_phase.properties[t, x].vol_mol_phase['Vap']*\
+                        (blk.velocity_vap[t, x]**2)/blk.dp_wet[t, 1-x]) == 0
+                        
+                self.deltaP_constr = Constraint(self.flowsheet().time,
+                                    self.vapor_phase.length_domain,
+                                    rule=rule_deltaP,
+                                    doc='Irrigated packing pressure drop constraint')
+                
+        if self.config.simple_flooding_velocity_calculation:
+            def rule_flood_velocity(blk, t, x):
+                dens_liq = blk.liquid_phase.properties[t, 1-x].mw/\
+                        blk.liquid_phase.properties[t, 1-x].vol_mol_phase['Liq']
+                        
+                dens_vap = blk.vapor_phase.properties[t, x].mw/\
+                        blk.vapor_phase.properties[t, x].vol_mol_phase['Vap']
+                        
+                H = (blk.liquid_phase.properties[t, 1-x].flow_mass_phase['Liq']/\
+                    blk.vapor_phase.properties[t, x].flow_mass_phase['Vap'])*\
+                    (dens_liq/dens_vap)**0.5
+                    
+                mu_water = 0.001*pyunits.Pa*pyunits.s
+                
+                gref = pyunits.convert(g_ref, to_units=pyunits.ft/(pyunits.s)**2)
+                
+                aref = pyunits.convert(self.a_ref, to_units=((pyunits.ft)**2)/(pyunits.ft)**3)
+                
+                return ((gref*((self.eps_ref)**2)/aref)*(dens_liq/dens_vap)*\
+                    ((blk.liquid_phase.properties[t, 1-x].visc_d_phase['Liq']/mu_water)*(-0.2))*\
+                        exp(-4*(H)**(0.25)))**0.5
+                    
+            self.gas_velocity_flood = Expression(self.flowsheet().time,
+                                    self.vapor_phase.length_domain,
+                                    rule=rule_flood_velocity,
+                                    doc='Gas velocity at flooding point')
+        else:
+            # Stichlmair flooding correlation
+            # Dimensionless pressure drop term (deltaP/rho_l*g*Z) at flooding
+            self.deltaP_dimless_term = Var(self.flowsheet().time,
+                                    self.liquid_phase.length_domain,
+                                    units=None,
+                                    initialize=0.001,
+                                    doc='Dimensionless pressure drop term at flooding')
+            
+            # Flooding point correlation
+            def rule_flood_eqn(blk, t, x):
+                Fr_l = ((blk.velocity_liq[t, x])**2)*blk.a_ref/(g_ref*(blk.eps_ref)**4.65)
+                h0 = 0.555*(Fr_l)**(1/3)
+                return (blk.deltaP_dimless_term[t, x])**(-2) - ((40*(2+blk.c[1-x])*h0/3)/\
+                    (1 - blk.eps_ref + h0*(1 + 20*(blk.deltaP_dimless_term[t, x])**2))) - \
+                    (186*h0/(blk.eps_ref - h0*(1 + 20*(blk.deltaP_dimless_term[t, x])**2))) == 0
+            
+            self.flooding_equation = Constraint(self.flowsheet().time,
+                                    self.liquid_phase.length_domain,
+                                    rule=rule_flood_eqn,
+                                    doc='Flooding point correlation')
+            
+            # Gas velocity at flooding point
+            def rule_flood_velocity(blk, t, x):
+                return ((blk.deltaP_dimless_term[t, 1-x]*\
+                        blk.liquid_phase.properties[t, 1-x].mw/\
+                        blk.liquid_phase.properties[t, 1-x].vol_mol_phase['Liq']*g_ref)/\
+                    ((3/4)*blk.f0_wet[t, 1-x]*((1-blk.holdup_vap[t, x])/\
+                        (blk.holdup_vap[t, x])**4.65)*blk.vapor_phase.properties[t, x].mw/\
+                        blk.vapor_phase.properties[t, x].vol_mol_phase['Vap']*\
+                     /blk.dp_wet[t, 1-x]))**0.5
+                    
+            self.gas_velocity_flood = Expression(self.flowsheet().time,
+                                    self.vapor_phase.length_domain,
+                                    rule=rule_flood_velocity,
+                                    doc='Gas velocity at flooding point')
+            
+        # Flooding fraction 
+        def rule_flood_fraction(blk, t, x):
+            return blk.velocity_vap[t, x]/blk.gas_velocity_flood[t, x]
+            
+        self.flood_fraction = Expression(self.flowsheet().time,
+                                    self.vapor_phase.length_domain,
+                                    rule=rule_flood_fraction,
+                                    doc='Flooding fraction (expected to be below 0.8)')
+        
+        # Mass and heat transfer terms
+        
+        # Mass transfer terms
         self.pressure_equil = Var(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
-            liq_comp,
+            equilibrium_comp,
             domain=NonNegativeReals,
             initialize=500,
             units=pyunits.Pa,
             doc='Equilibruim pressure of diffusing components at interface')
+        
         self.interphase_mass_transfer = Var(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
@@ -524,32 +716,17 @@ documentation for supported schemes,
             initialize=0.0,
             units=pyunits.mol / (pyunits.s * pyunits.m),
             doc='Moles of diffusing species transfered into liquid')
-        self.enhancement_factor = Param(self.flowsheet().time,
+        
+        self.enhancement_factor = Var(self.flowsheet().time,
                                       self.liquid_phase.length_domain,
                                       units=None,
                                       mutable=True,
                                       initialize=160,
                                       doc='Enhancement factor')
+        
+        self.enhancement_factor.fix(160)
 
-        self.yi_solvent = Var(self.flowsheet().time,
-                          self.liquid_phase.length_domain,
-                          solvent_comp_list,
-                          domain=NonNegativeReals,
-                          initialize=0.5,
-                          units=None,
-                          doc='''Dimensionless concentration of solvent \
-                              components (except H2O)
-                                    at interface ''')
-        self.yeq_solute = Var(self.flowsheet().time,
-                           self.liquid_phase.length_domain,
-                           solute_comp_list,
-                           domain=NonNegativeReals,
-                           initialize=0.5,
-                           units=None,
-                           doc='''Dimensionless concentration of solute
-                                      in equilibruim with the bulk''')
-
-        # heat transfer
+        # Heat transfer
         self.heat_vap = Var(self.flowsheet().time,
                             self.vapor_phase.length_domain,
                             domain=Reals,
@@ -573,40 +750,16 @@ documentation for supported schemes,
                 return Expression.Skip
             else:
                 return (blk.a_ref * blk.area_interfacial_parA * (
-                    (blk.liquid_phase.properties[t, x].dens_mass /
-                    blk.liquid_phase.properties[t, x].surf_tens) * (g_ref)**(1/3) *
-                    (blk.velocity_liq[t, x]*blk.area_column/(CONST.pi*blk.dh_ref))**(4.0 / 3.0)
+                    (blk.liquid_phase.properties[t, 1-x].mw/\
+                    blk.liquid_phase.properties[t, 1-x].vol_mol_phase['Liq']* /
+                    blk.liquid_phase.properties[t, 1-x].surf_tens) * (g_ref)**(1/3) *
+                    (blk.velocity_liq[t, 1-x]*blk.area_column/(CONST.pi*blk.dh_ref))**(4.0 / 3.0)
                     )**blk.area_interfacial_parB)
 
         self.area_interfacial = Expression(self.flowsheet().time,
                                            self.vapor_phase.length_domain,
                                            rule=rule_interfacial_area,
                                            doc='Specific inter-facial area')
-
-        # liquid holdup model
-        # reference: Tsai correlation,regressed by Chinen et al. 2018
-        def rule_holdup_liq(blk, t, x):
-            return (blk.holdup_parA * (
-                (blk.velocity_liq[t, x]*blk.area_column/\
-                 (CONST.pi*blk.dh_ref*(blk.S_ref)**(2)*(g_ref)**(2/3))) *
-                (blk.liquid_phase.properties[t, x].visc_d /
-                 blk.liquid_phase.properties[t, x].dens_mass)**(0.333)
-                )**blk.holdup_parB)
-
-        self.holdup_liq = Expression(self.flowsheet().time,
-                                     self.liquid_phase.length_domain,
-                                     rule=rule_holdup_liq,
-                                     doc='Volumetric liquid holdup [-]')
-
-        # vapor holdup model
-        # reference: Tsai correlation,regressed by Chinen et al. 2018
-        def rule_holdup_vap(blk, t, x):
-            return blk.eps_ref - blk.holdup_liq[t, x]
-
-        self.holdup_vap = Expression(self.flowsheet().time,
-                                     self.vapor_phase.length_domain,
-                                     rule=rule_holdup_vap,
-                                     doc='Volumetric vapor holdup [-]')
 
         # ---------------------------------------------------------------------
         # Geometry contraints
@@ -684,7 +837,7 @@ documentation for supported schemes,
             return blk.liquid_phase.length == blk.length_column
 
         # ---------------------------------------------------------------------
-        # Hydrodynamic contraints
+        # Hydrodynamic constraints
         # Vapor superficial velocity
 
         @self.Constraint(self.flowsheet().time,
@@ -708,7 +861,7 @@ documentation for supported schemes,
         # Mass transfer coefficients, Billet and Schultes (1999) correlation,
         # where parameters are regressed by Chinen et al. (2018).
 
-        # vapor mass transfer coeff. for diffusing components [mol/m2.s.Pa]
+        # Vapor mass transfer coeff. for diffusing components [mol/m2.s.Pa]
         def rule_mass_transfer_coeff_vap(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
                 return Expression.Skip
@@ -717,13 +870,15 @@ documentation for supported schemes,
                     1/(R_ref * blk.vapor_phase.properties[t, x].temperature) *
                     blk.Cv_ref / (blk.holdup_vap[t, x])**0.5 *
                     (blk.a_ref / blk.dh_ref)**0.5 *
-                    (blk.vapor_phase.properties[t, x].diffus[j])**(2/3) *
-                    (blk.vapor_phase.properties[t, x].visc_d /
-                      blk.vapor_phase.properties[t, x].dens_mass)**(1/3) *
+                    (blk.vapor_phase.properties[t, x].diffus_phase_comp[j])**(2/3) *
+                    (blk.vapor_phase.properties[t, x].visc_d_phase['Vap'] /
+                      (blk.vapor_phase.properties[t, x].mw/\
+                    blk.vapor_phase.properties[t, x].vol_mol_phase['Vap']))**(1/3) *
                     ((blk.velocity_vap[t, x] *
-                      blk.vapor_phase.properties[t, x].dens_mass) /
+                      (blk.vapor_phase.properties[t, x].mw/\
+                    blk.vapor_phase.properties[t, x].vol_mol_phase['Vap'])) /
                       (blk.a_ref *
-                      blk.vapor_phase.properties[t, x].visc_d))**(3/4))
+                      blk.vapor_phase.properties[t, x].visc_d_phase['Vap']))**(3/4))
             else:
                 return Expression.Skip
 
@@ -733,15 +888,16 @@ documentation for supported schemes,
                               rule=rule_mass_transfer_coeff_vap,
                               doc=' Vapor mass transfer coefficient ')
 
-        # mass transfer coefficients of diffusing components in liquid phase  [m/s]
+        # Mass transfer coefficients of diffusing components in liquid phase  [m/s]
         def rule_mass_transfer_coeff_liq(blk, t, x, j):
             if x == self.liquid_phase.length_domain.last():
                 return Expression.Skip
             else:
                 return blk.Cl_ref*((g_ref*\
-                    blk.liquid_phase.properties[t, x].dens_mass/\
-                        blk.liquid_phase.properties[t, x].visc_d)**(0.167))*\
-                    ((blk.liquid_phase.properties[t, x].diffus[j]/blk.dh_ref)**0.5)*\
+                    (blk.liquid_phase.properties[t, x].mw/\
+                    blk.liquid_phase.properties[t, x].vol_mol_phase['Liq'])/\
+                        blk.liquid_phase.properties[t, x].visc_d_phase['Liq'])**(0.167))*\
+                    ((blk.liquid_phase.properties[t, x].diffus_phase_comp[j]/blk.dh_ref)**0.5)*\
                         (blk.velocity_liq[t, x]/blk.a_ref)**0.333
 
         self.k_l = Expression(
@@ -781,22 +937,21 @@ documentation for supported schemes,
                 zb = self.vapor_phase.length_domain.at(self.zi[x].value - 1)
                 lprops = blk.liquid_phase.properties[t, zb]
                 henry = lprops.params.get_component(j).config.henry_component
-                # if j == "CO2":
                 if henry is not None and "Liq" in henry:
                     return blk.pressure_equil[t, x, j] == (
                         (blk.vapor_phase.properties[t, x].mole_frac_comp[j] *
                          blk.vapor_phase.properties[
                              t, x].pressure + blk.phi[t, x, j] *
-                         lprops.conc_mol_comp_true[j]) /
+                         lprops.conc_mol_phase_comp_true['Liq',j]) /
                         (1 + blk.phi[t, x, j] /
-                         lprops.henry_N2O_analogy))
+                         lprops.henry_component[j]["Liq"]))
                 else:
                     return blk.pressure_equil[t, x, j] == (
-                        lprops.vol_mol *
-                        lprops.conc_mol_comp_true[j] *
-                        lprops.pressure_sat[j])
+                        lprops.vol_mol_phase['Liq'] *
+                        lprops.conc_mol_phase_comp_true['Liq',j] *
+                        lprops.pressure_sat_comp[j])
 
-        # mass transfer of  diffusing components in vapor phase
+        # Mass transfer of  diffusing components in vapor phase
         def rule_mass_transfer(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
                 return blk.interphase_mass_transfer[t, x, j] == 0.0
@@ -855,20 +1010,21 @@ documentation for supported schemes,
         # Heat transfer coefficients, Chilton Colburn  analogy
         # Vapor-liquid heat transfer coefficient [J/m2.s.K]
 
-        def rule_heat_transfer_coeff(blk, t, x):
+        def rule_heat_transfer_coeff(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
                 return Expression.Skip
             else:
-                return blk.k_v[t, x, 'CO2'] *\
+                return blk.k_v[t, x, j] *\
                     blk.vapor_phase.properties[t, x].pressure *\
-                    blk.vapor_phase.properties[t, x].cp_mol_mean *\
-                    (blk.vapor_phase.properties[t, x].therm_cond /
-                     (blk.vapor_phase.properties[t, x].conc_mol *
-                      blk.vapor_phase.properties[t, x].cp_mol_mean *
-                      blk.vapor_phase.properties[t, x].diffus['CO2']))**(2 / 3)
+                    blk.vapor_phase.properties[t, x].cp_mol_phase['Vap'] *\
+                    (blk.vapor_phase.properties[t, x].therm_cond_phase['Vap'] /
+                     (blk.vapor_phase.properties[t, x].dens_mol_phase['Vap'] *
+                      blk.vapor_phase.properties[t, x].cp_mol_phase['Vap'] *
+                      blk.vapor_phase.properties[t, x].diffus_phase_comp[j]))**(2 / 3)
 
         self.h_v = Expression(self.flowsheet().time,
                               self.vapor_phase.length_domain,
+                              solute_comp_list,
                               rule=rule_heat_transfer_coeff,
                               doc='''vap-liq heat transfer coefficient''')
 
@@ -878,10 +1034,8 @@ documentation for supported schemes,
                 return Expression.Skip
             else:
                 Ackmann_factor =\
-                    (blk.vapor_phase.properties[t, x].cp_mol_comp_mean['CO2'] *
-                     blk.interphase_mass_transfer[t, x, 'CO2'] +
-                     blk.vapor_phase.properties[t, x].cp_mol_comp_mean['H2O'] *
-                     blk.interphase_mass_transfer[t, x, 'H2O'])
+                    sum(blk.vapor_phase.properties[t, x].cp_mol_phase_comp['Vap',j] *
+                     blk.interphase_mass_transfer[t, x, j] for j in equilibrium_comp)
                 return Ackmann_factor /\
                     (1 - exp(-Ackmann_factor /
                              (blk.h_v[t, x] * blk.area_interfacial[t, x] *
@@ -916,10 +1070,10 @@ documentation for supported schemes,
             else:
                 zf = self.vapor_phase.length_domain.at(value(self.zi[x]) + 1)
                 return blk.heat_liq[t, x] == blk.heat_vap[t, zf] + \
-                    (blk.liquid_phase.properties[t, x].habs *
-                     blk.interphase_mass_transfer[t, zf, 'CO2'] -
-                     blk.liquid_phase.properties[t, x].hvap *
-                     blk.interphase_mass_transfer[t, zf, 'H2O']) *\
+                    (sum(blk.liquid_phase.properties[t, x].enth_mol_liq_comp[j] *
+                     blk.interphase_mass_transfer[t, zf, j] for j in solute_comp_list) -
+                     sum(blk.liquid_phase.properties[t, x].dh_vap[k] *
+                     blk.interphase_mass_transfer[t, zf, k] for k in solvent_comp_list)) *\
                     blk._homotopy_par_h
 
         # heat transfer handle
@@ -937,149 +1091,6 @@ documentation for supported schemes,
                          doc="liquid - heat transfer handle")
         def liquid_phase_heat_transfer_handle(blk, t, x):
             return blk.liquid_phase.heat[t, x] == -blk.heat_liq[t, x]
-
-        # Enhancement factor model
-        # reference: Jozsef Gaspar,Philip Loldrup Fosbol, (2015)
-        # self.yi_MEA[z] is equivalent to sqrt(yi_MEA) in the document
-
-        def rule_conc_mol_comp_interface_solute(blk, t, x, j):
-            if x == self.liquid_phase.length_domain.last():
-                return Expression.Skip
-            else:
-                zf = self.liquid_phase.length_domain.at(self.zi[x].value + 1)
-                return blk.pressure_equil[t, zf, j] /\
-                    blk.liquid_phase.properties[t, x].henry_N2O_analogy
-
-        self.conc_mol_comp_solute_eq = Expression(
-            self.flowsheet().time,
-            self.liquid_phase.length_domain,
-            solute_comp_list,
-            rule=rule_conc_mol_comp_interface_solute,
-            doc='Concentration of solute at the interface')
-
-        # def rule_Hatta(blk, t, x):
-        #     if x == self.liquid_phase.length_domain.last():
-        #         return Expression.Skip
-        #     else:
-        #         return (
-        #             (blk.liquid_phase.properties[t, x].k2_rxn *
-        #              blk.liquid_phase.properties[
-        #                  t, x].conc_mol_comp_true['MEA'] *
-        #              blk.liquid_phase.properties[t, x].diffus['CO2'])**0.5 /
-        #             blk.k_l_CO2[t, x])
-
-        # self.Hatta = Expression(self.flowsheet().time,
-        #                         self.liquid_phase.length_domain,
-        #                         rule=rule_Hatta,
-        #                         doc='Hatta number')
-
-        def rule_yb_solute(blk, t, x, j):
-            if x == self.liquid_phase.length_domain.last():
-                return Expression.Skip
-            else:
-                return (blk.liquid_phase.properties[
-                            t, x].conc_mol_comp_true[j] /
-                        blk.conc_mol_comp_solute_eq[t, x, j])
-
-        self.yb_solute = Expression(
-            self.flowsheet().time,
-            self.liquid_phase.length_domain,
-            solute_comp_list,
-            rule=rule_yb_solute,
-            doc='Dimensionless concentration of solute, driving force term where '
-            'absortion implies yb_solute < 1 and desorption impies yb_solute > 1')
-
-        # def rule_instantaneous_E(blk, t, x):
-        #     if x == self.liquid_phase.length_domain.last():
-        #         return Expression.Skip
-        #     else:
-        #         return (
-        #             1 + (blk.liquid_phase.properties[t, x].diffus['MEA'] *
-        #                  blk.liquid_phase.properties[
-        #                      t, x].conc_mol_comp_true['MEA']) /
-        #             (2 * blk.liquid_phase.properties[t, x].diffus['CO2'] *
-        #              blk.conc_mol_comp_CO2_eq[t, x]))
-
-        # self.instant_E = Expression(self.flowsheet().time,
-        #                             self.liquid_phase.length_domain,
-        #                             rule=rule_instantaneous_E,
-        #                             doc='Instantaneous Enhancement factor')
-        
-        # self.instant_E = Param(self.flowsheet().time,
-        #                        self.liquid_phase.length_domain,
-        #                        initialize=100,
-        #                        doc='Instantaneous Enhancement factor')
-        
-        def rule_yi_electrolyte_diffus(blk, t, x, j, k):
-            if x == self.liquid_phase.length_domain.last() or j == 'H2O':
-                return Expression.Skip
-            else:
-                return (
-                    1 + (blk.liquid_phase.properties[t, x].diffus[j] *
-                         blk.liquid_phase.properties[
-                             t, x].conc_mol_comp_true[j]) *
-                    (1 - blk.yi_solvent[t, x, j] * blk.yi_solvent[t, x, j]) /
-                    (2 * blk.liquid_phase.properties[t, x].diffus[k] *
-                     blk.liquid_phase.properties[
-                         t, x].conc_mol_comp_true[k]))
-
-        self.yi_electrolyte_diffus = Expression(self.flowsheet().time,
-                                  self.liquid_phase.length_domain,
-                                  solvent_comp_list,
-                                  electrolyte_comp_diffus,
-                                  rule=rule_yi_electrolyte_diffus,
-                                  doc='Dimensionless concentration of diffusing electrolytes')
-
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         solvent_comp_list,
-                         solute_comp_list,
-                         doc='Dimensionless concentration of solute'
-                         'at equilibruim with the bulk')
-        def yeq_solute_eqn(blk, t, x, j, m):
-            if x == self.liquid_phase.length_domain.last():
-                return blk.yeq_solute[t, x, m] == 0.0
-            elif j == 'H2O':
-                return Constraint.Skip
-            else:
-                right_term=blk.yb_solute[t, x, m]
-                for k in electrolyte_comp_diffus:
-                    right_term *= blk.yi_electrolyte_diffus[t, x, j, k]
-                return blk.yeq_solute[t, x, m] * blk.yi_solvent[t, x, j]**4 == \
-                    right_term
-
-        # @self.Constraint(self.flowsheet().time,
-        #                  self.liquid_phase.length_domain,
-        #                  doc='Enhancement factor model Eqn 1')
-        # def E1_eqn(blk, t, x):
-        #     if x == self.liquid_phase.length_domain.last():
-        #         return blk.enhancement_factor[t, x] == 1
-        #     else:
-        #         return ((blk.enhancement_factor[t, x] - 1) *
-        #                 (1 - blk.yb_CO2[t, x]) ==
-        #                 (blk.instant_E[t, x] - 1) *
-        #                 (1 - blk.yi_MEA[t, x]**2))
-
-        # @self.Constraint(self.flowsheet().time,
-        #                  self.liquid_phase.length_domain,
-        #                  doc='Enhancement factor model Eqn 2')
-        # def E2_eqn(blk, t, x):
-        #     if x == self.liquid_phase.length_domain.last():
-        #         return blk.yi_MEA[t, x] == 0
-        #     else:
-        #         return (blk.enhancement_factor[t, x] *
-        #                 (1 - blk.yb_CO2[t, x]) ==
-        #                 blk.Hatta[t, x] * blk.yi_MEA[t, x] *
-        #                 (1 - blk.yeq_CO2[t, x]))
-
-        # @self.Constraint(self.flowsheet().time,
-        #                  self.liquid_phase.length_domain,
-        #                  doc='Enhancement factor lower bound ')
-        # def E3_eqn(blk, t, x):
-        #     if x == self.liquid_phase.length_domain.last():
-        #         return Constraint.Skip
-        #     else:
-        #         return 1 - blk.enhancement_factor[t, x] <= 0.0
 
         if self.config.dynamic:
             self.fix_initial_condition()
@@ -1192,8 +1203,8 @@ documentation for supported schemes,
 
         # other variables
         # Pressure_dx
-        # if not blk.config.fix_column_pressure:
-        #     blk.vapor_phase.pressure_dx[...].fix(0.0)
+        if not blk.config.fix_column_pressure:
+            blk.vapor_phase.pressure_dx[...].fix(0.0)
 
         # vapor side flow terms
         blk.vapor_phase._enthalpy_flow.fix(1.0)
