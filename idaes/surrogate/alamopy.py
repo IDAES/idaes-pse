@@ -656,25 +656,41 @@ class AlamoTrainer(SurrogateTrainer):
         if trace_fname is not None:
             stream.write(f"TRACEFNAME {trace_fname}\n")
 
+        def _trim_extra_whitespace(text, sep=' '):
+            trimmed_lines = []
+            for line in text.splitlines():
+                parts = [part.strip() for part in line.split()]
+                trimmed_lines.append(str.join(sep, parts))
+            return str.join('\n', trimmed_lines)
+
+        def _df_to_data_fragment(df, **kwargs):
+            text = df.to_string(
+                header=False,
+                index=False,
+                float_format=lambda x: str(x).format(":g"),
+                **kwargs
+            )
+            # this is only needed to remove the extra spaces (from `justify`?) on python 3.6
+            # since on 3.7 and up pandas.to_string() returns already the proper format without any further string processing needed
+            return _trim_extra_whitespace(text, sep=' ')
+
         stream.write("\nBEGIN_DATA\n")
         # Columns will be writen in order in input and output lists
-        training_data.to_string(
-            buf=stream,
+        training_data_str = _df_to_data_fragment(
+            training_data,
             columns=self._input_labels + self._output_labels,
-            header=False,
-            index=False,
-            float_format=lambda x: str(x).format(":g"))
+        )
+        stream.write(training_data_str)
         stream.write("\nEND_DATA\n")
 
         if validation_data is not None:
             # Add validation data defintion
             stream.write("\nBEGIN_VALDATA\n")
-            validation_data.to_string(
-                buf=stream,
+            val_data_str = _df_to_data_fragment(
+                validation_data,
                 columns=self._input_labels + self._output_labels,
-                header=False,
-                index=False,
-                float_format=lambda x: str(x).format(":g"))
+            )
+            stream.write(val_data_str)
             stream.write("\nEND_VALDATA\n")
 
         if self.config.custom_basis_functions is not None:
@@ -947,52 +963,14 @@ class AlamoSurrogate(SurrogateBase):
 
         Args:
             block: Pyomo Block component to be populated with constraints.
-        """
-        # TODO: Let's discuss the use of variables and index_set - this should
-        # be promoted to the SurrogateBlock if needed?
-        """
             variables: dict mapping surrogate variable labels to existing
                 Pyomo Vars (default=None). If no mapping provided,
                 construct_variables will be called to create a set of new Vars.
-            index_set: (optional) if provided, this will be used to index the
-                Constraints created. This must match the indexing set of the
-                Vars provided in the variables argument.
 
         Returns:
             None
         """
-        # TODO: Let's discuss the use of index_set
-        """
-        variables = kwargs.pop('variables', None)
-        index_set = kwargs.pop('index_set', None)
 
-        if index_set is None:
-            var_index_set = UnindexedComponent_set
-            con_index_set = Set(initialize=self._output_labels)
-        else:
-            var_index_set = index_set
-            con_index_set = Set(initialize=self._output_labels)*index_set
-
-        if variables is None:
-            variables = self._construct_variables(
-                block, index_set=var_index_set)
-
-        def alamo_rule(b, o, *args):
-            # If we have more than 1 argument, it means we have an index_set
-            # Need to get the var_data from the indexed vars
-    
-            # ** TODO ** This deepcopy was breaking things
-            lvars = deepcopy(variables)
-            if len(args) > 0:
-                for k, v in variables.items():
-                    lvars[k] = v[args]
-            return eval(self._surrogate_expressions[o], GLOBAL_FUNCS, lvars)
-
-        block.add_component(
-            "alamo_constraint",
-            Constraint(con_index_set,
-                       rule=alamo_rule))
-        """
         # TODO: do we need to add the index_set stuff back in?
         output_set = Set(initialize=self._output_labels, ordered=True)
         def alamo_rule(b, o):
