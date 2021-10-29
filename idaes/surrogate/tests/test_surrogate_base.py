@@ -106,8 +106,8 @@ class TestSurrogateTrainer:
     @pytest.mark.unit
     def test_surrogate_trainer_input_label_mismatch(self):
         with pytest.raises(ValueError,
-                           match='An input label was specified that was not '
-                           'found in the training data.'):
+                           match="The following input labels were not found in "
+                           "the training data columns: {'foo'}"):
             SurrogateTrainer(input_labels=["x1", "foo"],
                              output_labels=["z1"],
                              training_dataframe=training_data)
@@ -118,8 +118,8 @@ class TestSurrogateTrainer:
         validation_data_x = pd.DataFrame.from_dict(vdata_x)
 
         with pytest.raises(ValueError,
-                           match='An input label was specified that was not '
-                           'found in the validation data.'):
+                           match="The following input labels were not found in "
+                           "the validation data columns: {'x2'}"):
             SurrogateTrainer(input_labels=["x1", "x2"],
                              output_labels=["z1"],
                              training_dataframe=training_data,
@@ -128,8 +128,8 @@ class TestSurrogateTrainer:
     @pytest.mark.unit
     def test_surrogate_trainer_output_label_mismatch(self):
         with pytest.raises(ValueError,
-                           match='An output label was specified that was not '
-                           'found in the training data.'):
+                           match="The following output labels were not found in "
+                           "the training data columns: {'foo'}."):
             SurrogateTrainer(input_labels=["x1", "x2"],
                              output_labels=["foo"],
                              training_dataframe=training_data)
@@ -140,8 +140,8 @@ class TestSurrogateTrainer:
         validation_data_x = pd.DataFrame.from_dict(vdata_x)
 
         with pytest.raises(ValueError,
-                           match='An output label was specified that was not '
-                           'found in the validation data.'):
+                           match="The following output labels were not found in "
+                           "the validation data columns: {'z1'}."):
             SurrogateTrainer(input_labels=["x1", "x2"],
                              output_labels=["z1"],
                              training_dataframe=training_data,
@@ -175,7 +175,7 @@ class TestSurrogateTrainer:
 
     @pytest.mark.unit
     def test_input_bounds(self, trainer):
-        assert trainer.input_bounds() is trainer._input_bounds
+        assert trainer.input_bounds() == trainer._input_bounds
 
     @pytest.mark.unit
     def test_train_surrogate(self, trainer):
@@ -216,7 +216,7 @@ class TestSurrogateBase:
 
     @pytest.mark.unit
     def test_input_bounds(self, surrogate):
-        assert surrogate.input_bounds() is surrogate._input_bounds
+        assert surrogate.input_bounds() == surrogate._input_bounds
 
     @pytest.mark.unit
     def test_populate_block(self, surrogate):
