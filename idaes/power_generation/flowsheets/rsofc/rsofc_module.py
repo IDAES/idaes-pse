@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 
 # Import Pyomo modules
 import pyomo.environ as pyo
-
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES modules
 import idaes.core.plugins
@@ -32,8 +32,8 @@ from idaes.core.solvers import use_idaes_solver_configuration_defaults
 
 from idaes.power_generation.flowsheets.rsofc import (
     rsofc_costing as rsofc_cost,
-    rsofc_sofc_mode_flowsheet_v3 as rsofc_sofc,
-    rsofc_soec_mode_flowsheet_v6 as rsofc_soec
+    rsofc_sofc_flowsheet as rsofc_sofc,
+    rsofc_soec_flowsheet as rsofc_soec
     )
 
 
@@ -80,19 +80,61 @@ def get_model(use_DNN=True):
 def cost_rsofc(m):
     # Capital and fixed costs
     # Add both sofc and soec mode flowsheets before computing cap&fixed costs
-    rsofc_cost.get_rsofc_capital_costing(m)
+    rsofc_cost.get_rsofc_sofc_capital_cost(m.sofc_fs)
+    rsofc_cost.get_rsofc_soec_capital_cost(m.soec_fs)
+
     design_rsofc_netpower = 650  # MW
-    rsofc_cost.get_rsofc_fixed_OM_costing(m, design_rsofc_netpower)
+    fixed_TPC = 693.019  # TPC $MM for sofc
+    rsofc_cost.get_rsofc_sofc_fixed_OM_costing(m.sofc_fs,
+                                               design_rsofc_netpower,
+                                               fixed_TPC)
+    rsofc_cost.get_rsofc_soec_fixed_OM_costing(m.soec_fs,
+                                               design_rsofc_netpower)
 
     # # Solve for capital and fixed costs
     # solver = get_solver()
-    # solver.solve(m, tee=True)  # cap&fixed costs calculated in fs flowsheet
+    # solver.solve(m.sofc_fs, tee=True)
+    # solver.solve(m.soec_fs, tee=True)
 
-    rsofc_cost.lock_capital_cost(m)
+    rsofc_cost.lock_rsofc_sofc_capital_cost(m.sofc_fs)
+    rsofc_cost.lock_rsofc_soec_capital_cost(m.soec_fs)
 
     # Variable O&M costs
     rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
     rsofc_cost.get_rsofc_sofc_variable_OM_costing(m.sofc_fs)
+
+    m.rsofc_total_TPC = pyo.Var(
+        initialize=1e-6,
+        # bounds=(0, 1e4),
+        doc="rsofc total plant cost in $MM",
+    )
+
+    @m.Constraint()
+    def rsofc_total_TPC_eq(c):
+        return c.rsofc_total_TPC == (
+            c.sofc_fs.costing.total_plant_cost + c.soec_fs.costing.total_TPC)
+
+    calculate_variable_from_constraint(
+        m.rsofc_total_TPC,
+        m.rsofc_total_TPC_eq
+    )
+
+    m.rsofc_total_fixed_OM_cost = pyo.Var(
+        initialize=1e-6,
+        # bounds=(0, 1e4),
+        doc="rsofc total plant cost in $MM/yr",
+    )
+
+    @m.Constraint()
+    def rsofc_total_fixed_OM_cost_eq(c):
+        return c.rsofc_total_fixed_OM_cost == (
+            c.sofc_fs.costing.total_fixed_OM_cost +
+            c.soec_fs.costing.total_fixed_OM_cost)
+
+    calculate_variable_from_constraint(
+        m.rsofc_total_fixed_OM_cost,
+        m.rsofc_total_fixed_OM_cost_eq
+    )
 
     # # Display results
     # m.fs.costing.display()

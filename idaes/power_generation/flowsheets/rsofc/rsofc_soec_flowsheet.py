@@ -32,6 +32,7 @@ import idaes.core.util as iutil
 import idaes.core.util.tables as tables
 import idaes.core.util.scaling as iscale
 import idaes.core.util.initialization as iinit
+from idaes.core.util import model_serializer as ms
 from idaes.core.util import copy_port_values
 import idaes.core.plugins
 
@@ -1551,7 +1552,7 @@ def initialize_bop(fs, solver):
                  symbolic_solver_labels=True)
 
 
-def additional_scaling(fs):
+def add_scaling(fs):
     for t, c in fs.oxygen_preheater.heat_transfer_equation.items():
         iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
     for t, c in fs.ng_preheater.heat_transfer_equation.items():
@@ -1631,7 +1632,7 @@ def additional_scaling(fs):
     iscale.calculate_scaling_factors(fs)
 
 
-def additional_scaling_2(fs):
+def add_scaling_bop(fs):
     iscale.set_scaling_factor(fs.HRSG_2.control_volume.heat, 1e-5)
     iscale.set_scaling_factor(fs.HRSG_3.control_volume.heat, 1e-5)
     iscale.set_scaling_factor(fs.HRSG_1.control_volume.heat, 1e-5)
@@ -2068,60 +2069,7 @@ def write_pfd_results(m, filename, infilename=None):
         iutil.svg_tag(svg=f, tag_group=m.soec_fs.tag_pfd, outfile=filename)
 
 
-def get_model(m=None, name="SOEC Module"):
-    add_flowsheet(m)
-    add_properties(m.soec_fs)
-
-    add_asu(m.soec_fs)
-    add_preheater(m.soec_fs)
-    add_soec_air_side_units(m.soec_fs)
-    add_combustor(m.soec_fs)
-    add_aux_boiler_steam(m.soec_fs)
-    add_soec_unit(m.soec_fs)
-    add_more_hx_connections(m.soec_fs)
-    add_soec_inlet_mix(m.soec_fs)
-
-    add_design_constraints(m.soec_fs)
-    expand_arcs = pyo.TransformationFactory("network.expand_arcs")
-    expand_arcs.apply_to(m.soec_fs)
-    set_guess(m.soec_fs)
-    set_inputs(m.soec_fs)
-    solver = get_solver()
-    additional_scaling(m.soec_fs)
-    iscale.scale_arc_constraints(m.soec_fs)
-
-    initialize_plant(m.soec_fs, solver)
-    add_h2_compressor(m.soec_fs)
-    add_hrsg_and_cpu(m.soec_fs)
-    expand_arcs = pyo.TransformationFactory("network.expand_arcs")
-    expand_arcs.apply_to(m.soec_fs)
-    additional_scaling_2(m.soec_fs)
-    initialize_bop(m.soec_fs, solver)
-
-    add_result_constraints(m.soec_fs)
-    initialize_results(m.soec_fs)
-    tag_inputs_opt_vars(m.soec_fs)
-    tag_for_pfd_and_tables(m.soec_fs)
-
-    display_input_tags(m.soec_fs)
-
-    return m, solver
-
-
-if __name__ == "__main__":
-    m = pyo.ConcreteModel()
-    m, solver = get_model(m)
-    # m.soec_fs.visualize("rSOEC Flowsheet")  # visualize flowsheet
-    rsofc_cost.get_rsofc_capital_costing(m)
-    rsofc_cost.lock_capital_cost(m)
-    # rsofc_cost.get_rsofc_fixed_OM_costing(m, 650)
-    rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
-    # check_scaling(m)
-    write_pfd_results(m, "rsofc_soec_results.svg")
-
-    # strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
-    # strip_bounds.apply_to(m, reversible=False)
-
+def optimize_model(m):
     #############################
     # Omptimization #
     #############################
@@ -2144,6 +2092,9 @@ if __name__ == "__main__":
         1e6*m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].expression
     )
 
+    m.soec_fs.spltf1.split_fraction[:, "out"].setlb(0.00001)
+    m.soec_fs.spltf1.split_fraction[:, "out"].setub(0.99999)
+
     m.soec_fs.tag_input["feed_h2_frac"].unfix()  # optimization
     m.soec_fs.tag_input["feed_h2_frac"].setlb(0.001)
     m.soec_fs.tag_input["feed_h2_frac"].setub(0.999)
@@ -2152,19 +2103,15 @@ if __name__ == "__main__":
     m.soec_fs.tag_input["preheat_fg_split_to_oxygen"].setlb(0.55)
     m.soec_fs.tag_input["preheat_fg_split_to_oxygen"].setub(0.99)
 
-    m.soec_fs.spltf1.split_fraction[:, "out"].setlb(0.00001)
-    m.soec_fs.spltf1.split_fraction[:, "out"].setub(0.99999)
-
-    # m.soec_fs.ng_preheater.tube_inlet.flow_mol.setlb(1)
-    # m.soec_fs.ng_preheater.tube_inlet.flow_mol.setub(600)
-
     # m.soec_fs.obj = pyo.Objective(
     #     expr=m.soec_fs.ng_preheater.tube_inlet.flow_mol[0] / 10)
-    # # m.soec_fs.obj = pyo.Objective(expr=-m.soec_fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"]*10)
-    # m.soec_fs.obj = pyo.Objective(expr=1e3*m.soec_fs.H2_costing.total_variable_OM_cost[0]/m.soec_fs.net_power_per_mass_h2[0])
+    # m.soec_fs.obj = pyo.Objective(
+    #     expr=1e3*m.soec_fs.H2_costing.total_variable_OM_cost[0] /
+    #     m.soec_fs.net_power_per_mass_h2[0])
     m.soec_fs.obj = pyo.Objective(
         expr=m.soec_fs.H2_costing.total_variable_OM_cost[0])
 
+    rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
     m.soec_fs.tag_pfd["total_variable_OM_cost"] = iutil.ModelTag(
         expr=m.soec_fs.H2_costing.total_variable_OM_cost[0],
         format_string="{:.3f}",
@@ -2225,6 +2172,97 @@ if __name__ == "__main__":
         with open("opt_res.csv", "a", newline="") as f:
             w = csv.writer(f)
             w.writerow(row_1 + row_2)
-        # write_pfd_results(
-        #     m, f"rsofc_soec_{m.soec_fs.tag_input['hydrogen_product_rate'].display(units=False)}.svg"
-        # )
+        write_pfd_results(
+            m, f"rsofc_soec_{m.soec_fs.tag_input['hydrogen_product_rate'].display(units=False)}.svg"
+        )
+
+
+def get_model(m=None, name="SOEC Module"):
+
+    init_fname = "rsofc_soec_surrogate_init.json.gz"
+
+    if os.path.exists(init_fname):
+        # main plant
+        add_flowsheet(m)
+        add_properties(m.soec_fs)
+        add_asu(m.soec_fs)
+        add_preheater(m.soec_fs)
+        add_soec_air_side_units(m.soec_fs)
+        add_combustor(m.soec_fs)
+        add_aux_boiler_steam(m.soec_fs)
+        add_soec_unit(m.soec_fs)
+        add_more_hx_connections(m.soec_fs)
+        add_soec_inlet_mix(m.soec_fs)        
+        add_design_constraints(m.soec_fs)
+        expand_arcs = pyo.TransformationFactory("network.expand_arcs")
+        expand_arcs.apply_to(m.soec_fs)
+        add_scaling(m.soec_fs)
+
+        # bop
+        add_h2_compressor(m.soec_fs)
+        add_hrsg_and_cpu(m.soec_fs)
+        expand_arcs = pyo.TransformationFactory("network.expand_arcs")
+        expand_arcs.apply_to(m.soec_fs)
+        add_scaling_bop(m.soec_fs)
+        
+        # results
+        add_result_constraints(m.soec_fs)
+
+        # load model and results
+        ms.from_json(m, fname=init_fname)
+        
+    else:
+        add_flowsheet(m)
+        add_properties(m.soec_fs)
+    
+        add_asu(m.soec_fs)
+        add_preheater(m.soec_fs)
+        add_soec_air_side_units(m.soec_fs)
+        add_combustor(m.soec_fs)
+        add_aux_boiler_steam(m.soec_fs)
+        add_soec_unit(m.soec_fs)
+        add_more_hx_connections(m.soec_fs)
+        add_soec_inlet_mix(m.soec_fs)
+    
+        add_design_constraints(m.soec_fs)
+        expand_arcs = pyo.TransformationFactory("network.expand_arcs")
+        expand_arcs.apply_to(m.soec_fs)
+        set_guess(m.soec_fs)
+        set_inputs(m.soec_fs)
+        solver = get_solver()
+        add_scaling(m.soec_fs)
+        iscale.scale_arc_constraints(m.soec_fs)
+    
+        initialize_plant(m.soec_fs, solver)
+        add_h2_compressor(m.soec_fs)
+        add_hrsg_and_cpu(m.soec_fs)
+        expand_arcs = pyo.TransformationFactory("network.expand_arcs")
+        expand_arcs.apply_to(m.soec_fs)
+        add_scaling_bop(m.soec_fs)
+        initialize_bop(m.soec_fs, solver)
+    
+        add_result_constraints(m.soec_fs)
+        initialize_results(m.soec_fs)
+
+        # # save model and results
+        # ms.to_json(m, fname=init_fname)
+
+    return m, solver
+
+
+if __name__ == "__main__":
+    m = pyo.ConcreteModel()
+    m, solver = get_model(m)
+    tag_inputs_opt_vars(m.soec_fs)
+    tag_for_pfd_and_tables(m.soec_fs)
+    display_input_tags(m.soec_fs)
+    # check_scaling(m)
+    write_pfd_results(m, "rsofc_soec_results.svg")
+    # m.soec_fs.visualize("rSOEC Flowsheet")  # visualize flowsheet
+
+    rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
+    # optimize_model(m)
+
+
+    # strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
+    # strip_bounds.apply_to(m, reversible=False)

@@ -38,41 +38,79 @@ from idaes.core.util.unit_costing import fired_heater_costing
 
 def add_total_plant_cost(b, project_contingency, process_contingency):
 
-    # b.costing.total_plant_cost = pyo.Var(bounds=(0, 1e4))
+    b.costing.total_plant_cost = pyo.Var(initialize=1e-6,
+                                         # bounds=(0, None)
+                                         doc='Unit total_TPC in $MM'
+                                         )
     try:
         b.parent_block().generic_costing_units.append(b)
     except AttributeError:
         b.parent_block().generic_costing_units = []
         b.parent_block().generic_costing_units.append(b)
 
-    @b.costing.Expression()
-    def total_plant_cost(c):
-        return (c.purchase_cost * project_contingency *
-                process_contingency / 1e6)
+    @b.costing.Constraint()
+    def total_plant_cost_eq(c):
+        return c.total_plant_cost == (c.purchase_cost * project_contingency *
+                                      process_contingency / 1e6)
+
+    # @b.costing.Expression()
+    # def total_plant_cost(c):
+    #     return c.purchase_cost * project_contingency * process_contingency / 1e6
 
 
-def get_rsofc_capital_costing(m):
+def get_rsofc_sofc_capital_cost(fs):
     # add flowsheet for costing
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    # fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.get_costing(year="2018")
+    fs.get_costing(year="2018")
 
     # TPC of 650 MW NG based sofc plant
     # SOEC-only cap costs for water-side equipment and H2 compr. will be added
     # NGFC_TPC = 693.019  # MM$
 
-    # m.fs.costing = pyo.Block()  # This is created in the costing module
-    m.fs.costing.total_plant_cost = pyo.Var(
-        initialize=130,
+    # fs.costing = pyo.Block()  # This is created in the costing module
+    get_total_TPC(fs)
+    fs.costing.total_plant_cost = pyo.Var(
+        initialize=1e-6,
         # bounds=(0, 1e4),
         doc="total plant cost in $MM",
     )
 
-    @m.fs.costing.Constraint()
+    @fs.costing.Constraint()
     def total_plant_cost_eq(c):
         NGFC_TPC = 693.019  # MM$
         # TODO - what are the units for total_plant_cost (MM$?)
         return c.total_plant_cost == NGFC_TPC
+
+    calculate_variable_from_constraint(
+        fs.costing.total_plant_cost,
+        fs.costing.total_plant_cost_eq)
+
+    # TODO - Not sure why but total_plant_cost is not assigned to total_TPC
+    # TODO - ie total_TPC returns as zero
+    get_total_TPC(fs)
+
+    costing_initialization(fs)
+
+    calculate_variable_from_constraint(
+        fs.costing.total_TPC,
+        fs.costing.total_TPC_eq
+    )
+
+def get_rsofc_soec_capital_cost(fs):
+    # add flowsheet for costing
+    # fs = FlowsheetBlock(default={"dynamic": False})
+
+    fs.get_costing(year="2018")
+
+    # fs.costing.total_plant_cost = pyo.Var(
+    #     initialize=0,
+    #     # bounds=(0, 1e4),
+    #     doc="total plant cost in $MM",
+    # )
+
+    # TPC of 650 MW NG based sofc plant
+    # SOEC-only cap costs for water-side equipment and H2 compr. will be added
 
     # bhx1 - U-tube HXs
     # costed with IDAES generic heat exchanger correlation
@@ -83,28 +121,28 @@ def get_rsofc_capital_costing(m):
         # m.fs.ng_preheater.get_costing(hx_type="U-tube")
         # add_total_plant_cost(m.fs.ng_preheater, 1.15, 1.15)
 
-    m.soec_fs.bhx1.get_costing(hx_type="U-tube")
-    add_total_plant_cost(m.soec_fs.bhx1, 1.15, 1.15)
+    fs.bhx1.get_costing(hx_type="U-tube")
+    add_total_plant_cost(fs.bhx1, 1.15, 1.15)
 
     # bhx2
     # TODO - is this the right costing for oxycombustor with in-bed HEX tubes?
     # TODO - try costing bhx2 as hrsg and compare the numbers to the steam_boiler cost
     # costed with IDAES generic fired heater correlation
-    m.soec_fs.bhx2.costing = pyo.Block()
+    fs.bhx2.costing = pyo.Block()
     fired_heater_costing(
-        m.soec_fs.bhx2.costing,
+        fs.bhx2.costing,
         fired_type="steam_boiler",
-        ref_parameter_pressure=m.soec_fs.bhx2.inlet.pressure[0],
+        ref_parameter_pressure=fs.bhx2.inlet.pressure[0],
     )
-    add_total_plant_cost(m.soec_fs.bhx2, 1.15, 1.15)
+    add_total_plant_cost(fs.bhx2, 1.15, 1.15)
 
     # H2 compressor
     # costed with IDAES generic compressor correlations
     # TODO - this is a placeholder until H2 compressor scaling is released
-    for unit in [m.soec_fs.hcmp01,
-                 m.soec_fs.hcmp02,
-                 m.soec_fs.hcmp03,
-                 m.soec_fs.hcmp04]:
+    for unit in [fs.hcmp01,
+                 fs.hcmp02,
+                 fs.hcmp03,
+                 fs.hcmp04]:
         unit.get_costing()
         add_total_plant_cost(unit, 1.15, 1.15)
 
@@ -114,90 +152,90 @@ def get_rsofc_capital_costing(m):
 
     # TODO - water treatment and CO2 processing capcosts included in NGFC_TPC
     # build constraint summing total plant costs
-    get_total_TPC(m)
 
-    # costing initialization
-    calculate_variable_from_constraint(
-        m.fs.costing.total_plant_cost,
-        m.fs.costing.total_plant_cost_eq
-    )
+    get_total_TPC(fs)
 
-    # """
-    m.fs.generic_costing_units = [
-        m.soec_fs.bhx1,
-        m.soec_fs.bhx2,
-        m.soec_fs.hcmp01,
-        m.soec_fs.hcmp02,
-        m.soec_fs.hcmp03,
-        m.soec_fs.hcmp04
+    fs.generic_costing_units = [
+        fs.bhx1,
+        fs.bhx2,
+        fs.hcmp01,
+        fs.hcmp02,
+        fs.hcmp03,
+        fs.hcmp04
         ]
 
-    for u in m.fs.generic_costing_units:
+    for u in fs.generic_costing_units:
         cost_init(u.costing)
+        calculate_variable_from_constraint(
+            u.costing.total_plant_cost,
+            u.costing.total_plant_cost_eq)
 
-        # calculate_variable_from_constraint(
-        #     u.costing.total_plant_cost,
-        #     u.costing.total_plant_cost_eq)
-    # """
-    costing_initialization(m.fs)
+    costing_initialization(fs)
+
     calculate_variable_from_constraint(
-        m.fs.costing.total_TPC, m.fs.costing.total_TPC_eq
+        fs.costing.total_TPC,
+        fs.costing.total_TPC_eq
     )
 
 
-def lock_capital_cost(m):
-    for b in m.fs.generic_costing_units:
+def lock_rsofc_soec_capital_cost(fs):
+    for b in fs.generic_costing_units:
         for v in b.costing.total_plant_cost.values():
-            print("TPC of generic units")
-            print(b)
-            v.display()
+            # print("TPC of generic units")
+            # print(b)
+            # v.display()
             v.set_value(pyo.value(v))
-
         b.costing.deactivate()
-    m.fs.costing.deactivate()
-    m.fs.costing.total_TPC.fix()
+    fs.costing.deactivate()
+    fs.costing.total_TPC.fix()
 
 
-def get_rsofc_fixed_OM_costing(m, design_rsofc_netpower=650 * pyo.units.MW,
-                               fixed_TPC=None):
+def lock_rsofc_sofc_capital_cost(fs):
+    fs.costing.deactivate()
+    fs.costing.total_TPC.fix()
+
+
+def get_rsofc_sofc_fixed_OM_costing(fs,
+                                    design_rsofc_netpower=650 * pyo.units.MW,
+                                    fixed_TPC=None):
+
+    # TODO - deleting this Var/Constraint pair so non-zero TPC value is used
+    # del fs.costing.total_TPC
+    # del fs.costing.total_TPC_eq
+    fs.costing.del_component(fs.costing.total_TPC)
+    fs.costing.del_component(fs.costing.total_TPC_eq)
+
     # fixed O&M costs
-    get_fixed_OM_costs(m, design_rsofc_netpower, tech=6)
+    get_fixed_OM_costs(fs, design_rsofc_netpower, tech=6, fixed_TPC=fixed_TPC)
     # labor_rate=38.50
     # get_fixed_OM_costs(m, design_rsofc_netpower, labor_rate=38.50,
     #                    labor_burden=30, operators_per_shift=6, tech=6)
 
-    # m.fs.costing.stack_replacement_cost = pyo.Var(
-    #     initialize=13.26,
-    #     bounds=(0, 100),
-    #     doc="stack replacement cost in $MM/yr")
-    # m.fs.costing.stack_replacement_cost.fix()
-
-    # # redefine total fixed OM cost to include stack replacement cost
-    # # TODO - equate stack costs to m.fs.costing.other_fixed_OM costs
-    # del m.fs.costing.total_fixed_OM_cost_rule
-
-    # @m.fs.costing.Constraint()
-    # def total_fixed_OM_cost_rule(c):
-    #     return c.total_fixed_OM_cost == (c.annual_operating_labor_cost +
-    #                                      c.maintenance_labor_cost +
-    #                                      c.admin_and_support_labor_cost +
-    #                                      c.property_taxes_and_insurance +
-    #                                      c.stack_replacement_cost)
-
-    @m.fs.costing.Constraint()
+    @fs.costing.Constraint()
     def stack_replacement_cost(costing):
         # stack replacement cost
         stack_replacement_cost = 13.26  # $MM/yr
         return costing.other_fixed_costs == stack_replacement_cost
 
-    m.fs.costing.other_fixed_costs.unfix()
+    fs.costing.other_fixed_costs.unfix()
 
     # initialize fixed costs
     calculate_variable_from_constraint(
-        m.fs.costing.other_fixed_costs, m.fs.costing.stack_replacement_cost
+        fs.costing.other_fixed_costs,
+        fs.costing.stack_replacement_cost
     )
-    initialize_fixed_OM_costs(m)
+    initialize_fixed_OM_costs(fs)
 
+
+def get_rsofc_soec_fixed_OM_costing(fs,
+                                    design_rsofc_netpower=650 * pyo.units.MW,
+                                    fixed_TPC=None):
+    # fixed O&M costs
+    get_fixed_OM_costs(fs, design_rsofc_netpower, tech=6)
+    # labor_rate=38.50
+    # get_fixed_OM_costs(m, design_rsofc_netpower, labor_rate=38.50,
+    #                    labor_burden=30, operators_per_shift=6, tech=6)
+    initialize_fixed_OM_costs(fs)
 
 def get_rsofc_soec_variable_OM_costing(fs):
     # variable O&M costs

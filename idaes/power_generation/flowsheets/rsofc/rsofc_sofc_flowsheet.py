@@ -61,8 +61,8 @@ from idaes.power_generation.flowsheets.sofc.properties.natural_gas_PR_scaled_uni
     get_NG_properties, rxn_configuration
 
 from idaes.power_generation.flowsheets.sofc.surrogates.cpu import CPU
-from idaes.power_generation.flowsheets.sofc.surrogates.sofc_rom_builder \
-    import build_SOFC_ROM, initialize_SOFC_ROM
+# from idaes.power_generation.flowsheets.sofc.surrogates.sofc_rom_builder \
+#     import build_SOFC_ROM, initialize_SOFC_ROM
 from idaes.power_generation.flowsheets.sofc.surrogates.sofc_surrogate \
     import build_SOFC_SM, initialize_SOFC_SM
 
@@ -974,12 +974,12 @@ def initialize_NGFC(m):
     m.sofc_fs.CPU.initialize()
 
 
-def SOFC_ROM_setup(m, use_DNN=True):
-    # create the ROM
-    if use_DNN:  # option to use deep neural net sofc surrogate model
-        build_SOFC_ROM(m.sofc_fs)
-    else:  # option to use algebraic sofc surrogate model
-        build_SOFC_SM(m.sofc_fs)
+def SOFC_ROM_setup(m):
+    # # create the ROM
+    # if use_DNN:  # option to use deep neural net sofc surrogate model
+    #     build_SOFC_ROM(m.sofc_fs)
+    # else:  # option to use algebraic sofc surrogate model
+    build_SOFC_SM(m.sofc_fs)
 
     # build constraints connecting flowsheet to ROM input vars
 
@@ -1072,10 +1072,10 @@ def SOFC_ROM_setup(m, use_DNN=True):
     calculate_variable_from_constraint(m.sofc_fs.SOFC.air_util,
                                        m.sofc_fs.ROM_air_utilization)
 
-    if use_DNN:
-        initialize_SOFC_ROM(m.sofc_fs.SOFC)
-    else:
-        initialize_SOFC_SM(m.sofc_fs.SOFC)
+    # if use_DNN:
+    #     initialize_SOFC_ROM(m.sofc_fs.SOFC)
+    # else:
+    initialize_SOFC_SM(m.sofc_fs.SOFC)
 
     # add constraints for power calculations
     m.sofc_fs.F = pyo.Param(initialize=96487, units=pyunits.C/pyunits.mol)
@@ -1392,22 +1392,22 @@ def initialize_results(m):
             calculate_variable_from_constraint(v[t], c[t])
 
 
-def add_costing(m):
+def add_costing(fs):
     # fixed O&M costs
     NGFC_TPC = 693.019  # MM$
 
-    get_fixed_OM_costs(m, 650, tech=6, fixed_TPC=NGFC_TPC)
+    get_fixed_OM_costs(fs, 650, tech=6, fixed_TPC=NGFC_TPC)
 
-    m.sofc_fs.costing.stack_replacement_cost = pyo.Var(
+    fs.costing.stack_replacement_cost = pyo.Var(
         initialize=13.26,
         bounds=(0, 100),
         doc="stack replacement cost in $MM/yr")
-    m.sofc_fs.costing.stack_replacement_cost.fix()
+    fs.costing.stack_replacement_cost.fix()
 
     # redefine total fixed OM cost to include stack replacement cost
-    del m.sofc_fs.costing.total_fixed_OM_cost_rule
+    del fs.costing.total_fixed_OM_cost_rule
 
-    @m.sofc_fs.costing.Constraint()
+    @fs.costing.Constraint()
     def total_fixed_OM_cost_rule(c):
         return c.total_fixed_OM_cost == (c.annual_operating_labor_cost +
                                          c.maintenance_labor_cost +
@@ -1419,118 +1419,118 @@ def add_costing(m):
     # Natural Gas Fuel
     NG_HHV = 908839.23*pyunits.J/pyunits.mol
 
-    @m.sofc_fs.Expression(m.sofc_fs.time)
-    def NG_energy_rate(sofc_fs, t):
-        return m.sofc_fs.anode_mix.feed_inlet.flow_mol[t]*NG_HHV
+    @fs.Expression(fs.time)
+    def NG_energy_rate(fs, t):
+        return fs.anode_mix.feed_inlet.flow_mol[t]*NG_HHV
 
     # Water
-    m.sofc_fs.condensate_flowrate = pyo.Var(m.sofc_fs.time, units=pyunits.lb/pyunits.s)
+    fs.condensate_flowrate = pyo.Var(fs.time, units=pyunits.lb/pyunits.s)
 
     # scaled based on BB Case 31A steam turbine power
-    @m.sofc_fs.Constraint(m.sofc_fs.time)
-    def condensate_flowrate_constraint(sofc_fs, t):
+    @fs.Constraint(fs.time)
+    def condensate_flowrate_constraint(fs, t):
         ref_flowrate = 388.586*pyunits.lb/pyunits.s
         ref_power = 262.8*pyunits.MW
-        return (sofc_fs.condensate_flowrate[t] == ref_flowrate *
-                sofc_fs.steam_cycle_power[t]/ref_power)
+        return (fs.condensate_flowrate[t] == ref_flowrate *
+                fs.steam_cycle_power[t]/ref_power)
 
-    m.sofc_fs.BFW_circulation_rate = pyo.Var(m.sofc_fs.time,
+    fs.BFW_circulation_rate = pyo.Var(fs.time,
                                         units=pyunits.lb/pyunits.s)
 
-    @m.sofc_fs.Constraint(m.sofc_fs.time)
-    def BFW_circulation_rate_constraint(sofc_fs, t):
-        return sofc_fs.BFW_circulation_rate[t] == sofc_fs.condensate_flowrate[t]
+    @fs.Constraint(fs.time)
+    def BFW_circulation_rate_constraint(fs, t):
+        return fs.BFW_circulation_rate[t] == fs.condensate_flowrate[t]
 
-    m.sofc_fs.BFW_makeup_flow = pyo.Var(m.sofc_fs.time, units=pyunits.lb/pyunits.s)
+    fs.BFW_makeup_flow = pyo.Var(fs.time, units=pyunits.lb/pyunits.s)
 
-    @m.sofc_fs.Constraint(m.sofc_fs.time)
-    def BFW_makeup_flow_constraint(sofc_fs, t):
-        return sofc_fs.BFW_makeup_flow[t] == 0.01*sofc_fs.BFW_circulation_rate[t]
+    @fs.Constraint(fs.time)
+    def BFW_makeup_flow_constraint(fs, t):
+        return fs.BFW_makeup_flow[t] == 0.01*fs.BFW_circulation_rate[t]
 
-    m.sofc_fs.evaporation_losses = pyo.Var(m.sofc_fs.time, units=pyunits.lb/pyunits.s)
+    fs.evaporation_losses = pyo.Var(fs.time, units=pyunits.lb/pyunits.s)
 
-    @m.sofc_fs.Constraint(m.sofc_fs.time)
-    def evaporation_losses_constraint(sofc_fs, t):
-        return sofc_fs.evaporation_losses[t] == 0.016*sofc_fs.cooling_water_flowrate[t]
+    @fs.Constraint(fs.time)
+    def evaporation_losses_constraint(fs, t):
+        return fs.evaporation_losses[t] == 0.016*fs.cooling_water_flowrate[t]
 
-    m.sofc_fs.blowdown_losses = pyo.Var(m.sofc_fs.time, units=pyunits.lb/pyunits.s)
+    fs.blowdown_losses = pyo.Var(fs.time, units=pyunits.lb/pyunits.s)
 
-    @m.sofc_fs.Constraint(m.sofc_fs.time)
-    def blowdown_losses_constraint(sofc_fs, t):
+    @fs.Constraint(fs.time)
+    def blowdown_losses_constraint(fs, t):
         cycles_of_concentration = 4
-        return (sofc_fs.blowdown_losses[t] ==
-                sofc_fs.evaporation_losses[t]/(cycles_of_concentration - 1))
+        return (fs.blowdown_losses[t] ==
+                fs.evaporation_losses[t]/(cycles_of_concentration - 1))
 
-    m.sofc_fs.total_wet_losses = pyo.Var(m.sofc_fs.time, units=pyunits.lb/pyunits.s)
+    fs.total_wet_losses = pyo.Var(fs.time, units=pyunits.lb/pyunits.s)
 
-    @m.sofc_fs.Constraint(m.sofc_fs.time)
-    def wet_losses_constraint(sofc_fs, t):
-        return sofc_fs.total_wet_losses[t] == (sofc_fs.evaporation_losses[t] +
-                                          sofc_fs.blowdown_losses[t])
+    @fs.Constraint(fs.time)
+    def wet_losses_constraint(fs, t):
+        return fs.total_wet_losses[t] == (fs.evaporation_losses[t] +
+                                          fs.blowdown_losses[t])
 
-    m.sofc_fs.water_demand = pyo.Var(m.sofc_fs.time, units=pyunits.lb/pyunits.s)
+    fs.water_demand = pyo.Var(fs.time, units=pyunits.lb/pyunits.s)
 
-    @m.sofc_fs.Constraint(m.sofc_fs.time)
-    def water_demand_constraint(sofc_fs, t):
-        return sofc_fs.water_demand[t] == (sofc_fs.BFW_makeup_flow[t] +
-                                      sofc_fs.total_wet_losses[t])
+    @fs.Constraint(fs.time)
+    def water_demand_constraint(fs, t):
+        return fs.water_demand[t] == (fs.BFW_makeup_flow[t] +
+                                      fs.total_wet_losses[t])
 
-    m.sofc_fs.water_recycle = pyo.Var(m.sofc_fs.time, units=pyunits.lb/pyunits.s)
+    fs.water_recycle = pyo.Var(fs.time, units=pyunits.lb/pyunits.s)
 
-    @m.sofc_fs.Constraint(m.sofc_fs.time)
-    def water_recycle_constraint(sofc_fs, t):
+    @fs.Constraint(fs.time)
+    def water_recycle_constraint(fs, t):
         molar_mass = 18*pyunits.g/pyunits.mol
         CPU_water = pyunits.convert(
-            sofc_fs.CPU.water.flow_mol[t]*molar_mass,
+            fs.CPU.water.flow_mol[t]*molar_mass,
             pyunits.lb/pyunits.s)
         flash_water = pyunits.convert(
-            sofc_fs.flash.liq_outlet.flow_mol[t]*molar_mass,
+            fs.flash.liq_outlet.flow_mol[t]*molar_mass,
             pyunits.lb/pyunits.s)
-        return sofc_fs.water_recycle[t] == CPU_water + flash_water
+        return fs.water_recycle[t] == CPU_water + flash_water
 
-    m.sofc_fs.raw_water_withdrawal = pyo.Var(m.sofc_fs.time, units=pyunits.lb/pyunits.s)
+    fs.raw_water_withdrawal = pyo.Var(fs.time, units=pyunits.lb/pyunits.s)
 
-    @m.sofc_fs.Constraint(m.sofc_fs.time)
-    def raw_water_withdrawal_constraint(sofc_fs, t):
-        return sofc_fs.raw_water_withdrawal[t] == (sofc_fs.water_demand[t] -
-                                              sofc_fs.water_recycle[t])
+    @fs.Constraint(fs.time)
+    def raw_water_withdrawal_constraint(fs, t):
+        return fs.raw_water_withdrawal[t] == (fs.water_demand[t] -
+                                              fs.water_recycle[t])
 
-    m.sofc_fs.process_water_discharge = pyo.Var(m.sofc_fs.time, initialize=9,
+    fs.process_water_discharge = pyo.Var(fs.time, initialize=9,
                                            units=pyunits.lb/pyunits.s)
 
-    @m.sofc_fs.Constraint(m.sofc_fs.time)
-    def water_discharge_constraint(sofc_fs, t):
-        return sofc_fs.process_water_discharge[t] == 0.9*sofc_fs.blowdown_losses[t]
+    @fs.Constraint(fs.time)
+    def water_discharge_constraint(fs, t):
+        return fs.process_water_discharge[t] == 0.9*fs.blowdown_losses[t]
 
-    m.sofc_fs.raw_water_consumption = pyo.Var(m.sofc_fs.time,
+    fs.raw_water_consumption = pyo.Var(fs.time,
                                          units=pyunits.lb/pyunits.s)
 
-    @m.sofc_fs.Constraint(m.sofc_fs.time)
-    def raw_water_consumption_constraint(sofc_fs, t):
-        return sofc_fs.raw_water_consumption[t] == (sofc_fs.raw_water_withdrawal[t] -
-                                               sofc_fs.process_water_discharge[t])
+    @fs.Constraint(fs.time)
+    def raw_water_consumption_constraint(fs, t):
+        return fs.raw_water_consumption[t] == (fs.raw_water_withdrawal[t] -
+                                               fs.process_water_discharge[t])
 
     # MU & WT Chem
-    @m.sofc_fs.Expression(m.sofc_fs.time)
-    def waste_treatment_use(sofc_fs, t):
+    @fs.Expression(fs.time)
+    def waste_treatment_use(fs, t):
         use_rate = 0.00297886*pyunits.lb/pyunits.gal
         density = 8.34*pyunits.lb/pyunits.gal
-        return sofc_fs.water_demand[t]/density*use_rate
+        return fs.water_demand[t]/density*use_rate
 
     # NG desulfur TDA Adsorbent
-    @m.sofc_fs.Expression(m.sofc_fs.time)
-    def desulfur_adsorbent_use(sofc_fs, t):
+    @fs.Expression(fs.time)
+    def desulfur_adsorbent_use(fs, t):
         NG_sulfur_ppm = 5/1e6
         sulfur_MW = 32*pyunits.g/pyunits.mol
         sulfur_capacity = 0.03
-        return (m.sofc_fs.anode_mix.feed_inlet.flow_mol[t] *
+        return (fs.anode_mix.feed_inlet.flow_mol[t] *
                 NG_sulfur_ppm * sulfur_MW / sulfur_capacity)
 
     # Methanation Catalyst
-    @m.sofc_fs.Expression(m.sofc_fs.time)
-    def methanation_catalyst_use(sofc_fs, t):
+    @fs.Expression(fs.time)
+    def methanation_catalyst_use(fs, t):
         syngas_flow = pyunits.convert(
-            m.sofc_fs.anode_mix.feed_inlet_state[0].flow_mass, pyunits.lb/pyunits.hr)
+            fs.anode_mix.feed_inlet_state[0].flow_mass, pyunits.lb/pyunits.hr)
         return (3.2*syngas_flow/611167 *
                 pyunits.m**3/pyunits.day*pyunits.hr/pyunits.lb)
 
@@ -1539,49 +1539,49 @@ def add_costing(m):
                  "desulfur adsorbent",
                  "methanation catalyst"]
 
-    rates = [m.sofc_fs.NG_energy_rate,
-             m.sofc_fs.waste_treatment_use,
-             m.sofc_fs.desulfur_adsorbent_use,
-             m.sofc_fs.methanation_catalyst_use]
+    rates = [fs.NG_energy_rate,
+             fs.waste_treatment_use,
+             fs.desulfur_adsorbent_use,
+             fs.methanation_catalyst_use]
 
     prices = {"desulfur adsorbent": 6.0297*pyunits.USD/pyunits.lb,
               "methanation catalyst": 601.765*pyunits.USD/pyunits.m**3}
 
-    get_variable_OM_costs(m, m.sofc_fs.net_power, resources, rates, prices)
+    get_variable_OM_costs(fs, fs.net_power, resources, rates, prices)
 
 
-def initialize_costing(m):
+def initialize_costing(fs):
     variables = [
-        m.sofc_fs.condensate_flowrate,
-        m.sofc_fs.BFW_circulation_rate,
-        m.sofc_fs.BFW_makeup_flow,
-        m.sofc_fs.evaporation_losses,
-        m.sofc_fs.blowdown_losses,
-        m.sofc_fs.total_wet_losses,
-        m.sofc_fs.water_demand,
-        m.sofc_fs.water_recycle,
-        m.sofc_fs.raw_water_withdrawal,
-        m.sofc_fs.process_water_discharge,
-        m.sofc_fs.raw_water_consumption,
-        m.sofc_fs.costing.other_variable_costs]
+        fs.condensate_flowrate,
+        fs.BFW_circulation_rate,
+        fs.BFW_makeup_flow,
+        fs.evaporation_losses,
+        fs.blowdown_losses,
+        fs.total_wet_losses,
+        fs.water_demand,
+        fs.water_recycle,
+        fs.raw_water_withdrawal,
+        fs.process_water_discharge,
+        fs.raw_water_consumption,
+        fs.costing.other_variable_costs]
 
     constraints = [
-        m.sofc_fs.condensate_flowrate_constraint,
-        m.sofc_fs.BFW_circulation_rate_constraint,
-        m.sofc_fs.BFW_makeup_flow_constraint,
-        m.sofc_fs.evaporation_losses_constraint,
-        m.sofc_fs.blowdown_losses_constraint,
-        m.sofc_fs.wet_losses_constraint,
-        m.sofc_fs.water_demand_constraint,
-        m.sofc_fs.water_recycle_constraint,
-        m.sofc_fs.raw_water_withdrawal_constraint,
-        m.sofc_fs.water_discharge_constraint,
-        m.sofc_fs.raw_water_consumption_constraint,
-        # m.sofc_fs.stack_replacement
+        fs.condensate_flowrate_constraint,
+        fs.BFW_circulation_rate_constraint,
+        fs.BFW_makeup_flow_constraint,
+        fs.evaporation_losses_constraint,
+        fs.blowdown_losses_constraint,
+        fs.wet_losses_constraint,
+        fs.water_demand_constraint,
+        fs.water_recycle_constraint,
+        fs.raw_water_withdrawal_constraint,
+        fs.water_discharge_constraint,
+        fs.raw_water_consumption_constraint,
+        # fs.stack_replacement
         ]
 
     for v, c in zip(variables, constraints):
-        for t in m.sofc_fs.time:
+        for t in fs.time:
             calculate_variable_from_constraint(v[t], c[t])
 
     initialize_fixed_OM_costs(m)
@@ -1657,7 +1657,7 @@ def pfd_result(outfile, m, df):
     tags["emissions"] = sofc_fstr(pyo.value(m.sofc_fs.CO2_emissions[0]), 1)
 
     original_svg_file = os.path.join(this_file_dir(),
-                                     "rsofc_sofc_results.svg")
+                                     "rsofc_sofc_mode_template.svg")
     with open(original_svg_file, "r") as f:
         svg_tag(tags, f, outfile=outfile)
 
@@ -1722,45 +1722,53 @@ def check_scaling(m):
     print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
 
 
-def get_model(m=None, use_DNN=False):
+def get_model(m):
     # create model and flowsheet
     # m = pyo.ConcreteModel()
 
     # if use_DNN:
     #     init_fname = "sofc_dnn_init.json.gz"
     # else:
-    #     init_fname = "sofc_surrogate_init.json.gz"
+    init_fname = "rsofc_sofc_surrogate_init.json.gz"
 
-    # if os.path.exists(init_fname):
-    #     build_NGFC(m)
-    #     SOFC_ROM_setup(m, use_DNN=use_DNN)
-    #     add_SOFC_energy_balance(m)
-    #     add_result_constraints(m)
-    #     add_costing(m)
-    #     ms.from_json(m, fname=init_fname)
-    #     # scale_NGFC(m)
+    if os.path.exists(init_fname):
+        build_NGFC(m)
+        SOFC_ROM_setup(m)
+        add_SOFC_energy_balance(m)
+        add_result_constraints(m)
+        # add_costing(m.sofc_fs)
+        ms.from_json(m, fname=init_fname)
+        scale_NGFC(m)
 
-    # else:
-    # build model
-    build_NGFC(m)
-    set_NGFC_inputs(m)
-    # scale_NGFC(m)
-    initialize_NGFC(m)
-    SOFC_ROM_setup(m, use_DNN=use_DNN)
-    add_SOFC_energy_balance(m)
-    # solve model
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {'bound_push': 1e-23}
-    solver.solve(m.sofc_fs, tee=True)
-    # and results and costing
+    else:
+        # build model
+        build_NGFC(m)
+        set_NGFC_inputs(m)
+        scale_NGFC(m)
+        initialize_NGFC(m)
+        SOFC_ROM_setup(m)
+        add_SOFC_energy_balance(m)
+    
+        # solve model
+        solver = pyo.SolverFactory("ipopt")
+        solver.options = {
+            "max_iter": 100,
+            "tol": 1e-7,
+            "bound_push": 1e-12,
+            "linear_solver": "ma27",
+            "ma27_pivtol": 1e-3,
+              }
+        solver.solve(m.sofc_fs, tee=True)
+    
+        # and results and costing
+        add_result_constraints(m)
+        initialize_results(m)
+        # add_costing(m.sofc_fs)
+        # initialize_costing(m.sofc_fs)
 
-    add_result_constraints(m)
-    initialize_results(m)
-    # add_costing(m)
-    # initialize_costing(m)
-    # # save model
-    # ms.to_json(m, fname=init_fname)
-    report_results(m)
+        # save model
+        ms.to_json(m, fname=init_fname)
+
 
     return m
 
@@ -1768,4 +1776,7 @@ def get_model(m=None, use_DNN=False):
 if __name__ == "__main__":
     m = pyo.ConcreteModel()
     m = get_model(m)
+    report_results(m)
+    # add_costing(m)
+    # initialize_costing(m.sofc_fs)
     # check_scaling(m)
