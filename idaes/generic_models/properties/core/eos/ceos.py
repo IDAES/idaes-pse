@@ -573,22 +573,27 @@ class Cubic(EoSBase):
         EoS_u = EoS_param[pobj._cubic_type]['u']
         EoS_w = EoS_param[pobj._cubic_type]['w']
         EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
-
+        
+        R = Cubic.gas_constant(blk)
+        
+        entr_ideal = -R*safe_log(blk.pressure
+                                 /blk.params.pressure_ref, eps=1e-6)
+        for j in blk.components_in_phase(p):
+            entr_j = get_method(blk, "entr_mol_ig_comp", j)(
+                blk, cobj(blk, j), blk.temperature)
+            xj = blk.mole_frac_phase_comp[p, j]
+            
+            entr_ideal += xj*(entr_j - R*safe_log(xj,eps=1e-6))
+        
         # See pg. 102 in Properties of Gases and Liquids
-        return ((Cubic.gas_constant(blk)*safe_log((Z-B)/Z, eps=1e-6)*bm*EoS_p +
-                 Cubic.gas_constant(blk) *
-                 safe_log(Z*blk.params.pressure_ref/blk.pressure, eps=1e-6) *
-                 bm*EoS_p +
-                 dadT*safe_log((2*Z + B*(EoS_u + EoS_p)) /
-                               (2*Z + B*(EoS_u - EoS_p)),
-                               eps=1e-6)) /
-                (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] 
-                                 * (get_method(blk, "entr_mol_ig_comp", j)(
-                                     blk, cobj(blk, j), blk.temperature)
-                                     - Cubic.gas_constant(blk)
-                                     * safe_log(blk.mole_frac_phase_comp[p, j],
-                                                eps=1e-6))
-                                 for j in blk.components_in_phase(p)))
+        # or pg. 208 of Sandler, 4th Ed.
+        entr_departure = (
+            R*safe_log((Z-B), eps=1e-6)
+            +  dadT/(bm*EoS_p)*safe_log((2*Z + B*(EoS_u + EoS_p)) /
+                                         (2*Z + B*(EoS_u - EoS_p)),eps=1e-6)
+            )
+        
+        return entr_ideal + entr_departure
 
     @staticmethod
     def entr_mol_phase_comp(blk, p, j):
