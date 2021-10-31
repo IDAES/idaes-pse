@@ -13,7 +13,7 @@
 """
 Mock-up EoS module for testing generic property packages
 """
-from pyomo.environ import Var, units as pyunits
+from pyomo.environ import Var, sqrt, units as pyunits
 
 from idaes.generic_models.properties.core.eos.eos_base import EoSBase
 
@@ -121,6 +121,14 @@ class DummyEoS(EoSBase):
     @staticmethod
     def gibbs_mol_phase_comp(b, p, j):
         return 42
+
+    @staticmethod
+    def isothermal_speed_sound_phase(b, p):
+        return 250
+
+    @staticmethod
+    def isentropic_speed_sound_phase(b, p):
+        return sqrt(b.heat_capacity_ratio_phase[p]) * b.isothermal_speed_sound_phase[p]
 
     @staticmethod
     def vol_mol_phase(b, p):
