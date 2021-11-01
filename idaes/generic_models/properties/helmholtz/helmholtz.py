@@ -343,8 +343,8 @@ class HelmholtzThermoExpressions(object):
     value 1 or 0 for x with any state varaibles to get liquid or vapor
     properies.
 
-    The purpose of this class is to allow for straight forward calculation of
-    preoprties without a full state block for each set of conditions.
+    The purpose of this class is to allow for straight-forward calculation of
+    properties without a full state block for each set of conditions.
     """
 
     def __init__(self, blk, parameters):
@@ -368,7 +368,7 @@ class HelmholtzThermoExpressions(object):
             self, h=None, s=None, p=None, T=None, u=None, x=None):
         """This function is called as the basis for most thermo expression
         writer functions.  It takes the given state variables and returns
-        expressions for liqid density, vapor density, vapor fraction and
+        expressions for liquid density, vapor density, vapor fraction and
         temperature, which can be used to write an expression for any thermo
         quantity.
         """
@@ -1151,7 +1151,7 @@ class HelmholtzStateBlockData(StateBlockData):
     """
 
     def initialize(self, *args, **kwargs):
-        # This particualr property pacakage has no need for initialization
+        # This particular property package has no need for initialization
         pass
 
     def _external_functions(self):
@@ -1553,7 +1553,8 @@ class HelmholtzStateBlockData(StateBlockData):
         # Entropy
         self.entr_mol = Expression(
             expr=(self.func_s(delta["Liq"], tau) * self.phase_frac["Liq"] +
-                self.func_s(delta["Vap"], tau)*self.phase_frac["Vap"]))
+                self.func_s(delta["Vap"], tau)*self.phase_frac["Vap"]) *
+                params.uc_kJ_per_kgK_to_J_per_molK)
         # cp
         self.cp_mol = Expression(
             expr=sum(self.phase_frac[p] * self.cp_mol_phase[p]
