@@ -11,16 +11,16 @@
 # license information.
 #################################################################################
 """
-Reboiler model for solvent columns.
+Condenser model for solvent columns.
 
-This is a simple model for a reboiler in the case where liquid and vapor phases
-have separate proeprty packages, such as the case of solvent columns.
+This is a simple model for a condenser in the case where liquid and vapor
+phases have separate proeprty packages, such as the case of solvent columns.
 
 Assumptions:
      * Steady-state only
      * Liquid phase property package has a single phase named Liq
      * Vapor phase property package has a single phase named Vap
-     * Liquid and vapor phase properties need not have the same component lists
+     * Liquid and vapor phase proeprtes need not have the same component lists
 """
 
 __author__ = "Andrew Lee, Paul Akula"
@@ -48,13 +48,13 @@ from idaes.core.util.exceptions import ConfigurationError
 _log = idaeslog.getIdaesLogger(__name__)
 
 
-@declare_process_block_class("SolventReboiler")
-class SolventReboilerData(UnitModelBlockData):
+@declare_process_block_class("SolventCondenser")
+class SolventCondenserData(UnitModelBlockData):
     """
-    Reboiler unit for solvent column models using separate property packages
+    Condenser unit for solvent column models using separate property packages
     for liquid and vpor phases.
 
-    Unit model to reboil the liquid from the bottom of a solvent column.
+    Unit model to condense the vapor from the top of a solvent column.
     """
     CONFIG = ConfigBlock()
     # TOOO: Add dynamics in future
@@ -169,133 +169,134 @@ see property package for documentation.}"""))
         # Check phase lists match assumptions
         if self.config.vapor_property_package.phase_list != ["Vap"]:
             raise ConfigurationError(
-                f"{self.name} SolventReboiler model requires that the vapor "
+                f"{self.name} SolventCondenser model requires that the vapor "
                 f"phase property package have a single phase named 'Vap'")
         if self.config.liquid_property_package.phase_list != ["Liq"]:
             raise ConfigurationError(
-                f"{self.name} SolventReboiler model requires that the liquid "
+                f"{self.name} SolventCondenser model requires that the liquid "
                 f"phase property package have a single phase named 'Liq'")
 
         # Check for at least one common component in component lists
         if not any(j in self.config.vapor_property_package.component_list for
                    j in self.config.liquid_property_package.component_list):
             raise ConfigurationError(
-                f"{self.name} SolventReboiler model requires that the liquid "
+                f"{self.name} SolventCondenser model requires that the liquid "
                 f"and vapor phase property packages have at least one "
                 f"common component.")
 
         # ---------------------------------------------------------------------
-        # Add Control Volume for the Liquid Phase
-        self.liquid_phase = ControlVolume0DBlock(default={
+        # Add Control Volume for the Vapor Phase
+        self.vapor_phase = ControlVolume0DBlock(default={
             "dynamic": self.config.dynamic,
             "has_holdup": self.config.has_holdup,
-            "property_package": self.config.liquid_property_package,
-            "property_package_args": self.config.liquid_property_package_args})
+            "property_package": self.config.vapor_property_package,
+            "property_package_args": self.config.vapor_property_package_args})
 
-        self.liquid_phase.add_state_blocks(
+        self.vapor_phase.add_state_blocks(
             has_phase_equilibrium=True)
 
         # Separate liquid and vapor phases means that phase equilibrium will
         # be handled at the unit model level, thus has_phase_equilibrium is
         # False, but has_mass_transfer is True.
-        self.liquid_phase.add_material_balances(
+        self.vapor_phase.add_material_balances(
             balance_type=self.config.material_balance_type,
             has_mass_transfer=True,
             has_phase_equilibrium=False)
 
         # Need to include enthalpy transfer term for the mass transfer
-        self.liquid_phase.add_energy_balances(
+        self.vapor_phase.add_energy_balances(
             balance_type=self.config.energy_balance_type,
             has_heat_transfer=True,
             has_enthalpy_transfer=True)
 
-        self.liquid_phase.add_momentum_balances(
+        self.vapor_phase.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
         # ---------------------------------------------------------------------
-        # Add single state block for vapor phase
-        tmp_dict = dict(**self.config.vapor_property_package_args)
+        # Add single state block for liquid phase
+        tmp_dict = dict(**self.config.liquid_property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["defined_state"] = False
-        self.vapor_phase = \
-            self.config.vapor_property_package.build_state_block(
+        self.liquid_phase = \
+            self.config.liquid_property_package.build_state_block(
                 self.flowsheet().time,
-                doc="Vapor phase properties",
+                doc="Liquid phase properties",
                 default=tmp_dict)
 
         # ---------------------------------------------------------------------
         # Check flow basis is compatable
         # TODO : Could add code to convert flow bases, but not now
         t_init = self.flowsheet().time.first()
-        if (self.vapor_phase[t_init].get_material_flow_basis() !=
-                self.liquid_phase.properties_out[
+        if (self.liquid_phase[t_init].get_material_flow_basis() !=
+                self.vapor_phase.properties_out[
                     t_init].get_material_flow_basis()):
             raise ConfigurationError(
                 f"{self.name} vapor and liquid property packages must use the "
                 f"same material flow basis.")
 
         # ---------------------------------------------------------------------
-        # Add Ports for the reboiler
+        # Add Ports for the condenser
         self.add_inlet_port(
-            name="inlet", block=self.liquid_phase, doc="Liquid feed")
+            name="inlet", block=self.vapor_phase, doc="Vapor feed")
         self.add_outlet_port(
-            name="bottoms", block=self.liquid_phase, doc="Bottoms stream")
-        self.add_outlet_port(name="vapor_reboil",
-                             block=self.vapor_phase,
-                             doc="Vapor stream from reboiler")
+            name="vapor_outlet", block=self.vapor_phase, doc="Vapor product")
+        self.add_outlet_port(name="reflux",
+                             block=self.liquid_phase,
+                             doc="Liquid reflux from condenser")
 
         # ---------------------------------------------------------------------
         # Add unit level constraints
         # First, need the union and intersection of component lists
-        all_comps = (self.vapor_phase.component_list |
-                     self.liquid_phase.properties_out.component_list)
-        common_comps = (self.vapor_phase.component_list &
-                        self.liquid_phase.properties_out.component_list)
+        all_comps = (self.liquid_phase.component_list |
+                     self.vapor_phase.properties_out.component_list)
+        common_comps = (self.liquid_phase.component_list &
+                        self.vapor_phase.properties_out.component_list)
 
         # Get units for unit conversion
         vunits = self.config.vapor_property_package.get_metadata(
             ).get_derived_units
         lunits = self.config.liquid_property_package.get_metadata(
             ).get_derived_units
-        flow_basis = self.vapor_phase[t_init].get_material_flow_basis()
+        flow_basis = self.liquid_phase[t_init].get_material_flow_basis()
         if flow_basis == MaterialFlowBasis.molar:
             fb = "flow_mole"
         elif flow_basis == MaterialFlowBasis.molar:
             fb = "flow_mass"
         else:
             raise ConfigurationError(
-                f"{self.name} SolventReboiler only supports mass or molar "
+                f"{self.name} SolventCondenser only supports mass or molar "
                 f"basis for MaterialFlowBasis.")
 
-        if any(j not in common_comps for j in self.vapor_phase.component_list):
-            # We have non-condensable components present, need zero-flow param
+        if any(j not in common_comps for
+               j in self.liquid_phase.component_list):
+            # We have non-volatile components present, need zero-flow param
             self.zero_flow_param = Param(
                 mutable=True,
                 default=1e-8,
-                units=vunits("flow_mole"))
+                units=lunits("flow_mole"))
 
         # Material balances
         def rule_material_balance(blk, t, j):
             if j in common_comps:
                 # Component is in equilibrium
-                # Mass transfer equals vapor flowrate
-                return (-blk.liquid_phase.mass_transfer_term[t, "Liq", j] ==
+                # Mass transfer equals liquid flowrate
+                return (-blk.vapor_phase.mass_transfer_term[t, "Vap", j] ==
                         pyunits.convert(
-                            blk.vapor_phase[t].get_material_flow_terms(
-                                "Vap", j),
-                            to_units=lunits(fb)))
-            elif j in self.vapor_phase.component_list:
-                # Non-condensable component
+                            blk.liquid_phase[t].get_material_flow_terms(
+                                "Liq", j),
+                            to_units=vunits(fb)))
+            elif j in self.liquid_phase.component_list:
+                # Non-volatile component
                 # No mass transfer term
-                # Set vapor flowrate to an arbitary small value
-                return (blk.vapor_phase[t].get_material_flow_terms("Vap", j) ==
-                        blk.zero_flow_param)
+                # Set liquid flowrate to an arbitary small value
+                return (blk.liquid_phase[t].get_material_flow_terms(
+                    "Liq", j) == blk.zero_flow_param)
             else:
-                # Non-vaporisable comonent
+                # Non-condensable comonent
                 # Mass transfer term is zero, no vapor flowrate
-                return (blk.liquid_phase.mass_transfer_term[t, "Liq", j] ==
-                        0*lunits(fb))
+                return (blk.vapor_phase.mass_transfer_term[t, "Vap", j] ==
+                        0*vunits(fb))
         self.unit_material_balance = Constraint(
             self.flowsheet().time,
             all_comps,
@@ -306,10 +307,10 @@ see property package for documentation.}"""))
         # For all common components, equate fugacity in vapor and liquid
         def rule_phase_equilibrium(blk, t, j):
             return (
-                blk.liquid_phase.properties_out[t].fug_phase_comp[
-                    "Liq", j] ==
-                pyunits.convert(blk.vapor_phase[t].fug_phase_comp["Vap", j],
-                                to_units=lunits("pressure")))
+                blk.vapor_phase.properties_out[t].fug_phase_comp[
+                    "Vap", j] ==
+                pyunits.convert(blk.liquid_phase[t].fug_phase_comp["Liq", j],
+                                to_units=vunits("pressure")))
         self.unit_phase_equilibrium = Constraint(
             self.flowsheet().time,
             common_comps,
@@ -318,22 +319,22 @@ see property package for documentation.}"""))
 
         # Temperature equality constraint
         def rule_temperature_balance(blk, t):
-            return (blk.liquid_phase.properties_out[t].temperature ==
-                    pyunits.convert(blk.vapor_phase[t].temperature,
-                                    to_units=lunits("temperature")))
+            return (blk.vapor_phase.properties_out[t].temperature ==
+                    pyunits.convert(blk.liquid_phase[t].temperature,
+                                    to_units=vunits("temperature")))
         self.unit_temperature_equality = Constraint(
             self.flowsheet().time,
             rule=rule_temperature_balance,
             doc="Unit level temperature equality")
 
         # Unit level energy balance
-        # Energy leaving in vapor phase must be equal and opposite to enthalpy
-        # transfer from liquid phase
+        # Energy leaving in liquid phase must be equal and opposite to enthalpy
+        # transfer from vapor phase
         def rule_energy_balance(blk, t):
-            return (-blk.liquid_phase.enthalpy_transfer[t] ==
+            return (-blk.vapor_phase.enthalpy_transfer[t] ==
                     pyunits.convert(
-                        blk.vapor_phase[t].get_enthalpy_flow_terms("Vap"),
-                        to_units=lunits("energy")/lunits("time")))
+                        blk.liquid_phase[t].get_enthalpy_flow_terms("Liq"),
+                        to_units=vunits("energy")/lunits("time")))
         self.unit_enthalpy_balance = Constraint(
             self.flowsheet().time,
             rule=rule_energy_balance,
@@ -341,31 +342,31 @@ see property package for documentation.}"""))
 
         # Pressure balance constraint
         def rule_pressure_balance(blk, t):
-            return (blk.liquid_phase.properties_out[t].pressure ==
-                    pyunits.convert(blk.vapor_phase[t].pressure,
-                                    to_units=lunits("pressure")))
+            return (blk.vapor_phase.properties_out[t].pressure ==
+                    pyunits.convert(blk.liquid_phase[t].pressure,
+                                    to_units=vunits("pressure")))
         self.unit_pressure_balance = Constraint(
             self.flowsheet().time,
             rule=rule_pressure_balance,
             doc="Unit level pressure balance")
 
         # Set references to balance terms at unit level
-        self.heat_duty = Reference(self.liquid_phase.heat[:])
+        self.heat_duty = Reference(self.vapor_phase.heat[:])
 
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != MomentumBalanceType.none):
-            self.deltaP = Reference(self.liquid_phase.deltaP[:])
+            self.deltaP = Reference(self.vapor_phase.deltaP[:])
 
     # TODO : Scaling methods
 
     def initialize(blk, liquid_state_args=None, vapor_state_args=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
-        Initialization routine for solvent reboiler unit model.
+        Initialization routine for solvent condenser unit model.
 
         Keyword Arguments:
             liquid_state_args : a dict of arguments to be passed to the
-                liquid property packages to provide an initial state for
+                liquid property package to provide an initial state for
                 initialization (see documentation of the specific property
                 package) (default = none).
             vapor_state_args : a dict of arguments to be passed to the
@@ -398,55 +399,55 @@ see property package for documentation.}"""))
 
         # ---------------------------------------------------------------------
         # Initialize liquid phase control volume block
-        flags = blk.liquid_phase.initialize(
+        flags = blk.vapor_phase.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=liquid_state_args,
+            state_args=vapor_state_args,
             hold_state=True
         )
 
         init_log.info_high('Initialization Step 1 Complete.')
         # ---------------------------------------------------------------------
-        # Initialize vapor phase state block
-        if vapor_state_args is None:
+        # Initialize liquid phase state block
+        if liquid_state_args is None:
             # TODO : Need to make more general
             t_init = blk.flowsheet().time.first()
-            vapor_state_args = {}
-            vap_state_vars = blk.vapor_phase[t_init].define_state_vars()
+            liquid_state_args = {}
+            liq_state_vars = blk.liquid_phase[t_init].define_state_vars()
 
-            liq_state = blk.liquid_phase.properties_out[t_init]
+            vap_state = blk.vapor_phase.properties_out[t_init]
 
             # Check for unindexed state variables
-            # For an initial guess, assume 10% of flow vaporizes
+            # For an initial guess, assume 10% of flow condenses
             for sv in ["flow_mol"]:
-                if sv in vap_state_vars:
-                    vapor_state_args[sv] = 0.1*value(
-                        getattr(liq_state, sv))
+                if sv in liq_state_vars:
+                    liquid_state_args[sv] = 0.1*value(
+                        getattr(vap_state, sv))
 
             for sv in ["temperature", "pressure"]:
-                if sv in vap_state_vars:
-                    vapor_state_args[sv] = value(
-                        getattr(liq_state, sv))
+                if sv in liq_state_vars:
+                    liquid_state_args[sv] = value(
+                        getattr(vap_state, sv))
 
             # Check for component indexed state variables
             for sv in ["mole_frac_comp"]:
-                if sv in vap_state_vars:
-                    vapor_state_args[sv] = {}
+                if sv in liq_state_vars:
+                    liquid_state_args[sv] = {}
 
-                    for j in blk.vapor_phase.component_list:
-                        if j in liq_state.component_list:
-                            vapor_state_args[sv][j] = value(
-                                liq_state.fug_phase_comp["Liq", j] /
-                                liq_state.pressure)
+                    for j in blk.liquid_phase.component_list:
+                        if j in vap_state.component_list:
+                            liquid_state_args[sv][j] = value(
+                                vap_state.fug_phase_comp["Vap", j] /
+                                vap_state.pressure)
                         else:
-                            vapor_state_args[sv][j] = 1e-8
+                            liquid_state_args[sv][j] = 1e-8
 
-        blk.vapor_phase.initialize(
+        blk.liquid_phase.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=vapor_state_args,
+            state_args=liquid_state_args,
             hold_state=False
         )
 
@@ -462,7 +463,7 @@ see property package for documentation.}"""))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.liquid_phase.release_state(flags, outlvl)
+        blk.vapor_phase.release_state(flags, outlvl)
 
         init_log.info('Initialization Complete: {}'
                       .format(idaeslog.condition(results)))
