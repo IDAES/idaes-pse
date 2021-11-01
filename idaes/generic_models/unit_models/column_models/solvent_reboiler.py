@@ -418,29 +418,58 @@ see property package for documentation.}"""))
             liq_state = blk.liquid_phase.properties_out[t_init]
 
             # Check for unindexed state variables
-            # For an initial guess, assume 10% of flow vaporizes
-            for sv in ["flow_mol"]:
-                if sv in vap_state_vars:
-                    vapor_state_args[sv] = 0.1*value(
-                        getattr(liq_state, sv))
-
-            for sv in ["temperature", "pressure"]:
-                if sv in vap_state_vars:
+            for sv in vap_state_vars:
+                if "flow" in sv:
+                    # Flow varaible, assume 10% vaporization
+                    if "phase_comp" in sv:
+                        # Flow is indexed by phase and component
+                        vapor_state_args[sv] = {}
+                        for p, j in vap_state_vars[sv]:
+                            if j in liq_state.component_list:
+                                vapor_state_args[sv][p, j] = 0.1*value(
+                                    getattr(liq_state, sv)[p, j])
+                            else:
+                                vapor_state_args[sv][p, j] = 1e-8
+                    elif "comp" in sv:
+                        # Flow is indexed by component
+                        vapor_state_args[sv] = {}
+                        for j in vap_state_vars[sv]:
+                            if j in liq_state.component_list:
+                                vapor_state_args[sv][j] = 0.1*value(
+                                    getattr(liq_state, sv)[j])
+                            else:
+                                vapor_state_args[sv][j] = 1e-8
+                    elif "phase" in sv:
+                        # Flow is indexed by phase
+                        vapor_state_args[sv] = {}
+                        for p in vap_state_vars[sv]:
+                            vapor_state_args[sv][p] = 0.1*value(
+                                    getattr(liq_state, sv)["Liq"])
+                    else:
+                        vapor_state_args[sv] = 0.1*value(
+                            getattr(liq_state, sv))
+                elif "mole_frac" in sv:
+                    vapor_state_args[sv] = {}
+                    if "phase" in sv:
+                        # Variable is indexed by phase and component
+                        for p, j in vap_state_vars[sv].keys():
+                            if j in liq_state.component_list:
+                                vapor_state_args[sv][p, j] = value(
+                                    liq_state.fug_phase_comp["Liq", j] /
+                                    liq_state.pressure)
+                            else:
+                                vapor_state_args[sv][p, j] = 1e-8
+                    else:
+                        for j in vap_state_vars[sv].keys():
+                            if j in liq_state.component_list:
+                                vapor_state_args[sv][j] = value(
+                                    liq_state.fug_phase_comp["Liq", j] /
+                                    liq_state.pressure)
+                            else:
+                                vapor_state_args[sv][j] = 1e-8
+                else:
                     vapor_state_args[sv] = value(
                         getattr(liq_state, sv))
-
-            # Check for component indexed state variables
-            for sv in ["mole_frac_comp"]:
-                if sv in vap_state_vars:
-                    vapor_state_args[sv] = {}
-
-                    for j in blk.vapor_phase.component_list:
-                        if j in liq_state.component_list:
-                            vapor_state_args[sv][j] = value(
-                                liq_state.fug_phase_comp["Liq", j] /
-                                liq_state.pressure)
-                        else:
-                            vapor_state_args[sv][j] = 1e-8
 
         blk.vapor_phase.initialize(
             outlvl=outlvl,
