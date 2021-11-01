@@ -274,7 +274,6 @@ class TestStripperHeatDuty(object):
     @pytest.mark.component
     def test_initialize(self, model):
         initialization_tester(model)
-        assert False
 
     # @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -291,7 +290,7 @@ class TestStripperHeatDuty(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.1083, rel=1e-5) ==
+        assert (pytest.approx(0.108291, rel=1e-5) ==
                 value(model.fs.unit.reflux.flow_mol[0]))
         assert (pytest.approx(0, abs=1e-3) ==
                 value(model.fs.unit.reflux.mole_frac_comp[0, 'CO2']))
@@ -301,21 +300,21 @@ class TestStripperHeatDuty(object):
                 value(model.fs.unit.reflux.mole_frac_comp[0, 'H2O']))
         assert (pytest.approx(184360, rel=1e-5) ==
                 value(model.fs.unit.reflux.pressure[0]))
-        assert (pytest.approx(303.244, rel=1e-5) ==
+        assert (pytest.approx(303.250, rel=1e-5) ==
                 value(model.fs.unit.reflux.temperature[0]))
 
         assert (pytest.approx(1.0034, rel=1e-5) ==
                 value(model.fs.unit.vapor_outlet.flow_mol[0]))
         assert (pytest.approx(0.976758, rel=1e-5) ==
                 value(model.fs.unit.vapor_outlet.mole_frac_comp[0, 'CO2']))
-        assert (pytest.approx(0.0232416, rel=1e-5) ==
+        assert (pytest.approx(0.0232505, rel=1e-5) ==
                 value(model.fs.unit.vapor_outlet.mole_frac_comp[0, 'H2O']))
         assert (pytest.approx(184360, rel=1e-5) ==
                 value(model.fs.unit.vapor_outlet.pressure[0]))
-        assert (pytest.approx(303.244, rel=1e-5) ==
+        assert (pytest.approx(303.250, rel=1e-5) ==
                 value(model.fs.unit.vapor_outlet.temperature[0]))
 
-        assert (pytest.approx(-6264.72, rel=1e-5) ==
+        assert (pytest.approx(-6264, rel=1e-5) ==
                 value(model.fs.unit.heat_duty[0]))
 
     @pytest.mark.solver

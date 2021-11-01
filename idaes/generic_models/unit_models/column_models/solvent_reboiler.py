@@ -417,7 +417,13 @@ see property package for documentation.}"""))
             liq_state = blk.liquid_phase.properties_out[t_init]
 
             # Check for unindexed state variables
-            for sv in ["temperature", "pressure", "flow_mol"]:
+            # For an initial guess, assume 10% of flow vaporizes
+            for sv in ["flow_mol"]:
+                if sv in vap_state_vars:
+                    vapor_state_args[sv] = 0.1*value(
+                        getattr(liq_state, sv))
+
+            for sv in ["temperature", "pressure"]:
                 if sv in vap_state_vars:
                     vapor_state_args[sv] = value(
                         getattr(liq_state, sv))

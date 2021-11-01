@@ -419,7 +419,13 @@ see property package for documentation.}"""))
             vap_state = blk.vapor_phase.properties_out[t_init]
 
             # Check for unindexed state variables
-            for sv in ["temperature", "pressure", "flow_mol"]:
+            # For an initial guess, assume 10% of flow condenses
+            for sv in ["flow_mol"]:
+                if sv in liq_state_vars:
+                    liquid_state_args[sv] = 0.1*value(
+                        getattr(vap_state, sv))
+
+            for sv in ["temperature", "pressure"]:
                 if sv in liq_state_vars:
                     liquid_state_args[sv] = value(
                         getattr(vap_state, sv))
