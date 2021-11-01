@@ -40,7 +40,7 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 
@@ -356,7 +356,59 @@ see property package for documentation.}"""))
                 self.config.momentum_balance_type != MomentumBalanceType.none):
             self.deltaP = Reference(self.liquid_phase.deltaP[:])
 
-    # TODO : Scaling methods
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        common_comps = (self.vapor_phase.component_list &
+                        self.liquid_phase.properties_out.component_list)
+
+        for (t, j), v in self.unit_material_balance.items():
+            if j in common_comps:
+                iscale.constraint_scaling_transform(
+                    v,
+                    iscale.get_scaling_factor(
+                        self.liquid_phase.mass_transfer_term[t, "Liq", j],
+                        default=1,
+                        warning=True))
+            elif j in self.vapor_phase.component_list:
+                iscale.constraint_scaling_transform(
+                    v,
+                    value(1/self.zero_flow_param))
+            else:
+                pass  # no need to scale this constraint
+
+        for (t, j), v in self.unit_phase_equilibrium.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].fug_phase_comp[
+                        "Liq", j],
+                    default=1,
+                    warning=True))
+
+        for t, v in self.unit_temperature_equality.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].temperature,
+                    default=1,
+                    warning=True))
+
+        for t, v in self.unit_enthalpy_balance.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.enthalpy_transfer[t],
+                    default=1,
+                    warning=True))
+
+        for t, v in self.unit_pressure_balance.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].pressure,
+                    default=1,
+                    warning=True))
 
     def initialize(blk, liquid_state_args=None, vapor_state_args=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
@@ -410,7 +462,6 @@ see property package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Initialize vapor phase state block
         if vapor_state_args is None:
-            # TODO : Need to make more general
             t_init = blk.flowsheet().time.first()
             vapor_state_args = {}
             vap_state_vars = blk.vapor_phase[t_init].define_state_vars()
