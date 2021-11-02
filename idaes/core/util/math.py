@@ -122,6 +122,39 @@ def smooth_min(a, b, eps=1e-4):
     expr = smooth_minmax(a, b, eps, sense='min')
     return expr
 
+def smooth_bound(val, lb, ub, eps=1e-4, eps_lb=None, eps_ub=None):
+    """Returns a smooth expression that returns approximatly the value of val
+    between lb and ub, the value of ub if val > ub and the value of lb if
+    val < lb. The expression returned is
+
+    ..math:: smooth_min(smooth_max(val, lb, eps_lb), ub, eps_ub)
+
+    **Example Usage** This function is useful when calculating the value of a
+    quantitiy with physical limitations that may not be otherwise captured. A
+    good example of this is using a controller to manipulate a valve to maintain,
+    for example, a set flow rate. Under some process conditions the controller
+    may indicate the valve should be more than fully opened or closed. In this
+    example, the smooth_bound expression can be applied to the unbounded
+    controller output to get a bounded controller output, ensuring the valve
+    opening stays in the feasible region, while maintaining smoothness.
+
+    Args:
+        val: an expression for a bounded version of this value is returned
+        lb: lower bound
+        ub: lower bound
+        eps: smoothing parameter
+        eps_lb: (optional) lower bound smoothing parameter if not provided use eps
+        eps_ub: (optional) upper bound smoothing parameter if not provided use eps
+
+    Returns:
+        expression: smooth bounded version of val.
+    """
+    if eps_lb is None:
+        eps_lb = eps
+    if eps_ub is None:
+        eps_ub = eps
+    return smooth_min(smooth_max(val, lb, eps_lb), ub, eps_ub)
+
 def safe_sqrt(a, eps=1e-4):
     """Returns the square root of max(a, 0) using the smooth_max expression.
     This can be used to avoid transient evaluation errors when changing a model
@@ -140,7 +173,7 @@ def safe_sqrt(a, eps=1e-4):
 def safe_log(a, eps=1e-4):
     """Returns the log of max(a, eps) using the smooth_max expression.
     This can be used to avoid transient evaluation errors when changing a model
-    from one state to another.  This can be used when at the solution, a >> eps. 
+    from one state to another.  This can be used when at the solution, a >> eps.
 
     Args:
         a: Pyomo expression
