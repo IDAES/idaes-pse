@@ -742,6 +742,12 @@ class AlamoTrainer(SurrogateTrainer):
             ALAMO: return code
             log: string of the text output from ALAMO
         """
+        if alamo.executable is None:
+            raise FileNotFoundError(
+                "Could not find ALAMO executable. Please ensure that ALAMO "
+                "is installed and in the system path, or provide a path to "
+                "the executable.")
+
         ostreams = [StringIO(), sys.stdout]
 
         if self._temp_context is None:

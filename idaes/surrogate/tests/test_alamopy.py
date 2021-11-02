@@ -1087,7 +1087,7 @@ class TestAlamoSurrogate():
         assert not os.path.isfile(fname)
 
 
-@pytest.mark.skipif(alamo is None, reason="ALAMO not available")
+@pytest.mark.skipif(alamo.executable is None, reason="ALAMO not available")
 @pytest.mark.integration
 class TestWorkflow():
     training_data = pd.DataFrame(np.array(
