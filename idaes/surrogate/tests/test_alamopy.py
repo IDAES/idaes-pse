@@ -533,7 +533,8 @@ class TestAlamoTrainer:
     @pytest.mark.unit
     def test_read_trace_single(self, alamo_trainer):
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
+        trc = alamo_trainer._read_trace_file(
+            alamo_trainer._trcfile, alamo_trainer.output_labels())
 
         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
                         '4.0000000000020765611453 * x2**2 - '
@@ -615,7 +616,8 @@ class TestAlamoTrainer:
         alamo_trainer._output_labels = ["z1", "z2"]
 
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace2.trc")
-        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
+        trc = alamo_trainer._read_trace_file(
+            alamo_trainer._trcfile, alamo_trainer.output_labels())
 
         mdict = {
             'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
@@ -709,8 +711,8 @@ class TestAlamoTrainer:
         with pytest.raises(RuntimeError,
                            match="Mismatch when reading ALAMO trace file. "
                            "Expected OUTPUT = 1, found 2."):
-            alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
-            
+            alamo_trainer._read_trace_file(
+                alamo_trainer._trcfile, alamo_trainer.output_labels())
 
     @pytest.mark.unit
     def test_read_trace_label_mismatch(self, alamo_trainer):
@@ -721,12 +723,14 @@ class TestAlamoTrainer:
                            match="Mismatch when reading ALAMO trace file. "
                            "Label of output variable in expression "
                            "\(z2\) does not match expected label \(z3\)."):
-            alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
+            alamo_trainer._read_trace_file(
+                alamo_trainer._trcfile, alamo_trainer.output_labels())
 
     @pytest.mark.unit
     def test_populate_results(self, alamo_trainer):
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
+        trc = alamo_trainer._read_trace_file(
+            alamo_trainer._trcfile, alamo_trainer.output_labels())
         alamo_trainer._populate_results(trc)
 
         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
@@ -807,7 +811,8 @@ class TestAlamoTrainer:
     @pytest.mark.unit
     def test_build_surrogate_object(self, alamo_trainer):
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
+        trc = alamo_trainer._read_trace_file(
+            alamo_trainer._trcfile, alamo_trainer.output_labels())
         alamo_trainer._populate_results(trc)
         alamo_object = alamo_trainer._build_surrogate_object()
 
@@ -885,37 +890,6 @@ class TestAlamoSurrogate():
             "0.33333333332782633*inputs[x1]**6 + "
             "0.9999999999997299*inputs[x1]*inputs[x2])")
 
-    # @pytest.mark.unit
-    # def test_populate_block_indexed(self, alm_surr1):
-    #     blk = Block(concrete=True)
-
-    #     alm_surr1.populate_block(blk, index_set=[1, 2, 3])
-
-    #     assert isinstance(blk.x1, Var)
-    #     assert blk.x1.is_indexed()
-    #     assert len(blk.x1) == 3
-    #     assert isinstance(blk.x2, Var)
-    #     assert blk.x2.is_indexed()
-    #     assert len(blk.x2) == 3
-    #     assert isinstance(blk.z1, Var)
-    #     assert blk.z1.is_indexed()
-    #     assert len(blk.z1) == 3
-    #     assert isinstance(blk.alamo_constraint, Constraint)
-    #     assert blk.alamo_constraint.is_indexed()
-    #     assert len(blk.alamo_constraint) == 3
-
-    #     for i in [1, 2, 3]:
-    #         assert blk.x1[i].bounds == (0, 5)
-    #         assert blk.x2[i].bounds == (0, 10)
-    #         assert blk.z1[i].bounds == (None, None)
-    #         assert str(blk.alamo_constraint["z1", i].body) == (
-    #             f"z1[{i}] - (3.9999999999925446*x1[{i}]**2 - "
-    #             f"4.000000000002077*x2[{i}]**2 - "
-    #             f"2.099999999985938*x1[{i}]**4 + "
-    #             f"4.000000000004311*x2[{i}]**4 + "
-    #             f"0.33333333332782633*x1[{i}]**6 + "
-    #             f"0.9999999999997299*x1[{i}]*x2[{i}])")
-
     @pytest.fixture
     def alm_surr2(self):
         surrogate_expressions = {
@@ -938,7 +912,8 @@ class TestAlamoSurrogate():
         input_labels = ["x1", "x2"]
         output_labels = ["z1", "z2"]
 
-        alm_surr2 = AlamoSurrogate(surrogate_expressions, input_labels, output_labels)
+        alm_surr2 = AlamoSurrogate(
+            surrogate_expressions, input_labels, output_labels)
 
         return alm_surr2
 
@@ -1006,48 +981,6 @@ class TestAlamoSurrogate():
             "0.4214330995151807*inputs[x1]*inputs[x2] - "
             "0.041818729807213094)")
 
-    # @pytest.mark.unit
-    # def test_populate_block_multi_indexed(self, alm_surr2):
-    #     blk = Block(concrete=True)
-
-    #     alm_surr2.populate_block(blk, index_set=[1, 2, 3])
-
-    #     assert isinstance(blk.x1, Var)
-    #     assert blk.x1.is_indexed()
-    #     assert len(blk.x1) == 3
-    #     assert isinstance(blk.x2, Var)
-    #     assert blk.x2.is_indexed()
-    #     assert len(blk.x2) == 3
-    #     assert isinstance(blk.z1, Var)
-    #     assert blk.z1.is_indexed()
-    #     assert len(blk.z1) == 3
-    #     assert isinstance(blk.alamo_constraint, Constraint)
-    #     assert blk.alamo_constraint.is_indexed()
-    #     assert len(blk.alamo_constraint) == 6
-
-    #     for i in [1, 2, 3]:
-    #         assert blk.x1[i].bounds == (None, None)
-    #         assert blk.x2[i].bounds == (None, None)
-    #         assert blk.z1[i].bounds == (None, None)
-    #         assert str(blk.alamo_constraint["z1", i].body) == (
-    #             f"z1[{i}] - (3.9999999999925446*x1[{i}]**2 - "
-    #             f"4.000000000002077*x2[{i}]**2 - "
-    #             f"2.099999999985938*x1[{i}]**4 + "
-    #             f"4.000000000004311*x2[{i}]**4 + "
-    #             f"0.33333333332782633*x1[{i}]**6 + "
-    #             f"0.9999999999997299*x1[{i}]*x2[{i}])")
-    #         assert str(blk.alamo_constraint["z2", i].body) == (
-    #             f"z2[{i}] - (0.07226779984920294*x1[{i}] + "
-    #             f"0.06845168475391271*x2[{i}] + "
-    #             f"1.0677896915911471*x1[{i}]**2 - "
-    #             f"0.7057646480622435*x2[{i}]**2 - "
-    #             f"0.04028628356655499*x1[{i}]**3 + "
-    #             f"0.006778566802168481*x2[{i}]**5 - "
-    #             f"0.14017881460354553*x1[{i}]**6 + "
-    #             f"0.7720704944157665*x2[{i}]**6 + "
-    #             f"0.4214330995151807*x1[{i}]*x2[{i}] - "
-    #             f"0.041818729807213094)")
-
     @pytest.fixture
     def alm_surr3(self):
         surrogate_expressions = {
@@ -1056,7 +989,8 @@ class TestAlamoSurrogate():
         input_labels = ["x1", "x2"]
         output_labels = ["z1"]
 
-        alm_surr3 = AlamoSurrogate(surrogate_expressions, input_labels, output_labels)
+        alm_surr3 = AlamoSurrogate(
+            surrogate_expressions, input_labels, output_labels)
 
         return alm_surr3
 
@@ -1153,6 +1087,7 @@ class TestAlamoSurrogate():
         assert not os.path.isfile(fname)
 
 
+@pytest.mark.skipif(alamo is None, reason="ALAMO not available")
 @pytest.mark.integration
 class TestWorkflow():
     training_data = pd.DataFrame(np.array(
