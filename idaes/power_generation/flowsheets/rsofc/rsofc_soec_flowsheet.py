@@ -11,7 +11,14 @@
 # license information.
 ###############################################################################
 
-__author__ = "Chinedu Okoli", "John Eslick", "Alex Noring"
+"""
+Flowsheet of the soec mode of the reversible sofc.
+Air is used as sweep gas.
+Use the optimize_model method to run the flowsheet at different H2 prod. rates.
+
+"""
+
+__author__ = "Chinedu Okoli", "John Eslick"
 
 # Import python modules
 import os
@@ -2116,7 +2123,7 @@ def optimize_model(m):
         expr=m.soec_fs.H2_costing.total_variable_OM_cost[0],
         format_string="{:.3f}",
         display_units=pyo.units.USD / pyo.units.kg,
-        doc="Variable Hydrogen Production Cost",
+        doc="Total variable O&M cost",
     )
 
     options = {
@@ -2146,7 +2153,7 @@ def optimize_model(m):
 
     head_1 = m.soec_fs.tag_input.table_heading(tags=cols_input, units=True)
     head_2 = m.soec_fs.tag_pfd.table_heading(tags=cols_pfd, units=True)
-    with open("opt_res.csv", "w", newline="") as f:
+    with open("opt_res_soec.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(head_1 + head_2)
     # for h in np.linspace(375e6, 30e6, 24):
@@ -2169,7 +2176,7 @@ def optimize_model(m):
         m.soec_fs.tag_pfd["status"].set(stat)
         row_1 = m.soec_fs.tag_input.table_row(tags=cols_input, numeric=True)
         row_2 = m.soec_fs.tag_pfd.table_row(tags=cols_pfd, numeric=True)
-        with open("opt_res.csv", "a", newline="") as f:
+        with open("opt_res_soec.csv", "a", newline="") as f:
             w = csv.writer(f)
             w.writerow(row_1 + row_2)
         write_pfd_results(
@@ -2204,17 +2211,17 @@ def get_model(m=None, name="SOEC Module"):
         expand_arcs = pyo.TransformationFactory("network.expand_arcs")
         expand_arcs.apply_to(m.soec_fs)
         add_scaling_bop(m.soec_fs)
-        
+
         # results
         add_result_constraints(m.soec_fs)
 
         # load model and results
         ms.from_json(m, fname=init_fname)
-        
+
     else:
         add_flowsheet(m)
         add_properties(m.soec_fs)
-    
+
         add_asu(m.soec_fs)
         add_preheater(m.soec_fs)
         add_soec_air_side_units(m.soec_fs)
@@ -2223,7 +2230,7 @@ def get_model(m=None, name="SOEC Module"):
         add_soec_unit(m.soec_fs)
         add_more_hx_connections(m.soec_fs)
         add_soec_inlet_mix(m.soec_fs)
-    
+
         add_design_constraints(m.soec_fs)
         expand_arcs = pyo.TransformationFactory("network.expand_arcs")
         expand_arcs.apply_to(m.soec_fs)
@@ -2232,7 +2239,7 @@ def get_model(m=None, name="SOEC Module"):
         solver = get_solver()
         add_scaling(m.soec_fs)
         iscale.scale_arc_constraints(m.soec_fs)
-    
+
         initialize_plant(m.soec_fs, solver)
         add_h2_compressor(m.soec_fs)
         add_hrsg_and_cpu(m.soec_fs)
@@ -2240,7 +2247,7 @@ def get_model(m=None, name="SOEC Module"):
         expand_arcs.apply_to(m.soec_fs)
         add_scaling_bop(m.soec_fs)
         initialize_bop(m.soec_fs, solver)
-    
+
         add_result_constraints(m.soec_fs)
         initialize_results(m.soec_fs)
 
@@ -2262,7 +2269,6 @@ if __name__ == "__main__":
 
     rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
     # optimize_model(m)
-
 
     # strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
     # strip_bounds.apply_to(m, reversible=False)

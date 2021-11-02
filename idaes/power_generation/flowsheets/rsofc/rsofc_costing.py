@@ -11,6 +11,10 @@
 # license information.
 ###############################################################################
 
+"""
+Costing methods for the soec and sofc operating modes of the reversible sofc
+
+"""
 __author__ = "Chinedu Okoli", "Alex Noring"
 
 import pyomo.environ as pyo
@@ -26,14 +30,8 @@ from idaes.power_generation.costing.power_plant_costing import (
     initialize_variable_OM_costs,
 )
 
-from idaes.core import FlowsheetBlock
 from idaes.core.util.unit_costing import initialize as cost_init
 from idaes.core.util.unit_costing import fired_heater_costing
-
-# TODO - import flowsheets + adjust var names to reflect appropriate flowsheets
-# TODO - the cap cost method should take two flowsheets, one for each mode
-# TODO - the fixed_OM cost method should take only TPC from the capcost method
-# TODO - the variable_OM cost methods should take the respective flowsheets
 
 
 def add_total_plant_cost(b, project_contingency, process_contingency):
@@ -53,14 +51,8 @@ def add_total_plant_cost(b, project_contingency, process_contingency):
         return c.total_plant_cost == (c.purchase_cost * project_contingency *
                                       process_contingency / 1e6)
 
-    # @b.costing.Expression()
-    # def total_plant_cost(c):
-    #     return c.purchase_cost * project_contingency * process_contingency / 1e6
-
 
 def get_rsofc_sofc_capital_cost(fs):
-    # add flowsheet for costing
-    # fs = FlowsheetBlock(default={"dynamic": False})
 
     fs.get_costing(year="2018")
 
@@ -79,14 +71,13 @@ def get_rsofc_sofc_capital_cost(fs):
     @fs.costing.Constraint()
     def total_plant_cost_eq(c):
         NGFC_TPC = 693.019  # MM$
-        # TODO - what are the units for total_plant_cost (MM$?)
         return c.total_plant_cost == NGFC_TPC
 
     calculate_variable_from_constraint(
         fs.costing.total_plant_cost,
         fs.costing.total_plant_cost_eq)
 
-    # TODO - Not sure why but total_plant_cost is not assigned to total_TPC
+    # TODO - Not sure why, but total_plant_cost is not assigned to total_TPC
     # TODO - ie total_TPC returns as zero
     get_total_TPC(fs)
 
@@ -97,29 +88,18 @@ def get_rsofc_sofc_capital_cost(fs):
         fs.costing.total_TPC_eq
     )
 
+
 def get_rsofc_soec_capital_cost(fs):
-    # add flowsheet for costing
-    # fs = FlowsheetBlock(default={"dynamic": False})
 
     fs.get_costing(year="2018")
 
-    # fs.costing.total_plant_cost = pyo.Var(
-    #     initialize=0,
-    #     # bounds=(0, 1e4),
-    #     doc="total plant cost in $MM",
-    # )
-
     # TPC of 650 MW NG based sofc plant
     # SOEC-only cap costs for water-side equipment and H2 compr. will be added
+    # For rsofc_soec mode - O2 and ng preheater costs are captured in NGFC_TPC
+    # Water treatment and CO2 processing capcosts included in NGFC_TPC
 
     # bhx1 - U-tube HXs
     # costed with IDAES generic heat exchanger correlation
-        # TODO - For rsofc- O2 and ng preheater costs are captured in NGFC_TPC
-        # m.fs.air_preheater.get_costing(hx_type="U-tube")
-        # add_total_plant_cost(m.fs.air_preheater, 1.15, 1.15)
-
-        # m.fs.ng_preheater.get_costing(hx_type="U-tube")
-        # add_total_plant_cost(m.fs.ng_preheater, 1.15, 1.15)
 
     fs.bhx1.get_costing(hx_type="U-tube")
     add_total_plant_cost(fs.bhx1, 1.15, 1.15)
@@ -145,13 +125,6 @@ def get_rsofc_soec_capital_cost(fs):
                  fs.hcmp04]:
         unit.get_costing()
         add_total_plant_cost(unit, 1.15, 1.15)
-
-    # all the following equipment is scaled based on the bit baseline report
-        # TODO - not needed as HRSG costs are captured with NGFC_TPC
-        # HRSG_accounts = ["7.1", "7.2"]    # hxo2 and hxh2 - HRSGs
-
-    # TODO - water treatment and CO2 processing capcosts included in NGFC_TPC
-    # build constraint summing total plant costs
 
     get_total_TPC(fs)
 
@@ -236,6 +209,7 @@ def get_rsofc_soec_fixed_OM_costing(fs,
     # get_fixed_OM_costs(m, design_rsofc_netpower, labor_rate=38.50,
     #                    labor_burden=30, operators_per_shift=6, tech=6)
     initialize_fixed_OM_costs(fs)
+
 
 def get_rsofc_soec_variable_OM_costing(fs):
     # variable O&M costs
@@ -451,13 +425,15 @@ def display_rsofc_costing(m):
     print(
         "Electricity cost: ${:.2f}/kg H2".format(
             pyo.value(
-                m.soec_fs.H2_costing.variable_operating_costs[0, "electricity"])
+                m.soec_fs.H2_costing.variable_operating_costs[0,
+                                                              "electricity"])
         )
     )
     print(
         "Fuel cost: ${:.2f}/kg H2".format(
             pyo.value(
-                m.soec_fs.H2_costing.variable_operating_costs[0, "natural gas"])
+                m.soec_fs.H2_costing.variable_operating_costs[0,
+                                                              "natural gas"])
         )
     )
     print(

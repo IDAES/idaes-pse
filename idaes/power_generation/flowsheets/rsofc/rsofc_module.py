@@ -11,15 +11,19 @@
 # license information.
 ###############################################################################
 
+"""
+Example simulation and costing module for the reversible sofc
+
+"""
+
 __author__ = "Chinedu Okoli"
 
 
 # Import Python libraries
-import sys
-import os
-
-import numpy as np
-import matplotlib.pyplot as plt
+# import sys
+# import os
+# import numpy as np
+# import matplotlib.pyplot as plt
 
 
 # Import Pyomo modules
@@ -38,20 +42,10 @@ from idaes.power_generation.flowsheets.rsofc import (
 
 
 def add_sofc_mode_flowsheet(m, name="sofc_mode_flowsheet"):
-    # if m is None:
-    #     m = pyo.ConcreteModel(name)
-    # if not hasattr(m, "sofc_fs"):
-    #     m.sofc_fs = FlowsheetBlock(default={"dynamic": False})
-
     rsofc_sofc.get_model(m)
 
 
 def add_soec_mode_flowsheet(m, name="soec_mode_flowsheet"):
-    # if m is None:
-    #     m = pyo.ConcreteModel(name)
-    # if not hasattr(m, "soec_fs"):
-    #     m.soec_fs = FlowsheetBlock(default={"dynamic": False})
-
     rsofc_soec.get_model(m)
 
 
@@ -72,8 +66,10 @@ def get_solver():
 def get_model(use_DNN=True):
     # Create model and add flowsheets
     m = pyo.ConcreteModel()
-    add_sofc_mode_flowsheet(m)
-    add_soec_mode_flowsheet(m)
+    rsofc_sofc.get_model(m)
+    rsofc_soec.get_model(m)
+    # add_sofc_mode_flowsheet(m)
+    # add_soec_mode_flowsheet(m)
     return m
 
 
@@ -105,7 +101,6 @@ def cost_rsofc(m):
 
     m.rsofc_total_TPC = pyo.Var(
         initialize=1e-6,
-        # bounds=(0, 1e4),
         doc="rsofc total plant cost in $MM",
     )
 
@@ -121,7 +116,6 @@ def cost_rsofc(m):
 
     m.rsofc_total_fixed_OM_cost = pyo.Var(
         initialize=1e-6,
-        # bounds=(0, 1e4),
         doc="rsofc total plant cost in $MM/yr",
     )
 

@@ -11,9 +11,18 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
+"""
+Flowsheet of the sofc mode of the reversible sofc.
+Use the partial_load_operation method to run the flowsheet at different loads.
+"""
+
+__author__ = "Chinedu Okoli", "Alex Noring"
+
+# Import python modules
 import os
-import sys
 from collections import OrderedDict
+import csv
+import numpy as np
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
@@ -30,6 +39,7 @@ from idaes.core.util import model_serializer as ms
 from idaes.core.util.tags import svg_tag
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe
+import idaes.core.util as iutil
 
 import idaes.core.util.scaling as iscale
 
@@ -69,6 +79,8 @@ from idaes.power_generation.flowsheets.sofc.surrogates.sofc_surrogate \
 from idaes.power_generation.costing.power_plant_costing import \
     get_fixed_OM_costs, get_variable_OM_costs, initialize_fixed_OM_costs, \
     initialize_variable_OM_costs
+
+import idaes.logger as idaeslog
 
 
 def build_NGFC(m):
@@ -182,8 +194,9 @@ def build_NGFC(m):
     def recycle_translator_P(b, t):
         return b.inlet.pressure[t] == b.outlet.pressure[t]
 
-    @m.sofc_fs.recycle_translator.Constraint(m.sofc_fs.time,
-                                        m.sofc_fs.syn_props.component_list)
+    @m.sofc_fs.recycle_translator.Constraint(
+                                m.sofc_fs.time,
+                                m.sofc_fs.syn_props.component_list)
     def recycle_translator_x(b, t, j):
         return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
 
@@ -307,8 +320,9 @@ def build_NGFC(m):
     def oxycombustor_translator_P(b, t):
         return b.inlet.pressure[t] == b.outlet.pressure[t]
 
-    @m.sofc_fs.oxycombustor_translator.Constraint(m.sofc_fs.time,
-                                             m.sofc_fs.air_props.component_list)
+    @m.sofc_fs.oxycombustor_translator.Constraint(
+                                    m.sofc_fs.time,
+                                    m.sofc_fs.air_props.component_list)
     def oxycombustor_translator_x(b, t, j):
         return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
 
@@ -364,7 +378,9 @@ def build_NGFC(m):
     def CPU_translator_P(b, t):
         return b.inlet.pressure[t] == b.outlet.pressure[t]
 
-    @m.sofc_fs.CPU_translator.Constraint(m.sofc_fs.time, m.sofc_fs.CO2_H2O_VLE.component_list)
+    @m.sofc_fs.CPU_translator.Constraint(
+                m.sofc_fs.time,
+                m.sofc_fs.CO2_H2O_VLE.component_list)
     def CPU_translator_x(b, t, j):
         return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
 
@@ -1724,11 +1740,7 @@ def check_scaling(m):
 
 def get_model(m):
     # create model and flowsheet
-    # m = pyo.ConcreteModel()
 
-    # if use_DNN:
-    #     init_fname = "sofc_dnn_init.json.gz"
-    # else:
     init_fname = "rsofc_sofc_surrogate_init.json.gz"
 
     if os.path.exists(init_fname):
@@ -1772,11 +1784,91 @@ def get_model(m):
 
     return m
 
+def tag_for_pfd_and_tables(fs):
+    tag_group = iutil.ModelTagGroup()
+    tag_group["status"] = iutil.ModelTag(expr=None, format_string="{}")
+    fs.tag_pfd = tag_group
+
+def partial_load_operation(m):
+    #############################
+    # Omptimization #
+    #############################
+    add_costing(m.sofc_fs)
+    initialize_costing(m.sofc_fs)
+    partial_load_setup(m)
+    # iscale.calculate_scaling_factors(m)
+    # iscale.constraint_autoscale_large_jac(m)
+
+    tag_for_pfd_and_tables(m.sofc_fs)
+
+    # Stripping bounds helps with solver convergence at lower loads
+    strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
+    strip_bounds.apply_to(m, reversible=False)
+
+    # m.sofc_fs.obj = pyo.Objective(
+    #     expr=m.sofc_fs.costing.total_variable_OM_cost[0])
+
+    m.sofc_fs.tag_pfd["total_variable_OM_cost"] = iutil.ModelTag(
+        expr=m.sofc_fs.costing.total_variable_OM_cost[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.USD / pyo.units.MWh,
+        doc="Total variable O&M cost",
+    )
+    m.sofc_fs.tag_pfd["net_power"] = iutil.ModelTag(
+        expr=m.sofc_fs.net_power[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.MW,
+        doc="Net power",
+    )
+
+    options = {
+            "max_iter": 100,
+            "tol": 1e-7,
+            "bound_push": 1e-12,  # Set bound push to 1e-6 for optimization
+            "linear_solver": "ma27",
+            "ma27_pivtol": 1e-3,
+              }
+    # cols_input = ("net_power",)
+    cols_pfd = (
+        "status",
+        "net_power",
+        "total_variable_OM_cost",
+        )
+
+    # head_1 = m.soec_fs.tag_input.table_heading(tags=cols_input, units=True)
+    head_2 = m.sofc_fs.tag_pfd.table_heading(tags=cols_pfd, units=True)
+    with open("opt_res_sofc.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(head_2
+                   # + head_2
+                   )
+    for h in np.linspace(650, 100, 12):
+        m.sofc_fs.tag_pfd["net_power"].fix(
+            float(h) * pyo.units.MW
+        )
+        print()
+        print()
+        print()
+        print(f"Net power {m.sofc_fs.tag_pfd['net_power']}.")
+        solver = pyo.SolverFactory("ipopt")
+        res = solver.solve(m.sofc_fs, tee=True, symbolic_solver_labels=True,
+                           options=options)
+
+        stat = idaeslog.condition(res)
+        m.sofc_fs.tag_pfd["status"].set(stat)
+        # row_1 = m.sofc_fs.tag_input.table_row(tags=cols_input, numeric=True)
+        row_2 = m.sofc_fs.tag_pfd.table_row(tags=cols_pfd, numeric=True)
+        with open("opt_res_sofc.csv", "a", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(row_2)
+
+
 # %%       # ------------------------------------------------------------------
 if __name__ == "__main__":
     m = pyo.ConcreteModel()
     m = get_model(m)
     report_results(m)
+    # partial_load_operation(m)
     # add_costing(m)
     # initialize_costing(m.sofc_fs)
     # check_scaling(m)
