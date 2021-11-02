@@ -22,7 +22,7 @@ from pyomo.environ import log, Var, Param, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config
 
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -226,7 +226,7 @@ class dens_mol_liq_comp_eqn_2():
         return pyunits.convert(rho, units["density_mole"])
 
 
-class dens_mol_liq_comp():  # dens_mol_liq_comp_eqn_1, dens_mol_liq_comp_eqn_2
+class dens_mol_liq_comp():
 
     @staticmethod
     def build_parameters(cobj):
@@ -248,9 +248,9 @@ class dens_mol_liq_comp():  # dens_mol_liq_comp_eqn_1, dens_mol_liq_comp_eqn_2
         elif cobj.dens_mol_liq_comp_coeff_eqn_type.value == 2:
             dens_mol_liq_comp_eqn_2.build_parameters(cobj)
         else:
-            raise BurntToast(f"{cobj.name} unrecognized value for "
-                             f"dens_mol_liq_comp equation type: "
-                             f"{cobj.dens_mol_liq_comp_coeff_eqn_type}")
+            raise ConfigurationError(f"{cobj.name} unrecognized value for "
+                                     f"dens_mol_liq_comp equation type: "
+                                     f"{cobj.dens_mol_liq_comp_coeff_eqn_type}")
 
     @staticmethod
     def return_expression(b, cobj, T):
