@@ -114,6 +114,7 @@ def define_state(b):
 
     b.mole_frac_phase_comp = Var(
             b.phase_component_set,
+            bounds=(1e-20, 1.001),
             initialize=1/len(b.component_list),
             doc='Phase mole fractions',
             units=None)

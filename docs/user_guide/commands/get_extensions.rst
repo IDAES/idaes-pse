@@ -35,6 +35,11 @@ options
 
     Show the help message and exit.
 
+.. option:: --license
+
+    Display the license info for the currently installed extensions, doesn't
+    install anything.
+
 .. option:: --release <release number e.g. 2.4.4>
 
     Specify an official binary release version number to download.  If this is
