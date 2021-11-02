@@ -739,17 +739,12 @@ class PolynomialRegression:
 
         # Define variables
         model.theta = Var(model.N, initialize=0.1, domain=Reals)
-        model.y_predictions = Var(
-            model.M, model.P, initialize=y_data.stack().to_dict(), domain=Reals
-        )
 
         # constraint y_p = theta.X
         def xy_product(model, i, k):
-            return model.y_predictions[i, k] == sum(
-                model.theta[j] * model.x[i, j] for j in model.N for k in model.P
-            )
+            return sum(model.theta[j] * model.x[i, j] for j in model.N for k in model.P)
 
-        model.x_theta_product = Constraint(
+        model.y_predictions = Expression(
             model.M, model.P, rule=xy_product, doc="Predicted value calc: y = hx"
         )
 
