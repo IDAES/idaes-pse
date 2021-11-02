@@ -279,15 +279,13 @@ class TestHelm(object):
                 # skip near-critical area.
                 continue
 
-            # The test tolerances aren't super thight here, some property
+            # The test tolerances aren't super tight here, some property
             # functions are pretty sensitive, so for back calculating quantities
             # from the verification data to high accuracy would require more
             # data with more sig figs.
 
             # Test state variable with P in the set, these are pretty reliable
             tol = 0.001
-            print(f"{T}, {p}")
-
             assert value(te.h(u=u, p=p)) == pytest.approx(value(h), rel=tol)
             assert value(te.h(T=T * pyunits.K, p=p, x=x)) == pytest.approx(
                 value(h), rel=tol
@@ -309,7 +307,7 @@ class TestHelm(object):
             else:
                 assert value(te.u_vap(h=h, p=p)) == pytest.approx(value(u), rel=tol)
 
-            # To midigate the data sig figs calculate T and s from h and p for consistency
+            # To mitigate the data sig figs calculate T and s from h and p for consistency
             assert value(te.g(h=h, p=p)) == pytest.approx(
                 value(h - te.T(h=h, p=p) * te.s(h=h, p=p)), rel=tol
             )
@@ -325,7 +323,7 @@ class TestHelm(object):
                     value(h - te.T(h=h, p=p) * te.s(h=h, p=p)), rel=tol
                 )
 
-            # To midigate the data sig figs calculate u, T, and s from h and p for consistency
+            # To mitigate the data sig figs calculate u, T, and s from h and p for consistency
             assert value(te.f(h=h, p=p)) == pytest.approx(
                 value(te.u(h=h, p=p) - te.T(h=h, p=p) * te.s(h=h, p=p)), rel=tol
             )
@@ -364,7 +362,8 @@ class TestHelm(object):
 
                 if x == 1:
                     # This one's tricky since entropy is fairly insensitive to
-                    # pressure for liquids.  For now we'll just test vapor
+                    # pressure for liquids.  For now we'll just test vapor,
+                    # although this does mostly work for liquids too.
                     assert value(te.p(s=te.s(h=h, p=p), T=te.T(h=h, p=p))) == pytest.approx(
                         value(p), rel=tol
                     )
