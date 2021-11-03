@@ -71,8 +71,8 @@ class DummyParameterData(GenericParameterData):
 
 def define_state(b):
     # Add common variables
-    b.pressure = Var(initialize=101325)
-    b.temperature = Var(initialize=300)
+    b.pressure = Var(initialize=101325, units=pyunits.Pa)
+    b.temperature = Var(initialize=300, units=pyunits.K)
     b.mole_frac_phase_comp = Var(b.params.phase_list,
                                  b.params.component_list,
                                  initialize=0.5)
@@ -314,6 +314,21 @@ def test_common(m):
                     (1-m.params.PR_kappa[i, j])
                     for j in m.params.component_list))
 
+    assert isinstance(m.props[1].PR_daij_dT,Expression)
+    assert len(m.props[1].PR_daij_dT) == len(m.params.component_list)**2
+    for i in m.params.component_list:
+        for j in m.params.component_list:
+            assert pytest.approx(value(m.props[1].PR_daij_dT[i,j])
+                                 == (1-m.params.PR_kappa[i, j])
+                                 * (m.props[1].PR_fw[j] 
+                                 * sqrt(m.props[1].PR_a[i]
+                                     *  m.params.get_component(j).temperature_crit
+                                     / m.params.get_component(j).pressure_crit)
+                                  + m.props[1].PR_fw[i]
+                                  * sqrt(m.props[1].PR_a[j]
+                                      * m.params.get_component(i).temperature_crit
+                                      / m.params.get_component(i).pressure_crit)))
+                                     
     assert isinstance(m.props[1].PR_dam_dT, Expression)
     assert len(m.props[1].PR_dam_dT) == len(m.params.phase_list)
     for p in m.params.phase_list:
@@ -334,7 +349,29 @@ def test_common(m):
                       for j in m.params.component_list)
                   for i in m.params.component_list) /
               sqrt(m.props[1].temperature)))
-
+                                 
+    assert isinstance(m.props[1].PR_d2am_dT2, Expression)
+    assert len(m.props[1].PR_d2am_dT2) == len(m.params.phase_list)
+    T = m.props[1].temperature
+    R = const.gas_constant
+    for p in m.params.phase_list:
+        assert (pytest.approx(value(m.props[1].PR_d2am_dT2[p]))
+            == value(-(0.5/T)*m.props[1].PR_dam_dT[p] + ((R**2*0.45724)/(2*T)) 
+            *sum(
+                sum(m.props[1].mole_frac_phase_comp[p, i]
+                    * m.props[1].mole_frac_phase_comp[p, j]
+                    * (1 - m.params.PR_kappa[i, j])
+                    * m.props[1].PR_fw[i]*m.props[1].PR_fw[j]
+                        * sqrt((m.params.get_component(i).temperature_crit
+                                * m.params.get_component(j).temperature_crit)
+                               /(m.params.get_component(i).pressure_crit
+                                 * m.params.get_component(j).pressure_crit)
+                               )
+                    for j in m.params.component_list)
+                for i in m.params.component_list)
+                )
+            )
+    
     # Test equilibrium state Expressions
     assert isinstance(m.props[1]._PR_a_eq, Expression)
     assert len(m.props[1]._PR_a_eq) == len(m.params.component_list)
@@ -475,16 +512,19 @@ def test_energy_internal_mol_phase(m):
 
 @pytest.mark.unit
 def test_energy_internal_mol_phase_comp(m):
-    for j in m.params.component_list:
-        m.params.config.include_enthalpy_of_formation = False
-        m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
-        m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
+    m.props[1].enth_mol_phase_comp = Var(m.params.phase_list,
+                                         m.params.component_list)
+    m.props[1].vol_mol_phase_comp = Var(m.params.phase_list,
+                                         m.params.component_list)
 
-        assert pytest.approx(Ul, rel=1e-4) == value(
-            Cubic.energy_internal_mol_phase_comp(m.props[1], "Liq", j))
-        assert pytest.approx(Uv, rel=1e-4) == value(
-            Cubic.energy_internal_mol_phase_comp(m.props[1], "Vap", j))
-
+    for p in m.params.phase_list:
+        for j in m.params.component_list:
+            assert (str(Cubic.energy_internal_mol_phase_comp(m.props[1], p, j)) 
+                    == str(m.props[1].enth_mol_phase_comp[p, j] -
+                           m.props[1].pressure
+                           * m.props[1].vol_mol_phase_comp[p, j]
+                           )
+                    )
 
 @pytest.mark.unit
 def test_energy_internal_mol_phase_invalid_phase(m_sol):
@@ -510,14 +550,31 @@ def test_enth_mol_phase(m):
 
 @pytest.mark.unit
 def test_enth_mol_phase_comp(m):
+    enth = {("Liq", "a"): -23.8270,
+            ("Vap", "a"): 345.7288,
+            ("Liq", "b"): -407.3709,
+            ("Vap", "b"): -385.7457,
+            ("Liq", "c"): -757.0346,
+            ("Vap", "c"): -1052.4697}
     for j in m.params.component_list:
         m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
         m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
-
-        assert pytest.approx(Hl, rel=1e-5) == value(
+            
+        assert pytest.approx(enth["Liq",j], rel=1e-5) == value(
             Cubic.enth_mol_phase_comp(m.props[1], "Liq", j))
-        assert pytest.approx(Hv, rel=1e-5) == value(
+        assert pytest.approx(enth["Vap",j], rel=1e-5) == value(
             Cubic.enth_mol_phase_comp(m.props[1], "Vap", j))
+        
+    assert pytest.approx(Hl, rel=1e-5) == value(
+            sum(Cubic.enth_mol_phase_comp(m.props[1], "Liq", j)
+                * m.props[1].mole_frac_phase_comp["Liq", j]
+                for j in m.params.component_list)
+            )
+    assert pytest.approx(Hv, rel=1e-5) == value(
+            sum(Cubic.enth_mol_phase_comp(m.props[1], "Vap", j)
+                * m.props[1].mole_frac_phase_comp["Vap", j]
+                for j in m.params.component_list)
+            )
 
 
 @pytest.mark.unit
@@ -701,8 +758,44 @@ def test_vol_mol_phase(m):
     assert value(Cubic.vol_mol_phase(m.props[1], "Liq")) == pytest.approx(
             1/41.157, rel=1e-3)
 
+@pytest.mark.unit
+def test_vol_mol_phase_comp(m):
+    vol = {("Liq", "a"): 0.0249368,
+            ("Vap", "a"): 0.0262974,
+            ("Liq", "b"): 0.0236340,
+            ("Vap", "b"): 0.0237075,
+            ("Liq", "c"): 0.0224518,
+            ("Vap", "c"): 0.0213573}
+    for j in m.params.component_list:
+        assert pytest.approx(vol[("Liq", j)], rel=1e-5) == value(
+            Cubic.vol_mol_phase_comp(m.props[1], "Liq", j))
+        assert pytest.approx(vol[("Vap", j)], rel=1e-5) == value(
+            Cubic.vol_mol_phase_comp(m.props[1], "Vap", j))
+        
+    # With real partial molar quantities implemented, we should have that
+    # the sum weighted by mole fraction is equal to the molar volume
+    assert (pytest.approx(value(
+            Cubic.vol_mol_phase(m.props[1], "Liq")), rel=1e-5)
+            == value(sum(Cubic.vol_mol_phase_comp(m.props[1], "Liq", j)
+                         *m.props[1].mole_frac_phase_comp["Liq", j]
+                         for j in m.params.component_list))
+            )
+    assert (pytest.approx(value(
+            Cubic.vol_mol_phase(m.props[1], "Vap")), rel=1e-5)
+            == value(sum(Cubic.vol_mol_phase_comp(m.props[1], "Vap", j)
+                         *m.props[1].mole_frac_phase_comp["Vap", j]
+                         for j in m.params.component_list))
+            )    
 
 @pytest.mark.unit
 def test_vol_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Cubic.vol_mol_phase(m_sol.props[1], "Sol")
+
+if __name__ == "__main__":
+    #pytest.main()
+    #mod = m()
+    #test_energy_internal_mol_phase_comp(mod)
+    #test_enth_mol_phase_comp(mod)
+    pass
+    
