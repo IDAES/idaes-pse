@@ -28,7 +28,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 
 from idaes.core import (declare_process_block_class, Component,
-                        Phase, LiquidPhase, VaporPhase, MaterialFlowBasis)
+                        Phase, LiquidPhase, VaporPhase, MaterialFlowBasis, Solvent)
 from idaes.core.phases import PhaseType as PT
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 import idaes.logger as idaeslog
@@ -981,7 +981,8 @@ class TestGenericStateBlock(object):
         m = ConcreteModel()
         m.params = DummyParameterBlock(default={
                 "components": {
-                    "a": {"diffus_phase_comp": {"p1": dummy_method,
+                    "a": {"type": Solvent,
+                          "diffus_phase_comp": {"p1": dummy_method,
                                                 "p2": dummy_method},
                           "pressure_sat_comp": dummy_method},
                     "b": {"diffus_phase_comp": {"p1": dummy_method,
@@ -1170,7 +1171,7 @@ class TestGenericStateBlock(object):
         # Surface tension is only built for Liquid Phases, and we have none.
         # All values should be None.
         for p in frame.props[1].phase_list:
-            assert value(frame.props[1].surf_tens_phase[p]) is None
+            assert p not in frame.props[1].surf_tens_phase
 
     @pytest.mark.unit
     def test_therm_cond_phase(self, frame):

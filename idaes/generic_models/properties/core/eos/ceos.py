@@ -46,6 +46,16 @@ _log = idaeslog.getLogger(__name__)
 # Set path to root finder .so file
 _so = os.path.join(bin_directory, "cubic_roots.so")
 
+"""
+References:
+[1]. Poling, B.E., Prausnitz, J.M. and O’connell, J.P., 2001. 
+     Properties of gases and liquids. McGraw-Hill Education.
+
+[2]. Trujillo, M.F., O'Rourke, P. and Torres, D., 2002.
+     Generalizing the Thermodynamics State Relationships in KIVA-3V
+     https://www.osti.gov/servlets/purl/809947 (Last accessed: 08/13/2021)
+"""
+
 
 def cubic_roots_available():
     """Make sure the compiled cubic root functions are available. Yes, in
@@ -350,9 +360,91 @@ class Cubic(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
         return proc(f, A[p], B[p])
 
+
+    @staticmethod
+    def cp_mol_phase(blk, p):
+        pobj = blk.params.get_phase(p)
+        cname = pobj._cubic_type.name
+        am = getattr(blk, cname+"_am")[p]
+        bm = getattr(blk, cname+"_bm")[p]
+        A = getattr(blk, cname+"_A")[p]
+        B = getattr(blk, cname+"_B")[p]
+        fw = getattr(blk, cname+"_fw")
+        kappa = getattr(blk.params, cname+"_kappa")
+        dadT = getattr(blk, cname+"_dadT")[p]
+        Z = blk.compress_fact_phase[p]
+
+        EoS_u = EoS_param[pobj._cubic_type]['u']
+        EoS_w = EoS_param[pobj._cubic_type]['w']
+        omegaA = EoS_param[pobj._cubic_type]['omegaA'] 
+        EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
+
+        d2adT2 = - (0.5 / blk.temperature) * dadT + \
+                 ((Cubic.gas_constant(blk)**2 * omegaA) / (2*blk.temperature)) * (
+                     sum(sum(
+                         blk.mole_frac_phase_comp[p, i] * blk.mole_frac_phase_comp[p, j]
+                         * (1 - kappa[i, j]) * fw[i] * fw[j] * sqrt(
+                             (blk.params.get_component(i).temperature_crit * blk.params.get_component(j).temperature_crit) /
+                             (blk.params.get_component(i).pressure_crit * blk.params.get_component(j).pressure_crit)
+                         )
+                         for j in blk.components_in_phase(p))
+                         for i in blk.components_in_phase(p))
+                 )
+
+        dBdT = -B / blk.temperature
+        dAdT = (A/am) * dadT - (2*A/blk.temperature)
+        K2 = (EoS_u - 1) * B - 1
+        K3 = A - EoS_u * B - (EoS_u - EoS_w) * B**2
+        K4 = - (A * B + EoS_w * B**2 + EoS_w * B**3)
+        dK2dT = (EoS_u - 1) * dBdT
+        dK3dT = dAdT - EoS_u * dBdT - 2 * (EoS_u - EoS_w) * B * dBdT
+        dK4dT = - (A * dBdT + B * dAdT + 2 * EoS_w * B * dBdT + 3 * EoS_w * B**2 * dBdT) 
+        dZdT = - (Z**2 * dK2dT + Z*dK3dT + dK4dT) / (3*Z**2 + 2*K2*Z + K3)
+
+        expression1 = 2 * Z + (EoS_u + EoS_p) * B
+        expression2 = 2 * Z + (EoS_u - EoS_p) * B
+        expression3 = B * (dZdT + Z / blk.temperature) / (Z**2 + Z * EoS_u * B + EoS_w * B**2)
+
+        # Derived from the relations in Chapter 6 of [1]
+        return (
+            Cubic.gas_constant(blk)*(blk.temperature * dZdT + Z - 1) +
+            (blk.temperature * d2adT2 / (EoS_p * bm)) * safe_log(expression1 / expression2)  + 
+            ((am - blk.temperature * dadT) * expression3 / bm) +
+            sum(blk.mole_frac_phase_comp[p, j] * 
+                get_method(blk, "cp_mol_ig_comp", j)(blk, cobj(blk, j), blk.temperature)
+                for j in blk.components_in_phase(p))
+        )
+
+
+    @staticmethod
+    def cv_mol_phase(blk, p):
+        pobj = blk.params.get_phase(p)
+        cname = pobj._cubic_type.name
+        am = getattr(blk, cname+"_am")[p]
+        bm = getattr(blk, cname+"_bm")[p]
+        cp = blk.cp_mol_phase[p]
+        V = 1 / blk.dens_mol_phase[p]
+        dadT = getattr(blk, cname+"_dadT")[p]
+
+        EoS_u = EoS_param[pobj._cubic_type]['u']
+        EoS_w = EoS_param[pobj._cubic_type]['w']
+
+        dPdV = - ((Cubic.gas_constant(blk) * blk.temperature) / (V - bm)**2 ) + \
+                (am * (2 * V + EoS_u * bm) / (V**2 + EoS_u * bm * V + EoS_w * bm**2)**2)
+
+        dPdT = (Cubic.gas_constant(blk) / (V - bm)) - \
+               (1 / (V**2 + EoS_u * bm * V + EoS_w * bm**2)) * dadT
+
+        # See Chapter 6 in [1]
+        return (
+            cp + blk.temperature * dPdT**2 / dPdV
+        )
+
+
     @staticmethod
     def dens_mass_phase(b, p):
         return b.dens_mol_phase[p]*b.mw_phase[p]
+    
 
     @staticmethod
     def dens_mol_phase(b, p):
@@ -362,9 +454,7 @@ class Cubic(EoSBase):
                 Cubic.gas_constant(b)*b.temperature*b.compress_fact_phase[p])
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-
-    # TODO: Need to add functions to calculate cp and cv
-
+    
 
     @staticmethod
     def energy_internal_mol_phase(blk, p):
@@ -812,7 +902,33 @@ class Cubic(EoSBase):
                 b.entr_mol_phase_comp[p, j] *
                 b.temperature)
 
+
     @staticmethod
+    def isentropic_speed_sound_phase(blk, p):
+        # See Reference [2]
+        return sqrt(blk.heat_capacity_ratio_phase[p]) * blk.isothermal_speed_sound_phase[p]
+
+    
+    @staticmethod
+    def isothermal_speed_sound_phase(blk, p):
+        pobj = blk.params.get_phase(p)
+        cname = pobj._cubic_type.name
+        am = getattr(blk, cname+"_am")[p]
+        bm = getattr(blk, cname+"_bm")[p]
+        V = 1 / blk.dens_mol_phase[p]
+        mw = blk.mw
+        rho = blk.dens_mass_phase[p]
+
+        EoS_u = EoS_param[pobj._cubic_type]['u']
+        EoS_w = EoS_param[pobj._cubic_type]['w']
+
+        dPdV = - ((Cubic.gas_constant(blk) * blk.temperature) / (V - bm)**2 ) + \
+                (am * (2 * V + EoS_u * bm) / (V**2 + EoS_u * bm * V + EoS_w * bm**2)**2)
+
+        # see reference [2]
+        return sqrt(- dPdV * mw / rho**2)
+
+    @staticmethod    
     def vol_mol_phase(b, p):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
