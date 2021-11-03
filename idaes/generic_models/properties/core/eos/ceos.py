@@ -70,10 +70,12 @@ class CubicType(Enum):
 
 
 class MixingRuleA(Enum):
+    # Rule to calculate am for cubic equations of state
     default = 0
 
 
 class MixingRuleB(Enum):
+    # Rule to calculate bm for cubic equations of state
     default = 0
 
 
@@ -109,6 +111,8 @@ class Cubic(EoSBase):
 
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
+        mixing_rule_a = pobj._mixing_rule_a
+        mixing_rule_b = pobj._mixing_rule_b
 
         if hasattr(b, cname+"_fw"):
             # Common components already constructed by previous phase
@@ -133,7 +137,7 @@ class Cubic(EoSBase):
                         Expression(b.component_list,
                                    rule=func_fw,
                                    doc='EoS S factor'))
-
+        
         def func_a(m, j):
             cobj = m.params.get_component(j)
             fw = getattr(m, cname+"_fw")
@@ -146,6 +150,38 @@ class Cubic(EoSBase):
                         Expression(b.component_list,
                                    rule=func_a,
                                    doc='Component a coefficient'))
+        
+        def func_da_dT(m, j):
+            cobj = m.params.get_component(j)
+            fw = getattr(m, cname+"_fw")
+            
+            ac = (EoS_param[ctype]['omegaA']*(
+                       (Cubic.gas_constant(b) *
+                        cobj.temperature_crit)**2/cobj.pressure_crit))
+            Tr = m.temperature/cobj.temperature_crit
+            
+            return -ac*fw[j]/(cobj.temperature_crit*sqrt(Tr))*(1+fw[j]*(1-sqrt(Tr)))
+        b.add_component(cname+'_da_dT',
+                        Expression(b.component_list,
+                                   rule=func_da_dT,
+                                   doc='Temperature derivative of component a'))
+        
+        def func_d2a_dT2(m, j):
+            cobj = m.params.get_component(j)
+            fw = getattr(m, cname+"_fw")
+            
+            ac = (EoS_param[ctype]['omegaA']*(
+                       (Cubic.gas_constant(b) *
+                        cobj.temperature_crit)**2/cobj.pressure_crit))
+            Tr = m.temperature/cobj.temperature_crit
+            
+            return 1/cobj.temperature_crit**2*ac*fw[j]*(1+fw[j])/(2*Tr**(3/2))
+                    
+        b.add_component(cname+'_d2a_dT2',
+                        Expression(b.component_list,
+                                   rule=func_d2a_dT2,
+                                   doc='Second temperature derivative'
+                                       'of component a'))
 
         def func_b(m, j):
             cobj = m.params.get_component(j)
@@ -156,42 +192,106 @@ class Cubic(EoSBase):
                                    rule=func_b,
                                    doc='Component b coefficient'))
 
-        def rule_am(m, p):
-            try:
-                rule = m.params.get_phase(p).config.equation_of_state_options[
-                    "mixing_rule_a"]
-            except (KeyError, TypeError):
-                rule = MixingRuleA.default
-
-            a = getattr(m, cname+"_a")
-            if rule == MixingRuleA.default:
+        if mixing_rule_a == MixingRuleA.default:
+            def rule_am(m, p):
+                a = getattr(m, cname+"_a")
                 return rule_am_default(m, cname, a, p)
-            else:
-                raise ConfigurationError(
-                    "{} Unrecognized option for Equation of State "
-                    "mixing_rule_a: {}. Must be an instance of MixingRuleA "
-                    "Enum.".format(m.name, rule))
-        b.add_component(cname+'_am',
-                        Expression(b.phase_list, rule=rule_am))
+            b.add_component(cname+'_am',
+                            Expression(b.phase_list, rule=rule_am))
+            
+            def rule_daij_dT(m, i, j):
+                a = getattr(m, cname+"_a")
+                da_dT = getattr(m, cname+"_da_dT")
+                k = getattr(m.params, cname+"_kappa")
+                
+                # Include temperature derivative of k for future extension
+                dk_ij_dT = 0
+                
+                return sqrt(a[i]*a[j])*(-dk_ij_dT
+                                        + (1-k[i,j])/2
+                                        *(da_dT[i]/a[i]+da_dT[j]/a[j])
+                                        )
+            b.add_component(cname+'_daij_dT',
+                            Expression(b.component_list,
+                                       b.component_list,
+                                       rule=rule_daij_dT))
 
-        def rule_bm(m, p):
-            try:
-                rule = m.params.get_phase(p).config.equation_of_state_options[
-                    "mixing_rule_b"]
-            except (KeyError, TypeError):
-                rule = MixingRuleB.default
-
-            b = getattr(m, cname+"_b")
-            if rule == MixingRuleB.default:
+            def rule_dam_dT(m, p):
+                daij_dT = getattr(m, cname+"_daij_dT")
+                return sum(sum(m.mole_frac_phase_comp[p, i]
+                                *  m.mole_frac_phase_comp[p, j]
+                                 * daij_dT[i,j]
+                                 for j in m.components_in_phase(p))
+                             for i in m.components_in_phase(p))
+            
+            b.add_component(cname+"_dam_dT",
+                            Expression(b.phase_list,
+                                       rule=rule_dam_dT))
+            
+            
+            def rule_d2am_dT2(m,p):
+                 k = getattr(m.params, cname+"_kappa")
+                 a = getattr(m, cname+"_a")        
+                 da_dT = getattr(m, cname+"_da_dT")
+                 d2a_dT2 = getattr(m, cname+"_d2a_dT2")
+                # Placeholders for if temperature dependent k is needed
+                 dk_dT = 0
+                 d2k_dT2 = 0
+                 
+                 # Initialize loop variable
+                 d2am_dT2 = 0
+                 
+                 for i in m.components_in_phase(p):
+                     for j in m.components_in_phase(p):
+                         d2aij_dT2 = (
+                             sqrt(a[i]*a[j])
+                             * (-d2k_dT2- dk_dT*(da_dT[i]/a[i] + da_dT[j]/a[j])
+                                + (1-k[i,j])/2
+                                * (d2a_dT2[i]/a[i] + d2a_dT2[j]/a[j]
+                                   - 1/2*(da_dT[i]/a[i]-da_dT[j]/a[j])**2
+                                   )
+                                )
+                             )
+                         d2am_dT2 += (m.mole_frac_phase_comp[p, i]
+                                 * m.mole_frac_phase_comp[p, j]
+                                 * d2aij_dT2)
+                 return d2am_dT2
+            b.add_component(cname+"_d2am_dT2",
+                            Expression(b.phase_list,
+                                       rule=rule_d2am_dT2))                                
+                 
+            
+            def rule_delta(m, p, i):
+                # See pg. 145 in Properties of Gases and Liquids
+                a = getattr(m, cname+"_a")
+                am = getattr(m, cname+"_am")
+                kappa = getattr(m.params, cname+"_kappa")
+                return (2*sqrt(a[i])/am[p] *
+                        sum(m.mole_frac_phase_comp[p, j]*sqrt(a[j]) *
+                            (1-kappa[i, j])
+                            for j in b.components_in_phase(p)))
+            b.add_component(cname+"_delta",
+                            Expression(b.phase_component_set,
+                                       rule=rule_delta))
+            
+        else:
+            raise ConfigurationError(
+                "{} Unrecognized option for Equation of State "
+                "mixing_rule_a: {}. Must be an instance of MixingRuleA "
+                "Enum.".format(b.name, mixing_rule_a))        
+        
+        
+        if mixing_rule_b == MixingRuleB.default:
+            def rule_bm(m, p):
+                b = getattr(m, cname+"_b")
                 return rule_bm_default(m, b, p)
-            else:
-                raise ConfigurationError(
-                    "{} Unrecognized option for Equation of State "
-                    "mixing_rule_a: {}. Must be an instance of MixingRuleB "
-                    "Enum.".format(m.name, rule))
-
-        b.add_component(cname+'_bm',
-                        Expression(b.phase_list, rule=rule_bm))
+            b.add_component(cname+'_bm',
+                            Expression(b.phase_list, rule=rule_bm))
+        else:
+            raise ConfigurationError(
+                "{} Unrecognized option for Equation of State "
+                "mixing_rule_a: {}. Must be an instance of MixingRuleB "
+                "Enum.".format(b.name, mixing_rule_b))
 
         def rule_A(m, p):
             am = getattr(m, cname+"_am")
@@ -206,41 +306,8 @@ class Cubic(EoSBase):
                     (Cubic.gas_constant(b)*m.temperature))
         b.add_component(cname+'_B',
                         Expression(b.phase_list, rule=rule_B))
-
-        def rule_delta(m, p, i):
-            # See pg. 145 in Properties of Gases and Liquids
-            a = getattr(m, cname+"_a")
-            am = getattr(m, cname+"_am")
-            kappa = getattr(m.params, cname+"_kappa")
-            return (2*sqrt(a[i])/am[p] *
-                    sum(m.mole_frac_phase_comp[p, j]*sqrt(a[j]) *
-                        (1-kappa[i, j])
-                        for j in b.components_in_phase(p)))
-        b.add_component(cname+"_delta",
-                        Expression(b.phase_component_set,
-                                   rule=rule_delta))
-
-        def rule_dadT(m, p):
-            # See pg. 102 in Properties of Gases and Liquids
-            a = getattr(m, cname+"_a")
-            fw = getattr(m, cname+"_fw")
-            kappa = getattr(m.params, cname+"_kappa")
-            return -((Cubic.gas_constant(b)/2)*sqrt(EoS_param[ctype]['omegaA']) *
-                     sum(sum(m.mole_frac_phase_comp[p, i] *
-                             m.mole_frac_phase_comp[p, j] *
-                             (1-kappa[i, j]) *
-                             (fw[j]*sqrt(a[i] *
-                              m.params.get_component(j).temperature_crit /
-                              m.params.get_component(j).pressure_crit) +
-                              fw[i]*sqrt(a[j] *
-                              m.params.get_component(i).temperature_crit /
-                              m.params.get_component(i).pressure_crit))
-                             for j in m.components_in_phase(p))
-                         for i in m.components_in_phase(p)) /
-                     sqrt(m.temperature))
-        b.add_component(cname+"_dadT",
-                        Expression(b.phase_list,
-                                   rule=rule_dadT))
+        
+        
 
         # Add components at equilibrium state if required
         if (b.params.config.phases_in_equilibrium is not None and
@@ -328,7 +395,34 @@ class Cubic(EoSBase):
     @staticmethod
     def build_parameters(b):
         b._cubic_type = b.config.equation_of_state_options["type"]
+  
         cname = b._cubic_type.name
+        try:
+            mixing_rule_a = b.config.equation_of_state_options["mixing_rule_a"]
+        except (KeyError, TypeError):
+            mixing_rule_a = MixingRuleA.default
+        
+        if mixing_rule_a == MixingRuleA.default:
+            b._mixing_rule_a = mixing_rule_a
+        else:
+            raise ConfigurationError(
+                "{} Unrecognized option for Equation of State "
+                "mixing_rule_a: {}. Must be an instance of MixingRuleA "
+                "Enum.".format(b.name, mixing_rule_a))
+        
+        try:
+            mixing_rule_b = b.config.equation_of_state_options["mixing_rule_b"]
+        except (KeyError, TypeError):
+            mixing_rule_b = MixingRuleB.default
+
+        if mixing_rule_b == MixingRuleB.default:
+            b._mixing_rule_b = mixing_rule_b
+        else:
+            raise ConfigurationError(
+                "{} Unrecognized option for Equation of State "
+                "mixing_rule_a: {}. Must be an instance of MixingRuleB "
+                "Enum.".format(b.name, mixing_rule_b))
+        
         param_block = b.parent_block()
 
         if hasattr(param_block, cname+"_kappa"):
@@ -358,63 +452,57 @@ class Cubic(EoSBase):
             proc = getattr(b, "_"+cname+"_proc_Z_liq")
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-        return proc(f, A[p], B[p])
-
-
+        return proc(f, A[p], B[p])   
+    
     @staticmethod
     def cp_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
+
         am = getattr(blk, cname+"_am")[p]
         bm = getattr(blk, cname+"_bm")[p]
-        A = getattr(blk, cname+"_A")[p]
         B = getattr(blk, cname+"_B")[p]
-        fw = getattr(blk, cname+"_fw")
-        kappa = getattr(blk.params, cname+"_kappa")
-        dadT = getattr(blk, cname+"_dadT")[p]
+
+        dam_dT = getattr(blk, cname+"_dam_dT")[p]
+        d2am_dT2 = getattr(blk, cname+"_d2am_dT2")[p]
+        
+        T = blk.temperature
+        R = Cubic.gas_constant(blk)
         Z = blk.compress_fact_phase[p]
+        dZdT = _dZ_dT(blk,p)
 
         EoS_u = EoS_param[pobj._cubic_type]['u']
         EoS_w = EoS_param[pobj._cubic_type]['w']
-        omegaA = EoS_param[pobj._cubic_type]['omegaA'] 
         EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
 
-        d2adT2 = - (0.5 / blk.temperature) * dadT + \
-                 ((Cubic.gas_constant(blk)**2 * omegaA) / (2*blk.temperature)) * (
-                     sum(sum(
-                         blk.mole_frac_phase_comp[p, i] * blk.mole_frac_phase_comp[p, j]
-                         * (1 - kappa[i, j]) * fw[i] * fw[j] * sqrt(
-                             (blk.params.get_component(i).temperature_crit * blk.params.get_component(j).temperature_crit) /
-                             (blk.params.get_component(i).pressure_crit * blk.params.get_component(j).pressure_crit)
-                         )
-                         for j in blk.components_in_phase(p))
-                         for i in blk.components_in_phase(p))
-                 )
+        # d2adT2 = - (0.5/T) * dam_dT + \
+        #          ((R**2 * omegaA) / (2*T)) * (
+        #              sum(sum(
+        #                  blk.mole_frac_phase_comp[p, i] * blk.mole_frac_phase_comp[p, j]
+        #                  * (1 - kappa[i, j]) * fw[i] * fw[j] * sqrt(
+        #                      (blk.params.get_component(i).temperature_crit * blk.params.get_component(j).temperature_crit) /
+        #                      (blk.params.get_component(i).pressure_crit * blk.params.get_component(j).pressure_crit)
+        #                  )
+        #                  for j in blk.components_in_phase(p))
+        #                  for i in blk.components_in_phase(p))
+        #          )
 
-        dBdT = -B / blk.temperature
-        dAdT = (A/am) * dadT - (2*A/blk.temperature)
-        K2 = (EoS_u - 1) * B - 1
-        K3 = A - EoS_u * B - (EoS_u - EoS_w) * B**2
-        K4 = - (A * B + EoS_w * B**2 + EoS_w * B**3)
-        dK2dT = (EoS_u - 1) * dBdT
-        dK3dT = dAdT - EoS_u * dBdT - 2 * (EoS_u - EoS_w) * B * dBdT
-        dK4dT = - (A * dBdT + B * dAdT + 2 * EoS_w * B * dBdT + 3 * EoS_w * B**2 * dBdT) 
-        dZdT = - (Z**2 * dK2dT + Z*dK3dT + dK4dT) / (3*Z**2 + 2*K2*Z + K3)
+        expression1 = 2*Z + (EoS_u + EoS_p)*B
+        expression2 = 2*Z + (EoS_u - EoS_p)*B
+        expression3 = B*(dZdT + Z/T)/(Z**2 + Z*EoS_u*B + EoS_w*B**2)
 
-        expression1 = 2 * Z + (EoS_u + EoS_p) * B
-        expression2 = 2 * Z + (EoS_u - EoS_p) * B
-        expression3 = B * (dZdT + Z / blk.temperature) / (Z**2 + Z * EoS_u * B + EoS_w * B**2)
-
+        cp_ideal_gas =  sum(blk.mole_frac_phase_comp[p, j] 
+             * get_method(blk, "cp_mol_ig_comp", j)(blk, cobj(blk, j), T)
+             for j in blk.components_in_phase(p))
+        
         # Derived from the relations in Chapter 6 of [1]
-        return (
-            Cubic.gas_constant(blk)*(blk.temperature * dZdT + Z - 1) +
-            (blk.temperature * d2adT2 / (EoS_p * bm)) * safe_log(expression1 / expression2)  + 
-            ((am - blk.temperature * dadT) * expression3 / bm) +
-            sum(blk.mole_frac_phase_comp[p, j] * 
-                get_method(blk, "cp_mol_ig_comp", j)(blk, cobj(blk, j), blk.temperature)
-                for j in blk.components_in_phase(p))
-        )
+        cp_departure =  (R*(T*dZdT + Z - 1) 
+                      + (T*d2am_dT2/(EoS_p*bm))*safe_log(expression1/expression2,
+                                                         eps = 1e-6)
+                      + ((am - T*dam_dT)*expression3/bm))
 
+        
+        return cp_ideal_gas + cp_departure
 
     @staticmethod
     def cv_mol_phase(blk, p):
@@ -424,7 +512,7 @@ class Cubic(EoSBase):
         bm = getattr(blk, cname+"_bm")[p]
         cp = blk.cp_mol_phase[p]
         V = 1 / blk.dens_mol_phase[p]
-        dadT = getattr(blk, cname+"_dadT")[p]
+        dam_dT = getattr(blk, cname+"_dam_dT")[p]
 
         EoS_u = EoS_param[pobj._cubic_type]['u']
         EoS_w = EoS_param[pobj._cubic_type]['w']
@@ -433,7 +521,7 @@ class Cubic(EoSBase):
                 (am * (2 * V + EoS_u * bm) / (V**2 + EoS_u * bm * V + EoS_w * bm**2)**2)
 
         dPdT = (Cubic.gas_constant(blk) / (V - bm)) - \
-               (1 / (V**2 + EoS_u * bm * V + EoS_w * bm**2)) * dadT
+               (1 / (V**2 + EoS_u * bm * V + EoS_w * bm**2)) * dam_dT
 
         # See Chapter 6 in [1]
         return (
@@ -466,7 +554,7 @@ class Cubic(EoSBase):
         am = getattr(blk, cname+"_am")[p]
         bm = getattr(blk, cname+"_bm")[p]
         B = getattr(blk, cname+"_B")[p]
-        dadT = getattr(blk, cname+"_dadT")[p]
+        dam_dT = getattr(blk, cname+"_dam_dT")[p]
         Z = blk.compress_fact_phase[p]
 
         EoS_u = EoS_param[pobj._cubic_type]['u']
@@ -475,7 +563,7 @@ class Cubic(EoSBase):
 
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
         # Departure function for U is similar to H minus the RT(Z-1) term
-        return (((blk.temperature*dadT - am) *
+        return (((blk.temperature*dam_dT - am) *
                  safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
                           eps=1e-6)) / (bm*EoS_p) +
                 sum(blk.mole_frac_phase_comp[p, j] *
@@ -492,7 +580,7 @@ class Cubic(EoSBase):
         am = getattr(blk, cname+"_am")[p]
         bm = getattr(blk, cname+"_bm")[p]
         B = getattr(blk, cname+"_B")[p]
-        dadT = getattr(blk, cname+"_dadT")[p]
+        dam_dT = getattr(blk, cname+"_dam_dT")[p]
         Z = blk.compress_fact_phase[p]
 
         EoS_u = EoS_param[pobj._cubic_type]['u']
@@ -501,7 +589,7 @@ class Cubic(EoSBase):
 
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
         # Departure function for U is similar to H minus the RT(Z-1) term
-        return (((blk.temperature*dadT - am) *
+        return (((blk.temperature*dam_dT - am) *
                  safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
                           eps=1e-6)) / (bm*EoS_p) +
                 EoSBase.energy_internal_mol_ig_comp_pure(blk, j))
@@ -516,7 +604,7 @@ class Cubic(EoSBase):
         am = getattr(blk, cname+"_am")[p]
         bm = getattr(blk, cname+"_bm")[p]
         B = getattr(blk, cname+"_B")[p]
-        dadT = getattr(blk, cname+"_dadT")[p]
+        dam_dT = getattr(blk, cname+"_dam_dT")[p]
         Z = blk.compress_fact_phase[p]
 
         EoS_u = EoS_param[pobj._cubic_type]['u']
@@ -524,7 +612,7 @@ class Cubic(EoSBase):
         EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
 
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
-        return (((blk.temperature*dadT - am) *
+        return (((blk.temperature*dam_dT - am) *
                  safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
                           eps=1e-6) +
                  Cubic.gas_constant(blk)*blk.temperature*(Z-1)*bm*EoS_p) /
@@ -543,7 +631,7 @@ class Cubic(EoSBase):
         am = getattr(blk, cname+"_am")[p]
         bm = getattr(blk, cname+"_bm")[p]
         B = getattr(blk, cname+"_B")[p]
-        dadT = getattr(blk, cname+"_dadT")[p]
+        dam_dT = getattr(blk, cname+"_dam_dT")[p]
         Z = blk.compress_fact_phase[p]
 
         EoS_u = EoS_param[pobj._cubic_type]['u']
@@ -551,7 +639,7 @@ class Cubic(EoSBase):
         EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
 
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
-        return (((blk.temperature*dadT - am) *
+        return (((blk.temperature*dam_dT - am) *
                  safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
                           eps=1e-6) +
                  Cubic.gas_constant(blk)*blk.temperature*(Z-1)*bm*EoS_p) /
@@ -567,7 +655,7 @@ class Cubic(EoSBase):
         cname = pobj._cubic_type.name
         bm = getattr(blk, cname+"_bm")[p]
         B = getattr(blk, cname+"_B")[p]
-        dadT = getattr(blk, cname+"_dadT")[p]
+        dam_dT = getattr(blk, cname+"_dam_dT")[p]
         Z = blk.compress_fact_phase[p]
 
         EoS_u = EoS_param[pobj._cubic_type]['u']
@@ -576,24 +664,24 @@ class Cubic(EoSBase):
         
         R = Cubic.gas_constant(blk)
         
-        entr_ideal = -R*safe_log(blk.pressure
+        entr_ideal_gas = -R*safe_log(blk.pressure
                                  /blk.params.pressure_ref, eps=1e-6)
         for j in blk.components_in_phase(p):
             entr_j = get_method(blk, "entr_mol_ig_comp", j)(
                 blk, cobj(blk, j), blk.temperature)
             xj = blk.mole_frac_phase_comp[p, j]
             
-            entr_ideal += xj*(entr_j - R*safe_log(xj,eps=1e-6))
+            entr_ideal_gas += xj*(entr_j - R*safe_log(xj,eps=1e-6))
         
         # See pg. 102 in Properties of Gases and Liquids
         # or pg. 208 of Sandler, 4th Ed.
         entr_departure = (
             R*safe_log((Z-B), eps=1e-6)
-            +  dadT/(bm*EoS_p)*safe_log((2*Z + B*(EoS_u + EoS_p)) /
+            +  dam_dT/(bm*EoS_p)*safe_log((2*Z + B*(EoS_u + EoS_p)) /
                                          (2*Z + B*(EoS_u - EoS_p)),eps=1e-6)
             )
         
-        return entr_ideal + entr_departure
+        return entr_ideal_gas + entr_departure
 
     @staticmethod
     def entr_mol_phase_comp(blk, p, j):
@@ -602,28 +690,44 @@ class Cubic(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
 
         cname = pobj._cubic_type.name
+        
         bm = getattr(blk, cname+"_bm")[p]
         B = getattr(blk, cname+"_B")[p]
-        dadT = getattr(blk, cname+"_dadT")[p]
+        dam_dT = getattr(blk, cname+"_dam_dT")[p]
+        
+        b = getattr(blk, cname+"_b")
+        bm = getattr(blk, cname+"_bm")
+        A = getattr(blk, cname+"_A")
+        delta = getattr(blk, cname+"_delta")
+        Z = blk.compress_fact_phase[p]
+        
+        logphi_j = _log_fug_coeff_phase_comp(blk,p,j)
+        dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk,p,j)
         Z = blk.compress_fact_phase[p]
 
         EoS_u = EoS_param[pobj._cubic_type]['u']
         EoS_w = EoS_param[pobj._cubic_type]['w']
         EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
+        
+        R = Cubic.gas_constant(blk)
+        
+        entr_ideal_gas = (get_method(blk, "entr_mol_ig_comp", j)(
+                              blk, cobj(blk, j), blk.temperature)
+                            - R*(safe_log(blk.pressure
+                                 /blk.params.pressure_ref, eps=1e-6)
+                                 + safe_log(blk.mole_frac_phase_comp[p, j],
+                                            eps=1e-6)
+                                 )
+                            )
 
-        # See pg. 102 in Properties of Gases and Liquids
-        return (((Cubic.gas_constant(blk)*safe_log((Z-B)/Z, eps=1e-6) *
-                  bm*EoS_p +
-                  Cubic.gas_constant(blk) *
-                  safe_log(Z*blk.params.pressure_ref /
-                           (blk.mole_frac_phase_comp[p, j]*blk.pressure),
-                           eps=1e-6) *
-                  bm*EoS_p +
-                  dadT*safe_log((2*Z + B*(EoS_u + EoS_p)) /
-                                (2*Z + B*(EoS_u - EoS_p)),
-                                eps=1e-6)) /
-                (bm*EoS_p)) + get_method(blk, "entr_mol_ig_comp", j)(
-                                      blk, cobj(blk, j), blk.temperature))
+        # Departure function for partial molar entropy can be obtained by
+        # writing the departure function for the Gibbs energy in terms of the
+        # log of the fugacity coefficient, and differentiating that expression.
+        # This is mixing-rule dependent
+        
+        entr_departure = -R*logphi_j - R*blk.temperature*dlogphi_j_dT
+        
+        return entr_ideal_gas + entr_departure
 
     @staticmethod
     def fug_phase_comp(b, p, j):
@@ -634,7 +738,7 @@ class Cubic(EoSBase):
                     b.fug_coeff_phase_comp[p, j])
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-
+    
     @staticmethod
     def fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
@@ -645,6 +749,7 @@ class Cubic(EoSBase):
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
+
     @staticmethod
     def log_fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
@@ -654,7 +759,7 @@ class Cubic(EoSBase):
                     _log_fug_coeff_phase_comp_eq(b, p, j, pp))
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-
+    
     @staticmethod
     def fug_coeff_phase_comp(blk, p, j):
         pobj = blk.params.get_phase(p)
@@ -945,6 +1050,16 @@ class Cubic(EoSBase):
                     b.pressure)
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+    
+    @staticmethod
+    def vol_mol_phase_comp(b,p,j):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
+            return (Cubic.gas_constant(b)*b.temperature *
+                    _dZ_dxj(b,p,j) /
+                    b.pressure)
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
 def _invalid_phase_msg(name, phase):
@@ -952,6 +1067,89 @@ def _invalid_phase_msg(name, phase):
             "libray only supports Vap and Liq phases."
             .format(name, phase))
 
+
+
+def _dZ_dT(blk,p):
+    pobj = blk.params.get_phase(p)
+    cname = pobj._cubic_type.name
+    am = getattr(blk, cname+"_am")[p]
+    A = getattr(blk, cname+"_A")[p]
+    B = getattr(blk, cname+"_B")[p]
+    dam_dT = getattr(blk, cname+"_dam_dT")[p]
+    Z = blk.compress_fact_phase[p]
+    T = blk.temperature
+
+    EoS_u = EoS_param[pobj._cubic_type]['u']
+    EoS_w = EoS_param[pobj._cubic_type]['w']
+    
+    dBdT = -B/T
+    dAdT = (A/am) * dam_dT - (2*A/T)
+    
+    K2 = (EoS_u - 1) * B - 1
+    K3 = A - EoS_u*B - (EoS_u - EoS_w)*B**2
+    K4 = - (A*B + EoS_w*B**2 + EoS_w*B**3)
+    
+    dK2dT = (EoS_u - 1) * dBdT
+    dK3dT = dAdT - EoS_u*dBdT - 2*(EoS_u - EoS_w)*B*dBdT
+    dK4dT = -(A*dBdT + B*dAdT + 2*EoS_w*B*dBdT + 3*EoS_w*B**2*dBdT) 
+    
+    return -(Z**2*dK2dT + Z*dK3dT + dK4dT)/(3*Z**2 + 2*K2*Z + K3)
+
+def _dZ_dxj(blk,p,j):
+    pobj = blk.params.get_phase(p)
+    cname = pobj._cubic_type.name
+    
+    if not (pobj._mixing_rule_a == MixingRuleA.default
+            and pobj._mixing_rule_b == MixingRuleB.default):
+        # Any user adding more mixing rules will need to explicitly add
+        # support for these functions
+        raise NotImplementedError("Block {} called for a property "
+                                  "that is not supported by this choice "
+                                  "of mixing rules.".format(blk.name))
+    
+
+    a = getattr(blk, cname+"_a")
+    b = getattr(blk, cname+"_b")
+    k = getattr(blk, cname+"_kappa")
+    am = getattr(blk, cname+"_am")[p]
+    bm = getattr(blk, cname+"_bm")[p]
+    A = getattr(blk, cname+"_A")[p]
+    B = getattr(blk, cname+"_B")[p]
+    
+    # This derivative takes a somewhat unexpected form because it's a
+    # partial molar quantity
+    if pobj._mixing_rule_a == MixingRuleA.default:
+        dam_dxj = (2/(1-blk.mole_frac_phase_comp[p, j])
+                   *(-am + sum(blk.mole_frac_phase_comp[p, i]
+                       * (1 - k[i,j])*sqrt(a[i]*a[j])
+                               for i in blk.components_in_phase(p))
+                     )
+                   )
+    # Same thing here. 
+    if pobj._mixing_rule_b == MixingRuleB.default:
+        dbm_dxj = (b[j]-bm)/(1-blk.mole_frac_phase_comp[p, j])
+    
+    Z = blk.compress_fact_phase[p]
+    R = Cubic.gas_constant(blk)
+    T = blk.temperature
+    P = blk.pressure
+
+    EoS_u = EoS_param[pobj._cubic_type]['u']
+    EoS_w = EoS_param[pobj._cubic_type]['w']
+    
+    dA_dxj = P/(R*T)**2*dam_dxj
+    dB_dxj = P/(R*T)*dbm_dxj
+    
+    
+    K2 = (EoS_u - 1) * B - 1
+    K3 = A - EoS_u*B - (EoS_u - EoS_w)*B**2
+    K4 = - (A*B + EoS_w*B**2 + EoS_w*B**3)
+    
+    dK2_dxj = (EoS_u - 1) * dB_dxj
+    dK3_dxj = dA_dxj - EoS_u*dB_dxj - 2*(EoS_u - EoS_w)*B*dB_dxj
+    dK4_dxj = -(A*dB_dxj + B*dA_dxj + 2*EoS_w*B*dB_dxj + 3*EoS_w*B**2*dB_dxj) 
+    
+    return -(Z**2*dK2_dxj + Z*dK3_dxj + dK4_dxj)/(3*Z**2 + 2*K2*Z + K3)
 
 def _log_fug_coeff_phase_comp_eq(blk, p, j, pp):
     pobj = blk.params.get_phase(p)
@@ -978,6 +1176,30 @@ def _log_fug_coeff_phase_comp_eq(blk, p, j, pp):
                                  delta_eq[pp, p, j], Zeq(p), pobj._cubic_type)
 
 
+def _log_fug_coeff_phase_comp(blk,p,j):
+    pobj = blk.params.get_phase(p)
+    if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+        raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
+    
+    cname = pobj._cubic_type.name
+    b = getattr(blk, cname+"_b")
+    bm = getattr(blk, cname+"_bm")
+    A = getattr(blk, cname+"_A")
+    B = getattr(blk, cname+"_B")
+    delta = getattr(blk, cname+"_delta")
+
+    f = getattr(blk, "_"+cname+"_ext_func_param")
+    if pobj.is_vapor_phase():
+        proc = getattr(blk, "_"+cname+"_proc_Z_vap")
+    elif pobj.is_liquid_phase():
+        proc = getattr(blk, "_"+cname+"_proc_Z_liq")
+
+    def Z(p):
+        return proc(f, A[p], B[p])
+
+    return _log_fug_coeff_method(A[p], b[j], bm[p], B[p],
+                                 delta[p, j], Z(p), pobj._cubic_type)
+
 def _log_fug_coeff_method(A, b, bm, B, delta, Z, cubic_type):
     u = EoS_param[cubic_type]['u']
     w = EoS_param[cubic_type]['w']
@@ -988,6 +1210,44 @@ def _log_fug_coeff_method(A, b, bm, B, delta, Z, cubic_type):
                                        eps=1e-6)) /
             (B*p))
 
+def _d_log_fug_coeff_dT_phase_comp(blk,p,j):
+    pobj = blk.params.get_phase(p)
+    # Is this check necessary?
+    if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+        raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
+    
+    if not (pobj._mixing_rule_a == MixingRuleA.default
+            and pobj._mixing_rule_b == MixingRuleB.default):
+        # Any 
+        raise NotImplementedError("Block {} called for a property "
+                                  "that is not supported by this choice "
+                                  "of mixing rules.".format(blk.name))
+    
+    cname = pobj._cubic_type.name
+    am = getattr(blk, cname+"_am")[p]
+    daij_dT = getattr(blk, cname+"_daij_dT")
+    dam_dT = getattr(blk, cname+"_dam_dT")[p]
+    b = getattr(blk, cname+"_b")[j]
+    bm = getattr(blk, cname+"_bm")[p]
+    A = getattr(blk, cname+"_A")[p]
+    B = getattr(blk, cname+"_B")[p]
+    delta = getattr(blk, cname+"_delta")[p,j]
+    
+    Z = blk.compress_fact_phase[p]
+    dZ_dT = _dZ_dT(blk,p)
+    T = blk.temperature
+    
+    u = EoS_param[pobj._cubic_type]['u']
+    w = EoS_param[pobj._cubic_type]['w']
+    EoS_p = sqrt(u**2 - 4*w)
+    
+    expr = A/(EoS_p*B)*(b/bm*(1/am*dam_dT-1/T) + delta/T
+                    - 2/am*sum(blk.mole_frac_phase_comp[p,i]*daij_dT[i,j]
+                               for i in blk.component_list))
+    
+    return (b/bm*dZ_dT - (dZ_dT+B/T)/(Z-B)
+             - A*(b/bm-delta)*(Z/T+dZ_dT)/(Z**2+u*B*Z+w*B**2)
+             + log((2*Z+B*(u+EoS_p))/(2*Z+B*(u-EoS_p)))*expr)
 
 # -----------------------------------------------------------------------------
 # Mixing rules
@@ -998,7 +1258,6 @@ def rule_am_default(m, cname, a, p, pp=()):
         sqrt(a[pp, i]*a[pp, j])*(1-k[i, j])
         for j in m.components_in_phase(p))
         for i in m.components_in_phase(p))
-
 
 def rule_bm_default(m, b, p):
     return sum(m.mole_frac_phase_comp[p, i]*b[i]

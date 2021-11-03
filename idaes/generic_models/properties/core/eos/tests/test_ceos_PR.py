@@ -314,10 +314,10 @@ def test_common(m):
                     (1-m.params.PR_kappa[i, j])
                     for j in m.params.component_list))
 
-    assert isinstance(m.props[1].PR_dadT, Expression)
-    assert len(m.props[1].PR_dadT) == len(m.params.phase_list)
+    assert isinstance(m.props[1].PR_dam_dT, Expression)
+    assert len(m.props[1].PR_dam_dT) == len(m.params.phase_list)
     for p in m.params.phase_list:
-        assert pytest.approx(value(m.props[1].PR_dadT[p]),
+        assert pytest.approx(value(m.props[1].PR_dam_dT[p]),
                              rel=1e-5) == value(
             -((const.gas_constant/2)*sqrt(0.45724) *
               sum(sum(m.props[1].mole_frac_phase_comp[p, i] *
