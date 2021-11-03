@@ -18,9 +18,14 @@ Perry, Green, Maloney, 1997, McGraw-Hill
 
 All parameter indicies and units based on conventions used by the source
 """
-from pyomo.environ import log, Var, units as pyunits
+from pyomo.environ import log, Var, Param, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config
+
+from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 # -----------------------------------------------------------------------------
@@ -142,7 +147,8 @@ class entr_mol_liq_comp():
 
 # -----------------------------------------------------------------------------
 # Densities
-class dens_mol_liq_comp():
+
+class dens_mol_liq_comp_eqn_1():
 
     @staticmethod
     def build_parameters(cobj):
@@ -179,6 +185,84 @@ class dens_mol_liq_comp():
         units = b.params.get_metadata().derived_units
 
         return pyunits.convert(rho, units["density_mole"])
+
+
+class dens_mol_liq_comp_eqn_2():
+
+    @staticmethod
+    def build_parameters(cobj):
+        cobj.dens_mol_liq_comp_coeff_1 = Var(
+                doc="Parameter 1 for liquid phase molar density",
+                units=pyunits.kmol/pyunits.m**3)
+        set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="1")
+
+        cobj.dens_mol_liq_comp_coeff_2 = Var(
+                doc="Parameter 2 for liquid phase molar density",
+                units=pyunits.kmol/pyunits.m**3/pyunits.K)
+        set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="2")
+
+        cobj.dens_mol_liq_comp_coeff_3 = Var(
+                doc="Parameter 3 for liquid phase molar density",
+                units=pyunits.kmol/pyunits.m**3/pyunits.K**2)
+        set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="3")
+
+        cobj.dens_mol_liq_comp_coeff_4 = Var(
+                doc="Parameter 4 for liquid phase molar density",
+                units=pyunits.kmol/pyunits.m**3/pyunits.K**3)
+        set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="4")
+
+    @staticmethod
+    def return_expression(b, cobj, T):
+        # pg. 2-98
+        T = pyunits.convert(T, to_units=pyunits.K)
+
+        rho = (cobj.dens_mol_liq_comp_coeff_1) + \
+            (cobj.dens_mol_liq_comp_coeff_2)*T + \
+            (cobj.dens_mol_liq_comp_coeff_3)*T**2 + \
+            (cobj.dens_mol_liq_comp_coeff_4)*T**3
+
+        units = b.params.get_metadata().derived_units
+
+        return pyunits.convert(rho, units["density_mole"])
+
+
+class dens_mol_liq_comp():
+
+    @staticmethod
+    def build_parameters(cobj):
+        cobj.dens_mol_liq_comp_coeff_eqn_type = Param(
+            mutable=True, doc="Liquid molar density equation form")
+
+        try:
+            set_param_from_config(cobj, param="dens_mol_liq_comp_coeff",
+                                  index="eqn_type")
+        except KeyError:
+            _log.warning("DEPRECATED - {} dens_mol_liq_comp_coeff index "
+                         "'eqn_type' should be specified, defaulting to "
+                         "equation form 1.".format(cobj))
+            # default to equation form 1 if not specified
+            cobj.dens_mol_liq_comp_coeff_eqn_type.value = 1
+
+        if cobj.dens_mol_liq_comp_coeff_eqn_type.value == 1:
+            dens_mol_liq_comp_eqn_1.build_parameters(cobj)
+        elif cobj.dens_mol_liq_comp_coeff_eqn_type.value == 2:
+            dens_mol_liq_comp_eqn_2.build_parameters(cobj)
+        else:
+            raise ConfigurationError(f"{cobj.name} unrecognized value for "
+                                     f"dens_mol_liq_comp equation type: "
+                                     f"{cobj.dens_mol_liq_comp_coeff_eqn_type}")
+
+    @staticmethod
+    def return_expression(b, cobj, T):
+        if cobj.dens_mol_liq_comp_coeff_eqn_type.value == 1:
+            rho = dens_mol_liq_comp_eqn_1.return_expression(b, cobj, T)
+        elif cobj.dens_mol_liq_comp_coeff_eqn_type.value == 2:
+            rho = dens_mol_liq_comp_eqn_2().return_expression(b, cobj, T)
+        else:
+            raise ConfigurationError("No expression for eqn_type of "
+                                     "dens_mol_liq_comp_coeff specified,"
+                                     "please specify valid flag.")
+        return rho
 
 
 # -----------------------------------------------------------------------------
