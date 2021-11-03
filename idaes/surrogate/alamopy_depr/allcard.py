@@ -18,7 +18,7 @@ cvalsim = None  # could cause problems
 def allcard(xdata, zdata, xval, zval, **kwargs):
     # enumerate all model cardinalities via ccmiqp and 
     # use validation/cross-validaiton to determine 
-    from idaes.surrogate import alamopy
+    from idaes.surrogate import alamopy_depr as alamopy
     # PYLINT-TODO-FIX alamopy.writethis.writethis doesn't seem to exist
     # pylint: disable=import-error
     from alamopy.writethis import writethis
