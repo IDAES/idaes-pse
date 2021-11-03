@@ -12,6 +12,9 @@ Methods for calculating pure component properties from:
 Perry's Chemical Engineers' Handbook, 7th Edition
 Perry, Green, Maloney, 1997, McGraw-Hill
 
+.. note::
+    Currently, only the most common correlation forms from Perry's Handbook are implemented. Some components use different forms which are not yet supported.
+
 Ideal Liquid Molar Heat Capacity (Constant Pressure)
 ----------------------------------------------------
 
@@ -85,21 +88,25 @@ Units are :math:`\text{J/kmol}\cdotp\text{K}`.
 Liquid Molar Density
 --------------------
 
-Perry's Handbook uses the following correlation for liquid molar density:
+Perry's Handbook uses the following correlations for liquid molar density:
 
-.. math:: \rho_{liq} = \frac{C_1}{C_2^{1 + (1-\frac{T}{C_3})^{C_4}}}
+.. math:: \rho_{liq} = \frac{C_1}{C_2^{1 + (1-\frac{T}{C_3})^{C_4}}} \space (1)
+.. math:: \rho_{liq} = {C_1} + {C_2} \times {T} + {C_3} \times {T^2} + {C_4} \times {T^3} \space (2)
 
 Units are :math:`\text{kmol/}\text{m}^3`.
 
 **Parameters**
 
 .. csv-table::
-   :header: "Symbol", "Parameter Name", "Units", "Description"
+   :header: "Symbol", "Parameter Name", "Units (form 1)", "Units (form 2)", "Description"
 
-   ":math:`C_1`", "dens_mol_comp_liq_coeff_1", ":math:`\text{kmol/}\text{m}^3`", ""
-   ":math:`C_2`", "dens_mol_comp_liq_coeff_2", "None", ""
-   ":math:`C_3`", "dens_mol_comp_liq_coeff_3", ":math:`\text{K}`", ""
-   ":math:`C_4`", "dens_mol_comp_liq_coeff_4", "None`", ""
-
+   "`eqn_type`", "dens_mol_comp_liq_coeff_eqn_type", "None", "None", "Flag in the set [1, 2]"
+   ":math:`C_1`", "dens_mol_comp_liq_coeff_1", ":math:`\text{kmol/}\text{m}^3`", ":math:`\text{kmol/}\text{m}^3`", ""
+   ":math:`C_2`", "dens_mol_comp_liq_coeff_2", "None", ":math:`\text{kmol/}\text{m}^3\text{K}`", ""
+   ":math:`C_3`", "dens_mol_comp_liq_coeff_3", ":math:`\text{K}`", ":math:`\text{kmol/}\text{m}^3\text{K}^2`", ""
+   ":math:`C_4`", "dens_mol_comp_liq_coeff_4", "None", ":math:`\text{kmol/}\text{m}^3\text{K}^3`", ""
+    
 .. note::
-    Currently, only the most common correlation form from Perry's Handbook is implemented. Some components use different forms which are not yet supported.
+    When Perry's methods are used, an equation form for liquid molar density must be specified as an additional coefficient 'eqn_type.' This parameter
+    may be either '1' or '2' to select an equation form. The second correlation form for liquid molar density is most often used for water or o-terphenyl
+    (values exist in Perry's Handbook). Fitted coefficients must be entered with the correct Pyomo units to use a specific correlation form.
