@@ -24,7 +24,7 @@ from idaes.dmf import resource, propdata
 from idaes.dmf.resource import Predicates
 from idaes.dmf import errors
 # alamo
-from idaes.surrogate import alamopy
+from idaes.surrogate import alamopy_depr as alamopy
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
