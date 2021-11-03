@@ -139,8 +139,8 @@ def delta_temperature_lmtd_callback(b):
         \Delta T = \frac{\Delta T_1 - \Delta T_2}{
             \log_e\left(\frac{\Delta T_1}{\Delta T_2}\right)}
 
-    where :math:`\Delta T_1` is the temperature differnce at the hot inlet end
-    and :math:`\Delta T_2` is the temperature differnce at the hot outlet end.
+    where :math:`\Delta T_1` is the temperature difference at the hot inlet end
+    and :math:`\Delta T_2` is the temperature difference at the hot outlet end.
     """
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
@@ -161,8 +161,8 @@ def delta_temperature_lmtd2_callback(b):
         \Delta T = \frac{\Delta T_2 - \Delta T_1}{
             \log_e\left(\frac{\Delta T_2}{\Delta T_1}\right)}
 
-    where :math:`\Delta T_1` is the temperature differnce at the hot inlet end
-    and :math:`\Delta T_2` is the temperature differnce at the hot outlet end.
+    where :math:`\Delta T_1` is the temperature difference at the hot inlet end
+    and :math:`\Delta T_2` is the temperature difference at the hot outlet end.
     """
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
@@ -183,8 +183,8 @@ def delta_temperature_lmtd3_callback(b):
         \Delta T = \frac{\Delta T_1 - \Delta T_2}{
             \log_e\left(\Delta T_2\right) - \log_e\left(\Delta T_1\right)}
 
-    where :math:`\Delta T_1` is the temperature differnce at the hot inlet end
-    and :math:`\Delta T_2` is the temperature differnce at the hot outlet end.
+    where :math:`\Delta T_1` is the temperature difference at the hot inlet end
+    and :math:`\Delta T_2` is the temperature difference at the hot outlet end.
     """
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
@@ -205,8 +205,8 @@ def delta_temperature_amtd_callback(b):
 
         \Delta T = \frac{\Delta T_1 + \Delta T_2}{2}
 
-    where :math:`\Delta T_1` is the temperature differnce at the hot inlet end
-    and :math:`\Delta T_2` is the temperature differnce at the hot outlet end.
+    where :math:`\Delta T_1` is the temperature difference at the hot inlet end
+    and :math:`\Delta T_2` is the temperature difference at the hot outlet end.
     """
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
@@ -231,8 +231,8 @@ def delta_temperature_underwood_callback(b):
         \Delta T = \left(\frac{
             \Delta T_1^\frac{1}{3} + \Delta T_2^\frac{1}{3}}{2}\right)^3
 
-    where :math:`\Delta T_1` is the temperature differnce at the hot inlet end
-    and :math:`\Delta T_2` is the temperature differnce at the hot outlet end.
+    where :math:`\Delta T_1` is the temperature difference at the hot inlet end
+    and :math:`\Delta T_2` is the temperature difference at the hot outlet end.
     """
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
@@ -429,7 +429,7 @@ class HeatExchangerData(UnitModelBlockData):
         if not hasattr(self, "cold_outlet"):
             add_object_reference(self, "cold_outlet", o2)
         ########################################################################
-        # Add end temperature differnece constraints                           #
+        # Add end temperature difference constraints                           #
         ########################################################################
 
         @self.Constraint(self.flowsheet().time)
