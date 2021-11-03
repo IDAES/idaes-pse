@@ -25,6 +25,7 @@ from idaes.core import (declare_process_block_class,
                         UnitModelBlockData)
 from idaes.core.util.config import (is_physical_parameter_block)
 from idaes.core.util.constants import Constants as constants
+import idaes.core.util.scaling as sc
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 
@@ -126,7 +127,7 @@ see reaction package for documentation.}"""))
 
     def build(self):
         # Call UnitModel.build to setup dynamics
-        super(FixedBed0DData, self).build()
+        super().build()
 
         # Build Gas Phase StateBlock
         # This block only needed so gas conc. to rxn block is calculated
@@ -183,7 +184,8 @@ see reaction package for documentation.}"""))
         self.volume_solid = Var(
                     self.flowsheet().config.time,
                     initialize=1.0,
-                    doc="Solids phase volume including particle pores  [m**3]")
+                    doc="Solids phase volume including particle pores  [m**3]",
+                    units=pyunits.m**3)
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Calculating solid phase volume")

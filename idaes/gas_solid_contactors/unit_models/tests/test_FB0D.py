@@ -25,6 +25,7 @@ from pyomo.environ import (ConcreteModel,
                            value,
                            units as pyunits,
                            Constraint)
+from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
@@ -204,6 +205,7 @@ class TestIronOC(object):
                 iron_oc.fs.unit.solids[3600].mass_frac_comp['Fe3O4'].value)
         assert (pytest.approx(1255.59, abs=1e-2) ==
                 iron_oc.fs.unit.solids[3600].temperature.value)
+        assert_units_consistent(iron_oc)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -416,6 +418,7 @@ class TestIronOC_EnergyBalanceType(object):
                 iron_oc.fs.unit.solids[3600].mass_frac_comp['Fe3O4'].value)
         assert (pytest.approx(1273.15, abs=1e-2) ==
                 iron_oc.fs.unit.solids[3600].temperature.value)
+        assert_units_consistent(iron_oc)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
