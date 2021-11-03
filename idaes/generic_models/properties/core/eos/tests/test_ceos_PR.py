@@ -791,11 +791,4 @@ def test_vol_mol_phase_comp(m):
 def test_vol_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Cubic.vol_mol_phase(m_sol.props[1], "Sol")
-
-if __name__ == "__main__":
-    #pytest.main()
-    #mod = m()
-    #test_energy_internal_mol_phase_comp(mod)
-    #test_enth_mol_phase_comp(mod)
-    pass
     
