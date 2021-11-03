@@ -537,19 +537,19 @@ def test_entr_mol_phase(m):
                                          initialize=1)
 
     assert pytest.approx(value(
-        Cubic.entr_mol_phase(m.props[1], "Vap")), rel=1e-5) == 39.9218
+        Cubic.entr_mol_phase(m.props[1], "Vap")), rel=1e-5) == 46.58858
     assert pytest.approx(value(
-        Cubic.entr_mol_phase(m.props[1], "Liq")), rel=1e-5) == 41.1621
+        Cubic.entr_mol_phase(m.props[1], "Liq")), rel=1e-5) == 48.62807
 
 
 @pytest.mark.unit
 def test_entr_mol_phase_comp(m):
-    entr = {("Liq", "a"): 45.4093,
-            ("Vap", "a"): 59.0666,
-            ("Liq", "b"): 51.1725,
-            ("Vap", "b"): 53.3035,
-            ("Liq", "c"): 60.3069,
-            ("Vap", "c"): 42.8875}
+    entr = {("Liq", "a"): 45.8181,
+            ("Vap", "a"): 61.5670,
+            ("Liq", "b"): 50.7494,
+            ("Vap", "b"): 54.1797,
+            ("Liq", "c"): 59.1236,
+            ("Vap", "c"): 42.2799}
     for j in m.params.component_list:
         m.params.get_component(j).config.entr_mol_liq_comp = dummy_call
         m.params.get_component(j).config.entr_mol_ig_comp = dummy_call
@@ -558,7 +558,21 @@ def test_entr_mol_phase_comp(m):
             Cubic.entr_mol_phase_comp(m.props[1], "Liq", j))
         assert pytest.approx(entr[("Vap", j)], rel=1e-5) == value(
             Cubic.entr_mol_phase_comp(m.props[1], "Vap", j))
-
+        
+    # With real partial molar quantities implemented, we should have that
+    # the sum weighted by mole fraction is equal to the molar entropy
+    assert (pytest.approx(value(
+            Cubic.entr_mol_phase(m.props[1], "Liq")), rel=1e-5)
+            == value(sum(Cubic.entr_mol_phase_comp(m.props[1], "Liq", j)
+                         *m.props[1].mole_frac_phase_comp["Liq", j]
+                         for j in m.params.component_list))
+            )
+    assert (pytest.approx(value(
+            Cubic.entr_mol_phase(m.props[1], "Vap")), rel=1e-5)
+            == value(sum(Cubic.entr_mol_phase_comp(m.props[1], "Vap", j)
+                         *m.props[1].mole_frac_phase_comp["Vap", j]
+                         for j in m.params.component_list))
+            )
 
 @pytest.mark.unit
 def test_entr_mol_phase_invalid_phase(m_sol):
