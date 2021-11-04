@@ -130,7 +130,11 @@ class DMFVisitor(codesearch.PropertyMetadataVisitor):
             '"{}"'.format(".".join([obj.__module__, obj.__name__]))
         )
         r = resource.Resource(type_=resource.ResourceTypes.code)
-        r.data = {"units": meta.default_units, "properties": meta.properties}
+        r.data = {
+            # Convert Pyomo units to strings for JSON serialization
+            "units": {q: str(u) for q,u in meta.default_units.items()},
+            "properties": meta.properties
+        }
         containing_module = obj.__module__
         if hasattr(containing_module, "__version__"):
             obj_ver = resource.version_list(containing_module.__version__)

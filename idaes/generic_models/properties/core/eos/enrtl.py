@@ -36,7 +36,7 @@ from idaes.generic_models.properties.core.generic.utility import (
 from idaes.generic_models.properties.core.generic.generic_property import \
     StateIndex
 from idaes.core.util.constants import Constants
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 
 
@@ -550,24 +550,6 @@ class ENRTL(Ideal):
         return b.mole_frac_phase_comp_apparent[p, j]*exp(ln_gamma[j])
 
     @staticmethod
-    def log_act_phase_comp(b, p, j):
-        if b.params.config.state_components == StateIndex.true:
-            ln_gamma = getattr(b, p+"_log_gamma")
-        else:
-            ln_gamma = getattr(b, p+"_log_gamma_appr")
-        return log(b.mole_frac_phase_comp[p, j]) + ln_gamma[p, j]
-
-    @staticmethod
-    def log_act_phase_comp_true(b, p, j):
-        ln_gamma = getattr(b, p+"_log_gamma")
-        return log(b.mole_frac_phase_comp_true[p, j]) + ln_gamma[p, j]
-
-    @staticmethod
-    def log_act_phase_comp_appr(b, p, j):
-        ln_gamma = getattr(b, p+"_log_gamma_appr")
-        return log(b.mole_frac_phase_comp_apparent[p, j]) + ln_gamma[p, j]
-
-    @staticmethod
     def act_coeff_phase_comp(b, p, j):
         if b.params.config.state_components == StateIndex.true:
             ln_gamma = getattr(b, p+"_log_gamma")
@@ -587,10 +569,9 @@ class ENRTL(Ideal):
 
     @staticmethod
     def pressure_osm_phase(b, p):
-        return (-ENRTL.gas_constant(b)*b.temperature *
-                log(sum(b.act_phase_comp[p, j]
-                        for j in b.params.solvent_set)) /
-                b.vol_mol_phase[p])
+        return (-ENRTL.gas_constant(b) * b.temperature *
+                                b.log_act_phase_solvents[p] /
+                                b.vol_mol_phase[p])
 
     @staticmethod
     def vol_mol_phase(b, p):

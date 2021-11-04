@@ -85,18 +85,6 @@ class EoSBase():
         raise NotImplementedError(_msg(b, "act_phase_comp_appr"))
 
     @staticmethod
-    def log_act_phase_comp(b, p, j):
-        raise NotImplementedError(_msg(b, "log_act_phase_comp"))
-
-    @staticmethod
-    def log_act_phase_comp_true(b, p, j):
-        raise NotImplementedError(_msg(b, "log_act_phase_comp_true"))
-
-    @staticmethod
-    def log_act_phase_comp_appr(b, p, j):
-        raise NotImplementedError(_msg(b, "log_act_phase_comp_appr"))
-
-    @staticmethod
     def act_coeff_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "act_coeff_phase_comp"))
 
@@ -304,6 +292,13 @@ class EoSBase():
         raise NotImplementedError(_msg(b, "gibbs_mol_phase_comp"))
 
     @staticmethod
+    def isentropic_speed_sound_phase(b, p):
+        raise NotImplementedError(_msg(b, "isentropic_speed_sound_phase"))
+
+    @staticmethod
+    def isothermal_speed_sound_phase(b, p):
+        raise NotImplementedError(_msg(b, "isothermal_speed_sound_phase"))
+        
     def pressure_osm_phase(b, p):
         raise NotImplementedError(_msg(b, "pressure_osm_phase"))
 

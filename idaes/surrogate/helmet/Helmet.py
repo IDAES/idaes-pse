@@ -24,7 +24,7 @@ import platform
 import subprocess
 
 
-from idaes.surrogate import alamopy
+from idaes.surrogate import alamopy_depr as alamopy
 from . import AncillaryEquations  # , Certainty
 from . import Plotting, DataImport, DataManipulation
 from . import GAMSWrite, BasisFunctions

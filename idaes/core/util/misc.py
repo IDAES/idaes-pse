@@ -14,7 +14,7 @@
 """
 This module contains miscellaneous utility functions for use in IDAES models.
 """
-import xml.dom.minidom
+from pyomo.common.deprecation import deprecated
 
 import pyomo.environ as pyo
 from pyomo.core.base.expression import _GeneralExpressionData
@@ -26,6 +26,7 @@ from pyomo.common.config import ConfigBlock
 
 import idaes.logger as idaeslog
 import idaes.core.solvers
+from idaes.core.util.tags import svg_tag as svg_tag_new
 
 _log = idaeslog.getLogger(__name__)
 
@@ -97,7 +98,10 @@ def extract_data(data_dict):
     return _rule_initialize
 
 
-# Author: John Eslick
+@deprecated(
+    "idaes.core.util.misc.TagReference will be removed in a future version",
+    version=1.12
+)
 def TagReference(s, description=""):
     """
     Create a Pyomo reference with an added description string attribute to
@@ -117,115 +121,6 @@ def TagReference(s, description=""):
     return r
 
 
-# Author John Eslick
-def svg_tag(
-    tags,
-    svg,
-    outfile=None,
-    idx=None,
-    tag_map=None,
-    show_tags=False,
-    byte_encoding="utf-8",
-    tag_format=None,
-    tag_format_default="{:.4e}"
-):
-    """
-    Replace text in a SVG with tag values for the model. This works by looking
-    for text elements in the SVG with IDs that match the tags or are in tag_map.
-
-    Args:
-        tags: A dictionary where the key is the tag and the value is a Pyomo
-            Reference.  The reference could be indexed. In typical IDAES
-            applications the references would be indexed by time.
-        svg: a file pointer or a string continaing svg contents
-        outfile: a file name to save the results, if None don't save
-        idx: if None not indexed, otherwise an index in the indexing set of the
-            reference
-        tag_map: dictionary with svg id keys and tag values, to map svg ids to
-            tags
-        show_tags: Put tag labels of the diagram instead of numbers
-        byte_encoding: If svg is given as a byte-array, use this encoding to
-            convert it to a string.
-        tag_format: A dictionary of formatting strings.  If the formatting
-            string is a callable, it should be a function that takes the value
-            to display and returns a formatting string.
-        tag_format_default: The default formatting if not explicitly by
-            tag_format. If the formatting string is a callable, it should be a
-            function that takes the value to display and returns a formatting
-            string.
-
-    Returns:
-        SVG String
-    """
-    if tag_format is None:
-        tag_format = {}
-
-    if isinstance(svg, str):  # assume this is svg content string
-        pass
-    elif isinstance(svg, bytes):
-        svg = svg.decode(byte_encoding)
-    elif hasattr(svg, "read"):  # file-like object to svg
-        svg = svg.read()
-    else:
-        raise TypeError("SVG must either be a string or a file-like object")
-    # Make tag map here because the tags may not make valid XML IDs if no
-    # tag_map provided we'll go ahead and handle XML @ (maybe more in future)
-    if tag_map is None:
-        tag_map = dict()
-        for tag in tags:
-            new_tag = tag.replace("@", "_")
-            tag_map[new_tag] = tag
-    # Search for text in the svg that has an id in tags
-    doc = xml.dom.minidom.parseString(svg)
-    texts = doc.getElementsByTagName("text")
-    for t in texts:
-        id = t.attributes["id"].value
-        if id in tag_map:
-            # if it's multiline change last line
-            try:
-                tspan = t.getElementsByTagName("tspan")[-1]
-            except IndexError:
-                _log.warning(f"Text object but no tspan for tag {tag_map[id]}.")
-                _log.warning(f"Skipping output for {tag_map[id]}.")
-                continue
-            try:
-                tspan = tspan.childNodes[0]
-            except IndexError:
-                # No child node means there is a line with no text, so add some.
-                tspan.appendChild(doc.createTextNode(""))
-                tspan = tspan.childNodes[0]
-            try:
-                if show_tags:
-                    val = tag_map[id]
-                elif idx is None:
-                    val = pyo.value(tags[tag_map[id]], exception=False)
-                else:
-                    val = pyo.value(tags[tag_map[id]][idx], exception=False)
-            except ZeroDivisionError:
-                val = "Divide_by_0"
-            tf = tag_format.get(tag_map[id], tag_format_default)
-            try:
-                if callable(tf): # conditional formatting
-                    tspan.nodeValue = tf(val).format(val)
-                else:
-                    tspan.nodeValue = tf.format(val)
-            except ValueError:
-                # whatever it is, it doesn't match the format.  Usually this
-                # happens when a string is given, but it is using a default
-                # number format
-                tspan.nodeValue = val
-
-    new_svg = doc.toxml()
-    # If outfile is provided save to a file
-    if outfile is not None:
-        with open(outfile, "w") as f:
-            f.write(new_svg)
-    # Return the SVG as a string.  This lets you take several passes at adding
-    # output without saving and loading files.
-    return new_svg
-
-
-# Author: John Eslick
 def copy_port_values(destination=None, source=None, arc=None,
         direction="forward"):
     """
@@ -238,6 +133,17 @@ def copy_port_values(destination=None, source=None, arc=None,
     from idaes.core.util.initialization import propagate_state
     propagate_state(destination=destination, source=source, arc=arc,
             direction=direction)
+
+@deprecated(
+    "idaes.core.util.misc.svg_tag has moved to idaes.core.util.tags.svg_tag",
+    version=1.12
+)
+def svg_tag(*args, **kwargs):
+    """
+    Moved to idaes.core.util.tags.svg_tag
+    Leaving redirection function here for deprecation warning.
+    """
+    return svg_tag_new(*args, **kwargs)
 
 
 def set_param_from_config(b, param, config=None, index=None):
@@ -351,14 +257,39 @@ class _GeneralVarLikeExpressionData(_GeneralExpressionData):
 
     # Define methods for common APIs on Vars in case user mistakes
     # an Expression for a Var
+    def set_value(self, value, force=False):
+        """
+        Overload set_value method to provide meaningful error if user attempts
+        to set the value of the Expression. In order to support changing the
+        expression (and setting it originally), if self._expr is None or
+        force=True, the value of the expression will be updated, otherwise a
+        TypeError will be raised.
+
+        Args:
+            value: value to set for _expr
+            force: force updating of _expr if True (default = False)
+
+        Returns:
+            None
+
+        Raises:
+            TypeError if _expr is not None and force=False
+        """
+        if self._expr is None or force:
+            super().set_value(value)
+        else:
+            raise TypeError(
+                f"{self.name} is an Expression and does not have a value "
+                f"which can be set.")
+
     @property
     def value(self):
-        # Overload value so it behaves like a Var
-        return pyo.value(self.expr)
+        raise TypeError(
+            f"{self.name} is an Expression and does not have a value "
+            f"attribute. Use the 'value()' method instead.")
 
     @value.setter
     def value(self, expr):
-        # Overload value seter to prevent users changing the expression body
         raise TypeError(
             "%s is an Expression and does not have a value which can be set."
             % (self.name))

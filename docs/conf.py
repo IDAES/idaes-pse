@@ -69,7 +69,7 @@ main_doc = 'index'
 
 # General information about the project.
 project = u'IDAES'
-copyright = u'2016-2019, David Miller et al.'
+copyright = u'2016-2021, David Miller et al.'
 author = u'The IDAES project'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -276,6 +276,57 @@ html_extra_path = [
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'IDAESdoc'
+
+html_context = {
+    "footer_logos": {
+        "row1":
+        [
+            {
+                "alt": "National Energy Technology Laboratory logo", 
+                "src": "footer_logo_NETL.png", 
+                "href": "https://netl.doe.gov/"
+            },
+            {
+                "alt": "Lawrence Berkeley National Laboratory logo", 
+                "src": "footer_logo_LBNL.jpg", 
+                "href": "https://www.lbl.gov/"
+            },
+            {
+                "alt": "Sandia National Laboratory logo", 
+                "src": "footer_logo_Sandia.png", 
+                "href": "https://www.sandia.gov/"
+            },
+            {
+                "alt": "Department of Energy logo", 
+                "src": "footer_logo_DOE.jpg", 
+                "href": "https://www.energy.gov/"
+            },
+        ],
+        "row2":
+        [
+            {
+                "alt": "Carnegie Mellon University logo", 
+                "src": "footer_logo_CMU.png", 
+                "href": "https://www.cmu.edu/"
+            },
+            {
+                "alt": "West Virginia University logo", 
+                "src": "footer_logo_West_VA_U.png", 
+                "href": "https://www.wvu.edu/"
+            },
+            {
+                "alt": "University of Notre Dame logo", 
+                "src": "footer_logo_Notre_Dame.png", 
+                "href": "https://www.nd.edu/"
+            },
+            {
+                "alt": "Georgia Institute of Technology logo", 
+                "src": "footer_logo_Georgia_Tech.png", 
+                "href": "https://www.gatech.edu/"
+            },
+        ]
+    }
+}
 
 # -- Options for LaTeX output ---------------------------------------------
 

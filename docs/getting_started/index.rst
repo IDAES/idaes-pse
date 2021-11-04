@@ -140,7 +140,9 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
   e. For developers: follow the :ref:`advanced user installation<advanced_user_guide/advanced_install/index:Advanced User Installation>`.
 
 2. Run the :doc:`idaes get-extensions command<../user_guide/commands/get_extensions>`
-   to install the compiled binaries::
+   to install the compiled binaries. These binaries include solvers and function libraries.
+   See :ref:`Binary Packages <getting_started/binaries:Binary Packages>`
+   for more details.
 
     idaes get-extensions
 
@@ -262,7 +264,7 @@ assuming that the installation was done using one of the methods described earli
 
         idaes --version
 
-3. Run the ``idaes get-extension`` command to install compiled binaries compatible with the newly upgraded IDAES version::
+3. Run the ``idaes get-extension`` command to install compiled binaries compatible with the newly upgraded IDAES version.  These binaries include solvers and function libraries.  See :ref:`Binary Packages <getting_started/binaries:Binary Packages>` for more details.::
 
     idaes get-extensions
 

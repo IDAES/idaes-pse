@@ -48,8 +48,8 @@ def get_default_solver():
     Move to idaes.core.util.misc - leaving redirection method here for
     deprecation warning
     """
-    _log.warn("Deprecated: get_default_solve has been moved and can now be "
-              "imported from idaes.core.util")
+    _log.warn("Deprecated: get_default_solver has been moved and renamed. It "
+              "can now be imported from idaes.core.util as get_solver")
     return default_solver()
 
 
@@ -106,7 +106,6 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
 
     unit.initialize(**init_kwargs)
 
-    print(degrees_of_freedom(m))
     assert degrees_of_freedom(m) == dof
 
     fin_fixed_vars = fixed_variables_set(m)

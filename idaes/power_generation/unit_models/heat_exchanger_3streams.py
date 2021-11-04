@@ -15,7 +15,7 @@
 side 1 is hot stream, side 2 and 3 are cold streams
 """
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -34,7 +34,7 @@ import idaes.logger as idaeslog
 
 
 # Additional import for the unit operation
-from pyomo.environ import SolverFactory, Var, Reference
+from pyomo.environ import Var, Reference
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "1.0.0"
@@ -135,7 +135,7 @@ see property package for documentation.}"""))
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -144,7 +144,7 @@ see property package for documentation.}"""))
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,

@@ -21,10 +21,9 @@ from pyomo.environ import (
     PositiveReals,
     Reals,
     RangeSet,
-    SolverFactory,
     Var,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
 from idaes.core import (
     declare_process_block_class,
@@ -36,7 +35,6 @@ from idaes.core import (
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_state_block,
-    list_of_strings,
 )
 from idaes.core.util.exceptions import (
     BurntToast,
@@ -139,7 +137,7 @@ see property package for documentation.}""",
     CONFIG.declare(
         "inlet_list",
         ConfigValue(
-            domain=list_of_strings,
+            domain=ListOf(str),
             description="List of inlet names",
             doc="""A list containing names of inlets,
 **default** - None.
@@ -185,7 +183,7 @@ balance type
         "has_phase_equilibrium",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Calculate phase equilibrium in mixed stream",
             doc="""Argument indicating whether phase equilibrium should be
 calculated for the resulting mixed stream,
@@ -250,7 +248,7 @@ Mixer block,
         "construct_ports",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Construct inlet and outlet Port objects",
             doc="""Argument indicating whether model should construct Port
 objects linked to all inlet states and the mixed state,

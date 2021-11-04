@@ -13,17 +13,16 @@
 """
 Framework for generic reaction packages
 """
-from enum import Enum
-
+from math import log
 
 # Import Pyomo libraries
 from pyomo.environ import (Block,
                            Constraint,
                            Expression,
                            Set,
+                           units as pyunits,
                            Var)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.core.base.units_container import _PyomoUnit
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -31,6 +30,8 @@ from idaes.core import (declare_process_block_class,
                         ReactionBlockDataBase,
                         ReactionBlockBase,
                         MaterialFlowBasis)
+from idaes.generic_models.properties.core.generic.utility import \
+    ConcentrationForm
 from idaes.core.util.exceptions import (
     BurntToast, ConfigurationError, PropertyPackageError)
 import idaes.core.util.scaling as iscale
@@ -53,59 +54,6 @@ class GenericReactionPackageError(PropertyPackageError):
                f"{self.prop}, but was not provided with a method " \
                f"for this property. Please add a method for this property " \
                f"in the reaction parameter configuration."
-
-
-# Enumerate concentration form options
-class ConcentrationForm(Enum):
-    molarity = 1
-    activity = 2
-    molality = 3
-    moleFraction = 4
-    massFraction = 5
-    partialPressure = 6
-
-
-def get_concentration_term(blk, r_idx):
-    if "rate_reactions" in blk.params.config:
-        try:
-            conc_form = blk.params.config.rate_reactions[r_idx].concentration_form
-        except KeyError:
-            conc_form = blk.params.config.equilibrium_reactions[r_idx].concentration_form
-        state = blk.state_ref
-    else:
-        conc_form = blk.params.config.inherent_reactions[r_idx].concentration_form
-        state = blk
-
-    if hasattr(state.params, "_electrolyte") and state.params._electrolyte:
-        sub = "_true"
-    else:
-        sub = ""
-
-    if conc_form is None:
-        raise ConfigurationError(
-            "{} concentration_form configuration argument was not set. "
-            "Please ensure that this argument is included in your "
-            "configuration dict.".format(blk.name))
-    elif conc_form == ConcentrationForm.molarity:
-        conc_term = getattr(state, "conc_mol_phase_comp"+sub)
-    elif conc_form == ConcentrationForm.activity:
-        conc_term = getattr(state, "act_phase_comp"+sub)
-    elif conc_form == ConcentrationForm.molality:
-        conc_term = getattr(state, "molality_phase_comp"+sub)
-    elif conc_form == ConcentrationForm.moleFraction:
-        conc_term = getattr(state, "mole_frac_phase_comp"+sub)
-    elif conc_form == ConcentrationForm.massFraction:
-        conc_term = getattr(state, "mass_frac_phase_comp"+sub)
-    elif conc_form == ConcentrationForm.partialPressure:
-        conc_term = (getattr(state, "mole_frac_phase_comp"+sub) *
-                     getattr(state, "pressure"))
-    else:
-        raise BurntToast(
-            "{} get_concentration_term received unrecognised "
-            "ConcentrationForm ({}). This should not happen - please contact "
-            "the IDAES developers with this bug.".format(blk.name, conc_form))
-
-    return conc_term
 
 
 rxn_config = ConfigBlock()
@@ -196,32 +144,8 @@ class GenericReactionParameterData(ReactionParameterBlock):
         super(ReactionParameterBlock, self).build()
         self.default_scaling_factor = {}
 
-        # Validate and set base units of measurement
+        # Set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)
-        units_meta = self.get_metadata().default_units
-
-        for key, unit in self.config.base_units.items():
-            if key in ['time', 'length', 'mass', 'amount', 'temperature',
-                       "current", "luminous intensity"]:
-                if not isinstance(unit, _PyomoUnit):
-                    raise ConfigurationError(
-                        "{} recieved unexpected units for quantity {}: {}. "
-                        "Units must be instances of a Pyomo unit object."
-                        .format(self.name, key, unit))
-            else:
-                raise ConfigurationError(
-                    "{} defined units for an unexpected quantity {}. "
-                    "Generic reaction packages only support units for the 7 "
-                    "base SI quantities.".format(self.name, key))
-
-        # Check that main 5 base units are assigned
-        for k in ['time', 'length', 'mass', 'amount', 'temperature']:
-            if not isinstance(units_meta[k], _PyomoUnit):
-                raise ConfigurationError(
-                    "{} units for quantity {} were not assigned. "
-                    "Please make sure to provide units for all base units "
-                    "when configuring the reaction package."
-                    .format(self.name, k))
 
         # TODO: Need way to tie reaction package to a specfic property package
         self._validate_property_parameter_units()
@@ -490,6 +414,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
         obj.add_properties({
                 'dh_rxn': {'method': '_dh_rxn'},
                 'k_eq': {'method': '_k_eq'},
+                'log_k_eq': {'method': '_log_k_eq'},
                 'k_rxn': {'method': '_k_rxn'},
                 'reaction_rate': {'method': "_reaction_rate"}
                 })
@@ -566,11 +491,27 @@ class GenericReactionBlockData(ReactionBlockDataBase):
                             self, rblock)
                     iscale.set_scaling_factor(v, sf)
 
+        if hasattr(self, "log_k_eq"):
+            for r, v in self.log_k_eq.items():
+                if iscale.get_scaling_factor(v) is None:
+                    rblock = getattr(self.params, "reaction_"+r)
+                    carg = self.params.config.equilibrium_reactions[r]
+                    sf = carg[
+                        "equilibrium_constant"].calculate_scaling_factors(
+                            self, rblock)
+                    iscale.set_scaling_factor(v, log(sf))
+
         if hasattr(self, "equilibrium_constraint"):
             for r, v in self.equilibrium_constraint.items():
+                carg = self.params.config.equilibrium_reactions[r]
                 if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.k_eq[r], default=1, warning=True)
+                    if carg["equilibrium_form"].__name__.startswith("log_"):
+                        # Log form constraint
+                        sf = iscale.get_scaling_factor(
+                            self.log_k_eq[r], default=1, warning=True)
+                    else:
+                        sf = iscale.get_scaling_factor(
+                            self.k_eq[r], default=1, warning=True)
 
                 sf_const = carg["equilibrium_form"].calculate_scaling_factors(
                     self, sf)
@@ -638,6 +579,25 @@ class GenericReactionBlockData(ReactionBlockDataBase):
         self.k_eq = Expression(self.params.equilibrium_reaction_idx,
                                doc="Equilibrium constant",
                                rule=keq_rule)
+
+    def _log_k_eq(self):
+        def log_keq_rule(b, r):
+            rblock = getattr(b.params, "reaction_"+r)
+
+            carg = b.params.config.equilibrium_reactions[r]
+
+            return carg["equilibrium_constant"].return_log_expression(
+                b, rblock, r, b.state_ref.temperature)
+
+        self.log_k_eq = Var(self.params.equilibrium_reaction_idx,
+                            initialize=1,
+                            doc="Log of equilibrium constant",
+                            units=pyunits.dimensionless)
+
+        self.log_k_eq_constraint = Constraint(
+            self.params.equilibrium_reaction_idx,
+            rule=log_keq_rule,
+            doc="Constraint for log of K_eq")
 
     def _equilibrium_constraint(self):
         def equil_rule(b, r):
