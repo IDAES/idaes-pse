@@ -738,17 +738,19 @@ def test_gibbs_mol_phase(m):
 
 @pytest.mark.unit
 def test_gibbs_mol_phase_comp(m):
-    m.props[1].enth_mol_phase_comp = Var(m.params.phase_list,
-                                         m.params.component_list)
-    m.props[1].entr_mol_phase_comp = Var(m.params.phase_list,
-                                         m.params.component_list)
+    for j in m.params.component_list:
+        m.params.get_component(j).config.entr_mol_ig_comp = dummy_call
+        m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
 
     for p in m.params.phase_list:
         for j in m.params.component_list:
-            assert str(Cubic.gibbs_mol_phase_comp(m.props[1], p, j)) == str(
-                    m.props[1].enth_mol_phase_comp[p, j] -
-                    m.props[1].entr_mol_phase_comp[p, j] *
-                    m.props[1].temperature)
+            assert (pytest.approx(
+                value(Cubic.gibbs_mol_phase_comp(m.props[1], p, j)), rel=1e-5) 
+                == value(
+                    Cubic.enth_mol_phase_comp(m.props[1], p, j)
+                    - Cubic.entr_mol_phase_comp(m.props[1], p, j)
+                    * m.props[1].temperature)
+                )
 
 
 @pytest.mark.unit
@@ -791,4 +793,8 @@ def test_vol_mol_phase_comp(m):
 def test_vol_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Cubic.vol_mol_phase(m_sol.props[1], "Sol")
-    
+
+if __name__ == "__main__":
+    # mod = m()
+    # test_gibbs_mol_phase_comp(mod)
+    pass

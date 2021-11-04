@@ -952,11 +952,31 @@ class Cubic(EoSBase):
         return (b.enth_mol_phase[p] - b.entr_mol_phase[p]*b.temperature)
 
     @staticmethod
-    def gibbs_mol_phase_comp(b, p, j):
-        return (b.enth_mol_phase_comp[p, j] -
-                b.entr_mol_phase_comp[p, j] *
-                b.temperature)
+    def gibbs_mol_phase_comp(blk, p, j):
+        # Calling the enthalpy and entropy directly adds a lot of overhead
+        # because expressions involving the derivative of the fugacity coefficient
+        # are generated. Those terms cancel mathematically, but I suspect Pyomo
+        # leaves them in, causing trouble.
+        R = Cubic.gas_constant(blk)
+        T = blk.temperature
+        logphi_j = _log_fug_coeff_phase_comp(blk,p,j)
+        
+        enth_ideal_gas = get_method(blk, "enth_mol_ig_comp", j)(
+                              blk, cobj(blk, j), T)
 
+        
+        entr_ideal_gas = (get_method(blk, "entr_mol_ig_comp", j)(
+                              blk, cobj(blk, j), T)
+                            - R*(safe_log(blk.pressure
+                                 /blk.params.pressure_ref, eps=1e-6)
+                                 + safe_log(blk.mole_frac_phase_comp[p, j],
+                                            eps=1e-6)
+                                 )
+                            )
+        gibbs_ideal_gas = enth_ideal_gas - T*entr_ideal_gas
+        gibbs_departure = R*T*logphi_j
+        
+        return gibbs_ideal_gas + gibbs_departure
 
     @staticmethod
     def isentropic_speed_sound_phase(blk, p):
