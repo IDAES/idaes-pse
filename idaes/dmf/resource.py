@@ -330,7 +330,7 @@ class Resource:
         return self.v.get("codes", [])
 
     @property
-    def tables(self) -> Dict[str, Any]:  # TODO: Really should be "Table"
+    def tables(self) -> Dict:  # TODO: Really should be Dict[str, Table]
         """Get all the 'tables' stored in the resource.
 
         The resource _should_ be of the type 'tabular' and this may be
