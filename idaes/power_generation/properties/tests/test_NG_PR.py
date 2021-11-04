@@ -140,8 +140,8 @@ class TestNaturalGasProps(object):
 
                 assert -70000 >= value(m.fs.state[1].enth_mol_phase['Vap'])
                 assert -105000 <= value(m.fs.state[1].enth_mol_phase['Vap'])
-                assert 175 <= value(m.fs.state[1].entr_mol_phase['Vap'])
-                assert 250 >= value(m.fs.state[1].entr_mol_phase['Vap'])
+                assert 195 <= value(m.fs.state[1].entr_mol_phase['Vap'])
+                assert 275 >= value(m.fs.state[1].entr_mol_phase['Vap'])
 
     @pytest.mark.component
     def test_gibbs(self, m):
@@ -152,7 +152,8 @@ class TestNaturalGasProps(object):
             "dynamic": False,
             "has_heat_transfer": True,
             "has_pressure_change": False,
-            "property_package": m.fs.props})
+            "property_package": m.fs.props,
+            "exhausted_species":["O2"]})
 
         m.fs.reactor.inlet.flow_mol.fix(8000)  # mol/s
         m.fs.reactor.inlet.temperature.fix(600)  # K
@@ -160,13 +161,13 @@ class TestNaturalGasProps(object):
 
         m.fs.reactor.outlet.temperature.fix(600)  # K
 
-        m.fs.reactor.inlet.mole_frac_comp[0, "H2"].fix(0)
-        m.fs.reactor.inlet.mole_frac_comp[0, "CO"].fix(0)
+        m.fs.reactor.inlet.mole_frac_comp[0, "H2"].fix(1E-6)
+        m.fs.reactor.inlet.mole_frac_comp[0, "CO"].fix(1E-6)
         m.fs.reactor.inlet.mole_frac_comp[0, "H2O"].fix(0.3)
-        m.fs.reactor.inlet.mole_frac_comp[0, "CO2"].fix(0)
+        m.fs.reactor.inlet.mole_frac_comp[0, "CO2"].fix(1E-6)
         m.fs.reactor.inlet.mole_frac_comp[0, "O2"].fix(0.2)
         m.fs.reactor.inlet.mole_frac_comp[0, "N2"].fix(0.05)
-        m.fs.reactor.inlet.mole_frac_comp[0, "Ar"].fix(0.05)
+        m.fs.reactor.inlet.mole_frac_comp[0, "Ar"].fix(0.05-3E-6)
         m.fs.reactor.inlet.mole_frac_comp[0, "CH4"].fix(0.4)
 
         results = solver.solve(m, tee=True)
@@ -188,3 +189,8 @@ class TestNaturalGasProps(object):
 
         assert -634e6 == pytest.approx(value(
             m.fs.reactor.heat_duty[0]), 1e-3)
+
+if __name__ == "__main__":
+    obj = TestNaturalGasProps
+    mod = obj.m(obj)
+    obj.test_gibbs(obj,mod)

@@ -124,6 +124,11 @@ see property package for documentation.}"""))
         domain=ListOf(str),
         description="List of inert species",
         doc="List of species which do not take part in reactions."))
+    CONFIG.declare("exhausted_species", ConfigValue(
+        default=[],
+        domain=ListOf(str),
+        description="List of exhausted species",
+        doc="List of species totally consumed in reaction."))
 
     def build(self):
         """
@@ -194,6 +199,8 @@ see property package for documentation.}"""))
             # warnings of reaching infeasible point
             if j in self.config.inert_species:
                 return Constraint.Skip
+            elif j in self.config.exhausted_species:
+                return 0 == b.control_volume.properties_out[t].mole_frac_phase_comp[p,j]
             return 0 == b.gibbs_scaling * (
                 b.control_volume.properties_out[t].gibbs_mol_phase_comp[p, j] +
                 sum(b.lagrange_mult[t, e] *
