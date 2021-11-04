@@ -7,6 +7,8 @@ ignore-patterns=test_.*
 disable=no-self-argument,
     bad-super-call,
     assignment-from-none,
+    invalid-unary-operand-type,
+    unsubscriptable-object,    
 
 [IMPORTS]
 ignored-modules=cvalsim,almsim
@@ -18,3 +20,4 @@ ignored-modules=cvalsim,almsim
 # (see e.g. https://github.com/PyCQA/pylint/issues/2498)
 # here "cm" refers to matplotlib.cm
 generated-members=cm\..*,
+ignore-none=yes
