@@ -49,6 +49,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants as CONST
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util.math import smooth_min, smooth_max
 from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
@@ -398,6 +399,11 @@ class PlateHeatExchangerData(UnitModelBlockData):
         self.frict_factor_param_b.fix(18.29)
         self.frict_factor_param_c.fix(-0.652)
 
+        # espilon parameter for smooth Cmin and Cmax functions
+        self.epsilon_param = Param(initialize= 1e-2,
+                                   units=pyunits.W/pyunits.K,
+                                doc="Epsilon parameter for smoth Cmin and Cmax")
+
     def _make_performance_method(self):
 
         solvent_list = \
@@ -686,17 +692,20 @@ class PlateHeatExchangerData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # min n max capacitance and capacitance ratio
         def rule_Cmin(blk, t, p):
-            return 0.5 * (blk.Caph[t, p] + blk.Capc[t, p] -
-                          ((blk.Caph[t, p] - blk.Capc[t, p])**2 +
-                           0.00001)**0.5)
+            return smooth_min(blk.Caph[t, p], blk.Capc[t, p], eps=blk.epsilon_param)
+            # return 0.5 * (blk.Caph[t, p] + blk.Capc[t, p] -
+            #               ((blk.Caph[t, p] - blk.Capc[t, p])**2 +
+            #                0.00001)**0.5)
         self.Cmin = Expression(self.flowsheet().time, self.PH,
                                rule=rule_Cmin,
                                doc='Minimum capacitance rate')
 
+        # smooth core/
         def rule_Cmax(blk, t, p):
-            return 0.5 * (blk.Caph[t, p] + blk.Capc[t, p] +
-                          ((blk.Caph[t, p] - blk.Capc[t, p])**2 +
-                           0.00001)**0.5)
+            return smooth_max(blk.Caph[t, p], blk.Capc[t, p], eps=blk.epsilon_param)
+            # return 0.5 * (blk.Caph[t, p] + blk.Capc[t, p] +
+            #               ((blk.Caph[t, p] - blk.Capc[t, p])**2 +
+                           # 0.00001)**0.5)
         self.Cmax = Expression(self.flowsheet().time, self.PH,
                                rule=rule_Cmax,
                                doc='Maximum capacitance rate')

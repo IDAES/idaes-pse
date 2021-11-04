@@ -144,7 +144,7 @@ class TestPHE(object):
 
     @pytest.mark.component
     def test_units(self, phe):
-        #assert_units_consistent(phe)
+        assert_units_consistent(phe)
         assert_units_equivalent(phe.fs.unit.plate_length, units.m)
         assert_units_equivalent(phe.fs.unit.cold_fluid.deltaP[0], units.Pa)
         assert_units_equivalent(phe.fs.unit.hot_fluid.deltaP[0], units.Pa)
