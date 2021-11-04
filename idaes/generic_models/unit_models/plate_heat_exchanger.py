@@ -384,16 +384,13 @@ class PlateHeatExchangerData(UnitModelBlockData):
         self.nusselt_param_c.fix(0.333)
 
         # friction factor parameters
-        self.frict_factor_param_a = Var(initialize=0.3,
-                                        bounds=(0.2, 0.4),
+        self.frict_factor_param_a = Var(initialize=0.0,
                                         units=pyunits.dimensionless,
                                         doc='Friction factor parameter')
-        self.frict_factor_param_b = Var(initialize=0.663,
-                                        bounds=(0.3, 0.7),
+        self.frict_factor_param_b = Var(initialize=18.29,
                                         units=pyunits.dimensionless,
                                         doc='Friction factor parameter')
-        self.frict_factor_param_c = Var(initialize=1 / 3.0,
-                                        bounds=(1e-5, 2),
+        self.frict_factor_param_c = Var(initialize=-0.652,
                                         units=pyunits.dimensionless,
                                         doc='Friction factor parameter')
 
