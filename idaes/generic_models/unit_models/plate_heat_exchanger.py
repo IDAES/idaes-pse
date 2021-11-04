@@ -28,7 +28,7 @@ Detailed model equations can be found in the paper :
 Modelling and Parameter Estimation of a Plate Heat Exchanger
 as Part of a Solvent-Based Post-Combustion CO2 Capture System.
 In Computer Aided Chemical Engineering (Vol. 47, pp. 47-52). Elsevier.
-[2]
+
 """
 
 # Import Pyomo libraries
@@ -209,7 +209,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
         # performance equations that track the temperature along the series of
         # sub heat exchangers by applying  the effectiveness Number of Transfer
         # Units (e-NTU)approach to each pass.The total heat transfered is computed
-        # using the inlet and exit temperature. For more details see reference #2
+        # using the inlet and exit temperature. For more details see reference #1
 
         # =====================================================================
         # Build cold-side  Control Volume(Rich solvent)
@@ -402,7 +402,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
         # espilon parameter for smooth Cmin and Cmax functions
         self.epsilon_param = Param(initialize= 1e-2,
                                    units=pyunits.W/pyunits.K,
-                                doc="Epsilon parameter for smoth Cmin and Cmax")
+                                   doc="Epsilon parameter for smooth Cmin and Cmax")
 
     def _make_performance_method(self):
 
@@ -540,8 +540,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
             return blk.hot_fluid.properties_in[t].flow_mass * blk.channel_diameter /\
                 (blk.Np[p] * blk.plate_width *
                  blk.plate_gap * blk.hot_fluid.properties_in[t].visc_d_phase["Liq"])
-                 # pyunits.convert(blk.hot_fluid.properties_in[t].visc_d_phase["Liq"],
-                 #                 to_units=pyunits.Pa*pyunits.s))
+
 
         Re_h = self.Reynold_number_h = \
             Expression(self.flowsheet().time,
@@ -553,8 +552,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
             return blk.cold_fluid.properties_in[t].flow_mass * blk.channel_diameter /\
                 (blk.Np[p] * blk.plate_width *
                  blk.plate_gap * blk.cold_fluid.properties_in[t].visc_d_phase["Liq"])
-                # pyunits.convert(blk.cold_fluid.properties_in[t].visc_d_phase["Liq"],
-                #                 to_units=pyunits.Pa*pyunits.s))
+
 
         Re_c = self.Reynold_number_c = \
             Expression(self.flowsheet().time,
@@ -693,9 +691,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
         # min n max capacitance and capacitance ratio
         def rule_Cmin(blk, t, p):
             return smooth_min(blk.Caph[t, p], blk.Capc[t, p], eps=blk.epsilon_param)
-            # return 0.5 * (blk.Caph[t, p] + blk.Capc[t, p] -
-            #               ((blk.Caph[t, p] - blk.Capc[t, p])**2 +
-            #                0.00001)**0.5)
+
         self.Cmin = Expression(self.flowsheet().time, self.PH,
                                rule=rule_Cmin,
                                doc='Minimum capacitance rate')
@@ -703,9 +699,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
         # smooth core/
         def rule_Cmax(blk, t, p):
             return smooth_max(blk.Caph[t, p], blk.Capc[t, p], eps=blk.epsilon_param)
-            # return 0.5 * (blk.Caph[t, p] + blk.Capc[t, p] +
-            #               ((blk.Caph[t, p] - blk.Capc[t, p])**2 +
-                           # 0.00001)**0.5)
+
         self.Cmax = Expression(self.flowsheet().time, self.PH,
                                rule=rule_Cmax,
                                doc='Maximum capacitance rate')
