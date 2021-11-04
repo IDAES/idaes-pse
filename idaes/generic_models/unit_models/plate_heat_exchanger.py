@@ -22,12 +22,13 @@ Divider plates may be used to partition the passes in separate sections.
 The heat transfer area  of a single plate depends on the total heat transfer
 area as specified by the manufacturer and the total number of active plates.
 
+Reference
 Detailed model equations can be found in the paper :
-Akula, P., Eslick, J., Bhattacharyya, D. and Miller, D.C., 2019.
+[1] Akula, P., Eslick, J., Bhattacharyya, D. and Miller, D.C., 2019.
 Modelling and Parameter Estimation of a Plate Heat Exchanger
 as Part of a Solvent-Based Post-Combustion CO2 Capture System.
 In Computer Aided Chemical Engineering (Vol. 47, pp. 47-52). Elsevier.
-
+[2]
 """
 
 # Import Pyomo libraries
@@ -42,6 +43,8 @@ from idaes.core import (ControlVolume0DBlock,
                         MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
+from idaes.generic_models.properties.core.generic.generic_property import (
+    set_param_value)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants as CONST
@@ -86,61 +89,52 @@ class PlateHeatExchangerData(UnitModelBlockData):
         unit. Each pass can be separated by a divider plate"""))
 
     CONFIG.declare("port_diameter", ConfigValue(
-        default=0.2045,
-        domain=float,
+        default=(0.2045, pyunits.m),
         description="Diameter of the ports on the plate [m]",
         doc="""Diameter of the ports on the plate for fluid entry/exit
                into a channel"""))
 
     CONFIG.declare("plate_thermal_cond", ConfigValue(
-        default=16.2,
-        domain=float,
+        default=(16.2, pyunits.W / pyunits.m / pyunits.K),
         description="Thermal conductivity [W/m.K]",
         doc="""Thermal conductivity of the plate material [W/m.K]"""))
 
     CONFIG.declare("total_area", ConfigValue(
-        default=114.3,
-        domain=float,
+        default=(114.3, pyunits.m**2),
         description="Total heat transfer area [m2]",
         doc="""Total heat transfer area as specifed by the manufacturer"""))
 
     CONFIG.declare("plate_thickness", ConfigValue(
-        default=0.0006,
-        domain=float,
+        default=(0.0006, pyunits.m),
         description="Plate thickness [m]",
         doc="""Plate thickness"""))
 
     CONFIG.declare("plate_vertical_dist", ConfigValue(
-        default=1.897,
-        domain=float,
+        default=(1.897, pyunits.m),
         description="Vertical distance between centers of ports [m].",
         doc="""Vertical distance between centers of ports.(Top and bottom
         ports) (approximately equals to the plate length)"""))
 
     CONFIG.declare("plate_horizontal_dist", ConfigValue(
-        default=0.409,
-        domain=float,
+        default=(0.409, pyunits.m),
         description="Horizontal distance between centers of ports [m].",
         doc="""Horizontal distance between centers of ports(Left and right
         ports)"""))
 
     CONFIG.declare("plate_pact_length", ConfigValue(
-        default=0.381,
-        domain=float,
+        default=(0.381, pyunits.m),
         description="Compressed plate pact length [m].",
         doc="""Compressed plate pact length.
                Length between the Head and the Follower"""))
 
     CONFIG.declare("surface_enlargement_factor", ConfigValue(
         default=None,
-        domain=float,
         description="Surface enlargement factor",
         doc="""Surface enlargement factor is the ratio of single plate area
                (obtained from the total area) to the projected plate area"""))
 
     CONFIG.declare("plate_gap", ConfigValue(
         default=None,
-        domain=float,
         description="Mean channel spacing or gap bewteen two plates [m]",
         doc="""The plate gap is the distance between two adjacent plates that
                forms a flow channel """))
@@ -208,9 +202,13 @@ class PlateHeatExchangerData(UnitModelBlockData):
             balance_type=MomentumBalanceType.pressureTotal,
             has_pressure_change=True)
 
-        # Energy balance is based on the effectiveness Number of Transfer units
-        # (E-NTU method) and inluded as performance equations. Hence the
-        # control volume energy balances are not added.
+        # since the Plate Heat Exchanger is composed of multiple passes, it is
+        # built as a series of sub-heat exchangers,where each pass represents a
+        # sub-heat exchanger. Hence, a custom energy balance is adopted as
+        # performance equations that track the temperature along the series of
+        # sub heat exchangers by applying  the effectiveness Number of Transfer
+        # Units (e-NTU)approach to each pass.The total heat transfered is computed
+        # using the inlet and exit temperature. For more details see reference #2
 
         # =====================================================================
         # Build cold-side  Control Volume(Rich solvent)
@@ -252,28 +250,41 @@ class PlateHeatExchangerData(UnitModelBlockData):
         self._make_performance_method()
 
     def _make_params(self):
-        self.P = Param(initialize=self.config.passes,
-                       units=pyunits.dimensionless,
-                       doc="Total number of passes for hot or cold fluid")
-        self.PH = RangeSet(self.P,
-                           doc="Set of hot fluid passes")
-        self.PC = RangeSet(self.P,
-                           doc="Set of cold fluid passes(equal to PH)")
+        self.pass_num = Param(initialize=self.config.passes,
+                              units=pyunits.dimensionless,
+                              doc="Total number of passes for hot or cold fluid")
+
+        # Design for equal number of passes for both fluids
+        self.PH = RangeSet(self.pass_num,
+                           doc="Set of hot/cold fluid passes")
 
         self.plate_thermal_cond = Param(
             mutable=True,
-            initialize=self.config.plate_thermal_cond,
             units=pyunits.W / pyunits.m / pyunits.K,
             doc="Plate thermal conductivity")
-        self.plate_thick = Param(mutable=True,
-                                 initialize=self.config.plate_thickness,
-                                 units=pyunits.m,
-                                 doc="Plate thickness")
+        set_param_value(self, "plate_thermal_cond",
+                        pyunits.W / pyunits.m / pyunits.K)
 
-        self.port_dia = Param(mutable=True,
-                              initialize=self.config.port_diameter,
-                              units=pyunits.m,
-                              doc=" Port diameter of plate ")
+        self.plate_thickness = Param(mutable=True,
+                                     units=pyunits.m,
+                                     doc="Plate thickness")
+        set_param_value(self, "plate_thickness", pyunits.m)
+
+        self.port_diameter = Param(mutable=True,
+                                   units=pyunits.m,
+                                   doc=" Port diameter of plate ")
+        set_param_value(self, "port_diameter", pyunits.m)
+
+        self.divider_plate_number = Param(mutable=True,
+                                          units=pyunits.dimensionless,
+                                          doc="Number of divider plates in heat exchanger ")
+        set_param_value(self, "divider_plate_number", pyunits.dimensionless)
+
+        self.plate_pact_length = Param(mutable=True,
+                                       units=pyunits.m,
+                                       doc="Compressed plate pact length")
+        set_param_value(self, "plate_pact_length", pyunits.m)
+
         self.Np = Param(self.PH,
                         units=pyunits.dimensionless,
                         doc="Number of channels in each pass", mutable=True)
@@ -284,63 +295,111 @@ class PlateHeatExchangerData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Assign plate specifications
 
-        # effective plate length & width
-        _effective_plate_length = self.config.plate_vertical_dist*pyunits.m - \
-            self.config.port_diameter*pyunits.m
-        _effective_plate_width = self.config.plate_horizontal_dist*pyunits.m + \
-            self.config.port_diameter*pyunits.m
+        self.plate_vertical_dist = Param(
+            mutable=True,
+            units=pyunits.m,
+            doc="Vertical distance between centers of ports")
+        set_param_value(self, "plate_vertical_dist", pyunits.m)
 
-        self.plate_length = Expression(expr=_effective_plate_length)
-        self.plate_width = Expression(expr=_effective_plate_width)
+        self.plate_horizontal_dist = Param(
+            mutable=True,
+            units=pyunits.m,
+            doc="Horizontal distance between centers of ports")
+        set_param_value(self, "plate_horizontal_dist", pyunits.m)
+
+        self.plate_length = Expression(expr=self.plate_vertical_dist -
+                                       self.port_diameter)
+        self.plate_width = Expression(expr=self.plate_horizontal_dist +
+                                      self.port_diameter)
+        # heat transer area
+        self.total_area = Var(doc='Total heat transfer area',
+                              units=pyunits.m**2)
+        set_param_value(self, "total_area", pyunits.m**2)
+        self.total_area.fix()
+
+        # total number of active plates
+        _total_active_plate_number = 2 * sum(self.config.channel_list) - 1 -\
+            self.divider_plate_number
+
+        self.total_active_plate_number = Param(initialize=_total_active_plate_number,
+                                               units=pyunits.dimensionless,
+                                               doc="Total number of active plates")
 
         # Area of single plate
-        _total_active_plate_number = 2 * sum(self.config.channel_list) - 1 -\
-            self.config.divider_plate_number
+        self.plate_area = Var(initialize=1,
+                              units=pyunits.m**2,
+                              doc='Heat transfer area of single plate')
 
-        self.plate_area = Expression(expr=self.config.total_area*pyunits.m**2 /
-                                     _total_active_plate_number,
-                                     doc="Heat transfer area of single plate")
+        # Equation for design of new plate_area/total_area/No.of active plates
+        self.plate_area_eq = Constraint(expr=self.total_area ==
+                                        self.plate_area * self.total_active_plate_number)
 
         # Plate gap
         if self.config.plate_gap is None:
             _total_plate_number = 2 * sum(self.config.channel_list) + 1 +\
-                self.config.divider_plate_number
-            _plate_pitch = self.config.plate_pact_length*pyunits.m / _total_plate_number
+                self.divider_plate_number
+            _plate_pitch = self.plate_pact_length / _total_plate_number
 
-            _plate_gap = _plate_pitch - self.config.plate_thickness*pyunits.m
+            _plate_gap = _plate_pitch - self.plate_thickness
+            self.plate_gap = Expression(expr=_plate_gap)
         else:
-            _plate_gap = self.config.plate_gap*pyunits.m
-
-        self.plate_gap = Expression(expr=_plate_gap)
+            self.plate_gap = Param(mutable=True,
+                                   units=pyunits.m,
+                                   doc="Gap bewteen two plates ")
+            set_param_value(self, "plate_gap", pyunits.m)
 
         # Surface enlargement factor
+        # projected plate area = plate length *plate width
         if self.config.surface_enlargement_factor is None:
-            _projected_plate_area = (
-                _effective_plate_length * _effective_plate_width)
-            _surface_enlargement_factor = (
-                self.plate_area / _projected_plate_area)
+            self.surface_enlargement_factor = Expression(
+                expr=self.plate_area / (self.plate_length * self.plate_width))
         else:
-            _surface_enlargement_factor = \
-                self.config.surface_enlargement_factor
-
-        self.surface_enlargement_factor = Expression(
-            expr=_surface_enlargement_factor)
+            self.surface_enlargement_factor = Param(mutable=True,
+                                                    units=pyunits.dimensionless,
+                                                    doc="Surface enlargement factor ")
+            set_param_value(self, "surface_enlargement_factor",
+                            pyunits.dimensionless)
 
         # Channel equivalent diameter
-        self.channel_dia = Expression(expr=2 * self.plate_gap /
-                                      _surface_enlargement_factor,
-                                      doc=" Channel equivalent diameter")
+        self.channel_diameter = Expression(expr=2 * self.plate_gap /
+                                           self.surface_enlargement_factor,
+                                           doc=" Channel equivalent diameter")
 
         # heat transfer parameters
-        self.param_a = Var(initialize=0.3, bounds=(0.2, 0.4), units=None,
-                           doc='Nusselt parameter')
-        self.param_b = Var(initialize=0.663, bounds=(0.3, 0.7), units=None,
-                           doc='Nusselt parameter')
-        self.param_c = Var(initialize=1 / 3.0, bounds=(1e-5, 2), units=None,
-                           doc='Nusselt parameter')
-        self.param_a.fix(0.4)
-        self.param_b.fix(0.663)
-        self.param_c.fix(0.333)
+        self.nusselt_param_a = Var(initialize=0.3,
+                                   bounds=(0.2, 0.4),
+                                   units=pyunits.dimensionless,
+                                   doc='Nusselt parameter')
+        self.nusselt_param_b = Var(initialize=0.663,
+                                   bounds=(0.3, 0.7),
+                                   units=pyunits.dimensionless,
+                                   doc='Nusselt parameter')
+        self.nusselt_param_c = Var(initialize=1 / 3.0,
+                                   bounds=(1e-5, 2),
+                                   units=pyunits.dimensionless,
+                                   doc='Nusselt parameter')
+
+        self.nusselt_param_a.fix(0.4)
+        self.nusselt_param_b.fix(0.663)
+        self.nusselt_param_c.fix(0.333)
+
+        # friction factor parameters
+        self.frict_factor_param_a = Var(initialize=0.3,
+                                        bounds=(0.2, 0.4),
+                                        units=pyunits.dimensionless,
+                                        doc='Friction factor parameter')
+        self.frict_factor_param_b = Var(initialize=0.663,
+                                        bounds=(0.3, 0.7),
+                                        units=pyunits.dimensionless,
+                                        doc='Friction factor parameter')
+        self.frict_factor_param_c = Var(initialize=1 / 3.0,
+                                        bounds=(1e-5, 2),
+                                        units=pyunits.dimensionless,
+                                        doc='Friction factor parameter')
+
+        self.frict_factor_param_a.fix(0.0)
+        self.frict_factor_param_b.fix(18.29)
+        self.frict_factor_param_c.fix(-0.652)
 
     def _make_performance_method(self):
 
@@ -356,7 +415,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
             self.flowsheet().time,
             solvent_list,
             rule=rule_mass_frac_solvent_hot,
-            doc='mass fraction of solvent on free solute basis')
+            doc='Mass fraction of hot solvent on free solute basis')
 
         def rule_cp_mass_comp_hot(blk, t, j):
             return 0.5 * (
@@ -389,7 +448,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
             self.flowsheet().time,
             solvent_list,
             rule=rule_mass_frac_solvent_cold,
-            doc='mass fraction of solvent on free solute basis')
+            doc='Mass fraction of cold solvent on free solute basis')
 
         def rule_cp_mass_comp_cold(blk, t, j):
             return 0.5 * (
@@ -429,97 +488,135 @@ class PlateHeatExchangerData(UnitModelBlockData):
 
         # =====================================================================
         # PERFORMANCE EQUATIONS
-        # mass flow rate in kg/s
-        def rule_mh_in(blk, t):
-            return blk.hot_fluid.properties_in[t].flow_mol *\
-                blk.hot_fluid.properties_in[t].mw
-        self.mh_in = Expression(self.flowsheet().time, rule=rule_mh_in,
-                                doc='Hotside mass flow rate [kg/s]')
 
-        def rule_mc_in(blk, t):
-            return blk.cold_fluid.properties_in[t].flow_mol *\
-                blk.cold_fluid.properties_in[t].mw
-        self.mc_in = Expression(self.flowsheet().time, rule=rule_mc_in,
-                                doc='Coldside mass flow rate [kg/s]')
+        # G:mass flow velocity, p :port , h:hotfluid , c :coldfluid
+        # Gph is hotfluid port mass velocity[kg/m2.s]
+        def rule_Gph(blk, t):
+            return (4 * blk.hot_fluid.properties_in[t].flow_mass * 7) /\
+                   (22 * blk.port_diameter**2)
+
+        Gph = self.port_mass_velocity_h = \
+            Expression(self.flowsheet().time,
+                       rule=rule_Gph,
+                       doc='Hotside port mass velocity[kg/m2.s]')
+
+        # Gpc is coldfluid port mass velocity[kg/m2.s]
+        def rule_Gpc(blk, t):
+            return (4 * blk.cold_fluid.properties_in[t].flow_mass * 7) /\
+                   (22 * blk.port_diameter**2)
+
+        Gpc = self.port_mass_velocity_c =\
+            Expression(self.flowsheet().time,
+                       rule=rule_Gpc,
+                       doc='Coldside port mass velocity[kg/m2.s]')
 
         # ---------------------------------------------------------------------
-        # port mass velocity[kg/m2.s]
-        def rule_Gph(blk, t):
-            return (4 * blk.mh_in[t] * 7) / (22 * blk.port_dia**2)
+        # Gch is hotfluid channel mass velocity[kg/m2.s]
+        def rule_Gch(blk, t):
+            return blk.hot_fluid.properties_in[t].flow_mass / \
+                (blk.Np[1] * blk.plate_width * blk.plate_gap)
 
-        self.Gph = Expression(self.flowsheet().time, rule=rule_Gph,
-                              doc='Hotside port mass velocity[kg/m2.s]')
+        Gch = self.channel_mass_velocity_h = \
+            Expression(self.flowsheet().time,
+                       rule=rule_Gch,
+                       doc='Hotside channel mass velocity[kg/m2.s]')
 
-        def rule_Gpc(blk, t):
-            return (4 * blk.mc_in[t] * 7) / (22 * blk.port_dia**2)
+        # Gcc is coldfluid channel mass velocity[kg/m2.s]
+        def rule_Gcc(blk, t):
+            return blk.cold_fluid.properties_in[t].flow_mass / \
+                (blk.Np[1] * blk.plate_width * blk.plate_gap)
 
-        self.Gpc = Expression(self.flowsheet().time, rule=rule_Gpc,
-                              doc='Coldside port mass velocity[kg/m2.s]')
+        Gcc = self.channel_mass_velocity_c =\
+            Expression(self.flowsheet().time,
+                       rule=rule_Gcc,
+                       doc='Coldside channel mass velocity[kg/m2.s]')
 
         # ---------------------------------------------------------------------
         # Reynold & Prandtl numbers
         def rule_Re_h(blk, t, p):
-            return blk.mh_in[t] * blk.channel_dia /\
+            return blk.hot_fluid.properties_in[t].flow_mass * blk.channel_diameter /\
                 (blk.Np[p] * blk.plate_width *
                  blk.plate_gap * blk.hot_fluid.properties_in[t].visc_d_phase["Liq"])
-        self.Re_h = Expression(self.flowsheet().time, self.PH,
-                               rule=rule_Re_h,
-                               doc='Hotside Reynolds number')
+                 # pyunits.convert(blk.hot_fluid.properties_in[t].visc_d_phase["Liq"],
+                 #                 to_units=pyunits.Pa*pyunits.s))
+
+        Re_h = self.Reynold_number_h = \
+            Expression(self.flowsheet().time,
+                       self.PH,
+                       rule=rule_Re_h,
+                       doc='Hotside Reynolds number')
 
         def rule_Re_c(blk, t, p):
-            return blk.mc_in[t] * blk.channel_dia /\
+            return blk.cold_fluid.properties_in[t].flow_mass * blk.channel_diameter /\
                 (blk.Np[p] * blk.plate_width *
                  blk.plate_gap * blk.cold_fluid.properties_in[t].visc_d_phase["Liq"])
-        self.Re_c = Expression(self.flowsheet().time, self.PH,
-                               rule=rule_Re_c,
-                               doc='Coldside Reynolds number')
+                # pyunits.convert(blk.cold_fluid.properties_in[t].visc_d_phase["Liq"],
+                #                 to_units=pyunits.Pa*pyunits.s))
+
+        Re_c = self.Reynold_number_c = \
+            Expression(self.flowsheet().time,
+                       self.PH,
+                       rule=rule_Re_c,
+                       doc='Coldside Reynolds number')
 
         def rule_Pr_h(blk, t):
             return blk.cp_hot[t] * blk.hot_fluid.properties_in[t].visc_d_phase["Liq"] /\
                 blk.hot_fluid.properties_in[t].therm_cond_phase["Liq"]
-        self.Pr_h = Expression(self.flowsheet().time,
-                               rule=rule_Pr_h,
-                               doc='Hotside Prandtl number')
+
+        Pr_h = self.Prandtl_number_h = \
+            Expression(self.flowsheet().time,
+                       rule=rule_Pr_h,
+                       doc='Hotside Prandtl number')
 
         def rule_Pr_c(blk, t):
             return blk.cp_cold[t] * blk.cold_fluid.properties_in[t].visc_d_phase["Liq"] /\
                 blk.cold_fluid.properties_in[t].therm_cond_phase["Liq"]
-        self.Pr_c = Expression(self.flowsheet().time,
-                               rule=rule_Pr_c,
-                               doc='Coldside Prandtl number')
+
+        Pr_c = self.Prandtl_number_c = \
+            Expression(self.flowsheet().time,
+                       rule=rule_Pr_c,
+                       doc='Coldside Prandtl number')
         # ---------------------------------------------------------------------
         # Film heat transfer coefficients
 
         def rule_hotside_transfer_coef(blk, t, p):
             return (blk.hot_fluid.properties_in[t].therm_cond_phase["Liq"] /
-                    blk.channel_dia *
-                    blk.param_a * blk.Re_h[t, p]**blk.param_b *
-                    blk.Pr_h[t]**blk.param_c)
+                    blk.channel_diameter *
+                    blk.nusselt_param_a * Re_h[t, p]**blk.nusselt_param_b *
+                    Pr_h[t]**blk.nusselt_param_c)
 
-        self.h_hot = Expression(self.flowsheet().time,
-                                self.PH, rule=rule_hotside_transfer_coef,
-                                doc='Hotside heat transfer coefficient')
+        h_hot = self.heat_trans_coef_hot =\
+            Expression(self.flowsheet().time,
+                       self.PH,
+                       rule=rule_hotside_transfer_coef,
+                       doc='Hotside heat transfer coefficient')
 
         def rule_coldside_transfer_coef(blk, t, p):
             return (blk.cold_fluid.properties_in[t].therm_cond_phase["Liq"] /
-                    blk.channel_dia *
-                    blk.param_a * blk.Re_c[t, p]**blk.param_b *
-                    blk.Pr_c[t]**blk.param_c)
+                    blk.channel_diameter *
+                    blk.nusselt_param_a * Re_c[t, p]**blk.nusselt_param_b *
+                    Pr_c[t]**blk.nusselt_param_c)
 
-        self.h_cold = Expression(self.flowsheet().time,
-                                 self.PH, rule=rule_coldside_transfer_coef,
-                                 doc='Coldside heat transfer coefficient')
+        h_cold = self.heat_trans_coef_cold =\
+            Expression(self.flowsheet().time,
+                       self.PH,
+                       rule=rule_coldside_transfer_coef,
+                       doc='Coldside heat transfer coefficient')
 
         # ---------------------------------------------------------------------
         # Friction factor calculation
         def rule_fric_h(blk, t):
-            return 18.29 * blk.Re_h[t, 1]**(-0.652)
+            return blk.frict_factor_param_a + blk.frict_factor_param_b *\
+                Re_h[t, 1]**(blk.frict_factor_param_c)
+
         self.fric_h = Expression(self.flowsheet().time,
                                  rule=rule_fric_h,
                                  doc='Hotside friction factor')
 
         def rule_fric_c(blk, t):
-            return 1.441 * self.Re_c[t, 1]**(-0.206)
+            return blk.frict_factor_param_a + blk.frict_factor_param_b *\
+                Re_c[t, 1]**(blk.frict_factor_param_c)
+
         self.fric_c = Expression(self.flowsheet().time,
                                  rule=rule_fric_c,
                                  doc='Coldside friction factor')
@@ -527,38 +624,40 @@ class PlateHeatExchangerData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # pressure drop calculation
         def rule_hotside_dP(blk, t):
-            return (2 * blk.fric_h[t] * (blk.plate_length + blk.port_dia) *
-                    blk.P * blk.Gph[t]**2) /\
+            return (2 * blk.fric_h[t] * (blk.plate_length + blk.port_diameter) *
+                    blk.pass_num * Gch[t]**2) /\
                 (blk.hot_fluid.properties_in[t].dens_mass *
-                 blk.channel_dia) + 1.4 * blk.P * blk.Gph[t]**2 * 0.5 /\
+                 blk.channel_diameter) + 0.7 * blk.pass_num * Gph[t]**2 /\
                 blk.hot_fluid.properties_in[t].dens_mass + \
-                blk.hot_fluid.properties_in[t].dens_mass* \
-                CONST.acceleration_gravity * (blk.plate_length + blk.port_dia)
+                blk.hot_fluid.properties_in[t].dens_mass * \
+                CONST.acceleration_gravity * \
+                (blk.plate_length + blk.port_diameter)
 
-        self.dP_h = Expression(self.flowsheet().time,
-                               rule=rule_hotside_dP,
-                               doc='Hotside pressure drop  [Pa]')
+        self.deltaP_h = Expression(self.flowsheet().time,
+                                   rule=rule_hotside_dP,
+                                   doc='Hotside pressure drop  [Pa]')
 
         def rule_coldside_dP(blk, t):
-            return (2 * blk.fric_c[t] * (blk.plate_length + blk.port_dia) *
-                    blk.P * blk.Gpc[t]**2) /\
-                (blk.cold_fluid.properties_in[t].dens_mass * blk.channel_dia) +\
-                0.7 * (blk.P * blk.Gpc[t]**2  /
+            return (2 * blk.fric_c[t] * (blk.plate_length + blk.port_diameter) *
+                    blk.pass_num * Gcc[t]**2) /\
+                (blk.cold_fluid.properties_in[t].dens_mass * blk.channel_diameter) +\
+                0.7 * (blk.pass_num * Gpc[t]**2 /
                        blk.cold_fluid.properties_in[t].dens_mass) + \
                 blk.cold_fluid.properties_in[t].dens_mass * \
-                CONST.acceleration_gravity * (blk.plate_length + blk.port_dia)
+                CONST.acceleration_gravity * \
+                (blk.plate_length + blk.port_diameter)
 
-        self.dP_c = Expression(self.flowsheet().time,
-                               rule=rule_coldside_dP,
-                               doc='Coldside pressure drop  [Pa]')
+        self.deltaP_c = Expression(self.flowsheet().time,
+                                   rule=rule_coldside_dP,
+                                   doc='Coldside pressure drop  [Pa]')
 
         def rule_eq_deltaP_hot(blk, t):
-            return blk.hot_fluid.deltaP[t] == -blk.dP_h[t]
+            return blk.hot_fluid.deltaP[t] == -blk.deltaP_h[t]
         self.eq_deltaP_hot = Constraint(self.flowsheet().time,
                                         rule=rule_eq_deltaP_hot)
 
         def rule_eq_deltaP_cold(blk, t):
-            return blk.cold_fluid.deltaP[t] == -blk.dP_c[t]
+            return blk.cold_fluid.deltaP[t] == -blk.deltaP_c[t]
         self.eq_deltaP_cold = Constraint(self.flowsheet().time,
                                          rule=rule_eq_deltaP_cold)
 
@@ -566,9 +665,9 @@ class PlateHeatExchangerData(UnitModelBlockData):
         # Overall heat transfer coefficients
         def rule_U(blk, t, p):
             return 1.0 /\
-                (1.0 / blk.h_hot[t, p] +
+                (1.0 / h_hot[t, p] +
                  blk.plate_gap / blk.plate_thermal_cond +
-                 1.0 / blk.h_cold[t, p])
+                 1.0 / h_cold[t, p])
         self.U = Expression(self.flowsheet().time, self.PH,
                             rule=rule_U,
                             doc='Overall heat transfer coefficient')
@@ -576,13 +675,13 @@ class PlateHeatExchangerData(UnitModelBlockData):
         # capacitance of hot and cold fluid
 
         def rule_Caph(blk, t, p):
-            return blk.mh_in[t] * blk.cp_hot[t] / blk.Np[p]
+            return blk.hot_fluid.properties_in[t].flow_mass * blk.cp_hot[t] / blk.Np[p]
         self.Caph = Expression(self.flowsheet().time, self.PH,
                                rule=rule_Caph,
                                doc='Hotfluid capacitance rate')
 
         def rule_Capc(blk, t, p):
-            return blk.mc_in[t] * blk.cp_cold[t] / blk.Np[p]
+            return blk.cold_fluid.properties_in[t].flow_mass * blk.cp_cold[t] / blk.Np[p]
         self.Capc = Expression(self.flowsheet().time, self.PH,
                                rule=rule_Capc,
                                doc='Coldfluid capacitance rate')
@@ -622,11 +721,11 @@ class PlateHeatExchangerData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # effectiveness of sub-heat exchangers
         def rule_Ecf(blk, t, p):
-            if blk.P.value % 2 == 0:
+            if blk.pass_num.value % 2 == 0:
                 return (1 - exp(-blk.NTU[t, p] * (1 - blk.CR[t, p]))) / \
                     (1 - blk.CR[t, p] *
                      exp(-blk.NTU[t, p] * (1 - blk.CR[t, p])))
-            elif blk.P.value % 2 == 1:
+            elif blk.pass_num.value % 2 == 1:
                 return ((1 - exp(-blk.NTU[t, p] * (1 + blk.CR[t, p]))) /
                         (1 + blk.CR[t, p]))
 
@@ -636,7 +735,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Energy balance equations for hot fluid in sub-heat exhanger
-        def rule_Ebh_eq(blk, t, p):
+        def rule_hotside_energy_balance_per_pass(blk, t, p):
             return blk.Th_out[t, p] == blk.Th_in[t, p] -\
                 blk.Ecf[t, p] * blk.Cmin[t, p] / blk.Caph[t, p] * \
                 (blk.Th_in[t, p] - blk.Tc_in[t, p])
@@ -644,12 +743,12 @@ class PlateHeatExchangerData(UnitModelBlockData):
         self.Ebh_eq = Constraint(
             self.flowsheet().time,
             self.PH,
-            rule=rule_Ebh_eq,
+            rule=rule_hotside_energy_balance_per_pass,
             doc='Hot fluid sub-heat exchanger energy balance')
 
         # Hot fluid exit temperature
         def rule_Tout_hot(blk, t):
-            return blk.Th_out[t, blk.P.value] ==\
+            return blk.Th_out[t, blk.pass_num.value] ==\
                 blk.hot_fluid.properties_out[t].temperature
 
         self.Tout_hot_eq = Constraint(self.flowsheet().time,
@@ -657,7 +756,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
                                       doc='Hot fluid exit temperature')
 
         # Energy balance equations for cold fluid in sub-heat exhanger
-        def rule_Ebc_eq(blk, t, p):
+        def rule_coldside_energy_balance_per_pass(blk, t, p):
             return blk.Tc_out[t, p] == blk.Tc_in[t, p] + \
                 blk.Ecf[t, p] * blk.Cmin[t, p] / blk.Capc[t, p] * \
                 (blk.Th_in[t, p] - blk.Tc_in[t, p])
@@ -665,7 +764,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
         self.Ebc_eq = Constraint(
             self.flowsheet().time,
             self.PH,
-            rule=rule_Ebc_eq,
+            rule=rule_coldside_energy_balance_per_pass,
             doc='Cold fluid sub-heat exchanger energy balance')
 
         # Cold fluid exit temperature
@@ -688,13 +787,14 @@ class PlateHeatExchangerData(UnitModelBlockData):
                                    doc='Hot fluid inlet boundary conditions')
 
         def rule_cold_BCIN(blk, t):
-            return blk.Tc_in[t, blk.P.value] ==\
+            return blk.Tc_in[t, blk.pass_num.value] ==\
                 blk.cold_fluid.properties_in[t].temperature
         self.cold_BCIN = Constraint(self.flowsheet().time,
                                     rule=rule_cold_BCIN,
                                     doc='Cold fluid inlet boundary conditions')
 
-        Pset = [i for i in range(1, self.P.value)]
+        # list of  passes : 1,...., p-1
+        Pset = [i for i in range(1, self.pass_num.value)]
 
         def rule_hot_BC(blk, t, p):
             return blk.Th_out[t, p] == blk.Th_in[t, p + 1]
@@ -712,20 +812,20 @@ class PlateHeatExchangerData(UnitModelBlockData):
             doc='Cold fluid boundary conditions: change of pass')
 
         # ---------------------------------------------------------------------
-        # Energy transferred
-        def rule_QH(blk, t):
-            return blk.mh_in[t] * blk.cp_hot[t] *\
+        # Energy transferred from Hotside to Coldside
+        def rule_heat_lost(blk, t):
+            return blk.hot_fluid.properties_in[t].flow_mass * blk.cp_hot[t] *\
                 (blk.hot_fluid.properties_in[t].temperature -
                  blk.hot_fluid.properties_out[t].temperature)
-        self.QH = Expression(self.flowsheet().time, rule=rule_QH,
-                             doc='Heat lost by hot fluid')
+        self.heat_lost = Expression(self.flowsheet().time, rule=rule_heat_lost,
+                                    doc='Heat lost by hot fluid')
 
-        def rule_QC(blk, t):
-            return blk.mc_in[t] * blk.cp_cold[t] *\
+        def rule_heat_gain(blk, t):
+            return blk.cold_fluid.properties_in[t].flow_mass * blk.cp_cold[t] *\
                 (blk.cold_fluid.properties_out[t].temperature -
                  blk.cold_fluid.properties_in[t].temperature)
-        self.QC = Expression(self.flowsheet().time, rule=rule_QH,
-                             doc='Heat gain by cold fluid')
+        self.heat_gain = Expression(self.flowsheet().time, rule=rule_heat_gain,
+                                    doc='Heat gain by cold fluid')
 
     def initialize(blk, hotside_state_args=None, coldside_state_args=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
@@ -757,11 +857,11 @@ class PlateHeatExchangerData(UnitModelBlockData):
 
         for i in blk.config.hot_side.property_package.apparent_species_set:
             hot_fluid_mole_frac_comp_dict[i] =\
-            value(blk.hot_inlet.mole_frac_comp[0, i])
+                value(blk.hot_inlet.mole_frac_comp[0, i])
 
         for i in blk.config.cold_side.property_package.apparent_species_set:
             cold_fluid_mole_frac_comp_dict[i] =\
-            value(blk.cold_inlet.mole_frac_comp[0, i])
+                value(blk.cold_inlet.mole_frac_comp[0, i])
 
         hotside_state_args = {
             'flow_mol': value(blk.hot_inlet.flow_mol[0]),
@@ -825,3 +925,150 @@ class PlateHeatExchangerData(UnitModelBlockData):
             },
             time_point=time_point,
         )
+
+
+if __name__ == '__main__':
+
+    from pyomo.environ import ConcreteModel, value
+    from idaes.core import FlowsheetBlock
+    import matplotlib.pyplot as plt
+
+    from idaes.generic_models.properties.core.generic.generic_property import (
+        GenericParameterBlock)
+    from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_solvent \
+        import configuration as aqueous_mea
+
+    from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                                  number_variables,
+                                                  number_total_constraints,
+                                                  number_unused_variables)
+
+    solver = get_solver()
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    # Set up property package
+    m.fs.hotside_properties = GenericParameterBlock(default=aqueous_mea)
+    m.fs.coldside_properties = GenericParameterBlock(default=aqueous_mea)
+
+    # create instance of plate heat exchanger  on flowsheet
+    m.fs.unit = PlateHeatExchanger(default={'passes': 4,
+                                            'channel_list': [12, 12, 12, 12],
+                                            'divider_plate_number': 2,
+                                            "hot_side": {
+                                                "property_package": m.fs.hotside_properties
+                                            },
+                                            "cold_side": {
+                                                "property_package": m.fs.coldside_properties
+                                            }})
+
+    # m.fs.unit.port_diameter.display()
+
+    # hot fluid
+    m.fs.unit.hot_inlet.flow_mol[0].fix(60.54879)
+    m.fs.unit.hot_inlet.temperature[0].fix(392.23)
+    m.fs.unit.hot_inlet.pressure[0].fix(202650)
+    m.fs.unit.hot_inlet.mole_frac_comp[0, "CO2"].fix(0.0158)
+    m.fs.unit.hot_inlet.mole_frac_comp[0, "H2O"].fix(0.8747)
+    m.fs.unit.hot_inlet.mole_frac_comp[0, "MEA"].fix(0.1095)
+
+    # cold fluid
+    m.fs.unit.cold_inlet.flow_mol[0].fix(63.01910)
+    m.fs.unit.cold_inlet.temperature[0].fix(326.36)
+    m.fs.unit.cold_inlet.pressure[0].fix(202650)
+    m.fs.unit.cold_inlet.mole_frac_comp[0, "CO2"].fix(0.0414)
+    m.fs.unit.cold_inlet.mole_frac_comp[0, "H2O"].fix(0.8509)
+    m.fs.unit.cold_inlet.mole_frac_comp[0, "MEA"].fix(0.1077)
+
+    print('dof = {}'.format(degrees_of_freedom(m.fs.unit)))
+    m.fs.unit.initialize()
+    solver.solve(m.fs.unit)
+    print('PC_out = {}'.format(value(m.fs.unit.cold_outlet.pressure[0])))
+    print('PH_out = {}'.format(value(m.fs.unit.hot_outlet.pressure[0])))
+    m.fs.unit.report()
+    print('heat lost = {}'.format(value(m.fs.unit.heat_lost[0])))
+    print('heat gain = {}'.format(value(m.fs.unit.heat_gain[0])))
+
+    '''
+    #molar flowrate
+    hot_molar_flowrate =  [60.54879,102.07830,60.05750,58.86128,104.30124,105.49475,27.53904,
+                           60.88287,60.88904,60.04379,77.69829,76.66811,59.68288]
+    cold_molar_flowrate = [63.01910,104.99350,62.53341,60.40000,106.18207,107.38606, 28.19399,
+                           63.60044,63.16421,61.14541,81.36657,79.89472,60.39896]
+    # plant inlet temperature
+    hot_Temp_IN  = [392.23,389.57,393.78,382.42,376.32,392.69,389.69,392.10,392.36,392.30,391.19,390.95,392.26]
+    cold_Temp_IN = [326.36,332.26,329.12,318.82,319.58,330.54,321.42,327.72,327.47,326.72,328.59,325.44,326.11]
+    # plant exit temperature
+    NCCC_hot_Temp_OUT=[330.42,336.70,331.44,323.41,324.57,334.63,324.83,331.25,331.08,330.43,332.96,329.96,329.75]
+    NCCC_cold_Temp_OUT= [384.9111111,383.2111111,383.6944444,376.1722222,370.5,384.9555556,382.0388889,
+                        384.6388889,384.8055556,384.5888889,384.3277778,383.5333333,384.5277778]
+    # hot-side (lean solvent) inlet mole fraction
+    xh_H2O=[0.8747,0.8569,0.8739,0.8505,0.8573,0.8808,0.8582,0.8757,0.8758,0.8702,0.8646,0.8590,0.8676]
+    xh_MEA=[0.1095,0.1148,0.1138,0.1110,0.1020,0.1033,0.1144,0.1070,0.1071,0.1115,0.1106,0.1152,0.1134]
+    xh_CO2=[0.0158,0.0284,0.0123,0.0385,0.0407,0.0160,0.0274,0.0172,0.0171,0.0183,0.0248,0.0258,0.0190]
+    # cold-side(rich solvent) inlet mole fraction
+    xc_H2O=[0.8509,0.8426,0.8546,0.8378,0.8501,0.8676,0.8315,0.8554,0.8586,0.8490,0.8468,0.8408,0.8455]
+    xc_MEA=[0.1077,0.1137,0.1123,0.1104,0.1019,0.1038,0.1143,0.1050,0.1055,0.1110,0.1079,0.1127,0.1141]
+    xc_CO2=[0.0414,0.0438,.0331,0.0518,0.0480,0.0286,0.0541,0.0397,0.0360,0.0400,0.0453,0.0465,0.0404]
+    # create list to save results
+    PHE_THOUT=[]
+    PHE_TCOUT=[]
+    # fix the inputs, solve and save results
+    for i in range(1):
+        # hot fluid
+        m.fs.unit.hot_inlet.flow_mol[0].fix(hot_molar_flowrate[i])
+        m.fs.unit.hot_inlet.temperature[0].fix(hot_Temp_IN[i])
+        m.fs.unit.hot_inlet.mole_frac_comp[0,"CO2"].fix(xh_CO2[i])
+        m.fs.unit.hot_inlet.mole_frac_comp[0,"H2O"].fix(xh_H2O[i])
+        m.fs.unit.hot_inlet.mole_frac_comp[0,"MEA"].fix(xh_MEA[i])
+        #cold fluid
+        m.fs.unit.cold_inlet.flow_mol[0].fix(cold_molar_flowrate[i])
+        m.fs.unit.cold_inlet.temperature[0].fix(cold_Temp_IN[i])
+        m.fs.unit.cold_inlet.mole_frac_comp[0,"CO2"].fix(xc_CO2[i])
+        m.fs.unit.cold_inlet.mole_frac_comp[0,"H2O"].fix(xc_H2O[i])
+        m.fs.unit.cold_inlet.mole_frac_comp[0,"MEA"].fix(xc_MEA[i])
+        solver.solve(m.fs.unit,tee=False)
+        PHE_THOUT.append(value(m.fs.unit.hot_outlet.temperature[0]))
+        PHE_TCOUT.append(value(m.fs.unit.cold_outlet.temperature[0]))
+    m.fs.unit.report()
+    fontsize = 16
+    labelsize = 16
+    markersize=12
+    x= [i for i in range(1,len(NCCC_cold_Temp_OUT)+1)]
+    plt.figure(figsize=(8,6))
+    plt.plot(x,NCCC_cold_Temp_OUT,
+            color='g',
+            linestyle='',
+            label='Data: Rich solvent',
+            mfc="None",
+            marker='s',
+            markersize=markersize)
+    plt.plot(x,PHE_TCOUT,
+            color='g',
+            linestyle='',
+            label='Model: Rich solvent',
+            mfc="None",
+            marker='x',
+            markersize=markersize)
+    plt.plot(x,NCCC_hot_Temp_OUT,
+            color='r',
+            linestyle='',
+            label='Data: Lean solvent',
+            mfc="None",
+            marker='o',
+            markersize=markersize)
+    plt.plot(x,PHE_THOUT,
+            color='r',
+            linestyle='',
+            label='Model: Lean solvent',
+            mfc="None",
+            marker='+',
+            markersize=markersize)
+    plt.ylim(278,400)
+    plt.ylabel('Temperature (K)',fontsize=fontsize,fontweight='bold')
+    plt.xlabel('NCCC Case No.',fontsize=fontsize,fontweight='bold')
+    plt.legend(loc='lower right',fontsize=fontsize)
+    plt.tick_params(labelsize=labelsize)
+    plt.tight_layout()
+    plt.show()
+    '''
+    xyz = 1

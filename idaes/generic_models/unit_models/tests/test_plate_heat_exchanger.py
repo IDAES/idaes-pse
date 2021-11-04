@@ -146,10 +146,8 @@ class TestPHE(object):
     def test_units(self, phe):
         #assert_units_consistent(phe)
         assert_units_equivalent(phe.fs.unit.plate_length, units.m)
-        assert_units_equivalent(phe.fs.unit.Gph[0], units.kg/units.m**2/units.s)
         assert_units_equivalent(phe.fs.unit.cold_fluid.deltaP[0], units.Pa)
         assert_units_equivalent(phe.fs.unit.hot_fluid.deltaP[0], units.Pa)
-
 
 
     @pytest.mark.unit
@@ -177,9 +175,9 @@ class TestPHE(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, phe):
-        assert (pytest.approx(183470.08, abs=1e-2) ==
+        assert (pytest.approx(182282.48, abs=1e-2) ==
                 value(phe.fs.unit.hot_outlet.pressure[0]))
-        assert (pytest.approx(180880.03, abs=1e-2) ==
+        assert (pytest.approx(177774.85, abs=1e-2) ==
                 value(phe.fs.unit.cold_outlet.pressure[0]))
 
         assert (pytest.approx(329.54, abs=1e-2) ==
@@ -213,7 +211,8 @@ class TestPHE(object):
                          phe.fs.unit.cold_outlet.flow_mol[0])) <= 1e-6
 
         # Energy conservation test
-        assert value(phe.fs.unit.QH[0]) == value(phe.fs.unit.QC[0])
+        assert abs(value(phe.fs.unit.heat_lost[0] -
+                         phe.fs.unit.heat_gain[0])) <=1e-6
 
     @pytest.mark.ui
     @pytest.mark.unit
