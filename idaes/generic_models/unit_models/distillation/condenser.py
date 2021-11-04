@@ -20,3 +20,15 @@ relocated_module_attribute(
     'Condenser',
     'idaes.generic_models.unit_models.column_models.condenser.Condenser',
     version='1.12')
+
+
+relocated_module_attribute(
+    'CondenserType',
+    'idaes.generic_models.unit_models.column_models.condenser.CondenserType',
+    version='1.12')
+
+
+relocated_module_attribute(
+    'TemperatureSpec',
+    'idaes.generic_models.unit_models.column_models.condenser.TemperatureSpec',
+    version='1.12')

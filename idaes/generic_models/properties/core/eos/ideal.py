@@ -23,6 +23,8 @@ from idaes.core.util.exceptions import (
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
 from .eos_base import EoSBase
+from idaes.generic_models.properties.core.phase_equil.henry import (
+    henry_pressure, log_henry_pressure)
 
 
 # TODO: Add support for ideal solids
@@ -220,7 +222,7 @@ class Ideal(EoSBase):
             if (cobj(b, j).config.henry_component is not None and
                     p in cobj(b, j).config.henry_component):
                 # Use Henry's Law
-                return log(b.get_mole_frac(p)[p, j]) + log(b.henry[p, j])
+                return log_henry_pressure(b, p, j, b.temperature)
             elif cobj(b, j).config.has_vapor_pressure:
                 # Use Raoult's Law
                 return (log(b.get_mole_frac(p)[p, j]) +
@@ -385,7 +387,7 @@ def _fug_phase_comp(b, p, j, T):
         if (cobj(b, j).config.henry_component is not None and
                 p in cobj(b, j).config.henry_component):
             # Use Henry's Law
-            return b.get_mole_frac(p)[p, j] * b.henry[p, j]
+            return henry_pressure(b, p, j, T)
         elif cobj(b, j).config.has_vapor_pressure:
             # Use Raoult's Law
             return (b.get_mole_frac(p)[p, j] *

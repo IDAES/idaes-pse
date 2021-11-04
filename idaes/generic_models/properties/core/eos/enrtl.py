@@ -569,10 +569,9 @@ class ENRTL(Ideal):
 
     @staticmethod
     def pressure_osm_phase(b, p):
-        return (-ENRTL.gas_constant(b)*b.temperature *
-                log(sum(b.act_phase_comp[p, j]
-                        for j in b.params.solvent_set)) /
-                b.vol_mol_phase[p])
+        return (-ENRTL.gas_constant(b) * b.temperature *
+                                b.log_act_phase_solvents[p] /
+                                b.vol_mol_phase[p])
 
     @staticmethod
     def vol_mol_phase(b, p):

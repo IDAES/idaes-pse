@@ -35,6 +35,28 @@ def test_import_old_condenser(caplog):
 
 
 @pytest.mark.unit
+def test_import_old_condenser_type(caplog):
+    from idaes.generic_models.unit_models.distillation.condenser import \
+        CondenserType
+    assert (
+        "DEPRECATED: the 'CondenserType' class has been moved to "
+        "'idaes.generic_models.unit_models.column_models."
+        "condenser.CondenserType'"
+        ) in caplog.text.replace('\n', '')
+
+
+@pytest.mark.unit
+def test_import_old_temperature_spec(caplog):
+    from idaes.generic_models.unit_models.distillation.condenser import \
+        TemperatureSpec
+    assert (
+        "DEPRECATED: the 'TemperatureSpec' class has been moved to "
+        "'idaes.generic_models.unit_models.column_models."
+        "condenser.TemperatureSpec'."
+        ) in caplog.text.replace('\n', '')
+
+
+@pytest.mark.unit
 def test_import_reboiler_from_init(caplog):
     from idaes.generic_models.unit_models.distillation import Reboiler
     assert (

@@ -27,9 +27,9 @@ from pyomo.environ import (Block,
                            Param,
                            value,
                            Var,
-                           units as pyunits)
+                           units as pyunits,
+                           Reference)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.core.base.units_container import _PyomoUnit
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES cores
@@ -48,7 +48,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_constraints)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
-                                        PropertyPackageError)
+                                        PropertyPackageError,
+                                        PropertyNotSupportedError)
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver
 import idaes.logger as idaeslog
@@ -57,18 +58,14 @@ import idaes.core.util.scaling as iscale
 from idaes.generic_models.properties.core.generic.generic_reaction import \
     equil_rxn_config
 from idaes.generic_models.properties.core.generic.utility import (
-    get_method, get_phase_method, GenericPropertyPackageError)
+    get_method, get_phase_method, GenericPropertyPackageError, StateIndex)
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
     LogBubbleDew
-
+from idaes.generic_models.properties.core.phase_equil.henry import \
+    HenryType
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-
-
-class StateIndex(Enum):
-    true = 1
-    apparent = 2
 
 
 def set_param_value(b, param, units):
@@ -656,7 +653,7 @@ class GenericParameterData(PhysicalParameterBlock):
 
             # Validate and construct Henry parameters (indexed by phase)
             if cobj.config.henry_component is not None:
-                for p, meth in cobj.config.henry_component.items():
+                for p, d in cobj.config.henry_component.items():
                     # First validate that p is a phase
                     if p not in self.phase_list:
                         raise ConfigurationError(
@@ -669,8 +666,39 @@ class GenericParameterData(PhysicalParameterBlock):
                             "component in phase {}, but this is not a Liquid "
                             "phase.".format(self.name, c, p))
                     else:
+                        # Check that dict has necessary information
+                        if "method" not in d.keys():
+                            raise ConfigurationError(
+                                f"{self.name} component {c} was marked as a "
+                                f"Henry's Law component in phase {p}, but no "
+                                f"method argument was provided.")
+                        elif "type" not in d.keys():
+                            raise ConfigurationError(
+                                f"{self.name} component {c} was marked as a "
+                                f"Henry's Law component in phase {p}, but no "
+                                f"type argument was provided.")
+                        elif not isinstance(d["type"], HenryType):
+                            raise ConfigurationError(
+                                f"{self.name} component {c} was marked as a "
+                                f"Henry's Law component in phase {p}, but "
+                                f"type argument was not an instance of "
+                                f"HenryType.")
+                        elif (self.config.phases_in_equilibrium is not None and
+                                  d["type"] != HenryType.Kpx):
+                            raise PropertyNotSupportedError(
+                                f"{self.name} currently only Kpx type Henry's "
+                                f"constants are supported with full phase "
+                                f"equilibrium. Support for other forms is a "
+                                f"work-in-progress.")
+                        elif self._electrolyte and "basis" not in d.keys():
+                            raise ConfigurationError(
+                                f"{self.name} component {c} was marked as a "
+                                f"Henry's Law component in phase {p}, but no "
+                                f"basis argument was provided. Property "
+                                f"packages using electrolytes must provide a "
+                                f"basis in addition to a method and type.")
                         try:
-                            meth.build_parameters(cobj, p)
+                            d["method"].build_parameters(cobj, p, d["type"])
                         except AttributeError:
                             # Method provided has no build_parameters method
                             # Assume it is not needed and continue
@@ -939,6 +967,8 @@ class GenericParameterData(PhysicalParameterBlock):
              'gibbs_mol': {'method': '_gibbs_mol'},
              'gibbs_mol_phase': {'method': '_gibbs_mol_phase'},
              'gibbs_mol_phase_comp': {'method': '_gibbs_mol_phase_comp'},
+             'isentropic_speed_sound_phase': {'method': '_isentropic_speed_sound_phase'},
+             'isothermal_speed_sound_phase': {'method': '_isothermal_speed_sound_phase'},
              'henry': {'method': '_henry'},
              'mass_frac_phase_comp': {'method': '_mass_frac_phase_comp'},
              'mass_frac_phase_comp_apparent': {
@@ -970,6 +1000,7 @@ class GenericParameterData(PhysicalParameterBlock):
              'vol_mol_phase': {'method': '_vol_mol_phase'},
              'dh_rxn': {'method': '_dh_rxn'},
              'log_act_phase_comp': {'method': '_log_act_phase_comp'},
+             'log_act_phase_solvents': {'method': '_log_act_phase_solvents'},
              'log_act_phase_comp_true': {'method': '_log_act_phase_comp_true'},
              'log_act_phase_comp_apparent': {
                  'method': '_log_act_phase_comp_apparent'},
@@ -1110,7 +1141,10 @@ class _GenericStateBlock(StateBlock):
                 except AttributeError:
                     pass
 
-                if hasattr(blk[k], "inherent_equilibrium_constraint"):
+                if (hasattr(blk[k], "inherent_equilibrium_constraint") and
+                        (not blk[k].params._electrolyte or
+                         blk[k].params.config.state_components ==
+                         StateIndex.true)):
                     blk[k].inherent_equilibrium_constraint.deactivate()
 
         # Fix state variables if not already fixed
@@ -1403,7 +1437,7 @@ class _GenericStateBlock(StateBlock):
                     sum(blk.mole_frac_comp[j] *
                         blk.params.get_component(
                             j).config.henry_component[
-                                l_phase].return_expression(
+                                l_phase]["method"].return_expression(
                                     blk, l_phase, j, Tbub0*T_units)
                         for j in henry_comps) -
                     blk.pressure)
@@ -1417,8 +1451,8 @@ class _GenericStateBlock(StateBlock):
                        for j in raoult_comps) +
                            sum(blk.mole_frac_comp[j] *
                                blk.params.get_component(
-                                   j).config.henry_component[
-                                       l_phase].dT_expression(
+                                   j).config.henry_component[l_phase][
+                                       "method"].dT_expression(
                                     blk, l_phase, j, Tbub0*T_units)
                                for j in henry_comps))
 
@@ -1449,7 +1483,7 @@ class _GenericStateBlock(StateBlock):
                     blk.mole_frac_comp[j] *
                     blk.params.get_component(
                         j).config.henry_component[
-                            l_phase].return_expression(
+                            l_phase]["method"].return_expression(
                                 blk, l_phase, j, Tbub0*T_units) /
                     blk.pressure)
 
@@ -1497,7 +1531,7 @@ class _GenericStateBlock(StateBlock):
                          for j in raoult_comps) +
                      sum(blk.mole_frac_comp[j] /
                          blk.params.get_component(j).config.henry_component[
-                             l_phase].return_expression(
+                             l_phase]["method"].return_expression(
                                  blk, l_phase, j, Tdew0*T_units)
                          for j in henry_comps)) - 1)
                 df = -value(
@@ -1516,11 +1550,11 @@ class _GenericStateBlock(StateBlock):
                          sum(blk.mole_frac_comp[j] /
                              blk.params.get_component(
                                  j).config.henry_component[
-                                     l_phase].return_expression(
+                                     l_phase]["method"].return_expression(
                                          blk, l_phase, j, Tdew0*T_units)**2 *
                              blk.params.get_component(
                                  j).config.henry_component[
-                                     l_phase].dT_expression(
+                                     l_phase]["method"].dT_expression(
                                          blk, l_phase, j, Tdew0*T_units)
                              for j in henry_comps)))
 
@@ -1549,7 +1583,7 @@ class _GenericStateBlock(StateBlock):
                 blk._mole_frac_tdew[pp, j].value = value(
                     blk.mole_frac_comp[j]*blk.pressure /
                     blk.params.get_component(j).config.henry_component[
-                        l_phase].return_expression(
+                        l_phase]["method"].return_expression(
                             blk, l_phase, j, Tdew0*T_units))
 
     def _init_Pbub(self, blk, T_units):
@@ -1894,6 +1928,11 @@ class GenericStateBlockData(StateBlockData):
                     hint="for log_mole_frac_phase_comp_true")
                 iscale.constraint_scaling_transform(
                     v, sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_act_phase_solvents") and len(self.params.solvent_set) > 1:
+            for p, v in self.log_act_phase_solvents_eq.items():
+                iscale.constraint_scaling_transform(
+                    v, 1e-3, overwrite=False)
 
         if self.is_property_constructed("log_conc_mol_phase_comp"):
             for (p, j), v in self.log_conc_mol_phase_comp_eq.items():
@@ -2676,7 +2715,7 @@ class GenericStateBlockData(StateBlockData):
             def rule_flow_mass_phase_comp(b, p, i):
                 if b.get_material_flow_basis() == MaterialFlowBasis.mass:
                     raise PropertyPackageError(
-                        "{} Generic proeprty Package set to use material flow "
+                        "{} Generic property Package set to use material flow "
                         "basis {}, but flow_mass_phase_comp was not created "
                         "by state definition.")
                 elif b.get_material_flow_basis() == MaterialFlowBasis.molar:
@@ -2872,14 +2911,40 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.gibbs_mol_phase_comp)
             raise
 
+    def _isentropic_speed_sound_phase(self):
+        try:
+            def rule_isentropic_speed_sound_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.isentropic_speed_sound_phase(b, p)
+            self.isentropic_speed_sound_phase = Expression(
+                    self.phase_list,
+                    doc="Isentropic speed of sound in each phase",
+                    rule=rule_isentropic_speed_sound_phase)
+        except AttributeError:
+            self.del_component(self.isentropic_speed_sound_phase)
+            raise
+
+    def _isothermal_speed_sound_phase(self):
+        try:
+            def rule_isothermal_speed_sound_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.isothermal_speed_sound_phase(b, p)
+            self.isothermal_speed_sound_phase = Expression(
+                    self.phase_list,
+                    doc="Isothermal speed of sound in each phase",
+                    rule=rule_isothermal_speed_sound_phase)
+        except AttributeError:
+            self.del_component(self.isothermal_speed_sound_phase)
+            raise
+            
     def _henry(self):
         try:
             def henry_rule(b, p, j):
                 cobj = b.params.get_component(j)
                 if (cobj.config.henry_component is not None and
                         p in cobj.config.henry_component):
-                    return cobj.config.henry_component[p].return_expression(
-                        b, p, j, b.temperature)
+                    return cobj.config.henry_component[p][
+                        "method"].return_expression(b, p, j, b.temperature)
                 else:
                     return Expression.Skip
             self.henry = Expression(
@@ -3236,6 +3301,38 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.log_act_phase_comp)
             self.del_component(self.log_act_phase_comp_eq)
             raise
+
+    def _log_act_phase_solvents(self):
+        if len(self.params.solvent_set) == 1:
+            self.log_act_phase_solvents = \
+                Reference(self.log_act_phase_comp[:, self.params.solvent_set.first()])
+        else:
+            try:
+                self.log_act_phase_solvents = Var(
+                    self.phase_list,
+                    initialize=1,
+                    bounds=(-50, 1),
+                    units=pyunits.dimensionless,
+                    doc="Log of activities summed across solvents by phase")
+
+                def rule_log_act_phase_solvents(b, p):
+                    p_obj = b.params.get_phase(p)
+                    p_config = b.params.get_phase(p).config
+                    if not isinstance(p_obj, LiquidPhase):
+                        return Expression.Skip
+                    else:
+                        return exp(b.log_act_phase_solvents[p]) == \
+                               sum(p_config.equation_of_state.act_phase_comp(b, p, j)
+                                   for j in b.params.solvent_set)
+
+                self.log_act_phase_solvents_eq = Constraint(
+                        self.phase_list,
+                        doc="Natural log of summed solvent activity in each phase",
+                        rule=rule_log_act_phase_solvents)
+            except AttributeError:
+                self.del_component(self.log_act_phase_solvents)
+                self.del_component(self.log_act_phase_solvents_eq)
+                raise
 
     def _log_act_phase_comp_true(self):
         try:
