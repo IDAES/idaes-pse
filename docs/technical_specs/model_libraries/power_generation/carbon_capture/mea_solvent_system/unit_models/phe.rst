@@ -98,15 +98,15 @@ post-combustion carbon capture using MEA solvent.
 PHE Class
 ----------
 
-.. module:: idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.phe
+.. module:: idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.plate_heat_exchanger
 
-.. autoclass:: PHE
+.. autoclass:: PlateHeatExchanger
   :members:
 
 PHEData Class
 --------------
 
-.. autoclass:: PHEData
+.. autoclass:: PlateHeatExchangerData
   :members:
 
 References

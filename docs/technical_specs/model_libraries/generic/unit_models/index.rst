@@ -13,7 +13,6 @@ Unit Models
     gibbs_reactor
     heater
     heat_exchanger
-    phe
     heat_exchanger_1D
     mixer
     pfr
