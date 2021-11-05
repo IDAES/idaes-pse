@@ -290,7 +290,7 @@ see reaction package for documentation.}"""))
     def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
-        Initialization routine for MB unit.
+        Initialization routine for FB0D unit.
 
         Keyword Arguments:
             gas_phase_state_args : a dict of arguments to be passed to the
