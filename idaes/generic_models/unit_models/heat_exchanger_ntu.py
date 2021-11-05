@@ -228,7 +228,7 @@ constructed,
 
         # Overall energy balance
         def rule_energy_balance(blk, t):
-            return blk.hot_side.heat[t] == pyunits.convert(
+            return blk.hot_side.heat[t] == -pyunits.convert(
                 blk.cold_side.heat[t], to_units=hunits("power"))
         self.energy_balance_constraint = Constraint(
             self.flowsheet().time, rule=rule_energy_balance)

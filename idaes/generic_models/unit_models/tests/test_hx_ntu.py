@@ -174,48 +174,86 @@ class TestHXNTU(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    # @pytest.mark.solver
-    # @pytest.mark.skipif(solver is None, reason="Solver not available")
-    # @pytest.mark.component
-    # def test_solution(self, model):
-    #     assert (pytest.approx(182282.48, abs=1e-2) ==
-    #             value(model.fs.unit.hot_outlet.pressure[0]))
-    #     assert (pytest.approx(177774.85, abs=1e-2) ==
-    #             value(model.fs.unit.cold_outlet.pressure[0]))
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert (pytest.approx(200650, rel=1e-5) ==
+                value(model.fs.unit.hot_outlet.pressure[0]))
+        assert (pytest.approx(200650, rel=1e-5) ==
+                value(model.fs.unit.cold_outlet.pressure[0]))
 
-    #     assert (pytest.approx(329.54, abs=1e-2) ==
-    #             value(model.fs.unit.hot_outlet.temperature[0]))
-    #     assert (pytest.approx(385.32, abs=1e-2) ==
-    #             value(model.fs.unit.cold_outlet.temperature[0]))
+        assert (pytest.approx(365.768, rel=1e-5) ==
+                value(model.fs.unit.hot_outlet.temperature[0]))
+        assert (pytest.approx(356.455, rel=1e-5) ==
+                value(model.fs.unit.cold_outlet.temperature[0]))
 
-    #     assert (pytest.approx(0.015800, abs=1e-4) ==
-    #             value(model.fs.unit.hot_outlet.mole_frac_comp[0, "CO2"]))
-    #     assert (pytest.approx(0.10950, abs=1e-4) ==
-    #             value(model.fs.unit.hot_outlet.mole_frac_comp[0, "MEA"]))
-    #     assert (pytest.approx(0.87470, abs=1e-4) ==
-    #             value(model.fs.unit.hot_outlet.mole_frac_comp[0, "H2O"]))
+        assert (pytest.approx(0.015800, rel=1e-5) ==
+                value(model.fs.unit.hot_outlet.mole_frac_comp[0, "CO2"]))
+        assert (pytest.approx(0.10950, rel=1e-5) ==
+                value(model.fs.unit.hot_outlet.mole_frac_comp[0, "MEA"]))
+        assert (pytest.approx(0.87470, rel=1e-5) ==
+                value(model.fs.unit.hot_outlet.mole_frac_comp[0, "H2O"]))
 
-    #     assert (pytest.approx(0.041400, abs=1e-4) ==
-    #             value(model.fs.unit.cold_outlet.mole_frac_comp[0, "CO2"]))
-    #     assert (pytest.approx(0.10770, abs=1e-4) ==
-    #             value(model.fs.unit.cold_outlet.mole_frac_comp[0, "MEA"]))
-    #     assert (pytest.approx(0.85090, abs=1e-4) ==
-    #             value(model.fs.unit.cold_outlet.mole_frac_comp[0, "H2O"]))
+        assert (pytest.approx(0.041400, rel=1e-5) ==
+                value(model.fs.unit.cold_outlet.mole_frac_comp[0, "CO2"]))
+        assert (pytest.approx(0.10770, rel=1e-5) ==
+                value(model.fs.unit.cold_outlet.mole_frac_comp[0, "MEA"]))
+        assert (pytest.approx(0.85090, rel=1e-5) ==
+                value(model.fs.unit.cold_outlet.mole_frac_comp[0, "H2O"]))
 
-    # @pytest.mark.solver
-    # @pytest.mark.skipif(solver is None, reason="Solver not available")
-    # @pytest.mark.component
-    # def test_conservation(self, model):
-    #     # Mass conservation test
-    #     assert abs(value(model.fs.unit.hot_inlet.flow_mol[0] -
-    #                      model.fs.unit.hot_outlet.flow_mol[0])) <= 1e-6
+        Cmin = value(model.fs.unit.cold_side.properties_in[0].flow_mol *
+                     model.fs.unit.cold_side.properties_in[0].cp_mol)
+        assert value(model.fs.unit.Cmin[0]) == pytest.approx(
+            Cmin, rel=1e-5)
+        assert value(model.fs.unit.Cmax[0]) == pytest.approx(
+            value(model.fs.unit.hot_side.properties_in[0].flow_mol *
+                  model.fs.unit.hot_side.properties_in[0].cp_mol),
+            rel=1e-5)
+        assert value(model.fs.unit.NTU[0]) == pytest.approx(
+            value(model.fs.unit.area *
+                  model.fs.unit.heat_transfer_coefficient[0] /
+                  Cmin),
+            rel=1e-5)
 
-    #     assert abs(value(model.fs.unit.cold_inlet.flow_mol[0] -
-    #                      model.fs.unit.cold_outlet.flow_mol[0])) <= 1e-6
+        assert (pytest.approx(0.7*Cmin*(392.23-326.36), rel=1e-5) ==
+                value(model.fs.unit.heat_duty[0]))
 
-    #     # Energy conservation test
-    #     assert abs(value(model.fs.unit.heat_lost[0] -
-    #                      model.fs.unit.heat_gain[0])) <=1e-6
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, model):
+        # Mass conservation test
+        assert abs(value(model.fs.unit.hot_inlet.flow_mol[0] -
+                         model.fs.unit.hot_outlet.flow_mol[0])) <= 1e-6
+
+        for j in model.fs.hotside_properties.apparent_species_set:
+            assert abs(value(
+                model.fs.unit.hot_inlet.flow_mol[0] *
+                model.fs.unit.hot_inlet.mole_frac_comp[0, j] -
+                model.fs.unit.hot_outlet.flow_mol[0] *
+                model.fs.unit.hot_outlet.mole_frac_comp[0, j])) <= 1e-6
+
+        assert abs(value(model.fs.unit.cold_inlet.flow_mol[0] -
+                         model.fs.unit.cold_outlet.flow_mol[0])) <= 1e-6
+
+        for j in model.fs.coldside_properties.apparent_species_set:
+            assert abs(value(
+                model.fs.unit.cold_inlet.flow_mol[0] *
+                model.fs.unit.cold_inlet.mole_frac_comp[0, j] -
+                model.fs.unit.cold_outlet.flow_mol[0] *
+                model.fs.unit.cold_outlet.mole_frac_comp[0, j])) <= 1e-6
+
+        # Energy conservation test
+        assert abs(value(
+            model.fs.unit.hot_side.properties_in[
+                0]._enthalpy_flow_term["Liq"] +
+            model.fs.unit.cold_side.properties_in[
+                0]._enthalpy_flow_term["Liq"] -
+            model.fs.unit.hot_side.properties_out[
+                0]._enthalpy_flow_term["Liq"] -
+            model.fs.unit.cold_side.properties_out[
+                0]._enthalpy_flow_term["Liq"])) <= 1e-6
 
     @pytest.mark.ui
     @pytest.mark.unit
