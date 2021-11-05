@@ -447,7 +447,7 @@ class Viscosity():
         T = blk.temperature
         alpha = (blk.mole_frac_phase_comp_apparent['Liq', 'CO2'] /
                  blk.mole_frac_phase_comp_apparent['Liq', 'MEA'])
-        mu_H2O = (1.002e-3*pyunits.Pa/pyunits.s *
+        mu_H2O = (1.002e-3*pyunits.Pa*pyunits.s *
                   10**((1.3272 *
                         (293.15*pyunits.K - T -
                          0.001053*pyunits.K**-1 * (T - 293.15*pyunits.K)**2)) /

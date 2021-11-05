@@ -149,12 +149,12 @@ def visc_d_comp(blk, pobj, i):
         return ((pobj.visc_d_h2o_coeff_1 *
                  blk.temperature**pobj.visc_d_h2o_coeff_2 /
                  (1 + pobj.visc_d_h2o_coeff_3/blk.temperature)) *
-                pyunits.Pa/pyunits.s)
+                pyunits.Pa*pyunits.s)
     elif i == "CO2":
         return ((pobj.visc_d_co2_coeff_1 *
                  blk.temperature**pobj.visc_d_co2_coeff_2 /
                  (1 + pobj.visc_d_co2_coeff_3/blk.temperature)) *
-                pyunits.Pa/pyunits.s)
+                pyunits.Pa*pyunits.s)
     elif i == "N2":
         return (pobj.visc_d_n2_coeff_1 *
                 (pobj.visc_d_n2_coeff_2 + pobj.visc_d_n2_coeff_3) /
@@ -328,7 +328,7 @@ class Viscosity():
         if "N2" in pobj.parent_block().component_list:
             pobj.visc_d_n2_coeff_1 = Var(
                     doc="Parameter 1 for N2 viscosity model",
-                    units=pyunits.Pa/pyunits.s)
+                    units=pyunits.Pa*pyunits.s)
             set_param_from_config(pobj, param="visc_d_n2_coeff", index="1")
             pobj.visc_d_n2_coeff_2 = Var(
                     doc="Parameter 2 for N2 viscosity model",
@@ -341,7 +341,7 @@ class Viscosity():
 
             pobj.visc_d_o2_coeff_1 = Var(
                     doc="Parameter 1 for O2 viscosity model",
-                    units=pyunits.Pa/pyunits.s)
+                    units=pyunits.Pa*pyunits.s)
             set_param_from_config(pobj, param="visc_d_o2_coeff", index="1")
             pobj.visc_d_o2_coeff_2 = Var(
                     doc="Parameter 2 for O2 viscosity model",
