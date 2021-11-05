@@ -52,11 +52,6 @@ jobs:
         os:
           - ubuntu-18.04
           - windows-latest
-        include:
-          - python-version: '3.8'
-            # only generate coverage report for a single python version in the matrix
-            # to avoid overloading Codecov
-            cov-report: true
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
@@ -70,14 +65,12 @@ jobs:
         with:
           install-target: -r requirements-dev.txt
       - name: Add pytest CLI options for coverage
-        if: matrix.cov-report
         run: |
           echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
       - name: Run pytest (not integration)
         run: |
           pytest -m "not integration"
       - name: Upload coverage report to Codecov
-        if: matrix.cov-report
         uses: codecov/codecov-action@v2
         with:
           fail_ci_if_error: true
