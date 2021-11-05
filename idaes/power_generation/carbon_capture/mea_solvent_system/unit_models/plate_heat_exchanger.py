@@ -218,6 +218,28 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
             doc='Cold side channel velocity')
 
         # ---------------------------------------------------------------------
+        # Mean cp_mass
+        def rule_cp_hot(blk, t):
+            return 0.5*(blk.hot_side.properties_in[t].cp_mol /
+                        blk.hot_side.properties_in[t].mw +
+                        blk.hot_side.properties_out[t].cp_mol /
+                        blk.hot_side.properties_out[t].mw)
+        self.mean_cp_mass_hot = Expression(
+            self.flowsheet().time,
+            rule=rule_cp_hot,
+            doc='Hot side mean specific heat capacity')
+
+        def rule_cp_cold(blk, t):
+            return 0.5*(blk.cold_side.properties_in[t].cp_mol /
+                        blk.cold_side.properties_in[t].mw +
+                        blk.cold_side.properties_out[t].cp_mol /
+                        blk.cold_side.properties_out[t].mw)
+        self.mean_cp_mass_cold = Expression(
+            self.flowsheet().time,
+            rule=rule_cp_cold,
+            doc='Cold side mean specific heat capacity')
+
+        # ---------------------------------------------------------------------
         # Reynolds & Prandtl numbers
 
         # Density cancels out of Reynolds number if mass flow rate is used
@@ -243,21 +265,49 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
                                   rule=rule_Re_c,
                                   doc='Cold side Reynolds number')
 
-        # def rule_Pr_h(blk, t):
-        #     return (blk.cp_hot[t] *
-        #             blk.hot_side.properties_in[t].visc_d_phase["Liq"] /
-        #             blk.hot_side.properties_in[t].therm_cond_phase["Liq"])
-        # self.Pr_hot = Expression(self.flowsheet().time,
-        #                          rule=rule_Pr_h,
-        #                          doc='Hot side Prandtl number')
+        def rule_Pr_h(blk, t):
+            return (blk.mean_cp_mass_hot[t] *
+                    blk.hot_side.properties_in[t].visc_d_phase["Liq"] /
+                    blk.hot_side.properties_in[t].therm_cond_phase["Liq"])
+        self.Pr_hot = Expression(self.flowsheet().time,
+                                 rule=rule_Pr_h,
+                                 doc='Hot side Prandtl number')
 
-        # def rule_Pr_c(blk, t):
-        #     return (blk.cp_cold[t] *
-        #             blk.cold_side.properties_in[t].visc_d_phase["Liq"] /
-        #             blk.cold_side.properties_in[t].therm_cond_phase["Liq"])
-        # self.Pr_cold = Expression(self.flowsheet().time,
-        #                           rule=rule_Pr_c,
-        #                           doc='Cold side Prandtl number')
+        def rule_Pr_c(blk, t):
+            return (blk.mean_cp_mass_cold[t] *
+                    blk.cold_side.properties_in[t].visc_d_phase["Liq"] /
+                    blk.cold_side.properties_in[t].therm_cond_phase["Liq"])
+        self.Pr_cold = Expression(self.flowsheet().time,
+                                  rule=rule_Pr_c,
+                                  doc='Cold side Prandtl number')
+
+        # ---------------------------------------------------------------------
+        # Heat transfer coefficients
+
+        # # Film heat transfer coefficients
+        # def rule_hotside_transfer_coef(blk, t, p):
+        #     return (blk.hot_fluid.properties_in[t].therm_cond_phase["Liq"] /
+        #             blk.channel_diameter *
+        #             blk.nusselt_param_a * Re_h[t, p]**blk.nusselt_param_b *
+        #             Pr_h[t]**blk.nusselt_param_c)
+
+        # h_hot = self.heat_trans_coef_hot =\
+        #     Expression(self.flowsheet().time,
+        #                self.PH,
+        #                rule=rule_hotside_transfer_coef,
+        #                doc='Hotside heat transfer coefficient')
+
+        # def rule_coldside_transfer_coef(blk, t, p):
+        #     return (blk.cold_fluid.properties_in[t].therm_cond_phase["Liq"] /
+        #             blk.channel_diameter *
+        #             blk.nusselt_param_a * Re_c[t, p]**blk.nusselt_param_b *
+        #             Pr_c[t]**blk.nusselt_param_c)
+
+        # h_cold = self.heat_trans_coef_cold =\
+        #     Expression(self.flowsheet().time,
+        #                self.PH,
+        #                rule=rule_coldside_transfer_coef,
+        #                doc='Coldside heat transfer coefficient')
 
         # ---------------------------------------------------------------------
         # Pressure drop correlations
