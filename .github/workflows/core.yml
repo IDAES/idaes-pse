@@ -79,6 +79,9 @@ jobs:
       - name: Upload coverage report to Codecov
         if: matrix.cov-report
         uses: codecov/codecov-action@v1
+        with:
+          fail_ci_if_error: true
+
   build-docs:
     name: Build Sphinx docs
     runs-on: ubuntu-latest
