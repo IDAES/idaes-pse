@@ -25,9 +25,8 @@ from idaes.core import (declare_process_block_class,
                         UnitModelBlockData)
 from idaes.core.util.config import (is_physical_parameter_block)
 from idaes.core.util.constants import Constants as constants
-import idaes.core.util.scaling as sc
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
 
 __author__ = "Chinedu Okoli, Andrew Lee"
 
@@ -129,6 +128,10 @@ see reaction package for documentation.}"""))
         # Call UnitModel.build to setup dynamics
         super().build()
 
+        # Get units meta data from property packages (only solid needed)
+        units_meta_solid = \
+            self.config.solid_property_package.get_metadata().get_derived_units
+
         # Build Gas Phase StateBlock
         # This block only needed so gas conc. to rxn block is calculated
         # Defined state is set to True so that the "sum(mole_frac)=1" eqn in
@@ -164,14 +167,14 @@ see reaction package for documentation.}"""))
 
         # Volume of reactor
         self.bed_diameter = Var(initialize=1,
-                                doc='Reactor diameter [m]',
-                                units=pyunits.m)
+                                doc='Reactor diameter',
+                                units=units_meta_solid('length'))
         self.bed_height = Var(initialize=1,
-                              doc='Bed length [m]',
-                              units=pyunits.m)
+                              doc='Bed length',
+                              units=units_meta_solid('length'))
         self.volume_bed = Var(initialize=1.0,
-                              doc="Volume of the reactor bed [m**3]",
-                              units=pyunits.m**3)
+                              doc="Volume of the reactor bed",
+                              units=units_meta_solid('length')**3)
 
         @self.Constraint(doc="Calculating volume of the reactor bed")
         def volume_bed_constraint(b):
@@ -184,8 +187,8 @@ see reaction package for documentation.}"""))
         self.volume_solid = Var(
                     self.flowsheet().config.time,
                     initialize=1.0,
-                    doc="Solids phase volume including particle pores  [m**3]",
-                    units=pyunits.m**3)
+                    doc="Solids phase volume including particle pores",
+                    units=units_meta_solid('length')**3)
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Calculating solid phase volume")
@@ -200,7 +203,7 @@ see reaction package for documentation.}"""))
                 self.config.solid_property_package.component_list,
                 initialize=1,
                 doc="Solid phase component holdups",
-                units=pyunits.kg)
+                units=units_meta_solid('mass'))
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.solid_property_package.component_list,
@@ -214,7 +217,7 @@ see reaction package for documentation.}"""))
                     self.solids_material_holdup,
                     wrt=self.flowsheet().config.time,
                     doc="Solids material accumulation",
-                    units=pyunits.kg/pyunits.s)
+                    units=units_meta_solid('mass')/units_meta_solid('time'))
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.solid_property_package.component_list,
@@ -231,12 +234,12 @@ see reaction package for documentation.}"""))
         # Add solid mass variable and constraint for TGA tracking
         self.mass_solids = Var(self.flowsheet().config.time,
                                doc="Total mass of solids",
-                               units=pyunits.kg)
+                               units=units_meta_solid('mass'))
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Calculating total mass of solids")
         def mass_solids_constraint(b, t):
-            return 1e2*b.mass_solids[t] == 1e2*b.volume_solid[t] * sum(
+            return b.mass_solids[t] == b.volume_solid[t] * sum(
                     b.solids[t].get_material_density_terms("Sol", j)
                     for j in b.config.solid_property_package.component_list)
 
@@ -247,9 +250,9 @@ see reaction package for documentation.}"""))
             if t == b.flowsheet().config.time.first():
                 return Constraint.Skip
             else:
-                return 1e2 == 1e2*sum(b.solids[t].mass_frac_comp[j]
-                                      for j in b.solids[t].
-                                      _params.component_list)
+                return 1 == sum(b.solids[t].mass_frac_comp[j]
+                                for j in b.solids[t].
+                                _params.component_list)
 
         if self.config.energy_balance_type != EnergyBalanceType.none:
             # Solid phase energy balance
@@ -258,7 +261,7 @@ see reaction package for documentation.}"""))
                     self.flowsheet().time,
                     initialize=1,
                     doc="Solid phase energy holdup",
-                    units=pyunits.kJ)
+                    units=units_meta_solid('energy'))
 
             @self.Constraint(self.flowsheet().config.time,
                              doc="Solid phase energy holdup constraints")
@@ -271,7 +274,8 @@ see reaction package for documentation.}"""))
                         self.solids_energy_holdup,
                         wrt=self.flowsheet().config.time,
                         doc="Solids energy accumulation",
-                        units=pyunits.kJ/pyunits.s)
+                        units=units_meta_solid('energy') /
+                            units_meta_solid('time'))
 
             @self.Constraint(self.flowsheet().config.time,
                              doc="Solid phase energy accumulation constraints")
@@ -283,32 +287,25 @@ see reaction package for documentation.}"""))
                           for r in b.config.reaction_package.
                           rate_reaction_idx)
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+    def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
-        This is a general purpose initialization routine for simple unit
-        models. This method assumes a single ControlVolume block called
-        controlVolume, and first initializes this and then attempts to solve
-        the entire unit.
-        More complex models should overload this method with their own
-        initialization routines.
+        Initialization routine for MB unit.
 
         Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                           package(s) to provide an initial state for
-                           initialization (see documentation of the specific
-                           property package) (default = {}).
-            outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            gas_phase_state_args : a dict of arguments to be passed to the
+                        property package(s) to provide an initial state for
+                        initialization (see documentation of the specific
+                        property package) (default = None).
+            solid_phase_state_args : a dict of arguments to be passed to the
+                        property package(s) to provide an initial state for
+                        initialization (see documentation of the specific
+                        property package) (default = None).
+            outlvl : sets output level of initialisation routine
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -327,16 +324,17 @@ see reaction package for documentation.}"""))
         gas_phase_flags = blk.gas.initialize(
                                 outlvl=outlvl,
                                 optarg=optarg,
-                                solver=solver)
+                                solver=solver,
+                                state_args=gas_phase_state_args)
 
         # Initialize solid_phase properties block
         solid_phase_flags = blk.solids.initialize(
                                 outlvl=outlvl,
                                 optarg=optarg,
-                                solver=solver)
+                                solver=solver,
+                                state_args=gas_phase_state_args)
 
-        print()
-        print('Initialize reaction properties')
+        init_log.info('Initialize reaction properties')
         # Initialize reactions
         blk.reactions.initialize(outlvl=outlvl,
                                  optarg=optarg,
@@ -352,5 +350,16 @@ see reaction package for documentation.}"""))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.gas.release_state(gas_phase_flags, outlvl+1)
-        blk.solids.release_state(solid_phase_flags, outlvl+1)
+        blk.gas.release_state(gas_phase_flags, outlvl)
+        blk.solids.release_state(solid_phase_flags, outlvl)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        if hasattr(self, "mass_solids_constraint"):
+            for t, v in self.mass_solids_constraint.items():
+                iscale.set_scaling_factor(v, 1e2)
+
+        if hasattr(self, "sum_component_constraint"):
+            for t, v in self.sum_component_constraint.items():
+                iscale.set_scaling_factor(v, 1e2)

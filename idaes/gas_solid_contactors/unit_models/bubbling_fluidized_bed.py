@@ -1520,7 +1520,7 @@ see reaction package for documentation.}"""))
     def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
-        Initialisation routine for Bubbling Fluidized Bed unit
+        Initialization routine for Bubbling Fluidized Bed unit
 
         Keyword Arguments:
             gas_phase_state_args : a dict of arguments to be passed to the
