@@ -34,8 +34,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_total_constraints,
                                               number_unused_variables)
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
-
+from idaes.core.util import get_solver, scaling as iscale
 
 from idaes.generic_models.unit_models.column_models.solvent_reboiler import (
     SolventReboiler)
@@ -378,3 +377,39 @@ class TestAbsorberHeatDuty(object):
                 "Liq"] -
             model.fs.unit.vapor_phase[0]._enthalpy_flow_term["Vap"] +
             model.fs.unit.heat_duty[0])) <= 1e-6
+
+    @pytest.mark.component
+    def test_scaling(self, model):
+        iscale.set_scaling_factor(
+            model.fs.unit.liquid_phase.properties_out[0].fug_phase_comp[
+                "Liq", "CO2"], 1e-5)
+        iscale.set_scaling_factor(
+            model.fs.unit.liquid_phase.properties_out[0].fug_phase_comp[
+                "Liq", "H2O"], 1e-3)
+
+        iscale.calculate_scaling_factors(model.fs.unit)
+
+        assert iscale.get_constraint_transform_applied_scaling_factor(
+            model.fs.unit.unit_material_balance[0, "CO2"]) == 1
+        assert iscale.get_constraint_transform_applied_scaling_factor(
+            model.fs.unit.unit_material_balance[0, "H2O"]) == 1
+        assert iscale.get_constraint_transform_applied_scaling_factor(
+            model.fs.unit.unit_material_balance[0, "MEA"]) is None
+        assert iscale.get_constraint_transform_applied_scaling_factor(
+            model.fs.unit.unit_material_balance[0, "N2"]) == 1e8
+        assert iscale.get_constraint_transform_applied_scaling_factor(
+            model.fs.unit.unit_material_balance[0, "O2"]) == 1e8
+
+        assert iscale.get_constraint_transform_applied_scaling_factor(
+            model.fs.unit.unit_phase_equilibrium[0, "CO2"]) == 1e-5
+        assert iscale.get_constraint_transform_applied_scaling_factor(
+            model.fs.unit.unit_phase_equilibrium[0, "H2O"]) == 1e-3
+
+        assert iscale.get_constraint_transform_applied_scaling_factor(
+            model.fs.unit.unit_temperature_equality[0]) == 1e-2
+
+        assert iscale.get_constraint_transform_applied_scaling_factor(
+            model.fs.unit.unit_enthalpy_balance[0]) == 1
+
+        assert iscale.get_constraint_transform_applied_scaling_factor(
+            model.fs.unit.unit_pressure_balance[0]) == 1e-5

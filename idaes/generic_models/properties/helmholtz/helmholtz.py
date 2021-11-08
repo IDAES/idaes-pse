@@ -342,6 +342,9 @@ class HelmholtzThermoExpressions(object):
     can be used to calculate any other property.  You can specify an integer
     value 1 or 0 for x with any state varaibles to get liquid or vapor
     properies.
+
+    The purpose of this class is to allow for straight-forward calculation of
+    properties without a full state block for each set of conditions.
     """
 
     def __init__(self, blk, parameters):
@@ -363,9 +366,9 @@ class HelmholtzThermoExpressions(object):
 
     def basic_calculations(
             self, h=None, s=None, p=None, T=None, u=None, x=None):
-        """This function is called as this basis for most thermo expression
+        """This function is called as the basis for most thermo expression
         writer functions.  It takes the given state variables and returns
-        expressions for liqid density, vapor density, vapor fraction and
+        expressions for liquid density, vapor density, vapor fraction and
         temperature, which can be used to write an expression for any thermo
         quantity.
         """
@@ -385,7 +388,6 @@ class HelmholtzThermoExpressions(object):
         blk = self.blk
 
         # 3.) Take given state varaibles and convert to density, T, and x
-
         if h is not None and p is not None:
             # h, p
             self.add_funcs(names=["func_tau", "func_vf"])
@@ -436,36 +438,112 @@ class HelmholtzThermoExpressions(object):
         return blk, delta_liq, delta_vap, tau, x
 
     def s(self, **kwargs):
+        """Mixed phase entropy"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_s"])
         s = blk.func_s(delta_liq, tau)*(1-x) + blk.func_s(delta_vap, tau)*x
         return s * self.param.uc_kJ_per_kgK_to_J_per_molK
 
+    def s_liq(self, **kwargs):
+        """Liquid phase entropy"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_s"])
+        s = blk.func_s(delta_liq, tau)
+        return s * self.param.uc_kJ_per_kgK_to_J_per_molK
+
+    def s_vap(self, **kwargs):
+        """Vapor phase entropy"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_s"])
+        s = blk.func_s(delta_vap, tau)
+        return s * self.param.uc_kJ_per_kgK_to_J_per_molK
+
     def h(self, **kwargs):
+        """Mixed phase enthalpy"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_h"])
         h = blk.func_h(delta_liq, tau)*(1-x) + blk.func_h(delta_vap, tau)*x
         return h * self.param.uc_kJ_per_kg_to_J_per_mol
 
+    def h_liq(self, **kwargs):
+        """Liquid phase enthalpy"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_h"])
+        h = blk.func_h(delta_liq, tau)
+        return h * self.param.uc_kJ_per_kg_to_J_per_mol
+
+    def h_vap(self, **kwargs):
+        """Vapor phase enthalpy"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_h"])
+        h = blk.func_h(delta_vap, tau)
+        return h * self.param.uc_kJ_per_kg_to_J_per_mol
+
     def u(self, **kwargs):
+        """Mixed phase internal energy"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_u"])
         u = blk.func_u(delta_liq, tau)*(1-x) + blk.func_u(delta_vap, tau)*x
         return u * self.param.uc_kJ_per_kg_to_J_per_mol
 
+    def u_liq(self, **kwargs):
+        """Liquid phase internal energy"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_u"])
+        u = blk.func_u(delta_liq, tau)
+        return u * self.param.uc_kJ_per_kg_to_J_per_mol
+
+    def u_vap(self, **kwargs):
+        """Vapor phase internal energy"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_u"])
+        u = blk.func_u(delta_vap, tau)
+        return u * self.param.uc_kJ_per_kg_to_J_per_mol
+
     def g(self, **kwargs):
+        """Mixed phase Gibb's free energy"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_g"])
         g = blk.func_g(delta_liq, tau)*(1-x) + blk.func_g(delta_vap, tau)*x
         return g * self.param.uc_kJ_per_kg_to_J_per_mol
 
+    def g_liq(self, **kwargs):
+        """Liquid phase Gibb's free energy"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_g"])
+        g = blk.func_g(delta_liq, tau)
+        return g * self.param.uc_kJ_per_kg_to_J_per_mol
+
+    def g_vap(self, **kwargs):
+        """Vapor phase Gibb's free energy"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_g"])
+        g = blk.func_g(delta_vap, tau)
+        return g * self.param.uc_kJ_per_kg_to_J_per_mol
+
     def f(self, **kwargs):
+        """Mixed phase Helmholtz free energy"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_f"])
         f = blk.func_f(delta_liq, tau)*(1-x) + blk.func_f(delta_vap, tau)*x
         return f * self.param.uc_kJ_per_kg_to_J_per_mol
 
+    def f_liq(self, **kwargs):
+        """Liquid phase Helmholtz free energy"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_f"])
+        f = blk.func_f(delta_liq, tau)
+        return f * self.param.uc_kJ_per_kg_to_J_per_mol
+
+    def f_vap(self, **kwargs):
+        """Vapor phase Helmholtz free energy"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_f"])
+        f = blk.func_f(delta_vap, tau)
+        return f * self.param.uc_kJ_per_kg_to_J_per_mol
+
     def p(self, **kwargs):
+        """Pressure"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_p"])
         # The following line looks a bit weird, but it is okay.  When in the
@@ -474,46 +552,127 @@ class HelmholtzThermoExpressions(object):
         return p * self.param.uc_kPa_to_Pa
 
     def v(self, **kwargs):
+        """Mixed phase molar volume"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         v = ((1-x)/delta_liq + x/delta_vap)/self.param.dens_mass_crit*self.param.mw
         return v
 
+    def v_liq(self, **kwargs):
+        """Liquid phase molar volume"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        v = 1.0/delta_liq/self.param.dens_mass_crit*self.param.mw
+        return v
+
+    def v_vap(self, **kwargs):
+        """Vapor phase molar volume"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        v = 1.0/delta_vap/self.param.dens_mass_crit*self.param.mw
+        return v
+
     def x(self, **kwargs):
+        """Vapor faction"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         return x
 
     def T(self, **kwargs):
+        """Temperature"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         return self.param.temperature_crit/tau
 
     def tau(self, **kwargs):
+        """Critical Temperature (K)/Temperature (K)"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         return tau
 
     def delta_liq(self, **kwargs):
+        """Return liquid phase reduced density (dens/critical dens) expression"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         return delta_liq
 
     def rho_liq(self, **kwargs):
+        """Return liquid phase mass density expression"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         return delta_liq*self.param.dens_mass_crit
 
     def rho_mol_liq(self, **kwargs):
+        """Return liquid phase molar density expression"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         return delta_liq*self.param.dens_mass_crit/self.param.mw
 
     def delta_vap(self, **kwargs):
+        """Return vapor phase reduced density (dens/critical dens) expression"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         return delta_vap
 
     def rho_vap(self, **kwargs):
+        """Return vapor phase mass density expression"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         return delta_vap*self.param.dens_mass_crit
 
     def rho_mol_vap(self, **kwargs):
+        """Return vapor phase molar density expression"""
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         return delta_vap*self.param.dens_mass_crit/self.param.mw
 
+    def cp_mol_liq(self, **kwargs):
+        """Return liquid phase constant pressure heat capacity expression"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_cp"])
+        return (
+            blk.func_cp(delta_liq, tau) * self.param.uc_kJ_per_kgK_to_J_per_molK)
+
+    def cp_mol_vap(self, **kwargs):
+        """Return vapor phase constant pressure heat capacity expression"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_cp"])
+        return (
+            blk.func_cp(delta_vap, tau) * self.param.uc_kJ_per_kgK_to_J_per_molK)
+
+    def cv_mol_liq(self, **kwargs):
+        """Return liquid phase constant volume heat capacity expression"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_cv"])
+        return (
+            blk.func_cv(delta_liq, tau) * self.param.uc_kJ_per_kgK_to_J_per_molK)
+
+    def cv_mol_vap(self, **kwargs):
+        """Return vapor phase constant volume heat capacity expression"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_cv"])
+        return (
+            blk.func_cv(delta_vap, tau) * self.param.uc_kJ_per_kgK_to_J_per_molK)
+
+    def w_liq(self, **kwargs):
+        """Return liquid phase speed of sound expression"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_w"])
+        return blk.func_w(delta_liq, tau)
+
+    def w_vap(self, **kwargs):
+        """Return vapor phase speed of sound expression"""
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_w"])
+        return blk.func_w(delta_vap, tau)
+
+    def p_sat(self, T=None, tau=None):
+        """Return saturation pressure as a function of T or tau"""
+        if T is not None:
+            tau = self.param.temperature_crit/T
+        elif tau is not None:
+            pass
+        else:
+            raise RuntimeError("p_sat expression requires either T or tau arg")
+        return self.blk.func_p_sat(tau) * self.param.uc_kPa_to_Pa
+
+    def T_sat(self, p):
+        """Return saturation temperature as a function of p"""
+        p *= self.param.uc_Pa_to_kPa
+        return self.param.temperature_crit / self.blk.func_tau_sat(p)
+
+    def tau_sat(self, p):
+        """Return saturation tau as a function of p"""
+        p *= self.param.uc_Pa_to_kPa
+        return self.blk.func_tau_sat(p)
 
 class HelmholtzParameterBlockData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
@@ -659,12 +818,8 @@ example, if pyomo units is imported as pyunits,
         self.default_temperature_value = temperature_value
         self.default_enthalpy_value = enthalpy_value
 
-    def build(self):
-        super().build()
-        # Location of the *.so or *.dll file for external functions
-        # Phase list
-        self.available = _available(self.plib)
-
+    def _bound_from_config(self):
+        """If bounds on the state variables are set in the config, apply them"""
         #if state var bounds are provided in config, override the defaults
         if self.config.temperature_bounds is not None:
             self.default_temperature_bounds = (
@@ -691,54 +846,11 @@ example, if pyomo units is imported as pyunits,
                 value(pyunits.convert(ub, u))
             )
 
-        # Create Component objects
-        for c in self.component_list:
-            setattr(self, str(c), Component(
-                default={"_component_list_exists": True}))
+    def _set_default_scaling(self):
+        """Set default scaling parameters to be used if not otherwise set"""
 
-        # Create Phase objects
-        self.private_phase_list = Set(initialize=["Vap", "Liq"])
-        if self.config.phase_presentation == PhaseType.MIX:
-            self.Mix = Phase()
-
-        if self.config.phase_presentation == PhaseType.LG or \
-                self.config.phase_presentation == PhaseType.L:
-            self.Liq = LiquidPhase()
-
-        if self.config.phase_presentation == PhaseType.LG or \
-                self.config.phase_presentation == PhaseType.G:
-            self.Vap = VaporPhase()
-
-        # State var set
-        self.state_vars = self.config.state_vars
-
-        self.smoothing_pressure_over = Param(
-            mutable=True,
-            initialize=1e-4,
-            doc="Smooth max parameter (pressure over)",
-            units=pyunits.kPa)
-
-        self.smoothing_pressure_under = Param(
-            mutable=True,
-            initialize=1e-4,
-            doc="Smooth max parameter (pressure under)",
-            units=pyunits.kPa)
-
-        # Unit conversion factors. Currently assume everything except external
-        # functions are on a molar basis with base SI units.  Most of these are
-        # used to convert quanties related to external functions.  Not using
-        # pyunits convert since these conversions are just prefixes.  Mass
-        # to moles is a simple conversions, since this is only one component
-        self.uc_J_per_mol_to_kJ_per_kg = pyunits.kJ/self.mw/1000/pyunits.J
-        self.uc_kJ_per_kg_to_J_per_mol = self.mw*pyunits.J*1000/pyunits.kJ
-        # Entropy type units are same as energy type units since K is left as is
-        self.uc_J_per_molK_to_kJ_per_kgK = self.uc_J_per_mol_to_kJ_per_kg
-        self.uc_kJ_per_kgK_to_J_per_molK = self.uc_kJ_per_kg_to_J_per_mol
-        # Pressure conversions
-        self.uc_kPa_to_Pa = 1000*pyunits.Pa/pyunits.kPa
-        self.uc_Pa_to_kPa = pyunits.kPa/pyunits.Pa/1000
-
-        # TODO<jce> leaving flow to not break things, but plan to remove
+        # TODO<jce> leaving flow to not break things, but plan to remove it and
+        #     make the user specify with no default.
         self.set_default_scaling("flow_mol", 1e-4)
         self.set_default_scaling("flow_mol_comp", 1e-4)
         self.set_default_scaling("flow_vol", 100)
@@ -786,6 +898,64 @@ example, if pyomo units is imported as pyunits,
         self.set_default_scaling("dens_mol", 1e-3)
         self.set_default_scaling("heat_capacity_ratio", 1e1)
         self.set_default_scaling("enth_mass", 1)
+
+    def _create_component_and_phase_objects(self):
+        # Create chemical component objects
+        for c in self.component_list:
+            setattr(self, str(c), Component(
+                default={"_component_list_exists": True}))
+        # Create phase objects
+        self.private_phase_list = Set(initialize=["Vap", "Liq"])
+        # Make mixed phase object for mixed phase option
+        if self.config.phase_presentation == PhaseType.MIX:
+            self.Mix = Phase()
+        # Make liquid phase object for L and LG options
+        if self.config.phase_presentation == PhaseType.LG or \
+                self.config.phase_presentation == PhaseType.L:
+            self.Liq = LiquidPhase()
+        # Make vapor phase object for G and LG options
+        if self.config.phase_presentation == PhaseType.LG or \
+                self.config.phase_presentation == PhaseType.G:
+            self.Vap = VaporPhase()
+        # State var set
+        self.state_vars = self.config.state_vars
+
+    def build(self):
+        """Default rule to build block"""
+        super().build()
+        # Set flag for external function availability
+        self.available = _available(self.plib)
+
+        self._bound_from_config() # set state var bounds if user specifies
+        self._set_default_scaling() # set default scaling factor values
+        self._create_component_and_phase_objects()
+
+        # Smoothing Parameters
+        self.smoothing_pressure_over = Param(
+            mutable=True,
+            initialize=1e-4,
+            doc="Smooth max parameter (pressure over)",
+            units=pyunits.kPa)
+
+        self.smoothing_pressure_under = Param(
+            mutable=True,
+            initialize=1e-4,
+            doc="Smooth max parameter (pressure under)",
+            units=pyunits.kPa)
+
+        # Unit conversion factors. Currently assume everything except external
+        # functions are on a molar basis with base SI units.  Most of these are
+        # used to convert quanties related to external functions.  Not using
+        # pyo.units convert since these conversions are just prefixes. Mass
+        # to moles is a simple conversions, since this is only one component
+        self.uc_J_per_mol_to_kJ_per_kg = pyunits.kJ/self.mw/1000/pyunits.J
+        self.uc_kJ_per_kg_to_J_per_mol = self.mw*pyunits.J*1000/pyunits.kJ
+        # Entropy type units are same as energy type units since K is left as is
+        self.uc_J_per_molK_to_kJ_per_kgK = self.uc_J_per_mol_to_kJ_per_kg
+        self.uc_kJ_per_kgK_to_J_per_molK = self.uc_kJ_per_kg_to_J_per_mol
+        # Pressure conversions
+        self.uc_kPa_to_Pa = 1000*pyunits.Pa/pyunits.kPa
+        self.uc_Pa_to_kPa = pyunits.kPa/pyunits.Pa/1000
 
     @classmethod
     def define_metadata(cls, obj):
@@ -981,8 +1151,7 @@ class HelmholtzStateBlockData(StateBlockData):
     """
 
     def initialize(self, *args, **kwargs):
-        # With this particualr property pacakage there is not need for
-        # initialization
+        # This particular property package has no need for initialization
         pass
 
     def _external_functions(self):
@@ -1145,48 +1314,43 @@ class HelmholtzStateBlockData(StateBlockData):
         super().build(*args)
         params = self.config.parameters
 
-        # Check if the library is available.
+        # Check if the library is available, and add external functions.
         self.available = params.available
         if not self.available:
-            _log.error("Library file '{}' not found. Was it installed?".format(
-                    params.plib
-                )
-            )
-
-        # Add external functions
+            _log.error(f"Shared lib '{params.plib}' not found. Is it installed?")
         self._external_functions()
 
         # Thermo expression writer
-        te = HelmholtzThermoExpressions(
-            blk=self,
-            parameters=params
-        )
+        te = HelmholtzThermoExpressions(blk=self, parameters=params)
 
         # Which state vars to use
         self.state_vars = params.state_vars
-        # The private phase list contains phases that may be present and is
-        # used internally.  If using the single mixed phase option the phase
-        # list would be mixed while the private phase list would be
-        # ["Liq, "Vap"]
+
+        # Define various phase and component lists
+        #
+        # The private phase list contains phases that may be present. Used
+        # internally.  Explicitly MIXED or LG -> ["Liq, "Vap"],  L ->["Liq"],
+        # and G -> ["Vap"]
         phlist = params.private_phase_list
+        # Public phase list
         pub_phlist = params.phase_list
         component_list = params.component_list
         phase_set = params.config.phase_presentation
-        self.phase_equilibrium_list = \
-            params.phase_equilibrium_list
+        self.phase_equilibrium_list = params.phase_equilibrium_list
 
         # Expressions that link to some parameters in the param block, which
         # are commonly needed, this lets you get the parameters with scale
         # factors directly from the state block
         self.temperature_crit = Expression(
-            expr=params.temperature_crit)
-        self.pressure_crit = Expression(
-            expr=params.pressure_crit)
-        self.dens_mass_crit = Expression(
-            expr=params.dens_mass_crit)
-        self.mw = Expression(
-            expr=params.mw, doc="molecular weight [kg/mol]"
+            expr=params.temperature_crit, doc="critical temperaure"
         )
+        self.pressure_crit = Expression(
+            expr=params.pressure_crit, doc="critical pressure"
+        )
+        self.dens_mass_crit = Expression(
+            expr=params.dens_mass_crit, doc="critical mass density"
+        )
+        self.mw = Expression(expr=params.mw, doc="molecular weight")
 
         # create the appropriate state variables
         self._state_vars()
@@ -1387,7 +1551,10 @@ class HelmholtzStateBlockData(StateBlockData):
             )
         )
         # Entropy
-        self.entr_mol = Expression(expr=te.s(h=self.enth_mol, p=self.pressure))
+        self.entr_mol = Expression(
+            expr=(self.func_s(delta["Liq"], tau) * self.phase_frac["Liq"] +
+                self.func_s(delta["Vap"], tau)*self.phase_frac["Vap"]) *
+                params.uc_kJ_per_kgK_to_J_per_molK)
         # cp
         self.cp_mol = Expression(
             expr=sum(self.phase_frac[p] * self.cp_mol_phase[p]
