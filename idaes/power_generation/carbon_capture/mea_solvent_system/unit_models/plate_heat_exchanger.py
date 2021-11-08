@@ -34,6 +34,7 @@ In Computer Aided Chemical Engineering (Vol. 47, pp. 47-52). Elsevier.
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
+                           exp,
                            Expression,
                            NonNegativeIntegers,
                            Param,
@@ -154,6 +155,12 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
                                  domain=PositiveReals,
                                  doc="Port diamter")
 
+        self.plate_therm_cond = Var(
+            initialize=16.2,
+            units=units_meta("thermal_conductivity"),
+            domain=PositiveReals,
+            doc="Thermal conductivity heat exchanger plates")
+
         # Set default value of total heat transfer area
         self.area.set_value(114.3)
 
@@ -220,20 +227,18 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
         # ---------------------------------------------------------------------
         # Mean cp_mass
         def rule_cp_hot(blk, t):
-            return 0.5*(blk.hot_side.properties_in[t].cp_mol /
-                        blk.hot_side.properties_in[t].mw +
-                        blk.hot_side.properties_out[t].cp_mol /
-                        blk.hot_side.properties_out[t].mw)
+            return (0.5*(blk.hot_side.properties_in[t].cp_mol +
+                         blk.hot_side.properties_out[t].cp_mol) /
+                    blk.hot_side.properties_in[t].mw)
         self.mean_cp_mass_hot = Expression(
             self.flowsheet().time,
             rule=rule_cp_hot,
             doc='Hot side mean specific heat capacity')
 
         def rule_cp_cold(blk, t):
-            return 0.5*(blk.cold_side.properties_in[t].cp_mol /
-                        blk.cold_side.properties_in[t].mw +
-                        blk.cold_side.properties_out[t].cp_mol /
-                        blk.cold_side.properties_out[t].mw)
+            return (0.5*(blk.cold_side.properties_in[t].cp_mol +
+                         blk.cold_side.properties_out[t].cp_mol) /
+                    blk.cold_side.properties_in[t].mw)
         self.mean_cp_mass_cold = Expression(
             self.flowsheet().time,
             rule=rule_cp_cold,
@@ -284,30 +289,91 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
         # ---------------------------------------------------------------------
         # Heat transfer coefficients
 
-        # # Film heat transfer coefficients
-        # def rule_hotside_transfer_coef(blk, t, p):
-        #     return (blk.hot_fluid.properties_in[t].therm_cond_phase["Liq"] /
-        #             blk.channel_diameter *
-        #             blk.nusselt_param_a * Re_h[t, p]**blk.nusselt_param_b *
-        #             Pr_h[t]**blk.nusselt_param_c)
+        # Parameters for Nusselt number correlation
+        self.Nusselt_param_a = Param(initialize=0.4,
+                                     domain=PositiveReals,
+                                     units=pyunits.dimensionless,
+                                     mutable=True,
+                                     doc='Nusselt parameter A')
+        self.Nusselt_param_b = Param(initialize=0.663,
+                                     domain=PositiveReals,
+                                     units=pyunits.dimensionless,
+                                     mutable=True,
+                                     doc='Nusselt parameter B')
+        self.Nusselt_param_c = Param(initialize=0.333,
+                                     domain=PositiveReals,
+                                     units=pyunits.dimensionless,
+                                     mutable=True,
+                                     doc='Nusselt parameter C')
 
-        # h_hot = self.heat_trans_coef_hot =\
-        #     Expression(self.flowsheet().time,
-        #                self.PH,
-        #                rule=rule_hotside_transfer_coef,
-        #                doc='Hotside heat transfer coefficient')
+        # Film heat transfer coefficients
+        def rule_hotside_transfer_coeff(blk, t):
+            return (blk.hot_side.properties_in[t].therm_cond_phase["Liq"] /
+                    blk.channel_diameter *
+                    blk.Nusselt_param_a * blk.Re_hot[t]**blk.Nusselt_param_b *
+                    blk.Pr_hot[t]**blk.Nusselt_param_c)
+        self.heat_transfer_coefficient_hot_side = Expression(
+            self.flowsheet().time,
+            rule=rule_hotside_transfer_coeff,
+            doc='Hot side heat transfer coefficient')
 
-        # def rule_coldside_transfer_coef(blk, t, p):
-        #     return (blk.cold_fluid.properties_in[t].therm_cond_phase["Liq"] /
-        #             blk.channel_diameter *
-        #             blk.nusselt_param_a * Re_c[t, p]**blk.nusselt_param_b *
-        #             Pr_c[t]**blk.nusselt_param_c)
+        def rule_coldside_transfer_coeff(blk, t):
+            return (
+                pyunits.convert(
+                    blk.cold_side.properties_in[t].therm_cond_phase["Liq"],
+                    to_units=units_meta("thermal_conductivity")) /
+                blk.channel_diameter *
+                blk.Nusselt_param_a * blk.Re_cold[t]**blk.Nusselt_param_b *
+                blk.Pr_cold[t]**blk.Nusselt_param_c)
+        self.heat_transfer_coefficient_cold_side = Expression(
+            self.flowsheet().time,
+            rule=rule_coldside_transfer_coeff,
+            doc='Cold side heat transfer coefficient')
 
-        # h_cold = self.heat_trans_coef_cold =\
-        #     Expression(self.flowsheet().time,
-        #                self.PH,
-        #                rule=rule_coldside_transfer_coef,
-        #                doc='Coldside heat transfer coefficient')
+        # Overall heat transfer coefficient
+        def rule_U(blk, t):
+            return blk.heat_transfer_coefficient[t] == (
+                1.0 / (
+                    1.0/blk.heat_transfer_coefficient_hot_side[t] +
+                    blk.plate_gap/blk.plate_therm_cond +
+                    1.0/blk.heat_transfer_coefficient_cold_side[t]))
+        self.overall_heat_transfer_eq = Constraint(
+            self.flowsheet().time,
+            rule=rule_U,
+            doc='Calculations of overall heat transfer coefficient')
+
+        # Heat capacitance ratio
+        def rule_CR(blk, t):
+            return blk.Cmin[t] / blk.Cmax[t]
+        self.Cratio = Expression(self.flowsheet().time,
+                                 rule=rule_CR,
+                                 doc='Heat capacitance ratio')
+
+        # Original model divides by number of passes for heat capacitance
+
+        # Effectiveness based on sub-heat exchangers
+        def rule_Ecf(blk, t):
+            if blk.number_of_passes.value % 2 == 0:
+                return (
+                    # blk.effectiveness[t] ==
+                    (1 -
+                     exp(-blk.NTU[t]/blk.channels_per_pass *
+                         (1 - blk.Cratio[t]))) /
+                    (1 -
+                     blk.Cratio[t] *
+                     exp(-blk.NTU[t]/blk.channels_per_pass *
+                         (1 - blk.Cratio[t]))))
+            elif blk.pass_num.value % 2 == 1:
+                return (
+                    # blk.effectiveness[t] ==
+                    (1 -
+                     exp(-blk.NTU[t]/blk.channels_per_pass *
+                         (1 + blk.Cratio[t]))) /
+                    (1 + blk.Cratio[t]))
+        self.effectiveness_correlation = Expression(
+            self.flowsheet().time,
+            rule=rule_Ecf,
+            doc='Correlation for effectiveness factor')
 
         # ---------------------------------------------------------------------
         # Pressure drop correlations
@@ -316,17 +382,17 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
         self.friction_factor_param_a = Param(
             initialize=0.0,
             units=pyunits.dimensionless,
-            doc='Friction factor parameter',
+            doc='Friction factor parameter A',
             mutable=True)
         self.friction_factor_param_b = Param(
             initialize=18.29,
             units=pyunits.dimensionless,
-            doc='Friction factor parameter',
+            doc='Friction factor parameter B',
             mutable=True)
         self.friction_factor_param_c = Param(
             initialize=-0.652,
             units=pyunits.dimensionless,
-            doc='Friction factor parameter',
+            doc='Friction factor parameter C',
             mutable=True)
 
         def rule_fric_h(blk, t):

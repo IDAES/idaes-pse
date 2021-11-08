@@ -247,7 +247,7 @@ constructed,
                               units=hunits("power")/hunits("temperature"),
                               doc="Epsilon parameter for smooth Cmin and Cmax")
 
-        # TODO L Support both mass and mole based flows
+        # TODO : Support both mass and mole based flows
         def rule_Cmin(blk, t):
             caph = (blk.hot_side.properties_in[t].flow_mol *
                     blk.hot_side.properties_in[t].cp_mol)
