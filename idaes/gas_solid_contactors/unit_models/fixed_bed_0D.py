@@ -1,15 +1,15 @@
-###############################################################################
+#################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
 # by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University,
-# West Virginia University Research Corporation, et al.  All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-###############################################################################
+#################################################################################
 """
 IDAES 0D Fixed Bed Reactor model.
 """
@@ -107,7 +107,7 @@ property block(s) and used when constructing these,
 see property package for documentation.}"""))
     CONFIG.declare("reaction_package", ConfigValue(
         default=None,
-        # TODO: Had to remove domain due to limitations in ReactionBase for
+        # Removed domain argument due to limitations in ReactionBase for
         # heterogeneous systems
         description="Reaction package to use for unit",
         doc="""Reaction parameter object used to define reaction calculations,
@@ -286,6 +286,18 @@ see reaction package for documentation.}"""))
                           b.reactions[t].dh_rxn[r]
                           for r in b.config.reaction_package.
                           rate_reaction_idx)
+        if self.config.energy_balance_type == EnergyBalanceType.none:
+            # Fix solids temperature to initial value for isothermal conditions
+            @self.Constraint(
+                self.flowsheet().config.time,
+                doc="Isothermal solid phase constraint")
+            def isothermal_solid_phase(b, t):
+                if t == b.flowsheet().config.time.first():
+                    return Constraint.Skip
+                else:
+                    return (
+                        b.solids[t].temperature ==
+                        b.solids[0].temperature)
 
     def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
@@ -301,7 +313,7 @@ see reaction package for documentation.}"""))
                         property package(s) to provide an initial state for
                         initialization (see documentation of the specific
                         property package) (default = None).
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default=None, use
                      default solver options)
             solver : str indicating which solver to use during
@@ -339,12 +351,6 @@ see reaction package for documentation.}"""))
         blk.reactions.initialize(outlvl=outlvl,
                                  optarg=optarg,
                                  solver=solver)
-
-        # TODO - maybe set this up in a nicer way
-        # Fix the solids temperature to initial value if isothermal conditions
-        if blk.config.energy_balance_type == EnergyBalanceType.none:
-            for t in blk.flowsheet().config.time:
-                blk.solids[t].temperature.fix(blk.solids[0].temperature.value)
 
         init_log.info_high("Initialization Step 1 Complete.")
 

@@ -119,11 +119,11 @@ class TestIronOC(object):
         m.fs.unit.bed_height.fix(1)  # height of solids in the TGA reactor [m]
 
         # Set initial conditions of the solid phase
+        m.fs.unit.solids[0].temperature.fix(1273.15)
         m.fs.unit.solids[0].particle_porosity.fix(0.20)
         m.fs.unit.solids[0].mass_frac_comp['Fe2O3'].fix(0.45)
         m.fs.unit.solids[0].mass_frac_comp['Fe3O4'].fix(0)
         m.fs.unit.solids[0].mass_frac_comp['Al2O3'].fix(0.55)
-        m.fs.unit.solids[0].temperature.fix(1273.15)
 
         # Set conditions of the gas phase (this is all fixed as gas side
         # assumption is excess gas flowrate which means all state variables
@@ -338,6 +338,7 @@ class TestIronOC_EnergyBalanceType(object):
         m.fs.unit.bed_height.fix(1)  # height of solids in the TGA reactor [m]
 
         # Set initial conditions of the solid phase
+        m.fs.unit.solids[0].temperature.fix(1273.15)
         m.fs.unit.solids[0].particle_porosity.fix(0.20)
         m.fs.unit.solids[0].mass_frac_comp['Fe2O3'].fix(0.45)
         m.fs.unit.solids[0].mass_frac_comp['Fe3O4'].fix(0)
@@ -352,7 +353,6 @@ class TestIronOC_EnergyBalanceType(object):
             m.fs.unit.gas[t].mole_frac_comp['CO2'].fix(0.4)
             m.fs.unit.gas[t].mole_frac_comp['H2O'].fix(0.5)
             m.fs.unit.gas[t].mole_frac_comp['CH4'].fix(0.1)
-            m.fs.unit.solids[t].temperature.fix(1273.15)
 
         return m
 
@@ -370,7 +370,7 @@ class TestIronOC_EnergyBalanceType(object):
         assert isinstance(iron_oc.fs.unit.sum_component_constraint, Constraint)
 
         assert number_variables(iron_oc) == 3044
-        assert number_total_constraints(iron_oc) == 2219
+        assert number_total_constraints(iron_oc) == 2319
         assert number_unused_variables(iron_oc) == 206
         print(unused_variables_set(iron_oc))
 
