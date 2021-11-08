@@ -25,6 +25,7 @@ from pyomo.common.config import ConfigValue, In
 from idaes.core.util.math import smooth_max, smooth_min
 from idaes.core.util.exceptions import ConfigurationError
 from pyomo.dae import ContinuousSet
+from pyomo.common.deprecation import deprecation_warning
 
 
 class PIDForm(Enum):
@@ -84,6 +85,14 @@ class PIDBlockData(ProcessBlockData):
     #           for the first time point to calculate integral error to keep the
     #           controller output from suddenly jumping in response to a set
     #           point change or transition from manual to automatic control.
+
+    def __init__(self, *args, **kwargs):
+        deprecation_warning(
+            "DEPRECATED: The PIDBlock model is deprecated and will be removed."
+            "Use PIDController instead.",
+            version=1.12,
+        )
+        super().__init__(*args, **kwargs)
 
     def _build_standard(self, time_set, t0):
         # Want to fix the output variable at the first time step to make

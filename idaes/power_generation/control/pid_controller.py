@@ -25,6 +25,7 @@ from pyomo.dae import DerivativeVar
 from idaes.core import UnitModelBlockData, declare_process_block_class
 from pyomo.common.config import ConfigValue, In
 from idaes.core.util.exceptions import ConfigurationError
+from pyomo.common.deprecation import deprecation_warning
 
 
 @declare_process_block_class("PIDController", doc="""This is a PID controller
@@ -58,6 +59,15 @@ If True, user need to set the lower and upper bound parameters"""))
 - PD: Proportional and derivative only
 - PID: Proportional, integral and derivative
 Default is PI"""))
+
+    def __init__(self, *args, **kwargs):
+        deprecation_warning(
+            "DEPRECATED: The idaes.power_generation.control.pid_controller.PIDController"
+            " model is deprecated and will be removed. Use"
+            " idaes.generic_models.control.PIDController instead.",
+            version=1.12,
+        )
+        super().__init__(*args, **kwargs)
 
     def build(self):
         """
