@@ -48,6 +48,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
     log_power_law_equil
 from idaes.generic_models.properties.core.generic.utility import (
     ConcentrationForm)
+from idaes.generic_models.properties.core.phase_equil.henry import HenryType
 
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
@@ -151,9 +152,9 @@ class EnthMolSolvent():
                 (cobj.cp_mass_liq_comp_coeff_4/4)*(T**4-Tr**4) +
                 (cobj.cp_mass_liq_comp_coeff_3/3)*(T**3-Tr**3) +
                 (cobj.cp_mass_liq_comp_coeff_2/2)*(T**2-Tr**2) +
-                cobj.cp_mass_liq_comp_coeff_1*(T-Tr)) +
-            cobj.dh_vap,
-            units["energy_mole"]))
+                cobj.cp_mass_liq_comp_coeff_1*(T-Tr)),
+            units["energy_mole"]) -
+            cobj.dh_vap)
 
         return h
 
@@ -181,7 +182,7 @@ class N2OAnalogy():
 
         return ((exp(wt_MEA * log(H_CO2_MEA) + wt_H2O * log(H_CO2_H2O) +
                      wt_MEA * wt_H2O * lwm)) *
-                pyunits.Pa*pyunits.m**-3*pyunits.mol**-1)
+                pyunits.Pa*pyunits.m**3*pyunits.mol**-1)
 
 
 class PressureSatSolvent():
@@ -446,7 +447,7 @@ class Viscosity():
         T = blk.temperature
         alpha = (blk.mole_frac_phase_comp_apparent['Liq', 'CO2'] /
                  blk.mole_frac_phase_comp_apparent['Liq', 'MEA'])
-        mu_H2O = (1.002e-3*pyunits.Pa/pyunits.s *
+        mu_H2O = (1.002e-3*pyunits.Pa*pyunits.s *
                   10**((1.3272 *
                         (293.15*pyunits.K - T -
                          0.001053*pyunits.K**-1 * (T - 293.15*pyunits.K)**2)) /
@@ -751,7 +752,9 @@ configuration = {
                 "cp_mol_liq_comp": CpMolCO2,
                 "diffus_phase_comp": {"Liq": DiffusCO2},
                 "enth_mol_liq_comp": EnthMolCO2,
-                "henry_component": {"Liq": N2OAnalogy},
+                "henry_component": {"Liq": {"method": N2OAnalogy,
+                                            "type": HenryType.Kpc,
+                                            "basis": StateIndex.true}},
                 "vol_mol_liq_comp": VolMolCO2,
                 "parameter_data": {
                     "mw": (0.04401, pyunits.kg/pyunits.mol),

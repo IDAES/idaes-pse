@@ -99,7 +99,7 @@ def list_of_floats(arg):
         arg : argument to be cast to list of floats and validated
 
     Returns:
-        List of strings
+        List of floats
     '''
     deprecation_warning(
         "The list_of_floats function is deprecated.  Use the ListOf(float) "
