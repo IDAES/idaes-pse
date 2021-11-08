@@ -84,6 +84,7 @@ EoS_param = {
         CubicType.SRK: {'u': 1, 'w': 0, 'omegaA': 0.42748, 'coeff_b': 0.08664}
         }
 
+eps_SL = 1E-8
 
 CubicConfig = ConfigBlock()
 CubicConfig.declare("type", ConfigValue(
@@ -486,7 +487,7 @@ class Cubic(EoSBase):
         # Derived from the relations in Chapter 6 of [1]
         cp_departure =  (R*(T*dZdT + Z - 1) 
                       + (T*d2am_dT2/(EoS_p*bm))*safe_log(expression1/expression2,
-                                                         eps = 1e-6)
+                                                         eps = eps_SL)
                       + ((am - T*dam_dT)*expression3/bm))
 
         
@@ -553,7 +554,7 @@ class Cubic(EoSBase):
         # Departure function for U is similar to H minus the RT(Z-1) term
         return (((blk.temperature*dam_dT - am) *
                  safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
-                          eps=1e-6)) / (bm*EoS_p) +
+                          eps=eps_SL)) / (bm*EoS_p) +
                 sum(blk.mole_frac_phase_comp[p, j] *
                     EoSBase.energy_internal_mol_ig_comp_pure(blk, j)
                     for j in blk.components_in_phase(p)))
@@ -587,7 +588,7 @@ class Cubic(EoSBase):
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
         return (((blk.temperature*dam_dT - am) *
                  safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
-                          eps=1e-6) +
+                          eps=eps_SL) +
                  Cubic.gas_constant(blk)*blk.temperature*(Z-1)*bm*EoS_p) /
                 (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
                                  get_method(blk, "enth_mol_ig_comp", j)(
@@ -629,20 +630,21 @@ class Cubic(EoSBase):
         R = Cubic.gas_constant(blk)
         
         entr_ideal_gas = -R*safe_log(blk.pressure
-                                 /blk.params.pressure_ref, eps=1e-6)
+                                 /blk.params.pressure_ref, eps=eps_SL)
         for j in blk.components_in_phase(p):
             entr_j = get_method(blk, "entr_mol_ig_comp", j)(
                 blk, cobj(blk, j), blk.temperature)
             xj = blk.mole_frac_phase_comp[p, j]
+            log_xj = blk.log_mole_frac_phase_comp[p,j]
             
-            entr_ideal_gas += xj*(entr_j - R*safe_log(xj,eps=1e-6))
+            entr_ideal_gas += xj*(entr_j - R*log_xj)
         
         # See pg. 102 in Properties of Gases and Liquids
         # or pg. 208 of Sandler, 4th Ed.
         entr_departure = (
-            R*safe_log((Z-B), eps=1e-6)
+            R*safe_log((Z-B), eps=eps_SL)
             +  dam_dT/(bm*EoS_p)*safe_log((2*Z + B*(EoS_u + EoS_p)) /
-                                         (2*Z + B*(EoS_u - EoS_p)),eps=1e-6)
+                                         (2*Z + B*(EoS_u - EoS_p)),eps=eps_SL)
             )
         
         return entr_ideal_gas + entr_departure
@@ -661,9 +663,8 @@ class Cubic(EoSBase):
         entr_ideal_gas = (get_method(blk, "entr_mol_ig_comp", j)(
                               blk, cobj(blk, j), blk.temperature)
                             - R*(safe_log(blk.pressure
-                                 /blk.params.pressure_ref, eps=1e-6)
-                                 + safe_log(blk.mole_frac_phase_comp[p, j],
-                                            eps=1e-6)
+                                 /blk.params.pressure_ref, eps=eps_SL)
+                                 + blk.log_mole_frac_phase_comp[p,j]
                                  )
                             )
         
@@ -696,7 +697,7 @@ class Cubic(EoSBase):
     def log_fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return (log(b.mole_frac_phase_comp[p, j]) +
+            return (b.log_mole_frac_phase_comp[p, j] +
                     log(b.pressure/b.params.pressure_ref) +
                     _log_fug_coeff_phase_comp_eq(b, p, j, pp))
         else:
@@ -776,12 +777,12 @@ class Cubic(EoSBase):
         Z = proc(f, A, B)
 
         if pobj.is_vapor_phase():
-            mole_frac = blk._mole_frac_tbub[pp[0], pp[1], j]
+            log_mole_frac = blk._log_mole_frac_tbub[pp[0], pp[1], j]
         else:
-            mole_frac = blk.mole_frac_comp[j]
+            log_mole_frac = blk.log_mole_frac_comp[j]
 
         return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
-                log(mole_frac) + log(blk.pressure/blk.pressure._units))
+                log_mole_frac + log(blk.pressure/blk.pressure._units))
 
     @staticmethod
     def log_fug_phase_comp_Tdew(blk, p, j, pp):
@@ -835,12 +836,12 @@ class Cubic(EoSBase):
         Z = proc(f, A, B)
 
         if pobj.is_vapor_phase():
-            mole_frac = blk.mole_frac_comp[j]
+            log_mole_frac = blk.log_mole_frac_comp[j]
         else:
-            mole_frac = blk._mole_frac_tdew[pp[0], pp[1], j]
+            log_mole_frac = blk._log_mole_frac_tdew[pp[0], pp[1], j]
 
         return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
-                log(mole_frac) + log(blk.pressure/blk.pressure._units))
+                log_mole_frac + log(blk.pressure/blk.pressure._units))
 
     @staticmethod
     def log_fug_phase_comp_Pbub(blk, p, j, pp):
@@ -887,12 +888,12 @@ class Cubic(EoSBase):
         Z = proc(f, A, B)
 
         if pobj.is_vapor_phase():
-            mole_frac = blk._mole_frac_pbub[pp[0], pp[1], j]
+            log_mole_frac = blk._log_mole_frac_pbub[pp[0], pp[1], j]
         else:
-            mole_frac = blk.mole_frac_comp[j]
+            log_mole_frac = blk.log_mole_frac_comp[j]
 
         return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
-                log(mole_frac) + log(blk.pressure_bubble[pp] /
+                log_mole_frac + log(blk.pressure_bubble[pp] /
                                      blk.pressure_bubble._units))
 
     @staticmethod
@@ -939,12 +940,12 @@ class Cubic(EoSBase):
         Z = proc(f, A, B)
 
         if pobj.is_vapor_phase():
-            mole_frac = blk.mole_frac_comp[j]
+            log_mole_frac = blk.log_mole_frac_comp[j]
         else:
-            mole_frac = blk._mole_frac_pdew[pp[0], pp[1], j]
+            log_mole_frac = blk._log_mole_frac_pdew[pp[0], pp[1], j]
 
         return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
-                log(mole_frac) + log(blk.pressure_dew[pp] /
+                log_mole_frac + log(blk.pressure_dew[pp] /
                                      blk.pressure_dew._units))
 
     @staticmethod
@@ -968,9 +969,8 @@ class Cubic(EoSBase):
         entr_ideal_gas = (get_method(blk, "entr_mol_ig_comp", j)(
                               blk, cobj(blk, j), T)
                             - R*(safe_log(blk.pressure
-                                 /blk.params.pressure_ref, eps=1e-6)
-                                 + safe_log(blk.mole_frac_phase_comp[p, j],
-                                            eps=1e-6)
+                                 /blk.params.pressure_ref, eps=eps_SL)
+                                 + blk.log_mole_frac_phase_comp[p,j]
                                  )
                             )
         gibbs_ideal_gas = enth_ideal_gas - T*entr_ideal_gas
@@ -1172,9 +1172,9 @@ def _log_fug_coeff_method(A, b, bm, B, delta, Z, cubic_type):
     w = EoS_param[cubic_type]['w']
     p = sqrt(u**2 - 4*w)
 
-    return ((b/bm*(Z-1)*(B*p) - safe_log(Z-B, eps=1e-6)*(B*p) +
+    return ((b/bm*(Z-1)*(B*p) - safe_log(Z-B, eps=eps_SL)*(B*p) +
              A*(b/bm - delta)*safe_log((2*Z + B*(u + p))/(2*Z + B*(u - p)),
-                                       eps=1e-6)) /
+                                       eps=eps_SL)) /
             (B*p))
 
 def _d_log_fug_coeff_dT_phase_comp(blk,p,j):

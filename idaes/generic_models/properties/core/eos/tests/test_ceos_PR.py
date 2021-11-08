@@ -23,6 +23,7 @@ from pyomo.environ import (ConcreteModel,
                            Expression,
                            ExternalFunction,
                            Param,
+                           log,
                            sqrt,
                            value,
                            Var,
@@ -76,6 +77,9 @@ def define_state(b):
     b.mole_frac_phase_comp = Var(b.params.phase_list,
                                  b.params.component_list,
                                  initialize=0.5)
+    b.log_mole_frac_phase_comp = Var(b.params.phase_list,
+                                     b.params.component_list,
+                                     initialize=0)
 
     # Set mole fractions for each phase so they can be distinguished
     if "Sol" not in b.params.phase_list:
@@ -85,6 +89,11 @@ def define_state(b):
         b.mole_frac_phase_comp["Liq", "a"].value = 0.6
         b.mole_frac_phase_comp["Liq", "b"].value = 0.3
         b.mole_frac_phase_comp["Liq", "c"].value = 0.1
+        
+        for p in ["Liq","Vap"]:
+            for j in "abc":
+                b.log_mole_frac_phase_comp[p,j].value = log(
+                    b.mole_frac_phase_comp[p,j].value)
 
 
 @pytest.fixture()
