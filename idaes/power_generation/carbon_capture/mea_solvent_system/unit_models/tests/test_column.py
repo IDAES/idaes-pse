@@ -24,10 +24,12 @@ from pyomo.environ import ConcreteModel, value, Param, TransformationFactory,\
 from idaes.core import FlowsheetBlock
 from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.column \
     import PackedColumn, ProcessType
-from idaes.power_generation.carbon_capture.mea_solvent_system.properties.vapor_prop \
-    import VaporParameterBlock
-from idaes.power_generation.carbon_capture.mea_solvent_system.properties.liquid_prop \
-    import LiquidParameterBlock
+from idaes.generic_models.properties.core.generic.generic_property import (
+        GenericParameterBlock)
+from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_vapor \
+    import flue_gas as vaporconfig
+from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_solvent \
+    import configuration as liquidconfig
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
@@ -58,19 +60,19 @@ class TestColumn:
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         # Set up property package
-        m.fs.vapor_properties = VaporParameterBlock()
-        m.fs.liquid_properties = LiquidParameterBlock()
+        m.fs.vapor_properties = GenericParameterBlock(default=vaporconfig)
+        m.fs.liquid_properties = GenericParameterBlock(default=liquidconfig)
 
         # Create instance of column on flowsheet
         m.fs.unit = PackedColumn(default={
+            "process_type": ProcessType.absorber,
             "finite_elements": x_nfe,
             "length_domain_set": x_nfe_list,
             "transformation_method": "dae.finite_difference",
             "vapor_side": {
                 "transformation_scheme": "BACKWARD",
                 "property_package": m.fs.vapor_properties,
-                "has_pressure_change": False,
-                "pressure_drop_type": None},
+                "has_pressure_change": False},
             "liquid_side":
             {
                 "transformation_scheme": "FORWARD",
@@ -109,23 +111,23 @@ class TestColumn:
 
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": True,
-                                       'time_units': pyunits.s,
-                                       "time_set": time_set})
+                                        'time_units': pyunits.s,
+                                        "time_set": time_set})
 
         # Set up property package
-        m.fs.vapor_properties = VaporParameterBlock()
-        m.fs.liquid_properties = LiquidParameterBlock()
+        m.fs.vapor_properties = GenericParameterBlock(default=vaporconfig)
+        m.fs.liquid_properties = GenericParameterBlock(default=liquidconfig)
 
         # Create instance of column on flowsheet
         m.fs.unit = PackedColumn(default={
+            "process_type": ProcessType.absorber,
             "finite_elements": x_nfe,
             "length_domain_set": x_nfe_list,
             "transformation_method": "dae.finite_difference",
             "vapor_side": {
                 "transformation_scheme": "BACKWARD",
                 "property_package": m.fs.vapor_properties,
-                "has_pressure_change": False,
-                "pressure_drop_type": None},
+                "has_pressure_change": False},
             "liquid_side":
             {
                 "transformation_scheme": "FORWARD",
@@ -171,10 +173,10 @@ class TestColumn:
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         # Set up property package
-        m.fs.vapor_properties = VaporParameterBlock(
-            default={'process_type': Fpar})
-        m.fs.liquid_properties = LiquidParameterBlock(
-            default={'process_type': Fpar})
+        m.fs.vapor_properties = GenericParameterBlock(
+            default=vaporconfig)
+        m.fs.liquid_properties = GenericParameterBlock(
+            default=liquidconfig)
 
         if Fpar == ProcessType.absorber:
             col_pressure = 107650
@@ -191,8 +193,7 @@ class TestColumn:
             "vapor_side": {
                 "transformation_scheme": "BACKWARD",
                 "property_package": m.fs.vapor_properties,
-                "has_pressure_change": False,
-                "pressure_drop_type": None},
+                "has_pressure_change": False},
             "liquid_side":
             {
                 "transformation_scheme": "FORWARD",
@@ -264,14 +265,14 @@ class TestColumn:
 
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": True,
-                                       'time_units': pyunits.s,
-                                       "time_set": time_set})
+                                        'time_units': pyunits.s,
+                                        "time_set": time_set})
         # Set up property package
 
-        m.fs.vapor_properties = VaporParameterBlock(
-            default={'process_type': Fpar})
-        m.fs.liquid_properties = LiquidParameterBlock(
-            default={'process_type': Fpar})
+        m.fs.vapor_properties = GenericParameterBlock(
+            default=vaporconfig)
+        m.fs.liquid_properties = GenericParameterBlock(
+            default=liquidconfig)
 
         if Fpar == ProcessType.absorber:
             col_pressure = 107650
@@ -288,8 +289,7 @@ class TestColumn:
             "vapor_side": {
                 "transformation_scheme": "BACKWARD",
                 "property_package": m.fs.vapor_properties,
-                "has_pressure_change": False,
-                "pressure_drop_type": None},
+                "has_pressure_change": False},
             "liquid_side":
             {
                 "transformation_scheme": "FORWARD",
@@ -348,7 +348,7 @@ class TestColumn:
                     0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1])
         return m
 
-    # -------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_steady_state_column_build(self, column_model_ss):
@@ -399,13 +399,13 @@ class TestColumn:
 
         # material conservation check
         assert value(m.fs.unit.vapor_inlet.flow_mol[0] *
-                     m.fs.unit.vapor_phase.properties[0, 0].mw -
-                     m.fs.unit.vapor_outlet.flow_mol[0] *
-                     m.fs.unit.vapor_phase.properties[0, 1].mw +
-                     m.fs.unit.liquid_inlet.flow_mol[0] *
-                     m.fs.unit.liquid_phase.properties[0, 1].mw -
-                     m.fs.unit.liquid_outlet.flow_mol[0] *
-                     m.fs.unit.liquid_phase.properties[0, 0].mw) ==\
+                      m.fs.unit.vapor_phase.properties[0, 0].mw -
+                      m.fs.unit.vapor_outlet.flow_mol[0] *
+                      m.fs.unit.vapor_phase.properties[0, 1].mw +
+                      m.fs.unit.liquid_inlet.flow_mol[0] *
+                      m.fs.unit.liquid_phase.properties[0, 1].mw -
+                      m.fs.unit.liquid_outlet.flow_mol[0] *
+                      m.fs.unit.liquid_phase.properties[0, 0].mw) ==\
             pytest.approx(0, abs=1e-2)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -420,7 +420,7 @@ class TestColumn:
 
         # Performance Condition Testing at final time
         assert value(m.fs.unit.liquid_phase.properties[
-                     m.fs.time.last(), 0].mole_frac_comp['CO2'] /
-                     m.fs.unit.liquid_phase.properties[
-                     m.fs.time.last(), 0].mole_frac_comp['MEA']) == \
+                      m.fs.time.last(), 0].mole_frac_comp['CO2'] /
+                      m.fs.unit.liquid_phase.properties[
+                      m.fs.time.last(), 0].mole_frac_comp['MEA']) == \
             pytest.approx(value(m.fs.unit.loading), abs=1e-1)
