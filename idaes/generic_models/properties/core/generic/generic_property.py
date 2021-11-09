@@ -1778,7 +1778,7 @@ class GenericStateBlockData(StateBlockData):
             self.pressure, default=1, warning=True)
         sf_mf = {}
         for i, v in self.mole_frac_phase_comp.items():
-            sf_mf[i] = iscale.get_scaling_factor(v, default=1e3, warning=True)
+            sf_mf[i] = iscale.get_scaling_factor(v, default=10, warning=True)
 
         # Add scaling for components in build method
         # Phase equilibrium temperature
@@ -1892,6 +1892,29 @@ class GenericStateBlockData(StateBlockData):
             
             self.params.config.bubble_dew_method.scale_temperature_bubble(
                 self, overwrite=False)
+            
+        if self.is_property_constructed("_log_mole_frac_tbub"):
+            for i, v in self._log_mole_frac_tbub_eq.items():
+                if iscale.get_scaling_factor(v) is None:
+                    if self.params.config.phases[i[0]]["type"] is VaporPhase:
+                        p = i[0]
+                    elif self.params.config.phases[i[1]]["type"] is VaporPhase:
+                        p = i[1]
+                    else:
+                        p = i[0]
+                    j = i[2]
+                    try:
+                        sf_x = iscale.get_scaling_factor(
+                            sf_mf[p, j],
+                            default=10,
+                            warning=True,
+                            hint="for _log_mole_frac_tbub")
+                        iscale.constraint_scaling_transform(
+                            v, sf_x, overwrite=False)
+                    except KeyError:
+                        # component i[2] is not in the vapor phase, so this
+                        # variable is likely unused and scale doesn't matter
+                        pass
 
         if hasattr(self, "_mole_frac_tdew"):
             for v in self.temperature_dew.values():
@@ -1915,6 +1938,31 @@ class GenericStateBlockData(StateBlockData):
             self.params.config.bubble_dew_method.scale_temperature_dew(
                 self, overwrite=False)
 
+        if self.is_property_constructed("_log_mole_frac_tdew"):
+            for i, v in self._log_mole_frac_tdew_eq.items():
+                if iscale.get_scaling_factor(v) is None:
+                    if self.params.config.phases[i[0]]["type"] is LiquidPhase:
+                        p = i[0]
+                    elif self.params.config.phases[i[1]]["type"] \
+                            is LiquidPhase:
+                        p = i[1]
+                    else:
+                        p = i[0]
+                    j = i[2]
+                    try:
+                        sf_x = iscale.get_scaling_factor(
+                            sf_mf[p, j],
+                            default=10,
+                            warning=True,
+                            hint="for _log_mole_frac_tbub")
+                        iscale.constraint_scaling_transform(
+                            v, sf_x, overwrite=False)
+                    except KeyError:
+                        # component j is not in the liquid phase, so this
+                        # variable is likely unused and scale doesn't matter
+                        pass
+        
+        # TODO: Shouldn't this have a try-except block like pbub?
         if hasattr(self, "_mole_frac_pbub"):
             for v in self.pressure_bubble.values():
                 if iscale.get_scaling_factor(v) is None:
@@ -1924,7 +1972,31 @@ class GenericStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(v, sf_mf[i])
             self.params.config.bubble_dew_method.scale_pressure_bubble(
                 self, overwrite=False)
-
+            
+        if self.is_property_constructed("_log_mole_frac_pbub"):
+            for i, v in self._log_mole_frac_pbub_eq.items():
+                if iscale.get_scaling_factor(v) is None:
+                    if self.params.config.phases[i[0]]["type"] is VaporPhase:
+                        p = i[0]
+                    elif self.params.config.phases[i[1]]["type"] is VaporPhase:
+                        p = i[1]
+                    else:
+                        p = i[0]
+                    j = i[2]
+                    try:
+                        sf_x = iscale.get_scaling_factor(
+                            sf_mf[p, j],
+                            default=10,
+                            warning=True,
+                            hint="for _log_mole_frac_pbub")
+                        iscale.constraint_scaling_transform(
+                            v, sf_x, overwrite=False)                  
+                    except KeyError:
+                        # component i[2] is not in the vapor phase, so this
+                        # variable is likely unused and scale doesn't matter
+                        pass
+                
+        # TODO: Try-except
         if hasattr(self, "_mole_frac_pdew"):
             for v in self.pressure_dew.values():
                 if iscale.get_scaling_factor(v) is None:
@@ -1934,8 +2006,43 @@ class GenericStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(v, sf_mf[i])
             self.params.config.bubble_dew_method.scale_pressure_dew(
                 self, overwrite=False)
+            
+        if self.is_property_constructed("_log_mole_frac_pdew"):
+            for i, v in self._log_mole_frac_pdew_eq.items():
+                if iscale.get_scaling_factor(v) is None:
+                    if self.params.config.phases[i[0]]["type"] is LiquidPhase:
+                        p = i[0]
+                    elif self.params.config.phases[i[1]]["type"] \
+                        is LiquidPhase:
+                        p = i[1]
+                    else:
+                        p = i[0]
+                    j = i[2]
+                    try:
+                        sf_x = iscale.get_scaling_factor(
+                            sf_mf[p, j],
+                            default=10,
+                            warning=True,
+                            hint="for _log_mole_frac_pdew")
+                        iscale.constraint_scaling_transform(
+                            v, sf_x, overwrite=False)                  
+                    except KeyError:
+                        # component i[2] is not in the liquid phase, so this
+                        # variable is likely unused and scale doesn't matter
+                        pass
 
         # Scale log form constraints
+        
+        if self.is_property_constructed("log_mole_frac_comp"):
+            for j, v in self.log_mole_frac_comp_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_comp[j],
+                    default=10,
+                    warning=True,
+                    hint="for log_mole_frac_comp")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+        
         #TODO: determine if this is lazy copy and pasting
         if self.is_property_constructed("log_act_phase_comp"):
             for (p, j), v in self.log_act_phase_comp_eq.items():
@@ -2066,7 +2173,7 @@ class GenericStateBlockData(StateBlockData):
             for (p, j), v in self.log_mole_frac_phase_comp_eq.items():
                 sf_x = iscale.get_scaling_factor(
                     self.mole_frac_phase_comp[p, j],
-                    default=1e-3,
+                    default=10,
                     warning=True,
                     hint="for log_mole_frac_phase_comp")
                 iscale.constraint_scaling_transform(
