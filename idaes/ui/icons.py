@@ -36,18 +36,19 @@ class UnitModelIcon:
             unit_model = self.DEFAULT
         self._model = unit_model
         try:
-            self._info = self._mapping[unit_model]
+            self._model_details = self._mapping[unit_model]
         except KeyError:
             if not default:
                 raise
-            self._info = self._mapping[self.DEFAULT]
+            self._model_details = self._mapping[self.DEFAULT]
         self._pos = self._build_link_positions()
 
     @property
     def icon(self) -> str:
         """Get the name of the icon.
         """
-        return self._info[0]
+        # return self._info[0]
+        return self._model_details['image']
 
     @property
     def link_positions(self) -> Dict:
@@ -106,15 +107,14 @@ class UnitModelIcon:
 
         # build link positions from info
         groups, items = {}, []
-        for position in self._info[1:]:
-            group, name, (x, y, dx, dy) = position
-            if group not in groups:
-                groups[group] = {}
-            groups[group] = {
-                "position": {
-                    "name": name,
-                    "args": {"x": x, "y": y, "dx": dx, "dy": dy},
-                },
+        for group_name, group_config in self._model_details["groups"].items():
+            #group, layout_name, (x, y, dx, dy) = position
+            #if group not in groups:
+            #    groups[group] = {}
+            print("group_name:", group_name)
+            print("group_config:", group_config)
+            groups[group_name] = group_config
+            groups[group_name].update({
                 "attrs": {
                     "rect": {
                         "stroke": "#000000",
@@ -124,11 +124,12 @@ class UnitModelIcon:
                     }
                 },
                 "markup": "<g><rect/></g>",
-            }
-            items.append({"group": group, "id": group})
+            })
+            #items.append({"group": group, "id": group})
 
         # set new link positions attr and place in cache
-        positions = {"groups": groups, "items": items}
+        #positions = {"groups": groups, "items": items}
+        positions = {"groups": groups, "items": []}
         self._link_positions_map[self._model] = positions
         return positions
 
@@ -140,97 +141,641 @@ class UnitModelIcon:
     #  - Use 'cstr' as your template for new entries
     #  - Do not remove in/out entries in existing entries, or arcs won't connect
     _mapping = {
-        "cstr": (
-            "reactor_c.svg",
-            ("in", "left", (15, 0, 1, 1)),
-            ("out", "left", (48, 45, 1, 1)),
-        ),
-        "flash": (
-            "flash.svg",
-            ("bottom", "bottom", (25, 50, 1, 1)),
-            ("in", "left", (8, 25, 1, 1)),
-            ("top", "top", (25, 0, 1, 1)),
-        ),
-        "gibbs_reactor": (
-            "reactor_g.svg",
-            ("in", "left", (5, 10, 1, 1)),
-            ("out", "left", (45, 45, 1, 1)),
-        ),
-        "heat_exchanger": (
-            "heat_exchanger_1.svg",
-            ("in", "left", (2, 25, 1, 1)),
-            ("out", "left", (48, 25, 1, 1)),
-        ),
-        "heater": (
-            "heater_2.svg",
-            ("in", "left", (6, 25, 1, 1)),
-            ("out", "left", (43, 25, 1, 1)),
-        ),
-        "heat_exchanger_1D": (
-            "heat_exchanger_1.svg",
-            ("in", "left", (15, 0, 1, 1)),
-            ("out", "left", (48, 45, 1, 1)),
-        ),
-        "mixer": (
-            "mixer.svg",
-            ("in", "left", (2, 25, 1, 1)),
-            ("out", "left", (48, 25, 1, 1)),
-        ),
-        "plug_flow_reactor": (
-            "reactor_pfr.svg",
-            ("in", "left", (15, 0, 1, 1)),
-            ("out", "left", (48, 45, 1, 1)),
-        ),
-        "pressure_changer": (
-            "compressor.svg",
-            ("in", "left", (2, 25, 1, 1)),
-            ("out", "left", (48, 25, 1, 1)),
-        ),
-        "separator": (
-            "splitter.svg",
-            ("in", "left", (2, 25, 1, 1)),
-            ("out", "right", (48, 25, 1, 1)),
-        ),
-        "stoichiometric_reactor": (
-            "reactor_s.svg",
-            ("in", "left", (5, 10, 1, 1)),
-            ("out", "left", (45, 45, 1, 1)),
-        ),
-        "equilibrium_reactor": (
-            "reactor_e.svg",
-            ("in", "left", (5, 10, 1, 1)),
-            ("out", "left", (45, 45, 1, 1)),
-        ),
-        "feed": ("feed.svg", ("out", "left", (48, 25, 1, 1))),
-        "product": ("product.svg", ("in", "left", (2, 25, 1, 1))),
-        "feed_flash": (
-            "feed.svg",
-            ("in", "left", (25, 0, 1, 1)),
-            ("out", "left", (25, 50, 1, 1)),
-        ),
-        "statejunction": (
-            "NONE",
-            ("in", "left", (15, 0, 1, 1)),
-            ("out", "left", (48, 45, 1, 1)),
-        ),
-        "translator": (
-            "NONE",
-            ("in", "left", (15, 0, 1, 1)),
-            ("out", "left", (48, 45, 1, 1)),
-        ),
-        "packed_column": (
-            "packed_column_1.svg",
-            ("in", "left", (48, 10, 1, 1)),
-            ("out", "left", (48, 40, 1, 1)),
-        ),
-        "tray_column": (
-            "tray_column_1.svg",
-            ("in", "left", (48, 10, 1, 1)),
-            ("out", "left", (48, 40, 1, 1)),
-        ),
-        "default": (
-            "default.svg",
-            ("in", "left", (2, 0, 1, 1)),
-            ("out", "left", (48, 50, 1, 1)),
-        ),
+        "cstr": {
+            "image": "reactor_c.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 15,
+                            "y": 0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "flash": {
+            "image": "flash.svg",
+            "groups": {
+                "bottom": {
+                    "position": {
+                        "name": "bottom",
+                        "args": {
+                            "x": 25,
+                            "y": 50,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  8,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "top": {
+                    "position": {
+                        "name": "top",
+                        "args": {
+                            "x": 25,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                # added by AR
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 45,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                #end
+            }
+        },
+        "gibbs_reactor": {
+            "image": "reactor_g.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  5,
+                            "y": 10,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 45,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "heat_exchanger": {
+            "image": "heat_exchanger_1.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  2,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "heater": {
+            "image": "heater_2.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  6,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 43,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "heat_exchanger_1D": {
+            "image": "heat_exchanger_1.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 15,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "mixer": {
+            "image": "mixer.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "plug_flow_reactor": {
+            "image": "reactor_pfr.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 15,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "pressure_changer": {
+            "image": "compressor.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  2,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "separator": {
+            "image": "splitter.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  2,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "right",
+                        "args": {
+                            "x": 48,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "stoichiometric_reactor": {
+            "image": "reactor_s.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  5,
+                            "y": 10,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 45,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "equilibrium_reactor": {
+            "image": "reactor_e.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  5,
+                            "y": 10,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 45,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "feed": {
+            "image": "feed.svg",
+            "groups": {
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "product": {
+            "image": "product.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  2,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "feed_flash": {
+            "image": "feed.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 25,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 25,
+                            "y": 50,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "statejunction": {
+            "image": "NONE",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 15,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "translator": {
+            "image": "NONE",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 15,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "packed_column": {
+            "image": "packed_column_1.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 10,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 40,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "tray_column": {
+            "image": "tray_column_1.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 10,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 40,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "default": {
+            "image": "default.svg",
+            "groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  2,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 50,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
     }
+
+
+    # _mapping = {
+    #     "cstr": (
+    #         "reactor_c.svg",
+    #         ("in", "left", (15, 0, 1, 1)),
+    #         ("out", "left", (48, 45, 1, 1)),
+    #     ),
+    #     "flash": (
+    #         "flash.svg",
+    #         ("bottom", "bottom", (25, 50, 1, 1)),
+    #         ("in", "left", (8, 25, 1, 1)),
+    #         ("top", "top", (25, 0, 1, 1)),
+    #     ),
+    #     "gibbs_reactor": (
+    #         "reactor_g.svg",
+    #         ("in", "left", (5, 10, 1, 1)),
+    #         ("out", "left", (45, 45, 1, 1)),
+    #     ),
+    #     "heat_exchanger": (
+    #         "heat_exchanger_1.svg",
+    #         ("in", "left", (2, 25, 1, 1)),
+    #         ("out", "left", (48, 25, 1, 1)),
+    #     ),
+    #     "heater": (
+    #         "heater_2.svg",
+    #         ("in", "left", (6, 25, 1, 1)),
+    #         ("out", "left", (43, 25, 1, 1)),
+    #     ),
+    #     "heat_exchanger_1D": (
+    #         "heat_exchanger_1.svg",
+    #         ("in", "left", (15, 0, 1, 1)),
+    #         ("out", "left", (48, 45, 1, 1)),
+    #     ),
+    #     "mixer": (
+    #         "mixer.svg",
+    #         ("in", "left", (2, 25, 1, 1)),
+    #         ("out", "left", (48, 25, 1, 1)),
+    #     ),
+    #     "plug_flow_reactor": (
+    #         "reactor_pfr.svg",
+    #         ("in", "left", (15, 0, 1, 1)),
+    #         ("out", "left", (48, 45, 1, 1)),
+    #     ),
+    #     "pressure_changer": (
+    #         "compressor.svg",
+    #         ("in", "left", (2, 25, 1, 1)),
+    #         ("out", "left", (48, 25, 1, 1)),
+    #     ),
+    #     "separator": (
+    #         "splitter.svg",
+    #         ("in", "left", (2, 25, 1, 1)),
+    #         ("out", "right", (48, 25, 1, 1)),
+    #     ),
+    #     "stoichiometric_reactor": (
+    #         "reactor_s.svg",
+    #         ("in", "left", (5, 10, 1, 1)),
+    #         ("out", "left", (45, 45, 1, 1)),
+    #     ),
+    #     "equilibrium_reactor": (
+    #         "reactor_e.svg",
+    #         ("in", "left", (5, 10, 1, 1)),
+    #         ("out", "left", (45, 45, 1, 1)),
+    #     ),
+    #     "feed": ("feed.svg", ("out", "left", (48, 25, 1, 1))),
+    #     "product": ("product.svg", ("in", "left", (2, 25, 1, 1))),
+    #     "feed_flash": (
+    #         "feed.svg",
+    #         ("in", "left", (25, 0, 1, 1)),
+    #         ("out", "left", (25, 50, 1, 1)),
+    #     ),
+    #     "statejunction": (
+    #         "NONE",
+    #         ("in", "left", (15, 0, 1, 1)),
+    #         ("out", "left", (48, 45, 1, 1)),
+    #     ),
+    #     "translator": (
+    #         "NONE",
+    #         ("in", "left", (15, 0, 1, 1)),
+    #         ("out", "left", (48, 45, 1, 1)),
+    #     ),
+    #     "packed_column": (
+    #         "packed_column_1.svg",
+    #         ("in", "left", (48, 10, 1, 1)),
+    #         ("out", "left", (48, 40, 1, 1)),
+    #     ),
+    #     "tray_column": (
+    #         "tray_column_1.svg",
+    #         ("in", "left", (48, 10, 1, 1)),
+    #         ("out", "left", (48, 40, 1, 1)),
+    #     ),
+    #     "default": (
+    #         "default.svg",
+    #         ("in", "left", (2, 0, 1, 1)),
+    #         ("out", "left", (48, 50, 1, 1)),
+    #     ),
+    # }
