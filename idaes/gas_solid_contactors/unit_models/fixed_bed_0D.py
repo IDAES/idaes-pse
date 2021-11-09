@@ -344,7 +344,7 @@ see reaction package for documentation.}"""))
                                 outlvl=outlvl,
                                 optarg=optarg,
                                 solver=solver,
-                                state_args=gas_phase_state_args)
+                                state_args=solid_phase_state_args)
 
         init_log.info('Initialize reaction properties')
         # Initialize reactions
