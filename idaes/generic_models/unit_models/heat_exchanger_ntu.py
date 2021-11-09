@@ -272,6 +272,13 @@ constructed,
                                rule=rule_Cmax,
                                doc='Maximum heat capacitance rate')
 
+        # Heat capacitance ratio
+        def rule_Cratio(blk, t):
+            return blk.Cmin[t] / blk.Cmax[t]
+        self.Cratio = Expression(self.flowsheet().time,
+                                 rule=rule_Cratio,
+                                 doc='Heat capacitance ratio')
+
         def rule_NTU(blk, t):
             return blk.heat_transfer_coefficient[t]*blk.area/blk.Cmin[t]
         self.NTU = Expression(self.flowsheet().time,

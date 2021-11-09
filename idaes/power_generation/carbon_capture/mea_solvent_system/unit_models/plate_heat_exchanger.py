@@ -118,7 +118,7 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
             units=pyunits.dimensionless,
             domain=PositiveIntegers,
             doc="Number of hot/cold fluid passes",
-            mutable=False)
+            mutable=True)
 
         # Assuming number of channels is equal in all plates
         self.channels_per_pass = Param(
@@ -322,13 +322,6 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
             self.flowsheet().time,
             rule=rule_U,
             doc='Calculations of overall heat transfer coefficient')
-
-        # Heat capacitance ratio
-        def rule_CR(blk, t):
-            return blk.Cmin[t] / blk.Cmax[t]
-        self.Cratio = Expression(self.flowsheet().time,
-                                 rule=rule_CR,
-                                 doc='Heat capacitance ratio')
 
         # Effectiveness based on sub-heat exchangers
         # Divide NTU by number of channels per pass

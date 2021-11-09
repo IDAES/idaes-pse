@@ -136,6 +136,7 @@ class TestHXNTU(object):
 
         assert isinstance(model.fs.unit.Cmin, Expression)
         assert isinstance(model.fs.unit.Cmax, Expression)
+        assert isinstance(model.fs.unit.Cratio, Expression)
         assert isinstance(model.fs.unit.NTU, Expression)
 
         assert isinstance(model.fs.unit.energy_balance_constraint, Constraint)
