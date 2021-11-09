@@ -40,17 +40,18 @@ from pyomo.environ import (Constraint,
                            Param,
                            PositiveIntegers,
                            PositiveReals,
-                           RangeSet,
                            units as pyunits,
                            Var)
 from pyomo.common.config import ConfigValue, In, Integer
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class
 from idaes.generic_models.unit_models.heat_exchanger_ntu import \
     HeatExchangerNTUData
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants
+from idaes.core.util import get_solver
+import idaes.core.util.unit_costing as costing
 import idaes.logger as idaeslog
 
 __author__ = "Paul Akula, Andrew Lee"
@@ -225,28 +226,7 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
             doc='Cold side channel velocity')
 
         # ---------------------------------------------------------------------
-        # Mean cp_mass
-        def rule_cp_hot(blk, t):
-            return (0.5*(blk.hot_side.properties_in[t].cp_mol +
-                         blk.hot_side.properties_out[t].cp_mol) /
-                    blk.hot_side.properties_in[t].mw)
-        self.mean_cp_mass_hot = Expression(
-            self.flowsheet().time,
-            rule=rule_cp_hot,
-            doc='Hot side mean specific heat capacity')
-
-        def rule_cp_cold(blk, t):
-            return (0.5*(blk.cold_side.properties_in[t].cp_mol +
-                         blk.cold_side.properties_out[t].cp_mol) /
-                    blk.cold_side.properties_in[t].mw)
-        self.mean_cp_mass_cold = Expression(
-            self.flowsheet().time,
-            rule=rule_cp_cold,
-            doc='Cold side mean specific heat capacity')
-
-        # ---------------------------------------------------------------------
         # Reynolds & Prandtl numbers
-
         # Density cancels out of Reynolds number if mass flow rate is used
         def rule_Re_h(blk, t):
             return (
@@ -271,7 +251,8 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
                                   doc='Cold side Reynolds number')
 
         def rule_Pr_h(blk, t):
-            return (blk.mean_cp_mass_hot[t] *
+            return (blk.hot_side.properties_in[t].cp_mol /
+                    blk.hot_side.properties_in[t].mw *
                     blk.hot_side.properties_in[t].visc_d_phase["Liq"] /
                     blk.hot_side.properties_in[t].therm_cond_phase["Liq"])
         self.Pr_hot = Expression(self.flowsheet().time,
@@ -279,7 +260,8 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
                                  doc='Hot side Prandtl number')
 
         def rule_Pr_c(blk, t):
-            return (blk.mean_cp_mass_cold[t] *
+            return (blk.cold_side.properties_in[t].cp_mol /
+                    blk.cold_side.properties_in[t].mw *
                     blk.cold_side.properties_in[t].visc_d_phase["Liq"] /
                     blk.cold_side.properties_in[t].therm_cond_phase["Liq"])
         self.Pr_cold = Expression(self.flowsheet().time,
@@ -288,7 +270,6 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
 
         # ---------------------------------------------------------------------
         # Heat transfer coefficients
-
         # Parameters for Nusselt number correlation
         self.Nusselt_param_a = Param(initialize=0.4,
                                      domain=PositiveReals,
@@ -349,13 +330,12 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
                                  rule=rule_CR,
                                  doc='Heat capacitance ratio')
 
-        # Original model divides by number of passes for heat capacitance
-
         # Effectiveness based on sub-heat exchangers
+        # Divide NTU by number of channels per pass
         def rule_Ecf(blk, t):
             if blk.number_of_passes.value % 2 == 0:
                 return (
-                    # blk.effectiveness[t] ==
+                    blk.effectiveness[t] ==
                     (1 -
                      exp(-blk.NTU[t]/blk.channels_per_pass *
                          (1 - blk.Cratio[t]))) /
@@ -365,19 +345,18 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
                          (1 - blk.Cratio[t]))))
             elif blk.pass_num.value % 2 == 1:
                 return (
-                    # blk.effectiveness[t] ==
+                    blk.effectiveness[t] ==
                     (1 -
                      exp(-blk.NTU[t]/blk.channels_per_pass *
                          (1 + blk.Cratio[t]))) /
                     (1 + blk.Cratio[t]))
-        self.effectiveness_correlation = Expression(
+        self.effectiveness_correlation = Constraint(
             self.flowsheet().time,
             rule=rule_Ecf,
             doc='Correlation for effectiveness factor')
 
         # ---------------------------------------------------------------------
         # Pressure drop correlations
-
         # Friction factor calculation
         self.friction_factor_param_a = Param(
             initialize=0.0,
@@ -445,3 +424,142 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
                  (blk.plate_length + blk.port_diameter)))
         self.cold_side_deltaP_eq = Constraint(self.flowsheet().time,
                                               rule=rule_coldside_dP)
+
+    def initialize(
+        self,
+        hot_side_state_args=None,
+        cold_side_state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+        duty=None,
+    ):
+        """
+        Heat exchanger initialization method.
+
+        Args:
+            hot_side_state_args : a dict of arguments to be passed to the
+                property initialization for the hot side (see documentation of
+                the specific property package) (default = None).
+            cold_side_state_args : a dict of arguments to be passed to the
+                property initialization for the cold side (see documentation of
+                the specific property package) (default = None).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
+            duty : an initial guess for the amount of heat transfered. This
+                should be a tuple in the form (value, units), (default
+                = (1000 J/s))
+
+        Returns:
+            None
+
+        """
+        # Set solver options
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        hot_side = self.hot_side
+        cold_side = self.cold_side
+
+        # Create solver
+        opt = get_solver(solver, optarg)
+
+        flags1 = hot_side.initialize(
+            outlvl=outlvl, optarg=optarg, solver=solver,
+            state_args=hot_side_state_args
+        )
+
+        init_log.info_high("Initialization Step 1a (hot side) Complete.")
+
+        flags2 = cold_side.initialize(
+            outlvl=outlvl, optarg=optarg, solver=solver,
+            state_args=cold_side_state_args
+        )
+
+        init_log.info_high("Initialization Step 1b (cold side) Complete.")
+
+        # ---------------------------------------------------------------------
+        # Solve unit without heat transfer equation
+        # if costing block exists, deactivate
+        if hasattr(self, "costing"):
+            self.costing.deactivate()
+
+        self.energy_balance_constraint.deactivate()
+        self.effectiveness_correlation.deactivate()
+        self.effectiveness.fix(0.68)
+
+        # Get side 1 and side 2 heat units, and convert duty as needed
+        s1_units = hot_side.heat.get_units()
+        s2_units = cold_side.heat.get_units()
+
+        if duty is None:
+            # Assume 1000 J/s and check for unitless properties
+            if s1_units is None and s2_units is None:
+                # Backwards compatability for unitless properties
+                s1_duty = - 1000
+                s2_duty = 1000
+            else:
+                s1_duty = pyunits.convert_value(-1000,
+                                                from_units=pyunits.W,
+                                                to_units=s1_units)
+                s2_duty = pyunits.convert_value(1000,
+                                                from_units=pyunits.W,
+                                                to_units=s2_units)
+        else:
+            # Duty provided with explicit units
+            s1_duty = -pyunits.convert_value(duty[0],
+                                             from_units=duty[1],
+                                             to_units=s1_units)
+            s2_duty = pyunits.convert_value(duty[0],
+                                            from_units=duty[1],
+                                            to_units=s2_units)
+
+        cold_side.heat.fix(s2_duty)
+        for i in hot_side.heat:
+            hot_side.heat[i].value = s1_duty
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+
+        init_log.info_high("Initialization Step 2 {}.".format(
+            idaeslog.condition(res)))
+
+        cold_side.heat.unfix()
+        self.energy_balance_constraint.activate()
+
+        for t in self.effectiveness:
+            calculate_variable_from_constraint(
+                self.effectiveness[t], self.effectiveness_correlation[t])
+
+        # ---------------------------------------------------------------------
+        # Solve unit with new effectiveness factor
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info_high("Initialization Step 3 {}.".format(
+            idaeslog.condition(res)))
+
+        self.effectiveness_correlation.activate()
+        self.effectiveness.unfix()
+
+        # ---------------------------------------------------------------------
+        # Final solve of full modelr
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info_high("Initialization Step 4 {}.".format(
+            idaeslog.condition(res)))
+
+        # ---------------------------------------------------------------------
+        # Release Inlet state
+        hot_side.release_state(flags1, outlvl=outlvl)
+        cold_side.release_state(flags2, outlvl=outlvl)
+
+        init_log.info("Initialization Completed, {}".format(
+            idaeslog.condition(res)))
+
+        # if costing block exists, activate and initialize
+        if hasattr(self, "costing"):
+            self.costing.activate()
+            costing.initialize(self.costing)

@@ -107,9 +107,6 @@ class TestPHE(object):
         m.fs.unit.plate_therm_cond.fix()
         m.fs.unit.area.fix()
 
-        m.fs.unit.hot_outlet.temperature[0].fix(329.54)
-        # m.fs.unit.cold_outlet.temperature[0].fix(385.32)
-
         return m
 
     @pytest.mark.build
@@ -164,8 +161,10 @@ class TestPHE(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, phe):
-        initialization_tester(phe, duty=(531586, pyunits.J/pyunits.s))
-        assert False
+        initialization_tester(
+            phe,
+            duty=(245000, pyunits.W),
+            optarg={"bound_push": 1e-8, "mu_init": 1e-8})
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -182,45 +181,41 @@ class TestPHE(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, phe):
+        # phe.fs.unit.display()
         assert (pytest.approx(182282.48, rel=1e-5) ==
                 value(phe.fs.unit.hot_outlet.pressure[0]))
         assert (pytest.approx(177774.85, rel=1e-5) ==
                 value(phe.fs.unit.cold_outlet.pressure[0]))
 
-        assert (pytest.approx(329.54, abs=1e-2) ==
-                value(phe.fs.unit.hot_outlet.temperature[0]))
-        assert (pytest.approx(388.91, abs=1e-2) ==
-                value(phe.fs.unit.cold_outlet.temperature[0]))
-
-        assert pytest.approx(3845.05, rel=1e-5) == value(
-            phe.fs.unit.mean_cp_mass_hot[0])
-        assert pytest.approx(3835.51, rel=1e-5) == value(
-            phe.fs.unit.mean_cp_mass_cold[0])
         assert pytest.approx(701.548, rel=1e-5) == value(
             phe.fs.unit.Re_hot[0])
         assert pytest.approx(217.745, rel=1e-5) == value(
             phe.fs.unit.Re_cold[0])
-        assert pytest.approx(4.37770, rel=1e-5) == value(
+        assert pytest.approx(4.45171, rel=1e-5) == value(
             phe.fs.unit.Pr_hot[0])
-        assert pytest.approx(13.7813, rel=1e-5) == value(
+        assert pytest.approx(13.5542, rel=1e-5) == value(
             phe.fs.unit.Pr_cold[0])
-        assert pytest.approx(3698.53, rel=1e-5) == value(
+        assert pytest.approx(3719.23, rel=1e-5) == value(
             phe.fs.unit.heat_transfer_coefficient_hot_side[0])
-        assert pytest.approx(2717.97, rel=1e-5) == value(
+        assert pytest.approx(2702.97, rel=1e-5) == value(
             phe.fs.unit.heat_transfer_coefficient_cold_side[0])
-        assert pytest.approx(1192.15, rel=1e-5) == value(
+        assert pytest.approx(1191.38, rel=1e-5) == value(
             phe.fs.unit.heat_transfer_coefficient[0])
 
-        # Differences have compunded by this point
-        assert pytest.approx(24.8666, rel=1e-5) == value(
+        assert pytest.approx(24.8507, rel=1e-5) == value(
             phe.fs.unit.NTU[0])
         assert pytest.approx(0.971227, rel=1e-5) == value(
             phe.fs.unit.Cratio[0])
-        assert pytest.approx(0.681045, rel=1e-5) == value(
-            phe.fs.unit.effectiveness_correlation[0])
+        assert pytest.approx(0.680902, rel=1e-5) == value(
+            phe.fs.unit.effectiveness[0])
 
-        assert pytest.approx(531586, rel=1e-5) == value(
+        assert pytest.approx(245771, rel=1e-5) == value(
             phe.fs.unit.heat_duty[0])
+
+        assert (pytest.approx(365.120, rel=1e-5) ==
+                value(phe.fs.unit.hot_outlet.temperature[0]))
+        assert (pytest.approx(357.123, rel=1e-5) ==
+                value(phe.fs.unit.cold_outlet.temperature[0]))
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

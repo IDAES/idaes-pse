@@ -183,9 +183,9 @@ class TestHXNTU(object):
         assert (pytest.approx(200650, rel=1e-5) ==
                 value(model.fs.unit.cold_outlet.pressure[0]))
 
-        assert (pytest.approx(365.768, rel=1e-5) ==
+        assert (pytest.approx(364.311, rel=1e-5) ==
                 value(model.fs.unit.hot_outlet.temperature[0]))
-        assert (pytest.approx(356.455, rel=1e-5) ==
+        assert (pytest.approx(357.935, rel=1e-5) ==
                 value(model.fs.unit.cold_outlet.temperature[0]))
 
         assert (pytest.approx(0.015800, rel=1e-5) ==
@@ -202,13 +202,13 @@ class TestHXNTU(object):
         assert (pytest.approx(0.85090, rel=1e-5) ==
                 value(model.fs.unit.cold_outlet.mole_frac_comp[0, "H2O"]))
 
-        Cmin = value(model.fs.unit.cold_side.properties_in[0].flow_mol *
-                     model.fs.unit.cold_side.properties_in[0].cp_mol)
+        Cmin = value(model.fs.unit.hot_side.properties_in[0].flow_mol *
+                     model.fs.unit.hot_side.properties_in[0].cp_mol)
         assert value(model.fs.unit.Cmin[0]) == pytest.approx(
             Cmin, rel=1e-5)
         assert value(model.fs.unit.Cmax[0]) == pytest.approx(
-            value(model.fs.unit.hot_side.properties_in[0].flow_mol *
-                  model.fs.unit.hot_side.properties_in[0].cp_mol),
+            value(model.fs.unit.cold_side.properties_in[0].flow_mol *
+                  model.fs.unit.cold_side.properties_in[0].cp_mol),
             rel=1e-5)
         assert value(model.fs.unit.NTU[0]) == pytest.approx(
             value(model.fs.unit.area *
