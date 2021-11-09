@@ -128,22 +128,24 @@ def petsc_default_options(solver_type=PetscSolverType.SNES):
             "--ts_monitor":"",            #show progess of TS solver
             "--ts_max_snes_failures":40,  #max nonlin solve fails before give up
             "--ts_max_reject":20,         #max steps to reject
-            "--ts_type":"alpha",          #ts_solver
-            "--snes_monitor":"",          #show progress on nonlinear solves
-            "--pc_type":"lu",             #direct solve MUMPS default LU fact
-            "--ksp_type":"preonly",       #no ksp used direct solve preconditioner
+            "--ts_type":"beuler",         #ts_solver
+            #"--ts_dt":0.1,
+            #"--ts_adapt_monitor":"",
+            #"--snes_monitor":"",          #show progress on nonlinear solves
+            #"--pc_type":"lu",             #direct solve MUMPS default LU fact
+            #"--ksp_type":"preonly",       #no ksp used direct solve preconditioner
             #"--show_jac":"",
             #"--show_initial":"",
-            "--snes_type":"newtonls",     # newton line search for nonliner solver
+            #"--snes_type":"newtonls",     # newton line search for nonliner solver
             "--ts_adapt_type":"basic",
-            "--ts_init_time":0,           # initial time
-            "--ts_max_time":1,            # final time
+            #"--ts_init_time":0,           # initial time
+            #"--ts_max_time":1,            # final time
             #"--ts_save_trajectory":1,
             #"--ts_trajectory_type":"visualization",
             #"--ts_exact_final_time":"stepover",
             "--ts_exact_final_time":"matchstep",
             #"--ts_exact_final_time":"interpolate",
-            #"--ts_view":""
+            #"--ts_view":"",
         }
     elif solver_type == PetscSolverType.TAO:
         raise NotImplementedError("Tao optimization solvers not yet implimented")
@@ -151,11 +153,39 @@ def petsc_default_options(solver_type=PetscSolverType.SNES):
 
 
 def _copy_time(time_vars, t_from, t_to):
+    """PRIVATE FUNCTION:
+
+    This is used on the flattened (only indexed by time) variable
+    representations to copy variable values that are unfixed at the "to" time
+    from the value at the "from" time. The PETSc DAE solver uses the initial
+    variable values as the initial condition, so this is used to copy the
+    previous time in as the initial condition for the next step.
+
+    Args:
+        time_vars (list): list of variables or refernces to variables indexed
+            only by time
+        t_from (float): time point to copy from
+        t_to (float): time point to copy to, only unfix vars will be overwritten
+
+    Returns:
+        None
+    """
     for v in time_vars:
         if not v[t_to].fixed:
             v[t_to].value = v[t_from].value
 
 def _generate_time_discretization(m, time):
+    """This is a generator for time discretization equations. Since we aren't
+    solving the whole time period simulataneously, we'll want to deactivate
+    these constraints.
+
+    Args:
+        m (Block): model or block to search for constraints
+        time (ContinuousSet):
+
+    Yields:
+        time discretization constraints
+    """
     for var in m.component_objects(pyo.Var):
         if isinstance(var, pyodae.DerivativeVar):
             if time in ComponentSet(var.get_continuousset_list()):
@@ -164,28 +194,35 @@ def _generate_time_discretization(m, time):
                 disc_eq = getattr(parent, name)
                 yield disc_eq
 
-def _set_dae_suffixes_from_variables(m, time, variables):
-    """
-    This is an alternative to the above method that allows us to build
-    a "local" suffix, which only contains variables at a single point.
+def _set_dae_suffixes_from_variables(m, variables):
+    """Write suffixes used by the solver to identify different variable types
+    and assocciate derivative and differential variables.
 
-    This method is unfortunately very slow and somewhat fragile.
-    There is a better way to get corresponding differential and derivative
-    variables, partitioned by time, but it relies on the
-    flatten_component_along_sets function added in Pyomo PR #2141
+    Note:  This is a method that allows us to build a "local" suffix, which only
+    contains variables at a single point. This method is unfortunately very
+    slow and somewhat fragile. There is a better way to get corresponding
+    differential and derivative variables, partitioned by time, but it relies on
+    the flatten_component_along_sets function added in Pyomo PR #2141
 
+    Args:
+        m: model search for varaibles and write suffixes to
+        variables (list): List of time indexed variables at a sepcific time point
+
+    Returns:
+        None
     """
     m.dae_suffix = pyo.Suffix(direction=pyo.Suffix.EXPORT, datatype=pyo.Suffix.INT)
     m.dae_link = pyo.Suffix(direction=pyo.Suffix.EXPORT, datatype=pyo.Suffix.INT)
     dae_var_link_index = 1
     differential_vars = []
+    n = 0
     for var in variables:
         # Getting an index from a vardata is unfortunately very slow
         t = var.index()
         # this recovers the original component from the reference
         parent = var.parent_component()
-        if (isinstance(parent, pyodae.DerivativeVar)
-                and time in ComponentSet(parent.get_continuousset_list())):
+        if isinstance(parent, pyodae.DerivativeVar):
+            n += 1
             # This works because the original component is also indexed
             # only by time.
             difvar = parent.get_state_var()[t]
@@ -229,7 +266,7 @@ def petsc_dae_by_time_element(
     solve_log = idaeslog.getSolveLogger("petsc-dae")
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
     regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
-    time_disc = list(_generate_time_discretization(m, time))
+    tdisc = list(_generate_time_discretization(m, time))
 
     #_set_dae_suffixes(m, time)
     solver_snes = get_petsc_solver(
@@ -241,42 +278,39 @@ def petsc_dae_by_time_element(
         options=ts_options,
         wsl=wsl)
 
-    # Context manager so we don't forget to reactivate
-    with TemporarySubsystemManager(to_deactivate=time_disc):
+    # First calculate the inital conditions and non-time-tindexed constraints
+    t = time.first()
+    with TemporarySubsystemManager(to_deactivate=tdisc, to_fix=initial_variables):
+        constraints = [con[t] for con in time_cons if t in con]
+        variables = [var[t] for var in time_vars]
+        t_block = create_subsystem_block(
+            constraints + initial_constraints,
+            variables
+        )
+        with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
+            res = solver_snes.solve(t_block, tee=slc.tee)
+    tprev = t
+    with TemporarySubsystemManager(to_deactivate=tdisc):
         # Solver time steps
-        var_unfix = []
         for t in time:
             constraints = [con[t] for con in time_cons if t in con]
             variables = [var[t] for var in time_vars]
-
-            # Create a temporary block with references to original
-            # constraints and variables so we can integrate this "subsystem"
-            # without altering the rest of the model.
             if t == time.first():
-                t_block = create_subsystem_block(
-                    constraints + initial_constraints,
-                    variables
+                continue
+            # Create a temporary block with references to original constraints
+            # and variables so we can integrate this "subsystem" without altering
+            # the rest of the model.
+            t_block = create_subsystem_block(constraints, variables)
+            differential_vars = _set_dae_suffixes_from_variables(t_block, variables)
+            # Take initial conditions for this step from the result of previous
+            _copy_time(time_vars, tprev, t)
+            with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
+                res = solver_dae.solve(
+                    t_block,
+                    tee=slc.tee,
+                    #keepfiles=True,
+                    #symbolic_solver_labels=True,
+                    export_nonlinear_variables=differential_vars,
+                    options={"--ts_init_time":tprev, "--ts_max_time":t}
                 )
-                with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
-                    res = solver_snes.solve(t_block, tee=slc.tee)
-                for var in initial_variables:
-                    if not var.fixed:
-                        var.fix()
-                        var_unfix.append(var)
-            else:
-                t_block = create_subsystem_block(constraints, variables)
-                differential_vars = _set_dae_suffixes_from_variables(
-                    t_block, time, variables)
-                _copy_time(time_vars, tprev, t)
-                with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
-                    res = solver_dae.solve(
-                        t_block,
-                        tee=slc.tee,
-                        #keepfiles=True,
-                        #symbolic_solver_labels=True,
-                        export_nonlinear_variables=differential_vars,
-                        options={"--ts_init_time":tprev, "--ts_max_time":t}
-                    )
             tprev = t
-            for var in var_unfix:
-                var.unfix()
