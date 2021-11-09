@@ -98,6 +98,10 @@ if self.config.energy_balance_type != EnergyBalanceType.none:
 
     .. math:: {\dot{q}}_{energy,s,t} = - V_{s} {\Sigma}_{r} {r_{s,t,r} H_{rxn,s,t,r}}
 
+    Isothermal solid phase:
+
+    .. math:: T_{s,t} = T_{s,t=0}
+
 List of Variables
 -----------------
 
@@ -114,7 +118,7 @@ List of Variables
    ":math:`q_{energy,s,t}`", "Energy holdup, solid phase", "``solids.energy_material_holdup``"
    ":math:`{\dot{q}}_{energy,s,t}`", "Energy accumulation, solid phase", "``solids.solids_energy_accumulation``"
    ":math:`r_{s,t,r}`", "Solid phase reaction rate of reaction r", "``solids.reactions.reaction_rate``"
-   ":math:`T_{s,t,x}`", "Solid phase temperature", "``solids.temperature``"
+   ":math:`T_{s,t}`", "Solid phase temperature", "``solids.temperature``"
    ":math:`x_{mass,s,t,j}`", "Mass fraction of component j, solid phase", "``solids.mass_frac_comp``"
    ":math:`V_{bed}`", "Total volume of the bed", "``volume_bed``"
    ":math:`V_{s,t}`", "Total volume of solids", "``solids.volume_solid``"
