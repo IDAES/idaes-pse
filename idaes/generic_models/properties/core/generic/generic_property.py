@@ -1022,6 +1022,14 @@ class GenericParameterData(PhysicalParameterBlock):
                  'method': '_log_molality_phase_comp_true'},
              'log_mole_frac_comp': {
                  'method': '_log_mole_frac_comp'},
+             'log_mole_frac_tbub': {
+                 'method': '_log_mole_frac_tbub'},
+             'log_mole_frac_tdew': {
+                 'method': '_log_mole_frac_tdew'},
+             'log_mole_frac_pbub': {
+                 'method': '_log_mole_frac_pbub'},
+             'log_mole_frac_pdew': {
+                 'method': '_log_mole_frac_pdew'},
              'log_mole_frac_phase_comp': {
                  'method': '_log_mole_frac_phase_comp'},
              'log_mole_frac_phase_comp_apparent': {
@@ -1208,10 +1216,10 @@ class _GenericStateBlock(StateBlock):
                                         "eq_mole_frac_tdew",
                                         "eq_mole_frac_pbub",
                                         "eq_mole_frac_pdew",
-                                        "_log_mole_frac_tbub_eq",
-                                        "_log_mole_frac_tdew_eq",
-                                        "_log_mole_frac_pbub_eq",
-                                        "_log_mole_frac_pdew_eq",
+                                        "log_mole_frac_tbub_eq",
+                                        "log_mole_frac_tdew_eq",
+                                        "log_mole_frac_pbub_eq",
+                                        "log_mole_frac_pdew_eq",
                                         "mole_frac_comp_eq",
                                         "log_mole_frac_comp_eq"):
                     c.deactivate()
@@ -1488,8 +1496,8 @@ class _GenericStateBlock(StateBlock):
                                    blk.params.get_component(j),
                                    Tbub0*T_units) /
                         blk.pressure)
-                if blk.is_property_constructed("_log_mole_frac_tbub"):
-                    blk._log_mole_frac_tbub[pp, j].value = value(
+                if blk.is_property_constructed("log_mole_frac_tbub"):
+                    blk.log_mole_frac_tbub[pp, j].value = value(
                         log(blk._mole_frac_tbub[pp, j]))
                     
             for j in henry_comps:
@@ -1500,8 +1508,8 @@ class _GenericStateBlock(StateBlock):
                             l_phase]["method"].return_expression(
                                 blk, l_phase, j, Tbub0*T_units) /
                     blk.pressure)
-                if blk.is_property_constructed("_log_mole_frac_tbub"):
-                    blk._log_mole_frac_tbub[pp, j].value = value(
+                if blk.is_property_constructed("log_mole_frac_tbub"):
+                    blk.log_mole_frac_tbub[pp, j].value = value(
                         log(blk._mole_frac_tbub[pp, j]))
 
     def _init_Tdew(self, blk, T_units):
@@ -1596,9 +1604,8 @@ class _GenericStateBlock(StateBlock):
                                    blk,
                                    blk.params.get_component(j),
                                    Tdew0*T_units))
-                #if hasattr(blk,"_log_mole_frac_tdew"):
-                if blk.is_property_constructed("_log_mole_frac_tdew"):
-                    blk._log_mole_frac_tdew[pp, j].value = value(
+                if blk.is_property_constructed("log_mole_frac_tdew"):
+                    blk.log_mole_frac_tdew[pp, j].value = value(
                         log(blk._mole_frac_tdew[pp, j]))
             for j in henry_comps:
                 blk._mole_frac_tdew[pp, j].value = value(
@@ -1606,8 +1613,8 @@ class _GenericStateBlock(StateBlock):
                     blk.params.get_component(j).config.henry_component[
                         l_phase]["method"].return_expression(
                             blk, l_phase, j, Tdew0*T_units))
-                if blk.is_property_constructed("_log_mole_frac_tdew"):
-                    blk._log_mole_frac_tdew[pp, j].value = value(
+                if blk.is_property_constructed("log_mole_frac_tdew"):
+                    blk.log_mole_frac_tdew[pp, j].value = value(
                         log(blk._mole_frac_tdew[pp, j]))
 
     def _init_Pbub(self, blk, T_units):
@@ -1633,15 +1640,15 @@ class _GenericStateBlock(StateBlock):
                 blk._mole_frac_pbub[pp, j].value = value(
                     blk.mole_frac_comp[j] * blk.pressure_sat_comp[j] /
                     blk.pressure_bubble[pp])
-                if blk.is_property_constructed("_log_mole_frac_pbub"):
-                    blk._log_mole_frac_pbub[pp, j].value = value(
+                if blk.is_property_constructed("log_mole_frac_pbub"):
+                    blk.log_mole_frac_pbub[pp, j].value = value(
                         log(blk._mole_frac_pbub[pp, j]))
             for j in henry_comps:
                 blk._mole_frac_pbub[pp, j].value = value(
                     blk.mole_frac_comp[j]*blk.henry[l_phase, j] /
                     blk.pressure_bubble[pp])
-                if blk.is_property_constructed("_log_mole_frac_pbub"):
-                    blk._log_mole_frac_pbub[pp, j].value = value(
+                if blk.is_property_constructed("log_mole_frac_pbub"):
+                    blk.log_mole_frac_pbub[pp, j].value = value(
                         log(blk._mole_frac_pbub[pp, j]))
 
     def _init_Pdew(self, blk, T_units):
@@ -1667,15 +1674,15 @@ class _GenericStateBlock(StateBlock):
                 blk._mole_frac_pdew[pp, j].value = value(
                     blk.mole_frac_comp[j]*blk.pressure_dew[pp] /
                     blk.pressure_sat_comp[j])
-                if blk.is_property_constructed("_log_mole_frac_pdew"):
-                    blk._log_mole_frac_pdew[pp, j].value = value(
+                if blk.is_property_constructed("log_mole_frac_pdew"):
+                    blk.log_mole_frac_pdew[pp, j].value = value(
                         log(blk._mole_frac_pdew[pp, j]))
             for j in henry_comps:
                 blk._mole_frac_pdew[pp, j].value = value(
                     blk.mole_frac_comp[j]*blk.pressure_dew[pp] /
                     blk.henry[l_phase, j])
-                if blk.is_property_constructed("_log_mole_frac_pdew"):
-                    blk._log_mole_frac_pdew[pp, j].value = value(
+                if blk.is_property_constructed("log_mole_frac_pdew"):
+                    blk.log_mole_frac_pdew[pp, j].value = value(
                         log(blk._mole_frac_pdew[pp, j]))
 
 
@@ -1893,8 +1900,8 @@ class GenericStateBlockData(StateBlockData):
             self.params.config.bubble_dew_method.scale_temperature_bubble(
                 self, overwrite=False)
             
-        if self.is_property_constructed("_log_mole_frac_tbub"):
-            for i, v in self._log_mole_frac_tbub_eq.items():
+        if self.is_property_constructed("log_mole_frac_tbub"):
+            for i, v in self.log_mole_frac_tbub_eq.items():
                 if iscale.get_scaling_factor(v) is None:
                     if self.params.config.phases[i[0]]["type"] is VaporPhase:
                         p = i[0]
@@ -1908,7 +1915,7 @@ class GenericStateBlockData(StateBlockData):
                             sf_mf[p, j],
                             default=10,
                             warning=True,
-                            hint="for _log_mole_frac_tbub")
+                            hint="for log_mole_frac_tbub")
                         iscale.constraint_scaling_transform(
                             v, sf_x, overwrite=False)
                     except KeyError:
@@ -1938,8 +1945,8 @@ class GenericStateBlockData(StateBlockData):
             self.params.config.bubble_dew_method.scale_temperature_dew(
                 self, overwrite=False)
 
-        if self.is_property_constructed("_log_mole_frac_tdew"):
-            for i, v in self._log_mole_frac_tdew_eq.items():
+        if self.is_property_constructed("log_mole_frac_tdew"):
+            for i, v in self.log_mole_frac_tdew_eq.items():
                 if iscale.get_scaling_factor(v) is None:
                     if self.params.config.phases[i[0]]["type"] is LiquidPhase:
                         p = i[0]
@@ -1954,7 +1961,7 @@ class GenericStateBlockData(StateBlockData):
                             sf_mf[p, j],
                             default=10,
                             warning=True,
-                            hint="for _log_mole_frac_tbub")
+                            hint="for _log_mole_frac_tdew")
                         iscale.constraint_scaling_transform(
                             v, sf_x, overwrite=False)
                     except KeyError:
@@ -1973,8 +1980,8 @@ class GenericStateBlockData(StateBlockData):
             self.params.config.bubble_dew_method.scale_pressure_bubble(
                 self, overwrite=False)
             
-        if self.is_property_constructed("_log_mole_frac_pbub"):
-            for i, v in self._log_mole_frac_pbub_eq.items():
+        if self.is_property_constructed("log_mole_frac_pbub"):
+            for i, v in self.log_mole_frac_pbub_eq.items():
                 if iscale.get_scaling_factor(v) is None:
                     if self.params.config.phases[i[0]]["type"] is VaporPhase:
                         p = i[0]
@@ -1988,7 +1995,7 @@ class GenericStateBlockData(StateBlockData):
                             sf_mf[p, j],
                             default=10,
                             warning=True,
-                            hint="for _log_mole_frac_pbub")
+                            hint="for log_mole_frac_pbub")
                         iscale.constraint_scaling_transform(
                             v, sf_x, overwrite=False)                  
                     except KeyError:
@@ -2007,8 +2014,8 @@ class GenericStateBlockData(StateBlockData):
             self.params.config.bubble_dew_method.scale_pressure_dew(
                 self, overwrite=False)
             
-        if self.is_property_constructed("_log_mole_frac_pdew"):
-            for i, v in self._log_mole_frac_pdew_eq.items():
+        if self.is_property_constructed("log_mole_frac_pdew"):
+            for i, v in self.log_mole_frac_pdew_eq.items():
                 if iscale.get_scaling_factor(v) is None:
                     if self.params.config.phases[i[0]]["type"] is LiquidPhase:
                         p = i[0]
@@ -2023,7 +2030,7 @@ class GenericStateBlockData(StateBlockData):
                             sf_mf[p, j],
                             default=10,
                             warning=True,
-                            hint="for _log_mole_frac_pdew")
+                            hint="for log_mole_frac_pdew")
                         iscale.constraint_scaling_transform(
                             v, sf_x, overwrite=False)                  
                     except KeyError:
@@ -2273,33 +2280,37 @@ class GenericStateBlockData(StateBlockData):
                     bounds=(0, None),
                     doc="Vapor mole fractions at bubble temperature",
                     units=None)
-            
-            b._log_mole_frac_tbub = Var(
+
+            b.params.config.bubble_dew_method.temperature_bubble(b)
+        except AttributeError:
+            b.del_component(b.temperature_bubble)
+            b.del_component(b._mole_frac_tbub)
+            raise
+    
+    def _log_mole_frac_tbub(b):
+        try:
+            b.log_mole_frac_tbub = Var(
                     b.params._pe_pairs,
                     b.component_list,
                     initialize= log(1/len(b.component_list)),
                     bounds=(None, 0),
                     doc="Vapor log mole fractions at bubble temperature",
                     units=None)
-
+    
             def rule_log_mole_frac_tbub(b, p1, p2, j):
-                return exp(b._log_mole_frac_tbub[p1, p2, j]) == (
+                return exp(b.log_mole_frac_tbub[p1, p2, j]) == (
                     b._mole_frac_tbub[p1, p2, j])
-            b._log_mole_frac_tbub_eq = Constraint(
+            b.log_mole_frac_tbub_eq = Constraint(
                 b.params._pe_pairs,
                 b.component_list,
                 rule=rule_log_mole_frac_tbub,
                 doc="Constraint for log of bubble mole fractions"
                 )
-
-            b.params.config.bubble_dew_method.temperature_bubble(b)
         except AttributeError:
-            b.del_component(b.temperature_bubble)
-            b.del_component(b._mole_frac_tbub)
-            b.del_component(b._log_mole_frac_tbub)
-            b.del_component(b._log_mole_frac_tbub_eq)
+            b.del_component(b.log_mole_frac_tbub)
+            b.del_component(b.log_mole_frac_tbub_eq)
             raise
-
+    
     def _temperature_dew(b):
         if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "temperature_dew")
@@ -2320,7 +2331,15 @@ class GenericStateBlockData(StateBlockData):
                     doc="Liquid mole fractions at dew temperature",
                     units=None)
             
-            b._log_mole_frac_tdew = Var(
+            b.params.config.bubble_dew_method.temperature_dew(b)
+        except AttributeError:
+            b.del_component(b.temperature_dew)
+            b.del_component(b._mole_frac_tdew)
+            raise
+            
+    def _log_mole_frac_tdew(b):
+        try:
+            b.log_mole_frac_tdew = Var(
                     b.params._pe_pairs,
                     b.component_list,
                     initialize=log(1/len(b.component_list)),
@@ -2329,22 +2348,18 @@ class GenericStateBlockData(StateBlockData):
                     units=None)
             
             def rule_log_mole_frac_tdew(b, p1, p2, j):
-                return exp(b._log_mole_frac_tdew[p1, p2, j]) == (
+                return exp(b.log_mole_frac_tdew[p1, p2, j]) == (
                     b._mole_frac_tdew[p1, p2, j])
-            b._log_mole_frac_tdew_eq = Constraint(
+            b.log_mole_frac_tdew_eq = Constraint(
                 b.params._pe_pairs,
                 b.component_list,
                 rule=rule_log_mole_frac_tdew,
                 doc="Constraint for log of dew mole fractions"
                 )
-            
-            b.params.config.bubble_dew_method.temperature_dew(b)
-        except AttributeError:
-            b.del_component(b.temperature_dew)
-            b.del_component(b._mole_frac_tdew)
-            b.del_component(b._log_mole_frac_tdew)
-            b.del_component(b._log_mole_frac_tdew_eq)
-            raise
+        except:
+            b.del_component(b.log_mole_frac_tdew)
+            b.del_component(b.log_mole_frac_tdew_eq)
+            raise            
 
     def _pressure_bubble(b):
         if b.params.config.bubble_dew_method is None:
@@ -2366,8 +2381,16 @@ class GenericStateBlockData(StateBlockData):
                     bounds=(0, None),
                     doc="Vapor mole fractions at bubble pressure",
                     units=None)
-            
-            b._log_mole_frac_pbub = Var(
+
+            b.params.config.bubble_dew_method.pressure_bubble(b)
+        except AttributeError:
+            b.del_component(b.pressure_bubble)
+            b.del_component(b._mole_frac_pbub)
+            raise
+
+    def _log_mole_frac_pbub(b):
+        try:
+            b.log_mole_frac_pbub = Var(
                     b.params._pe_pairs,
                     b.component_list,
                     initialize=log(1/len(b.component_list)),
@@ -2376,21 +2399,17 @@ class GenericStateBlockData(StateBlockData):
                     units=None)
             
             def rule_log_mole_frac_pbub(b, p1, p2, j):
-                return exp(b._log_mole_frac_pbub[p1, p2, j]) == (
+                return exp(b.log_mole_frac_pbub[p1, p2, j]) == (
                     b._mole_frac_pbub[p1, p2, j])
-            b._log_mole_frac_pbub_eq = Constraint(
+            b.log_mole_frac_pbub_eq = Constraint(
                 b.params._pe_pairs,
                 b.component_list,
                 rule=rule_log_mole_frac_pbub,
                 doc="Constraint for log of bubble mole fractions"
                 )
-
-            b.params.config.bubble_dew_method.pressure_bubble(b)
         except AttributeError:
-            b.del_component(b.pressure_bubble)
-            b.del_component(b._mole_frac_pbub)
-            b.del_component(b._log_mole_frac_pbub)
-            b.del_component(b._log_mole_frac_pbub_eq)
+            b.del_component(b.log_mole_frac_pbub)
+            b.del_component(b.log_mole_frac_pbub_eq)
             raise
 
     def _pressure_dew(b):
@@ -2414,7 +2433,15 @@ class GenericStateBlockData(StateBlockData):
                     doc="Liquid mole fractions at dew pressure",
                     units=None)
 
-            b._log_mole_frac_pdew = Var(
+            b.params.config.bubble_dew_method.pressure_dew(b)
+        except AttributeError:
+            b.del_component(b.pressure_dew)
+            b.del_component(b._mole_frac_pdew)
+            raise
+    
+    def _log_mole_frac_pdew(b):
+        try:
+            b.log_mole_frac_pdew = Var(
                     b.params._pe_pairs,
                     b.component_list,
                     initialize=log(1/len(b.component_list)),
@@ -2423,23 +2450,19 @@ class GenericStateBlockData(StateBlockData):
                     units=None)
 
             def rule_log_mole_frac_pdew(b, p1, p2, j):
-                return exp(b._log_mole_frac_pdew[p1, p2, j]) == (
+                return exp(b.log_mole_frac_pdew[p1, p2, j]) == (
                     b._mole_frac_pdew[p1, p2, j])
-            b._log_mole_frac_pdew_eq = Constraint(
+            b.log_mole_frac_pdew_eq = Constraint(
                 b.params._pe_pairs,
                 b.component_list,
                 rule=rule_log_mole_frac_pdew,
                 doc="Constraint for log of dew mole fractions"
                 )
-            
-            b.params.config.bubble_dew_method.pressure_dew(b)
         except AttributeError:
-            b.del_component(b.pressure_dew)
-            b.del_component(b._mole_frac_pdew)
-            b.del_component(b._log_mole_frac_pdew)
-            b.del_component(b._log_mole_frac_pdew_eq)
+            b.del_component(b.log_mole_frac_pdew)
+            b.del_component(b.log_mole_frac_pdew_eq)
             raise
-
+            
     # -------------------------------------------------------------------------
     # Property Methods
     def _act_phase_comp(self):

@@ -777,7 +777,7 @@ class Cubic(EoSBase):
         Z = proc(f, A, B)
 
         if pobj.is_vapor_phase():
-            log_mole_frac = blk._log_mole_frac_tbub[pp[0], pp[1], j]
+            log_mole_frac = blk.log_mole_frac_tbub[pp[0], pp[1], j]
         else:
             log_mole_frac = blk.log_mole_frac_comp[j]
 
@@ -838,7 +838,7 @@ class Cubic(EoSBase):
         if pobj.is_vapor_phase():
             log_mole_frac = blk.log_mole_frac_comp[j]
         else:
-            log_mole_frac = blk._log_mole_frac_tdew[pp[0], pp[1], j]
+            log_mole_frac = blk.log_mole_frac_tdew[pp[0], pp[1], j]
 
         return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
                 log_mole_frac + log(blk.pressure/blk.pressure._units))
@@ -888,7 +888,7 @@ class Cubic(EoSBase):
         Z = proc(f, A, B)
 
         if pobj.is_vapor_phase():
-            log_mole_frac = blk._log_mole_frac_pbub[pp[0], pp[1], j]
+            log_mole_frac = blk.log_mole_frac_pbub[pp[0], pp[1], j]
         else:
             log_mole_frac = blk.log_mole_frac_comp[j]
 
@@ -942,7 +942,7 @@ class Cubic(EoSBase):
         if pobj.is_vapor_phase():
             log_mole_frac = blk.log_mole_frac_comp[j]
         else:
-            log_mole_frac = blk._log_mole_frac_pdew[pp[0], pp[1], j]
+            log_mole_frac = blk.log_mole_frac_pdew[pp[0], pp[1], j]
 
         return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
                 log_mole_frac + log(blk.pressure_dew[pp] /
