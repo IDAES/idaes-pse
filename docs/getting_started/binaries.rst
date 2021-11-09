@@ -101,3 +101,16 @@ contents of the batch file to run the petsc are below:
 
   @echo off
   idaes solver-wsl --distribution Ubuntu-20.04 --user john --executable ~/local/bin/petsc %*
+
+If you want to use user-defined AMPL functions with a WSL solver while running IDAES
+in the normal Windows environment, you will need to set the ``AMPLFUNC`` environment
+variable in the WSL environment manually. The ``AMPLFUNC`` variable is a newline-separated
+list of paths to shared libraries containing user-defined AMPL functions.  The easiest way
+to handle user-defined functions in this case is to just set ``AMPLFUNC`` in your
+``.bashrc`` file then run the WSL command in interactive mode, with the batch file
+setup below.
+
+.. code-block ::
+
+  @echo off
+  idaes solver-wsl --distribution Ubuntu-20.04 --user john --executable bash -ic '~/local/bin/petsc %*'
