@@ -44,20 +44,20 @@ Design Parameters and Variables:
     * plate thickness,
     * port diameter,
     * plate thermal conductivity, and
-    * total heat trasnfer area.
+    * total heat transfer area.
 
 Model Structure
 ---------------
 
-The Plate Heat Exchanger unit model bulds off the core 
+The Plate Heat Exchanger unit model builds off the core 
 :ref:`HeatExchangerNTU model <technical_specs/model_libraries/generic/unit_models/heat_exchanger_ntu:Heat Exchanger using the NTU Method>`,
-and heat trasnfer is based on the Effectiveness-Number of Transfer Units
+and heat transfer is based on the Effectiveness-Number of Transfer Units
 (e-NTU method).
 
 Parameters
 ----------
 
-The following parameters can be set via configuration arguments when instantiating the Plate Heat Exchanger model, or modifed later.
+The following parameters can be set via configuration arguments when instantiating the Plate Heat Exchanger model, or modified later.
 
 =========================== ==================== =========== =============================================================================
 Variable                    Symbol               Index Sets  Doc
@@ -79,7 +79,7 @@ plate_length                :math:`L`          None        Length of a heat exch
 plate_width                 :math:`W`          None        Width of a heat exchanger plate
 plate_thickness             :math:`H`          None        Thickness of a heat exchanger plate
 plate_pact_length           :math:`L_{pact}`   None        Compressed plate pact length
-port_diameter               :math:`d_{port}`   None        Diamter of fluid ports in each plate
+port_diameter               :math:`d_{port}`   None        Diameter of fluid ports in each plate
 plate_therm_cond            :math:`k_{plate}`  None        Thermal conductivity of heat exchanger plates
 =========================== ================== =========== =============================================================================
 
@@ -99,7 +99,7 @@ where
 .. math::
   N_{plates} = 2N_{channels}N_{passes} - (1+N_{dividers})
 
-Channel diamter:
+Channel diameter:
 
 .. math::
   d_{channel} = \frac{2LWg_{plate}}{A}
@@ -109,14 +109,14 @@ Hot and cold side heat transfer coefficients are calculated using the following 
 .. math::
   U_{side} = \frac{k_{fluid} \times A \times Re^B \times Pr^C}{d_{channel}}
 
-where :math:`k_{fluid}` is the thermal conductiviity of the fluid, :math:`Re` and :math:`Pr` are the Reynold's and Prandlt number respectively and :math:`A`, :math:`B` and :math:`C` are coefficients.
+where :math:`k_{fluid}` is the thermal conductivity of the fluid, :math:`Re` and :math:`Pr` are the Reynolds and Prandlt number respectively and :math:`A`, :math:`B` and :math:`C` are coefficients.
 
-The friciton factor for the pressure drop correlation is expressed as:
+The friction factor for the pressure drop correlation is expressed as:
 
 .. math::
   f = A + B \times Re^C
 
-where :math:`Re` is the Reynold's and :math:`A`, :math:`B` and :math:`C` are coefficients (different to those above).
+where :math:`Re` is the Reynolds and :math:`A`, :math:`B` and :math:`C` are coefficients (different to those above).
 
 Constraints
 -----------
@@ -124,17 +124,17 @@ Constraints
 The Plate Heat Exchanger unit model writes additional ``Constraints`` beyond those written by the
 HeatExchangerNTU class.
 
-The overall heat transfer coefficient is calcuated using the following correaltion:
+The overall heat transfer coefficient is calculated using the following correlation:
 
 .. math::
   U == \frac{1}{\frac{1}{U_{hot}} + \frac{g_{plate}}{k_{plate}} + \frac{1}{U_{cold}}}
 
-For heat exchangers with an even number of passes, the follwoing correlation is used for the effectiveness factor:
+For heat exchangers with an even number of passes, the following correlation is used for the effectiveness factor:
 
 .. math::
   \epsilon = \frac{(1 - exp(-\frac{NTU}{{channels}} \times (1 - C_{ratio})))}{(1 - C_{ratio} \times exp(-\frac{NTU}{{channels}} \times (1 - C_{ratio})))}
 
-For heat exchangers with an odd number of passes, the follwoing correlation is used for the effectiveness factor:
+For heat exchangers with an odd number of passes, the following correlation is used for the effectiveness factor:
 
 .. math::
   \epsilon = \frac{(1 - exp(-\frac{NTU}{{channels}} \times (1 + C_{ratio})))}{(1 + C_{ratio})}
