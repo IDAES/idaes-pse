@@ -1,15 +1,15 @@
-#################################################################################
+###############################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
 # by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University,
+# West Virginia University Research Corporation, et al.  All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-#################################################################################
+###############################################################################
 """
 IDAES Moving Bed Model.
 
@@ -736,7 +736,7 @@ see reaction package for documentation.}"""))
             def prandtl_number(b, t, x):
                 return (b.Pr[t, x] *
                         b.gas_phase.properties[t, x].therm_cond ==
-                        b.solid_phase.properties[t, x].cp_mass *
+                        b.gas_phase.properties[t, x].cp_mass *
                         b.gas_phase.properties[t, x].visc_d)
 
             # Particle Nusselt number
@@ -803,7 +803,7 @@ see reaction package for documentation.}"""))
     def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
-        Initialisation routine for MB unit.
+        Initialization routine for MB unit.
 
         Keyword Arguments:
             gas_phase_state_args : a dict of arguments to be passed to the
@@ -988,7 +988,7 @@ see reaction package for documentation.}"""))
                         for j in gas_phase.property_package.component_list:
                             (gas_rxn_gen[t, x, p, j].unfix())
                             if not (
-                                (blk.gas_phase.config.transformation_scheme 
+                                (blk.gas_phase.config.transformation_scheme
                                     != "FORWARD"
                                  and x == blk.length_domain.first()) or
                                 (blk.gas_phase.config.transformation_scheme
@@ -1038,7 +1038,7 @@ see reaction package for documentation.}"""))
                         for j in solid_phase.property_package.component_list:
                             (solid_rxn_gen[t, x, p, j].unfix())
                             if not (
-                                (blk.solid_phase.config.transformation_scheme 
+                                (blk.solid_phase.config.transformation_scheme
                                     != "FORWARD"
                                  and x == blk.length_domain.first()) or
                                 (blk.solid_phase.config.transformation_scheme
