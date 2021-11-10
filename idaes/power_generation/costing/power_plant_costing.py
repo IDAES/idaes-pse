@@ -53,6 +53,28 @@ pyunits.load_definitions_from_strings(['USD = [currency]'])
 # Power Plant Costing Library
 # -----------------------------------------------------------------------------
 
+"""
+Custom dictionaries have been added as a way to add new scaling equations
+that are not based on the Bituminous Baseline report.
+New cost accounts include:
+    - 5.1.a.epri can be used to cost the Cansolv carbon capture system
+    between 90% and 97.7% capture rate. It is only valid for a flue gas CO2
+    concentration of 4%. The additional cost component of the CO2 system is
+    in account 5.1.b and remains unchanged.
+ """
+
+custom_costing_exponents = {"6": {"5.1.a.epri": 
+                                  {"Account Name": "Cansolv CO2 Removal System",
+                                   "Exponent": 2.788,
+                                   "Process Parameter": "CO2 Flowrate"}}}
+
+custom_costing_params = {"6": {"B": {"5.1.a.epri": 
+                                     {"BEC": 224191.4,
+                                      "Eng Fee": 0.2,
+                                      "Process Contingency": 0.18,
+                                      "Project Contingency": 0.2,
+                                      "RP Value": 493587.88,
+                                      "Units": "lb/hr"}}}}
 
 def get_PP_costing(self, cost_accounts,
                    scaled_param, units, tech, ccs='B'):
@@ -197,24 +219,10 @@ def get_PP_costing(self, cost_accounts,
         else:
             AttributeError("{} technology not supported".format(self.name))
 
-    # check that all accounts use the same process parameter
-    param_check = None
-    for account in cost_accounts:
-        param = BB_costing_exponents[str(tech)][account]['Process Parameter']
-        if param_check is None:
-            param_check = param
-        elif param != param_check:
-            raise ValueError("{} cost accounts selected do not use "
-                             " the same process parameter".format(self.name))
-
-    # check that the user passed the correct units
-    ref_units = BB_costing_params[str(tech)][ccs][cost_accounts[0]]['Units']
-    if units != ref_units:
-        raise ValueError('Account %s uses units of %s. '
-                         'Units of %s were passed.'
-                         % (cost_accounts[0], ref_units, units))
-
-    # construct dictionaries
+    
+    # pull data for each account into dictionaries
+    process_params = {}
+    reference_units = {}
     account_names = {}
     exponents = {}
     reference_costs = {}
@@ -222,22 +230,69 @@ def get_PP_costing(self, cost_accounts,
     engineering_fees = {}
     process_contingencies = {}
     project_contingencies = {}
-
+    
     for account in cost_accounts:
-        account_names[account] = BB_costing_exponents[str(
-            tech)][account]['Account Name']
-        exponents[account] = float(
-            BB_costing_exponents[str(tech)][account]['Exponent'])
-        reference_costs[account] = BB_costing_params[str(
-            tech)][ccs][account]['BEC']
-        reference_params[account] = BB_costing_params[str(
-            tech)][ccs][account]['RP Value']
-        engineering_fees[account] = BB_costing_params[str(
-            tech)][ccs][account]['Eng Fee']
-        process_contingencies[account] = BB_costing_params[str(
-            tech)][ccs][account]['Process Contingency']
-        project_contingencies[account] = BB_costing_params[str(
-            tech)][ccs][account]['Project Contingency']
+        try:  # first look for data in json file info
+            process_params[account] = BB_costing_exponents[str(
+                tech)][account]['Process Parameter']
+            reference_units[account] = BB_costing_params[str(
+                tech)][ccs][cost_accounts[0]]['Units']
+            account_names[account] = BB_costing_exponents[str(
+                tech)][account]['Account Name']
+            exponents[account] = float(
+                BB_costing_exponents[str(tech)][account]['Exponent'])
+            reference_costs[account] = BB_costing_params[str(
+                tech)][ccs][account]['BEC']
+            reference_params[account] = BB_costing_params[str(
+                tech)][ccs][account]['RP Value']
+            engineering_fees[account] = BB_costing_params[str(
+                tech)][ccs][account]['Eng Fee']
+            process_contingencies[account] = BB_costing_params[str(
+                tech)][ccs][account]['Process Contingency']
+            project_contingencies[account] = BB_costing_params[str(
+                tech)][ccs][account]['Project Contingency']
+        except KeyError:
+            try: # next look for data in custom dictionaries
+                process_params[account] = custom_costing_exponents[str(
+                    tech)][account]['Process Parameter']
+                reference_units[account] = custom_costing_params[str(
+                    tech)][ccs][cost_accounts[0]]['Units']
+                account_names[account] = custom_costing_exponents[str(
+                    tech)][account]['Account Name']
+                exponents[account] = float(
+                    custom_costing_exponents[str(tech)][account]['Exponent'])
+                reference_costs[account] = custom_costing_params[str(
+                    tech)][ccs][account]['BEC']
+                reference_params[account] = custom_costing_params[str(
+                    tech)][ccs][account]['RP Value']
+                engineering_fees[account] = custom_costing_params[str(
+                    tech)][ccs][account]['Eng Fee']
+                process_contingencies[account] = custom_costing_params[str(
+                    tech)][ccs][account]['Process Contingency']
+                project_contingencies[account] = custom_costing_params[str(
+                    tech)][ccs][account]['Project Contingency']
+            except KeyError:
+                print("KeyError: Account {} could not be found in the "
+                      "dictionary for technology {} with CCS {}".format(
+                          account, str(tech), ccs))
+            
+    # check that all accounts use the same process parameter
+    param_check = None
+    for account in cost_accounts:
+        param = process_params[account]
+        if param_check is None:
+            param_check = param
+        elif param != param_check:
+            raise ValueError("{} cost accounts selected do not use "
+                             "the same process parameter".format(self.name))
+
+    # check that the user passed the correct units
+    for account in cost_accounts:
+        ref_units = reference_units[account]
+        if units != ref_units:
+            raise ValueError('Account %s uses units of %s. '
+                             'Units of %s were passed.'
+                             % (cost_accounts[0], ref_units, units))
 
     # Used by other functions for reporting results
     self.costing.account_names = account_names
