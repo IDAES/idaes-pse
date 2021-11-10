@@ -106,7 +106,6 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
 
     unit.initialize(**init_kwargs)
 
-    print(degrees_of_freedom(m))
     assert degrees_of_freedom(m) == dof
 
     fin_fixed_vars = fixed_variables_set(m)
