@@ -17,6 +17,10 @@ Currently only supports liquid and vapor phases
 """
 import os
 from enum import Enum
+from copy import deepcopy
+
+from pyomo.environ import units as pyunits
+from idaes.core.util.constants import Constants as const
 
 from pyomo.environ import (exp,
                            Expression,
@@ -28,7 +32,6 @@ from pyomo.environ import (exp,
                            Var)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
-from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
 from idaes.core.util.math import safe_log
@@ -38,6 +41,7 @@ import idaes.logger as idaeslog
 from idaes.core.util.exceptions import \
     BurntToast, ConfigurationError, PropertyNotSupportedError
 
+# pylint: disable=invalid-name
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -72,6 +76,7 @@ class CubicType(Enum):
 class MixingRuleA(Enum):
     # Rule to calculate am for cubic equations of state
     default = 0
+    dummy = 1
 
 
 class MixingRuleB(Enum):
@@ -91,6 +96,18 @@ CubicConfig.declare("type", ConfigValue(
     domain=In(CubicType),
     description="Equation of state to use",
     doc="Enum indicating type of cubic equation of state to use."))
+CubicConfig.declare("mixing_rule_a", ConfigValue(
+    default=MixingRuleA.default,
+    domain=In(MixingRuleA),
+    description="Mixing rule for parameter am for cubic EoS",
+    doc="Enum indicating type of mixing rule for parameter am to use."
+    ))
+CubicConfig.declare("mixing_rule_b", ConfigValue(
+    default=MixingRuleB.default,
+    domain=In(MixingRuleB),
+    description="Mixing rule for parameter bm for cubic EoS",
+    doc="Enum indicating type of mixing rule for parameter bm to use."
+    ))
 
 
 class Cubic(EoSBase):
@@ -119,68 +136,68 @@ class Cubic(EoSBase):
             # Common components already constructed by previous phase
             return
 
-        # Create expressions for coefficients
-        def func_fw(m, j):
-            cobj = m.params.get_component(j)
-            if ctype == CubicType.PR:
-                return 0.37464 + 1.54226*cobj.omega - \
-                       0.26992*cobj.omega**2
-            elif ctype == CubicType.SRK:
-                return 0.48 + 1.574*cobj.omega - \
-                       0.176*cobj.omega**2
-            else:
-                raise BurntToast(
-                        "{} received unrecognized cubic type. This should "
-                        "never happen, so please contact the IDAES developers "
-                        "with this bug.".format(b.name))
 
+        # Create expressions for coefficients
+        def rule_fw(m,j):
+            func_fw = getattr(m.params,cname+"_func_fw")
+            cobj = m.params.get_component(j)
+            return func_fw(cobj)
+        
         b.add_component(cname+'_fw',
                         Expression(b.component_list,
-                                   rule=func_fw,
+                                   rule=rule_fw,
                                    doc='EoS S factor'))
         
-        def func_a(m, j):
+                
+        def rule_a_crit(m,j):
             cobj = m.params.get_component(j)
-            fw = getattr(m, cname+"_fw")
             return (EoS_param[ctype]['omegaA']*(
                        (Cubic.gas_constant(b) *
-                        cobj.temperature_crit)**2/cobj.pressure_crit) *
-                    ((1+fw[j]*(1-sqrt(m.temperature /
-                                      cobj.temperature_crit)))**2))
+                        cobj.temperature_crit)**2/cobj.pressure_crit))
+        
+        b.add_component(cname+'_a_crit',
+                        Expression(b.component_list,
+                                   rule=rule_a_crit,
+                                   doc='Component a coefficient at T_crit')
+                        )
+        
+        def rule_a(m, j):
+            cobj = m.params.get_component(j)
+            fw = getattr(m, cname+"_fw")[j]
+            ac = getattr(m, cname+'_a_crit')[j]
+            func_alpha = getattr(m.params,cname+"_func_alpha")
+            
+            return  ac*func_alpha(m.temperature,fw,cobj)
+        
         b.add_component(cname+'_a',
                         Expression(b.component_list,
-                                   rule=func_a,
+                                   rule=rule_a,
                                    doc='Component a coefficient'))
         
-        def func_da_dT(m, j):
+        def rule_da_dT(m, j):
             cobj = m.params.get_component(j)
-            fw = getattr(m, cname+"_fw")
+            fw = getattr(m, cname+"_fw")[j]
+            ac = getattr(m, cname+'_a_crit')[j]
+            func_dalpha_dT = getattr(m.params,cname+"_func_dalpha_dT")
             
-            ac = (EoS_param[ctype]['omegaA']*(
-                       (Cubic.gas_constant(b) *
-                        cobj.temperature_crit)**2/cobj.pressure_crit))
-            Tr = m.temperature/cobj.temperature_crit
-            
-            return -ac*fw[j]/(cobj.temperature_crit*sqrt(Tr))*(1+fw[j]*(1-sqrt(Tr)))
+            return ac*func_dalpha_dT(m.temperature,fw,cobj)
+        
         b.add_component(cname+'_da_dT',
                         Expression(b.component_list,
-                                   rule=func_da_dT,
+                                   rule=rule_da_dT,
                                    doc='Temperature derivative of component a'))
         
-        def func_d2a_dT2(m, j):
+        def rule_d2a_dT2(m, j):
             cobj = m.params.get_component(j)
-            fw = getattr(m, cname+"_fw")
+            fw = getattr(m, cname+"_fw")[j]
+            ac = getattr(m, cname+'_a_crit')[j]
+            func_d2alpha_dT2 = getattr(m.params,cname+"_func_d2alpha_dT2")
             
-            ac = (EoS_param[ctype]['omegaA']*(
-                       (Cubic.gas_constant(b) *
-                        cobj.temperature_crit)**2/cobj.pressure_crit))
-            Tr = m.temperature/cobj.temperature_crit
-            
-            return 1/cobj.temperature_crit**2*ac*fw[j]*(1+fw[j])/(2*Tr**(3/2))
+            return ac*func_d2alpha_dT2(m.temperature,fw,cobj)
                     
         b.add_component(cname+'_d2a_dT2',
                         Expression(b.component_list,
-                                   rule=func_d2a_dT2,
+                                   rule=rule_d2a_dT2,
                                    doc='Second temperature derivative'
                                        'of component a'))
 
@@ -315,12 +332,12 @@ class Cubic(EoSBase):
                 (not b.config.defined_state or b.always_flash)):
             def func_a_eq(m, p1, p2, j):
                 cobj = m.params.get_component(j)
-                fw = getattr(m, cname+"_fw")
-                return (EoS_param[ctype]['omegaA']*(
-                            (Cubic.gas_constant(b) *
-                             cobj.temperature_crit)**2/cobj.pressure_crit) *
-                        ((1+fw[j]*(1-sqrt(m._teq[p1, p2] /
-                                          cobj.temperature_crit)))**2))
+                fw = getattr(m, cname+"_fw")[j]
+                ac = getattr(m, cname+'_a_crit')[j]
+                func_alpha = getattr(m.params,cname+"_func_alpha")
+                
+                return ac*func_alpha(m._teq[p1, p2],fw,cobj)
+            
             b.add_component('_'+cname+'_a_eq',
                             Expression(b.params._pe_pairs,
                                        b.component_list,
@@ -395,41 +412,47 @@ class Cubic(EoSBase):
 
     @staticmethod
     def build_parameters(b):
-        b._cubic_type = b.config.equation_of_state_options["type"]
-  
-        cname = b._cubic_type.name
-        try:
-            mixing_rule_a = b.config.equation_of_state_options["mixing_rule_a"]
-        except (KeyError, TypeError):
-            mixing_rule_a = MixingRuleA.default
-        
-        if mixing_rule_a == MixingRuleA.default:
-            b._mixing_rule_a = mixing_rule_a
-        else:
-            raise ConfigurationError(
-                "{} Unrecognized option for Equation of State "
-                "mixing_rule_a: {}. Must be an instance of MixingRuleA "
-                "Enum.".format(b.name, mixing_rule_a))
-        
-        try:
-            mixing_rule_b = b.config.equation_of_state_options["mixing_rule_b"]
-        except (KeyError, TypeError):
-            mixing_rule_b = MixingRuleB.default
-
-        if mixing_rule_b == MixingRuleB.default:
-            b._mixing_rule_b = mixing_rule_b
-        else:
-            raise ConfigurationError(
-                "{} Unrecognized option for Equation of State "
-                "mixing_rule_a: {}. Must be an instance of MixingRuleB "
-                "Enum.".format(b.name, mixing_rule_b))
-        
         param_block = b.parent_block()
-
-        if hasattr(param_block, cname+"_kappa"):
-            # Common components already constructed by previous phase
+        if not (b.is_vapor_phase() or b.is_liquid_phase()):
+            raise PropertyNotSupportedError("{} received unrecognized phase "
+                 "name {}. Cubic equation of state supports only Vap and Liq "
+                 "phases.".format(param_block.name, b))
+        
+        if b.config.equation_of_state_options["type"] not in CubicType:
+            raise ConfigurationError("{} Unrecognized option for equation of "
+            "state type: {}. Must be an instance of CubicType "
+            "Enum.".format(b.name, b.config.equation_of_state_options["type"]))
+            
+        ctype = b.config.equation_of_state_options["type"]
+        b._cubic_type = ctype
+        cname = ctype.name
+        
+        # Check to see if ConfigBlock was created by previous phase
+        if hasattr(param_block,cname+"_eos_options"):
+            ConfigBlock = getattr(param_block,cname+"_eos_options")
+            for key, value in b.config.equation_of_state_options.items():
+                if ConfigBlock[key] != value:
+                    raise ConfigurationError("In {}, different {} equation of "
+                "state options for {} are set in different phases, which is "
+                "not supported.".format(b.name, cname, key))
+            # Once the options have been validated, we don't have anything
+            # left to do
+            mixing_rule_a = ConfigBlock["mixing_rule_a"]
+            mixing_rule_b = ConfigBlock["mixing_rule_b"]
+            b._mixing_rule_a = mixing_rule_a
+            b._mixing_rule_b = mixing_rule_b
             return
-
+        
+        
+        setattr(param_block,cname+"_eos_options", deepcopy(CubicConfig))
+        ConfigBlock = getattr(param_block,cname+"_eos_options")
+        ConfigBlock.set_value(b.config.equation_of_state_options)
+            
+        mixing_rule_a = ConfigBlock["mixing_rule_a"]
+        mixing_rule_b = ConfigBlock["mixing_rule_b"]
+        b._mixing_rule_a = mixing_rule_a
+        b._mixing_rule_b = mixing_rule_b
+        
         kappa_data = param_block.config.parameter_data[cname+"_kappa"]
         param_block.add_component(
             cname+'_kappa',
@@ -439,6 +462,22 @@ class Cubic(EoSBase):
                 initialize=kappa_data,
                 doc=cname+' binary interaction parameters',
                 units=None))
+        
+        if b._cubic_type == CubicType.PR:
+            func_fw = func_fw_PR
+        elif b._cubic_type == CubicType.SRK:
+            func_fw = func_fw_SRK
+        else:
+            raise BurntToast(
+                    "{} received unrecognized cubic type. This should "
+                    "never happen, so please contact the IDAES developers "
+                    "with this bug.".format(b.name))
+        setattr(param_block, cname+"_func_fw", func_fw)
+        setattr(param_block, cname+"_func_alpha", func_alpha_soave)
+        setattr(param_block, cname+"_func_dalpha_dT", func_dalpha_dT_soave)
+        setattr(param_block, cname+"_func_d2alpha_dT2", func_d2alpha_dT2_soave)
+            
+
 
     @staticmethod
     def compress_fact_phase(b, p):
@@ -452,7 +491,10 @@ class Cubic(EoSBase):
         elif pobj.is_liquid_phase():
             proc = getattr(b, "_"+cname+"_proc_Z_liq")
         else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+            raise BurntToast("{} non-vapor or liquid phase called for cubic "
+                             "EoS compressability factor. This should never "
+                             "happen, so please contact the IDAES developers "
+                             "with this bug.".format(b.name))
         return proc(f, A[p], B[p])   
     
     @staticmethod
@@ -526,18 +568,13 @@ class Cubic(EoSBase):
     @staticmethod
     def dens_mol_phase(b, p):
         pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return b.pressure/(
-                Cubic.gas_constant(b)*b.temperature*b.compress_fact_phase[p])
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+        return b.pressure/(
+            Cubic.gas_constant(b)*b.temperature*b.compress_fact_phase[p])
     
 
     @staticmethod
     def energy_internal_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
 
         cname = pobj._cubic_type.name
         am = getattr(blk, cname+"_am")[p]
@@ -562,8 +599,6 @@ class Cubic(EoSBase):
     @staticmethod
     def energy_internal_mol_phase_comp(blk, p, j):
         pobj = blk.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
 
         return (blk.enth_mol_phase_comp[p, j] 
                 - blk.pressure*blk.vol_mol_phase_comp[p,j])
@@ -571,8 +606,6 @@ class Cubic(EoSBase):
     @staticmethod
     def enth_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
 
         cname = pobj._cubic_type.name
         am = getattr(blk, cname+"_am")[p]
@@ -598,8 +631,6 @@ class Cubic(EoSBase):
     @staticmethod
     def enth_mol_phase_comp(blk, p, j):
         pobj = blk.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
 
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk,p,j)
         
@@ -614,8 +645,6 @@ class Cubic(EoSBase):
     @staticmethod
     def entr_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
 
         cname = pobj._cubic_type.name
         bm = getattr(blk, cname+"_bm")[p]
@@ -652,8 +681,6 @@ class Cubic(EoSBase):
     @staticmethod
     def entr_mol_phase_comp(blk, p, j):
         pobj = blk.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
      
         logphi_j = _log_fug_coeff_phase_comp(blk,p,j)
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk,p,j)
@@ -674,42 +701,27 @@ class Cubic(EoSBase):
 
     @staticmethod
     def fug_phase_comp(b, p, j):
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return (b.mole_frac_phase_comp[p, j] *
-                    b.pressure *
-                    b.fug_coeff_phase_comp[p, j])
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+        return (b.mole_frac_phase_comp[p, j] *
+                b.pressure *
+                b.fug_coeff_phase_comp[p, j])
     
     @staticmethod
     def fug_phase_comp_eq(b, p, j, pp):
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return (b.mole_frac_phase_comp[p, j] *
-                    b.pressure *
-                    exp(_log_fug_coeff_phase_comp_eq(b, p, j, pp)))
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+        return (b.mole_frac_phase_comp[p, j] *
+                b.pressure *
+                exp(_log_fug_coeff_phase_comp_eq(b, p, j, pp)))
 
 
     @staticmethod
     def log_fug_phase_comp_eq(b, p, j, pp):
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return (b.log_mole_frac_phase_comp[p, j] +
-                    log(b.pressure/b.params.pressure_ref) +
-                    _log_fug_coeff_phase_comp_eq(b, p, j, pp))
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+        return (b.log_mole_frac_phase_comp[p, j] +
+                log(b.pressure/b.params.pressure_ref) +
+                _log_fug_coeff_phase_comp_eq(b, p, j, pp))
     
     @staticmethod
     def fug_coeff_phase_comp(blk, p, j):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
-
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
 
         cname = pobj._cubic_type.name
         b = getattr(blk, cname+"_b")[j]
@@ -1005,30 +1017,15 @@ class Cubic(EoSBase):
 
     @staticmethod    
     def vol_mol_phase(b, p):
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return (Cubic.gas_constant(b)*b.temperature *
-                    b.compress_fact_phase[p] /
-                    b.pressure)
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+        return (Cubic.gas_constant(b)*b.temperature *
+                b.compress_fact_phase[p] /
+                b.pressure)
     
     @staticmethod
     def vol_mol_phase_comp(b,p,j):
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return (Cubic.gas_constant(b)*b.temperature/b.pressure
-                    * (b.compress_fact_phase[p]+_N_dZ_dNj(b,p,j))
-                    )
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-
-
-def _invalid_phase_msg(name, phase):
-    return ("{} received unrecognized phase name {}. Ideal property "
-            "libray only supports Vap and Liq phases."
-            .format(name, phase))
-
+        return (Cubic.gas_constant(b)*b.temperature/b.pressure
+                * (b.compress_fact_phase[p]+_N_dZ_dNj(b,p,j))
+                )
 
 
 def _dZ_dT(blk,p):
@@ -1113,8 +1110,6 @@ def _N_dZ_dNj(blk,p,j):
 
 def _log_fug_coeff_phase_comp_eq(blk, p, j, pp):
     pobj = blk.params.get_phase(p)
-    if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-        raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
 
     cname = pobj._cubic_type.name
     b = getattr(blk, cname+"_b")
@@ -1138,8 +1133,6 @@ def _log_fug_coeff_phase_comp_eq(blk, p, j, pp):
 
 def _log_fug_coeff_phase_comp(blk,p,j):
     pobj = blk.params.get_phase(p)
-    if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-        raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
     
     if not (pobj._mixing_rule_a == MixingRuleA.default
             and pobj._mixing_rule_b == MixingRuleB.default):
@@ -1179,9 +1172,6 @@ def _log_fug_coeff_method(A, b, bm, B, delta, Z, cubic_type):
 
 def _d_log_fug_coeff_dT_phase_comp(blk,p,j):
     pobj = blk.params.get_phase(p)
-    # Is this check necessary?
-    if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-        raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
     
     if not (pobj._mixing_rule_a == MixingRuleA.default
             and pobj._mixing_rule_b == MixingRuleB.default):
@@ -1215,6 +1205,31 @@ def _d_log_fug_coeff_dT_phase_comp(blk,p,j):
     return (b/bm*dZ_dT - (dZ_dT+B/T)/(Z-B)
              - A*(b/bm-delta)*(Z/T+dZ_dT)/(Z**2+u*B*Z+w*B**2)
              + log((2*Z+B*(u+EoS_p))/(2*Z+B*(u-EoS_p)))*expr)
+
+# -----------------------------------------------------------------------------
+# Default rules for cubic expressions
+def func_fw_PR(cobj):
+    return 0.37464 + 1.54226*cobj.omega - \
+           0.26992*cobj.omega**2
+def func_fw_SRK(cobj):
+    return 0.48 + 1.574*cobj.omega - \
+           0.176*cobj.omega**2
+
+def func_alpha_soave(T,fw,cobj):
+    Tc = cobj.temperature_crit
+    Tr = T/Tc
+    return (1+fw*(1-sqrt(Tr)))**2
+
+def func_dalpha_dT_soave(T,fw,cobj):
+    Tc = cobj.temperature_crit
+    Tr = T/Tc
+    return 1/Tc*(-fw/sqrt(Tr))*(1+fw*(1-sqrt(Tr)))
+
+def func_d2alpha_dT2_soave(T,fw,cobj):
+    Tc = cobj.temperature_crit
+    Tr = T/Tc
+    return 1/Tc**2*((fw**2+fw)/(2*Tr*sqrt(Tr)))
+    
 
 # -----------------------------------------------------------------------------
 # Mixing rules

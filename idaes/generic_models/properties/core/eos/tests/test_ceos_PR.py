@@ -35,7 +35,8 @@ from idaes.core import (declare_process_block_class,
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
-from idaes.core.util.exceptions import PropertyNotSupportedError
+from idaes.core.util.exceptions import ( PropertyNotSupportedError, 
+    ConfigurationError)
 from idaes.core.util.constants import Constants as const
 from idaes import bin_directory
 
@@ -158,65 +159,6 @@ def m():
     return m
 
 
-@pytest.fixture()
-def m_sol():
-    m = ConcreteModel()
-
-    # Dummy params block
-    m.params = DummyParameterBlock(default={
-                "components": {
-                    "a": {"phase_equilibrium_form": {("Sol", "Liq"): dummy_pe},
-                          "parameter_data": {
-                              "omega": 0.1,
-                              "pressure_crit": 1e5,
-                              "temperature_crit": 100}},
-                    "b": {"phase_equilibrium_form": {("Sol", "Liq"): dummy_pe},
-                          "parameter_data": {
-                              "omega": 0.2,
-                              "pressure_crit": 2e5,
-                              "temperature_crit": 200}},
-                    "c": {"phase_equilibrium_form": {("Sol", "Liq"): dummy_pe},
-                          "parameter_data": {
-                              "omega": 0.3,
-                              "pressure_crit": 3e5,
-                              "temperature_crit": 300}}},
-                "phases": {
-                    "Sol": {"type": SolidPhase,
-                            "equation_of_state": Cubic,
-                            "equation_of_state_options": {
-                                "type": CubicType.PR}},
-                    "Liq": {"type": LiquidPhase,
-                            "equation_of_state": Cubic,
-                            "equation_of_state_options": {
-                                "type": CubicType.PR}}},
-                "base_units": {"time": pyunits.s,
-                               "length": pyunits.m,
-                               "mass": pyunits.kg,
-                               "amount": pyunits.mol,
-                               "temperature": pyunits.K},
-                "state_definition": modules[__name__],
-                "pressure_ref": 1e5,
-                "temperature_ref": 300,
-                "phases_in_equilibrium": [("Sol", "Liq")],
-                "phase_equilibrium_state": {("Sol", "Liq"): modules[__name__]},
-                "parameter_data": {"PR_kappa": {("a", "a"): 0.000,
-                                                ("a", "b"): 0.000,
-                                                ("a", "c"): 0.000,
-                                                ("b", "a"): 0.000,
-                                                ("b", "b"): 0.000,
-                                                ("b", "c"): 0.000,
-                                                ("c", "a"): 0.000,
-                                                ("c", "b"): 0.000,
-                                                ("c", "c"): 0.000}}})
-
-    m.props = m.params.state_block_class(
-        [1], default={"defined_state": False,
-                      "parameters": m.params,
-                      "has_phase_equilibrium": True})
-
-    return m
-
-
 # Expected values for A and B
 Al = 0.0419062
 Bl = 0.0262770
@@ -240,6 +182,194 @@ _so = os.path.join(bin_directory, "cubic_roots.so")
 f_Zl = ExternalFunction(library=_so, function="ceos_z_liq")
 f_Zv = ExternalFunction(library=_so, function="ceos_z_vap")
 
+@pytest.mark.unit
+def test_wrong_phase():
+    m = ConcreteModel()
+    with pytest.raises(PropertyNotSupportedError):
+        m.params = DummyParameterBlock(default={
+                    "components": {
+                        "a": {"phase_equilibrium_form": {("Sol", "Liq"): dummy_pe},
+                              "parameter_data": {
+                                  "omega": 0.1,
+                                  "pressure_crit": 1e5,
+                                  "temperature_crit": 100}}},
+                    "phases": {
+                        "Sol": {"type": SolidPhase,
+                                "equation_of_state": Cubic,
+                                "equation_of_state_options": {
+                                    "type": CubicType.PR}}
+                        },
+                    "base_units": {"time": pyunits.s,
+                                    "length": pyunits.m,
+                                    "mass": pyunits.kg,
+                                    "amount": pyunits.mol,
+                                    "temperature": pyunits.K},
+                    "state_definition": modules[__name__],
+                    "pressure_ref": 1e5,
+                    "temperature_ref": 300,
+                    "phases_in_equilibrium": [("Vap", "Liq")],
+                    "phase_equilibrium_state": {("Vap", "Liq"): modules[__name__]},
+                    "parameter_data": {"PR_kappa": {("a", "a"): 0.000}}})
+
+@pytest.mark.unit
+def test_unknown_eos_option():
+    m = ConcreteModel()
+    with pytest.raises(ConfigurationError):
+        m.params = DummyParameterBlock(default={
+                    "components": {
+                        "a": {"phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                              "parameter_data": {
+                                  "omega": 0.1,
+                                  "pressure_crit": 1e5,
+                                  "temperature_crit": 100}}},
+                    "phases": {
+                        "Vap": {"type": VaporPhase,
+                                "equation_of_state": Cubic,
+                                "equation_of_state_options": {
+                                    "type": "PR"}}
+                        },
+                    "base_units": {"time": pyunits.s,
+                                    "length": pyunits.m,
+                                    "mass": pyunits.kg,
+                                    "amount": pyunits.mol,
+                                    "temperature": pyunits.K},
+                    "state_definition": modules[__name__],
+                    "pressure_ref": 1e5,
+                    "temperature_ref": 300,
+                    "phases_in_equilibrium": [("Vap", "Liq")],
+                    "phase_equilibrium_state": {("Vap", "Liq"): modules[__name__]},
+                    "parameter_data": {"PR_kappa": {("a", "a"): 0.000}}})
+
+@pytest.mark.unit
+def test_mixing_rule_fail():
+    m = ConcreteModel()
+
+    # Dummy params block
+    with pytest.raises(ValueError):
+        m.params = DummyParameterBlock(default={
+                    "components": {
+                        "a": {"phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                              "parameter_data": {
+                                  "omega": 0.1,
+                                  "pressure_crit": 1e5,
+                                  "temperature_crit": 100}},
+                        "b": {"phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                              "parameter_data": {
+                                  "omega": 0.2,
+                                  "pressure_crit": 2e5,
+                                  "temperature_crit": 200}}},
+                    "phases": {
+                        "Vap": {"type": VaporPhase,
+                                "equation_of_state": Cubic,
+                                "equation_of_state_options": {
+                                    "type": CubicType.PR,
+                                    "mixing_rule_a": "wong_sandler"}},
+                        "Liq": {"type": LiquidPhase,
+                                "equation_of_state": Cubic,
+                                "equation_of_state_options": {
+                                    "type": CubicType.PR}}},
+                    "base_units": {"time": pyunits.s,
+                                    "length": pyunits.m,
+                                    "mass": pyunits.kg,
+                                    "amount": pyunits.mol,
+                                    "temperature": pyunits.K},
+                    "state_definition": modules[__name__],
+                    "pressure_ref": 1e5,
+                    "temperature_ref": 300,
+                    "phases_in_equilibrium": [("Vap", "Liq")],
+                    "phase_equilibrium_state": {("Vap", "Liq"): modules[__name__]},
+                    "parameter_data": {"PR_kappa": {("a", "a"): 0.000,
+                                                    ("a", "b"): 0.000,
+                                                    ("b", "a"): 0.000,
+                                                    ("b", "b"): 0.000,}}})
+        
+# This test can be resuscitated when we actually implement another mixing rule
+# @pytest.mark.unit
+# def test_mixing_rule_mismatch():
+#     m = ConcreteModel()
+
+#     # Dummy params block
+#     with pytest.raises(ConfigurationError):
+#         m.params = DummyParameterBlock(default={
+#                     "components": {
+#                         "a": {"phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+#                               "parameter_data": {
+#                                   "omega": 0.1,
+#                                   "pressure_crit": 1e5,
+#                                   "temperature_crit": 100}},
+#                         "b": {"phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+#                               "parameter_data": {
+#                                   "omega": 0.2,
+#                                   "pressure_crit": 2e5,
+#                                   "temperature_crit": 200}}},
+#                     "phases": {
+#                         "Vap": {"type": VaporPhase,
+#                                 "equation_of_state": Cubic,
+#                                 "equation_of_state_options": {
+#                                     "type": CubicType.PR,
+#                                     "mixing_rule_a": MixingRuleA.default}},
+#                         "Liq": {"type": LiquidPhase,
+#                                 "equation_of_state": Cubic,
+#                                 "equation_of_state_options": {
+#                                     "type": CubicType.PR,
+#                                     "mixing_rule_a": MixingRuleA.dummy}}},
+#                     "base_units": {"time": pyunits.s,
+#                                     "length": pyunits.m,
+#                                     "mass": pyunits.kg,
+#                                     "amount": pyunits.mol,
+#                                     "temperature": pyunits.K},
+#                     "state_definition": modules[__name__],
+#                     "pressure_ref": 1e5,
+#                     "temperature_ref": 300,
+#                     "phases_in_equilibrium": [("Vap", "Liq")],
+#                     "phase_equilibrium_state": {("Vap", "Liq"): modules[__name__]},
+#                     "parameter_data": {"PR_kappa": {("a", "a"): 0.000,
+#                                                     ("a", "b"): 0.000,
+#                                                     ("b", "a"): 0.000,
+#                                                     ("b", "b"): 0.000,}}})
+
+@pytest.mark.unit
+def test_config_fail():
+    m = ConcreteModel()
+
+    # Dummy params block
+    with pytest.raises(ValueError):
+        m.params = DummyParameterBlock(default={
+                    "components": {
+                        "a": {"phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                              "parameter_data": {
+                                  "omega": 0.1,
+                                  "pressure_crit": 1e5,
+                                  "temperature_crit": 100}},
+                        "b": {"phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                              "parameter_data": {
+                                  "omega": 0.2,
+                                  "pressure_crit": 2e5,
+                                  "temperature_crit": 200}}},
+                    "phases": {
+                        "Vap": {"type": VaporPhase,
+                                "equation_of_state": Cubic,
+                                "equation_of_state_options": {
+                                    "type": CubicType.PR,
+                                    "mixing_rule_a": "wong_sandler"}},
+                        "Liq": {"type": LiquidPhase,
+                                "equation_of_state": Cubic,
+                                "equation_of_state_options": {
+                                    "type": CubicType.PR}}},
+                    "base_units": {"time": pyunits.s,
+                                    "length": pyunits.m,
+                                    "mass": pyunits.kg,
+                                    "amount": pyunits.mol,
+                                    "temperature": pyunits.K},
+                    "state_definition": modules[__name__],
+                    "pressure_ref": 1e5,
+                    "temperature_ref": 300,
+                    "phases_in_equilibrium": [("Vap", "Liq")],
+                    "phase_equilibrium_state": {("Vap", "Liq"): modules[__name__]},
+                    "parameter_data": {"PR_kappa": {("a", "a"): 0.000,
+                                                    ("a", "b"): 0.000,
+                                                    ("b", "a"): 0.000,
+                                                    ("b", "b"): 0.000,}}})
 
 @pytest.mark.unit
 def test_common(m):
@@ -474,12 +604,6 @@ def test_compress_fact_phase_Vap(m):
 
 
 @pytest.mark.unit
-def test_compress_fact_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Cubic.compress_fact_phase(m_sol.props[1], "Sol")
-
-
-@pytest.mark.unit
 def test_dens_mass_phase(m):
     m.props[1].dens_mol_phase = Var(m.params.phase_list)
     m.props[1].mw_phase = Var(m.params.phase_list)
@@ -495,12 +619,6 @@ def test_dens_mol_phase(m):
             44.800, rel=1e-3)
     assert value(Cubic.dens_mol_phase(m.props[1], "Liq")) == pytest.approx(
             41.157, rel=1e-3)
-
-
-@pytest.mark.unit
-def test_dens_mol_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Cubic.dens_mol_phase(m_sol.props[1], "Sol")
 
 
 @pytest.mark.unit
@@ -534,11 +652,6 @@ def test_energy_internal_mol_phase_comp(m):
                            * m.props[1].vol_mol_phase_comp[p, j]
                            )
                     )
-
-@pytest.mark.unit
-def test_energy_internal_mol_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Cubic.energy_internal_mol_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
 @pytest.mark.unit
@@ -585,13 +698,6 @@ def test_enth_mol_phase_comp(m):
                 for j in m.params.component_list)
             )
 
-
-@pytest.mark.unit
-def test_enth_mol_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Cubic.enth_mol_phase_comp(m_sol.props[1], "Sol", "foo")
-
-
 @pytest.mark.unit
 def test_entr_mol_phase(m):
     for j in m.params.component_list:
@@ -637,15 +743,7 @@ def test_entr_mol_phase_comp(m):
             Cubic.entr_mol_phase(m.props[1], "Vap")), rel=1e-5)
             == value(sum(Cubic.entr_mol_phase_comp(m.props[1], "Vap", j)
                          *m.props[1].mole_frac_phase_comp["Vap", j]
-                         for j in m.params.component_list))
-            )
-
-@pytest.mark.unit
-def test_entr_mol_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Cubic.entr_mol_phase_comp(m_sol.props[1], "Sol", "foo")
-
-
+                         for j in m.params.component_list)))
 @pytest.mark.component
 def test_fug_phase_comp(m):
     for p in m.params.phase_list:
@@ -655,12 +753,6 @@ def test_fug_phase_comp(m):
                 m.props[1].mole_frac_phase_comp[p, j] *
                 m.props[1].pressure *
                 m.props[1].fug_coeff_phase_comp[p, j])
-
-
-@pytest.mark.unit
-def test_fug_phase_comp_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Cubic.fug_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
 @pytest.mark.component
@@ -673,12 +765,6 @@ def test_fug_phase_comp_eq(m):
                 m.props[1].pressure *
                 Cubic.fug_coeff_phase_comp_eq(
                     m.props[1], p, j, ("Vap", "Liq")))
-
-
-@pytest.mark.unit
-def test_fug_phase_comp_eq_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Cubic.fug_phase_comp_eq(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 
 
 @pytest.mark.unit
@@ -702,12 +788,6 @@ def test_fug_coeff_phase_comp_Vap(m):
 
 
 @pytest.mark.unit
-def test_fug_coeff_phase_comp_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Cubic.fug_coeff_phase_comp(m_sol.props[1], "Sol", "foo")
-
-
-@pytest.mark.unit
 def test_fug_coeff_phase_comp_eq_Liq(m):
     assert pytest.approx(1.22431, rel=1e-5) == value(
         Cubic.fug_coeff_phase_comp_eq(m.props[1], "Liq", "a", ("Vap", "Liq")))
@@ -725,13 +805,6 @@ def test_fug_coeff_phase_comp_eq_Vap(m):
         Cubic.fug_coeff_phase_comp_eq(m.props[1], "Vap", "b", ("Vap", "Liq")))
     assert pytest.approx(6.49776e-07, rel=1e-5) == value(
         Cubic.fug_coeff_phase_comp_eq(m.props[1], "Vap", "c", ("Vap", "Liq")))
-
-
-@pytest.mark.unit
-def test_fug_coeff_phase_comp_eq_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Cubic.fug_coeff_phase_comp_eq(
-            m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 
 
 @pytest.mark.unit
@@ -796,12 +869,7 @@ def test_vol_mol_phase_comp(m):
             == value(sum(Cubic.vol_mol_phase_comp(m.props[1], "Vap", j)
                          *m.props[1].mole_frac_phase_comp["Vap", j]
                          for j in m.params.component_list))
-            )    
-
-@pytest.mark.unit
-def test_vol_mol_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Cubic.vol_mol_phase(m_sol.props[1], "Sol")
+            )
 
 if __name__ == "__main__":
     # mod = m()
