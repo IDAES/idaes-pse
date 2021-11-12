@@ -89,13 +89,37 @@ class UnitModelIcon:
                         "markup": "<g><rect/></g>",
                     },
                 },
-                "items": [{"group": "in", "id": "in"}, {"group": "out", "id": "out"}],
+                "items": []
             }
 
         Returns:
             The link position (see example result)
         """
         return self._pos
+    
+    @property
+    def routing_config(self) -> Dict:
+        """Get the Unit model routing config to be used to add jointjs vertices
+        for layout control within the created graph.
+
+        Example result::
+
+            {
+                "in": {
+                    "gap": {
+                        "direction": "left",
+                        "distance": 20
+                    }
+                }
+            }
+
+        Returns:
+            The routing configuration (see example result)
+        """
+        if "routing_config" in self._model_details:
+            return self._model_details["routing_config"]
+        else:
+            return {}
 
     def _build_link_positions(self) -> Dict:
         """Fill in boilerplate based on raw info and place built value in class cache.
@@ -348,6 +372,14 @@ class UnitModelIcon:
                             "dx": 1,
                             "dy": 1
                         }
+                    }
+                }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "direction": "left",
+                        "distance": 30
                     }
                 }
             }
@@ -682,100 +714,3 @@ class UnitModelIcon:
             }
         },
     }
-
-
-    # _mapping = {
-    #     "cstr": (
-    #         "reactor_c.svg",
-    #         ("in", "left", (15, 0, 1, 1)),
-    #         ("out", "left", (48, 45, 1, 1)),
-    #     ),
-    #     "flash": (
-    #         "flash.svg",
-    #         ("bottom", "bottom", (25, 50, 1, 1)),
-    #         ("in", "left", (8, 25, 1, 1)),
-    #         ("top", "top", (25, 0, 1, 1)),
-    #     ),
-    #     "gibbs_reactor": (
-    #         "reactor_g.svg",
-    #         ("in", "left", (5, 10, 1, 1)),
-    #         ("out", "left", (45, 45, 1, 1)),
-    #     ),
-    #     "heat_exchanger": (
-    #         "heat_exchanger_1.svg",
-    #         ("in", "left", (2, 25, 1, 1)),
-    #         ("out", "left", (48, 25, 1, 1)),
-    #     ),
-    #     "heater": (
-    #         "heater_2.svg",
-    #         ("in", "left", (6, 25, 1, 1)),
-    #         ("out", "left", (43, 25, 1, 1)),
-    #     ),
-    #     "heat_exchanger_1D": (
-    #         "heat_exchanger_1.svg",
-    #         ("in", "left", (15, 0, 1, 1)),
-    #         ("out", "left", (48, 45, 1, 1)),
-    #     ),
-    #     "mixer": (
-    #         "mixer.svg",
-    #         ("in", "left", (2, 25, 1, 1)),
-    #         ("out", "left", (48, 25, 1, 1)),
-    #     ),
-    #     "plug_flow_reactor": (
-    #         "reactor_pfr.svg",
-    #         ("in", "left", (15, 0, 1, 1)),
-    #         ("out", "left", (48, 45, 1, 1)),
-    #     ),
-    #     "pressure_changer": (
-    #         "compressor.svg",
-    #         ("in", "left", (2, 25, 1, 1)),
-    #         ("out", "left", (48, 25, 1, 1)),
-    #     ),
-    #     "separator": (
-    #         "splitter.svg",
-    #         ("in", "left", (2, 25, 1, 1)),
-    #         ("out", "right", (48, 25, 1, 1)),
-    #     ),
-    #     "stoichiometric_reactor": (
-    #         "reactor_s.svg",
-    #         ("in", "left", (5, 10, 1, 1)),
-    #         ("out", "left", (45, 45, 1, 1)),
-    #     ),
-    #     "equilibrium_reactor": (
-    #         "reactor_e.svg",
-    #         ("in", "left", (5, 10, 1, 1)),
-    #         ("out", "left", (45, 45, 1, 1)),
-    #     ),
-    #     "feed": ("feed.svg", ("out", "left", (48, 25, 1, 1))),
-    #     "product": ("product.svg", ("in", "left", (2, 25, 1, 1))),
-    #     "feed_flash": (
-    #         "feed.svg",
-    #         ("in", "left", (25, 0, 1, 1)),
-    #         ("out", "left", (25, 50, 1, 1)),
-    #     ),
-    #     "statejunction": (
-    #         "NONE",
-    #         ("in", "left", (15, 0, 1, 1)),
-    #         ("out", "left", (48, 45, 1, 1)),
-    #     ),
-    #     "translator": (
-    #         "NONE",
-    #         ("in", "left", (15, 0, 1, 1)),
-    #         ("out", "left", (48, 45, 1, 1)),
-    #     ),
-    #     "packed_column": (
-    #         "packed_column_1.svg",
-    #         ("in", "left", (48, 10, 1, 1)),
-    #         ("out", "left", (48, 40, 1, 1)),
-    #     ),
-    #     "tray_column": (
-    #         "tray_column_1.svg",
-    #         ("in", "left", (48, 10, 1, 1)),
-    #         ("out", "left", (48, 40, 1, 1)),
-    #     ),
-    #     "default": (
-    #         "default.svg",
-    #         ("in", "left", (2, 0, 1, 1)),
-    #         ("out", "left", (48, 50, 1, 1)),
-    #     ),
-    # }

@@ -8,6 +8,7 @@ export class App {
         const url = `/fs?id=${ flowsheetId }`;
         $.ajax({url: url, datatype: 'json'})
             .done((model) => {
+                console.log("1. model:", model);
                 this.renderModel(model);
                 this.stream_table = new StreamTable(this, model);
                 this.toolbar = new Toolbar(this, this.paper, this.stream_table);
@@ -24,6 +25,37 @@ export class App {
 
     renderModel(model) {
         $('#idaes-fs-name').text(model.model.id);  // set flowsheet name
+        var routing_fns = {};
+        var routing_config = model['routing_config'];
+        for (var link in routing_config) {
+            console.log("renderModel - link:", link);
+            console.log("renderModel - typeof(link):", typeof(link));
+            var routing_fn = null;
+            // TODO: Implement for source as well
+            if ('destination' in routing_config[link]) {
+                routing_fn = function(vertices, opt, linkView) {
+                    // const sourceBBox = linkView.sourceBBox;
+                    const a = linkView.getEndAnchor('source');
+                    const b = linkView.getEndAnchor('target');
+                    const minGap = routing_config[link].destination.gap.distance;
+                    const x1 = Math.min(b.x - minGap, (a.x + b.x) / 2);
+                    const p1 = {
+                        x: x1,
+                        y: a.y
+                    };
+                    const p2 = {
+                        x: x1,
+                        y: b.y
+                    };
+                    return [p1, ...vertices, p2];
+                }
+            }
+
+            routing_fns[link] = routing_fn;
+
+            model['cells'][routing_config[link].cell_index].router = routing_fn;
+            console.log("2. model:", model);
+        }
         this.paper.graph.fromJSON(model);
     }
 

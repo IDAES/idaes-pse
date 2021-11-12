@@ -180,7 +180,7 @@ class FlowsheetSerializer:
         self.orphaned_ports = {}
         self.labels = {}
         self._stream_table_df = None
-        self._out_json = {"model": {}}
+        self._out_json = {"model": {}, "routing_config" : {}}
         self._serialized_contents = defaultdict(dict)
         self._used_ports = set()
         self._known_endpoints = set()
@@ -204,7 +204,6 @@ class FlowsheetSerializer:
 
         # Identify and add unit models
         unit_models_map = self._identify_unit_models()
-        print("unit_models_map:", unit_models_map)
         for model, model_type in unit_models_map.items():
             self._add_unit_model_with_ports(model, model_type)
 
@@ -214,16 +213,7 @@ class FlowsheetSerializer:
 
     def _identify_arcs(self):
         # Identify the arcs and known endpoints and store them
-        print("self.flowsheet.component_objects:", self.flowsheet.component_objects)
-        print("type(self.flowsheet.component_objects):", type(self.flowsheet.component_objects))
-        print("self.flowsheet.component_objects(Arc, descend_into=False):", self.flowsheet.component_objects(Arc, descend_into=False))
         for component in self.flowsheet.component_objects(Arc, descend_into=False):
-            print("component:", component)
-            print("type(component):", type(component))
-            print("component.getname():", component.getname())
-            print("component.getname():", component.getname())
-            print("component.source.parent_block():", component.source.parent_block())
-            print("component.dest.parent_block():", component.dest.parent_block())
             self.arcs[component.getname()] = component
             self._known_endpoints.add(component.source.parent_block())
             self._known_endpoints.add(component.dest.parent_block())
@@ -518,9 +508,8 @@ class FlowsheetSerializer:
         )
 
     def _construct_jointjs_json(self):
-        def create_jointjs_image(unit_name, unit_type, x_pos, y_pos):
-            default_icon = UnitModelIcon()
-            unit_icon = UnitModelIcon(unit_type)
+        def create_jointjs_image(unit_icon: UnitModelIcon, unit_name, unit_type, x_pos, y_pos):
+            """Create jointjs element 'standard.Image' type in json format"""
             try:
                 return self._create_image_jointjs_json(
                     x_pos,
@@ -534,6 +523,7 @@ class FlowsheetSerializer:
                 self._logger.info(
                     f'Unable to find icon for {unit_type}. Using default icon'
                 )
+                default_icon = UnitModelIcon()
                 return self._create_image_jointjs_json(
                     x_pos,
                     y_pos,
@@ -544,6 +534,9 @@ class FlowsheetSerializer:
                 )
         
         def adjust_image_position(x_pos, y_pos, y_starting_pos):
+            """Based on the position of the last added element, we calculate
+            the x,y position of the next element.
+            """
             # If x_pos it greater than 700 then start another diagonal line
             if x_pos >= 700:
                 x_pos = 100
@@ -564,27 +557,27 @@ class FlowsheetSerializer:
 
         track_jointjs_elements = {}
 
-        for name, ports_dict in self.edges.items():
-            #umst = self.unit_models[ports_dict["source"]]["type"]  # alias
-
+        # Go through all the edges/links and create the necessary Unit models
+        # that are connected to these edges.
+        for link_name, ports_dict in self.edges.items():
             src = ports_dict["source"]
             dest = ports_dict["dest"]
 
-            print("src:", src)
-            print("dest:", dest)
-
             src_unit_name = self.unit_models[src]["name"]
             src_unit_type = self.unit_models[src]["type"]
+            src_unit_icon = UnitModelIcon(src_unit_type)
+
             dest_unit_name = self.unit_models[dest]["name"]
             dest_unit_type = self.unit_models[dest]["type"]
+            dest_unit_icon = UnitModelIcon(dest_unit_type)
 
             if src_unit_name not in track_jointjs_elements:
-                cell_index = create_jointjs_image(src_unit_name, src_unit_type, x_pos, y_pos)
+                cell_index = create_jointjs_image(src_unit_icon, src_unit_name, src_unit_type, x_pos, y_pos)
                 x_pos, y_pos, y_starting_pos = adjust_image_position(x_pos, y_pos, y_starting_pos)
                 track_jointjs_elements[src_unit_name] = cell_index
 
             if dest_unit_name not in track_jointjs_elements:
-                cell_index = create_jointjs_image(dest_unit_name, dest_unit_type, x_pos, y_pos)
+                cell_index = create_jointjs_image(dest_unit_icon, dest_unit_name, dest_unit_type, x_pos, y_pos)
                 x_pos, y_pos, y_starting_pos = adjust_image_position(x_pos, y_pos, y_starting_pos)
                 track_jointjs_elements[dest_unit_name] = cell_index
 
@@ -606,6 +599,9 @@ class FlowsheetSerializer:
             # inlets and outlets between the same two unit models
             src_port = "out"
             dest_port = "in"
+
+            # We create port ids for both ends: Source and Destination elements
+            # and pass it to the link jointjs element for accurate port representation
             src_port_id = str(uuid.uuid4())
             dest_port_id = str(uuid.uuid4())
 
@@ -622,15 +618,36 @@ class FlowsheetSerializer:
                 dest_port_id
             )
 
-            self._create_link_jointjs_json(
+            link_index = self._create_link_jointjs_json(
                 src_port_id,
                 dest_port_id,
                 src.getname(),
                 dest.getname(),
-                name,
-                self.labels[name],
+                link_name,
+                self.labels[link_name],
             )
 
+            # Add routing config if edge/link has source or destination elements
+            # that has routing specifications. e.g. If destination element requires
+            # the link to connect horizontally from the left side.
+            if src_unit_icon.routing_config and src_port in src_unit_icon.routing_config:
+                if link_name not in self._out_json["routing_config"]:
+                    self._out_json["routing_config"][link_name] = {
+                        'cell_index': link_index
+                    }
+                # The port group has to be specified in the routing config
+                self._out_json["routing_config"][link_name]["source"] = src_unit_icon.routing_config[src_port]
+
+            if dest_unit_icon.routing_config and dest_port in dest_unit_icon.routing_config:
+                if link_name not in self._out_json["routing_config"]:
+                    self._out_json["routing_config"][link_name] = {
+                        'cell_index': link_index
+                    }
+                # The port group has to be specified in the routing config
+                self._out_json["routing_config"][link_name]["destination"] = dest_unit_icon.routing_config[dest_port]
+
+
+        # Make sure that all registered Unit Models are created
         for _, unit_attrs in self.unit_models.items():
             if unit_attrs['name'] in track_jointjs_elements:
                 # skip if unit is already added to the list of created cells
@@ -638,49 +655,7 @@ class FlowsheetSerializer:
             cell_index = create_jointjs_image(unit_attrs['name'], unit_attrs['type'], x_pos, y_pos)
             x_pos, y_pos, y_starting_pos = adjust_image_position(x_pos, y_pos, y_starting_pos)
             track_jointjs_elements[unit_attrs['name']] = cell_index
-
-        print("track_jointjs_elements:", track_jointjs_elements)
-        print("self._out_json['cells'][0]:", self._out_json['cells'][0])
-
-        # for component, unit_attrs in self.unit_models.items():
-        #     if unit_attrs['name'] in track_jointjs_elements:
-        #         # skip if unit is already added to the list of created cells
-        #         continue
-        #     unit_icon = UnitModelIcon(unit_attrs["type"])
-        #     try:
-        #         self._create_image_jointjs_json(
-        #             x_pos,
-        #             y_pos,
-        #             unit_attrs["name"],
-        #             unit_icon.icon,
-        #             unit_attrs["type"],
-        #             unit_icon.link_positions,
-        #         )
-        #     except KeyError as e:
-        #         self._logger.info(
-        #             f'Unable to find icon for {unit_attrs["type"]}. Using default icon'
-        #         )
-        #         self._create_image_jointjs_json(
-        #             x_pos,
-        #             y_pos,
-        #             unit_attrs["name"],
-        #             default_icon.icon,
-        #             unit_attrs["type"],
-        #             default_icon.link_positions,
-        #         )
-        #     track_jointjs_elements[unit_attrs["name"]] = 1
-
-        #     # If x_pos it greater than 700 then start another diagonal line
-        #     if x_pos >= 700:
-        #         x_pos = 100
-        #         y_pos = y_starting_pos
-        #         y_starting_pos += 100
-        #     else:
-        #         x_pos += 100
-        #         y_pos += 100
-
         
-
     def _create_image_jointjs_json(self, x_pos, y_pos, name, image, title, port_groups):
         # Create the jointjs for a given image
         entry = {}
@@ -705,7 +680,7 @@ class FlowsheetSerializer:
             "root": {"title": title},
         }
         self._out_json["cells"].append(entry)
-        return len(self._out_json["cells"]) - 1 # return index of cell
+        return len(self._out_json["cells"]) - 1 # return the index of the newly added cell
 
     def _create_link_jointjs_json(
         self, source_port, dest_port, source_id, dest_id, name, label
@@ -752,7 +727,7 @@ class FlowsheetSerializer:
             "z": z,
         }
         self._out_json["cells"].append(entry)
-        return len(self._out_json["cells"]) - 1 # return index of cell
+        return len(self._out_json["cells"]) - 1 # return the index of the newly added cell
 
     class _PseudoUnit:
         """
