@@ -106,7 +106,7 @@ class TestColumn(object):
                       [ 2.965e-05, 3.87e-05],[ 3.018e-05, 3.929e-05],
                       [ 3.092e-05, 4.011e-05],[ 3.195e-05, 4.126e-05],
                       [ 3.305e-05, 4.251e-05],[ 3.18e-05, 4.121e-05]]
-        m.fs.unit.vapor_phase.length_domain.display()
+        
         for t in m.fs.time:
             for i,x in enumerate(m.fs.unit.vapor_phase.length_domain):
                 for j,comp in enumerate(['CO2','H2O']):

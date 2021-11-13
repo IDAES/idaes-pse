@@ -780,11 +780,32 @@ documentation for supported schemes,
         blk.liquid_phase.heat.fix(0.0)
         
         # # ---------------------------------------------------------------------
-        # Get values for state variables for initialization
+        # Provide state arguments for property package initialization
 
         init_log.info("Step 1: Property Package initialization")
+        
+        vap_comp = blk.config.vapor_side.property_package.component_list
+        liq_apparent_comp = [c[1] for c in blk.liquid_phase.properties.phase_component_set]
+        
+        if vapor_phase_state_args is None:
+            vapor_phase_state_args = {
+                'flow_mol': blk.vapor_inlet.flow_mol[0].value,
+                'temperature': blk.vapor_inlet.temperature[0].value,
+                'pressure': blk.vapor_inlet.pressure[0].value,
+                'mole_frac_comp':
+                {j: blk.vapor_inlet.mole_frac_comp[0, j].value 
+                 for j in vap_comp}}
 
-        # Initialize vapor_phase block
+        if liquid_phase_state_args is None:
+            liquid_phase_state_args = {
+                'flow_mol': blk.liquid_inlet.flow_mol[0].value,
+                'temperature': blk.liquid_inlet.temperature[0].value,
+                'pressure': blk.vapor_inlet.pressure[0].value,
+                'mole_frac_comp':
+                {j: blk.liquid_inlet.mole_frac_comp[0, j].value 
+                 for j in liq_apparent_comp}}
+
+        # Initialize vapor_phase properties block
         vflag = blk.vapor_phase.properties.initialize(
             state_args=vapor_phase_state_args,
             state_vars_fixed=False,
@@ -813,10 +834,9 @@ documentation for supported schemes,
         init_log.info_high("Step 2: {}.".format(idaeslog.condition(res)))
         
         # ---------------------------------------------------------------------
-        init_log.info('Step 3: Add Mass transfer terms')
-        # Initialize :Interface pressure
-
-        # Interface pressure
+        init_log.info('Step 3: Interface equilibrium')
+        
+        # Activate interface pressure constraint 
         
         blk.pressure_equil.unfix()
         blk.pressure_at_interface.activate()
@@ -833,11 +853,12 @@ documentation for supported schemes,
         init_log.info('Step 4: Isothermal chemical absoption')
         init_log.info_high("No mass transfer to mass transfer")
 
-        # ISOTHERMAL CHEMICAL ABSORPTION
+        # Unfix mass transfer terms
         blk.interphase_mass_transfer.unfix()
         blk.vapor_phase.mass_transfer_term.unfix()
         blk.liquid_phase.mass_transfer_term.unfix()
 
+        # Activate mass transfer equation in vapor phase
         blk.mass_transfer_vapor.activate()
         blk.vapor_phase_mass_transfer_handle.activate()
         blk.liquid_phase_mass_transfer_handle.activate()
@@ -861,14 +882,18 @@ documentation for supported schemes,
         blk.vapor_phase.heat.unfix()
         blk.liquid_phase.heat.unfix()
 
-        # Activate steady-state energy balance related equations
-        # Unit model
+        # Activate heat transfer and steady-state energy balance related equations
         for c in ["vapor_phase_heat_transfer",
-                  "liquid_phase_heat_transfer",
-                  "vapor_phase_heat_transfer_handle",
-                  "liquid_phase_heat_transfer_handle"]:
+                  "vapor_phase_heat_transfer_handle"]:
             getattr(blk, c).activate()
         
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+            
+        for c in ["liquid_phase_heat_transfer",
+                  "liquid_phase_heat_transfer_handle"]:
+            getattr(blk, c).activate()
+            
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
 
