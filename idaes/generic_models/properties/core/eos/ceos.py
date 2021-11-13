@@ -19,9 +19,6 @@ import os
 from enum import Enum
 from copy import deepcopy
 
-from pyomo.environ import units as pyunits
-from idaes.core.util.constants import Constants as const
-
 from pyomo.environ import (exp,
                            Expression,
                            ExternalFunction,
@@ -31,7 +28,7 @@ from pyomo.environ import (exp,
                            sqrt,
                            Var)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-
+from idaes.core.phases import LiquidPhase, VaporPhase
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
 from idaes.core.util.math import safe_log
@@ -736,229 +733,26 @@ class Cubic(EoSBase):
     @staticmethod
     def fug_coeff_phase_comp_eq(blk, p, j, pp):
         return exp(_log_fug_coeff_phase_comp_eq(blk, p, j, pp))
-
+    
     @staticmethod
     def log_fug_phase_comp_Tbub(blk, p, j, pp):
-        pobj = blk.params.get_phase(p)
-        ctype = pobj._cubic_type
-        cname = pobj.config.equation_of_state_options["type"].name
-
-        if pobj.is_liquid_phase():
-            x = blk.mole_frac_comp
-            xidx = ()
-        elif pobj.is_vapor_phase():
-            x = blk._mole_frac_tbub
-            xidx = pp
-        else:
-            raise BurntToast("{} non-vapor or liquid phase called for bubble "
-                             "temperature calculation. This should never "
-                             "happen, so please contact the IDAES developers "
-                             "with this bug.".format(blk.name))
-
-        def a(k):
-            cobj = blk.params.get_component(k)
-            fw = getattr(blk, cname+"_fw")[k]
-            return (EoS_param[ctype]['omegaA'] *
-                    ((Cubic.gas_constant(blk) * cobj.temperature_crit)**2 /
-                     cobj.pressure_crit) *
-                    ((1+fw*(1-sqrt(blk.temperature_bubble[pp] /
-                                   cobj.temperature_crit)))**2))
-
-        kappa = getattr(blk.params, cname+"_kappa")
-        am = sum(sum(x[xidx, i]*x[xidx, j]*sqrt(a(i)*a(j))*(1-kappa[i, j])
-                     for j in blk.component_list)
-                 for i in blk.component_list)
-
-        b = getattr(blk, cname+"_b")
-        bm = sum(x[xidx, i]*b[i] for i in blk.component_list)
-
-        A = am*blk.pressure/(Cubic.gas_constant(blk) *
-                             blk.temperature_bubble[pp])**2
-        B = bm*blk.pressure/(Cubic.gas_constant(blk) *
-                             blk.temperature_bubble[pp])
-
-        delta = (2*sqrt(a(j))/am * sum(x[xidx, i]*sqrt(a(i))*(1-kappa[j, i])
-                                       for i in blk.component_list))
-
-        f = getattr(blk, "_"+cname+"_ext_func_param")
-        if pobj.is_vapor_phase():
-            proc = getattr(blk, "_"+cname+"_proc_Z_vap")
-        elif pobj.is_liquid_phase():
-            proc = getattr(blk, "_"+cname+"_proc_Z_liq")
-
-        Z = proc(f, A, B)
-
-        if pobj.is_vapor_phase():
-            log_mole_frac = blk.log_mole_frac_tbub[pp[0], pp[1], j]
-        else:
-            log_mole_frac = blk.log_mole_frac_comp[j]
-
-        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
-                log_mole_frac + log(blk.pressure/blk.pressure._units))
+        return _bubble_dew_log_fug_coeff_method(blk, p, j, pp,
+                                                blk.temperature_bubble)
 
     @staticmethod
     def log_fug_phase_comp_Tdew(blk, p, j, pp):
-        pobj = blk.params.get_phase(p)
-        ctype = pobj._cubic_type
-        cname = pobj.config.equation_of_state_options["type"].name
-
-        if pobj.is_liquid_phase():
-            x = blk._mole_frac_tdew
-            xidx = pp
-        elif pobj.is_vapor_phase():
-            x = blk.mole_frac_comp
-            xidx = ()
-        else:
-            raise BurntToast("{} non-vapor or liquid phase called for bubble "
-                             "temperature calculation. This should never "
-                             "happen, so please contact the IDAES developers "
-                             "with this bug.".format(blk.name))
-
-        def a(k):
-            cobj = blk.params.get_component(k)
-            fw = getattr(blk, cname+"_fw")[k]
-            return (EoS_param[ctype]['omegaA'] *
-                    ((Cubic.gas_constant(blk) * cobj.temperature_crit)**2 /
-                     cobj.pressure_crit) *
-                    ((1+fw*(1-sqrt(blk.temperature_dew[pp] /
-                                   cobj.temperature_crit)))**2))
-
-        kappa = getattr(blk.params, cname+"_kappa")
-        am = sum(sum(x[xidx, i]*x[xidx, j]*sqrt(a(i)*a(j))*(1-kappa[i, j])
-                     for j in blk.component_list)
-                 for i in blk.component_list)
-
-        b = getattr(blk, cname+"_b")
-        bm = sum(x[xidx, i]*b[i] for i in blk.component_list)
-
-        A = am*blk.pressure/(Cubic.gas_constant(blk) *
-                             blk.temperature_dew[pp])**2
-        B = bm*blk.pressure/(Cubic.gas_constant(blk) *
-                             blk.temperature_dew[pp])
-
-        delta = (2*sqrt(a(j))/am * sum(x[xidx, i]*sqrt(a(i))*(1-kappa[j, i])
-                                       for i in blk.component_list))
-
-        f = getattr(blk, "_"+cname+"_ext_func_param")
-        if pobj.is_vapor_phase():
-            proc = getattr(blk, "_"+cname+"_proc_Z_vap")
-        elif pobj.is_liquid_phase():
-            proc = getattr(blk, "_"+cname+"_proc_Z_liq")
-
-        Z = proc(f, A, B)
-
-        if pobj.is_vapor_phase():
-            log_mole_frac = blk.log_mole_frac_comp[j]
-        else:
-            log_mole_frac = blk.log_mole_frac_tdew[pp[0], pp[1], j]
-
-        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
-                log_mole_frac + log(blk.pressure/blk.pressure._units))
+        return _bubble_dew_log_fug_coeff_method(blk, p, j, pp,
+                                                blk.temperature_dew)
 
     @staticmethod
     def log_fug_phase_comp_Pbub(blk, p, j, pp):
-        pobj = blk.params.get_phase(p)
-        ctype = pobj._cubic_type
-        cname = pobj.config.equation_of_state_options["type"].name
-
-        if pobj.is_liquid_phase():
-            x = blk.mole_frac_comp
-            xidx = ()
-        elif pobj.is_vapor_phase():
-            x = blk._mole_frac_pbub
-            xidx = pp
-        else:
-            raise BurntToast("{} non-vapor or liquid phase called for bubble "
-                             "temperature calculation. This should never "
-                             "happen, so please contact the IDAES developers "
-                             "with this bug.".format(blk.name))
-
-        a = getattr(blk, cname+"_a")
-        kappa = getattr(blk.params, cname+"_kappa")
-        am = sum(sum(x[xidx, i]*x[xidx, j] *
-                     sqrt(a[i]*a[j])*(1-kappa[i, j])
-                     for j in blk.component_list)
-                 for i in blk.component_list)
-
-        b = getattr(blk, cname+"_b")
-        bm = sum(x[xidx, i]*b[i] for i in blk.component_list)
-
-        A = am*blk.pressure_bubble[pp]/(Cubic.gas_constant(blk) *
-                                        blk.temperature)**2
-        B = bm*blk.pressure_bubble[pp]/(Cubic.gas_constant(blk) *
-                                        blk.temperature)
-
-        delta = (2*sqrt(a[j])/am * sum(x[xidx, i]*sqrt(a[i])*(1-kappa[j, i])
-                                       for i in blk.component_list))
-
-        f = getattr(blk, "_"+cname+"_ext_func_param")
-        if pobj.is_vapor_phase():
-            proc = getattr(blk, "_"+cname+"_proc_Z_vap")
-        elif pobj.is_liquid_phase():
-            proc = getattr(blk, "_"+cname+"_proc_Z_liq")
-
-        Z = proc(f, A, B)
-
-        if pobj.is_vapor_phase():
-            log_mole_frac = blk.log_mole_frac_pbub[pp[0], pp[1], j]
-        else:
-            log_mole_frac = blk.log_mole_frac_comp[j]
-
-        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
-                log_mole_frac + log(blk.pressure_bubble[pp] /
-                                     blk.pressure_bubble._units))
+        return _bubble_dew_log_fug_coeff_method(blk, p, j, pp,
+                                                blk.pressure_bubble)
 
     @staticmethod
     def log_fug_phase_comp_Pdew(blk, p, j, pp):
-        pobj = blk.params.get_phase(p)
-        ctype = pobj._cubic_type
-        cname = pobj.config.equation_of_state_options["type"].name
-
-        if pobj.is_liquid_phase():
-            x = blk._mole_frac_pdew
-            xidx = pp
-        elif pobj.is_vapor_phase():
-            x = blk.mole_frac_comp
-            xidx = ()
-        else:
-            raise BurntToast("{} non-vapor or liquid phase called for bubble "
-                             "temperature calculation. This should never "
-                             "happen, so please contact the IDAES developers "
-                             "with this bug.".format(blk.name))
-
-        a = getattr(blk, cname+"_a")
-        kappa = getattr(blk.params, cname+"_kappa")
-        am = sum(sum(x[xidx, i]*x[xidx, j] *
-                     sqrt(a[i]*a[j])*(1-kappa[i, j])
-                     for j in blk.component_list)
-                 for i in blk.component_list)
-
-        b = getattr(blk, cname+"_b")
-        bm = sum(x[xidx, i]*b[i] for i in blk.component_list)
-
-        A = am*blk.pressure_dew[pp]/(Cubic.gas_constant(blk) *
-                                     blk.temperature)**2
-        B = bm*blk.pressure_dew[pp]/(Cubic.gas_constant(blk)*blk.temperature)
-
-        delta = (2*sqrt(a[j])/am * sum(x[xidx, i]*sqrt(a[i])*(1-kappa[j, i])
-                                       for i in blk.component_list))
-
-        f = getattr(blk, "_"+cname+"_ext_func_param")
-        if pobj.is_vapor_phase():
-            proc = getattr(blk, "_"+cname+"_proc_Z_vap")
-        elif pobj.is_liquid_phase():
-            proc = getattr(blk, "_"+cname+"_proc_Z_liq")
-
-        Z = proc(f, A, B)
-
-        if pobj.is_vapor_phase():
-            log_mole_frac = blk.log_mole_frac_comp[j]
-        else:
-            log_mole_frac = blk.log_mole_frac_pdew[pp[0], pp[1], j]
-
-        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
-                log_mole_frac + log(blk.pressure_dew[pp] /
-                                     blk.pressure_dew._units))
+        return _bubble_dew_log_fug_coeff_method(blk, p, j, pp,
+                                               blk.pressure_dew)
 
     @staticmethod
     def gibbs_mol_phase(b, p):
@@ -1205,6 +999,91 @@ def _d_log_fug_coeff_dT_phase_comp(blk,p,j):
     return (b/bm*dZ_dT - (dZ_dT+B/T)/(Z-B)
              - A*(b/bm-delta)*(Z/T+dZ_dT)/(Z**2+u*B*Z+w*B**2)
              + log((2*Z+B*(u+EoS_p))/(2*Z+B*(u-EoS_p)))*expr)
+
+def _bubble_dew_log_fug_coeff_method(blk, p, j, pp, pt_var):
+    pobj = blk.params.get_phase(p)
+    ctype = pobj._cubic_type
+    cname = pobj.config.equation_of_state_options["type"].name
+    
+    # Ditch the m.fs.unit.control_volume...
+    short_name = pt_var.name.split(".")[-1]
+    #import pdb; pdb.set_trace()
+    if short_name.startswith("temperature"):
+        abbrv = "t"
+        T =  pt_var[pp]
+        P = blk.pressure
+    elif short_name.startswith("pressure"):
+        abbrv = "p"
+        P = pt_var[pp]
+        T = blk.temperature
+    else:
+        raise BurntToast("Users shouldn't be calling this function. "
+                         "If you're a dev, you know what you did.")
+    
+    if short_name.endswith("bubble"):
+        abbrv += "bub"
+        if pobj.is_liquid_phase():
+            x = blk.mole_frac_comp
+            log_mole_frac = blk.log_mole_frac_comp
+            xidx = ()
+        elif pobj.is_vapor_phase():
+            x = getattr(blk,"_mole_frac_"+abbrv)
+            log_mole_frac = getattr(blk,"log_mole_frac_"+abbrv)
+            xidx = pp
+        else:
+            raise BurntToast("Users shouldn't be calling this function. "
+                             "If you're a dev, you know what you did.")
+            
+    elif short_name.endswith("dew"):
+        abbrv += "dew"
+        if pobj.is_vapor_phase():
+            x = blk.mole_frac_comp
+            log_mole_frac = blk.log_mole_frac_comp
+            xidx = ()
+        elif pobj.is_liquid_phase():
+            x = getattr(blk,"_mole_frac_"+abbrv)
+            log_mole_frac = getattr(blk,"log_mole_frac_"+abbrv)
+            xidx = pp
+        else:
+            raise BurntToast("Users shouldn't be calling this function. "
+                             "If you're a dev, you know what you did.")
+    else:
+        raise BurntToast("Users shouldn't be calling this function. "
+                         "If you're a dev, you know what you did.")
+
+    def a(k):
+        cobj = blk.params.get_component(k)
+        fw = getattr(blk, cname+"_fw")[k]
+        ac = getattr(blk, cname+'_a_crit')[k]
+        func_alpha = getattr(blk.params,cname+"_func_alpha")
+        
+        return  ac*func_alpha(T,fw,cobj)
+
+    kappa = getattr(blk.params, cname+"_kappa")
+    am = sum(sum(x[xidx, i]*x[xidx, j]*sqrt(a(i)*a(j))*(1-kappa[i, j])
+                 for j in blk.component_list)
+             for i in blk.component_list)
+
+    b = getattr(blk, cname+"_b")
+    bm = sum(x[xidx, i]*b[i] for i in blk.component_list)
+    R = Cubic.gas_constant(blk)
+
+    A = am*P/(R*T)**2
+    B = bm*P/(R*T)
+
+    delta = (2*sqrt(a(j))/am * sum(x[xidx, i]*sqrt(a(i))*(1-kappa[j, i])
+                                   for i in blk.component_list))
+
+    f = getattr(blk, "_"+cname+"_ext_func_param")
+    if pobj.is_vapor_phase():
+        proc = getattr(blk, "_"+cname+"_proc_Z_vap")
+    elif pobj.is_liquid_phase():
+        proc = getattr(blk, "_"+cname+"_proc_Z_liq")
+
+    Z = proc(f, A, B)
+
+    return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
+            log_mole_frac[xidx,j] + log(P/blk.params.pressure_ref))
 
 # -----------------------------------------------------------------------------
 # Default rules for cubic expressions
