@@ -11,20 +11,10 @@
 # license information.
 #################################################################################
 """
-IDAES First Generation (GEN1) General Rate-Based Packed Column.
-
-Detailed model equations can be found in the supplimentary information
-of the paper :
-Akula, Paul; Eslick, John; Bhattacharyya, Debangsu; Miller, David
-"Model Development, Validation, and Part-Load Optimization of a
-MEA-Based Post-Combustion CO2 Capture Process
-Under Part-Load and Variable Capture Operation,
-Industrial & Engineering Chemistry Research,2021. (submitted)
-
+IDAES First Generation (GEN1) General Purpose Solvent Column Model.
 """
 
-# Import Python libraries and third-party
-import numpy as np
+# Import Python and third-party libraries
 import matplotlib.pyplot as plt
 from enum import Enum
 
@@ -57,11 +47,6 @@ __author__ = "Paul Akula, John Eslick"
 _log = idaeslog.getLogger(__name__)
 
 
-class ProcessType(Enum):
-    absorber = 1
-    stripper = 2
-
-
 @declare_process_block_class("PackedColumn")
 class PackedColumnData(UnitModelBlockData):
     """
@@ -76,7 +61,7 @@ class PackedColumnData(UnitModelBlockData):
     _PhaseCONFIG = ConfigBlock()
 
     CONFIG.declare("finite_elements", ConfigValue(
-        default=10,
+        default=20,
         domain=int,
         description="Number of finite elements length domain",
         doc="""Number of finite elements to use when discretizing length
@@ -711,9 +696,6 @@ documentation for supported schemes,
                          doc="liquid - heat transfer handle")
         def liquid_phase_heat_transfer_handle(blk, t, x):
             return blk.liquid_phase.heat[t, x] == -blk.heat_transfer_rate_liq[t, x]
-
-        if self.config.dynamic:
-            self.fix_initial_condition()
 
     # =========================================================================
     # Model initialization routine

@@ -23,7 +23,7 @@ from pyomo.environ import ConcreteModel, value, Param, TransformationFactory,\
 # Import IDAES Libraries
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.column_models.column \
-    import PackedColumn, ProcessType
+    import PackedColumn
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_vapor \
