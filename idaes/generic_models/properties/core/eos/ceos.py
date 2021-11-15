@@ -73,7 +73,6 @@ class CubicType(Enum):
 class MixingRuleA(Enum):
     # Rule to calculate am for cubic equations of state
     default = 0
-    dummy = 1
 
 
 class MixingRuleB(Enum):
@@ -415,7 +414,8 @@ class Cubic(EoSBase):
                  "name {}. Cubic equation of state supports only Vap and Liq "
                  "phases.".format(param_block.name, b))
         
-        if b.config.equation_of_state_options["type"] not in CubicType:
+        if b.config.equation_of_state_options["type"] not in set(
+                item for item in CubicType):
             raise ConfigurationError("{} Unrecognized option for equation of "
             "state type: {}. Must be an instance of CubicType "
             "Enum.".format(b.name, b.config.equation_of_state_options["type"]))

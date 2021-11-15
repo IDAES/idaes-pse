@@ -1890,7 +1890,8 @@ class GenericStateBlockData(StateBlockData):
                 abbrv = "p"
                 sf_pt = sf_P
             else:
-                import pdb; pdb.set_trace()
+                raise BurntToast("Users shouldn't be calling this function. "
+                                 "If you're a dev, you know what you did.")
             
             if short_name.endswith("bubble"):
                 phase = VaporPhase
