@@ -57,7 +57,7 @@ class UnitModelIcon:
         Example result::
 
             {
-                "groups": {
+                "port_groups": {
                     "in": {
                         "position": {
                             "name": "left",
@@ -131,12 +131,7 @@ class UnitModelIcon:
 
         # build link positions from info
         groups, items = {}, []
-        for group_name, group_config in self._model_details["groups"].items():
-            #group, layout_name, (x, y, dx, dy) = position
-            #if group not in groups:
-            #    groups[group] = {}
-            print("group_name:", group_name)
-            print("group_config:", group_config)
+        for group_name, group_config in self._model_details["port_groups"].items():
             groups[group_name] = group_config
             groups[group_name].update({
                 "attrs": {
@@ -149,10 +144,8 @@ class UnitModelIcon:
                 },
                 "markup": "<g><rect/></g>",
             })
-            #items.append({"group": group, "id": group})
 
         # set new link positions attr and place in cache
-        #positions = {"groups": groups, "items": items}
         positions = {"groups": groups, "items": []}
         self._link_positions_map[self._model] = positions
         return positions
@@ -167,7 +160,7 @@ class UnitModelIcon:
     _mapping = {
         "cstr": {
             "image": "reactor_c.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -194,7 +187,7 @@ class UnitModelIcon:
         },
         "flash": {
             "image": "flash.svg",
-            "groups": {
+            "port_groups": {
                 "bottom": {
                     "position": {
                         "name": "bottom",
@@ -245,7 +238,7 @@ class UnitModelIcon:
         },
         "gibbs_reactor": {
             "image": "reactor_g.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -272,7 +265,7 @@ class UnitModelIcon:
         },
         "heat_exchanger": {
             "image": "heat_exchanger_1.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -299,7 +292,7 @@ class UnitModelIcon:
         },
         "heater": {
             "image": "heater_2.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -326,7 +319,7 @@ class UnitModelIcon:
         },
         "heat_exchanger_1D": {
             "image": "heat_exchanger_1.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -353,14 +346,11 @@ class UnitModelIcon:
         },
         "mixer": {
             "image": "mixer.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
-                        "args": {
-                            "dx": 1,
-                            "dy": 1
-                        }
+                        "args": {}
                     }
                 },
                 "out": {
@@ -386,7 +376,7 @@ class UnitModelIcon:
         },
         "plug_flow_reactor": {
             "image": "reactor_pfr.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -413,7 +403,7 @@ class UnitModelIcon:
         },
         "pressure_changer": {
             "image": "compressor.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -440,7 +430,7 @@ class UnitModelIcon:
         },
         "separator": {
             "image": "splitter.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -467,7 +457,7 @@ class UnitModelIcon:
         },
         "stoichiometric_reactor": {
             "image": "reactor_s.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -494,7 +484,7 @@ class UnitModelIcon:
         },
         "equilibrium_reactor": {
             "image": "reactor_e.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -521,7 +511,7 @@ class UnitModelIcon:
         },
         "feed": {
             "image": "feed.svg",
-            "groups": {
+            "port_groups": {
                 "out": {
                     "position": {
                         "name": "left",
@@ -537,7 +527,7 @@ class UnitModelIcon:
         },
         "product": {
             "image": "product.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -553,7 +543,7 @@ class UnitModelIcon:
         },
         "feed_flash": {
             "image": "feed.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -580,7 +570,7 @@ class UnitModelIcon:
         },
         "statejunction": {
             "image": "NONE",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -607,7 +597,7 @@ class UnitModelIcon:
         },
         "translator": {
             "image": "NONE",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -634,7 +624,7 @@ class UnitModelIcon:
         },
         "packed_column": {
             "image": "packed_column_1.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -661,7 +651,7 @@ class UnitModelIcon:
         },
         "tray_column": {
             "image": "tray_column_1.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",
@@ -688,7 +678,7 @@ class UnitModelIcon:
         },
         "default": {
             "image": "default.svg",
-            "groups": {
+            "port_groups": {
                 "in": {
                     "position": {
                         "name": "left",

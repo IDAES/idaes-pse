@@ -696,7 +696,7 @@ class FlowsheetSerializer:
             "type": "standard.Link",
             "source": {"id": source_id, "port": source_port},
             "target": {"id": dest_id, "port": dest_port},
-            "router": {"name": "orthogonal", "padding": padding},
+            "router": {"name": "manhattan", "padding": padding},
             "connector": {"name": "jumpover", "attrs": {"line": {"stroke": "#5c9adb"}}},
             "id": name,
             "labels": [

@@ -1,28 +1,57 @@
 
 export class JointJsCellConfig {
-	constructor(cells_json) {
-	    this._cells_json = cell_json;
+	constructor(model) {
+	    this._model = model;
 	}
     
-	get cells_json() {
-	    return this._cells_json
+	get model() {
+	    return this._model
 	}
     
-	set cell_json(cell_json) {
-	    this._cells_json = cell_json;
+	set model(model) {
+	    this._model = model;
 	}
-    
-	parse() {
-        var routing_fns = {}
-        for (link in this._cells_json['routing_config']) {
-            var routing_fn = null;
-            // TODO: Implement for source as well
-            if ('destination' in link) {
-                routing_fn = function(vertices, opt, linkView) {
-                    const sourceBBox = linkView.sourceBBox;
+
+    // TODO: Implement a function that find the orthogonal path from a
+    // source to a target.
+    // Orthogonal Connector Routing:
+    // https://link.springer.com/content/pdf/10.1007%2F978-3-642-11805-0_22.pdf
+    //
+    // routerGapFnFactory(linkEnds, direction, minGap) {
+    //     var router_fn = null;
+    //     switch(direction) {
+    //         case "left":
+    //             router_fn = (vertices, opt, linkView) => {
+    //                 const a = linkView.getEndAnchor('source');
+    //                 const b = linkView.getEndAnchor('target');
+    //                 const minGap = link.destination.gap.distance;
+    //                 const x1 = Math.min(b.x - minGap, (a.x + b.x) / 2);
+    //                 const p1 = {
+    //                     x: x1,
+    //                     y: a.y
+    //                 };
+    //                 const p2 = {
+    //                     x: x1,
+    //                     y: b.y
+    //                 };
+    //                 return [p1, ...vertices, p2];
+    //             }
+    //             break;
+    //         default:
+    //             throw Error('Unknown direction for Link routing');
+    //     }
+
+    //     return router_fn;
+    // }
+
+    routerGapFnFactory(direction, gap) {
+        var router_fn = null;
+        switch(direction) {
+            case "left":
+                router_fn = (vertices, opt, linkView) => {
                     const a = linkView.getEndAnchor('source');
                     const b = linkView.getEndAnchor('target');
-                    const minGap = link.destination.gap.distance;
+                    const minGap = gap
                     const x1 = Math.min(b.x - minGap, (a.x + b.x) / 2);
                     const p1 = {
                         x: x1,
@@ -34,12 +63,29 @@ export class JointJsCellConfig {
                     };
                     return [p1, ...vertices, p2];
                 }
-            }
-
-            routing_fns[link] = routing_fn;
+                break;
+            default:
+                throw Error('Unsupported direction for Link routing');
         }
 
+        return router_fn;
+    }
 
+	processRoutingConfig() {
+        var routing_config = this._model['routing_config'];
+        for (var link in routing_config) {
+            var routing_fn = null;
+            // TODO: Implement for source as well
+            if ('destination' in routing_config[link]) {
+                routing_fn = this.routerGapFnFactory(
+                    routing_config[link].destination.gap.direction,
+                    routing_config[link].destination.gap.distance
+                );
+
+                this._model['cells'][routing_config[link].cell_index].router = routing_fn;
+            }
+        }
+        return this._model;
 	}
 	
     };
