@@ -464,6 +464,17 @@ def main(
         m.fs.gts2.control_volume.properties_out[0].flow_mol, 1e-5)
     iscale.set_scaling_factor(
         m.fs.gts3.control_volume.properties_out[0].flow_mol, 1e-5)
+    
+    for unit in [m.fs.cmp1,m.fs.gts1,m.fs.gts2,m.fs.gts3]:
+        iscale.set_scaling_factor(
+            unit.control_volume.properties_in[0].mole_frac_phase_comp["Vap","CH4"],1E3)
+        iscale.set_scaling_factor(
+            unit.properties_isentropic[0].mole_frac_phase_comp["Vap","CH4"],1E3)
+        iscale.constraint_scaling_transform(
+            unit.control_volume.properties_in[0].log_mole_frac_phase_comp_eq["Vap","CH4"],1E3)
+        iscale.constraint_scaling_transform(
+            unit.properties_isentropic[0].log_mole_frac_phase_comp_eq["Vap","CH4"],1E3)
+
     for i, v in m.fs.cmb1.control_volume.rate_reaction_extent.items():
         if i[1] == "ch4_cmb":
             iscale.set_scaling_factor(v, 1e-2)
@@ -552,7 +563,11 @@ def main(
     #
     # Initialization
     #
+    import idaes.logger as idaeslog
+    import pdb
     solver = pyo.SolverFactory('ipopt')
+    solver.options["nlp_scaling_method"]="user-scaling"
+    optarg = {"nlp_scaling_method":"user-scaling"}
     if initialize:
         # feeds
         m.fs.feed_air1.initialize()
@@ -561,7 +576,9 @@ def main(
         iutil.copy_port_values(m.fs.air01)
         m.fs.vsv.initialize()
         iutil.copy_port_values(m.fs.air02)
-        m.fs.cmp1.initialize()
+        iscale.constraint_autoscale_large_jac(m.fs.cmp1)
+        m.fs.cmp1.initialize(optarg=optarg)
+        #pdb.set_trace()
         # splitter
         iutil.copy_port_values(m.fs.air03)
         m.fs.splt1.split_fraction[0, "air05"].fix(0.0916985*0.73)
@@ -582,7 +599,9 @@ def main(
         # gas turbine stage 1
         iutil.copy_port_values(m.fs.g02)
         m.fs.gts1.ratioP[0] = 0.7
-        m.fs.gts1.initialize()
+        iscale.constraint_autoscale_large_jac(m.fs.gts1)
+        m.fs.gts1.initialize(optarg=optarg)
+        #pdb.set_trace()
         # blade cooling air valve01, and calculate a flow coefficent
         iutil.copy_port_values(m.fs.air05)
         m.fs.valve01.Cv = 2
@@ -602,7 +621,9 @@ def main(
         # gas turbine stage 2
         iutil.copy_port_values(m.fs.g04)
         m.fs.gts2.ratioP[0] = 0.7
-        m.fs.gts2.initialize()
+        iscale.constraint_autoscale_large_jac(m.fs.gts2)
+        m.fs.gts2.initialize(optarg=optarg)
+        #pdb.set_trace()
         # blade cooling air valve02, and calculate a flow coefficent
         iutil.copy_port_values(m.fs.air07)
         m.fs.valve02.Cv = 2
@@ -622,7 +643,9 @@ def main(
         # gas turbine stage 3
         iutil.copy_port_values(m.fs.g06)
         m.fs.gts3.ratioP[0] = 0.7
-        m.fs.gts3.initialize()
+        iscale.constraint_autoscale_large_jac(m.fs.gts3)
+        m.fs.gts3.initialize(optarg=optarg)
+        #pdb.set_trace()
         # blade cooling air valve03, and calculate a flow coefficent
         iutil.copy_port_values(m.fs.air09)
         m.fs.valve03.Cv = 2
@@ -643,6 +666,13 @@ def main(
         iutil.copy_port_values(m.fs.g08)
         m.fs.exhaust_1.initialize()
         # Solve
+        #solver.options["bound_push"] = 1E-6
+        
+        # m.fs.gt_power[0].set_value(-480e6)
+        # from idaes.core.util.model_diagnostics import DegeneracyHunter
+        # m.fs.obj = pyo.Objective(expr=0)
+        # dh = DegeneracyHunter(m,pyo.SolverFactory('cbc'))
+        iscale.constraint_autoscale_large_jac(m)
         solver.solve(m, tee=True)
     return m, solver
 
@@ -692,6 +722,8 @@ def run_full_load(m, solver):
     # Fix the gross power output
     m.fs.gt_power[0].fix(-480e6) # Watts negative because is power out
     # Solve
+    #import pdb; pdb.set_trace()
+    #solver.options["bound_push"] = 1E-6
     return solver.solve(m, tee=True)
 
 def run_series(m, solver):
