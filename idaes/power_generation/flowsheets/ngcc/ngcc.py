@@ -415,6 +415,8 @@ def get_model():
 
 
     # Aux power expressions
+    m.fs.cap_fraction = pyo.Var(initialize=0.90, units=pyo.units.dimensionless)
+    m.fs.cap_fraction.fix()
     m.fs.cap_specific_reboiler_duty = pyo.Var(initialize=2.6e6, units=pyo.units.J/pyo.units.kg)
     m.fs.cap_specific_reboiler_duty.fix()
     m.fs.cap_addtional_co2 = pyo.Var(m.fs.time, initialize=0.0, units=pyo.units.kg/pyo.units.s)
@@ -440,16 +442,16 @@ def get_model():
 
     @m.fs.Expression(m.fs.config.time)
     def aux_capture(b, t): #scale to flue gas flow
-        return 1e3*10600* \
+        return 1e3*10600*m.fs.cap_fraction/0.90* \
             (b.gts2.control_volume.properties_out[t].flow_mass/1090.759)
 
     @m.fs.Expression(m.fs.config.time)
     def aux_compression(b, t):
         if not hasattr(m.fs, "cap_addtional_co2"):
-            return m.fs.cap_specific_compression_power* \
+            return m.fs.cap_specific_compression_power*m.fs.cap_fraction* \
                 (b.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"]*0.04401*pyo.units.kg/pyo.units.mol)
         else:
-            return m.fs.cap_specific_compression_power* \
+            return m.fs.cap_specific_compression_power*m.fs.cap_fraction* \
                 (b.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"]*0.04401*pyo.units.kg/pyo.units.mol
                  + m.fs.cap_addtional_co2[t])
 
@@ -479,7 +481,10 @@ def get_model():
 
     m.fs.fuel_lhv = pyo.Var(initialize=47.2e6,
                             units=pyunits.J/pyunits.kg) # J/kg
-    m.fs.fuel_lhv.fix(47.2e6)
+    m.fs.fuel_hhv = pyo.Var(initialize=52.3e6,
+                            units=pyunits.J/pyunits.kg) # J/kg
+    m.fs.fuel_lhv.fix()
+    m.fs.fuel_hhv.fix()
 
     @m.fs.Expression(m.fs.config.time)
     def fuel_thermal_in_mbtu(b, t):
@@ -491,7 +496,7 @@ def get_model():
 
     @m.fs.Expression(m.fs.config.time)
     def reboiler_duty_expr(b, t): #scale to flue gas flow
-        return -m.fs.cap_specific_reboiler_duty * \
+        return -m.fs.cap_specific_reboiler_duty * m.fs.cap_fraction *\
             (b.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"]*0.04401*pyo.units.kg/pyo.units.mol
              + m.fs.cap_addtional_co2[t]) + m.fs.cap_additional_reboiler_duty[t]
 
@@ -532,7 +537,7 @@ def get_model():
     @m.fs.Constraint(m.fs.time)
     def eq1(c, t):
         return m.fs.natural_gas[t] == pyunits.convert(
-            m.fs.inject1.gas_state[t].flow_mass*m.fs.fuel_lhv,
+            m.fs.inject1.gas_state[t].flow_mass*m.fs.fuel_hhv,
             pyunits.MBtu/pyunits.day)
     for t in m.fs.eq1:
         iscale.constraint_scaling_transform(m.fs.eq1[t], 1e-4)
