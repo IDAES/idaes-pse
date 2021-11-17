@@ -279,7 +279,8 @@ htmlhelp_basename = 'IDAESdoc'
 
 html_context = {
     "footer_logos": {
-        "row1":[
+        "row1":
+        [
             {
                 "alt": "National Energy Technology Laboratory logo", 
                 "src": "footer_logo_NETL.png", 
@@ -289,17 +290,23 @@ html_context = {
                 "alt": "Lawrence Berkeley National Laboratory logo", 
                 "src": "footer_logo_LBNL.jpg", 
                 "href": "https://www.lbl.gov/"
-                },
+            },
             {
                 "alt": "Sandia National Laboratory logo", 
                 "src": "footer_logo_Sandia.png", 
                 "href": "https://www.sandia.gov/"
             },
+            {
+                "alt": "Department of Energy logo", 
+                "src": "footer_logo_DOE.jpg", 
+                "href": "https://www.energy.gov/"
+            },
         ],
-        "row2":[
+        "row2":
+        [
             {
                 "alt": "Carnegie Mellon University logo", 
-                "src": "footer_logo_CMU.jpg", 
+                "src": "footer_logo_CMU.png", 
                 "href": "https://www.cmu.edu/"
             },
             {
@@ -316,18 +323,6 @@ html_context = {
                 "alt": "Georgia Institute of Technology logo", 
                 "src": "footer_logo_Georgia_Tech.png", 
                 "href": "https://www.gatech.edu/"
-            },
-        ],
-        "row3":[
-            {
-                "alt": "IDAES logo", 
-                "src": "idaes-footer-logo.png", 
-                "href": "https://idaes.org/"
-            },
-            {
-                "alt": "Department of Energy logo", 
-                "src": "footer_logo_DOE.jpg", 
-                "href": "https://www.energy.gov/"
             },
         ]
     }
