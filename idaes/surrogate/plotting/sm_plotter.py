@@ -33,7 +33,7 @@ Standard plotting methods (scatter, parity and residual plots).
 def surrogate_scatter2D(surrogate, dataframe, filename=None):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
-    output_surrogate = surrogate.evaluate_surrogate(dataframe)
+    output_surrogate = surrogate.evaluate_surrogate(input_data)
     _scatter2D(xdata=input_data.values,
                zdata=output_data.values,
                zfit=output_surrogate.values,
@@ -69,38 +69,38 @@ def _scatter2D(xdata, zdata, zfit, xlabels=None, zlabels=None,
         for j in range(numouts):
             zlabels.append('z' + str(j+1))
 
-    plotidx = -1  # dummy index for each plot produced
-    fig, ax = [], []
+    if filename is not None:
+        if filename[-4:] != '.pdf':  # adding extension if not present
+            name = filename + '.pdf'
+        else:
+            name = filename
+        pdf = PdfPages(name)
+
     for j in range(numouts):  # loop over all outputs, zj
         for i in range(numins):  # plot every possible zj = f(xi)
-            plotidx += 1
-            fig.append(plt.figure())
-            ax.append(fig[plotidx].add_subplot())
-            ax[plotidx].scatter(xdata[:, i], zdata[:, j], c='grey',
-                                marker='s', label='Data')
-            ax[plotidx].scatter(xdata[:, i], zfit[:, j], c='b',
-                                marker='.', label='Model')
+            fig = plt.figure()
+            ax = fig.add_subplot()
+            ax.scatter(xdata[:, i], zdata[:, j], c='grey',
+                       marker='s', label='Data')
+            ax.scatter(xdata[:, i], zfit[:, j], c='b',
+                       marker='.', label='Model')
 
-            ax[plotidx].set_xlabel(xlabels[i])
-            ax[plotidx].set_ylabel(zlabels[j])
-            ax[plotidx].set_title('2D Scatter Plot')
-            ax[plotidx].legend()
+            ax.set_xlabel(xlabels[i])
+            ax.set_ylabel(zlabels[j])
+            ax.set_title('2D Scatter Plot')
+            ax.legend()
 
             if show is True:
                 plt.show()
             if filename is not None:
-                if filename[-4:] != '.pdf':  # adding extension if not present
-                    name = filename + '.pdf'
-                else:
-                    name = filename
-                PdfPages(name).savefig(fig[plotidx])
-                PdfPages(name).close()
+                pdf.savefig(fig)
+    pdf.close()
 
 
 def surrogate_scatter3D(surrogate, dataframe, filename=None):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
-    output_surrogate = surrogate.evaluate_surrogate(dataframe)
+    output_surrogate = surrogate.evaluate_surrogate(input_data)
     _scatter3D(xdata=input_data.values,
                zdata=output_data.values,
                zfit=output_surrogate.values,
@@ -136,39 +136,40 @@ def _scatter3D(xdata, zdata, zfit, xlabels=None, zlabels=None, show=True,
         for j in range(numouts):
             zlabels.append('z' + str(j+1))
 
-    plotidx = -1  # dummy index for each plot produced
-    fig, ax = [], []
+    if filename is not None:
+        if filename[-4:] != '.pdf':  # adding extension if not present
+            name = filename + '.pdf'
+        else:
+            name = filename
+        pdf = PdfPages(name)
+
     for j in range(numouts):  # loop over all outputs, zj
         for pair in list(combinations(range(numins), 2)):  # pick two x vars
-            plotidx += 1
             a, b = pair[0], pair[1]  # indices for the x variables picked
-            fig.append(plt.figure())
-            ax.append(fig[plotidx].add_subplot(projection='3d'))
+            fig = plt.figure()
+            ax = fig.add_subplot(projection='3d')
 
-            ax[plotidx].scatter(xdata[:, a], xdata[:, b], zdata[:, j],
-                                c='grey', marker='s', label='Data')
-            ax[plotidx].scatter(xdata[:, a], xdata[:, b], zfit[:, j], c='b',
-                                marker='.', label='Model')
-            ax[plotidx].set_xlabel(xlabels[a])
-            ax[plotidx].set_ylabel(xlabels[b])
-            ax[plotidx].set_zlabel(zlabels[j])
-            ax[plotidx].set_title('3D Scatter Plot')
-            ax[plotidx].legend()
+            ax.scatter(xdata[:, a], xdata[:, b], zdata[:, j],
+                       c='grey', marker='s', label='Data')
+            ax.scatter(xdata[:, a], xdata[:, b], zfit[:, j], c='b',
+                       marker='.', label='Model')
+            ax.set_xlabel(xlabels[a])
+            ax.set_ylabel(xlabels[b])
+            ax.set_zlabel(zlabels[j])
+            ax.set_title('3D Scatter Plot')
+            ax.legend()
 
             if show is True:
                 plt.show()
             if filename is not None:
-                if filename[-4:] != '.pdf':  # adding extension if not present
-                    name = filename + '.pdf'
-                else:
-                    name = filename
-                PdfPages(name).savefig(fig[plotidx])
-                PdfPages(name).close()
+                pdf.savefig(fig)
+    pdf.close()
 
 
 def surrogate_parity(surrogate, dataframe, filename=None):
+    input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
-    output_surrogate = surrogate.evaluate_surrogate(dataframe)
+    output_surrogate = surrogate.evaluate_surrogate(input_data)
     _parity(zdata=output_data.values, zfit=output_surrogate.values,
             zlabels=surrogate.output_labels(), filename=filename)
 
@@ -194,37 +195,38 @@ def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
         for j in range(numouts):
             zlabels.append('z' + str(j+1))
 
-    plotidx = -1  # dummy index for each plot produced
-    fig, ax = [], []
+    if filename is not None:
+        if filename[-4:] != '.pdf':  # adding extension if not present
+            name = filename + '.pdf'
+        else:
+            name = filename
+        pdf = PdfPages(name)
+
     for j in range(numouts):  # loop over all outputs, zj
-        plotidx += 1
-        fig.append(plt.figure())
-        ax.append(fig[j].add_subplot())
+        fig = plt.figure()
+        ax = fig.add_subplot()
 
-        ax[j].plot(zdata[:, j], zdata[:, j], c='grey', label='Data')
-        ax[j].scatter(zdata[:, j], zfit[:, j], marker='.', label='Predictions')
+        ax.plot(zdata[:, j], zdata[:, j], c='grey', label='Data')
+        ax.scatter(zdata[:, j], zfit[:, j], s=3, c='b', marker='.',
+                   label='Predictions')
 
-        ax[j].set_xlabel(zlabels[j])
-        ax[j].set_ylabel('Model Output')
-        ax[j].set_title('Parity Plot')
-        ax[j].legend()
+        ax.set_xlabel(zlabels[j])
+        ax.set_ylabel('Model Output')
+        ax.set_title('Parity Plot')
+        ax.legend()
 
         if show is True:
             plt.show()
         if filename is not None:
-            if filename[-4:] != '.pdf':  # adding extension if not present
-                name = filename + '.pdf'
-            else:
-                name = filename
-            PdfPages(name).savefig(fig[plotidx])
-            PdfPages(name).close()
+            pdf.savefig(fig)
+    pdf.close()
 
 
 def surrogate_residual(surrogate, dataframe, filename=None,
                        relative_error=False):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
-    output_surrogate = surrogate.evaluate_surrogate(dataframe)
+    output_surrogate = surrogate.evaluate_surrogate(input_data)
     error = np.abs(output_data - output_surrogate)
     if relative_error is True:
         error = np.divide(error, np.maximum(output_data, 1.0))
@@ -260,26 +262,25 @@ def _residual(xdata, error, xlabels=None, elabels=None, show=True,
         for i in range(numouts):
             elabels.append('z'+str(j+1)+' Error')
 
-    plotidx = -1  # dummy index for each plot produced
-    fig, ax = [], []
+    if filename is not None:
+        if filename[-4:] != '.pdf':  # adding extension if not present
+            name = filename + '.pdf'
+        else:
+            name = filename
+        pdf = PdfPages(name)
+
     for i in range(numins):
         for j in range(numouts):  # loop over all outputs, zj
-            plotidx += 1
-            fig.append(plt.figure())
-            ax.append(fig[plotidx].add_subplot())
-            ax[plotidx].scatter(xdata[:, i], error[:, j], marker='.',
-                                label=elabels[j])
-            ax[plotidx].set_xlabel(xlabels[i])
-            ax[plotidx].set_ylabel(elabels[j])
-            ax[plotidx].set_title('Residual Plot')
-            ax[plotidx].legend()
+            fig = plt.figure()
+            ax = fig.add_subplot()
+            ax.scatter(xdata[:, i], error[:, j], marker='.', label=elabels[j])
+            ax.set_xlabel(xlabels[i])
+            ax.set_ylabel(elabels[j])
+            ax.set_title('Residual Plot')
+            ax.legend()
 
             if show is True:
                 plt.show()
             if filename is not None:
-                if filename[-4:] != '.pdf':  # adding extension if not present
-                    name = filename + '.pdf'
-                else:
-                    name = filename
-                PdfPages(name).savefig(fig[plotidx])
-                PdfPages(name).close()
+                pdf.savefig(fig)
+    pdf.close()
