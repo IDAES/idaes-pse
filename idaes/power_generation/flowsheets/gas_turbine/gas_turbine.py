@@ -29,6 +29,7 @@ import idaes.generic_models.unit_models as um # um = unit models
 import idaes.core.util as iutil
 import idaes.core.util.tables as tables
 import idaes.core.util.scaling as iscale
+from idaes.core.util.misc import get_solver
 import idaes.core.plugins
 from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
@@ -563,11 +564,9 @@ def main(
     #
     # Initialization
     #
-    import idaes.logger as idaeslog
-    import pdb
+    
+    optarg = {}
     solver = pyo.SolverFactory('ipopt')
-    solver.options["nlp_scaling_method"]="user-scaling"
-    optarg = {"nlp_scaling_method":"user-scaling"}
     if initialize:
         # feeds
         m.fs.feed_air1.initialize()
@@ -722,8 +721,16 @@ def run_full_load(m, solver):
     # Fix the gross power output
     m.fs.gt_power[0].fix(-480e6) # Watts negative because is power out
     # Solve
-    #import pdb; pdb.set_trace()
-    #solver.options["bound_push"] = 1E-6
+    iscale.constraint_autoscale_large_jac(m)
+    jac, nlp = iscale.get_jacobian(m, scaled=True)
+    print("Badly scaled variables:")
+    for v, sv in iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-16):
+        print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
+    print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
+    from idaes.core.util.model_diagnostics import DegeneracyHunter
+    m.obj = pyo.Objective(expr=0)
+    dh = DegeneracyHunter(m,pyo.SolverFactory('cbc'))
+    import pdb; pdb.set_trace()
     return solver.solve(m, tee=True)
 
 def run_series(m, solver):

@@ -15,9 +15,11 @@ __author__ = "John Eslick"
 
 import pytest
 import pyomo.environ as pyo
+import idaes
 from idaes.power_generation.flowsheets.gas_turbine.gas_turbine import (
     main, run_full_load)
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.solvers import use_idaes_solver_configuration_defaults
 
 solver_available = pyo.SolverFactory('ipopt').available()
 
@@ -92,6 +94,10 @@ def test_initialize():
         "CO2":0.0,
         "N2":0.0,
         "Ar":0.0}
+
+    use_idaes_solver_configuration_defaults()
+    idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
+    idaes.cfg.ipopt["options"]["bound_push"] = 1e-6
 
     m, solver = main(
         comps=comps,
