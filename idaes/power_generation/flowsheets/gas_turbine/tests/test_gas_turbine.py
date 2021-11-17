@@ -37,18 +37,11 @@ def test_build():
         "h2_cmb":"H2"}
     phases = ["Vap"]
     air_comp = {
-        "CH4":0.0,
-        "C2H6":0.0,
-        "C2H4":0.0,
-        "CO":0.0,
-        "H2S":0.0,
-        "H2":0.0,
         "O2":0.2074,
         "H2O":0.0099,
         "CO2":0.0003,
         "N2":0.7732,
-        "Ar":0.0092,
-        "SO2":0.0}
+        "Ar":0.0092}
     ng_comp = {
         "CH4":0.87,
         "C2H6":0.0846,
@@ -81,7 +74,6 @@ def test_initialize():
     rxns = {"ch4_cmb":"CH4"}
     phases = ["Vap"]
     air_comp = {
-        "CH4":0.0,
         "O2":0.2074,
         "H2O":0.0099,
         "CO2":0.0003,
