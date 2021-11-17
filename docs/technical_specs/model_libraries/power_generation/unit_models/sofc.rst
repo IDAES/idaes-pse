@@ -57,7 +57,7 @@ also appear in the electrolyte and interconnect.
 +---------------------+------------------+------------------------+------------+-----------------------------------+
 | Symbol              | Model Name       | Blocks                 | Units      | Description                       |
 +=====================+==================+========================+============+===================================+
-| :math:`P`           | pressure         | fc, oc, fe, oe         | Pa         | Pressure                          |
+| :math:`P`           | pressure         | fc, oc, fe, oe         | Pa         | Pressure                          |               
 +---------------------+------------------+------------------------+------------+-----------------------------------+
 | :math:`T`           | temperature      | fc, oc, fe, eo, el, ic | K          | Temperature                       |
 +---------------------+------------------+------------------------+------------+-----------------------------------+
@@ -121,7 +121,12 @@ Effective Diffusivity
 
 .. math::
 
-  
+  \frac{\partial c}{\partial t} = D_{ie}\frac{\partial^2 c_i}{\partial t^2} + D_{ie}\frac{\partial^2 c_i}{\partial t^2}
+
+The boundary conditions are at :math:`z = 0`, :math:`\frac{\partial c_i}{\partial z} = 0`;
+:math:`z = 1`, :math:`\frac{\partial c_i}{\partial z} = 0`; at :math:`x = 0`, :math:`c_i = c_{i, channel}`
+
+
 
 
 Energy Balances
