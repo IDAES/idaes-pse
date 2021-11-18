@@ -589,7 +589,13 @@ class GasPhaseStateBlockData(StateBlockData):
         def D_bin(i, j):
             # 1e3 used to multiply MW to convert from kg/mol to kg/kmol
             # TODO: Does this factor of 1.43e-3 have units?
-            return ((1.43e-3*(self.temperature**1.75) *
+            emperical_coef_units = (
+                pyunits.cm**2 / pyunits.s
+                / pyunits.K**1.75
+                * pyunits.g**0.5 / pyunits.mol**0.5
+                * pyunits.bar
+            )
+            return ((1.43e-3*emperical_coef_units*(self.temperature**1.75) *
                      ((1e3*pyunits.g/pyunits.kg * self._params.mw_comp[i] +
                        1e3*pyunits.g/pyunits.kg * self._params.mw_comp[j])
                      / (2 * 
