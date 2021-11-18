@@ -32,81 +32,132 @@ see `Akula et al. (2019) <https://doi.org/10.1016/B978-0-12-818597-1.50008-4>`_.
 Degrees of Freedom
 ------------------
 
-Once the configuration parameters (construction arguments of the PHE Class)
-have been specified, the PHE unit model has 12 degrees of freedom which are the
-operating parameters as listed in the Specification Table below. The indexed
-components for ``mole_frac_comp`` are ``H2O, MEA and CO2``.
+The Plate Heat Exchanger model has 3 design parameters and 7 design variables.
 
+Design Parameters and Variables:
 
-Specification
-^^^^^^^^^^^^^
-
-.. csv-table::
-   :header: "Variable Name", "Description", "Units"
-   :widths: 16,29,8
-
-   "**Configuration parameters**", " "," "
-   "``passes``","Number of passes of the fluids", "None "
-   "``channel_list``","Number of channels in each pass as a list", "None "
-   "``divider_plate_number``","Number of divider plates", "None "
-   "``port_diameter``","Diameter of the plate ports (Dp)", ":math:`m` "
-   "``plate_thermal_cond``","Thermal conductivity of the plate material", ":math:`W/m.K`"
-   "``total_area``","Total heat transfer area as specified by the manufacturer", ":math:`m^{2}`"
-   "``plate_thickness``","Plate thickness", ":math:`m`"
-   "``plate_vertical_dist``","Vertical distance between centers of ports (Lv)", ":math:`m`"
-   "``plate_horizontal_dist``","Horizontal distance between centers of ports (Lh)", ":math:`m`"
-   "``plate_pact_length``","Compressed plate pact length (optional)", ":math:`m`"
-   "``surface_enlargement_factor``","Ratio of single plate area obtained from the total area
-   to the projected plate area (optional)", "None"
-   "``plate_gap``","Distance between two adjacent plates that forms a flow channel", ":math:`m` "
-   "**Operating parameters**", " ", " "
-   "``hot_inlet.flow_mol``", "Hot fluid inlet total molar flowrate", ":math:`mol/s`"
-   "``hot_inlet.temperature``", "Hot fluid inlet temperature", ":math:`K`"
-   "``hot_inlet.pressure``", "Hot fluid inlet pressure", ":math:`Pa`"
-   "``hot_inlet.mole_frac_comp``", "Hot fluid inlet mole fraction indexed by component", "None"
-   "``cold_inlet.flow_mol``", "Cold fluid inlet total molar flowrate", ":math:`mol/s`"
-   "``cold_inlet.temperature``", "Cold fluid inlet temperature", ":math:`K`"
-   "``cold_inlet.pressure``", "Cold fluid inlet pressure", ":math:`Pa`"
-   "``cold_inlet.mole_frac_comp``", "Cold fluid inlet mole fraction indexed by component", "None"
-
+    * number of passes (mutable parameter),
+    * channels per pass (mutable parameter),
+    * number of divider plates (mutable parameter,
+    * plate length,
+    * plate width,
+    * plate thickness,
+    * port diameter,
+    * plate thermal conductivity, and
+    * total heat transfer area.
 
 Model Structure
 ---------------
 
-The PHE unit model consists of two
-:ref:`ControlVolume0D Blocks <technical_specs/core/control_volume_0d:0D Control Volume Class>`
-(named ``hot_side`` and ``cold_side``), each with one Inlet Port (named ``hot_inlet``
-and ``cold_inlet``) and one Outlet Port (named ``hot_outlet`` and ``cold_outlet``).
-The ``hot_side`` and ``cold_side`` ControlVolume0D Blocks use the
-:ref:`Liquid Phase Property Methods <technical_specs/model_libraries/power_generation/carbon_capture/mea_solvent_system/properties/liquid_prop:Liquid Phase Property Methods>` which is built off of the
-:ref:`Physical Property Package Class <technical_specs/core/physical_property_class:Physical Property Package Classes>`.
-The Energy balance is based on the Effectiveness Number of Transfer Units
-(e-NTU method) and is included as performance equations (Additional Constraints).
-Hence, the control volume energy balances are not added.
+The Plate Heat Exchanger unit model builds off the core 
+:ref:`HeatExchangerNTU model <technical_specs/model_libraries/generic/unit_models/heat_exchanger_ntu:Heat Exchanger using the NTU Method>`,
+and heat transfer is based on the Effectiveness-Number of Transfer Units
+(e-NTU method).
 
-
-Additional Constraints
-----------------------
-
-The PHE unit model writes additional ``Constraints`` beyond those written by the
-:ref:`ControlVolume0D Blocks <technical_specs/core/control_volume_0d:0D Control Volume Class>`
-to describe the heat exchange between the rich and lean solvent for
-post-combustion carbon capture using MEA solvent.
-
-
-
-PHE Class
+Parameters
 ----------
 
-.. module:: idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.phe
+The following parameters can be set via configuration arguments when instantiating the Plate Heat Exchanger model, or modified later.
 
-.. autoclass:: PHE
+=========================== ==================== =========== =============================================================================
+Variable                    Symbol               Index Sets  Doc
+=========================== ==================== =========== =============================================================================
+number_of_passes            :math:`N_{passes}`   None        Number of passes in heat exchanger unit
+channels_per_pass           :math:`N_{channels}` None        Number of channels per heat exchanger pass (assumed equal in all plates)
+number_of_divider_plates    :math:`N_{dividers}` None        Number of divider plates in heat exchanger assembly
+=========================== ==================== =========== =============================================================================
+
+Variables
+---------
+
+The following variables are declared in addition to those variables created by the HeatExchangerNTU class.
+
+=========================== ================== =========== =============================================================================
+Variable                    Symbol             Index Sets  Doc
+=========================== ================== =========== =============================================================================
+plate_length                :math:`L`          None        Length of a heat exchanger plate
+plate_width                 :math:`W`          None        Width of a heat exchanger plate
+plate_thickness             :math:`H`          None        Thickness of a heat exchanger plate
+plate_pact_length           :math:`L_{pact}`   None        Compressed plate pact length
+port_diameter               :math:`d_{port}`   None        Diameter of fluid ports in each plate
+plate_therm_cond            :math:`k_{plate}`  None        Thermal conductivity of heat exchanger plates
+=========================== ================== =========== =============================================================================
+
+Expressions
+-----------
+
+The following expressions are declared in addition to those created by the HeatExchangerNTU class.
+
+
+Plate gap:
+
+.. math::
+  g_{plate} = \frac{L_{pact}}{N_{plates}} - H
+
+where
+
+.. math::
+  N_{plates} = 2N_{channels}N_{passes} - (1+N_{dividers})
+
+Channel diameter:
+
+.. math::
+  d_{channel} = \frac{2LWg_{plate}}{A}
+
+Hot and cold side heat transfer coefficients are calculated using the following correlation:
+
+.. math::
+  U_{side} = \frac{k_{fluid} \times A \times Re^B \times Pr^C}{d_{channel}}
+
+where :math:`k_{fluid}` is the thermal conductivity of the fluid, :math:`Re` and :math:`Pr` are the Reynolds and Prandlt number respectively and :math:`A`, :math:`B` and :math:`C` are coefficients.
+
+The friction factor for the pressure drop correlation is expressed as:
+
+.. math::
+  f = A + B \times Re^C
+
+where :math:`Re` is the Reynolds and :math:`A`, :math:`B` and :math:`C` are coefficients (different to those above).
+
+Constraints
+-----------
+
+The Plate Heat Exchanger unit model writes additional ``Constraints`` beyond those written by the
+HeatExchangerNTU class.
+
+The overall heat transfer coefficient is calculated using the following correlation:
+
+.. math::
+  U == \frac{1}{\frac{1}{U_{hot}} + \frac{g_{plate}}{k_{plate}} + \frac{1}{U_{cold}}}
+
+For heat exchangers with an even number of passes, the following correlation is used for the effectiveness factor:
+
+.. math::
+  \epsilon = \frac{(1 - exp(-\frac{NTU}{{channels}} \times (1 - C_{ratio})))}{(1 - C_{ratio} \times exp(-\frac{NTU}{{channels}} \times (1 - C_{ratio})))}
+
+For heat exchangers with an odd number of passes, the following correlation is used for the effectiveness factor:
+
+.. math::
+  \epsilon = \frac{(1 - exp(-\frac{NTU}{{channels}} \times (1 + C_{ratio})))}{(1 + C_{ratio})}
+
+Pressure drop for both sides of the heat exchanger is calculated using the following correlation:
+
+.. math::
+  \Delta P = \frac{2fN_{passes}v^2\rho_{mass} \times (L_{plate} + d_{port})}{d_{channel}} + 0.7N_{passes}v^2\rho_{mass}g \times (L_{plate} + d_{port})
+
+where :math:`f` is the friction factor for the side and :math:`v` is the velocity of the fluid at the port.
+
+PlateHeatExchanger Class
+------------------------
+
+.. module:: idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.plate_heat_exchanger
+
+.. autoclass:: PlateHeatExchanger
   :members:
 
-PHEData Class
---------------
+PlateHeatExchangerData Class
+----------------------------
 
-.. autoclass:: PHEData
+.. autoclass:: PlateHeatExchangerData
   :members:
 
 References

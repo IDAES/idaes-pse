@@ -16,7 +16,7 @@ div.highlight pre {
 
 /* allow wider pages */
 .wy-nav-content {
-    max-width: 1000px; /* default=800 */
+    max-width: 95%; /* default=800px */
 }
 
 /* Make headings more distinct */

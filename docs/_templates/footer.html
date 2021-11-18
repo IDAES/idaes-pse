@@ -1,0 +1,23 @@
+{% extends '!footer.html' %}
+  {%- block contentinfo %}
+  {%- if footer_logos %}
+    <div style="text-align:center; padding-bottom: 35px">
+    {%- for row in footer_logos.values() %}
+      <div>
+        {% set img_w = 15 %}
+        {% if row|length * img_w > 100 %}
+          {% set img_w = (100//(row|length))-1 %}
+        {% endif %}
+        {%- for dict_item in row %}
+          <div style="width:{{img_w}}%; display:inline-block; position:relative; padding: 2px 5px 2px">
+            <a href="{{ dict_item.href }}">
+              <img alt="{{ dict_item.alt }}" src="{{ pathto('_static/' + dict_item.src, 1) }}"/>
+            </a>
+          </div>
+        {%- endfor %}
+      </div>
+    {%- endfor %}
+    </div>
+  {%- endif %}
+  {{ super() }}
+  {%- endblock %}
