@@ -21,11 +21,12 @@ import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 import numpy as np
+from scipy.linalg  import svd
 from scipy.sparse.linalg import svds
 from scipy.sparse import issparse, find
 
 from idaes.core.util.model_statistics import large_residuals_set, variables_near_bounds_set
-
+import idaes.core.util.scaling as iscale
 from pyomo.opt import SolverStatus, TerminationCondition
 
 import matplotlib.pyplot as plt
@@ -61,11 +62,8 @@ class DegeneracyHunter():
             # setup pynumero interface
             self.nlp = PyomoNLP(self.block)
 
-            # calculate Jacobian of equality constraints in COO sparse matrix format
-            jac_eq = self.nlp.evaluate_jacobian_eq()
-
-            # save the Jacobian
-            self.jac_eq = jac_eq
+            # Get the scaled Jacobian of equality constraints
+            self.jac_eq = iscale.get_jacobian(self.block)[0]
         
             # Create a list of equality constraint names            
             self.eq_con_list = PyomoNLP.get_pyomo_equality_constraints(self.nlp)
@@ -112,7 +110,7 @@ class DegeneracyHunter():
         self.min_nonzero_nu = 1E-5
         
         
-    def check_residuals(self, tol=1e-5, print_level=2, sort=True):
+    def check_residuals(self, tol=1e-5, print_level=1, sort=True):
         """
         Method to return a ComponentSet of all Constraint components with a
         residual greater than a given threshold which appear in a model.
@@ -519,12 +517,16 @@ class DegeneracyHunter():
             # And V is a n_var x n_var
             # (U or V may be smaller in economy mode)
             # Thus we really only care about U
-            u, s, v = svds(self.jac_eq, k = n_sv, which='SM')
-        
+            #u, s, v = svds(self.jac_eq, k = n_sv, which='SM')#, solver='lobpcg')
+            
+            u, s, vT = svd(self.jac_eq.todense())
+            u = u[:,-1-n_smallest_sv:-1]
+            s = s[-1-n_smallest_sv:-1]
+            vT = vT[-1-n_smallest_sv:-1,:]
             # Save results
             self.u = u
             self.s = s
-            self.v = v
+            self.v = vT.transpose()
             
         else:
             print("Warning: model must contain at least 2 equality constraints to perform svd_analysis")
@@ -629,3 +631,6 @@ class DegeneracyHunter():
             nothing
         '''
         print(v,"\t\t",v.lb,"\t",v.value,"\t",v.ub)
+        
+def _special_svds():
+    pass
