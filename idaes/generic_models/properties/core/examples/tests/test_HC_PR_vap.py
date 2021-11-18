@@ -48,6 +48,11 @@ from idaes.generic_models.properties.core.examples.HC_PR_vap \
 # Get default solver for testing
 solver = get_solver()
 
+def _as_quantity(x):
+    unit = pyunits.get_units(x)
+    if unit is None:
+        unit = pyunits.dimensionless
+    return value(x) * unit._get_pint_unit()
 
 # Test for configuration dictionaries with parameters from Properties of Gases
 # and liquids 4th edition
@@ -99,8 +104,7 @@ class TestParamBlock(object):
             { "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
               "temperature": (273.15, 300, 1500, pyunits.K),
               "pressure": (5e4, 1e5, 1e7, pyunits.Pa) },
-            item_callback=lambda x: value(x) * (
-                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+            item_callback=_as_quantity,
         )
 
         assert model.params.pressure_ref.value == 101325
