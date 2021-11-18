@@ -35,6 +35,7 @@ import pyomo.common.unittest as unittest
 from pyomo.common.unittest import TestCase
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.util.subsystems import ParamSweeper
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 
@@ -400,6 +401,7 @@ class TestProperties(TestCase):
 
         # Construct dens_mol and all prerequisites
         state.dens_mol
+        assert_units_consistent(state.ideal_gas)
 
         param_sweeper = ParamSweeper(n_scen, state_values,
                 output_values=target_values)
