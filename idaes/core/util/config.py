@@ -19,6 +19,9 @@ the `domain` argument in ConfigBlocks.
 
 __author__ = "Andrew Lee"
 
+from pyomo.common.deprecation import deprecation_warning
+from pyomo.common.config import ListOf, Bool
+
 from pyomo.environ import Set
 from pyomo.dae import ContinuousSet
 from pyomo.network import Port
@@ -96,15 +99,14 @@ def list_of_floats(arg):
         arg : argument to be cast to list of floats and validated
 
     Returns:
-        List of strings
+        List of floats
     '''
-    try:
-        # Assume arg is iterable
-        lst = [float(i) for i in arg]
-    except TypeError:
-        # arg is not iterable
-        lst = [float(arg)]
-    return lst
+    deprecation_warning(
+        "The list_of_floats function is deprecated.  Use the ListOf(float) "
+        "validator from pyomo.common.config instead.", version='1.11',
+        remove_in='1.13')
+
+    return ListOf(float)(arg)
 
 
 def list_of_strings(arg):
@@ -116,21 +118,12 @@ def list_of_strings(arg):
     Returns:
         List of strings
     '''
-    if isinstance(arg, dict):
-        raise ConfigurationError("Invalid argument type (dict). "
-                                 "Expected a list of strings, or something "
-                                 "that can be cast to a list of strings")
+    deprecation_warning(
+        "The list_of_strings function is deprecated.  Use the ListOf(str) "
+        "validator from pyomo.common.config instead.", version='1.11',
+        remove_in='1.13')
 
-    try:
-        # Assume arg is iterable
-        if isinstance(arg, str):
-            lst = [arg]
-        else:
-            lst = [str(i) for i in arg]
-    except TypeError:
-        # arg is not iterable
-        lst = [str(arg)]
-    return lst
+    return ListOf(str)(arg)
 
 
 def list_of_phase_types(arg):
@@ -142,17 +135,12 @@ def list_of_phase_types(arg):
     Returns:
         List of PhaseTypes
     '''
-    if isinstance(arg, PhaseType):
-        # Cast to list and return
-        return [arg]
-    else:
-        # Assume arg is iterable
-        for i in arg:
-            if not isinstance(i, PhaseType):
-                raise ConfigurationError(
-                    "valid_phase_types configuration argument must be a list "
-                    "of PhaseTypes.")
-    return arg
+    deprecation_warning(
+        "The list_of_phase_types function is deprecated.  Use the "
+        "ListOf(PhaseType) validator from pyomo.common.config instead.",
+        version='1.11', remove_in='1.13')
+
+    return ListOf(PhaseType)(arg)
 
 
 def is_port(arg):
@@ -221,3 +209,23 @@ def is_transformation_scheme(arg):
                 'Invalid value provided for transformation_scheme. '
                 'Please check the value and spelling of the argument provided.'
                 )
+
+
+def DefaultBool(arg):
+    """
+    Domain validator for bool-like arguments with a 'use default' option.
+    Relies on Pyomo's Bool() validator for identifying bool-like arguments.
+
+    Args:
+        arg : argument to be validated.
+
+    Returns:
+        A bool or useDefault
+
+    Raises:
+        ValueError if arg is not bool-like or useDefault
+    """
+    if arg == useDefault:
+        return arg
+    else:
+        return Bool(arg)

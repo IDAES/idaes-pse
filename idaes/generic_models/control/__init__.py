@@ -11,3 +11,8 @@
 # license information.
 #################################################################################
 from idaes.generic_models.control.pid_controller import PIDBlock, PIDForm
+from idaes.generic_models.control.controller import (
+    PIDController,
+    ControllerType,
+    ControllerMVBoundType,
+) 

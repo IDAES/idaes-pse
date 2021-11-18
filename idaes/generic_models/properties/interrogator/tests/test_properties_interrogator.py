@@ -19,14 +19,18 @@ Tests for Property Interrogator Tool
 """
 import pytest
 
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, units as pyunits
+from pyomo.util.check_units import assert_units_equivalent
 
-from idaes.core import FlowsheetBlock, MaterialBalanceType
+from idaes.core import FlowsheetBlock, MaterialBalanceType, LiquidPhase, Solute
 from idaes.generic_models.unit_models import Flash, HeatExchanger1D
-from idaes.generic_models.unit_models.pressure_changer import (PressureChanger,
-                                                ThermodynamicAssumption)
-from idaes.generic_models.unit_models.separator import Separator, SplittingType
-from idaes.generic_models.properties.interrogator import PropertyInterrogatorBlock
+from idaes.generic_models.unit_models.pressure_changer import \
+    PressureChanger, ThermodynamicAssumption
+from idaes.generic_models.unit_models.separator import \
+    Separator, SplittingType
+from idaes.generic_models.properties.interrogator import \
+    PropertyInterrogatorBlock
+from idaes.core.util.exceptions import ConfigurationError
 
 
 @pytest.mark.unit
@@ -39,6 +43,19 @@ def test_interrogator_parameter_block():
     # Check that parameter block has expected attributes
     assert isinstance(m.fs.params.required_properties, dict)
     assert len(m.fs.params.required_properties) == 0
+
+
+@pytest.mark.unit
+def test_units_metadata():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = PropertyInterrogatorBlock()
+
+    units_meta = m.fs.params.get_metadata().get_derived_units
+
+    assert_units_equivalent(units_meta('length'), pyunits.m)
+    assert_units_equivalent(units_meta('pressure'), pyunits.Pa)
 
 
 @pytest.mark.unit
@@ -188,7 +205,8 @@ def test_interrogator_initialize_method():
 @pytest.fixture(scope="module")
 def model():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True})
+    m.fs = FlowsheetBlock(default={"dynamic": True,
+                                   "time_units": pyunits.s})
 
     m.fs.params = PropertyInterrogatorBlock()
 
@@ -456,3 +474,73 @@ def test_ideal_Separator_3():
     # Ideal Separator should require no property calls
     # Only dummy state variables are required
     assert len(m.fs.params.required_properties) == 0
+
+
+@pytest.mark.unit
+def test_interrogator_parameter_block_custom_phase_comps():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = PropertyInterrogatorBlock(default={
+        "phase_list": {"P1": LiquidPhase, "P2": None},
+        "component_list": {"c1": Solute, "c2": None}})
+
+    # Check that parameter block has expected attributes
+    assert isinstance(m.fs.params.required_properties, dict)
+    assert len(m.fs.params.required_properties) == 0
+    assert m.fs.params.phase_list == ["P1", "P2"]
+    assert m.fs.params.component_list == ["c1", "c2"]
+
+
+@pytest.mark.unit
+def test_interrogator_state_block_methods_custom_phase_comps():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = PropertyInterrogatorBlock(default={
+        "phase_list": {"P1": LiquidPhase, "P2": None},
+        "component_list": {"c1": Solute, "c2": None}})
+
+    m.fs.props = m.fs.params.build_state_block([0])
+
+    # Check get_term methods return an unindexed dummy var
+    assert m.fs.props[0].get_material_flow_terms("P1", "c1") is \
+        m.fs.props[0]._dummy_var
+    assert m.fs.props[0].get_enthalpy_flow_terms("P1") is \
+        m.fs.props[0]._dummy_var
+    assert m.fs.props[0].get_material_density_terms("P1", "c1") is \
+        m.fs.props[0]._dummy_var
+    assert m.fs.props[0].get_energy_density_terms("P1") is \
+        m.fs.props[0]._dummy_var
+
+    # Check that get_term calls were logged correctly
+    assert m.fs.params.required_properties == {
+            "material flow terms": ["fs.props"],
+            "material density terms": ["fs.props"],
+            "enthalpy flow terms": ["fs.props"],
+            "energy density terms": ["fs.props"]}
+
+
+@pytest.mark.unit
+def test_interrogator_parameter_block_custom_phase_error():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    with pytest.raises(ConfigurationError,
+                       match="fs.params invalid phase type foo \(for phase "
+                       "P1\). Type must be a subclass of Phase."):
+        m.fs.params = PropertyInterrogatorBlock(default={
+            "phase_list": {"P1": "foo", "P2": None}})
+
+
+@pytest.mark.unit
+def test_interrogator_parameter_block_custom_comp_error():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    with pytest.raises(ConfigurationError,
+                       match="fs.params invalid component type foo \(for "
+                       "component c1\). Type must be a subclass of "
+                       "Component."):
+        m.fs.params = PropertyInterrogatorBlock(default={
+            "component_list": {"c1": "foo", "c2": None}})

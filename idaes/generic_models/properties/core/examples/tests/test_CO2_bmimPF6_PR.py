@@ -35,7 +35,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 
 from idaes.generic_models.unit_models import Flash
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 
 from idaes.generic_models.properties.core.examples.CO2_bmimPF6_PR \
     import configuration
@@ -87,7 +87,7 @@ class TestParamBlock(object):
         )
 
         assert model.param.config.phase_equilibrium_state == {
-            ("Vap", "Liq"): smooth_VLE}
+            ("Vap", "Liq"): SmoothVLE}
 
         assert isinstance(model.param.phase_equilibrium_idx, Set)
         assert len(model.param.phase_equilibrium_idx) == 1
@@ -294,14 +294,14 @@ class TestFlashIntegration(object):
     @pytest.mark.component
     def test_solution(self, model):
         # Check phase equilibrium results
-        assert model.fs.unit.liq_outlet.mole_frac_comp[
-            0, "carbon_dioxide"].value == \
+        assert value(model.fs.unit.liq_outlet.mole_frac_comp[
+            0, "carbon_dioxide"]) == \
             pytest.approx(0.3119, abs=1e-4)
-        assert model.fs.unit.vap_outlet.mole_frac_comp[
-            0, "carbon_dioxide"].value == \
+        assert value(model.fs.unit.vap_outlet.mole_frac_comp[
+            0, "carbon_dioxide"]) == \
             pytest.approx(1.0000, abs=1e-4)
-        assert (model.fs.unit.vap_outlet.flow_mol[0].value /
-                model.fs.unit.liq_outlet.flow_mol[0].value) == \
+        assert value(model.fs.unit.vap_outlet.flow_mol[0] /
+                     model.fs.unit.liq_outlet.flow_mol[0]) == \
             pytest.approx(0.37619, abs=1e-4)
 
     @pytest.mark.ui

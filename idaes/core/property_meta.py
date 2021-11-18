@@ -182,30 +182,14 @@ class PropertyClassMetadata(object):
 
         # Validate values. Pyomo units are all-or-nothing, so check to see that
         # this is the case
-        _units = 0
         for q, u in self._default_units.items():
-            if isinstance(u, _PyomoUnit):
-                _units += 1
-            elif u is None and (q == "luminous intensity" or q == "current"):
+            if u is None and (q == "luminous intensity" or q == "current"):
                 # these units are infrequently used in PSE, so allow users
                 # to skip these
                 continue
-            elif _units > 0:
-                # Mix of units and non-unit objects
+            elif not isinstance(u, _PyomoUnit):
                 raise PropertyPackageError(
-                    "default_units ({}: {}): if using Pyomo Units objects, "
-                    "all units must be defined using Units objects (not "
-                    "compount units)."
-                    .format(q, u))
-
-        # Take opportunity to log a deprecation warning if units are not used
-        if _units == 0:
-            _log.warning("DEPRECATED: IDAES is moving to using Pyomo Units "
-                         "when defining default units, which are used "
-                         "to automatically determine units of measurement "
-                         "for quantities and convert where necessary. "
-                         "Users are strongly encouraged to convert their "
-                         "property packages to use Pyomo Units objects.")
+                    f"Unrecognized units of measurment for quantity {q} ({u})")
 
     def add_properties(self, p):
         """Add properties to the metadata.
@@ -274,6 +258,8 @@ class PropertyClassMetadata(object):
                               self.default_units["time"]**-1),
                 "flow_mole": (self.default_units["amount"] *
                               self.default_units["time"]**-1),
+                "flow_vol": (self.default_units["length"]**3 *
+                             self.default_units["time"]**-1),
                 "flux_mass": (self.default_units["mass"] *
                               self.default_units["time"]**-1 *
                               self.default_units["length"]**-2),

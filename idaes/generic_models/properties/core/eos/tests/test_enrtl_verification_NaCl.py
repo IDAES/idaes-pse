@@ -28,6 +28,7 @@ import pytest
 from math import exp, log
 
 from pyomo.environ import (ConcreteModel,
+                           Param,
                            units as pyunits,
                            value)
 
@@ -46,21 +47,28 @@ from idaes.generic_models.properties.core.pure.electrolyte import \
     relative_permittivity_constant
 
 
-def dummy_method(b, *args, **kwargs):
-    return 1000/18e-3*pyunits.mol/pyunits.m**3
+class ConstantVolMol():
+    def build_parameters(b):
+        b.vol_mol_pure = Param(initialize=18e-6,
+                               units=pyunits.m**3/pyunits.mol,
+                               mutable=True)
+
+    def return_expression(b, cobj, T):
+        return cobj.vol_mol_pure
 
 
 configuration = {
     "components": {
         "H2O": {"type": Solvent,
-                "dens_mol_liq_comp": dummy_method,
+                "vol_mol_liq_comp": ConstantVolMol,
                 "relative_permittivity_liq_comp":
                     relative_permittivity_constant,
                 "parameter_data": {
                     "mw": (18E-3, pyunits.kg/pyunits.mol),
                     "relative_permittivity_liq_comp": 78.54}},
         "NaCl": {"type": Apparent,
-                 "dissociation_species": {"Na+": 1, "Cl-": 1}},
+                 "dissociation_species": {"Na+": 1, "Cl-": 1},
+                 "vol_mol_liq_comp": ConstantVolMol},
         "Na+": {"type": Cation,
                 "charge": +1},
         "Cl-": {"type": Anion,

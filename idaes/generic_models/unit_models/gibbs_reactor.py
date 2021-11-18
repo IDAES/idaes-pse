@@ -15,7 +15,7 @@ Standard IDAES Gibbs reactor model.
 """
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Param, Reals, Reference, Var
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -24,7 +24,7 @@ from idaes.core import (ControlVolume0DBlock,
                         MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
-from idaes.core.util.config import is_physical_parameter_block, list_of_strings
+from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Jinliang Ma, Andrew Lee"
@@ -85,7 +85,7 @@ balance type
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -94,7 +94,7 @@ balance type
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -121,7 +121,7 @@ and used when constructing these,
 see property package for documentation.}"""))
     CONFIG.declare("inert_species", ConfigValue(
         default=[],
-        domain=list_of_strings,
+        domain=ListOf(str),
         description="List of inert species",
         doc="List of species which do not take part in reactions."))
 

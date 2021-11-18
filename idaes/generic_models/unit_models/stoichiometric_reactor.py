@@ -16,7 +16,7 @@ Standard IDAES STOICHIOMETRIC reactor model
 
 # Import Pyomo libraries
 from pyomo.environ import Reference, Var, Block
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -84,7 +84,7 @@ balance type
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_heat_of_reaction", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat of reaction term construction flag",
         doc="""Indicates whether terms for heat of reaction terms should be
 constructed,
@@ -94,7 +94,7 @@ constructed,
 **False** - exclude heat of reaction terms.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -103,7 +103,7 @@ constructed,
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,

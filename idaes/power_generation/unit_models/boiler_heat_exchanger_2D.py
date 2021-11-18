@@ -23,10 +23,10 @@ model)
 
 """
 # Import Pyomo libraries
-from pyomo.environ import (SolverFactory, Var, Param, Constraint,
+from pyomo.environ import (Var, Param, Constraint,
                            TransformationFactory, Reference,
                            value, exp, sqrt, log, log10, sin, cos)
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
@@ -96,7 +96,7 @@ class HeatExchangerCrossFlow2D_HeaderData(UnitModelBlockData):
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     _SideTemplate.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -203,7 +203,7 @@ tube side flows from 1 to 0"""))
         domain (default=5)."""))
     CONFIG.declare("has_header", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Flag to include tube header",
         doc="""If has_header is True, user must provide header thickness and
         inner diameter."""))
@@ -318,22 +318,22 @@ tube side flows from 1 to 0"""))
                                      'tube_thickness')
         # header inputs:
         if self.config.has_header is False and \
-            self.config.header_inner_diameter is True:
+                self.config.header_inner_diameter is True:
             _log.info_high("User set has_header to False "
                            "and provided header_inner_diameter")
 
         if self.config.has_header and \
-            self.config.header_inner_diameter is None:
+                self.config.header_inner_diameter is None:
             raise ConfigurationError('If has_heder is True, user must '
                                      'provide header_inner_diameter')
 
         if self.config.has_header is False and \
-            self.config.header_wall_thickness is True:
+                self.config.header_wall_thickness is True:
             _log.info_high("User set has_header to False "
                            "and provided header_wall_thickness")
 
         if self.config.has_header and \
-            self.config.header_wall_thickness is None:
+                self.config.header_wall_thickness is None:
             raise ConfigurationError(
                 'If has_heder is True, user must '
                 'provide header_wall_thickness')

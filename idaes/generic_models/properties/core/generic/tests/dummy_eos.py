@@ -13,7 +13,7 @@
 """
 Mock-up EoS module for testing generic property packages
 """
-from pyomo.environ import Var
+from pyomo.environ import Var, sqrt, units as pyunits
 
 from idaes.generic_models.properties.core.eos.eos_base import EoSBase
 
@@ -47,12 +47,40 @@ class DummyEoS(EoSBase):
             b.dummy_param = Var(initialize=42)
 
     @staticmethod
+    def act_phase_comp(b, p, j):
+        return 42
+
+    @staticmethod
+    def act_coeff_phase_comp(b, p, j):
+        return 1
+
+    @staticmethod
+    def compress_fact_phase(b, p):
+        return 42
+
+    @staticmethod
+    def cp_mol_phase(b, p):
+        return 42
+
+    @staticmethod
+    def cp_mol_phase_comp(b, p, j):
+        return 42
+
+    @staticmethod
+    def cv_mol_phase(b, p):
+        return 42
+
+    @staticmethod
+    def cv_mol_phase_comp(b, p, j):
+        return 42
+
+    @staticmethod
     def dens_mass_phase(b, p):
         return 42
 
     @staticmethod
     def dens_mol_phase(b, p):
-        return 55e3
+        return 55e3*pyunits.mol/pyunits.m**3
 
     @staticmethod
     def energy_internal_mol_phase(b, p):
@@ -93,3 +121,23 @@ class DummyEoS(EoSBase):
     @staticmethod
     def gibbs_mol_phase_comp(b, p, j):
         return 42
+
+    @staticmethod
+    def isothermal_speed_sound_phase(b, p):
+        return 250
+
+    @staticmethod
+    def isentropic_speed_sound_phase(b, p):
+        return sqrt(b.heat_capacity_ratio_phase[p]) * b.isothermal_speed_sound_phase[p]
+
+    @staticmethod
+    def vol_mol_phase(b, p):
+        return 42
+
+    @staticmethod
+    def log_act_phase_comp(b, p, j):
+        return 1
+
+    @staticmethod
+    def log_act_phase_solvents(b, p):
+        return 1

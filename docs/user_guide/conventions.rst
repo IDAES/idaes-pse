@@ -164,6 +164,7 @@ Material Flow                   flow
 Molality                        molality
 Molecular Weight                mw
 Mole Fraction                   mole_frac
+Osmotic Pressure                pressure_osm
 pH                              pH
 Pressure                        pressure
 Speed of Sound                  speed_sound

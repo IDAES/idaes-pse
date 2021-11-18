@@ -18,7 +18,7 @@ An example of how Property Interrogator tool is used is shown below:
     from idaes.generic_models.properties.interrogator import PropertyInterrogatorBlock, ReactionInterrogatorBlock
 
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True})
+    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
 
     m.fs.params = PropertyInterrogatorBlock()
     m.fs.rxn_params = ReactionInterrogatorBlock(

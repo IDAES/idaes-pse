@@ -15,7 +15,6 @@ Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           Expression,
                            Set,
                            SolverStatus,
                            TerminationCondition,

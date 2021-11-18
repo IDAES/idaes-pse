@@ -20,13 +20,12 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    SolverFactory,
     Var,
     Constraint,
     value,
     units as pyunits
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (
@@ -41,7 +40,7 @@ from idaes.core import (
 )
 from idaes.generic_models.unit_models.heat_exchanger \
     import HeatExchangerFlowPattern
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -74,7 +73,7 @@ class HeatExchanger1DData(UnitModelBlockData):
         "dynamic",
         ConfigValue(
             default=useDefault,
-            domain=In([useDefault, True, False]),
+            domain=DefaultBool,
             description="Dynamic model flag",
             doc="""Indicates whether this model will be dynamic or not,
 **default** = useDefault.
@@ -88,7 +87,7 @@ class HeatExchanger1DData(UnitModelBlockData):
         "has_holdup",
         ConfigValue(
             default=useDefault,
-            domain=In([useDefault, True, False]),
+            domain=DefaultBool,
             description="Holdup construction flag",
             doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
@@ -156,7 +155,7 @@ be constructed,
         "has_pressure_change",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Pressure change term construction flag",
             doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -170,7 +169,7 @@ constructed,
         "has_phase_equilibrium",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Phase equilibrium term construction flag",
             doc="""Argument to enable phase equilibrium on the shell side.
 - True - include phase equilibrium term
