@@ -31,6 +31,7 @@ from pyomo.contrib.incidence_analysis import (
         solve_strongly_connected_components,
         )
 from pyomo.common.collections import ComponentSet, ComponentMap
+import pyomo.common.unittest as unittest
 from pyomo.common.unittest import TestCase
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.util.subsystems import ParamSweeper
@@ -646,6 +647,8 @@ class TestProperties(TestCase):
 
         # Construct diffusion_comp and all prerequisites
         state.diffusion_comp
+
+        assert_units_consistent(state.diffusion_comp_constraint)
 
         param_sweeper = ParamSweeper(n_scen, state_values,
                 output_values=target_values)
