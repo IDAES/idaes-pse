@@ -194,7 +194,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         # Component diffusion volumes:
         # Ref: (1) Prop gas & liquids (2) Fuller et al. IECR, 58(5), 19, 1966
-        # TODO: What are the units of these parameters?
+        # NOTE: These parameters are dimensionless.
         diff_vol_param_dict = {'O2': 16.6, 'N2': 17.9,
                                'CO2': 26.9, 'H2O': 13.1}
         self.diff_vol_param = Param(self.component_list,
