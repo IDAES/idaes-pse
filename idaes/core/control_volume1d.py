@@ -232,9 +232,9 @@ argument)."""))
                 raise ConfigurationError(
                     f"{self.name} length_var must be a Pyomo Var, Param or "
                     "Expression.")
-            elif len(length_var) != 1:
+            elif length_var.is_indexed():
                 raise ConfigurationError(
-                    f"{self.name} length_var must be a scalar (unidexed) "
+                    f"{self.name} length_var must be a scalar (unindexed) "
                     "component.")
             add_object_reference(self, "length", length_var)
         else:

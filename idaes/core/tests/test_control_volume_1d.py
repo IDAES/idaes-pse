@@ -387,7 +387,7 @@ def test_add_geometry_length_var_indexed():
     m.fs.length = Var([1, 2, 3, 4])
 
     with pytest.raises(ConfigurationError,
-                       match="fs.cv length_var must be a scalar \(unidexed\) "
+                       match="fs.cv length_var must be a scalar \(unindexed\) "
                        "component."):
         m.fs.cv.add_geometry(length_var=m.fs.length)
 
