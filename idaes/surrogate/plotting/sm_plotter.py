@@ -30,7 +30,7 @@ Standard plotting methods (scatter, parity and residual plots).
 """
 
 
-def surrogate_scatter2D(surrogate, dataframe, filename=None):
+def surrogate_scatter2D(surrogate, dataframe, filename=None, show=True):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
     output_surrogate = surrogate.evaluate_surrogate(input_data)
@@ -39,6 +39,7 @@ def surrogate_scatter2D(surrogate, dataframe, filename=None):
                zfit=output_surrogate.values,
                xlabels=surrogate.input_labels(),
                zlabels=surrogate.output_labels(),
+               show=show,
                filename=filename)
 
 
@@ -70,11 +71,10 @@ def _scatter2D(xdata, zdata, zfit, xlabels=None, zlabels=None,
             zlabels.append('z' + str(j+1))
 
     if filename is not None:
-        if filename[-4:] != '.pdf':  # adding extension if not present
-            name = filename + '.pdf'
-        else:
-            name = filename
-        pdf = PdfPages(name)
+        if filename[-4:] != '.pdf':  # checking if extension is present
+            raise Exception('Filename does not end in .pdf, please amend '
+                            'filename with the proper extension.')
+        pdf = PdfPages(filename)
 
     for j in range(numouts):  # loop over all outputs, zj
         for i in range(numins):  # plot every possible zj = f(xi)
@@ -97,7 +97,7 @@ def _scatter2D(xdata, zdata, zfit, xlabels=None, zlabels=None,
     pdf.close()
 
 
-def surrogate_scatter3D(surrogate, dataframe, filename=None):
+def surrogate_scatter3D(surrogate, dataframe, filename=None, show=True):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
     output_surrogate = surrogate.evaluate_surrogate(input_data)
@@ -106,6 +106,7 @@ def surrogate_scatter3D(surrogate, dataframe, filename=None):
                zfit=output_surrogate.values,
                xlabels=surrogate.input_labels(),
                zlabels=surrogate.output_labels(),
+               show=show,
                filename=filename)
 
 
@@ -137,11 +138,10 @@ def _scatter3D(xdata, zdata, zfit, xlabels=None, zlabels=None, show=True,
             zlabels.append('z' + str(j+1))
 
     if filename is not None:
-        if filename[-4:] != '.pdf':  # adding extension if not present
-            name = filename + '.pdf'
-        else:
-            name = filename
-        pdf = PdfPages(name)
+        if filename[-4:] != '.pdf':  # checking if extension is present
+            raise Exception('Filename does not end in .pdf, please amend '
+                            'filename with the proper extension.')
+        pdf = PdfPages(filename)
 
     for j in range(numouts):  # loop over all outputs, zj
         for pair in list(combinations(range(numins), 2)):  # pick two x vars
@@ -166,12 +166,15 @@ def _scatter3D(xdata, zdata, zfit, xlabels=None, zlabels=None, show=True,
     pdf.close()
 
 
-def surrogate_parity(surrogate, dataframe, filename=None):
+def surrogate_parity(surrogate, dataframe, filename=None, show=True):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
     output_surrogate = surrogate.evaluate_surrogate(input_data)
-    _parity(zdata=output_data.values, zfit=output_surrogate.values,
-            zlabels=surrogate.output_labels(), filename=filename)
+    _parity(zdata=output_data.values,
+            zfit=output_surrogate.values,
+            zlabels=surrogate.output_labels(),
+            show=show,
+            filename=filename)
 
 
 def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
@@ -196,11 +199,10 @@ def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
             zlabels.append('z' + str(j+1))
 
     if filename is not None:
-        if filename[-4:] != '.pdf':  # adding extension if not present
-            name = filename + '.pdf'
-        else:
-            name = filename
-        pdf = PdfPages(name)
+        if filename[-4:] != '.pdf':  # checking if extension is present
+            raise Exception('Filename does not end in .pdf, please amend '
+                            'filename with the proper extension.')
+        pdf = PdfPages(filename)
 
     for j in range(numouts):  # loop over all outputs, zj
         fig = plt.figure()
@@ -223,23 +225,24 @@ def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
 
 
 def surrogate_residual(surrogate, dataframe, filename=None,
-                       relative_error=False):
+                       relative_error=False, show=True):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
     output_surrogate = surrogate.evaluate_surrogate(input_data)
-    error = np.abs(output_data - output_surrogate)
+    residual = np.abs(output_data - output_surrogate)
     if relative_error is True:
-        error = np.divide(error, np.maximum(output_data, 1.0))
-    _residual(xdata=input_data.values, error=error.values,
+        residual = np.divide(residual, np.maximum(output_data, 1.0))
+    _residual(xdata=input_data.values, residual=residual.values,
               xlabels=surrogate.input_labels(),
               elabels=surrogate.output_labels(),
+              show=show,
               filename=filename)
 
 
-def _residual(xdata, error, xlabels=None, elabels=None, show=True,
+def _residual(xdata, residual, xlabels=None, elabels=None, show=True,
               filename=None):
     """
-    Plots model error against data output.
+    Plots model residual against data output.
 
     Required: input variable data, model error data
 
@@ -250,7 +253,7 @@ def _residual(xdata, error, xlabels=None, elabels=None, show=True,
     are indexed by 'j'.
     """
     numins = np.shape(xdata)[1]  # number of input variables
-    numouts = np.shape(error)[1]  # number of output variables
+    numouts = np.shape(residual)[1]  # number of output variables
 
     # check and add labels if missing
 
@@ -263,17 +266,17 @@ def _residual(xdata, error, xlabels=None, elabels=None, show=True,
             elabels.append('z'+str(j+1)+' Error')
 
     if filename is not None:
-        if filename[-4:] != '.pdf':  # adding extension if not present
-            name = filename + '.pdf'
-        else:
-            name = filename
-        pdf = PdfPages(name)
+        if filename[-4:] != '.pdf':  # checking if extension is present
+            raise Exception('Filename does not end in .pdf, please amend '
+                            'filename with the proper extension.')
+        pdf = PdfPages(filename)
 
     for i in range(numins):
         for j in range(numouts):  # loop over all outputs, zj
             fig = plt.figure()
             ax = fig.add_subplot()
-            ax.scatter(xdata[:, i], error[:, j], marker='.', label=elabels[j])
+            ax.scatter(xdata[:, i], residual[:, j], marker='.',
+                       label=elabels[j])
             ax.set_xlabel(xlabels[i])
             ax.set_ylabel(elabels[j])
             ax.set_title('Residual Plot')
