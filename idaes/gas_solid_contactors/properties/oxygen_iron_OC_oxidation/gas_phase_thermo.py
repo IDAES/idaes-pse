@@ -52,6 +52,7 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables_in_activated_equalities)
+from idaes.core.util.constants import Constants
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -491,9 +492,9 @@ class GasPhaseStateBlockData(StateBlockData):
 
         def ideal_gas(b):
             return (
-                    b.dens_mol*
-                    b._params.gas_const*(1e3*pyunits.J/pyunits.kJ)
-                    *b.temperature ==
+                    b.dens_mol
+                    * Constants.gas_constant # [=] J/mol/K
+                    * b.temperature ==
                     b.pressure*(1e5*pyunits.Pa/pyunits.bar)
                     )
         try:
