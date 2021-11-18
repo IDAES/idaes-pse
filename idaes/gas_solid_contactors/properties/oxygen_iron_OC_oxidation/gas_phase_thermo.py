@@ -113,10 +113,18 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 doc="Component molar heats of formation [kJ/mol]",
                 units=pyunits.kJ/pyunits.mol)
 
-        # Ideal gas spec. heat capacity parameters(Shomate) of
+        # Ideal gas spec. heat capacity parameters (Shomate) of
         # components - ref: NIST webbook. Shomate equations from NIST.
         # Parameters A-E are used for cp calcs while A-H are used for enthalpy
         # calc.
+        #
+        # Note that the temperature ranges over which these parameters are
+        # valid, per NIST webbook, are different depending on species. In
+        # addition they may not contain the entire operating region of a
+        # unit model. Really enthalpy should be a piecewise continuous
+        # function of temperature that uses parameters only in the range
+        # they are valid, but we have not implemented this.
+        #
         # 1e3*cp_comp = A + B*T + C*T^2 + D*T^3 + E/(T^2)
         # where T = Temperature (K)/1000, and cp_comp = (kJ/mol.K)
         # H_comp = H - H(298.15) = A*T + B*T^2/2 + C*T^3/3 +
