@@ -79,7 +79,7 @@ for Python 3. The following sub-versions are supported:
 * Python 3.6
 * Python 3.7
 * Python 3.8
-* Python 3.9+ (should work, not explicitly tested)
+* Python 3.9
 
 Note that Python 3.5 is *not* supported.
 
