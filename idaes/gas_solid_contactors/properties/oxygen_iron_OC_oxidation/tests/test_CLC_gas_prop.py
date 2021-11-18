@@ -406,7 +406,7 @@ class TestProperties(TestCase):
             for inputs, target in param_sweeper:
                 solve_strongly_connected_components(state)
 
-                # Check that state block equations have been convered
+                # Check that state block equations have been converged
                 assert number_large_residuals(state, tol=1e-8) == 0
 
                 # Sanity check that inputs are what we expect
