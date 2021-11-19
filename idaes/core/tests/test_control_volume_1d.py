@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import (ConcreteModel, Constraint, Expression, Param,
-                           Set, units, Var)
+                           Set, units, value, Var)
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock
@@ -350,7 +350,7 @@ def test_add_geometry_length_var_Expression():
     assert m.fs.cv.length is m.fs.length
     assert isinstance(m.fs.cv.length, Expression)
     assert len(m.fs.cv.length) == 1.0
-    assert m.fs.cv.length.value == 4
+    assert value(m.fs.cv.length) == 4
     assert m.fs.cv._flow_direction == FlowDirection.forward
 
 
