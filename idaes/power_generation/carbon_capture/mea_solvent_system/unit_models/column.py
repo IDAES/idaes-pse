@@ -25,18 +25,16 @@ Industrial & Engineering Chemistry Research,2021. (submitted)
 
 # Import Python libraries and third-party
 import numpy as np
-import warnings
-import matplotlib.pyplot as plt
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import (Constraint, Expression, Param, Reals, NonNegativeReals,
-                           value, Var, exp, SolverStatus,
-                           units as pyunits)
+from pyomo.environ import (
+    Constraint, Expression, Param, Reals, NonNegativeReals,
+    value, Var, exp, SolverStatus, units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES Libraries
-from idaes.core.util.constants import Constants as CONST
+from idaes.core.util.constants import Constants
 from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         declare_process_block_class,
                         MaterialBalanceType,
@@ -47,8 +45,6 @@ from idaes.core.util import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.generic_models.unit_models.heat_exchanger_1D import \
     HeatExchangerFlowPattern as FlowPattern
-from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.control_volume1d import DistributedVars
 import idaes.logger as idaeslog
 
@@ -78,18 +74,6 @@ class PackedColumnData(UnitModelBlockData):
     # Configuration template for phase specific  arguments
     _PhaseCONFIG = ConfigBlock()
 
-    CONFIG.declare("area_definition", ConfigValue(
-        default=DistributedVars.variant,
-        domain=In(DistributedVars),
-        description="Argument for defining form of area variable",
-        doc="""Argument defining whether area variable should be spatially
-variant or not.
-**default** - DistributedVars.uniform.
-**Valid values:** {
-DistributedVars.uniform - area does not vary across spatial domian,
-DistributedVars.variant - area can vary over the domain and is indexed
-by time and space.}"""))
-
     CONFIG.declare("finite_elements", ConfigValue(
         default=10,
         domain=int,
@@ -99,7 +83,7 @@ domain (default=20)"""))
     CONFIG.declare("length_domain_set", ConfigValue(
         default=[0.0, 1.0],
         domain=list,
-       description="Number of finite elements length domain",
+        description="Number of finite elements length domain",
         doc="""length_domain_set - (optional) list of point to use to
 initialize a new ContinuousSet if length_domain is not
 provided (default = [0.0, 1.0])"""))
@@ -118,6 +102,7 @@ by the Pyomo TransformationFactory,
         description="Number of collocation points per finite element",
         doc="""Number of collocation points to use per finite element when
 discretizing length domain (default=3)"""))
+
     CONFIG.declare("flow_type", ConfigValue(
         default=FlowPattern.countercurrent,
         domain=In(FlowPattern),
@@ -127,6 +112,8 @@ discretizing length domain (default=3)"""))
 **Valid values:** {
 **FlowPattern.countercurrent** - countercurrent flow,
 **FlowPattern.cocurrent** - cocurrent flow}"""))
+
+    # TODO : Consider removing this
     CONFIG.declare("process_type", ConfigValue(
         default=ProcessType.absorber,
         domain=In(ProcessType),
@@ -136,54 +123,18 @@ discretizing length domain (default=3)"""))
 **Valid values:** {
 **ProcessType.absorber** - absorption process,
 **ProcessType.stripper** - stripping process.}"""))
-    CONFIG.declare("packing_specific_area", ConfigValue(
-        default=250,
-        domain=float,
-        description="Specific surface area of packing (m^2/m^3)",
-        doc="Surface area of packing per unit volume of column(default= 250 m2/m3)"))
-    CONFIG.declare("packing_void_fraction", ConfigValue(
-        default=0.97,
-        domain=float,
-        description="Void fraction of the packing",
-        doc="Packing porosity or void fraction (default= 0.97 )"))
-    CONFIG.declare("fix_column_pressure", ConfigValue(
-        default=True,
-        domain=Bool,
-        description="Indicates whether the column pressure should be fixed",
-        doc="""Indicates whether the column pressure should be fixed or not.
-The momentum balances are not added when this is True.
-**default** - True.
-**Valid values:** {
-**True** - fix the column pressure and do not add momentum balances,
-**False** -Do not fix the column pressure and add momentum balances}"""))
-    CONFIG.declare("column_pressure", ConfigValue(
-        default=107650,
-        domain=float,
-        description="fixed column pressure in Pa",
-        doc="Fixed column operating pressure in Pa"))
+
     # Populate the phase side template to default values
     _PhaseCONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
         domain=Bool,
         description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be constructed,
-**default** - False.
+        doc="""Indicates whether terms for pressure change should be
+constructed, **default** - False.
 **Valid values:** {
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
-    _PhaseCONFIG.declare("pressure_drop_type", ConfigValue(
-        default=None,
-        domain=In(["Billet_Schultes_correlation",
-                   "Stichlmair_Fair_Bravo_correlation",
-                   "GPDC-Kister"]),
-        description="Construction flag for type of pressure drop",
-        doc="""Indicates what type of pressure drop correlation should be used,
-**default**- None.
-**Valid values:** {
-**None** - set pressure drop to zero,
-**"Stichlmair_Fair_Bravo_correlation"** - Use the Stichlmair_Fair_Bravo_correlation model
-**"GPDC-Kister"** - Use the Generalized Pressure Drop Correlation of Kister 2007
-**"Billet_Schultes_correlation"** - Use the Billet_Schultes_correlation model}"""))
+
     _PhaseCONFIG.declare("property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
@@ -202,6 +153,7 @@ and used when constructing these
 - a dict (see property package for documentation)
 
             """))
+
     _PhaseCONFIG.declare("transformation_scheme", ConfigValue(
         default="BACKWARD",
         description="Scheme to use for DAE transformation",
@@ -233,11 +185,9 @@ documentation for supported schemes,
             None
         """
         # Call UnitModel.build to build default attributes
-        super(PackedColumnData, self).build()
+        super().build()
 
-    # ==========================================================================
-        """ Set argument values for vapor and liquid sides"""
-
+        # ---------------------------------------------------------------------
         # Set flow directions for the control volume blocks
         # Gas flows from 0 to 1, Liquid flows from 1 to 0
         if self.config.flow_type == FlowPattern.countercurrent:
@@ -249,24 +199,32 @@ documentation for supported schemes,
                 "flow pattern. Please contact the "
                 "developer of the unit model you are using.".format(self.name))
 
-    # ==========================================================================
-        """ Build Control volume 1D for vapor phase and
-            populate vapor control volume"""
+        self.length_column = Var(domain=Reals,
+                                 initialize=4.9,
+                                 units=pyunits.m,
+                                 doc='Column length')
 
+        # ---------------------------------------------------------------------
+        # Build control volumnes
+        # Vapor phase
+        # TODO: Add enthalpy transfer terms to energy balances
         self.vapor_phase = ControlVolume1DBlock(default={
             "transformation_method": self.config.transformation_method,
-            "transformation_scheme": self.config.vapor_side.transformation_scheme,
+            "transformation_scheme":
+                self.config.vapor_side.transformation_scheme,
             "finite_elements": self.config.finite_elements,
             "collocation_points": self.config.collocation_points,
             "dynamic": self.config.dynamic,
             "has_holdup": self.config.has_holdup,
-            "area_definition": self.config.area_definition,
+            "area_definition": DistributedVars.variant,
             "property_package": self.config.vapor_side.property_package,
             "property_package_args":
                 self.config.vapor_side.property_package_args})
 
-        self.vapor_phase.add_geometry(flow_direction=set_direction_vapor,
-                                      length_domain_set=self.config.length_domain_set)
+        self.vapor_phase.add_geometry(
+            flow_direction=set_direction_vapor,
+            length_domain_set=self.config.length_domain_set,
+            length_var=self.length_column)
 
         self.vapor_phase.add_state_blocks(
             information_flow=set_direction_vapor,
@@ -281,68 +239,30 @@ documentation for supported schemes,
             balance_type=EnergyBalanceType.enthalpyTotal,
             has_heat_transfer=True)
 
-        if not self.config.fix_column_pressure:
-            self.vapor_phase.add_momentum_balances(
-                balance_type=MomentumBalanceType.pressureTotal,
-                has_pressure_change=self.config.vapor_side.has_pressure_change)
-
-            # TO DO : remove this warning when there is support for deltaP
-            warnings.warn("""{} WARNING! WARNING!! WARNING!!!
-                  control volume class has not implemented a method
-                  for pressure drop. Constraint for deltaP must be provided if
-                  has_pressure_change is set to True""".format(self.name))
-        # consistency check
-        if (self.config.vapor_side.has_pressure_change and
-                self.config.fix_column_pressure):
-            raise ConfigurationError(
-                " has_pressure_change is set to {} "
-                " while fix_colume_pressure is set to {}.  "
-                " Set fix_column_pressure to False if has_pressure_change is True."
-                .format(self.config.vapor_side.has_pressure_change,
-                        self.config.fix_column_pressure))
-
-        # TO DO
-        # pressure drop calculation
-        # Correlations for pressure drop and flooding required for design cases
-        if (self.config.vapor_side.has_pressure_change and
-            self.config.vapor_side.pressure_drop_type ==
-                "Stichlmair_Fair_Bravo_correlation"):
-            raise NotImplementedError(
-                "{} control volume class has not implemented a method for "
-                "pressure drop. Please contact the "
-                "developer of the property_package you are using."
-                .format(self.name))
-
-        if (self.config.vapor_side.has_pressure_change and
-                self.config.vapor_side.pressure_drop_type == "GPDC-Kister"):
-            raise NotImplementedError(
-                "{} control volume class has not implemented a method for "
-                "pressure drop. Please contact the "
-                "developer of the property_package you are using."
-                .format(self.name))
+        self.vapor_phase.add_momentum_balances(
+            balance_type=MomentumBalanceType.pressureTotal,
+            has_pressure_change=self.config.vapor_side.has_pressure_change)
 
         self.vapor_phase.apply_transformation()
 
-    # ==========================================================================
-        """ Build Control volume 1D for liquid phase and
-            populate liquid control volume
-
-        """
+        # Liquid phase
         self.liquid_phase = ControlVolume1DBlock(default={
             "transformation_method": self.config.transformation_method,
-            "transformation_scheme": self.config.liquid_side.transformation_scheme,
+            "transformation_scheme":
+                self.config.liquid_side.transformation_scheme,
             "finite_elements": self.config.finite_elements,
             "collocation_points": self.config.collocation_points,
             "dynamic": self.config.dynamic,
             "has_holdup": self.config.has_holdup,
-            "area_definition": self.config.area_definition,
+            "area_definition": DistributedVars.variant,
             "property_package": self.config.liquid_side.property_package,
             "property_package_args":
                 self.config.liquid_side.property_package_args})
 
-        self.liquid_phase.add_geometry(flow_direction=set_direction_liquid,
-                                       length_domain_set=self.config.
-                                       length_domain_set)
+        self.liquid_phase.add_geometry(
+            flow_direction=set_direction_liquid,
+            length_domain_set=self.config.length_domain_set,
+            length_var=self.length_column)
 
         self.liquid_phase.add_state_blocks(
             information_flow=set_direction_liquid,
@@ -357,8 +277,12 @@ documentation for supported schemes,
             balance_type=EnergyBalanceType.enthalpyTotal,
             has_heat_transfer=True)
 
+        # No liquid phase momentum balance due ot assumption of mechanical
+        # equilibrium
+
         self.liquid_phase.apply_transformation()
 
+        # ---------------------------------------------------------------------
         # Add Ports for vapor side
         self.add_inlet_port(name="vapor_inlet", block=self.vapor_phase)
         self.add_outlet_port(name="vapor_outlet", block=self.vapor_phase)
@@ -367,40 +291,16 @@ documentation for supported schemes,
         self.add_inlet_port(name="liquid_inlet", block=self.liquid_phase)
         self.add_outlet_port(name="liquid_outlet", block=self.liquid_phase)
 
-    # ==========================================================================
-        """ Add performace equation method"""
-        self._make_performance()
-
-
-    def _make_performance(self):
-        """
-        Constraints for unit model.
-
-        Args: None
-
-        Returns: None
-
-        """
-
-        # ======================================================================
-        # Aliases for  Sets
-        vap_comp = self.config.vapor_side.property_package.component_list
-        liq_comp = self.config.liquid_side.property_package.component_list
-        dcomp = self.config.liquid_side.property_package.component_list_d
-        vapor_phase_list_ref = self.config.vapor_side.property_package.phase_list
-        liquid_phase_list_ref = self.config.liquid_side.property_package.phase_list
-
-        # Add object reference - time
-        add_object_reference(self,
-                             "t",
-                             self.flowsheet().time)
+        # ---------------------------------------------------------------------
+        # TODO : Remove this
+        dcomp = ['CO2', 'H2O']
 
         # Packing  parameters
-        self.eps_ref = Param(initialize=self.config.packing_void_fraction,
-                             units=None,
+        self.eps_ref = Param(initialize=0.97,
+                             units=pyunits.dimensionless,
                              doc="Packing void space m3/m3")
 
-        self.a_ref = Param(initialize=self.config.packing_specific_area,
+        self.a_ref = Param(initialize=250,
                            units=pyunits.m**2 / pyunits.m**3,
                            doc="Packing specific surface area m2/m3")
 
@@ -421,7 +321,7 @@ documentation for supported schemes,
         self.Cl_ref.fix()
 
         # Add object references - others
-        R_ref = CONST.gas_constant
+        R_ref = Constants.gas_constant
 
         # Unit Model Parameters/sets
         self.zi = Param(self.vapor_phase.length_domain, mutable=True,
@@ -439,31 +339,24 @@ documentation for supported schemes,
                                      doc='''Continuation parameter to turn on heat
                                      transfer terms gradually''')
 
-        # fixed column pressure
-        if self.config.fix_column_pressure:
-            self.column_pressure = Param(initialize=self.config.column_pressure,
-                                         mutable=True,
-                                         units=pyunits.Pa,
-                                         doc='Fixed operating pressure of column')
-
         # Interfacial area  parameters
         self.area_interfacial_parA = Var(initialize=0.6486,
-                                         units=None,
+                                         units=pyunits.dimensionless,
                                          doc='''Interfacial area parameter A''')
 
         self.area_interfacial_parB = Var(initialize=0.12,
-                                         units=None,
+                                         units=pyunits.dimensionless,
                                          doc='''Interfacial area parameter B''')
         self.area_interfacial_parA.fix(0.6486)
         self.area_interfacial_parB.fix(0.12)
 
         # Holdup  parameters
         self.holdup_parA = Var(initialize=24.2355,
-                               units=None,
+                               units=pyunits.dimensionless,
                                doc='''holdup parameter A''')
 
         self.holdup_parB = Var(initialize=0.6471,
-                               units=None,
+                               units=pyunits.dimensionless,
                                doc='''holdup parameter B''')
         self.holdup_parA.fix(24.2355)
         self.holdup_parB.fix(0.6471)
@@ -479,19 +372,15 @@ documentation for supported schemes,
                                initialize=0.5,
                                units=pyunits.m**2,
                                doc='Column cross-sectional area')
-        self.length_column = Var(domain=Reals,
-                                 initialize=4.9,
-                                 units=pyunits.m,
-                                 doc='Column length')
 
         # Hydrodynamics
-        self.velocity_vap = Var(self.t,
+        self.velocity_vap = Var(self.flowsheet().time,
                                 self.vapor_phase.length_domain,
                                 domain=NonNegativeReals,
                                 initialize=2,
                                 units=pyunits.m / pyunits.s,
                                 doc='Vapor superficial velocity')
-        self.velocity_liq = Var(self.t,
+        self.velocity_liq = Var(self.flowsheet().time,
                                 self.liquid_phase.length_domain,
                                 units=pyunits.m / pyunits.s,
                                 domain=NonNegativeReals,
@@ -499,7 +388,7 @@ documentation for supported schemes,
                                 doc='Liquid superficial velocity')
         # mass and heat transfer terms
         # mass transfer
-        self.pressure_equil = Var(self.t,
+        self.pressure_equil = Var(self.flowsheet().time,
                                   self.vapor_phase.length_domain,
                                   dcomp,
                                   domain=NonNegativeReals,
@@ -507,7 +396,7 @@ documentation for supported schemes,
                                   units=pyunits.Pa,
                                   doc='''Equilibruim pressure of diffusing
                                       components at the interface ''')
-        self.N_v = Var(self.t,
+        self.N_v = Var(self.flowsheet().time,
                        self.liquid_phase.length_domain,
                        dcomp,
                        domain=Reals,
@@ -515,36 +404,36 @@ documentation for supported schemes,
                        units=pyunits.mol / (pyunits.s * pyunits.m),
                        doc='''Moles of diffusing species transfered
                                      into liquid ''')
-        self.enhancement_factor = Var(self.t,
+        self.enhancement_factor = Var(self.flowsheet().time,
                                       self.liquid_phase.length_domain,
-                                      units=None,
+                                      units=pyunits.dimensionless,
                                       domain=NonNegativeReals,
                                       initialize=160,
                                       doc='Enhancement factor')
 
-        self.yi_MEA = Var(self.t,
+        self.yi_MEA = Var(self.flowsheet().time,
                           self.liquid_phase.length_domain,
                           domain=NonNegativeReals,
                           initialize=0.5,
-                          units=None,
+                          units=pyunits.dimensionless,
                           doc='''Dimensionless concentration of MEA
                                     at interface ''')
-        self.yeq_CO2 = Var(self.t,
+        self.yeq_CO2 = Var(self.flowsheet().time,
                            self.liquid_phase.length_domain,
                            domain=NonNegativeReals,
                            initialize=0.5,
-                           units=None,
+                           units=pyunits.dimensionless,
                            doc='''Dimensionless concentration of CO2
                                       in equilibruim with the bulk''')
 
         # heat transfer
-        self.heat_vap = Var(self.t,
+        self.heat_vap = Var(self.flowsheet().time,
                             self.vapor_phase.length_domain,
                             domain=Reals,
                             initialize=0.0,
                             units=pyunits.J / (pyunits.s * pyunits.m),
                             doc='Heat transfer rate in vapor phase')
-        self.heat_liq = Var(self.t,
+        self.heat_liq = Var(self.flowsheet().time,
                             self.vapor_phase.length_domain,
                             domain=Reals,
                             initialize=0.0,
@@ -565,7 +454,7 @@ documentation for supported schemes,
                     blk.liquid_phase.properties[t, x].surf_tens *
                     (blk.velocity_liq[t, x])**(4.0 / 3.0))**blk.area_interfacial_parB
 
-        self.area_interfacial = Expression(self.t,
+        self.area_interfacial = Expression(self.flowsheet().time,
                                            self.vapor_phase.length_domain,
                                            rule=rule_interfacial_area,
                                            doc='Specific inter-facial area')
@@ -578,7 +467,7 @@ documentation for supported schemes,
                                        blk.liquid_phase.properties[t, x].dens_mass) **
                                       (0.333))**blk.holdup_parB
 
-        self.holdup_liq = Expression(self.t,
+        self.holdup_liq = Expression(self.flowsheet().time,
                                      self.liquid_phase.length_domain,
                                      rule=rule_holdup_liq,
                                      doc='Volumetric liquid holdup [-]')
@@ -588,7 +477,7 @@ documentation for supported schemes,
         def rule_holdup_vap(blk, t, x):
             return blk.eps_ref - blk.holdup_liq[t, x]
 
-        self.holdup_vap = Expression(self.t,
+        self.holdup_vap = Expression(self.flowsheet().time,
                                      self.vapor_phase.length_domain,
                                      rule=rule_holdup_vap,
                                      doc='Volumetric vapor holdup [-]')
@@ -599,7 +488,7 @@ documentation for supported schemes,
         # Column area [m2]
         @self.Constraint(doc="Column cross-sectional area")
         def column_cross_section_area(blk):
-            return blk.area_column == (CONST.pi * 0.25 * (blk.diameter_column)**2)
+            return blk.area_column == (Constants.pi * 0.25 * (blk.diameter_column)**2)
 
         # Area of control volume : vapor side and liquid side
         control_volume_area_definition = ''' column_area * phase_holdup.
@@ -611,13 +500,13 @@ documentation for supported schemes,
         '''
 
         if self.config.dynamic:
-            @self.Constraint(self.t,
+            @self.Constraint(self.flowsheet().time,
                              self.vapor_phase.length_domain,
                              doc=control_volume_area_definition)
             def vapor_side_area(bk, t, x):
                 return bk.vapor_phase.area[t, x] == bk.area_column * bk.holdup_vap[t, x]
 
-            @self.Constraint(self.t,
+            @self.Constraint(self.flowsheet().time,
                              self.liquid_phase.length_domain,
                              doc=control_volume_area_definition)
             def liquid_side_area(bk, t, x):
@@ -626,50 +515,19 @@ documentation for supported schemes,
             self.vapor_phase.area.fix(value(self.area_column))
             self.liquid_phase.area.fix(value(self.area_column))
 
-        # if column pressure is fixed
-        if self.config.fix_column_pressure:
-            @self.Constraint(self.t,
-                             self.vapor_phase.length_domain,
-                             doc='Sets the fixed column pressure')
-            def vapor_side_pressure(bk, t, x):
-                if x == self.vapor_phase.length_domain.first():
-                    return Constraint.Skip
-                else:
-                    return bk.column_pressure == \
-                        bk.vapor_phase.properties[t, x].pressure
-
-            @self.Constraint(self.t,
-                             self.liquid_phase.length_domain,
-                             doc='Sets the fixed column pressure')
-            def liquid_side_pressure(bk, t, x):
-                if x == self.liquid_phase.length_domain.last():
-                    return Constraint.Skip
-                else:
-                    return bk.liquid_phase.properties[t, x].pressure == \
-                        bk.column_pressure
-        else:
-            @self.Constraint(self.t,
-                             self.liquid_phase.length_domain,
-                             doc='''Mechanical equilibruim: vapor-side pressure
-                                    equal liquid -side pressure''')
-            def mechanical_equil(bk, t, x):
-                return bk.liquid_phase.properties[t, x].pressure == \
-                    bk.vapor_phase.properties[t, x].pressure
-
-        # Length of control volume : vapor side and liquid side
-        @self.Constraint(doc="Vapor side length")
-        def vapor_side_length(blk):
-            return blk.vapor_phase.length == blk.length_column
-
-        @self.Constraint(doc="Liquid side length")
-        def liquid_side_length(blk):
-            return blk.liquid_phase.length == blk.length_column
+        @self.Constraint(self.flowsheet().time,
+                         self.liquid_phase.length_domain,
+                         doc='''Mechanical equilibruim: vapor-side pressure
+                                equal liquid -side pressure''')
+        def mechanical_equil(bk, t, x):
+            return bk.liquid_phase.properties[t, x].pressure == \
+                bk.vapor_phase.properties[t, x].pressure
 
         # ---------------------------------------------------------------------
         # Hydrodynamic contraints
         # Vapor superficial velocity
 
-        @self.Constraint(self.t,
+        @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,
                          doc="Vapor superficial velocity")
         def eq_velocity_vap(blk, t, x):
@@ -678,7 +536,7 @@ documentation for supported schemes,
                 blk.vapor_phase.properties[t, x].flow_mol
 
         # Liquid superficial velocity
-        @self.Constraint(self.t,
+        @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
                          doc="Liquid superficial velocity")
         def eq_velocity_liq(blk, t, x):
@@ -706,7 +564,7 @@ documentation for supported schemes,
                     ((blk.velocity_vap[t, x] * blk.vapor_phase.properties[t, x].dens_mass) /
                         (blk.a_ref * blk.vapor_phase.properties[t, x].visc_d))**(3 / 4)
 
-        self.k_v = Expression(self.t,
+        self.k_v = Expression(self.flowsheet().time,
                               self.vapor_phase.length_domain,
                               dcomp,
                               rule=rule_mass_transfer_coeff_vap,
@@ -721,7 +579,7 @@ documentation for supported schemes,
                                                    blk.liquid_phase.properties[t, x].diffus['CO2'] /
                                                    (blk.dh_ref * blk.holdup_liq[t, x]))**0.5
 
-        self.k_l_CO2 = Expression(self.t,
+        self.k_l_CO2 = Expression(self.flowsheet().time,
                                   self.liquid_phase.length_domain,
                                   rule=rule_mass_transfer_coeff_CO2,
                                   doc='''CO2 mass transfer coefficient in solvent''')
@@ -734,14 +592,14 @@ documentation for supported schemes,
                 zb = self.vapor_phase.length_domain[self.zi[x].value - 1]
                 return blk.enhancement_factor[t, zb] * blk.k_l_CO2[t, zb] / blk.k_v[t, x, 'CO2']
 
-        self.phi = Expression(self.t,
+        self.phi = Expression(self.flowsheet().time,
                               self.vapor_phase.length_domain,
                               rule=rule_phi,
                               doc='''CO2 Equilibruim partial pressure
                                    intermediate  term''')
 
         # Equilibruim partial pressure of diffusing components at interface
-        @self.Constraint(self.t,
+        @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,
                          dcomp,
                          doc='''Equilibruim partial pressure of diffusing
@@ -775,7 +633,7 @@ documentation for supported schemes,
                                              blk.vapor_phase.properties[t, x].pressure -
                                              blk.pressure_equil[t, x, j])) * blk._homotopy_par_m
 
-        self.mass_transfer = Constraint(self.t,
+        self.mass_transfer = Constraint(self.flowsheet().time,
                                         self.vapor_phase.length_domain,
                                         dcomp, rule=rule_mass_transfer,
                                         doc="mass transfer to liquid")
@@ -783,11 +641,11 @@ documentation for supported schemes,
         # mass tranfer term handle
         # liquid side
 
-        @self.Constraint(self.t,
-                         self.liquid_phase.length_domain,
-                         liquid_phase_list_ref,
-                         liq_comp,
-                         doc="mass transfer to liquid")
+        @self.Constraint(
+            self.flowsheet().time,
+            self.liquid_phase.length_domain,
+            self.config.liquid_side.property_package._phase_component_set,
+            doc="mass transfer to liquid")
         def liquid_phase_mass_transfer_handle(blk, t, x, p, j):
             if x == self.liquid_phase.length_domain.last():
                 return blk.liquid_phase.mass_transfer_term[t, x, p, j] == 0.0
@@ -800,11 +658,11 @@ documentation for supported schemes,
                     return blk.liquid_phase.mass_transfer_term[t, x, p, j] == \
                         blk.N_v[t, zf, j]
         # vapor side
-        @self.Constraint(self.t,
-                         self.vapor_phase.length_domain,
-                         vapor_phase_list_ref,
-                         vap_comp,
-                         doc="mass transfer from vapor")
+        @self.Constraint(
+            self.flowsheet().time,
+            self.vapor_phase.length_domain,
+            self.config.vapor_side.property_package._phase_component_set,
+            doc="mass transfer from vapor")
         def vapor_phase_mass_transfer_handle(blk, t, x, p, j):
             if x == self.vapor_phase.length_domain.first():
                 return blk.vapor_phase.mass_transfer_term[t, x, p, j] == 0.0
@@ -831,7 +689,7 @@ documentation for supported schemes,
                       blk.vapor_phase.properties[t, x].cp_mol_mean *
                       blk.vapor_phase.properties[t, x].diffus['CO2']))**(2 / 3)
 
-        self.h_v = Expression(self.t,
+        self.h_v = Expression(self.flowsheet().time,
                               self.vapor_phase.length_domain,
                               rule=rule_heat_transfer_coeff,
                               doc='''vap-liq heat transfer coefficient''')
@@ -849,14 +707,14 @@ documentation for supported schemes,
                 return Ackmann_factor /\
                     (1 - exp(-Ackmann_factor /
                              (blk.h_v[t, x] * blk.area_interfacial[t, x] * blk.area_column)))
-        self.h_v_Ack = Expression(self.t,
+        self.h_v_Ack = Expression(self.flowsheet().time,
                                   self.vapor_phase.length_domain,
                                   rule=rule_heat_transfer_coeff_Ack,
                                   doc='''vap-liq heat transfer coefficient corrected
                                          by Ackmann factor''')
 
         # heat transfer vapor  side [J/s.m]
-        @self.Constraint(self.t,
+        @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,
                          doc="heat transfer - vapor side ")
         def vapor_phase_heat_transfer(blk, t, x):
@@ -870,7 +728,7 @@ documentation for supported schemes,
                     blk._homotopy_par_h
 
         # heat transfer liquid side [J/s.m]
-        @self.Constraint(self.t,
+        @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
                          doc="heat transfer - liquid side ")
         def liquid_phase_heat_transfer(blk, t, x):
@@ -886,14 +744,14 @@ documentation for supported schemes,
         # heat transfer handle
         # vapor  heat transfer handle
 
-        @self.Constraint(self.t,
+        @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,
                          doc="vapor - heat transfer handle")
         def vapor_phase_heat_transfer_handle(blk, t, x):
             return blk.vapor_phase.heat[t, x] == blk.heat_vap[t, x]
 
         # liquid  heat transfer handle
-        @self.Constraint(self.t,
+        @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
                          doc="liquid - heat transfer handle")
         def liquid_phase_heat_transfer_handle(blk, t, x):
@@ -911,7 +769,7 @@ documentation for supported schemes,
                 return blk.pressure_equil[t, zf, 'CO2'] /\
                     blk.liquid_phase.properties[t, x].henry_N2O_analogy
 
-        self.conc_mol_comp_CO2_eq = Expression(self.t,
+        self.conc_mol_comp_CO2_eq = Expression(self.flowsheet().time,
                                                self.liquid_phase.length_domain,
                                                rule=rule_conc_mol_comp_interface_CO2,
                                                doc='''Concentration of CO2
@@ -926,7 +784,7 @@ documentation for supported schemes,
                         blk.liquid_phase.properties[t, x].diffus['CO2'])**0.5 /\
                     blk.k_l_CO2[t, x]
 
-        self.Hatta = Expression(self.t,
+        self.Hatta = Expression(self.flowsheet().time,
                                 self.liquid_phase.length_domain,
                                 rule=rule_Hatta,
                                 doc='Hatta number')
@@ -938,7 +796,7 @@ documentation for supported schemes,
                 return blk.liquid_phase.properties[t, x].conc_mol_comp_true['CO2'] /\
                     blk.conc_mol_comp_CO2_eq[t, x]
 
-        self.yb_CO2 = Expression(self.t,
+        self.yb_CO2 = Expression(self.flowsheet().time,
                                  self.liquid_phase.length_domain,
                                  rule=rule_yb_CO2,
                                  doc='''Dimensionless concentration of CO2,
@@ -955,7 +813,7 @@ documentation for supported schemes,
                     (2 * blk.liquid_phase.properties[t, x].diffus['CO2'] *
                         blk.conc_mol_comp_CO2_eq[t, x])
 
-        self.instant_E = Expression(self.t,
+        self.instant_E = Expression(self.flowsheet().time,
                                     self.liquid_phase.length_domain,
                                     rule=rule_instantaneous_E,
                                     doc='Instantaneous Enhancement factor')
@@ -971,7 +829,7 @@ documentation for supported schemes,
                     (2 * blk.liquid_phase.properties[t, x].diffus['MEACOO-'] *
                         blk.liquid_phase.properties[t, x].conc_mol_comp_true['MEACOO-'])
 
-        self.yi_MEACOO = Expression(self.t,
+        self.yi_MEACOO = Expression(self.flowsheet().time,
                                     self.liquid_phase.length_domain,
                                     rule=rule_yi_MEACOO,
                                     doc='Dimensionless concentration of MEACOO-')
@@ -987,12 +845,12 @@ documentation for supported schemes,
                     (2 * blk.liquid_phase.properties[t, x].diffus['MEA+'] *
                         blk.liquid_phase.properties[t, x].conc_mol_comp_true['MEA+'])
 
-        self.yi_MEAH = Expression(self.t,
+        self.yi_MEAH = Expression(self.flowsheet().time,
                                   self.liquid_phase.length_domain,
                                   rule=rule_yi_MEAH,
                                   doc='Dimensionless concentration of MEA+')
 
-        @self.Constraint(self.t,
+        @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
                          doc='''dimensionless concentration of CO2
                                 at equilibruim with the bulk ''')
@@ -1003,7 +861,7 @@ documentation for supported schemes,
                 return blk.yeq_CO2[t, x] * blk.yi_MEA[t, x]**4 == \
                     blk.yb_CO2[t, x] * blk.yi_MEAH[t, x] * blk.yi_MEACOO[t, x]
 
-        @self.Constraint(self.t,
+        @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
                          doc='''Enhancement factor model Eqn 1 ''')
         def E1_eqn(blk, t, x):
@@ -1013,7 +871,7 @@ documentation for supported schemes,
                 return (blk.enhancement_factor[t, x] - 1) * (1 - blk.yb_CO2[t, x]) == \
                     (blk.instant_E[t, x] - 1) * (1 - blk.yi_MEA[t, x]**2)
 
-        @self.Constraint(self.t,
+        @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
                          doc='''Enhancement factor model Eqn 2 ''')
         def E2_eqn(blk, t, x):
@@ -1024,7 +882,7 @@ documentation for supported schemes,
                     blk.Hatta[t, x] * blk.yi_MEA[t, x] * \
                     (1 - blk.yeq_CO2[t, x])
 
-        @self.Constraint(self.t,
+        @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
                          doc='Enhancement factor lower bound ')
         def E3_eqn(blk, t, x):
@@ -1146,8 +1004,7 @@ documentation for supported schemes,
 
         # other variables
         # Pressure_dx
-        if not blk.config.fix_column_pressure:
-            blk.vapor_phase.pressure_dx[:, :].fix(0.0)
+        blk.vapor_phase.pressure_dx[:, :].fix(0.0)
 
         # vapor side flow terms
         blk.vapor_phase._enthalpy_flow.fix(1.0)
@@ -1237,16 +1094,14 @@ documentation for supported schemes,
 
         blk.vapor_phase.properties.release_state(flags=vflag)
         blk.vapor_phase.properties[:, :].temperature.fix()
-        if not blk.config.fix_column_pressure:
-            blk.vapor_phase.properties[:, :].pressure.fix()
+        blk.vapor_phase.properties[:, :].pressure.fix()
 
         blk.vapor_phase._flow_terms[:, :, :, :].unfix()
         blk.vapor_phase.material_flow_dx[:, :, :, :].unfix()
         # liquid-side
         blk.liquid_phase.properties.release_state(flags=lflag)
         blk.liquid_phase.properties[:, :].temperature.fix()
-        if not blk.config.fix_column_pressure:
-            blk.liquid_phase.properties[:, :].pressure.fix()
+        blk.liquid_phase.properties[:, :].pressure.fix()
 
         blk.liquid_phase._flow_terms[:, :, :, :].unfix()
         blk.liquid_phase.material_flow_dx[:, :, :, :].unfix()
@@ -1287,7 +1142,7 @@ documentation for supported schemes,
         blk.velocity_liq.unfix()
         blk.eq_velocity_vap.activate()
         blk.eq_velocity_liq.activate()
-        for t in blk.t:
+        for t in blk.flowsheet().time:
             for x in blk.vapor_phase.length_domain:
                 blk.velocity_vap[t, x].value = value(
                     blk.vapor_phase.properties[t, x].flow_mol /
@@ -1308,7 +1163,7 @@ documentation for supported schemes,
         # ----------------------------------------------------------------------
         # Enhancement factor model
         blk.enhancement_factor.unfix()
-        for t in blk.t:
+        for t in blk.flowsheet().time:
             for x in blk.liquid_phase.length_domain:
                 blk.enhancement_factor[t, x].value = 100
         blk.yi_MEA.unfix()
@@ -1344,23 +1199,22 @@ documentation for supported schemes,
 
         init_log.info_high("Step 4 complete: {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
-        if not blk.config.fix_column_pressure:
-            for c in ["mechanical_equil"]:
-                getattr(blk, c).activate()
-            for c in ["pressure_balance", "pressure_dx_disc_eq"]:
-                getattr(blk.vapor_phase, c).activate()
+        for c in ["mechanical_equil"]:
+            getattr(blk, c).activate()
+        for c in ["pressure_balance", "pressure_dx_disc_eq"]:
+            getattr(blk.vapor_phase, c).activate()
 
-            blk.vapor_phase.pressure_dx[:, :].unfix()
+        blk.vapor_phase.pressure_dx[:, :].unfix()
 
-            # Unfix pressure
-            for t in blk.t:
-                for x in blk.vapor_phase.length_domain:
-                    # Unfix all vapor pressure variables except at the inlet
-                    if (blk.vapor_phase.properties[t, x].config.defined_state
-                            is False):
-                        blk.vapor_phase.properties[t, x].pressure.unfix()
-                for x in blk.liquid_phase.length_domain:
-                        blk.liquid_phase.properties[t, x].pressure.unfix()
+        # Unfix pressure
+        for t in blk.flowsheet().time:
+            for x in blk.vapor_phase.length_domain:
+                # Unfix all vapor pressure variables except at the inlet
+                if (blk.vapor_phase.properties[t, x].config.defined_state
+                        is False):
+                    blk.vapor_phase.properties[t, x].pressure.unfix()
+            for x in blk.liquid_phase.length_domain:
+                    blk.liquid_phase.properties[t, x].pressure.unfix()
 
         # ---------------------------------------------------------------------
         init_log.info('STEP 5: Adiabatic chemical absoption')
@@ -1368,7 +1222,7 @@ documentation for supported schemes,
         init_log.info_high("Isothermal (0.0) --> (1.0) Adiabatic ")
 
         # Unfix temperature
-        for t in blk.t:
+        for t in blk.flowsheet().time:
             for x in blk.vapor_phase.length_domain:
                 # Unfix all vapor temperature variables except at the inlet
                 if (blk.vapor_phase.properties[t, x].config.defined_state
@@ -1556,166 +1410,3 @@ documentation for supported schemes,
             for j in liq_comp:
                 if (x != 1 and j != 'CO2'):
                     blk.liquid_phase.properties[0, x].mole_frac_comp[j].unfix()
-
-    def make_steady_state_column_profile(blk):
-        """
-        Steady-state Plot function for Temperature and CO2 Pressure profile.
-
-        """
-
-        normalised_column_height = [x for x in blk.vapor_phase.length_domain]
-        simulation_time = [t for t in blk.t]
-
-        # final time
-        tf = simulation_time[-1]
-        CO2_profile = []
-        liquid_temperature_profile = []
-
-        # APPEND RESULTS
-        for x in blk.vapor_phase.length_domain:
-            CO2_profile.append(
-                value(1e-3 * blk.vapor_phase.properties[tf, x].pressure *
-                      blk.vapor_phase.properties[tf, x].mole_frac_comp['CO2']))
-            liquid_temperature_profile.append(
-                value(blk.liquid_phase.properties[tf, x].temperature))
-
-        # plot properties
-        fontsize = 18
-        labelsize = 18
-        fig = plt.figure(figsize=(9, 7))
-        ax1 = fig.add_subplot(111)
-        ax1.set_title('Steady-state column profile',
-                      fontsize=16, fontweight='bold')
-
-        # plot primary axis
-        lab1 = ax1.plot(normalised_column_height, CO2_profile,
-                        linestyle='--', mec="b", mfc="None",
-                        color='b', label='CO$_{2}$ partial pressure [kPa]',
-                        marker='o')
-
-        ax1.tick_params(axis='y', labelcolor='b',
-                        direction='in', labelsize=labelsize)
-        ax1.tick_params(axis='x', direction='in', labelsize=labelsize)
-
-        ax1.set_xlabel('Normalise column  height from bottom',
-                       fontsize=fontsize)
-        ax1.set_ylabel('P$_{CO_{2}}$  [ kPa]', color='b', fontweight='bold',
-                       fontsize=fontsize)
-        # plot secondary axis
-        ax2 = ax1.twinx()
-        lab2 = ax2.plot(normalised_column_height,
-                        liquid_temperature_profile,
-                        color='g',
-                        linestyle='-',
-                        label='Liquid temperature profile',
-                        marker='s')
-        ax2.set_ylabel('T$_{liq}$ [ K ] ', color='g', fontweight='bold',
-                       fontsize=fontsize)
-        ax2.tick_params(axis='y', labelcolor='g',
-                        direction='in', labelsize=labelsize)
-
-        # get the labels
-        lab_1 = lab1 + lab2
-        labels_1 = [l.get_label() for l in lab_1]
-        ax1.legend(lab_1, labels_1, loc='lower center', fontsize=fontsize)
-        fig.tight_layout()
-
-        # show graph
-        plt.show()
-
-    def make_dynamic_column_profile(blk):
-        """
-        Dynamic Plot function for Temperature and CO2 Pressure profile.
-
-        """
-
-        normalised_column_height = [x for x in blk.vapor_phase.length_domain]
-        simulation_time = [t for t in blk.t]
-        fluegas_flow = [value(blk.vapor_inlet.flow_mol[t]) for t in blk.t]
-
-        # final time
-        tf = simulation_time[-1]
-        nf = len(simulation_time)
-
-        # mid-time
-        if nf % 2 == 0:
-            tm = int(nf / 2)
-        else:
-            tm = int(nf / 2 + 1)
-
-        CO2_profile_mid = []
-        CO2_profile_fin = []
-        liquid_temperature_profile_mid = []
-        liquid_temperature_profile_fin = []
-
-        # APPEND RESULTS
-        for x in blk.vapor_phase.length_domain:
-            CO2_profile_mid.append(
-                value(1e-3 * blk.vapor_phase.properties[tm, x].pressure *
-                      blk.vapor_phase.properties[tm, x].mole_frac_comp['CO2']))
-            CO2_profile_fin.append(
-                value(1e-3 * blk.vapor_phase.properties[tf, x].pressure *
-                      blk.vapor_phase.properties[tf, x].mole_frac_comp['CO2']))
-
-            liquid_temperature_profile_mid.append(
-                value(blk.liquid_phase.properties[tm, x].temperature))
-            liquid_temperature_profile_fin.append(
-                value(blk.liquid_phase.properties[tf, x].temperature))
-
-        # plot properties
-        fontsize = 18
-        labelsize = 18
-        fig = plt.figure(figsize=(12, 7))
-        ax1 = fig.add_subplot(211)
-        ax1.set_title('Column profile @ {0:6.2f} & {1:6.2f} sec'.format(tm, tf),
-                      fontsize=16, fontweight='bold')
-
-        # plot primary axis
-        lab1 = ax1.plot(normalised_column_height, CO2_profile_mid,
-                        linestyle='--', color='b',
-                        label='CO$_{2}$ partial pressure [kPa] @ %d' % tm)
-        lab2 = ax1.plot(normalised_column_height, CO2_profile_fin,
-                        linestyle='-', color='b',
-                        label='CO$_{2}$ partial pressure [kPa] @ %d' % tf)
-
-        ax1.tick_params(axis='y', labelcolor='b',
-                        direction='in', labelsize=labelsize)
-        ax1.tick_params(axis='x', direction='in', labelsize=labelsize)
-
-        ax1.set_xlabel('Normalise column  height from bottom',
-                       fontsize=fontsize)
-        ax1.set_ylabel('P$_{CO_{2}}$  [ kPa]', color='b', fontweight='bold',
-                       fontsize=fontsize)
-
-        # plot secondary axis
-        ax2 = ax1.twinx()
-        lab3 = ax2.plot(normalised_column_height,
-                        liquid_temperature_profile_mid,
-                        color='g', linestyle='--',
-                        label='Liquid temperature profile @ {0:6.1f}'.format(tm))
-        lab4 = ax2.plot(normalised_column_height,
-                        liquid_temperature_profile_fin,
-                        color='g', linestyle='-',
-                        label='Liquid temperature profile @ {0:6.1f}'.format(tf))
-        ax2.set_ylabel('T$_{liq}$ [ K ] ', color='g', fontweight='bold',
-                       fontsize=fontsize)
-        ax2.tick_params(axis='y', labelcolor='g',
-                        direction='in', labelsize=labelsize)
-        # get the labels
-        lab_1 = lab1 + lab2 + lab3 + lab4
-        labels_1 = [l.get_label() for l in lab_1]
-        ax1.legend(lab_1, labels_1, fontsize=fontsize)
-
-        # plot flowgas flow
-        ax3 = fig.add_subplot(212)
-        ax3.plot(simulation_time, fluegas_flow,
-                 linestyle='--', mec="g", mfc="None",
-                 color='g', label='Fluegas flow [mol/s]',
-                 marker='o')
-        ax3.tick_params(labelsize=labelsize)
-        ax3.set_xlabel('Simulation time (sec)', fontsize=fontsize)
-        ax3.set_ylabel(' Fv  [ mol/s]', color='b', fontweight='bold',
-                       fontsize=fontsize)
-        ax3.legend(['Fluegas flow [mol/s]'], fontsize=fontsize)
-        fig.tight_layout()
-        plt.show()

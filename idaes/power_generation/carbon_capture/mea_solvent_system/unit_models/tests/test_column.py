@@ -58,13 +58,11 @@ class TestAbsorberSS:
             "process_type": ProcessType.absorber,
             "finite_elements": x_nfe,
             "length_domain_set": x_nfe_list,
-            "column_pressure": 107650,
             "transformation_method": "dae.finite_difference",
             "vapor_side": {
                 "transformation_scheme": "BACKWARD",
                 "property_package": m.fs.vapor_properties,
-                "has_pressure_change": False,
-                "pressure_drop_type": None},
+                "has_pressure_change": False},
             "liquid_side":
             {
                 "transformation_scheme": "FORWARD",
@@ -270,13 +268,11 @@ class TestStripperSS:
             "process_type": ProcessType.stripper,
             "finite_elements": x_nfe,
             "length_domain_set": x_nfe_list,
-            "column_pressure": 183430,
             "transformation_method": "dae.finite_difference",
             "vapor_side": {
                 "transformation_scheme": "BACKWARD",
                 "property_package": m.fs.vapor_properties,
-                "has_pressure_change": False,
-                "pressure_drop_type": None},
+                "has_pressure_change": False},
             "liquid_side":
             {
                 "transformation_scheme": "FORWARD",
