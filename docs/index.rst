@@ -19,6 +19,7 @@ For a more detailed overview of the :term:`IDAES integrated platform <IDAES-IP>`
 Contents Display
 ----------------
 .. list-table::
+   :class: index-table
 
    * - Getting Started (Tutorials)
          * :doc:`Installing IDAES for users <getting_started/index>`
