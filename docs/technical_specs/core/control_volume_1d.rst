@@ -44,7 +44,7 @@ This method also adds variables and constraints to describe the geometry of the 
    "length_domain", ":math:`x`", "None", "None"
    "volume", ":math:`V`", "None", "None"
    "area", ":math:`A`", "None", "None"
-   "length", ":math:`L`", "None", "None"
+   "length", ":math:`L`", "None", "If `length_var` argument is provided, a reference to the provided component is made in place of creating a new variable"
 
 **Constraints**
 

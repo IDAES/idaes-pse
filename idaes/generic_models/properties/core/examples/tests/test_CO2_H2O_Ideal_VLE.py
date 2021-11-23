@@ -51,6 +51,11 @@ from idaes.generic_models.properties.core.examples.CO2_H2O_Ideal_VLE import (
 # Get default solver for testing
 solver = get_solver()
 
+def _as_quantity(x):
+    unit = pyunits.get_units(x)
+    if unit is None:
+        unit = pyunits.dimensionless
+    return value(x) * unit._get_pint_unit()
 
 class TestParamBlock(object):
     @pytest.mark.unit
@@ -86,8 +91,7 @@ class TestParamBlock(object):
               "temperature": (273.15, 323.15, 1000, pyunits.K),
               "pressure": (5e4, 108900, 1e7, pyunits.Pa),
               "mole_frac_comp": {"H2O": (0, 0.5, 1),"CO2": (0, 0.5, 1)} },
-             item_callback=lambda x: value(x) * (
-                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+             item_callback=_as_quantity,
         )
 
         assert model.params.config.phase_equilibrium_state == {

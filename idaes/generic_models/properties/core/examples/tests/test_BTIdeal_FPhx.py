@@ -50,6 +50,12 @@ import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 # Get default solver for testing
 solver = get_solver()
 
+def _as_quantity(x):
+    unit = pyunits.get_units(x)
+    if unit is None:
+        unit = pyunits.dimensionless
+    return value(x) * unit._get_pint_unit()
+
 config_dict = {
     "components": {
         'benzene': {
@@ -167,8 +173,7 @@ class TestParamBlock(object):
               "enth_mol": (1e4, 5e4, 2e5, pyunits.J/pyunits.mol),
               "temperature": (273.15, 300, 450, pyunits.K),
               "pressure": (5e4, 1e5, 1e6, pyunits.Pa) },
-            item_callback=lambda x: value(x) * (
-                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+            item_callback=_as_quantity,
         )
 
         assert model.params.config.phase_equilibrium_state == {
