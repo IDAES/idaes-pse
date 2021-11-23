@@ -84,7 +84,7 @@ EoS_param = {
         CubicType.PR: {'u': 2, 'w': -1, 'omegaA': 0.45724, 'coeff_b': 0.07780},
         CubicType.SRK: {'u': 1, 'w': 0, 'omegaA': 0.42748, 'coeff_b': 0.08664}
         }
-
+# Value for smoothing epsilon for SafeLog when used
 eps_SL = 1E-8
 
 CubicConfig = ConfigBlock()
@@ -610,20 +610,24 @@ class Cubic(EoSBase):
         B = getattr(blk, cname+"_B")[p]
         dam_dT = getattr(blk, cname+"_dam_dT")[p]
         Z = blk.compress_fact_phase[p]
+        R = Cubic.gas_constant(blk)
+        T = blk.temperature
 
         EoS_u = EoS_param[pobj._cubic_type]['u']
         EoS_w = EoS_param[pobj._cubic_type]['w']
         EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
 
+        enth_ideal = sum(blk.mole_frac_phase_comp[p, j] *
+                         get_method(blk, "enth_mol_ig_comp", j)(
+                                    blk, cobj(blk, j), blk.temperature)
+                         for j in blk.components_in_phase(p))
+
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
-        return (((blk.temperature*dam_dT - am) *
-                 safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
-                          eps=eps_SL) +
-                 Cubic.gas_constant(blk)*blk.temperature*(Z-1)*bm*EoS_p) /
-                (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
-                                 get_method(blk, "enth_mol_ig_comp", j)(
-                                            blk, cobj(blk, j), blk.temperature)
-                                 for j in blk.components_in_phase(p)))
+        enth_departure = (R*T*(Z-1) + (T*dam_dT-am)/(bm*EoS_p)
+                          * safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
+                                   eps=eps_SL)
+                          )
+        return enth_ideal + enth_departure 
 
     @staticmethod
     def enth_mol_phase_comp(blk, p, j):
