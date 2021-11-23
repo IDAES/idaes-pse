@@ -294,15 +294,6 @@ def state_initialization(b):
             raise ValueError(f"Component {j} has a negative "
                              f"mole fraction in block {b.name}. "
                              "Check your initialization.")
-    
-    # Mole fractions that add up to a value less than 1 are mathematically
-    # equivalent to a phantom nonvaporizable component in the ideal phase
-    # fraction calculations. Nevertheless, since we need to check for values 
-    # greater than 1, we might as well check values less than 1
-    if abs(value(sum([b.mole_frac_comp[j] 
-                for j in b.component_list]))-1) >= 1e-3:
-        raise ValueError(f"Mole fractions in block {b.name} do not "
-                         "add up to 1.")
 
     vl_comps = []
     henry_comps = []
@@ -429,18 +420,36 @@ def state_initialization(b):
                     # B(vapFrac) is positive
                     k = 0
                     vapFrac = 0.5
+                    raoult_failed=False
                     while B(vapFrac) < 0:
                         vapFrac /= 2
                         k += 1
                         if k > 40:
-                            raise_runtime_error(b)
+                            raoult_failed=True
+                            break
                     # Now use Newton's method to calculate vapFrac
                     k = 0
-                    while abs(B(vapFrac)) > 1E-6:
-                        vapFrac -= B(vapFrac)/dB_dvapFrac(vapFrac)
-                        k += 1
-                        if k > 40 or vapFrac<0 or vapFrac>1:
-                            raise_runtime_error(b)
+                    if not raoult_failed:
+                        while abs(B(vapFrac)) > 1E-6:
+                            vapFrac -= B(vapFrac)/dB_dvapFrac(vapFrac)
+                            k += 1
+                            if k > 40:
+                                raoult_failed=True
+                                break
+                    if vapFrac<0:
+                        vapFrac = 0.005
+                        raoult_failed=True
+                    if vapFrac>1:
+                        vapFrac = 0.995
+                        raoult_failed=True
+                    
+                    if raoult_failed:
+                        _log.warning("{} - phase faction initialization using "
+                                     "Raoult's law failed. This could be "
+                                     "because a component is essentially "
+                                     "nonvolatile or noncondensible, or "
+                                     "because mole fractions sum to more than "
+                                     "one.".format(b.name))
 
                 
     for p in b.phase_list:
@@ -683,16 +692,3 @@ class FTPx(object):
     do_not_initialize = do_not_initialize
     define_default_scaling_factors = define_default_scaling_factors
     calculate_scaling_factors = calculate_scaling_factors
-
-# Mathematically, it should be impossible for the ideal vapor fraction
-# calculations to not converge, given nonnegative saturation pressures, Henry's
-# law constants, and mole fractions (that also add up to 1). However, the
-# methods that check those properties relax the bounds slightly to avoid
-# raising exceptions over roundoff errors, and, of course, floating point
-# calculations do not perfectly capture mathematical reality. Therefore, 
-# the error message is put in a separate function so we can test formatting.
-def raise_runtime_error(b):
-    raise RuntimeError("Could not calculate ideal vapor fraction "
-                        f"in initialization of block {b.name}. "
-                        "Check that mole fractions and saturation "
-                        "pressures have reasonable values.")

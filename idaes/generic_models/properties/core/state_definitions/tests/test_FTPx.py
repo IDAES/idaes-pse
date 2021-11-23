@@ -26,8 +26,7 @@ from pyomo.util.check_units import (
 
 # Need define_default_scaling_factors, even though it is not used directly
 from idaes.generic_models.properties.core.state_definitions.FTPx import \
-    FTPx, define_state, set_metadata, define_default_scaling_factors, \
-    raise_runtime_error
+    FTPx, define_state, set_metadata, define_default_scaling_factors
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -1114,35 +1113,11 @@ class TestCommon(object):
         assert len(frame.props[1].conc_mol_phase_comp) == 6
         
     @pytest.mark.unit
-    def test_runtime_error(self,frame):        
-        with pytest.raises(RuntimeError,
-                           match = "Could not calculate ideal vapor fraction "
-                           "in initialization of block props. Check that mole "
-                           "fractions and saturation pressures have "
-                           "reasonable values."):
-            raise_runtime_error(frame.props)
-    @pytest.mark.unit
-    def test_unphysical_mol_fraction_fails(self,frame):
+    def test_unphysical_mol_fraction_fail(self,frame):
         frame.props[1].mole_frac_comp["c1"].value = -0.1
         with pytest.raises(ValueError,
                            match = "Component c1 has a negative mole fraction "
                            "in block props\[1\]. Check your initialization."):
-            frame.props[1].params.\
-                config.state_definition.state_initialization(frame.props[1])
-        frame.props[1].mole_frac_comp["c1"].value = 0.4
-        frame.props[1].mole_frac_comp["c2"].value = 0.4
-        frame.props[1].mole_frac_comp["c3"].value = 0.4
-        with pytest.raises(ValueError,
-                           match = "Mole fractions in block props\[1\] do not "
-                           "add up to 1."):
-            frame.props[1].params.\
-                config.state_definition.state_initialization(frame.props[1])
-        frame.props[1].mole_frac_comp["c1"].value = 0.3
-        frame.props[1].mole_frac_comp["c2"].value = 0.3
-        frame.props[1].mole_frac_comp["c3"].value = 0.3
-        with pytest.raises(ValueError,
-                           match = "Mole fractions in block props\[1\] do not "
-                           "add up to 1."):
             frame.props[1].params.\
                 config.state_definition.state_initialization(frame.props[1])
         
@@ -1234,8 +1209,3 @@ def test_Psat_fail():
                 match="Component H2O has a negative saturation pressure in "
                 "block state\[0\]. Check your implementation and parameters."):
         m.state[0].params.config.state_definition.state_initialization(m.state[0])
-    
-
-if __name__ == '__main__':
-    pass 
-    #test_Psat_fail()
