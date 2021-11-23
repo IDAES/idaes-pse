@@ -38,3 +38,10 @@ h2 {
     color: rgb(64, 64, 64);
     font-size: 110%;
 }
+
+/* Set table values to top align*/
+{
+.rst-content table.docutils td,
+.rst-content table.docutils th {
+	vertical-align: top !important
+}
