@@ -485,7 +485,8 @@ def constraint_autoscale_large_jac(
     ignore_variable_scaling=False,
     max_grad=100,
     min_scale=1e-6,
-    no_scale=False
+    no_scale=False,
+    equality_constraints_only=False
 ):
     """Automatically scale constraints based on the Jacobian.  This function
     imitates Ipopt's default constraint scaling.  This scales constraints down
@@ -504,6 +505,8 @@ def constraint_autoscale_large_jac(
             scaled too much.
         no_scale: just calculate the Jacobian and scaled Jacobian, don't scale
             anything
+        equality_constraints_only: Only include the equality constraints in the
+        Jacobian calculated and scaled
 
     Returns:
         unscaled Jacobian CSR from, scaled Jacobian CSR from, Pynumero NLP
@@ -518,10 +521,16 @@ def constraint_autoscale_large_jac(
         setattr(m, dummy_objective_name, pyo.Objective(expr=0))
     # Create NLP and calculate the objective
     nlp = PyomoNLP(m)
-    jac = nlp.evaluate_jacobian().tocsr()
+    if equality_constraints_only:
+        jac = nlp.evaluate_jacobian_eq().tocsr()
+    else:
+        jac = nlp.evaluate_jacobian().tocsr()
     # Get lists of varibles and constraints to translate Jacobian indexes
     # save them on the NLP for later, since genrating them seems to take a while
-    nlp.clist = clist = nlp.get_pyomo_constraints()
+    if equality_constraints_only:
+        nlp.clist = clist = nlp.get_pyomo_equality_constraints()
+    else:
+        nlp.clist = clist = nlp.get_pyomo_constraints()
     nlp.vlist = vlist = nlp.get_pyomo_variables()
     # Create a scaled Jacobian to account for variable scaling, for now ignore
     # constraint scaling
@@ -555,7 +564,7 @@ def constraint_autoscale_large_jac(
     return jac, jac_scaled, nlp
 
 
-def get_jacobian(m, scaled=True):
+def get_jacobian(m, scaled=True, equality_constraints_only=False):
     """
     Get the Jacobian matrix at the current model values. This function also
     returns the Pynumero NLP which can be used to identify the constraints and
@@ -564,11 +573,14 @@ def get_jacobian(m, scaled=True):
     Args:
         m: model to get Jacobian from
         scaled: if True return scaled Jacobian, else get unscaled
+        equality_constraints_only: Only include equality constraints in the
+        Jacobian calculated and scaled
 
     Returns:
         Jacobian matrix in Scipy CSR format, Pynumero nlp
     """
-    jac, jac_scaled, nlp = constraint_autoscale_large_jac(m, no_scale=True)
+    jac, jac_scaled, nlp = constraint_autoscale_large_jac(m, no_scale=True,
+                          equality_constraints_only=equality_constraints_only)
     if scaled:
         return jac_scaled, nlp
     else:

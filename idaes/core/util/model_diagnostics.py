@@ -63,7 +63,8 @@ class DegeneracyHunter():
             self.nlp = PyomoNLP(self.block)
 
             # Get the scaled Jacobian of equality constraints
-            self.jac_eq = iscale.get_jacobian(self.block)[0]
+            self.jac_eq = iscale.get_jacobian(self.block,
+                                              equality_constraints_only=True)[0]
         
             # Create a list of equality constraint names            
             self.eq_con_list = PyomoNLP.get_pyomo_equality_constraints(self.nlp)
@@ -506,10 +507,14 @@ class DegeneracyHunter():
         
         if self.n_eq > 1:
         
+            
+            # Since we're not using svds now, no reason to accomodate its
+            # foibles
+            
             # Determine the number of singular values to compute
             # The "-1" is needed to avoid an error with svds
-            n_sv = min(n_smallest_sv, min(self.n_eq, self.n_var) - 1)
-            print("Computing the",n_sv,"smallest singular value(s)")
+            #n_sv = min(n_smallest_sv, min(self.n_eq, self.n_var) - 1)
+            #print("Computing the",n_sv,"smallest singular value(s)")
         
             # Perform SVD
             # Recall J is a n_eq x n_var matrix
@@ -520,9 +525,9 @@ class DegeneracyHunter():
             #u, s, v = svds(self.jac_eq, k = n_sv, which='SM')#, solver='lobpcg')
             
             u, s, vT = svd(self.jac_eq.todense())
-            u = u[:,-1-n_smallest_sv:-1]
-            s = s[-1-n_smallest_sv:-1]
-            vT = vT[-1-n_smallest_sv:-1,:]
+            u = u[:,-1-n_smallest_sv:]
+            s = s[-1-n_smallest_sv:]
+            vT = vT[-1-n_smallest_sv:,:]
             # Save results
             self.u = u
             self.s = s

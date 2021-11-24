@@ -243,7 +243,10 @@ def test_problem2_with_degenerate_constraint():
     
     # Check the rank
     n_rank_deficient = dh2.check_rank_equality_constraints()
-    
+    assert dh2.jac_eq.shape == (2,3)
+    assert dh2.u.shape == (2,2)
+    assert dh2.v.shape == (3,3)
+    assert dh2.s.shape == (2,)
     assert n_rank_deficient == 1
     
     # TODO: Add MILP solver to idaes get-extensions and add more tests
