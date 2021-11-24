@@ -134,7 +134,7 @@ and used when constructing these
         # Call UnitModel.build to build default attributes
         super().build()
 
-        # TODO : Proeprty package validation
+        # TODO : Property package validation
         # Same reference state
 
         # ---------------------------------------------------------------------
