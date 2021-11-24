@@ -44,6 +44,11 @@ from idaes.generic_models.properties.core.examples.BT_ideal \
 # Get default solver for testing
 solver = get_solver()
 
+def _as_quantity(x):
+    unit = pyunits.get_units(x)
+    if unit is None:
+        unit = pyunits.dimensionless
+    return value(x) * unit._get_pint_unit()
 
 class TestParamBlock(object):
     @pytest.mark.unit
@@ -78,8 +83,7 @@ class TestParamBlock(object):
             {"flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
              "temperature": (273.15, 300, 450, pyunits.K),
              "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
-            item_callback=lambda x: value(x) * (
-                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+            item_callback=_as_quantity,
         )
 
         assert model.params.config.phase_equilibrium_state == {

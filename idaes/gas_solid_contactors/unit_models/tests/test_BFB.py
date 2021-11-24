@@ -210,8 +210,8 @@ class TestIronOC(object):
         assert isinstance(iron_oc.fs.unit.solid_emulsion_heat_transfer,
                           Constraint)
 
-        assert number_variables(iron_oc) == 1437
-        assert number_total_constraints(iron_oc) == 1392
+        assert number_variables(iron_oc) == 1434
+        assert number_total_constraints(iron_oc) == 1389
         assert number_unused_variables(iron_oc) == 19
 
     @pytest.mark.unit
@@ -417,8 +417,8 @@ class TestIronOC_EnergyBalanceType(object):
                           Constraint)
         assert isinstance(iron_oc.fs.unit.isothermal_bubble, Constraint)
 
-        assert number_variables(iron_oc) == 1157
-        assert number_total_constraints(iron_oc) == 1049
+        assert number_variables(iron_oc) == 1154
+        assert number_total_constraints(iron_oc) == 1046
         assert number_unused_variables(iron_oc) == 83
         print(unused_variables_set(iron_oc))
 
