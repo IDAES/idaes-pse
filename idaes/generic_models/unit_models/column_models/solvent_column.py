@@ -34,7 +34,7 @@ from idaes.core import (ControlVolume1DBlock,
                         MomentumBalanceType,
                         FlowDirection)
 from idaes.core.util.constants import Constants
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.generic_models.unit_models.heat_exchanger_1D import \
     HeatExchangerFlowPattern as FlowPattern
@@ -119,7 +119,7 @@ and used when constructing these
     CONFIG.declare("liquid_side",
                    _PhaseCONFIG(doc="liquid side config arguments"))
 
-    # ==========================================================================
+    # -------------------------------------------------------------------------
 
     def build(self):
         """
@@ -182,7 +182,7 @@ and used when constructing these
             initialize=250,
             units=pyunits.m**2/pyunits.m**3,
             mutable=True,
-            doc="Packing specific surface area m2/m3")
+            doc="Packing specific surface area")
 
         self.diameter_hydraulic = Expression(
             expr=4*self.voidage_packing/self.packing_specific_surface_area,
@@ -284,15 +284,22 @@ and used when constructing these
             domain=NonNegativeReals,
             bounds=(0, 1),
             units=pyunits.dimensionless,
-            doc="Liquid phase volumetirc holdup fraction")
+            doc="Liquid phase volumetric holdup fraction")
+
+        def rule_vapor_holdup(blk, t, x):
+            return blk.voidage_packing - blk.liquid_holdup_fraction[t, x]
+        self.vapor_holdup_fraction = Expression(
+            self.flowsheet().time,
+            self.liquid_phase.length_domain,
+            rule=rule_vapor_holdup,
+            doc="Vapor phase volumetric holdup fraction")
 
         @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,
                          doc="Cross-sectional area occupied by vapor phase")
         def vapor_side_area(blk, t, x):
             return blk.vapor_phase.area[t, x] == (
-                blk.area_column *
-                (blk.voidage_packing - blk.liquid_holdup_fraction[t, x]))
+                blk.area_column * blk.vapor_holdup_fraction[t, x])
 
         @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
@@ -306,6 +313,7 @@ and used when constructing these
             self.vapor_phase.length_domain,
             initialize=200,
             domain=NonNegativeReals,
+            units=pyunits.m**2/pyunits.m**3,
             doc='Specific interfacial area between vapor and liquid phases')
 
         # ---------------------------------------------------------------------
@@ -368,7 +376,7 @@ and used when constructing these
             equilibrium_comp,
             domain=NonNegativeReals,
             initialize=10000,
-            units=pyunits.mol/pyunits.s/pyunits.m**3/pyunits.Pa,
+            units=pyunits.mol/pyunits.s/pyunits.m**2/pyunits.Pa,
             doc='Vapor phase mass transfer coefficient')
 
         def rule_mass_transfer_liq(blk, t, x, j):
@@ -378,8 +386,9 @@ and used when constructing these
                 return blk.liquid_phase.mass_transfer_term[t, x, "Liq", j] == \
                     0.0
             else:
+                xv = self.liquid_phase.length_domain.next(x)
                 return blk.liquid_phase.mass_transfer_term[t, x, "Liq", j] == (
-                    blk.mass_transfer_coeff_vap_comp[t, x, j] *
+                    blk.mass_transfer_coeff_vap_comp[t, xv, j] *
                     blk.area_interfacial[t, x] * blk.area_column *
                     (blk.vapor_phase.properties[t, x].fug_phase_comp[
                         "Vap", j] -
@@ -408,12 +417,23 @@ and used when constructing these
             rule=rule_mass_transfer_vap,
             doc="Mass transfer to vapor phase calculation")
 
+        # Add equilibrium pressure constraint
+        def equil_pressure(blk, t, x, j):
+            return blk.pressure_equil_comp[t, x, j] == (
+                blk.liquid_phase.properties[t, x].fug_phase_comp["Liq", j])
+        self.liquid_fugacity_constraint = Constraint(
+            self.flowsheet().time,
+            self.liquid_phase.length_domain,
+            equilibrium_comp,
+            rule=equil_pressure)
+
+        # ---------------------------------------------------------------------
         # Heat transfer
         self.heat_transfer_coeff = Var(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             domain=NonNegativeReals,
-            initialize=1,
+            initialize=5000,
             units=pyunits.J/pyunits.K/pyunits.s/pyunits.m,
             doc='Overall heat transfer coefficient')
 
@@ -440,6 +460,12 @@ and used when constructing these
                 xl = self.liquid_phase.length_domain.prev(x)
                 return blk.vapor_phase.heat[t, x] == (
                     -blk.liquid_phase.heat[t, xl])
+
+    # -------------------------------------------------------------------------
+    # Model scaling
+    def calculate_scaling_factors(self):
+        # TODO : Improve this
+        super().calculate_scaling_factors()
 
     # -------------------------------------------------------------------------
     # Model initialization routine
@@ -537,12 +563,12 @@ and used when constructing these
             )
 
         # ---------------------------------------------------------------------
-        # Reactivate heat transfer and solve
-        blk.vapor_phase_heat_transfer.activate()
-        blk.column_energy_balance.activate()
+        # Reactivate enthalpy transfer and solve
+        blk.vapor_enthalpy_transfer_equation.activate()
+        blk.enthalpy_transfer_balance.activate()
 
-        blk.vapor_phase.heat.unfix()
-        blk.liquid_phase.heat.unfix()
+        blk.vapor_phase.enthalpy_transfer.unfix()
+        blk.liquid_phase.enthalpy_transfer.unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
@@ -552,12 +578,12 @@ and used when constructing these
         )
 
         # ---------------------------------------------------------------------
-        # Reactivate enthalpy transfer and solve
-        blk.vapor_enthalpy_transfer_equation.activate()
-        blk.enthalpy_transfer_balance.activate()
+        # Reactivate heat transfer and solve
+        blk.vapor_phase_heat_transfer.activate()
+        blk.column_energy_balance.activate()
 
-        blk.vapor_phase.enthalpy_transfer.unfix()
-        blk.liquid_phase.enthalpy_transfer.unfix()
+        blk.vapor_phase.heat.unfix()
+        blk.liquid_phase.heat.unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
@@ -573,5 +599,3 @@ and used when constructing these
 
         init_log.info('Initialization Complete: {}'
                       .format(idaeslog.condition(results)))
-
-    # TODO : Scaling methods

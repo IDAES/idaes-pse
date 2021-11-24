@@ -127,6 +127,17 @@ class TestAbsorberSS:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
+        # model.fs.unit.velocity_vap.display()
+        # model.fs.unit.velocity_liq.display()
+        # model.fs.unit.area_interfacial.display()
+        # model.fs.unit.holdup_liq.display()
+        # model.fs.unit.holdup_vap.display()
+        model.fs.unit.h_v.display()
+        # model.fs.unit.k_l_CO2.display()
+        # model.fs.unit.phi.display()
+        # model.fs.unit.pressure_equil.display()
+        assert False
+
         assert pytest.approx(24.5379, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0])
         assert pytest.approx(0.0275158, rel=1e-5) == value(

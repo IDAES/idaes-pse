@@ -885,4 +885,6 @@ configuration = {
                             "k_eq_coeff": {
                                 "1": 176.72,
                                 "2": -2909,
-                                "3": -28.46}}}}}
+                                "3": -28.46}}}},
+    "default_scaling_factors": {("k_eq", "carbamate"): 10,
+                                ("k_eq", "bicarbonate"): 1e4}}
