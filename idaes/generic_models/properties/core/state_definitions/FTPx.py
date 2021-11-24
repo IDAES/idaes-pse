@@ -332,9 +332,9 @@ def state_initialization(b):
              l_only_comps,
              v_only_comps) = _valid_VL_component_list(b, pp)
             
-            H = {j: value(get_method(b, "henry_component", j, l_phase)(
-                        b, l_phase, j, b.temperature))
-                        for j in henry_comps}
+            # H = {j: value(get_method(b, "henry_component", j, l_phase)(
+            #             b, l_phase, j, b.temperature))
+            #             for j in henry_comps}
             try:
                 psat = {j: value(get_method(b, "pressure_sat_comp", j)(
                         b, b.params.get_component(j),b.temperature)) 
@@ -344,32 +344,42 @@ def state_initialization(b):
                 # No method for calculating Psat, use default values
                 raoult_init = False
             if raoult_init:
+                # TODO: Incorporate Henry components into this initialization
+                # once the API has stabilized.
+                if len(henry_comps) > 0:
+                    _log.warning("{} - Henry's Law components are present. "
+                                 "Vapor-liquid equilibrium initialization for "
+                                 "{} state variables does not support Henry "
+                                 "components at present. Initialization may "
+                                 "converge to an unphysical state.".format(
+                                     b.name,str(b.params.config.state_definition)))
+                
                 for j in vl_comps:
                     if psat[j] < 0:
                         raise UserModelError(f"Component {j} has a negative "
                                          f"saturation pressure in block "
                                          f"{b.name}. Check "
                                          f"your implementation and parameters.")
-                for j in henry_comps:
-                    if H[j] < 0:
-                        raise UserModelError(f"Component {j} has a negative "
-                                         f"Henry's Law constant in block "
-                                         f"{b.name}. Check "
-                                         f"your implementation and parameters.")
+                # for j in henry_comps:
+                #     if H[j] < 0:
+                #         raise UserModelError(f"Component {j} has a negative "
+                #                          f"Henry's Law constant in block "
+                #                          f"{b.name}. Check "
+                #                          f"your implementation and parameters.")
 
                 # Calculate bubble and dew pressures for an ideal mixture
                 if len(l_only_comps) == 0:
                     p_dew_ideal = 1/(sum([value(b.mole_frac_comp[j])/psat[j]
-                                        for j in vl_comps]) + sum(
-                                        [value(b.mole_frac_comp[j])/H[j]
-                                        for j in henry_comps]))
+                                        for j in vl_comps]))# + sum(
+                                        #[value(b.mole_frac_comp[j])/H[j]
+                                        #for j in henry_comps]))
                 else:
                     p_dew_ideal = 0
                 if len(v_only_comps) == 0:
                     p_bubble_ideal = (sum([value(b.mole_frac_comp[j])*psat[j]
-                                        for j in vl_comps]) + sum(
-                                        [value(b.mole_frac_comp[j])*H[j]
-                                        for j in henry_comps]))
+                                        for j in vl_comps])) #+ sum(
+                                        #[value(b.mole_frac_comp[j])*H[j]
+                                        #for j in henry_comps]))
                 else:
                     p_bubble_ideal = float('inf')
                     
@@ -395,9 +405,10 @@ def state_initialization(b):
                                 for j in vl_comps])
                             + sum([value(b.mole_frac_comp[j]/vapFrac)
                                    for j in v_only_comps]) 
-                            + sum([value(b.mole_frac_comp[j]*H[j]
-                                  /(vapFrac*H[j]+(1-vapFrac)*b.pressure))
-                                for j in henry_comps]) - 1
+                            # + sum([value(b.mole_frac_comp[j]*H[j]
+                            #       /(vapFrac*H[j]+(1-vapFrac)*b.pressure))
+                            #     for j in henry_comps]) 
+                            - 1
                             )
                     def dB_dvapFrac(vapFrac):
                         return (
@@ -405,10 +416,10 @@ def state_initialization(b):
                                        *(b.pressure - psat[j])
                                   /(vapFrac*psat[j]+(1-vapFrac)*b.pressure)**2)
                                 for j in vl_comps])
-                            + sum([value(b.mole_frac_comp[j]*H[j]
-                                       *(b.pressure - H[j])
-                                  /(vapFrac*H[j]+(1-vapFrac)*b.pressure)**2)
-                                for j in henry_comps])
+                            # + sum([value(b.mole_frac_comp[j]*H[j]
+                            #            *(b.pressure - H[j])
+                            #       /(vapFrac*H[j]+(1-vapFrac)*b.pressure)**2)
+                            #     for j in henry_comps])
                             - sum([value(b.mole_frac_comp[j]/vapFrac**2)
                                    for j in v_only_comps])
                             )
