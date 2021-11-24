@@ -331,6 +331,7 @@ def state_initialization(b):
              henry_comps,
              l_only_comps,
              v_only_comps) = _valid_VL_component_list(b, pp)
+            pp_VLE = pp
             
             # H = {j: value(get_method(b, "henry_component", j, l_phase)(
             #             b, l_phase, j, b.temperature))
@@ -492,7 +493,7 @@ def state_initialization(b):
                 for j in b.component_list:
                     if (p, j) in b.phase_component_set:
                         b.mole_frac_phase_comp[p, j].value = \
-                            b._mole_frac_tdew[pp, j].value
+                            b._mole_frac_tdew[pp_VLE, j].value
             elif tbub is not None and b.temperature.value < tbub:
                 # Pure liquid
                 b.flow_mol_phase[p].value = value(b.flow_mol)
@@ -517,10 +518,10 @@ def state_initialization(b):
                     kfact = value(psat[j] / b.pressure)
                     b.mole_frac_phase_comp[p, j].value = value(
                         b.mole_frac_comp[j]/(1+vapFrac*(kfact-1)))
-                for j in henry_comps:
-                    kfact = value(H[j] / b.pressure)
-                    b.mole_frac_phase_comp[p, j].value = value(
-                        b.mole_frac_comp[j]/(1+vapFrac*(kfact-1)))
+                # for j in henry_comps:
+                #     kfact = value(H[j] / b.pressure)
+                #     b.mole_frac_phase_comp[p, j].value = value(
+                #         b.mole_frac_comp[j]/(1+vapFrac*(kfact-1)))
                 for j in l_only_comps:
                     b.mole_frac_phase_comp[p, j].value = value(
                         b.mole_frac_comp[j]/(1-vapFrac))
@@ -550,7 +551,7 @@ def state_initialization(b):
                 for j in b.component_list:
                     if (p, j) in b.phase_component_set:
                         b.mole_frac_phase_comp[p, j].value = \
-                            b._mole_frac_tbub[pp, j].value
+                            b._mole_frac_tbub[pp_VLE, j].value
             elif raoult_init:
                 if tbub is not None and tdew is not None:
                     # Two-phase with bounds two-phase region
@@ -566,10 +567,10 @@ def state_initialization(b):
                     kfact = value(psat[j] / b.pressure)
                     b.mole_frac_phase_comp[p, j].value = value(
                         b.mole_frac_comp[j]*kfact/(kfact+1-vapFrac))
-                for j in henry_comps:
-                    kfact = value(H[j] / b.pressure)
-                    b.mole_frac_phase_comp[p, j].value = value(
-                        b.mole_frac_comp[j]*kfact/(kfact+1-vapFrac))
+                # for j in henry_comps:
+                #     kfact = value(H[j] / b.pressure)
+                #     b.mole_frac_phase_comp[p, j].value = value(
+                #         b.mole_frac_comp[j]*kfact/(kfact+1-vapFrac))
                 for j in v_only_comps:
                     b.mole_frac_phase_comp[p, j].value = value(
                         b.mole_frac_comp[j]/vapFrac)
