@@ -539,6 +539,7 @@ def constraint_autoscale_large_jac(
         sc = get_scaling_factor(c, default=1)
         if not no_scale:
             if (ignore_constraint_scaling or get_scaling_factor(c) is None):
+                sc = 1
                 row = jac_scaled[i]
                 for d in row.indices:
                     row[0,d] = abs(row[0,d])
