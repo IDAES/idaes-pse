@@ -188,7 +188,7 @@ class TestColumn(object):
     @pytest.mark.component
     def test_initialize_solve_absorber(self, model_absorber_steady_state):
         initialization_tester(model_absorber_steady_state)
-     
+    
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -198,6 +198,50 @@ class TestColumn(object):
         # Solver status and condition
         assert results.solver.status == SolverStatus.ok
         assert results.solver.termination_condition == TerminationCondition.optimal
+        
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_absorber_conservation(self, model_absorber_steady_state):
+        vap_comp = model_absorber_steady_state.fs.unit.config.vapor_side.property_package.component_list
+        liq_comp = model_absorber_steady_state.fs.unit.config.liquid_side.property_package.component_list
+        equilibrium_comp = vap_comp & liq_comp
+        solvent_comp_list = \
+            model_absorber_steady_state.fs.unit.config.liquid_side.property_package.solvent_set
+        solute_comp_list = model_absorber_steady_state.fs.unit.config.liquid_side.property_package.solute_set
+        
+        # Mass conservation test
+        
+        vap_in = model_absorber_steady_state.fs.unit.vapor_phase.properties[0, 0]
+        vap_out = model_absorber_steady_state.fs.unit.vapor_phase.properties[0, 1]
+        liq_in = model_absorber_steady_state.fs.unit.liquid_phase.properties[0, 1]
+        liq_out = model_absorber_steady_state.fs.unit.liquid_phase.properties[0, 0]
+        
+        # Material conservation
+        for j in liq_comp:
+            if j in equilibrium_comp:
+                assert 1e-6 >= abs(value(
+                    vap_in.get_material_flow_terms("Vap", j) +
+                    liq_in.get_material_flow_terms("Liq", j) -
+                    vap_out.get_material_flow_terms("Vap", j) -
+                    liq_out.get_material_flow_terms("Liq", j)))
+            elif j in solvent_comp_list:
+                assert 1e-6 >= abs(value(
+                liq_in.get_material_flow_terms("Liq", j) -
+                liq_out.get_material_flow_terms("Liq", j)))
+    
+        for j in vap_comp:
+            if j not in equilibrium_comp:
+                assert 1e-6 >= abs(value(
+                    vap_in.get_material_flow_terms("Vap", j) -
+                    vap_out.get_material_flow_terms("Vap", j)))
+                
+        # Energy conservation
+        assert 1e-6 >= abs(value(
+            vap_in.get_enthalpy_flow_terms("Vap") +
+            liq_in.get_enthalpy_flow_terms("Liq") -
+            vap_out.get_enthalpy_flow_terms("Vap") -
+            liq_out.get_enthalpy_flow_terms("Liq")))
+        
         
     @pytest.fixture(scope="class")
     def model_stripper_steady_state(self):
@@ -344,3 +388,47 @@ class TestColumn(object):
         # Solver status and condition
         assert results.solver.status == SolverStatus.ok
         assert results.solver.termination_condition == TerminationCondition.optimal
+        
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_stripper_conservation(self, model_stripper_steady_state):
+        
+        vap_comp = model_stripper_steady_state.fs.unit.config.vapor_side.property_package.component_list
+        liq_comp = model_stripper_steady_state.fs.unit.config.liquid_side.property_package.component_list
+        equilibrium_comp = vap_comp & liq_comp
+        solvent_comp_list = \
+            model_stripper_steady_state.fs.unit.config.liquid_side.property_package.solvent_set
+        solute_comp_list = model_stripper_steady_state.fs.unit.config.liquid_side.property_package.solute_set
+        
+        # Mass conservation test
+        
+        vap_in = model_stripper_steady_state.fs.unit.vapor_phase.properties[0, 0]
+        vap_out = model_stripper_steady_state.fs.unit.vapor_phase.properties[0, 1]
+        liq_in = model_stripper_steady_state.fs.unit.liquid_phase.properties[0, 1]
+        liq_out = model_stripper_steady_state.fs.unit.liquid_phase.properties[0, 0]
+        
+        # Material conservation
+        for j in liq_comp:
+            if j in equilibrium_comp:
+                assert 1e-6 >= abs(value(
+                    vap_in.get_material_flow_terms("Vap", j) +
+                    liq_in.get_material_flow_terms("Liq", j) -
+                    vap_out.get_material_flow_terms("Vap", j) -
+                    liq_out.get_material_flow_terms("Liq", j)))
+            elif j in solvent_comp_list:
+                assert 1e-6 >= abs(value(
+                liq_in.get_material_flow_terms("Liq", j) -
+                liq_out.get_material_flow_terms("Liq", j)))
+    
+        for j in vap_comp:
+            if j not in equilibrium_comp:
+                assert 1e-6 >= abs(value(
+                    vap_in.get_material_flow_terms("Vap", j) -
+                    vap_out.get_material_flow_terms("Vap", j)))
+                
+        # Energy conservation
+        assert 1e-6 >= abs(value(
+            vap_in.get_enthalpy_flow_terms("Vap") +
+            liq_in.get_enthalpy_flow_terms("Liq") -
+            vap_out.get_enthalpy_flow_terms("Vap") -
+            liq_out.get_enthalpy_flow_terms("Liq")))

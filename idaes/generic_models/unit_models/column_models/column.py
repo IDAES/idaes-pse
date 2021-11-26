@@ -21,7 +21,7 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (
     Constraint, Expression, Param, Reals, NonNegativeReals, value, Var, exp,
-    SolverStatus, units as pyunits)
+    SolverStatus, TerminationCondition, units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES Libraries
@@ -277,7 +277,6 @@ documentation for supported schemes,
         solvent_comp_list = \
             self.config.liquid_side.property_package.solvent_set
         solute_comp_list = self.config.liquid_side.property_package.solute_set
-        liq_comp_apparent = self.config.liquid_side.property_package._apparent_set
         vapor_phase_list_ref = \
             self.config.vapor_side.property_package.phase_list
         liquid_phase_list_ref = \
@@ -366,15 +365,15 @@ documentation for supported schemes,
                 blk.vapor_phase.properties[t, x].flow_mass_phase['Vap'])*\
                 (dens_liq/dens_vap)**0.5
                 
-            mu_water = 0.001*pyunits.Pa*pyunits.s
+            mu_water = 0.1*pyunits.Pa*pyunits.s
             
             g_ref = CONST.acceleration_gravity
             gref = pyunits.convert(g_ref, to_units=pyunits.ft/(pyunits.s)**2)
             
             aref = pyunits.convert(blk.packing_specific_area, to_units=((pyunits.ft)**2)/(pyunits.ft)**3)
             
-            return ((gref*((blk.eps_ref)**2)/aref)*(dens_liq/dens_vap)*\
-                ((blk.liquid_phase.properties[t, x_liq].visc_d_phase['Liq']/mu_water)*(-0.2))*\
+            return ((gref*((blk.eps_ref)**3)/aref)*(dens_liq/dens_vap)*\
+                ((blk.liquid_phase.properties[t, x_liq].visc_d_phase['Liq']/mu_water)**(-0.2))*\
                     exp(-4*(H)**(0.25)))**0.5
                 
         self.gas_velocity_flood = Expression(self.flowsheet().time,
@@ -406,7 +405,7 @@ documentation for supported schemes,
         self.interphase_mass_transfer = Var(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
-            liq_comp,
+            equilibrium_comp,
             domain=Reals,
             initialize=0.1,
             units=pyunits.mol / (pyunits.s * pyunits.m),
@@ -419,19 +418,12 @@ documentation for supported schemes,
                                       doc='Enhancement factor')
 
         # Heat transfer terms
-        self.heat_transfer_rate_vap = Var(self.flowsheet().time,
+        self.heat_flux_vap = Var(self.flowsheet().time,
                             self.vapor_phase.length_domain,
                             domain=Reals,
                             initialize=0.0,
-                            units=pyunits.J / (pyunits.s * pyunits.m),
-                            doc='Heat transfer rate in vapor phase')
-        
-        self.heat_transfer_rate_liq = Var(self.flowsheet().time,
-                            self.vapor_phase.length_domain,
-                            domain=Reals,
-                            initialize=0.0,
-                            units=pyunits.J / (pyunits.s * pyunits.m),
-                            doc='Heat transfer rate in liquid phase')
+                            units=pyunits.J / (pyunits.s * (pyunits.m**3)),
+                            doc='Volumetric heat flux in vapor phase')
 
         # =====================================================================
         # Add performance equations
@@ -529,7 +521,7 @@ documentation for supported schemes,
         # Mass transfer coefficients of diffusing components in liquid phase  [m/s]
         self.k_l = Var(self.flowsheet().time,
                        self.liquid_phase.length_domain,
-                       solute_comp_list,
+                       equilibrium_comp,
                        doc='Liquid phase mass transfer coefficient')
 
         # Intermediate term
@@ -580,19 +572,17 @@ documentation for supported schemes,
         def rule_mass_transfer(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
                 return blk.interphase_mass_transfer[t, x, j] == 0.0
-            elif j in equilibrium_comp:
-                return blk.interphase_mass_transfer[t, x, j] == (
-                    blk.k_v[t, x, j] *
-                    blk.area_interfacial[t, x] * blk.area_column *
-                    (blk.vapor_phase.properties[t, x].mole_frac_comp[j] *
-                     blk.vapor_phase.properties[t, x].pressure -
-                     blk.pressure_equil[t, x, j]))
             else:
-                return blk.interphase_mass_transfer[t, x, j] == 0.0
+                return blk.interphase_mass_transfer[t, x, j] == (
+                blk.k_v[t, x, j] *
+                blk.area_interfacial[t, x] * blk.area_column *
+                (blk.vapor_phase.properties[t, x].mole_frac_comp[j] *
+                 blk.vapor_phase.properties[t, x].pressure -
+                 blk.pressure_equil[t, x, j]))
 
         self.mass_transfer_vapor = Constraint(self.flowsheet().time,
                                         self.vapor_phase.length_domain,
-                                        liq_comp,
+                                        equilibrium_comp,
                                         rule=rule_mass_transfer,
                                         doc="mass transfer in vapor phase")
 
@@ -606,7 +596,7 @@ documentation for supported schemes,
                 return blk.liquid_phase.mass_transfer_term[t, x, p, j] == 0.0
             else:
                 zf = self.liquid_phase.length_domain.at(self.zi[x].value + 1)
-                if j in solute_comp_list:
+                if j in equilibrium_comp:
                     return blk.liquid_phase.mass_transfer_term[t, x, p, j] == \
                         blk.interphase_mass_transfer[t, zf, j]
                 else:
@@ -655,47 +645,44 @@ documentation for supported schemes,
             rule=rule_heat_transfer_coeff_Ack,
             doc='Vap-Liq heat transfer coefficient corrected by Ackmann factor')
 
-        # Heat transfer  - vapor side [J/s.m]
+        # Heat flux  - vapor side [J/s.m]
+        @self.Constraint(self.flowsheet().time,
+                         self.vapor_phase.length_domain,
+                         doc="heat transfer - vapor side ")
+        def vapor_phase_volumetric_heat_flux(blk, t, x):
+            if x == self.vapor_phase.length_domain.first():
+                return blk.heat_flux_vap[t, x] == 0
+            else:
+                zb = self.vapor_phase.length_domain.at(value(self.zi[x]) - 1)
+                return blk.heat_flux_vap[t, x] == blk.h_v_Ack[t, x] * \
+                    (blk.liquid_phase.properties[t, zb].temperature -
+                      blk.vapor_phase.properties[t, x].temperature)
+                    
+        # Heat transfer - vapor side [J/s.m]
         @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,
                          doc="heat transfer - vapor side ")
         def vapor_phase_heat_transfer(blk, t, x):
             if x == self.vapor_phase.length_domain.first():
-                return blk.heat_transfer_rate_vap[t, x] == 0
+                return blk.vapor_phase.heat[t, x] == 0
             else:
                 zb = self.vapor_phase.length_domain.at(value(self.zi[x]) - 1)
-                return blk.heat_transfer_rate_vap[t, x] == blk.h_v_Ack[t, x] * \
-                    (blk.liquid_phase.properties[t, zb].temperature -
-                     blk.vapor_phase.properties[t, x].temperature)
+                return blk.vapor_phase.heat[t, x] == -blk.heat_flux_vap[t, x] - \
+                    (sum(blk.vapor_phase.properties[t, x].enth_mol_phase_comp['Vap',j] *
+                      blk.vapor_phase.mass_transfer_term[t, x, 'Vap', j] for j in solute_comp_list)) + \
+                    (sum(blk.liquid_phase.properties[t, zb].enth_mol_phase_comp['Liq',j] *
+                      blk.liquid_phase.mass_transfer_term[t, zb, 'Liq', j] for j in solvent_comp_list))
 
         # Heat transfer - liquid side [J/s.m]
         @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         doc="heat transfer - liquid side ")
+                          self.liquid_phase.length_domain,
+                          doc="heat transfer - liquid side ")
         def liquid_phase_heat_transfer(blk, t, x):
             if x == self.liquid_phase.length_domain.last():
-                return blk.heat_transfer_rate_liq[t, x] == 0
+                return blk.liquid_phase.heat[t, x] == 0
             else:
                 zf = self.vapor_phase.length_domain.at(value(self.zi[x]) + 1)
-                return blk.heat_transfer_rate_liq[t, x] == blk.heat_transfer_rate_vap[t, zf] + \
-                    (sum(blk.liquid_phase.properties[t, x].enth_mol_phase_comp['Liq',j] *
-                     blk.interphase_mass_transfer[t, zf, j] for j in solute_comp_list) -
-                     sum(blk.liquid_phase.properties[t, x].enth_mol_phase_comp['Liq',k] *
-                     blk.interphase_mass_transfer[t, zf, k] for k in solvent_comp_list))
-
-        # Vapor phase heat transfer handle
-        @self.Constraint(self.flowsheet().time,
-                         self.vapor_phase.length_domain,
-                         doc="vapor - heat transfer handle")
-        def vapor_phase_heat_transfer_handle(blk, t, x):
-            return blk.vapor_phase.heat[t, x] == blk.heat_transfer_rate_vap[t, x]
-
-        # Liquid phase heat transfer handle
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         doc="liquid - heat transfer handle")
-        def liquid_phase_heat_transfer_handle(blk, t, x):
-            return blk.liquid_phase.heat[t, x] == -blk.heat_transfer_rate_liq[t, x]
+                return blk.liquid_phase.heat[t, x] == -blk.vapor_phase.heat[t, zf]
 
     # =========================================================================
     # Model initialization routine
@@ -734,10 +721,9 @@ documentation for supported schemes,
             "mass_transfer_vapor",
             "liquid_phase_mass_transfer_handle",
             "vapor_phase_mass_transfer_handle",
+            "vapor_phase_volumetric_heat_flux",
             "vapor_phase_heat_transfer",
-            "liquid_phase_heat_transfer",
-            "vapor_phase_heat_transfer_handle",
-            "liquid_phase_heat_transfer_handle"]
+            "liquid_phase_heat_transfer"]
 
         # ---------------------------------------------------------------------
         # Deactivate unit model level constraints (asides geometry constraints)
@@ -756,8 +742,9 @@ documentation for supported schemes,
         blk.liquid_phase.mass_transfer_term.fix(0.0)
 
         # Heat transfer rate
-        blk.heat_transfer_rate_vap.fix(0.0)
-        blk.heat_transfer_rate_liq.fix(0.0)
+        blk.heat_flux_vap.fix(0.0)
+        # blk.heat_transfer_rate_vap.fix(0.0)
+        # blk.heat_transfer_rate_liq.fix(0.0)
         blk.vapor_phase.heat.fix(0.0)
         blk.liquid_phase.heat.fix(0.0)
         
@@ -815,6 +802,10 @@ documentation for supported schemes,
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high("Step 2: {}.".format(idaeslog.condition(res)))
         
+        assert res.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert res.solver.status == SolverStatus.ok
+        
         # ---------------------------------------------------------------------
         init_log.info('Step 3: Interface equilibrium')
         
@@ -837,46 +828,47 @@ documentation for supported schemes,
 
         # Unfix mass transfer terms
         blk.interphase_mass_transfer.unfix()
-        blk.vapor_phase.mass_transfer_term.unfix()
-        blk.liquid_phase.mass_transfer_term.unfix()
 
         # Activate mass transfer equation in vapor phase
         blk.mass_transfer_vapor.activate()
+        
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        
+        blk.vapor_phase.mass_transfer_term.unfix()
+        blk.liquid_phase.mass_transfer_term.unfix()
         blk.vapor_phase_mass_transfer_handle.activate()
         blk.liquid_phase_mass_transfer_handle.activate()
-
         
+        optarg = {
+            "tol": 1e-8,
+            "max_iter": 150,
+            "bound_push":1e-8}
+        opt.options = optarg
+                    
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
             if res.solver.status != SolverStatus.warning:
                 print('')
-
         init_log.info_high(
             "Step 4 complete: {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         init_log.info('Step 5: Adiabatic chemical absoption')
         init_log.info_high("Isothermal to Adiabatic ")
-
+        
         # Unfix heat transfer terms
-        blk.heat_transfer_rate_vap.unfix()
-        blk.heat_transfer_rate_liq.unfix()
+        blk.heat_flux_vap.unfix()
         blk.vapor_phase.heat.unfix()
         blk.liquid_phase.heat.unfix()
 
         # Activate heat transfer and steady-state energy balance related equations
-        for c in ["vapor_phase_heat_transfer",
-                  "vapor_phase_heat_transfer_handle"]:
-            getattr(blk, c).activate()
-        
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
-            
-        for c in ["liquid_phase_heat_transfer",
-                  "liquid_phase_heat_transfer_handle"]:
+        for c in ["vapor_phase_volumetric_heat_flux",
+                  "vapor_phase_heat_transfer",
+                  "liquid_phase_heat_transfer"]:
             getattr(blk, c).activate()
             
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:    
             res = opt.solve(blk, tee=slc.tee)
 
         init_log.info_high(
