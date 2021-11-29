@@ -242,7 +242,7 @@ def test_problem2_with_degenerate_constraint():
     assert pytest.approx(x_sln[2], abs=1E-6) == 0.0
     
     # Check the rank
-    n_rank_deficient = dh2.check_rank_equality_constraints()
+    n_rank_deficient = dh2.check_rank_equality_constraints(dense=True)
     assert dh2.jac_eq.shape == (2,3)
     assert dh2.u.shape == (2,2)
     assert dh2.v.shape == (3,3)
@@ -250,3 +250,56 @@ def test_problem2_with_degenerate_constraint():
     assert n_rank_deficient == 1
     
     # TODO: Add MILP solver to idaes get-extensions and add more tests
+@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.unit    
+def test_sparse_svd():
+    # Create test problem instance
+    m2 = example2(with_degenerate_constraint=True)
+    
+    # Specify Ipopt as the solver
+    opt = pyo.SolverFactory('ipopt')
+
+    # Specifying an iteration limit of 0 allows us to inspect the initial point
+    opt.options['max_iter'] = 0
+
+    # "Solving" the model with an iteration limit of 0 load the initial point and applies
+    # any preprocessors (e.g., enforces bounds)
+    opt.solve(m2, tee=True)
+    
+    # Create Degeneracy Hunter object
+    dh2 = DegeneracyHunter(m2)
+    
+    # Check for violated constraints at the initial point
+    initial_point_constraints = dh2.check_residuals(tol=0.1)
+    
+    # Check there are 2 constraints with large residuals
+    assert len(initial_point_constraints) == 2
+    
+    initial_point_constraint_names = extract_constraint_names(initial_point_constraints)
+    
+    # Check first constraint
+    assert initial_point_constraint_names[0] == 'con2'
+    
+    # Check first constraint
+    assert initial_point_constraint_names[1] == 'con5'
+    
+    # Resolve
+    opt.options['max_iter'] = 500
+    opt.solve(m2, tee=True)
+    
+    # Check solution
+    x_sln = []
+    
+    for i in m2.I:
+        x_sln.append(m2.x[i]())
+    
+    assert pytest.approx(x_sln[0], abs=1E-6) == 1.0
+    assert pytest.approx(x_sln[1], abs=1E-6) == 0.0
+    assert pytest.approx(x_sln[2], abs=1E-6) == 0.0
+    
+    # Check the rank
+    n_rank_deficient = dh2.check_rank_equality_constraints()
+    assert n_rank_deficient == 1
+    # Is there any way to test whether the sparse SVD is actually used?
+    # Trying to do an SVD of a 50000x50000 identity matrix would work, but
+    # would produce an extremely slow test failure

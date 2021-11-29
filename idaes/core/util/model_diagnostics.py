@@ -197,7 +197,7 @@ class DegeneracyHunter():
             
         return vnbs
     
-    def check_rank_equality_constraints(self, tol=1E-6):
+    def check_rank_equality_constraints(self, tol=1E-6, dense=False):
         """
         Method to check the rank of the Jacobian of the equality constraints
         
@@ -217,7 +217,7 @@ class DegeneracyHunter():
         counter = 0
         if self.n_eq > 1:
             if self.s is None:
-                self.svd_analysis()
+                self.svd_analysis(dense=dense)
 
             n = len(self.s)
         
@@ -490,7 +490,7 @@ class DegeneracyHunter():
             return None, None
         
     
-    def svd_analysis(self, n_smallest_sv=10):
+    def svd_analysis(self, n_smallest_sv=10, dense=False):
         '''
         Perform SVD analysis of the constraint Jacobian
         
@@ -506,15 +506,12 @@ class DegeneracyHunter():
         '''
         
         if self.n_eq > 1:
-        
-            
-            # Since we're not using svds now, no reason to accomodate its
-            # foibles
             
             # Determine the number of singular values to compute
             # The "-1" is needed to avoid an error with svds
-            #n_sv = min(n_smallest_sv, min(self.n_eq, self.n_var) - 1)
-            #print("Computing the",n_sv,"smallest singular value(s)")
+            if not dense:
+                n_sv = min(n_smallest_sv, min(self.n_eq, self.n_var) - 1)
+                print("Computing the",n_sv,"smallest singular value(s)")
         
             # Perform SVD
             # Recall J is a n_eq x n_var matrix
@@ -522,16 +519,20 @@ class DegeneracyHunter():
             # And V is a n_var x n_var
             # (U or V may be smaller in economy mode)
             # Thus we really only care about U
-            #u, s, v = svds(self.jac_eq, k = n_sv, which='SM')#, solver='lobpcg')
             
-            u, s, vT = svd(self.jac_eq.todense())
-            u = u[:,-1-n_smallest_sv:]
-            s = s[-1-n_smallest_sv:]
-            vT = vT[-1-n_smallest_sv:,:]
+            if dense:
+                u, s, vT = svd(self.jac_eq.todense())
+                u = u[:,-1-n_smallest_sv:]
+                s = s[-1-n_smallest_sv:]
+                vT = vT[-1-n_smallest_sv:,:]
+                v = vT.transpose()
+            else:
+                u, s, v = svds(self.jac_eq, k = n_sv, which='SM')#, solver='lobpcg')
+            
             # Save results
             self.u = u
             self.s = s
-            self.v = vT.transpose()
+            self.v = v
             
         else:
             print("Warning: model must contain at least 2 equality constraints to perform svd_analysis")
