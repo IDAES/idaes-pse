@@ -637,6 +637,3 @@ class DegeneracyHunter():
             nothing
         '''
         print(v,"\t\t",v.lb,"\t",v.value,"\t",v.ub)
-        
-def _special_svds():
-    pass
