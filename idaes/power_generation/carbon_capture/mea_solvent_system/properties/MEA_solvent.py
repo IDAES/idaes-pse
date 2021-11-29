@@ -61,11 +61,18 @@ _log = idaeslog.getLogger(__name__)
 # -----------------------------------------------------------------------------
 # Pure Component Property methods for aqueous MEA
 class CpMolCO2():
-    # No contribution form CO2, return 0*J/mol.K
+    # No contribution to enthalpy from CO2, but need to add a contribution
+    # to cp to avoid artificial decrease in as CO2 is absorbed.
+    # Assume cp contribution of CO2 is equal to weighted average of cp for
+    # solvents
     @staticmethod
-    def return_expression(*args, **kwargs):
-        # Need a very small number to avoid unit consistency probelms
-        return 1e-20*pyunits.J/pyunits.mol/pyunits.K
+    def return_expression(b, cobj, T):
+        return ((b.mole_frac_phase_comp["Liq", "H2O"] *
+                 b.cp_mol_phase_comp["Liq", "H2O"] +
+                 b.mole_frac_phase_comp["Liq", "MEA"] *
+                 b.cp_mol_phase_comp["Liq", "MEA"]) /
+                b.mole_frac_phase_comp["Liq", "CO2"] *
+                (1/(1-b.mass_frac_phase_comp["Liq", "CO2"])-1))
 
 
 class CpMolSolvent():
@@ -447,7 +454,7 @@ class Viscosity():
         T = blk.temperature
         alpha = (blk.mole_frac_phase_comp_apparent['Liq', 'CO2'] /
                  blk.mole_frac_phase_comp_apparent['Liq', 'MEA'])
-        mu_H2O = (1.002e-3*pyunits.Pa/pyunits.s *
+        mu_H2O = (1.002e-3*pyunits.Pa*pyunits.s *
                   10**((1.3272 *
                         (293.15*pyunits.K - T -
                          0.001053*pyunits.K**-1 * (T - 293.15*pyunits.K)**2)) /

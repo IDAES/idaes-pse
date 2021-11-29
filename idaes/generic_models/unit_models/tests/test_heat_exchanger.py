@@ -33,13 +33,16 @@ from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from idaes.generic_models.unit_models.heat_exchanger import (
-    delta_temperature_lmtd_callback,
-    HeatExchanger,
-    HeatExchangerFlowPattern)
 
 from idaes.generic_models.unit_models.heat_exchanger import (
-    delta_temperature_underwood_callback)
+    delta_temperature_lmtd_callback,
+    delta_temperature_lmtd2_callback,
+    delta_temperature_lmtd3_callback,
+    delta_temperature_amtd_callback,
+    delta_temperature_underwood_callback,
+    HeatExchanger,
+    HeatExchangerFlowPattern,
+)
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.generic_models.properties import iapws95
@@ -140,12 +143,7 @@ def test_config():
     assert not m.fs.unit.config.tube.has_pressure_change
     assert m.fs.unit.config.tube.property_package is m.fs.properties
 
-
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
-def test_costing():
+def basic_model(cb=delta_temperature_lmtd_callback):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -154,48 +152,7 @@ def test_costing():
     m.fs.unit = HeatExchanger(default={
                 "shell": {"property_package": m.fs.properties},
                 "tube": {"property_package": m.fs.properties},
-                "flow_pattern": HeatExchangerFlowPattern.countercurrent})
-#   Set inputs
-    m.fs.unit.inlet_1.flow_mol[0].fix(100)
-    m.fs.unit.inlet_1.enth_mol[0].fix(4000)
-    m.fs.unit.inlet_1.pressure[0].fix(101325)
-
-    m.fs.unit.inlet_2.flow_mol[0].fix(100)
-    m.fs.unit.inlet_2.enth_mol[0].fix(3500)
-    m.fs.unit.inlet_2.pressure[0].fix(101325)
-
-    m.fs.unit.area.fix(1000)
-    m.fs.unit.overall_heat_transfer_coefficient.fix(100)
-
-    assert degrees_of_freedom(m) == 0
-
-    m.fs.unit.get_costing()
-
-    m.fs.unit.initialize()
-
-    assert m.fs.unit.costing.purchase_cost.value == \
-        pytest.approx(529738.6793, 1e-5)
-
-    assert_units_consistent(m.fs.unit.costing)
-
-    results = solver.solve(m)
-
-    # Check for optimal solution
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
-
-    assert m.fs.unit.costing.purchase_cost.value == \
-        pytest.approx(529738.6793, 1e-5)
-
-
-@pytest.mark.unit
-def test_costing_book():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = HeatExchanger(default={
-                "shell": {"property_package": m.fs.properties},
-                "tube": {"property_package": m.fs.properties},
+                "delta_temperature_callback": cb,
                 "flow_pattern": HeatExchangerFlowPattern.countercurrent})
     #   Set inputs
     m.fs.unit.inlet_1.flow_mol[0].fix(100)
@@ -208,27 +165,111 @@ def test_costing_book():
 
     m.fs.unit.area.fix(1000)
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)
-    # costing
-    m.fs.unit.get_costing(hx_type='floating_head', length_factor='20ft',
-                          year='2018')
-    m.fs.unit.area.fix(669.738)  # m2
-    m.fs.unit.costing.pressure_factor.fix(1.19)
-    m.fs.unit.costing.material_factor.fix(4.05)
-    m.fs.costing.CE_index = 550
-    m.fs.unit.costing.hx_os = 1.0
-    calculate_variable_from_constraint(
-            m.fs.unit.costing.base_cost_per_unit,
-            m.fs.unit.costing.base_cost_per_unit_eq)
 
-    calculate_variable_from_constraint(
-            m.fs.unit.costing.purchase_cost,
-            m.fs.unit.costing.cp_cost_eq)
+    assert degrees_of_freedom(m) == 0
+    m.fs.unit.get_costing()
+    m.fs.unit.initialize()
+    return m
 
-    assert value(m.fs.unit.costing.base_cost) == \
-        pytest.approx(78802.0518, 1e-5)
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
+def test_costing():
+    m = basic_model(delta_temperature_lmtd_callback)
+
     assert m.fs.unit.costing.purchase_cost.value == \
-        pytest.approx(417765.1377, 1e-5)
+        pytest.approx(529738.6793, 1e-5)
 
+    assert_units_consistent(m.fs.unit.costing)
+
+    results = solver.solve(m)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    # Check Solution
+
+    # hot in end
+    assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(
+        0.464879, rel=1e-3)
+    # hot out end
+    assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
+        0.465069, rel=1e-3)
+    assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
+
+    # Costing
+    assert m.fs.unit.costing.purchase_cost.value == \
+        pytest.approx(529738.6793, 1e-5)
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
+def test_lmtd2_cb():
+    m = basic_model(delta_temperature_lmtd2_callback)
+    assert_units_consistent(m.fs.unit.costing)
+    results = solver.solve(m)
+    # hot in end
+    assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(
+        0.464879, rel=1e-3)
+    # hot out end
+    assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
+        0.465069, rel=1e-3)
+    assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
+def test_lmtd3_cb():
+    m = basic_model(delta_temperature_lmtd2_callback)
+    assert_units_consistent(m.fs.unit.costing)
+    results = solver.solve(m)
+    # hot in end
+    assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(
+        0.464879, rel=1e-3)
+    # hot out end
+    assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
+        0.465069, rel=1e-3)
+    assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
+def test_amtd_cb():
+    # since the delta T at both ends, AMTD ends up about the same as LMTD
+    m = basic_model(delta_temperature_amtd_callback)
+    assert_units_consistent(m.fs.unit.costing)
+    results = solver.solve(m)
+    # hot in end
+    assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(
+        0.464879, rel=1e-3)
+    # hot out end
+    assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
+        0.465069, rel=1e-3)
+    assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
+def test_underwood_cb():
+    m = basic_model(delta_temperature_underwood_callback)
+    assert_units_consistent(m.fs.unit.costing)
+    results = solver.solve(m)
+    # hot in end
+    assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(
+        0.464879, rel=1e-3)
+    # hot out end
+    assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
+        0.465069, rel=1e-3)
+    assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
 
 # -----------------------------------------------------------------------------
 class TestBTX_cocurrent(object):

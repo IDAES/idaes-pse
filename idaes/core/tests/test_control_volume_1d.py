@@ -16,8 +16,8 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import (ConcreteModel, Constraint, Expression,
-                           Set, units, Var)
+from pyomo.environ import (ConcreteModel, Constraint, Expression, Param,
+                           Set, units, value, Var)
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock
@@ -268,6 +268,128 @@ def test_add_geometry_discretized_area():
     m.fs.cv.add_geometry()
 
     assert len(m.fs.cv.area) == 2
+
+
+@pytest.mark.unit
+def test_add_geometry_length_var_Var():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    m.fs.length = Var(initialize=4)
+
+    m.fs.cv.add_geometry(length_var=m.fs.length)
+
+    assert isinstance(m.fs.cv.length_domain, ContinuousSet)
+    assert len(m.fs.cv.length_domain) == 2
+    assert isinstance(m.fs.cv.area, Var)
+    assert len(m.fs.cv.area) == 1.0
+    assert m.fs.cv.area.value == 1.0
+    assert m.fs.cv.length is m.fs.length
+    assert isinstance(m.fs.cv.length, Var)
+    assert len(m.fs.cv.length) == 1.0
+    assert m.fs.cv.length.value == 4
+    assert m.fs.cv._flow_direction == FlowDirection.forward
+
+
+@pytest.mark.unit
+def test_add_geometry_length_var_Param():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    m.fs.length = Param(initialize=4)
+
+    m.fs.cv.add_geometry(length_var=m.fs.length)
+
+    assert isinstance(m.fs.cv.length_domain, ContinuousSet)
+    assert len(m.fs.cv.length_domain) == 2
+    assert isinstance(m.fs.cv.area, Var)
+    assert len(m.fs.cv.area) == 1.0
+    assert m.fs.cv.area.value == 1.0
+    assert m.fs.cv.length is m.fs.length
+    assert isinstance(m.fs.cv.length, Param)
+    assert len(m.fs.cv.length) == 1.0
+    assert m.fs.cv.length.value == 4
+    assert m.fs.cv._flow_direction == FlowDirection.forward
+
+
+@pytest.mark.unit
+def test_add_geometry_length_var_Expression():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    m.fs.length = Expression(expr=4)
+
+    m.fs.cv.add_geometry(length_var=m.fs.length)
+
+    assert isinstance(m.fs.cv.length_domain, ContinuousSet)
+    assert len(m.fs.cv.length_domain) == 2
+    assert isinstance(m.fs.cv.area, Var)
+    assert len(m.fs.cv.area) == 1.0
+    assert m.fs.cv.area.value == 1.0
+    assert m.fs.cv.length is m.fs.length
+    assert isinstance(m.fs.cv.length, Expression)
+    assert len(m.fs.cv.length) == 1.0
+    assert value(m.fs.cv.length) == 4
+    assert m.fs.cv._flow_direction == FlowDirection.forward
+
+
+@pytest.mark.unit
+def test_add_geometry_length_var_invalid_type():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    with pytest.raises(ConfigurationError,
+                       match="fs.cv length_var must be a Pyomo Var, Param or "
+                       "Expression."):
+        m.fs.cv.add_geometry(length_var="foo")
+
+
+@pytest.mark.unit
+def test_add_geometry_length_var_indexed():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    m.fs.length = Var([1, 2, 3, 4])
+
+    with pytest.raises(ConfigurationError,
+                       match="fs.cv length_var must be a scalar \(unindexed\) "
+                       "component."):
+        m.fs.cv.add_geometry(length_var=m.fs.length)
 
 
 # -----------------------------------------------------------------------------
