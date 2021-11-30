@@ -312,6 +312,10 @@ see reaction package for documentation.}"""))
                                 initialize=self.config.length_domain_set,
                                 doc="Normalized length domain")
 
+        self.bed_height = Var(domain=Reals,
+                              initialize=1,
+                              doc='Bed Height [m]')
+
     # =========================================================================
         """ Build Control volume 1D for the bubble region and
             populate its control volume"""
@@ -332,6 +336,7 @@ see reaction package for documentation.}"""))
         self.bubble.add_geometry(
                 length_domain=self.length_domain,
                 length_domain_set=self.config.length_domain_set,
+                length_var=self.bed_height,
                 flow_direction=set_direction_gas)
 
         self.bubble.add_state_blocks(
@@ -379,8 +384,8 @@ see reaction package for documentation.}"""))
 
         self.gas_emulsion.add_geometry(
                 length_domain=self.length_domain,
-                length_domain_set=self.config.
-                length_domain_set,
+                length_domain_set=self.config.length_domain_set,
+                length_var=self.bed_height,
                 flow_direction=set_direction_gas)
 
         self.gas_emulsion.add_state_blocks(
@@ -429,8 +434,8 @@ see reaction package for documentation.}"""))
 
         self.solid_emulsion.add_geometry(
             length_domain=self.length_domain,
-            length_domain_set=self.config.
-            length_domain_set,
+            length_domain_set=self.config.length_domain_set,
+            length_var=self.bed_height,
             flow_direction=set_direction_solid)
 
         self.solid_emulsion.add_state_blocks(
@@ -546,9 +551,6 @@ see reaction package for documentation.}"""))
         self.bed_area = Var(domain=Reals,
                             initialize=1,
                             doc='Reactor Cross-sectional Area [m2]')
-        self.bed_height = Var(domain=Reals,
-                              initialize=1,
-                              doc='Bed Height [m]')
 
         # Distributor Design
         self.area_orifice = Var(
@@ -810,19 +812,6 @@ see reaction package for documentation.}"""))
         def solid_emulsion_area(b, t, x):
             return (b.solid_emulsion.area[t, x] ==
                     b.bed_area*b.delta_e[t, x]*(1-b.voidage_emulsion[t, x]))
-
-        # Length of bubble, gas_emulsion, solid_emulsion
-        @self.Constraint(doc="Bubble Region Length")
-        def bubble_length(b):
-            return (b.bubble.length == b.bed_height)
-
-        @self.Constraint(doc="Gas Emulsion Region Length")
-        def gas_emulsion_length(b):
-            return (b.gas_emulsion.length == b.bed_height)
-
-        @self.Constraint(doc="Solid Emulsion Region Length")
-        def solid_emulsion_length(b):
-            return (b.solid_emulsion.length == b.bed_height)
 
         # ---------------------------------------------------------------------
         # Hydrodynamic contraints

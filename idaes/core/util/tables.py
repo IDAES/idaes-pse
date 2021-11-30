@@ -254,7 +254,7 @@ def create_stream_table_dataframe(
                 stream_attributes[key][stream_key] = value(disp_dict[k][i])
                 if add_units:
                     pyomo_unit = units.get_units(disp_dict[k][i])
-                    if pyomo_unit:
+                    if pyomo_unit is not None:
                         pint_unit = pyomo_unit._get_pint_unit()
                         stream_attributes['Units'][stream_key] = {
                             'raw': str(pyomo_unit),

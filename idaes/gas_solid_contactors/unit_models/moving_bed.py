@@ -326,6 +326,9 @@ see reaction package for documentation.}"""))
                                 initialize=self.config.length_domain_set,
                                 doc="Normalized length domain")
 
+        self.bed_height = Var(domain=Reals, initialize=1,
+                              doc='Bed length [m]')
+
     # =========================================================================
         """ Build Control volume 1D for gas phase and
             populate gas control volume"""
@@ -348,6 +351,7 @@ see reaction package for documentation.}"""))
         self.gas_phase.add_geometry(
                 length_domain=self.length_domain,
                 length_domain_set=self.config.length_domain_set,
+                length_var=self.bed_height,
                 flow_direction=set_direction_gas)
 
         self.gas_phase.add_state_blocks(
@@ -399,6 +403,7 @@ see reaction package for documentation.}"""))
         self.solid_phase.add_geometry(
                 length_domain=self.length_domain,
                 length_domain_set=self.config.length_domain_set,
+                length_var=self.bed_height,
                 flow_direction=set_direction_solid)
 
         self.solid_phase.add_state_blocks(
@@ -515,8 +520,6 @@ see reaction package for documentation.}"""))
         self.bed_area = Var(domain=Reals,
                             initialize=1,
                             doc='Reactor cross-sectional area [m2]')
-        self.bed_height = Var(domain=Reals, initialize=1,
-                              doc='Bed length [m]')
 
         # Phase specific variables
         self.velocity_superficial_gas = Var(
@@ -582,15 +585,6 @@ see reaction package for documentation.}"""))
         def solid_phase_area(b, t, x):
             return (b.solid_phase.area[t, x] ==
                     b.bed_area*(1-b.bed_voidage))
-
-        # Length of gas side, and solid side
-        @self.Constraint(doc="Gas side length")
-        def gas_phase_length(b):
-            return (b.gas_phase.length == b.bed_height)
-
-        @self.Constraint(doc="Solid side length")
-        def solid_phase_length(b):
-            return (b.solid_phase.length == b.bed_height)
 
         # ---------------------------------------------------------------------
         # Hydrodynamic contraints
