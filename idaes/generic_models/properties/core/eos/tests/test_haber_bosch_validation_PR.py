@@ -187,8 +187,8 @@ def _get_prop(components=None, phases="Vap"):
         # Specifying state definition
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 1, 10, pyunits.mol/pyunits.s),
-                         "temperature": (253.15, 573, 100, pyunits.K),
-                         "pressure": (100, 40e6, 1e7, pyunits.Pa)},
+                         "temperature": (253.15, 573, 1000, pyunits.K),
+                         "pressure": (100, 40e6, 1e9, pyunits.Pa)},
         "pressure_ref": (1E5, pyunits.Pa),
         "temperature_ref": (298.15, pyunits.K),
     }
@@ -368,20 +368,17 @@ class CoolPropTester():
         return self.AS.hmolar_residual()
     
     def gibbs_res_mol_comp(self,comp):
-        # Something's broken with CoolProp's gmolar_residual method right now;
-        # it doesn't agree with the sum of chemical potentials. This method
-        # of calculation agrees with our method, so we'll use it instead
-        # Actually nothing is broken, they just use an ideal gas reference state
-        # with the same density, not the same pressure
+        # CoolProp's gmolar_residual uses an ideal gas reference state with
+        # the same *density*, whereas we use one with the same *pressure*.
+        # Therefore get the residual gibbs energy by summing excess chemical 
+        # potentials from the fugacity coefficients
         return 8.314472*self.AS.T()*log(
             self.AS.fugacity_coefficient(self.component_list.index(comp)))
     
     def entr_res_mol(self):
-        # This backwards calculation of residual entropy is necessary because
-        # something is broken in CoolProp's calculations. This method agrees
-        # with our (independent) calculations, while smolar_residual doesn't
-        # Actually nothing is broken, they just use an ideal gas reference state
-        # with the same density, not the same pressure
+        # CoolProp's smolar_residual uses an ideal gas reference state with
+        # the same *density*, whereas we use one with the same *pressure*.
+        # Therefore this backwards calculation
         return (self.enth_res_mol()-self.gibbs_res_mol())/self.AS.T()
     
     def gibbs_res_mol(self):
