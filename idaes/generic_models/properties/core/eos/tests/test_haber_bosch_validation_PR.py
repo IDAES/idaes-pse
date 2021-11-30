@@ -34,6 +34,8 @@ Physics, 116(21–22), 3331–3344. https://doi.org/10.1080/00268976.2018.145166
 """
 
 from copy import deepcopy
+from io import StringIO
+from inspect import cleandoc
 
 import pandas as pd
 
@@ -232,6 +234,25 @@ def model():
         prop.initialize()
     return m
 
+@pytest.fixture()
+def dataframe():
+    # Need to use cleandoc to get rid of hanging indents inside the string
+    string = cleandoc("""\
+        P,N_NH3,N_N2,N_H2,H_NH3,H_res_NH3,V_NH3,H_N2,H_res_N2,V_N2,H_H2,H_res_H2,V_H2,G_res_NH3,G_res_N2,G_res_H2,dH_rxn
+        10,306,57,171,-36.61,-1.65,0.441,8.28,0.2,0.504,8.57,0.56,0.501,-0.38,0.26,0.25,-107.23
+        20,349,36,107,-38.43,-3.47,0.205,9.1,1.02,0.274,9.76,1.74,0.27,-0.79,0.68,0.64,-115.26
+        30,371,25,74,-40.13,-5.17,0.13,10.45,2.37,0.2,11.36,3.35,0.193,-1.14,1.19,1.11,-124.81
+        40,385,18,53,-41.56,-6.6,0.096,12.01,3.93,0.162,13.02,5.01,0.153,-1.43,1.75,1.59,-134.23
+        50,394,13,40,-42.65,-7.7,0.078,13.41,5.33,0.136,14.4,6.38,0.126,-1.65,2.3,2.03,-141.94
+        60,400,10,31,-43.45,-8.49,0.068,14.46,6.38,0.118,15.35,7.34,0.107,-1.81,2.8,2.42,-147.44
+        70,404,8,25,-44.02,-9.06,0.061,15.18,7.1,0.103,15.97,7.95,0.092,-1.91,3.26,2.76,-151.14
+        80,407,7,20,-44.42,-9.46,0.056,15.68,7.6,0.093,16.36,8.34,0.081,-1.97,3.67,3.05,-153.61
+        """)
+    
+    return pd.read_csv(StringIO(string))
+    
+    
+
 #TODO: At present, this method is unnecessary because we're comparing residual
 # entropies, not full entropies. We can revisit it once CoolProp patches
 # current issues it has with its implementation---either use it or delete it
@@ -350,6 +371,8 @@ class CoolPropTester():
         # Something's broken with CoolProp's gmolar_residual method right now;
         # it doesn't agree with the sum of chemical potentials. This method
         # of calculation agrees with our method, so we'll use it instead
+        # Actually nothing is broken, they just use an ideal gas reference state
+        # with the same density, not the same pressure
         return 8.314472*self.AS.T()*log(
             self.AS.fugacity_coefficient(self.component_list.index(comp)))
     
@@ -357,6 +380,8 @@ class CoolPropTester():
         # This backwards calculation of residual entropy is necessary because
         # something is broken in CoolProp's calculations. This method agrees
         # with our (independent) calculations, while smolar_residual doesn't
+        # Actually nothing is broken, they just use an ideal gas reference state
+        # with the same density, not the same pressure
         return (self.enth_res_mol()-self.gibbs_res_mol())/self.AS.T()
     
     def gibbs_res_mol(self):
@@ -369,12 +394,12 @@ class CoolPropTester():
 # Subdividing the tests really doesn't make sense in this case
 @pytest.mark.integration
 @pytest.mark.skipif(not _CoolProp_available(),reason="CoolProp not available")
-def test_thermo(model):
+def test_thermo(model,dataframe):
     m = model
     Ntot = 18 + 53 + 385
     tester = CoolPropTester({"H2":53/Ntot,"N2":18/Ntot,"NH3":385/Ntot})
     tester.set_temperature(573)
-    df = pd.read_csv("haber_data_PR.csv")
+    df = dataframe
     solver = SolverFactory('ipopt')
     
     
