@@ -342,7 +342,7 @@ class TestAlamoTrainer:
         alamo_trainer.config.xscaling = True
         alamo_trainer.config.scalez = True
 
-        alamo_trainer.config.monomialpower = [2]
+        alamo_trainer.config.monomialpower = [0.5, 2]
         alamo_trainer.config.multi2power = [1, 2, 3]
         alamo_trainer.config.multi3power = [1, 2, 3, 4]
         alamo_trainer.config.ratiopower = [1, 2, 3, 4, 5]
@@ -400,17 +400,17 @@ class TestAlamoTrainer:
             "XMIN 0 0\n"
             "XMAX 5 10\n"
             "NDATA 4\n\n"
-            "MONO 1\n"
+            "MONO 2\n"
             "MULTI2 3\n"
             "MULTI3 4\n"
             "RATIOS 5\n"
             "xfactor 1.2 1.6\n"
             "xscaling 1\n"
             "scalez 1\n"
-            "monomialpower 2\n"
-            "multi2power 1 2 3\n"
-            "multi3power 1 2 3 4\n"
-            "ratiopower 1 2 3 4 5\n"
+            "monomialpower 0.5 2\n"
+            "multi2power 1.0 2.0 3.0\n"
+            "multi3power 1.0 2.0 3.0 4.0\n"
+            "ratiopower 1.0 2.0 3.0 4.0 5.0\n"
             "expfcns 1\n"
             "linfcns 0\n"
             "logfcns 0\n"
@@ -867,6 +867,17 @@ class TestAlamoSurrogate():
                 0.33333333332782633107172 * inputs["x1"][i]**6 +
                 0.99999999999972988273811 * inputs["x1"][i]*inputs["x2"][i])
 
+        # Recall evaluate_surrogate to make sure cached fcn works
+        out2 = alm_surr1.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out2["z1"][i], rel=1e-8) == (
+                3.9999999999925446303450 * inputs["x1"][i]**2 -
+                4.0000000000020765611453 * inputs["x2"][i]**2 -
+                2.0999999999859380039879 * inputs["x1"][i]**4 +
+                4.0000000000043112180492 * inputs["x2"][i]**4 +
+                0.33333333332782633107172 * inputs["x1"][i]**6 +
+                0.99999999999972988273811 * inputs["x1"][i]*inputs["x2"][i])
+
     @pytest.mark.unit
     def test_populate_block(self, alm_surr1):
         blk = SurrogateBlock(concrete=True)
@@ -946,6 +957,28 @@ class TestAlamoSurrogate():
                 0.42143309951518070910481 * inputs["x1"][i]*inputs["x2"][i] -
                 0.41818729807213093907503E-001)
 
+        # Recall evaluate_surrogate to make sure cached fcn works
+        out2 = alm_surr2.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out2["z1"][i], rel=1e-8) == (
+                3.9999999999925446303450 * inputs["x1"][i]**2 -
+                4.0000000000020765611453 * inputs["x2"][i]**2 -
+                2.0999999999859380039879 * inputs["x1"][i]**4 +
+                4.0000000000043112180492 * inputs["x2"][i]**4 +
+                0.33333333332782633107172 * inputs["x1"][i]**6 +
+                0.99999999999972988273811 * inputs["x1"][i]*inputs["x2"][i])
+            assert pytest.approx(out2["z2"][i], rel=1e-8) == (
+                0.72267799849202937756409E-001 * inputs["x1"][i] +
+                0.68451684753912708791823E-001 * inputs["x2"][i] +
+                1.0677896915911471165117 * inputs["x1"][i]**2 -
+                0.70576464806224348258468 * inputs["x2"][i]**2 -
+                0.40286283566554989543640E-001 * inputs["x1"][i]**3 +
+                0.67785668021684807038607E-002 * inputs["x2"][i]**5 -
+                0.14017881460354553180281 * inputs["x1"][i]**6 +
+                0.77207049441576647286212 * inputs["x2"][i]**6 +
+                0.42143309951518070910481 * inputs["x1"][i]*inputs["x2"][i] -
+                0.41818729807213093907503E-001)
+
     @pytest.mark.unit
     def test_populate_block_multi(self, alm_surr2):
         blk = SurrogateBlock(concrete=True)
@@ -1004,6 +1037,13 @@ class TestAlamoSurrogate():
         out = alm_surr3.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
             assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                2*sin(inputs["x1"][i]**2) - 3*cos(inputs["x2"][i]**3) -
+                4*log(inputs["x1"][i]**4) + 5*exp(inputs["x2"][i]**5))
+
+        # Recall evaluate_surrogate to make sure cached fcn works
+        out2 = alm_surr3.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out2["z1"][i], rel=1e-8) == (
                 2*sin(inputs["x1"][i]**2) - 3*cos(inputs["x2"][i]**3) -
                 4*log(inputs["x1"][i]**4) + 5*exp(inputs["x2"][i]**5))
 
