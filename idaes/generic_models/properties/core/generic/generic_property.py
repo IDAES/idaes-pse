@@ -1304,6 +1304,12 @@ class _GenericStateBlock(StateBlock):
                                         "sum_mole_frac",
                                         "equilibrium_constraint"):
                         c.activate()
+                    if c.local_name == "log_mole_frac_phase_comp_eq":
+                        c.activate()
+                        for p, j in blk[k].params._phase_component_set:
+                            calculate_variable_from_constraint(
+                                blk[k].log_mole_frac_phase_comp[p,j],
+                                blk[k].log_mole_frac_phase_comp_eq[p,j])
                 for pp in blk[k].params._pe_pairs:
                     # Activate formulation specific constraints
                     blk[k].params.config.phase_equilibrium_state[pp] \
@@ -1348,8 +1354,8 @@ class _GenericStateBlock(StateBlock):
                 "molality_phase_comp",
                 "molality_phase_comp_apparent",
                 "molality_phase_comp_true",
-                "mole_frac_comp",
-                "mole_frac_phase_comp",
+                "mole_frac_comp", # Might have already been initialized
+                "mole_frac_phase_comp", # Might have already been initialized
                 "mole_frac_phase_comp_apparent",
                 "mole_frac_phase_comp_true",
                 "pressure_phase_comp",
