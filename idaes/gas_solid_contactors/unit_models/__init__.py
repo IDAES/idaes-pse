@@ -10,5 +10,6 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from .bubbling_fluidized_bed import BubblingFluidizedBed
-from .moving_bed import MBR
+from idaes.gas_solid_contactors.unit_models.bubbling_fluidized_bed import BubblingFluidizedBed
+from idaes.gas_solid_contactors.unit_models.moving_bed import MBR
+from idaes.gas_solid_contactors.unit_models.fixed_bed_0D import FixedBed0D
