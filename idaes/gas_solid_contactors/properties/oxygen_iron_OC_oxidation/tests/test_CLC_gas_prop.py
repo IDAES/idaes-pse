@@ -280,7 +280,13 @@ class TestProperties(TestCase):
     """
     The purpose of these tests is to ensure that the property package's
     state block can be used to solve for the specified properties, and
-    that the values produced are what we expect.
+    that the values produced are what we expect. Some of these values are
+    computed by hand, while others (viscosity, enthalpy, conductivity, etc.)
+    are computed from these constraints we are testing.
+    These tests pretty much just make sure the calculated values don't change.
+    If the property equations change, and the values change as a result,
+    the tolerances may be relaxed. If the new values are significantly
+    different, this should be investigated.
     """
     def _make_model(self):
         m = ConcreteModel()
