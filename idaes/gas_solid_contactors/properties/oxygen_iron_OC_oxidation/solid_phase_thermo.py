@@ -181,6 +181,13 @@ class PhysicalParameterData(PhysicalParameterBlock):
                               units=pyunits.m**3/pyunits.m**3)
         self.voidage_mf.fix()
 
+        # Voidage of the bed
+        self.voidage = Var(domain=Reals,
+                           initialize=0.35,
+                           doc='Voidage [-]',
+                           units=pyunits.m**3/pyunits.m**3)
+        self.voidage.fix()
+
         # Particle thermal conductivity
         self.therm_cond_sol = Var(
                     domain=Reals,
