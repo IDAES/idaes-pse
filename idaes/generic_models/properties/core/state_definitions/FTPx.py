@@ -25,6 +25,8 @@ from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config, get_method, GenericPropertyPackageError
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
     _valid_VL_component_list
+from idaes.generic_models.properties.core.phase_equil.henry import \
+    HenryType
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 from .electrolyte_states import \
@@ -295,11 +297,21 @@ def state_initialization(b):
                              f"mole fraction in block {b.name}. "
                              "Check your initialization.")
 
-    vl_comps = []
-    henry_comps = []
-    _pe_pairs = []
-    if hasattr(b.params,'_pe_pairs'):
+    for p in b.phase_list:
+        # Start with phase mole fractions equal to total mole fractions
+        for j in b.component_list:
+            if (p, j) in b.phase_component_set:
+                b.mole_frac_phase_comp[p, j].value = b.mole_frac_comp[j].value
+
+        b.flow_mol_phase[p].value = value(b.phase_frac[p]*b.flow_mol)
+
+    if not hasattr(b.params, "_pe_pairs"):
+        return 
+    else:
         _pe_pairs = b.params._pe_pairs
+
+    vl_comps = []
+    henry_comps = []   
     init_VLE = False
     for pp in _pe_pairs:
         # Look for a VLE pair with this phase - should only be 1
@@ -332,251 +344,148 @@ def state_initialization(b):
              l_only_comps,
              v_only_comps) = _valid_VL_component_list(b, pp)
             pp_VLE = pp
-            
-            # H = {j: value(get_method(b, "henry_component", j, l_phase)(
-            #             b, l_phase, j, b.temperature))
-            #             for j in henry_comps}
+    
+    if init_VLE:
+        raoult_init = True
+        henry_mole_frac = []
+        henry_conc = []
+        henry_other = []
+        K = {}
+        
+        if value(b.pressure)<0:
+            raise ValueError((f"Block {b.name} has a negative value for its "
+                             f"absolute pressure. Please provide a better "
+                             f"initial guess."))
+        
+        for j in henry_comps:
+            henry_type = b.params.get_component(j)\
+                        .config.henry_component[l_phase]["type"]
+            if henry_type in {HenryType.Hxp,HenryType.Kpx}:
+                # Quick and dirty way of getting a Henry constant in the right
+                # form/units is by temporarily setting its mole fraction to 
+                # one, then calling the henry_pressure method. Reset mole
+                # fraction to original value to "do no harm"
+                henry_mole_frac.append(j)
+                tmp = b.mole_frac_phase_comp[l_phase,j].value
+                b.mole_frac_phase_comp[l_phase, j].value = 1
+                K[j] = value(b.henry_pressure(l_phase, j)/b.pressure)
+                b.mole_frac_phase_comp[l_phase, j].value = tmp
+                
+                if K[j] < 0:
+                    raise UserModelError(f"Component {j} has a negative "
+                                      f"Henry's Law constant in block "
+                                      f"{b.name}. Check "
+                                      f"your implementation and parameters.")
+                
+            elif henry_type in {HenryType.Hcp,HenryType.Kpc}:
+                # Can't evaluate concentration without density, can't evaluate
+                # density without liquid phase concentration. Treat as
+                # noncondensible and correct value during a second pass
+                henry_conc.append(j)
+            else:
+                _log.warning("{} - Components with unsupported Henry's Law "
+                             "type {} are present, and will be treated as "
+                             "noncondensible by the vapor-liquid equilibrium "
+                             "initialization for {} state variables.".format(
+                                 b.name,  str(henry_type),
+                                 str(b.params.config.state_definition)))
+                henry_other.append(j)
+        for j in vl_comps:
             try:
-                psat = {j: value(get_method(b, "pressure_sat_comp", j)(
-                        b, b.params.get_component(j),b.temperature)) 
-                        for j in vl_comps}
-                raoult_init = True
+                K[j] = value(get_method(b, "pressure_sat_comp", j)(
+                        b, b.params.get_component(j),b.temperature)
+                        /b.pressure)
+                if K[j]<0:
+                    raise UserModelError(f"Component {j} has a negative "
+                                     f"saturation pressure in block "
+                                     f"{b.name}. Check "
+                                     f"your implementation and parameters.")
             except GenericPropertyPackageError:
                 # No method for calculating Psat, use default values
                 raoult_init = False
-            if raoult_init:
-                # TODO: Incorporate Henry components into this initialization
-                # once the API has stabilized.
-                if len(henry_comps) > 0:
-                    _log.warning("{} - Henry's Law components are present. "
-                                 "Vapor-liquid equilibrium initialization for "
-                                 "{} state variables does not support Henry "
-                                 "components at present. Initialization may "
-                                 "converge to an unphysical state.".format(
-                                     b.name,str(b.params.config.state_definition)))
-                
-                for j in vl_comps:
-                    if psat[j] < 0:
-                        raise UserModelError(f"Component {j} has a negative "
-                                         f"saturation pressure in block "
-                                         f"{b.name}. Check "
-                                         f"your implementation and parameters.")
-                # for j in henry_comps:
-                #     if H[j] < 0:
-                #         raise UserModelError(f"Component {j} has a negative "
-                #                          f"Henry's Law constant in block "
-                #                          f"{b.name}. Check "
-                #                          f"your implementation and parameters.")
-
-                # Calculate bubble and dew pressures for an ideal mixture
-                if len(l_only_comps) == 0:
-                    p_dew_ideal = 1/(sum([value(b.mole_frac_comp[j])/psat[j]
-                                        for j in vl_comps]))# + sum(
-                                        #[value(b.mole_frac_comp[j])/H[j]
-                                        #for j in henry_comps]))
-                else:
-                    p_dew_ideal = 0
-                if len(v_only_comps) == 0:
-                    p_bubble_ideal = (sum([value(b.mole_frac_comp[j])*psat[j]
-                                        for j in vl_comps])) #+ sum(
-                                        #[value(b.mole_frac_comp[j])*H[j]
-                                        #for j in henry_comps]))
-                else:
-                    p_bubble_ideal = float('inf')
-                    
-                # Sanity check for the block's pressure. The method to 
-                # calculate the ideal vapor fraction converges may not
-                # converge to a reasonable value if the system pressure does
-                # not lie between the ideal dew and bubble pressures. If 
-                # this is the case, we give up and assume that the 
-                # is predominantly one phase or the other
-                if value(b.pressure) <= p_dew_ideal:
-                    vapFrac = 0.95
-                elif value(b.pressure) >= p_bubble_ideal:
-                    vapFrac = 0.05
-                else:
-                    # Equation defining vapor fraction for an ideal mixture.
-                    # This equation has two roots: a trivial one at vapFrac = 1
-                    # and a nontrivial one for some 0<vapFrac<1. B is a
-                    # convex function
-                    def B(vapFrac):
-                        return (
-                            sum([value(b.mole_frac_comp[j]*psat[j]
-                                  /(vapFrac*psat[j]+(1-vapFrac)*b.pressure))
-                                for j in vl_comps])
-                            + sum([value(b.mole_frac_comp[j]/vapFrac)
-                                   for j in v_only_comps]) 
-                            # + sum([value(b.mole_frac_comp[j]*H[j]
-                            #       /(vapFrac*H[j]+(1-vapFrac)*b.pressure))
-                            #     for j in henry_comps]) 
-                            - 1
-                            )
-                    def dB_dvapFrac(vapFrac):
-                        return (
-                            sum([value(b.mole_frac_comp[j]*psat[j]
-                                       *(b.pressure - psat[j])
-                                  /(vapFrac*psat[j]+(1-vapFrac)*b.pressure)**2)
-                                for j in vl_comps])
-                            # + sum([value(b.mole_frac_comp[j]*H[j]
-                            #            *(b.pressure - H[j])
-                            #       /(vapFrac*H[j]+(1-vapFrac)*b.pressure)**2)
-                            #     for j in henry_comps])
-                            - sum([value(b.mole_frac_comp[j]/vapFrac**2)
-                                   for j in v_only_comps])
-                            )
-                    # Newton's method will always undershoot the root of a 
-                    # convex equation if one starts from a value from which
-                    # the function is positive. However, there is a singularity
-                    # at vapFrac=0 if there are noncondensable components.
-                    # Therefore, use a binary search to find a value where
-                    # B(vapFrac) is positive
-                    k = 0
-                    vapFrac = 0.5
-                    raoult_failed=False
-                    while B(vapFrac) < 0:
-                        vapFrac /= 2
-                        k += 1
-                        if k > 40:
-                            raoult_failed=True
-                            break
-                    # Now use Newton's method to calculate vapFrac
-                    k = 0
-                    if not raoult_failed:
-                        while abs(B(vapFrac)) > 1E-6:
-                            vapFrac -= B(vapFrac)/dB_dvapFrac(vapFrac)
-                            k += 1
-                            if k > 40:
-                                raoult_failed=True
-                                break
-                    if vapFrac<0:
-                        vapFrac = 0.005
-                        raoult_failed=True
-                    if vapFrac>1:
-                        vapFrac = 0.995
-                        raoult_failed=True
-                    
-                    if raoult_failed:
-                        _log.warning("{} - phase faction initialization using "
-                                     "Raoult's law failed. This could be "
-                                     "because a component is essentially "
-                                     "nonvolatile or noncondensible, or "
-                                     "because mole fractions sum to more than "
-                                     "one.".format(b.name))
-
-                
-    for p in b.phase_list:
-        # Start with phase mole fractions equal to total mole fractions
-        for j in b.component_list:
-            if (p, j) in b.phase_component_set:
-                b.mole_frac_phase_comp[p, j].value = b.mole_frac_comp[j].value
-
-        b.flow_mol_phase[p].value = value(
-                        b.flow_mol / len(b.phase_list))
-
-        # Try to refine guesses - Check phase type
-        pobj = b.params.get_phase(p)
-
-        if not hasattr(b.params, "_pe_pairs"):
-            return #TODO: Are we sure we want to end initialization instead of
-                    # breaking?
+    if init_VLE:
+        if tdew is not None and b.temperature.value > tdew:
+            # Pure vapour
+            vap_frac = 1 - 1e-5
+        elif tbub is not None and b.temperature.value < tbub:
+            # Pure liquid
+            vap_frac = 1e-5
+        elif tbub is not None and tdew is not None:
+            # Two-phase with bounds two-phase region
+            # Thanks to Rahul Gandhi for the method
+            vap_frac = value(b.temperature-tbub) / (tdew-tbub)
+        elif raoult_init:
+            vap_frac = _modified_rachford_rice(b, K,
+                                            vl_comps+henry_mole_frac,
+                                            l_only_comps, 
+                                            v_only_comps+henry_conc+henry_other)
+        else:
+            # No way to estimate phase fraction
+            init_VLE = False
+    
+    
+    
+    if init_VLE:
+        b.phase_frac[v_phase] = vap_frac
+        b.phase_frac[l_phase] = 1 - vap_frac
         
-        if pobj.is_liquid_phase() and init_VLE:
-            if tbub is None and tdew is None:
-                # No VLE pair found, or no bubble and dew point
-                # Do nothing
-                pass
-            elif tdew is not None and b.temperature.value > tdew:
-                # Pure vapour
-                b.flow_mol_phase[p].value = value(1e-5*b.flow_mol)
-                b.phase_frac[p].value = 1e-5
+        for p in pp_VLE:
+            b.flow_mol_phase[p].value = value(
+                b.phase_frac[p]*b.flow_mol)
 
-                for j in b.component_list:
-                    if (p, j) in b.phase_component_set:
-                        b.mole_frac_phase_comp[p, j].value = \
-                            b._mole_frac_tdew[pp_VLE, j].value
-            elif tbub is not None and b.temperature.value < tbub:
-                # Pure liquid
-                b.flow_mol_phase[p].value = value(b.flow_mol)
-                b.phase_frac[p].value = 1
-
-                for j in b.component_list:
-                    if (p, j) in b.phase_component_set:
-                        b.mole_frac_phase_comp[p, j].value = \
-                            b.mole_frac_comp[j].value
-            elif raoult_init:
-                if tbub is not None and tdew is not None:
-                    # Two-phase with bounds two-phase region
-                    # Thanks to Rahul Gandhi for the method
-                    vapFrac = value((b.temperature-tbub) / (tdew-tbub))
-                else:
-                    # Two-phase, but with non-vaporizables and/or non-condensables
-                    # Cannot take difference of tdew and tbub, so use vapor
-                    # fraction calculated with Raoult's law.
-                    pass
-                b.flow_mol_phase[p].value = value((1-vapFrac)*b.flow_mol)
-                for j in vl_comps:
-                    kfact = value(psat[j] / b.pressure)
-                    b.mole_frac_phase_comp[p, j].value = value(
-                        b.mole_frac_comp[j]/(1+vapFrac*(kfact-1)))
-                # for j in henry_comps:
-                #     kfact = value(H[j] / b.pressure)
-                #     b.mole_frac_phase_comp[p, j].value = value(
-                #         b.mole_frac_comp[j]/(1+vapFrac*(kfact-1)))
-                for j in l_only_comps:
-                    b.mole_frac_phase_comp[p, j].value = value(
-                        b.mole_frac_comp[j]/(1-vapFrac))
-            else:
-                # Cannot do anything without a method to calculate Psat
-                pass
-
-        elif pobj.is_vapor_phase() and init_VLE:            
-            if tbub is None and tdew is None:
-                # No VLE pair found, or no bubble and dew point
-                # Do nothing
-                pass
-            elif tdew is not None and b.temperature.value > tdew:
-                # Pure vapour
-                b.flow_mol_phase[p].value = value(b.flow_mol)
-                b.phase_frac[p].value = 1
-
-                for j in b.component_list:
-                    if (p, j) in b.phase_component_set:
-                        b.mole_frac_phase_comp[p, j].value = \
-                            b.mole_frac_comp[j].value
-            elif tbub is not None and b.temperature.value < tbub:
-                # Pure liquid
-                b.flow_mol_phase[p].value = value(1e-5*b.flow_mol)
-                b.phase_frac[p].value = 1e-5
-
-                for j in b.component_list:
-                    if (p, j) in b.phase_component_set:
-                        b.mole_frac_phase_comp[p, j].value = \
-                            b._mole_frac_tbub[pp_VLE, j].value
-            elif raoult_init:
-                if tbub is not None and tdew is not None:
-                    # Two-phase with bounds two-phase region
-                    # Thanks to Rahul Gandhi for the method
-                    vapFrac = value((b.temperature-tbub) / (tdew-tbub))
-                else:
-                    # Two-phase, but with non-vaporizables and/or non-condensables
-                    # Cannot take difference of tdew and tbub, so use vapor
-                    # fraction calculated with Raoult's law.
-                    pass
-                b.flow_mol_phase[p].value = value(vapFrac*b.flow_mol)
-                for j in vl_comps:
-                    kfact = value(psat[j] / b.pressure)
-                    b.mole_frac_phase_comp[p, j].value = value(
-                        b.mole_frac_comp[j]*kfact/(kfact+1-vapFrac))
-                # for j in henry_comps:
-                #     kfact = value(H[j] / b.pressure)
-                #     b.mole_frac_phase_comp[p, j].value = value(
-                #         b.mole_frac_comp[j]*kfact/(kfact+1-vapFrac))
-                for j in v_only_comps:
-                    b.mole_frac_phase_comp[p, j].value = value(
-                        b.mole_frac_comp[j]/vapFrac)
-            else:
-                # Cannot do anything without a method to calculate Psat
-                pass
+        if vap_frac < 1e-4:
+            # Pure liquid
+            for j in b.component_list:
+                if (l_phase, j) in b.phase_component_set:
+                    b.mole_frac_phase_comp[l_phase, j].value = \
+                        b.mole_frac_comp[j].value
+                elif (v_phase, j) in b.phase_component_set:
+                    b.mole_frac_phase_comp[v_phase, j].value = \
+                        b._mole_frac_tbub[pp_VLE, j].value
+        
+        elif vap_frac > 1-1e-4:
+            # Pure Vapor
+            for j in b.component_list:
+                if (v_phase, j) in b.phase_component_set:
+                    b.mole_frac_phase_comp[v_phase, j].value = \
+                        b.mole_frac_comp[j].value
+                elif (l_phase, j) in b.phase_component_set:
+                    b.mole_frac_phase_comp[l_phase, j].value = \
+                        b._mole_frac_tdew[pp_VLE, j].value
+        elif raoult_init:
+            _set_mole_fractions_vle(b, K, vap_frac, l_phase, v_phase,
+                                    vl_comps+henry_mole_frac, l_only_comps, 
+                                    v_only_comps+henry_conc+henry_other)
+            if len(henry_conc) >0:
+                # With initial guesses for the mole fractions, there is a
+                # decent value for density to calculate the concentration with
+                for j in henry_conc:
+                    tmp = b.mole_frac_phase_comp[l_phase,j].value
+                    b.mole_frac_phase_comp[l_phase, j].value = 1
+                    K[j] = value(b.henry_pressure(l_phase, j)/b.pressure)
+                    b.mole_frac_phase_comp[l_phase, j].value = tmp
+                    
+                    if K[j] < 0:
+                        raise UserModelError(f"Component {j} has a negative "
+                                          f"Henry's Law constant in block "
+                                          f"{b.name}. Check "
+                                          f"your implementation and parameters.")
+                
+                vap_frac = _modified_rachford_rice(b, K,
+                                    vl_comps + henry_mole_frac + henry_conc,
+                                    l_only_comps, v_only_comps + henry_other)
+                
+                b.phase_frac[v_phase] = vap_frac
+                b.phase_frac[l_phase] = 1 - vap_frac
+                
+                for p in pp_VLE:
+                    b.flow_mol_phase[p].value = value(
+                        b.phase_frac[p]*b.flow_mol)
+                
+                _set_mole_fractions_vle(b, K, vap_frac, l_phase, v_phase,
+                                    vl_comps + henry_mole_frac  + henry_conc, 
+                                    l_only_comps, v_only_comps + henry_other)
+                
 
 
 def define_default_scaling_factors(b):
@@ -704,3 +613,115 @@ class FTPx(object):
     do_not_initialize = do_not_initialize
     define_default_scaling_factors = define_default_scaling_factors
     calculate_scaling_factors = calculate_scaling_factors
+
+def _set_mole_fractions_vle(b, K, vap_frac, l_phase, v_phase,
+                        vl_comps, l_only_comps, v_only_comps):
+    # The only reason this method exists is so we can use it twice because
+    # concentration based Henry law coefficients make everything difficult
+    for j in l_only_comps:
+        b.mole_frac_phase_comp[l_phase, j].value = (1/(1-vap_frac)
+                                                *b.mole_frac_comp[j])
+    
+    for j in v_only_comps:
+        b.mole_frac_phase_comp[v_phase, j].value = (1/vap_frac
+                                                * b.mole_frac_comp[j])
+    
+    for j in vl_comps:
+        b.mole_frac_phase_comp[l_phase, j].value = value(
+            b.mole_frac_comp[j]/(1+vap_frac*(K[j]-1)))
+        b.mole_frac_phase_comp[v_phase, j].value = value(
+            b.mole_frac_comp[j]*K[j]/(K[j]+1-vap_frac))
+    
+
+def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps):
+    # Calculate harmonic and arithmatic means of the split constants K
+    if len(l_only_comps) == 0:
+        K_bar_H = 1/(sum([value(b.mole_frac_comp[j])/K[j]
+                            for j in vl_comps]))
+    else:
+        K_bar_H = 0
+    if len(v_only_comps) == 0:
+        K_bar_A = (sum([value(b.mole_frac_comp[j])*K[j]
+                            for j in vl_comps])) 
+    else:
+        K_bar_A = float('inf')
+            
+    # If neither of these conditions hold, RR gives a single-phase solution
+    if K_bar_H >= 1:
+        vapFrac = 1
+    elif K_bar_A <= 1:
+        vapFrac = 0
+    else:
+        # I discovered this method is a varient on solving the
+        # Rachford-Rice equation, which has been known to ChemEs
+        # since the 50s. I'm not sure if the link between Newton's
+        # method and convexity was explicitly stated, though. For good 
+        # reason, the classic RR equation does not appear to necessarily 
+        # be convex
+        
+        # There are varients where the flash calculation is robust
+        # to the calculated vapor fraction being greater than 1 or
+        # less than zero. Future reader, check out 
+        # https://doi.org/10.1016/j.fluid.2011.12.005 and
+        # https://doi.org/10.1016/S0378-3812(97)00179-9 if it
+        # becomes necessary to increase robustness to very nonideal
+        # systems.
+        
+        # Equation defining vapor fraction for an ideal mixture.
+        # This equation has two roots: a trivial one at vapFrac = 1
+        # and a nontrivial one for some 0<vapFrac<1. B is a
+        # convex function
+        def B(vapFrac):
+            return (
+                sum([value(b.mole_frac_comp[j]*K[j]
+                      /(1+vapFrac*(K[j]-1)))
+                    for j in vl_comps])
+                + sum([value(b.mole_frac_comp[j]/vapFrac)
+                       for j in v_only_comps])
+                - 1
+                )
+        def dB_dvapFrac(vapFrac):
+            return (sum([value(-b.mole_frac_comp[j]*K[j]*(K[j]-1)
+                      /((1+vapFrac*(K[j]-1))**2))
+                    for j in vl_comps])
+                    - sum([value(b.mole_frac_comp[j]/vapFrac**2)
+                           for j in v_only_comps]))
+        # Newton's method will always undershoot the root of a 
+        # convex equation if one starts from a value from which
+        # the function is positive. However, there is a singularity
+        # at vapFrac=0 if there are noncondensable components.
+        # Therefore, use a binary search to find a value where
+        # B(vapFrac) is positive
+        k = 0
+        vapFrac = 0.5
+        mRR_failed=False
+        while B(vapFrac) < 0:
+            vapFrac /= 2
+            k += 1
+            if k > 40:
+                mRR_failed=True
+                break
+        # Now use Newton's method to calculate vapFrac
+        k = 0
+        if not mRR_failed:
+            while abs(B(vapFrac)) > 1E-6:
+                vapFrac -= B(vapFrac)/dB_dvapFrac(vapFrac)
+                k += 1
+                if k > 40:
+                    mRR_failed=True
+                    break
+        if vapFrac<0:
+            vapFrac = 0.005
+            mRR_failed=True
+        if vapFrac>1:
+            vapFrac = 0.995
+            mRR_failed=True
+        
+        if mRR_failed:
+            _log.warning("{} - phase faction initialization using "
+                         "modified Rachford-Rice failed. This could be "
+                         "because a component is essentially "
+                         "nonvolatile or noncondensible, or "
+                         "because mole fractions sum to more than "
+                         "one.".format(b.name))
+    return vapFrac

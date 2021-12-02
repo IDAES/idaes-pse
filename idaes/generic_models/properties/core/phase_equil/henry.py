@@ -22,7 +22,7 @@ from pyomo.environ import log, Var
 
 from idaes.generic_models.properties.core.generic.utility import (
     StateIndex)
-from idaes.core.util.exceptions import BurntToast
+from idaes.core.util.exceptions import ConfigurationError
 
 
 class HenryType(Enum):
@@ -64,8 +64,7 @@ def get_henry_concentration_term(blk, henry_dict, log=False):
     elif henry_type == HenryType.Hxp or henry_type == HenryType.Kpx:
         conc_type = "mole_frac_phase_comp"
     else:
-        raise BurntToast(
-            f"Unrecognized value for HenryType {henry_type}")
+        _raise_henry_type_error(henry_type)
 
     return getattr(blk, pre+conc_type+sub)
 
@@ -90,8 +89,7 @@ def henry_pressure(b, p, j, T=None):
         # K = P/c type
         h_press = h_conc*henry
     else:
-        raise BurntToast(
-            f"Unrecognized value for HenryType Enum {henry_def['type']}.")
+        _raise_henry_type_error(henry_def['type'])
 
     return h_press
 
@@ -117,8 +115,7 @@ def log_henry_pressure(b, p, j, T=None):
         # K = P/c type
         log_h_press = h_conc + log(henry)
     else:
-        raise BurntToast(
-            f"Unrecognized value for HenryType Enum {henry_def['type']}.")
+        _raise_henry_type_error(henry_def['type'])
 
     return log_h_press
 
@@ -134,7 +131,7 @@ def henry_units(henry_type, units):
     elif henry_type == HenryType.Kpx:
         h_units = units["pressure"]
     else:
-        raise BurntToast(f"Unrecognized value for HenryType {henry_type}")
+        _raise_henry_type_error(henry_type)
 
     return h_units
 
@@ -166,3 +163,6 @@ class ConstantH():
     @staticmethod
     def dT_expression(b, p, j, T=None):
         return 0
+
+def _raise_henry_type_error(henry_type):
+    raise ConfigurationError(f"Unrecognized value for HenryType {henry_type}")

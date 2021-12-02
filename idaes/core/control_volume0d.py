@@ -1728,7 +1728,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for (t, p), v in self.energy_holdup.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.get_scaling_factor(self.volume[t])
-                    sf = iscale.get_scaling_factor(self.phase_fraction[t, p])
+                    sf *= iscale.get_scaling_factor(self.phase_fraction[t, p])
                     sf *= iscale.get_scaling_factor(
                         self.properties_out[t].get_energy_density_terms(p),
                         default=1,

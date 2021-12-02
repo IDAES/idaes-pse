@@ -1204,6 +1204,10 @@ def test_Psat_fail():
     m.state = m.params.build_state_block([0])
     m.state[0].params._pe_pairs = Set(initialize=(("Liq","Vap"),),
                                  ordered=True)
+    m.state[0].phase_frac = Var(m.params.phase_list, initialize=0.5)
+    m.state[0].flow_mol = Var(initialize=1)
+    m.state[0].pressure = Var(initialize=1)
+    
     with pytest.raises(UserModelError,
                 match="Component H2O has a negative saturation pressure in "
                 "block state\[0\]. Check your implementation and parameters."):
