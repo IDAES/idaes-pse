@@ -869,7 +869,7 @@ class TestProperties(TestCase):
         m = self._make_model()
         state = m.fs.state
 
-        n_scen = 8
+        n_scen = 7
         state_values = {
                 "flow_mol": [1.0*pyunits.mol/pyunits.s]*n_scen,
                 "temperature": [
@@ -877,20 +877,22 @@ class TestProperties(TestCase):
                     1200.0*pyunits.K,
                     1200.0*pyunits.K,
                     1200.0*pyunits.K,
-                    300.0*pyunits.K,
+                    # We do not test enthalpy at 300 K. The Shomate equation
+                    # we use is not valid below 500 K.
+                    #300.0*pyunits.K,
                     600.0*pyunits.K,
                     900.0*pyunits.K,
                     1200.0*pyunits.K,
                     ],
                 "pressure": [1.0*pyunits.bar]*n_scen,
                 "mole_frac_comp[O2]":  [
-                    1.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                    1.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.25],
                 "mole_frac_comp[N2]":  [
-                    0.0, 1.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                    0.0, 1.0, 0.0, 0.0, 0.25, 0.25, 0.25],
                 "mole_frac_comp[H2O]": [
-                    0.0, 0.0, 1.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                    0.0, 0.0, 1.0, 0.0, 0.25, 0.25, 0.25],
                 "mole_frac_comp[CO2]": [
-                    0.0, 0.0, 0.0, 1.0, 0.25, 0.25, 0.25, 0.25],
+                    0.0, 0.0, 0.0, 1.0, 0.25, 0.25, 0.25],
                 }
         state_values = ComponentMap((state.find_component(name), values)
                 for name, values in state_values.items())
@@ -902,7 +904,7 @@ class TestProperties(TestCase):
                     29.760175857866656*u,
                     29.760175857866656*u,
                     29.760175857866656*u,
-                    0.5175085434916653*u,
+                    #0.5175085434916653*u,
                     9.248259058533336*u,
                     19.241674269713887*u,
                     29.760175857866656*u,
@@ -912,7 +914,7 @@ class TestProperties(TestCase):
                     28.1081423656*u,
                     28.1081423656*u,
                     28.1081423656*u,
-                    -0.021818752399997976*u,
+                    #-0.021818752399997976*u,
                     8.8939164816*u,
                     18.223311732266666*u,
                     28.1081423656*u,
@@ -922,7 +924,7 @@ class TestProperties(TestCase):
                     34.505905041333335*u,
                     34.505905041333335*u,
                     34.505905041333335*u,
-                    0.06267505633334736*u,
+                    #0.06267505633334736*u,
                     10.500564354666665*u,
                     21.939189237444452*u,
                     34.505905041333335*u,
@@ -932,7 +934,7 @@ class TestProperties(TestCase):
                     44.474410900800024*u,
                     44.474410900800024*u,
                     44.474410900800024*u,
-                    0.06585135367498651*u,
+                    #0.06585135367498651*u,
                     12.906441898799983*u,
                     28.031785067675003*u,
                     44.474410900800024*u,
@@ -942,7 +944,7 @@ class TestProperties(TestCase):
                     28.1081423656*u,
                     34.505905041333335*u,
                     44.474410900800024*u,
-                    0.15605405027500296*u,
+                    #0.15605405027500296*u,
                     10.387295448399996*u,
                     21.858990076775*u,
                     0.25*(
