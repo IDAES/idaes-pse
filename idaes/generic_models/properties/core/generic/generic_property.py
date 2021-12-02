@@ -3825,10 +3825,12 @@ def _temperature_pressure_bubble_dew(b, name):
         tmp = getattr(b.params.config.bubble_dew_method, name)
         tmp(b)
     except AttributeError:
-        var = getattr(b,name)
-        b.del_component(var)
-        mole_frac = getattr(b,"_mole_frac_"+abbrv)
-        b.del_component(mole_frac)
+        if hasattr(b,name):
+            var = getattr(b,name)
+            b.del_component(var)
+        if hasattr(b,"_mole_frac_"+abbrv):
+            mole_frac = getattr(b,"_mole_frac_"+abbrv)
+            b.del_component(mole_frac)
         raise
 
 def _log_mole_frac_bubble_dew(b, name):
@@ -3893,8 +3895,10 @@ def _log_mole_frac_bubble_dew(b, name):
             doc=docstring_eqn
             ))
     except:
-        var = getattr(b,"log_mole_frac_"+abbrv)
-        b.del_component(var)
-        eqn = getattr(b,"log_mole_frac_"+abbrv+"_eqn")
-        b.del_component(eqn)
+        if hasattr(b,"log_mole_frac_"+abbrv):
+            var = getattr(b,"log_mole_frac_"+abbrv)
+            b.del_component(var)
+        if hasattr(b,"log_mole_frac_"+abbrv+"_eqn"):
+            eqn = getattr(b,"log_mole_frac_"+abbrv+"_eqn")
+            b.del_component(eqn)
         raise
