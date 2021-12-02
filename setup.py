@@ -34,7 +34,7 @@ def rglob(path, glob):
 
 
 DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.2.zip",
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.2.zip"
 ]
 
 
@@ -67,7 +67,7 @@ kwargs = dict(
         "pandas",
         "pint",
         "psutil",
-        "pyomo>=6.1.2",
+        "pyomo>=6.2",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
