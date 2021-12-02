@@ -86,6 +86,10 @@ An excerpt of a `dataset.json` is shown below:
         ]
     }
 
+.. note:: Make sure you pick a unique string for the ``name`` field, since this will be the key by which this
+    publication and associated data are found. Using the same name for different publications will result in one
+    overwriting the other and other bad behavior.
+
 The `dataset.json` above referred to one file that had the text of the publication
 and one file with comma-separated values of the data. Copy or move all these files into the same
 directory, let's call it `DataDir`, whose contents will now be:
