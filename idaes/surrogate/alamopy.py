@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import json
 
-from pyomo.environ import Constraint, value, sin, cos, log, exp, Set, Integers
+from pyomo.environ import Constraint, value, sin, cos, log, exp, Set, Reals
 from pyomo.common.config import ConfigValue, In, Path, ListOf, Bool
 from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
@@ -161,22 +161,22 @@ class AlamoTrainer(SurrogateTrainer):
     # Basis function options
     CONFIG.declare('monomialpower', ConfigValue(
         default=None,
-        domain=ListOf(int, In(Integers - {0,1})), # allow any integer except for 0 and 1
+        domain=ListOf(int, In(Reals - {0,1})), # allow any float except for 0 and 1
         description="Vector of monomial powers considered in basis "
-        "functions."))
+        "functions - cannot include 0 or 1."))
     CONFIG.declare('multi2power', ConfigValue(
         default=None,
-        domain=ListOf(int),
+        domain=ListOf(float),
         description="Vector of powers to be considered for pairwise "
         "combinations in basis functions."))
     CONFIG.declare('multi3power', ConfigValue(
         default=None,
-        domain=ListOf(int),
+        domain=ListOf(float),
         description="Vector of three variable combinations of powers to be "
         "considered as basis functions."))
     CONFIG.declare('ratiopower', ConfigValue(
         default=None,
-        domain=ListOf(int),
+        domain=ListOf(float),
         description="Vector of ratio combinations of powers to be considered "
         "in the basis functions."))
     CONFIG.declare('constant', ConfigValue(
@@ -971,7 +971,7 @@ class AlamoSurrogate(SurrogateBase):
         for i in range(inputdata.shape[0]):
             for o in range(len(self._output_labels)):
                 o_name = self._output_labels[o]
-                outputs[i, o] = value(fcn[o_name](*inputdata[i, :]))
+                outputs[i, o] = value(self._fcn[o_name](*inputdata[i, :]))
 
         return pd.DataFrame(data=outputs, index=inputs.index, columns=self._output_labels)
 

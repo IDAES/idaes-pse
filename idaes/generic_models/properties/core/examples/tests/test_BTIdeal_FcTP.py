@@ -52,6 +52,12 @@ import idaes.generic_models.properties.core.pure.NIST as NIST
 # Get default solver for testing
 solver = get_solver()
 
+def _as_quantity(x):
+    unit = pyunits.get_units(x)
+    if unit is None:
+        unit = pyunits.dimensionless
+    return value(x) * unit._get_pint_unit()
+
 config_dict = {
     "components": {
         'benzene': {
@@ -165,8 +171,7 @@ class TestParamBlock(object):
             {"flow_mol_comp": (0, 100, 1000, pyunits.mol/pyunits.s),
              "temperature": (273.15, 300, 450, pyunits.K),
               "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
-            item_callback=lambda x: value(x) * (
-                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+            item_callback=_as_quantity,
         )
 
         assert model.params.config.phase_equilibrium_state == {
