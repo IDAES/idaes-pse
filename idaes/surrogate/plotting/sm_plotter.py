@@ -30,22 +30,31 @@ Standard plotting methods (scatter, parity and residual plots).
 """
 
 
-def scatter2D(xdata, zdata, xtest, zfit, xlabels=None, zlabels=None, dz=None,
-              dzfit=None, clo=None, chi=None, clabel=None, show=True,
-              PDF=False, filename='results_scatter2D.pdf'):
+def surrogate_scatter2D(surrogate, dataframe, filename=None, show=True):
+    input_data = dataframe[surrogate.input_labels()]
+    output_data = dataframe[surrogate.output_labels()]
+    output_surrogate = surrogate.evaluate_surrogate(input_data)
+    _scatter2D(xdata=input_data.values,
+               zdata=output_data.values,
+               zfit=output_surrogate.values,
+               xlabels=surrogate.input_labels(),
+               zlabels=surrogate.output_labels(),
+               show=show,
+               filename=filename)
+
+
+def _scatter2D(xdata, zdata, zfit, xlabels=None, zlabels=None,
+               show=True, filename=None):
     """
-    Plots training data as 2D scatter, with overlayed model output data. If
-    available, can overlay confidence intervals on scatter plot and can
-    generate additional scatter plots for first derivative data.
+    Plots training data as 2D scatter, with overlayed model output data.
 
     Required: input variable data, output variable data, model fit data
 
-    Optional: input and output labels (will be generated as needed), first
-    derivative data (if given, derivative fit data required as well),
-    confidence interval data.
+    Optional: input and output labels (will be generated as needed), filename
+    to save plots to PDF
 
-    Generally, x (input) variables are indexed by 'i', z (output) variables
-    are indexded by 'j', and dummy variables are indexed by 'w' when needed.
+    Generally, x (input) variables are indexed by 'i', and z (output) variables
+    are indexed by 'j'.
     """
 
     numins = np.shape(xdata)[1]  # number of input variables
@@ -60,64 +69,59 @@ def scatter2D(xdata, zdata, xtest, zfit, xlabels=None, zlabels=None, dz=None,
         zlabels = []
         for j in range(numouts):
             zlabels.append('z' + str(j+1))
-    if clabel is None:
-        clabel = 'Confidence Intervals'
 
-    pointidx = -1  # dummy index for each plot produced
-    fig, ax = [], []
+    if filename is not None:
+        if filename[-4:] != '.pdf':  # checking if extension is present
+            raise Exception('Filename does not end in .pdf, please amend '
+                            'filename with the proper extension.')
+        pdf = PdfPages(filename)
+
     for j in range(numouts):  # loop over all outputs, zj
         for i in range(numins):  # plot every possible zj = f(xi)
-            pointidx += 1
-            fig.append(plt.figure())
-            ax.append(fig[pointidx].add_subplot())
-            ax[pointidx].scatter(xdata[:, i], zdata[:, j], c='grey', marker='s',
-                                 label='Data')
-            ax[pointidx].scatter(xtest[:, i], zfit[:, j], c='b',
-                                 marker='.', label='Model')
+            fig = plt.figure()
+            ax = fig.add_subplot()
+            ax.scatter(xdata[:, i], zdata[:, j], c='grey',
+                       marker='s', label='Data')
+            ax.scatter(xdata[:, i], zfit[:, j], c='b',
+                       marker='.', label='Model')
 
-            # plot confidence intervals if given data
-            if clo is not None and chi is not None:
-                ax[pointidx].scatter(xdata[:, i], clo[:, j], c='g',
-                                     marker='.', label=clabel)
-                ax[pointidx].scatter(xdata[:, i], chi[:, j], c='g',
-                                     marker='.', label=clabel)
-
-            ax[pointidx].set_xlabel(xlabels[i])
-            ax[pointidx].set_ylabel(zlabels[j])
-            ax[pointidx].set_title('2D Scatter Plot')
-            ax[pointidx].legend()
-
-            if dz is not None and dzfit is not None:
-                pointidx += 1
-                fig.append(plt.figure())
-                ax.append(fig[pointidx].add_subplot())
-                ax[pointidx].scatter(xdata[:, i], dz[:, j], c='grey', marker='s',
-                                     label='Data')
-                ax[pointidx].scatter(xdata[:, i], dzfit[:, j], c='b',
-                                     marker='.', label='Model')
-                ax[pointidx].set_xlabel(xlabels[i])
-                ax[pointidx].set_ylabel('d[' + str(zlabels[j]) + ']/d[' +
-                                        xlabels[i] + ']')
-                ax[pointidx].set_title('2D Derivative Plot')
-                ax[pointidx].legend()
+            ax.set_xlabel(xlabels[i])
+            ax.set_ylabel(zlabels[j])
+            ax.set_title('2D Scatter Plot')
+            ax.legend()
 
             if show is True:
                 plt.show()
-    if PDF is True:
-        pdfPrint(fig, filename)
+            if filename is not None:
+                pdf.savefig(fig)
+    pdf.close()
 
 
-def scatter3D(xdata, zdata, xtest, zfit, xlabels=None, zlabels=None, show=True,
-              PDF=False, filename='results_scatter3D.pdf'):
+def surrogate_scatter3D(surrogate, dataframe, filename=None, show=True):
+    input_data = dataframe[surrogate.input_labels()]
+    output_data = dataframe[surrogate.output_labels()]
+    output_surrogate = surrogate.evaluate_surrogate(input_data)
+    _scatter3D(xdata=input_data.values,
+               zdata=output_data.values,
+               zfit=output_surrogate.values,
+               xlabels=surrogate.input_labels(),
+               zlabels=surrogate.output_labels(),
+               show=show,
+               filename=filename)
+
+
+def _scatter3D(xdata, zdata, zfit, xlabels=None, zlabels=None, show=True,
+               filename=None):
     """
     Plots training data as 3D scatter, with overlayed model output data.
 
     Required: input variable data, output variable data, model fit data
 
-    Optional: input and output labels (will be generated as needed)
+    Optional: input and output labels (will be generated as needed), filename
+    to save plots to PDF
 
-    Generally, x (input) variables are indexed by 'i', z (output) variables
-    are indexded by 'j', and dummy variables are indexed by 'w' when needed.
+    Generally, x (input) variables are indexed by 'i', and z (output) variables
+    are indexed by 'j'.
     """
 
     numins = np.shape(xdata)[1]  # number of input variables
@@ -133,45 +137,57 @@ def scatter3D(xdata, zdata, xtest, zfit, xlabels=None, zlabels=None, show=True,
         for j in range(numouts):
             zlabels.append('z' + str(j+1))
 
-    pairidx = -1  # dummy index for each plot produced
-    fig, ax = [], []
+    if filename is not None:
+        if filename[-4:] != '.pdf':  # checking if extension is present
+            raise Exception('Filename does not end in .pdf, please amend '
+                            'filename with the proper extension.')
+        pdf = PdfPages(filename)
+
     for j in range(numouts):  # loop over all outputs, zj
         for pair in list(combinations(range(numins), 2)):  # pick two x vars
-            pairidx += 1  # index for new plot
             a, b = pair[0], pair[1]  # indices for the x variables picked
-            fig.append(plt.figure())
-            ax.append(fig[pairidx].add_subplot(projection='3d'))
+            fig = plt.figure()
+            ax = fig.add_subplot(projection='3d')
 
-            ax[pairidx].scatter(xdata[:, a], xdata[:, b], zdata[:, j], c='grey',
-                                marker='s', label='Data')
-            ax[pairidx].scatter(xtest[:, a], xtest[:, b], zfit[:, j], c='b',
-                                marker='.', label='Model')
-            ax[pairidx].set_xlabel(xlabels[a])
-            ax[pairidx].set_ylabel(xlabels[b])
-            ax[pairidx].set_zlabel(zlabels[j])
-            ax[pairidx].set_title('3D Scatter Plot')
-            ax[pairidx].legend()
+            ax.scatter(xdata[:, a], xdata[:, b], zdata[:, j],
+                       c='grey', marker='s', label='Data')
+            ax.scatter(xdata[:, a], xdata[:, b], zfit[:, j], c='b',
+                       marker='.', label='Model')
+            ax.set_xlabel(xlabels[a])
+            ax.set_ylabel(xlabels[b])
+            ax.set_zlabel(zlabels[j])
+            ax.set_title('3D Scatter Plot')
+            ax.legend()
 
             if show is True:
                 plt.show()
-    if PDF is True:
-        pdfPrint(fig, filename)
+            if filename is not None:
+                pdf.savefig(fig)
+    pdf.close()
 
-def surrogate_parity(surrogate, dataframe, filename=None):
+
+def surrogate_parity(surrogate, dataframe, filename=None, show=True):
+    input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
-    output_surrogate = surrogate.evaluate_surrogate(dataframe)
-    if filename is None:
-        parity(zdata=output_data.values, zfit=output_surrogate.values, zlabels=surrogate.output_labels())
-    else:
-        parity(zdata=output_data.values, zfit=output_surrogate.values, zlabels=surrogate.output_labels(),
-               PDF=True, filename=filename)
+    output_surrogate = surrogate.evaluate_surrogate(input_data)
+    _parity(zdata=output_data.values,
+            zfit=output_surrogate.values,
+            zlabels=surrogate.output_labels(),
+            show=show,
+            filename=filename)
 
 
-def parity(zdata, zfit, zlabels=None, clo=None, chi=None,
-           clabel=None, show=True, PDF=False, filename='results_parity.pdf'):
+def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
     """
-    Plots model output against data output, with confidence interval data
-    if provided to the method.
+    Plots model output against data output.
+
+    Required: output variable data, model fit data
+
+    Optional: output labels (will be generated as needed), filename to save
+    plots to PDF
+
+    Generally, x (input) variables are indexed by 'i', and z (output) variables
+    are indexed by 'j'.
     """
     numouts = np.shape(zdata)[1]  # number of output variables
 
@@ -182,55 +198,62 @@ def parity(zdata, zfit, zlabels=None, clo=None, chi=None,
         for j in range(numouts):
             zlabels.append('z' + str(j+1))
 
-    fig, ax = [], []
+    if filename is not None:
+        if filename[-4:] != '.pdf':  # checking if extension is present
+            raise Exception('Filename does not end in .pdf, please amend '
+                            'filename with the proper extension.')
+        pdf = PdfPages(filename)
+
     for j in range(numouts):  # loop over all outputs, zj
-        fig.append(plt.figure())
-        ax.append(fig[j].add_subplot())
+        fig = plt.figure()
+        ax = fig.add_subplot()
 
-        # ax[j].plot(zdata[j, :], zdata[j, :], c='grey', label='Data')
-        # ax[j].scatter(zdata[j, :], zfit[j, :], s=3, c='b', marker='.',
-        #               label='Predictions')
-        ax[j].plot(zdata[:, j], zdata[:, j], c='grey', label='Data')
-        ax[j].scatter(zdata[:, j], zfit[:, j], marker='.', label='Predictions')
+        ax.plot(zdata[:, j], zdata[:, j], c='grey', label='Data')
+        ax.scatter(zdata[:, j], zfit[:, j], s=3, c='b', marker='.',
+                   label='Predictions')
 
-        # plot confidence intervals if given data
-        if clo is not None and chi is not None:
-            ax[j].scatter(zdata[:, j], clo[:, j], c='g',
-                          marker='.', label=clabel)
-            ax[j].scatter(zdata[:, j], chi[:, j], c='g',
-                          marker='.', label=clabel)
-
-        ax[j].set_xlabel(zlabels[j])
-        ax[j].set_ylabel('Model Output')
-        ax[j].set_title('Parity Plot')
-        ax[j].legend()
+        ax.set_xlabel(zlabels[j])
+        ax.set_ylabel('Model Output')
+        ax.set_title('Parity Plot')
+        ax.legend()
 
         if show is True:
             plt.show()
-    if PDF is True:
-        pdfPrint(fig, filename)
+        if filename is not None:
+            pdf.savefig(fig)
+    pdf.close()
 
-def surrogate_residual(surrogate, dataframe, filename=None, relative_error=False):
+
+def surrogate_residual(surrogate, dataframe, filename=None,
+                       relative_error=False, show=True):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
-    output_surrogate = surrogate.evaluate_surrogate(dataframe)
-    error = np.abs(output_data - output_surrogate)
-    if relative_error == True:
-        error = np.divide(error, np.maximum(output_data,1.0))
-    if filename is None:
-        residual(xdata=input_data.values, e=error.values, xlabels=surrogate.input_labels(), elabels=surrogate.output_labels())
-    else:
-        residual(xdata=input_data.values, e=error.values, xlabels=surrogate.input_labels(), elabels=surrogate.output_labels(),
-                 PDF=True, filename=filename)
+    output_surrogate = surrogate.evaluate_surrogate(input_data)
+    residual = np.abs(output_data - output_surrogate)
+    if relative_error is True:
+        residual = np.divide(residual, np.maximum(output_data, 1.0))
+    _residual(xdata=input_data.values, residual=residual.values,
+              xlabels=surrogate.input_labels(),
+              elabels=surrogate.output_labels(),
+              show=show,
+              filename=filename)
 
 
-def residual(xdata, e, xlabels=None, elabels=None, show=True, PDF=False,
-             filename='results_residual.pdf'):
+def _residual(xdata, residual, xlabels=None, elabels=None, show=True,
+              filename=None):
     """
-    Plots model error against data output.
+    Plots model residual against data output.
+
+    Required: input variable data, model error data
+
+    Optional: input and error labels (will be generated as needed), filename
+    to save plots to PDF
+
+    Generally, x (input) variables are indexed by 'i', and z (output) variables
+    are indexed by 'j'.
     """
     numins = np.shape(xdata)[1]  # number of input variables
-    numouts = np.shape(e)[1]  # number of output variables
+    numouts = np.shape(residual)[1]  # number of output variables
 
     # check and add labels if missing
 
@@ -242,53 +265,25 @@ def residual(xdata, e, xlabels=None, elabels=None, show=True, PDF=False,
         for i in range(numouts):
             elabels.append('z'+str(j+1)+' Error')
 
-    fig, ax = [], []
-    count = 0
+    if filename is not None:
+        if filename[-4:] != '.pdf':  # checking if extension is present
+            raise Exception('Filename does not end in .pdf, please amend '
+                            'filename with the proper extension.')
+        pdf = PdfPages(filename)
+
     for i in range(numins):
         for j in range(numouts):  # loop over all outputs, zj
+            fig = plt.figure()
+            ax = fig.add_subplot()
+            ax.scatter(xdata[:, i], residual[:, j], marker='.',
+                       label=elabels[j])
+            ax.set_xlabel(xlabels[i])
+            ax.set_ylabel(elabels[j])
+            ax.set_title('Residual Plot')
+            ax.legend()
 
-            fig.append(plt.figure())
-            ax.append(fig[count].add_subplot())
-            ax[count].scatter(xdata[:, i], e[:, j], marker='.', label=elabels[j])
-            ax[count].set_xlabel(xlabels[i])
-            ax[count].set_ylabel(elabels[j])
-            ax[count].set_title('Residual Plot')
-            ax[count].legend()
-    
             if show is True:
                 plt.show()
-            count += 1
-
-    if PDF is True:
-        pdfPrint(fig, filename)
-
-
-def pdfPrint(fig, filename):
-    """
-    Print input figure list to a single PDF file, with a specified name.
-    """
-    pp = PdfPages(filename)
-    for plot in fig:
-        pp.savefig(plot)
-    pp.close()
-
-
-def extractData(data):  # might not need if we ensure data is all 2D a priori
-    """
-    Ensures any input vectors (numrows,0) or lists (numrows,) are converted to
-    arrays (numrows,1) to prevent indexing errors while plotting.
-
-    Note - the plotting methods don't depend on this, and eventually this will
-    be taken care by the SurrogateObject output.
-    """
-    if len(np.shape(data)) == 2 or data is None:  # check formatting
-        array = np.array(data)
-    else:  # reformat values as an n x 1 array
-        temp = np.empty((np.shape(data)[0], 1))
-        count = 0
-        for val in data:
-            temp[count] = data[count]
-            count += 1
-        array = np.array(temp)
-
-    return array
+            if filename is not None:
+                pdf.savefig(fig)
+    pdf.close()
