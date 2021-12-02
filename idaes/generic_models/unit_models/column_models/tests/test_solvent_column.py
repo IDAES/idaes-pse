@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Author: Paul Akula, Anuja Deshpande
+Author: Paul Akula, Anuja Deshpande, Andrew Lee
 """
 # Import Python libraries
 import pytest
@@ -22,7 +22,7 @@ from pyomo.environ import ConcreteModel, value, Param, TransformationFactory,\
 
 # Import IDAES Libraries
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models.column_models.column \
+from idaes.generic_models.unit_models.column_models.solvent_column \
     import PackedColumn
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)

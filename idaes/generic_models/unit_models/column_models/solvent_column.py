@@ -40,7 +40,7 @@ from idaes.core.control_volume1d import DistributedVars
 import idaes.logger as idaeslog
 
 
-__author__ = "Paul Akula, John Eslick"
+__author__ = "Paul Akula, John Eslick, Anuja Deshpande, Andrew Lee"
 
 
 # Set up logger
@@ -352,33 +352,10 @@ documentation for supported schemes,
                                      rule=rule_holdup_vap,
                                      doc='Volumetric vapor holdup [-]')
         
-        # Calculating gas velocity at flooding point
-        def rule_flood_velocity(blk, t, x):
-            x_liq = blk.liquid_phase.length_domain.at(blk.zi[x].value)
-            dens_liq = blk.liquid_phase.properties[t, x_liq].mw/\
-                    blk.liquid_phase.properties[t, x_liq].vol_mol_phase['Liq']
-                    
-            dens_vap = blk.vapor_phase.properties[t, x].mw/\
-                    blk.vapor_phase.properties[t, x].vol_mol_phase['Vap']
-                    
-            H = (blk.liquid_phase.properties[t, x_liq].flow_mass_phase['Liq']/\
-                blk.vapor_phase.properties[t, x].flow_mass_phase['Vap'])*\
-                (dens_liq/dens_vap)**0.5
-                
-            mu_water = 0.1*pyunits.Pa*pyunits.s
-            
-            g_ref = CONST.acceleration_gravity
-            gref = pyunits.convert(g_ref, to_units=pyunits.ft/(pyunits.s)**2)
-            
-            aref = pyunits.convert(blk.packing_specific_area, to_units=((pyunits.ft)**2)/(pyunits.ft)**3)
-            
-            return ((gref*((blk.eps_ref)**3)/aref)*(dens_liq/dens_vap)*\
-                ((blk.liquid_phase.properties[t, x_liq].visc_d_phase['Liq']/mu_water)**(-0.2))*\
-                    exp(-4*(H)**(0.25)))**0.5
-                
-        self.gas_velocity_flood = Expression(self.flowsheet().time,
+        # Define gas velocity at flooding point (m/s)                
+        self.gas_velocity_flood = Var(self.flowsheet().time,
                                 self.vapor_phase.length_domain,
-                                rule=rule_flood_velocity,
+                                initialize=1,
                                 doc='Gas velocity at flooding point')
             
         # Flooding fraction 
@@ -743,8 +720,6 @@ documentation for supported schemes,
 
         # Heat transfer rate
         blk.heat_flux_vap.fix(0.0)
-        # blk.heat_transfer_rate_vap.fix(0.0)
-        # blk.heat_transfer_rate_liq.fix(0.0)
         blk.vapor_phase.heat.fix(0.0)
         blk.liquid_phase.heat.fix(0.0)
         
