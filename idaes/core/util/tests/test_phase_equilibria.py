@@ -215,9 +215,11 @@ def test_Txy_data_no_dew():
     model = ConcreteModel()
 
     model.params = GenericParameterBlock(default=configuration)
-
+    
+    # Again, add more calculation points because the PR for single-phase
+    # component VLE initialization hasn't been accepted
     TD = Txy_data(model, "carbon_dioxide", "bmimPF6", 101325,
-                  num_points=3, temperature=150.15,
+                  num_points=9, temperature=150.15,
                   print_level=idaeslog.CRITICAL, solver_op={'tol': 1e-6})
 
     assert TD.Component_1 == 'carbon_dioxide'
@@ -225,13 +227,13 @@ def test_Txy_data_no_dew():
     assert_units_equivalent(TD.Punits, pyunits.kg / pyunits.m / pyunits.s ** 2)
     assert_units_equivalent(TD.Tunits, pyunits.K)
     assert TD.P == 101325
-    assert TD.TBubb == [pytest.approx(185.6468, abs=1e-2),
-                        pytest.approx(191.4697, abs=1e-2),
-                        pytest.approx(331.1625, abs=1e-2)]
+    TBubb_ref = np.array([185.6468, 183.9464, 185.2789, 187.8233, 191.4697,
+                         196.6568, 204.6795, 220.183 , 331.1625])
+    assert TD.TBubb == pytest.approx(TBubb_ref, abs=1e-2)
     assert TD.TDew == []
-    assert TD.x == [pytest.approx(0.99, abs=1e-4),
-                    pytest.approx(0.5, abs=1e-4),
-                    pytest.approx(0.01, abs=1e-4)]
+    x_ref = np.array([0.99, 0.8675, 0.745, 0.6225, 0.5, 0.3775, 0.255, 0.1325,
+       0.01  ])
+    assert TD.x == pytest.approx(x_ref, abs=1e-4)
 
 
 # Author: Alejandro Garciadiego

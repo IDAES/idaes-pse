@@ -3792,13 +3792,16 @@ def _temperature_pressure_bubble_dew(b, name):
     if splt[0] == "temperature":
         abbrv = "t"+abbrv
         bounds = (b.temperature.lb, b.temperature.ub)
+        units = b.params.get_metadata().default_units["temperature"]
     elif splt[0] == "pressure":
         abbrv = "p"+abbrv
         bounds = (b.pressure.lb, b.pressure.ub)
+        units_meta = b.params.get_metadata().derived_units
+        units = units_meta["pressure"]
     else:
         _raise_dev_burnt_toast()
         
-    units = b.params.get_metadata().default_units[splt[0]]
+    
     docstring_var += splt[0]
     docstring_mole_frac += splt[0]
       
