@@ -15,7 +15,6 @@ Framework for generic property packages
 """
 # Import Python libraries
 import types
-from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (Block,
