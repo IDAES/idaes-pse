@@ -20,7 +20,7 @@ __author__ = "Andrew Lee"
 
 class BalanceTypeNotSupportedError(NotImplementedError):
     """
-    IDAES exception to be used when a control volumedoes not support a given
+    IDAES exception to be used when a control volume does not support a given
     type of balance equation.
     """
     pass  # Tried to put bagel in normal toaster
@@ -66,3 +66,13 @@ class PropertyPackageError(AttributeError):
     Needs to inherit from AttributeError for Pyomo interactions.
     """
     pass  # Bread stuck
+
+
+class InitializationError(ValueError):
+    """
+    IDAES exception to be used when initialization routines fail. All
+    initialization routines should raise this Exception if the final step
+    fails ot converge, and can raise this exception earlier if the routine
+    enters a state from which recovery is impossible.
+    """
+    pass

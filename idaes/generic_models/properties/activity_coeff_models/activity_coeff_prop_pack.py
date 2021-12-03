@@ -42,8 +42,18 @@ References:
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, log, NonNegativeReals, value, Var, exp,\
-    Expression, Param, sqrt, SolverFactory, units as pyunits
+from pyomo.environ import (Constraint,
+                           log,
+                           NonNegativeReals,
+                           value,
+                           Var,
+                           exp,
+                           Expression,
+                           Param,
+                           sqrt,
+                           units as pyunits,
+                           SolverStatus,
+                           TerminationCondition)
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -59,7 +69,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants as const
 from idaes.core.util import get_solver
@@ -394,6 +404,12 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk.release_state(flags, outlvl=outlvl)
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        
+        if (res.solver.termination_condition != TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):

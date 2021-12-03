@@ -28,7 +28,9 @@ from pyomo.environ import (Block,
                            value,
                            Var,
                            units as pyunits,
-                           Reference)
+                           Reference,
+                           TerminationCondition,
+                           SolverStatus)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -49,7 +51,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError,
-                                        PropertyNotSupportedError)
+                                        PropertyNotSupportedError,
+                                        InitializationError)
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver
 import idaes.logger as idaeslog
@@ -1381,8 +1384,13 @@ class _GenericStateBlock(StateBlock):
                 blk.release_state(flag_dict)
 
         init_log.info("Property package initialization: {}.".format(
-            idaeslog.condition(res))
-        )
+            idaeslog.condition(res)))
+
+        if (res.solver.termination_condition != TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         '''

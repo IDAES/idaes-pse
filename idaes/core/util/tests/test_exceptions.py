@@ -55,3 +55,9 @@ def test_PropertyPackageError():
     with pytest.raises(AttributeError):
         # This MUST be an AttributeError due to behaviour in Pyomo
         raise PropertyPackageError()
+
+
+@pytest.mark.unit
+def test_InitializationError():
+    with pytest.raises(ValueError):
+        raise InitializationError()
