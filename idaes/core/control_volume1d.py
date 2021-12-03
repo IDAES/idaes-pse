@@ -20,6 +20,8 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
+                           Expression,
+                           Param,
                            Reals,
                            TransformationFactory,
                            units as pyunits,
@@ -153,6 +155,7 @@ argument)."""))
     def add_geometry(self,
                      length_domain=None,
                      length_domain_set=None,
+                     length_var=None,
                      flow_direction=FlowDirection.forward):
         """
         Method to create spatial domain and volume Var in ControlVolume.
@@ -166,6 +169,10 @@ argument)."""))
             length_domain_set - (optional) list of point to use to initialize
                             a new ContinuousSet if length_domain is not
                             provided (default = [0.0, 1.0]).
+            length_var - (optional) external variable to use for the length of
+                         the spatial domain,. If a variable is provided, a
+                         reference will be made to this in place of the length
+                         Var.
             flow_direction - argument indicating direction of material flow
                             relative to length domain. Valid values:
                                 - FlowDirection.forward (default), flow goes
@@ -218,9 +225,22 @@ argument)."""))
             self.area = Var(initialize=1.0,
                             doc='Cross-sectional area of Control Volume',
                             units=units("area"))
-        self.length = Var(initialize=1.0,
-                          doc='Length of Control Volume',
-                          units=units("length"))
+
+        if length_var is not None:
+            # Validate length_Var and add a reference
+            if not isinstance(length_var, (Var, Param, Expression)):
+                raise ConfigurationError(
+                    f"{self.name} length_var must be a Pyomo Var, Param or "
+                    "Expression.")
+            elif length_var.is_indexed():
+                raise ConfigurationError(
+                    f"{self.name} length_var must be a scalar (unindexed) "
+                    "component.")
+            add_object_reference(self, "length", length_var)
+        else:
+            self.length = Var(initialize=1.0,
+                              doc='Length of Control Volume',
+                              units=units("length"))
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,

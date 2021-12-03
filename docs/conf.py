@@ -189,7 +189,6 @@ html_favicon = "images/idaes-logo.ico"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['static', 'images']
 html_css_files = [
-    'css/theme.css',
     'css/custom.css',
     'css/badge_only.css'
 ]
