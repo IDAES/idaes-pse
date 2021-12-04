@@ -45,6 +45,10 @@ class CV_Direction(enum.Enum):
     Y = 3
 
 
+class CV_Bound(enum.Enum):
+    EXTRAPOLATE = 1
+
+
 class CV_Interpolation(enum.Enum):
     UDS = 1  # Upwind difference scheme, exit face same as node center
     CDS = 2  # Linear interpolation from upstream and downstream node centers
@@ -144,10 +148,13 @@ def _interpolate_2D(
     icu = ic - 1
     icd = ic
     if ic == ifaces.first():
-        return phi_bound_0
+        if not isinstance(phi_bound_0, CV_Bound):
+            return phi_bound_0
+        icu = ic + 1
     if ic == ifaces.last():
-        return phi_bound_1
-
+        if not isinstance(phi_bound_1, CV_Bound):
+            return phi_bound_1
+        icd = ic - 2
     # For now CDS is the only option
     cu = nodes.at(icu)
     cd = nodes.at(icd)
@@ -172,9 +179,9 @@ def contour_grid_data(var, time, xnodes, znodes):
     zg = {}
     for it, t in enumerate(time):
         i = 0
-        zg[it] = [None]*nz
-        xg[it] = [None]*nz
-        hg[it] = [None]*nz
+        zg[it] = [None] * nz
+        xg[it] = [None] * nz
+        hg[it] = [None] * nz
         for iz, z in enumerate(znodes):
             for ix, x in enumerate(xnodes):
                 data_z[ix] = z
@@ -421,14 +428,14 @@ def comp_entropy_expr(temperature, comp):
     d = h_params[comp]
     t = temperature / 1000.0 / pyo.units.K
     return (
-        1000
-        * (
+        (
             d["A"] * pyo.log(t)
             + d["B"] * t
             + d["C"] * t ** 2 / 2.0
             + d["D"] * t ** 3 / 3.0
             - d["E"] / 2.0 / t ** 2
             + d["G"]
+            - d["H"]
         )
         * pyo.units.J
         / pyo.units.mol
@@ -561,6 +568,13 @@ class SofcChannelData(UnitModelBlockData):
             doc="Heat flux to interconnect (positive is out)",
             initialize=0,
             units=pyo.units.J / pyo.units.m ** 2 / time_units,
+        )
+        self.htc = pyo.Var(
+            tset,
+            iznodes,
+            doc="Local channel heat fransfer coefficient",
+            initialize=500,
+            units=pyo.units.J / pyo.units.m ** 2 / time_units / pyo.units.K,
         )
         #
         self.flow_mol = pyo.Var(
@@ -959,7 +973,7 @@ class SofcElectrodeData(UnitModelBlockData):
         "length_y", ConfigValue(default=None, description="Width of cell (y-direction)")
     )
     CONFIG.declare(
-        "current", ConfigValue(default=None, description="Optional current variable")
+        "current_density", ConfigValue(default=None, description="Optional current_density variable")
     )
     CONFIG.declare(
         "conc_x0",
@@ -969,8 +983,20 @@ class SofcElectrodeData(UnitModelBlockData):
     )
     CONFIG.declare(
         "xflux_x0",
+        ConfigValue(default=None, description="Variable for fluid flux at x=0"),
+    )
+    CONFIG.declare(
+        "qflux_x0",
+        ConfigValue(default=None, description="Variable for heat flux at x=0"),
+    )
+    CONFIG.declare(
+        "channel_tempeature",
+        ConfigValue(default=None, description="Variable for channel temperature"),
+    )
+    CONFIG.declare(
+        "channel_htc",
         ConfigValue(
-            default=None, description="Variable for fluid flux at x=0"
+            default=None, description="Variable for channel heat transfer coefficent"
         ),
     )
     CONFIG.declare(
@@ -1073,19 +1099,8 @@ class SofcElectrodeData(UnitModelBlockData):
         else:
             self.conc_x0 = pyo.Reference(self.config.conc_x0)
 
-        if self.config.xflux_fluid_enth_x0 is None:
-            self.xflux_fluid_enth_x0 = pyo.Var(
-                tset,
-                iznodes,
-                doc="Enthaly flux due to fluid into electrode from channel",
-                initialize=0.0,
-                units=pyo.units.W / pyo.units.m ** 2,
-            )
-        else:
-            self.xflux_fluid_enth_x0 = pyo.Reference(self.config.xflux_fluid_enth_x0)
-
-        if self.config.current is None:
-            self.current = pyo.Var(
+        if self.config.current_density is None:
+            self.current_density = pyo.Var(
                 tset,
                 iznodes,
                 doc="Concentration of components at the x=0 boundary",
@@ -1093,7 +1108,7 @@ class SofcElectrodeData(UnitModelBlockData):
                 units=pyo.units.amps / pyo.units.m ** 2,
             )
         else:
-            self.current = pyo.Reference(self.config.current)
+            self.current_density = pyo.Reference(self.config.current_density)
 
         #
         self.porosity = pyo.Var(
@@ -1113,14 +1128,6 @@ class SofcElectrodeData(UnitModelBlockData):
             initialize=0,
             units=pyo.units.mol / pyo.units.m ** 2 / time_units,
         )
-        self.zflux_fluid_enth = pyo.Var(
-            tset,
-            ixnodes,
-            izfaces,
-            doc="Heat flux in z-direction",
-            initialize=0,
-            units=pyo.units.J / pyo.units.m ** 2 / time_units,
-        )
         self.xflux = pyo.Var(
             tset,
             ixfaces,
@@ -1129,14 +1136,6 @@ class SofcElectrodeData(UnitModelBlockData):
             doc="Component mole flux in x-direction",
             initialize=0,
             units=pyo.units.mol / pyo.units.m ** 2 / time_units,
-        )
-        self.xflux_fluid_enth = pyo.Var(
-            tset,
-            ixfaces,
-            iznodes,
-            doc="Heat flux in x-direction",
-            initialize=0,
-            units=pyo.units.J / pyo.units.m ** 2 / time_units,
         )
 
         #
@@ -1183,19 +1182,30 @@ class SofcElectrodeData(UnitModelBlockData):
         self.temperature = pyo.Var(
             tset, ixnodes, iznodes, doc="Temperature at node centers", units=pyo.units.K
         )
+        self.temperature_x0 = pyo.Var(
+            tset, iznodes, doc="Temperature at x=0 bound", units=pyo.units.K
+        )
+        self.temperature_x1 = pyo.Var(
+            tset, iznodes, doc="Temperature at x=1 bound", units=pyo.units.K
+        )
         self.mole_frac_comp = pyo.Var(
             tset, ixnodes, iznodes, comps, doc="Component mole fraction at node centers"
         )
-        self.Q_joule = pyo.Var(
-            tset, ixnodes, iznodes, doc="Joule heating", units=pyo.units.W
+        self.qflux_to_electrolyte = pyo.Var(
+            tset,
+            iznodes,
+            doc="Heat flux from electrode to electrolyte",
+            units=pyo.units.W / pyo.units.m ** 2,
         )
-        self.Q_sg = pyo.Var(
-            tset, ixnodes, iznodes, doc="Solid/gas heat transfer", units=pyo.units.W
+        self.a_res = pyo.Var(
+            doc="Resistance preexponential parameter", units=pyo.units.ohm * pyo.units.m
         )
+        self.b_res = pyo.Var(doc="Resistance parameter", units=pyo.units.K)
 
         # Parameters
         self.electrode_heat_capacity = pyo.Var()
         self.electrode_density = pyo.Var()
+        self.electrode_thermal_conductivity = pyo.Var()
 
         # Add time derivative varaible if steady state use const 0.
         if is_dynamic:
@@ -1292,6 +1302,13 @@ class SofcElectrodeData(UnitModelBlockData):
                 for i in comps
             )
 
+        @self.Expression(tset, iznodes)
+        def enth_mol_x0(b, t, iz):
+            return sum(
+                comp_enthalpy_expr(b.temperature_x0[t, iz], i) * b.conc_x0[t, iz, i]
+                for i in comps
+            ) / sum(b.conc_x0[t, iz, i] for i in comps)
+
         @self.Constraint(tset, ixnodes, iznodes)
         def int_energy_mol_eqn(b, t, ix, iz):
             return b.int_energy_mol[t, ix, iz] == sum(
@@ -1359,6 +1376,34 @@ class SofcElectrodeData(UnitModelBlockData):
                 derivative=True,
             )
 
+        @self.Expression(tset, ixfaces, iznodes)
+        def dTdx(b, t, ix, iz):
+            return _interpolate_2D(
+                ic=ix,
+                ifaces=ixfaces,
+                nodes=xnodes,
+                faces=xfaces,
+                phi_func=lambda ixf: b.temperature[t, ixf, iz],
+                phi_bound_0=(b.temperature_x0[t, iz] - b.temperature[t, 1, iz])
+                / (xfaces.at(1) - xnodes.at(1)),
+                phi_bound_1=(b.temperature[t, 1, iz] - b.temperature_x1[t, iz])
+                / (xnodes.last() - xfaces.last()),
+                derivative=True,
+            )
+
+        @self.Expression(tset, ixnodes, izfaces)
+        def dTdz(b, t, ix, iz):
+            return _interpolate_2D(
+                ic=iz,
+                ifaces=izfaces,
+                nodes=znodes,
+                faces=zfaces,
+                phi_func=lambda izf: b.temperature[t, ix, izf],
+                phi_bound_0=0,
+                phi_bound_1=0,
+                derivative=True,
+            )
+
         @self.Expression(tset, ixfaces, iznodes, comps)
         def diff_eff_coeff_xfaces(b, t, ix, iz, i):
             return _interpolate_2D(
@@ -1385,6 +1430,32 @@ class SofcElectrodeData(UnitModelBlockData):
                 derivative=False,
             )
 
+        @self.Expression(tset, ixfaces, iznodes)
+        def temperature_xfaces(b, t, ix, iz):
+            return _interpolate_2D(
+                ic=ix,
+                ifaces=ixfaces,
+                nodes=xnodes,
+                faces=xfaces,
+                phi_func=lambda ixf: b.temperature[t, ixf, iz],
+                phi_bound_0=b.temperature_x0[t, iz],
+                phi_bound_1=b.temperature_x1[t, iz],
+                derivative=False,
+            )
+
+        @self.Expression(tset, ixnodes, izfaces)
+        def temperature_zfaces(b, t, ix, iz):
+            return _interpolate_2D(
+                ic=iz,
+                ifaces=izfaces,
+                nodes=znodes,
+                faces=zfaces,
+                phi_func=lambda izf: b.temperature[t, ix, izf],
+                phi_bound_0=b.temperature[t, ix, iznodes.first()],
+                phi_bound_1=b.temperature[t, ix, iznodes.last()],
+                derivative=False,
+            )
+
         @self.Constraint(tset, ixfaces, iznodes, comps)
         def xflux_eqn(b, t, ix, iz, i):
             if ix == ixfaces.last():
@@ -1393,7 +1464,7 @@ class SofcElectrodeData(UnitModelBlockData):
                 else:
                     return (
                         b.xflux[t, ix, iz, i]
-                        == -b.tpb_stoich[i] * b.current[t, iz] / _constF
+                        == -b.tpb_stoich[i] * b.current_density[t, iz] / _constF
                     )
             return (
                 b.xflux[t, ix, iz, i]
@@ -1404,9 +1475,67 @@ class SofcElectrodeData(UnitModelBlockData):
             # if this is provided the xflux at the channel bound should be the
             # same as the flux out of the channel
             self.xflux_x0 = pyo.Reference(self.config.xflux_x0)
+
             @self.Constraint(tset, iznodes, comps)
             def xflux_from_channel_eqn(b, t, iz, i):
                 return b.xflux_x0[t, iz, i] == b.xflux[t, 1, iz, i]
+
+        if (
+            self.config.channel_tempeature is not None
+            and self.config.channel_htc is not None
+            and self.config.qflux_x0 is not None
+        ):
+            # if this is provided the xflux at the channel bound should be the
+            # same as the flux out of the channel
+            self.channel_htc = pyo.Reference(self.config.channel_htc)
+            self.channel_tempeature = pyo.Reference(self.config.channel_tempeature)
+            self.qflux_x0 = pyo.Reference(self.config.qflux_x0)
+
+            @self.Constraint(tset, iznodes)
+            def xflux_from_channel_conserve_eqn(b, t, iz):
+                return b.qflux_x0[t, iz] == -(1 - b.porosity) * b.electrode_thermal_conductivity * b.dTdx[
+                    t, 1, iz
+                ]
+
+            @self.Constraint(tset, iznodes)
+            def xflux_from_channel_htc_eqn(b, t, iz):
+                return b.qflux_x0[t, iz] == b.channel_htc[t, iz] * (
+                    b.channel_tempeature[t, iz] - b.temperature_x0[t, iz]
+                )
+
+        @self.Expression(tset, ixfaces, iznodes)
+        def qxflux(b, t, ix, iz):
+            if ix == ixfaces.first():
+                return self.qflux_x0[t, iz]
+            return -(1 - b.porosity) * b.electrode_thermal_conductivity * b.dTdx[t, ix, iz]
+
+        @self.Expression(tset, ixnodes, izfaces)
+        def qzflux(b, t, ix, iz):
+            if iz == izfaces.first() or iz == izfaces.last():
+                return 0
+            return -(1 - b.porosity) * b.electrode_thermal_conductivity * b.dTdz[t, ix, iz]
+
+        @self.Constraint(tset, iznodes)
+        def qflux_to_electrolyte_eqn(b, t, iz):
+            if "H2" in comps:
+                rxn = (
+                    b.xflux[t, ixnodes.last(), iz, "H2"]
+                    * b.temperature_x1[t, iz]
+                    * (
+                        comp_entropy_expr(b.temperature_x1[t, iz], "H2O")
+                        - comp_entropy_expr(b.temperature_x1[t, iz], "H2")
+                        - 0.5 * comp_entropy_expr(b.temperature_x1[t, iz], "O2")
+                    )
+                )
+            else:
+                rxn = 0
+
+            return (
+                b.electrode_thermal_conductivity
+                * b.dTdx[t, ixnodes.last(), iz]
+                * (1 - b.porosity)
+                == b.qflux_to_electrolyte[t, iz] + rxn
+            )
 
         @self.Constraint(tset, ixnodes, izfaces, comps)
         def zflux_eqn(b, t, ix, iz, i):
@@ -1415,17 +1544,40 @@ class SofcElectrodeData(UnitModelBlockData):
                 == -b.dcdz[t, ix, iz, i] * b.diff_eff_coeff_zfaces[t, ix, iz, i]
             )
 
+        @self.Expression(tset, ixnodes, iznodes)
+        def resistivity(b, t, ix, iz):
+            return b.a_res * pyo.exp(b.b_res / b.temperature[t, ix, iz])
+
         @self.Constraint(tset, ixnodes, iznodes, comps)
         def mass_balance_eqn(b, t, ix, iz, i):
+            if is_dynamic and t == tset.first():
+                return pyo.Constraint.Skip
             return b.node_volume[ix, iz] * b.dcdt[t, ix, iz, i] == b.xface_area[iz] * (
                 b.xflux[t, ix, iz, i] - b.xflux[t, ix + 1, iz, i]
             ) + b.zface_area[ix] * (b.zflux[t, ix, iz, i] - b.zflux[t, ix, iz + 1, i])
 
-        #@self.Constraint(tset, ixnodes, iznodes)
-        #def enrgy_balance_fluid_eqn(b, t, ix, iz):
-        #    return b.node_volume[ix, iz] * b.dcedt[ix, iz] = b.xface_area[iz] * (
-        #        b.xflux_fluid_enth[t, ix, iz, i] - b.xflux_fluid_enth[t, ix + 1, iz, i]
-        #    ) + b.zface_area[ix] * (b.zflux_fluid_enth[t, ix, iz, i] - b.zflux_fluid_enth[t, ix, iz + 1, i])
+        @self.Expression(tset, ixnodes, iznodes)
+        def joule_heating(b, t, ix, iz):
+            # current_density is the current density so have to multiply it be Area I**2 = i**2*A**2
+            # R = rho * dx / Area / (1-porosity) heating = I**2*R
+            return (
+                b.current_density[t, iz] ** 2
+                * b.resistivity[t, ix, iz]
+                * b.xface_area[iz]
+                / (1 - b.porosity)
+                * b.dx[ix]
+            )
+
+        @self.Constraint(tset, ixnodes, iznodes)
+        def energy_balance_solid_eqn(b, t, ix, iz):
+            if is_dynamic and t == tset.first():
+                return pyo.Constraint.Skip
+            return (
+                b.node_volume[ix, iz] * (1 - b.porosity) * b.dcedt_solid[t, ix, iz]
+                == b.xface_area[iz] * (b.qxflux[t, ix, iz] - b.qxflux[t, ix + 1, iz])
+                + b.zface_area[ix] * (b.qzflux[t, ix, iz] - b.qzflux[t, ix, iz + 1])
+                + b.joule_heating[t, ix, iz]
+            )
 
     def initialize(
         self,
@@ -1481,6 +1633,325 @@ class SofcElectrodeData(UnitModelBlockData):
                     # )
 
 
+@declare_process_block_class("SofcElectrolyte")
+class SofcElectrolyteData(UnitModelBlockData):
+    CONFIG = ConfigBlock()
+    CONFIG.declare(
+        "dynamic",
+        ConfigValue(
+            domain=In([useDefault, True, False]),
+            default=useDefault,
+            description="Dynamic model flag",
+            doc="""Indicates whether this model will be dynamic,
+**default** = useDefault.
+**Valid values:** {
+**useDefault** - get flag from parent (default = False),
+**True** - set as a dynamic model,
+**False** - set as a steady-state model.}""",
+        ),
+    )
+    CONFIG.declare(
+        "has_holdup",
+        ConfigValue(domain=In([useDefault, True, False]), default=useDefault),
+    )
+    CONFIG.declare(
+        "cv_zfaces",
+        ConfigValue(
+            description="CV z-boundary set, should start with 0 and end with 1."
+        ),
+    )
+    CONFIG.declare(
+        "cv_xfaces",
+        ConfigValue(
+            description="CV x-boundary set, should start with 0 and end with 1."
+        ),
+    )
+    CONFIG.declare(
+        "length_z",
+        ConfigValue(default=None, description="Length in the z-direction"),
+    )
+    CONFIG.declare(
+        "length_y", ConfigValue(default=None, description="Width of cell (y-direction)")
+    )
+    CONFIG.declare(
+        "current_density", ConfigValue(default=None, description="Optional current_density variable")
+    )
+    CONFIG.declare(
+        "temperature_x0", ConfigValue(default=None, description="Temperature at x=0")
+    )
+    CONFIG.declare(
+        "temperature_x1", ConfigValue(default=None, description="Temperature at x=1")
+    )
+    CONFIG.declare(
+        "qflux_x0", ConfigValue(default=None, description="Temperature at x=0")
+    )
+    CONFIG.declare(
+        "qflux_x1", ConfigValue(default=None, description="Temperature at x=1")
+    )
+
+    def build(self):
+        super().build()
+
+        # Set up some sets for the space and time indexing
+        is_dynamic = self.config.dynamic
+        time_units = self.flowsheet().time_units
+        tset = self.flowsheet().config.time
+        # z coordinates for nodes and faces
+        self.zfaces = pyo.Set(initialize=self.config.cv_zfaces)
+        self.znodes = pyo.Set(
+            initialize=[
+                (self.zfaces.at(i) + self.zfaces.at(i + 1)) / 2.0
+                for i in range(1, len(self.zfaces))
+            ]
+        )
+        self.xfaces = pyo.Set(initialize=self.config.cv_xfaces)
+        self.xnodes = pyo.Set(
+            initialize=[
+                (self.xfaces.at(i) + self.xfaces.at(i + 1)) / 2.0
+                for i in range(1, len(self.xfaces))
+            ]
+        )
+        # This sets provide an integer index for nodes and faces
+        self.izfaces = pyo.Set(initialize=range(1, len(self.zfaces) + 1))
+        self.iznodes = pyo.Set(initialize=range(1, len(self.znodes) + 1))
+        self.ixfaces = pyo.Set(initialize=range(1, len(self.xfaces) + 1))
+        self.ixnodes = pyo.Set(initialize=range(1, len(self.xnodes) + 1))
+
+        # Space saving aliases
+        izfaces = self.izfaces
+        iznodes = self.iznodes
+        ixfaces = self.ixfaces
+        ixnodes = self.ixnodes
+        zfaces = self.zfaces
+        znodes = self.znodes
+        xfaces = self.xfaces
+        xnodes = self.xnodes
+
+        # Since the length and width of the cell are general for all the parts
+        # of the cell, provide the option of just referencing cell level
+        # variables
+        if self.config.length_z is None:
+            self.length_z = pyo.Var(
+                initialize=0.25,
+                doc="Length in the direction z-direction",
+                units=pyo.units.m,
+            )
+        else:
+            self.length_z = pyo.Reference(self.config.length_z)
+
+        if self.config.length_y is None:
+            self.length_y = pyo.Var(
+                initialize=0.25, doc="Width of cell (y-direction)", units=pyo.units.m
+            )
+        else:
+            self.length_y = pyo.Reference(self.config.length_y)
+
+        # Channel thickness AKA length in the x direction is specific to the
+        # channel so local variable here is the only option
+        self.length_x = pyo.Var(
+            doc="Thickness of the electrode (x-direction)",
+            units=pyo.units.m,
+        )
+
+        if self.config.current_density is None:
+            self.current_density = pyo.Var(
+                tset,
+                iznodes,
+                doc="Concentration of components at the x=0 boundary",
+                initialize=0.0,
+                units=pyo.units.amps / pyo.units.m ** 2,
+            )
+        else:
+            self.current_density = pyo.Reference(self.config.current_density)
+
+        if self.config.temperature_x0 is None:
+            self.temperature_x0 = pyo.Var(
+                tset,
+                iznodes,
+                doc="Temperature at the x=0 boundary",
+                initialize=1000,
+                units=pyo.units.K,
+            )
+        else:
+            self.temperature_x0 = pyo.Reference(self.config.temperature_x0)
+
+        if self.config.temperature_x1 is None:
+            self.temperature_x1 = pyo.Var(
+                tset,
+                iznodes,
+                doc="Temperature at the x=1 boundary",
+                initialize=1000,
+                units=pyo.units.K,
+            )
+        else:
+            self.temperature_x1 = pyo.Reference(self.config.temperature_x1)
+
+        if self.config.qflux_x0 is None:
+            self.qflux_x0 = pyo.Var(
+                tset,
+                iznodes,
+                doc="Heat flux at the x=0 boundary",
+                initialize=1000,
+                units=pyo.units.J/pyo.units.M ** 2/time_units,
+            )
+        else:
+            self.qflux_x0 = pyo.Reference(self.config.qflux_x0)
+
+        if self.config.qflux_x1 is None:
+            self.qflux_x1 = pyo.Var(
+                tset,
+                iznodes,
+                doc="Heat flux at the x=1 boundary",
+                initialize=1000,
+                units=pyo.units.J/pyo.units.M ** 2/time_units,
+            )
+        else:
+            self.qflux_x1 = pyo.Reference(self.config.qflux_x1)
+
+        self.temperature = pyo.Var(
+            tset, ixnodes, iznodes, doc="Temperature at node centers", units=pyo.units.K
+        )
+        self.int_energy_density_solid = pyo.Var(
+            tset,
+            ixnodes,
+            iznodes,
+            doc="Internal energy density of solid electrode",
+            units=pyo.units.J / pyo.units.m ** 3,
+        )
+        self.a_res = pyo.Var(
+            doc="Resistance preexponential parameter", units=pyo.units.ohm * pyo.units.m
+        )
+        self.b_res = pyo.Var(doc="Resistance parameter", units=pyo.units.K)
+
+        # Parameters
+        self.heat_capacity = pyo.Var()
+        self.density = pyo.Var()
+        self.thermal_conductivity = pyo.Var()
+
+        @self.Constraint(tset, ixnodes, iznodes)
+        def int_energy_density_solid_eqn(b, t, ix, iz):
+            return b.int_energy_density_solid[
+                t, ix, iz
+            ] == b.heat_capacity * b.density * (
+                b.temperature[t, ix, iz] - 1000 * pyo.units.K
+            )
+
+        if is_dynamic:
+            self.dcedt_solid = DerivativeVar(
+                self.int_energy_density_solid,
+                wrt=tset,
+                initialize=0,
+                doc="Internal energy density time derivative",
+            )
+        else:
+            self.dcedt_solid = pyo.Param(
+                tset,
+                ixnodes,
+                iznodes,
+                initialize=0,
+                units=pyo.units.J / pyo.units.m ** 3 / time_units,
+            )
+
+        @self.Expression(iznodes)
+        def dz(b, iz):
+            return b.zfaces.at(iz + 1) - b.zfaces.at(iz)
+
+        @self.Expression(ixnodes)
+        def dx(b, ix):
+            return b.zfaces.at(ix + 1) - b.zfaces.at(ix)
+
+        @self.Expression(ixnodes, iznodes)
+        def node_volume(b, ix, iz):
+            return (
+                b.length_x[None]
+                * b.length_y[None]
+                * b.length_z[None]
+                * b.dz[iz]
+                * b.dx[ix]
+            )
+
+        @self.Expression(ixnodes)
+        def zface_area(b, ix):
+            return b.length_y[None] * b.length_x[None] * b.dx[ix]
+
+        @self.Expression(iznodes)
+        def xface_area(b, iz):
+            return b.length_y[None] * b.length_z[None] * b.dz[iz]
+
+        @self.Expression(tset, ixfaces, iznodes)
+        def dTdx(b, t, ix, iz):
+            return _interpolate_2D(
+                ic=ix,
+                ifaces=ixfaces,
+                nodes=xnodes,
+                faces=xfaces,
+                phi_func=lambda ixf: b.temperature[t, ixf, iz],
+                phi_bound_0=(b.temperature_x0[t, iz] - b.temperature[t, 1, iz])
+                / (xfaces.at(1) - xnodes.at(1)),
+                phi_bound_1=(b.temperature[t, 1, iz] - b.temperature_x1[t, iz])
+                / (xnodes.last() - xfaces.last()),
+                derivative=True,
+            )
+
+        @self.Expression(tset, ixnodes, izfaces)
+        def dTdz(b, t, ix, iz):
+            return _interpolate_2D(
+                ic=iz,
+                ifaces=izfaces,
+                nodes=znodes,
+                faces=zfaces,
+                phi_func=lambda izf: b.temperature[t, ix, izf],
+                phi_bound_0=0,
+                phi_bound_1=0,
+                derivative=True,
+            )
+
+        @self.Expression(tset, ixfaces, iznodes)
+        def qxflux(b, t, ix, iz):
+            if ix == ixfaces.first():
+                return self.qflux_x0[t, iz]
+            if ix == ixfaces.last():
+                return self.qflux_x1[t, iz]
+            return -b.thermal_conductivity * b.dTdx[t, ix, iz]
+
+        @self.Constraint(tset, iznodes)
+        def qflux_x1_eqn(b, t, iz):
+            return self.qflux_x1[t, iz] == -b.thermal_conductivity * b.dTdx[t, ixfaces.last(), iz]
+
+        @self.Expression(tset, ixnodes, izfaces)
+        def qzflux(b, t, ix, iz):
+            if iz == izfaces.first() or iz == izfaces.last():
+                return 0
+            return -b.thermal_conductivity * b.dTdz[t, ix, iz]
+
+        @self.Expression(tset, ixnodes, iznodes)
+        def resistivity(b, t, ix, iz):
+            return b.a_res * pyo.exp(b.b_res / b.temperature[t, ix, iz])
+
+        @self.Expression(tset, ixnodes, iznodes)
+        def joule_heating(b, t, ix, iz):
+            # current_density is the current density so have to multiply it be Area I**2 = i**2*A**2
+            # R = rho * dx / Area / (1-porosity) heating = I**2*R
+            return (
+                b.current_density[t, iz] ** 2
+                * b.resistivity[t, ix, iz]
+                * b.xface_area[iz]
+                * b.dx[ix]
+            )
+
+        @self.Constraint(tset, ixnodes, iznodes)
+        def energy_balance_solid_eqn(b, t, ix, iz):
+            if is_dynamic and t == tset.first():
+                return pyo.Constraint.Skip
+            return (
+                b.node_volume[ix, iz] * b.dcedt_solid[t, ix, iz]
+                == b.xface_area[iz] * (b.qxflux[t, ix, iz] - b.qxflux[t, ix + 1, iz])
+                + b.zface_area[ix] * (b.qzflux[t, ix, iz] - b.qzflux[t, ix, iz + 1])
+                + b.joule_heating[t, ix, iz]
+            )
+
+
+
 def use_channel():
     from idaes.core import FlowsheetBlock
 
@@ -1505,6 +1976,7 @@ def use_channel():
             "oposite_flow": True,
         }
     )
+
     if dynamic:
         pyo.TransformationFactory("dae.finite_difference").apply_to(
             m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
@@ -1533,7 +2005,7 @@ def use_channel():
 
     m.fs.chan.initialize()
     solver = pyo.SolverFactory("ipopt")
-    solver.solve(m, tee=True, options={"tol":1e-6})
+    solver.solve(m, tee=True, options={"tol": 1e-6})
 
     m.fs.chan.display()
     m.fs.chan.temperature.display()
@@ -1546,8 +2018,8 @@ def use_elecrode():
     import idaes.core.plugins
 
     dynamic = False
-    time_nfe = 10
-    time_set = [0, 1] if dynamic else [0]
+    time_nfe = 8
+    time_set = [0, 15] if dynamic else [0]
 
     zfaces = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     xfaces = [0.0, 0.2, 0.4, 0.6, 0.8, 0.9, 1.0]
@@ -1565,10 +2037,10 @@ def use_elecrode():
             "cv_zfaces": zfaces,
             "interpolation_scheme": CV_Interpolation.UDS,
             "oposite_flow": False,
-            "comp_list": ["H2", "H2O"]
+            "comp_list": ["H2", "H2O"],
         }
     )
-    m.fs.electrode = SofcElectrode(
+    m.fs.anode = SofcElectrode(
         default={
             "cv_zfaces": zfaces,
             "cv_xfaces": xfaces,
@@ -1576,6 +2048,18 @@ def use_elecrode():
             "comp_list": ["H2", "H2O"],
             "conc_x0": m.fs.chan.conc,
             "xflux_x0": m.fs.chan.xflux,
+            "qflux_x0": m.fs.chan.qxflux_el,
+            "channel_tempeature": m.fs.chan.temperature,
+            "channel_htc": m.fs.chan.htc,
+        }
+    )
+    m.fs.electrolyte = SofcElectrolyte(
+        default={
+            "cv_zfaces": zfaces,
+            "cv_xfaces": xfaces,
+            "current_density": m.fs.anode.current_density,
+            "temperature_x0": m.fs.anode.temperature_x1,
+            "qflux_x0": m.fs.anode.qflux_to_electrolyte,
         }
     )
 
@@ -1583,7 +2067,9 @@ def use_elecrode():
         pyo.TransformationFactory("dae.finite_difference").apply_to(
             m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
         )
-        m.fs.electrode.conc[0, :, :, :].fix(pyo.value(1.02e5 / _constR / 1023.15 / 2))
+        m.fs.anode.conc[0, :, :, :].fix(pyo.value(1.02e5 / _constR / 1023.15 / 2))
+        m.fs.anode.temperature[0, :, :].fix(1023.15)
+        m.fs.electrolyte[0, :, :].fix(1023.15)
         m.fs.chan.temperature[0, :].fix(1023.15)
         m.fs.chan.flow_mol[0, :].fix(1)
         m.fs.chan.mole_frac_comp[0, :, "H2"].fix(0.9)
@@ -1605,52 +2091,98 @@ def use_elecrode():
     m.fs.chan.length_x.fix(0.002)
     m.fs.chan.length_y.fix(0.05)
     m.fs.chan.length_z.fix(0.05)
+    m.fs.chan.htc.fix(10)
 
-    m.fs.electrode.pressure[:, :, :].set_value(1.02e5)
-    m.fs.electrode.temperature.fix(1023)
-    m.fs.electrode.current.fix(-20)
-    #m.fs.electrode.conc_x0.fix(pyo.value(2e5 / _constR / 1023.0 / 2))
+    m.fs.anode.pressure[:, :, :].set_value(1.02e5)
+    m.fs.anode.temperature[:, :, :].set_value(1023.15)
+    m.fs.anode.temperature_x0.fix(1023.15)
+    m.fs.anode.temperature_x1[:, :].set_value(1023.15)
+    m.fs.anode.qflux_to_electrolyte.fix(0)
+    m.fs.anode.current_density.fix(-2)
+    # m.fs.anode.conc_x0.fix(pyo.value(2e5 / _constR / 1023.0 / 2))
 
-    m.fs.electrode.length_x.fix(1e-3)
-    m.fs.electrode.length_y.fix(0.05)
-    m.fs.electrode.length_z.fix(0.05)
-    m.fs.electrode.porosity.fix(0.48)
-    m.fs.electrode.tortuosity.fix(5.4)
-    m.fs.electrode.electrode_heat_capacity.fix(430)
-    m.fs.electrode.electrode_density.fix(3030)
+    m.fs.anode.length_x.fix(1e-3)
+    m.fs.anode.length_y.fix(0.05)
+    m.fs.anode.length_z.fix(0.05)
+    m.fs.anode.porosity.fix(0.48)
+    m.fs.anode.tortuosity.fix(5.4)
+    m.fs.anode.electrode_heat_capacity.fix(430)
+    m.fs.anode.electrode_density.fix(3030)
+    m.fs.anode.electrode_thermal_conductivity.fix(1.6)
+    m.fs.anode.a_res.fix(2.98e-5)
+    m.fs.anode.b_res.fix(-1392.0)
 
+    m.fs.electrolyte.temperature[:, :, :].set_value(1023.15)
+    m.fs.electrolyte.temperature_x1.fix(1023.15)
+    m.fs.electrolyte.qflux_x1.fix(1.0)
+    m.fs.electrolyte.length_x.fix(1e-3)
+    m.fs.electrolyte.length_y.fix(0.05)
+    m.fs.electrolyte.length_z.fix(0.05)
+    m.fs.electrolyte.heat_capacity.fix(430)
+    m.fs.electrolyte.density.fix(3030)
+    m.fs.electrolyte.thermal_conductivity.fix(1.6)
+    m.fs.electrolyte.a_res.fix(2.98e-5)
+    m.fs.electrolyte.b_res.fix(-1392.0)
+
+
+    m.fs.chan.xflux.fix()
     m.fs.chan.initialize()
-    m.fs.electrode.initialize()
+    m.fs.chan.xflux.unfix()
+    m.fs.anode.initialize()
+
+    m.fs.anode.temperature_x0.unfix()
+    m.fs.chan.qxflux_el.unfix()
+    m.fs.anode.qflux_to_electrolyte.unfix()
+
+
     # see = pyo.TransformationFactory("simple_equality_eliminator")
     # see.apply_to(m)
     solver = pyo.SolverFactory("ipopt")
     # see.revert()
-    solver.solve(m, tee=True, options={"tol":1e-6})
-
-    z, x, h = contour_grid_data(
-        var=pyo.Reference(m.fs.electrode.mole_frac_comp[:, :, :, "H2"]),
-        time=m.fs.time,
-        xnodes=m.fs.electrode.xnodes,
-        znodes=m.fs.electrode.znodes,
+    solver.solve(
+        m,
+        tee=True,
+        symbolic_solver_labels=True,
+        options={"tol": 1e-6, "halt_on_ampl_error": "yes"},
     )
 
+    z, x, h = contour_grid_data(
+        # var=pyo.Reference(m.fs.anode.mole_frac_comp[:, :, :, "H2"]),
+        var=m.fs.anode.temperature,
+        time=m.fs.time,
+        xnodes=m.fs.anode.xnodes,
+        znodes=m.fs.anode.znodes,
+    )
 
-    #levels = np.linspace(10,12,21)
-    levels=21
-    for i, t in enumerate(m.fs.time):
-        plt.contourf(
-            z[i], x[i], h[i], levels=levels, cmap="RdYlBu"
-        )
-        plt.colorbar()
-        plt.show()
+    fig, ax = plt.subplots()
+    # levels = np.linspace(800, 1400, 40)
+    levels = 40
 
-    # m.fs.electrode.xflux_x0.display()
-    # m.fs.electrode.conc_x0.display()
-    # m.fs.electrode.current.display()
-    m.fs.electrode.conc.display()
-    m.fs.chan.conc.display()
-    print(h[i])
-    # m.fs.electrode.int_energy_density_solid.display()
+    def animate(i):
+        ax.clear()
+        ax.set_title("Mole Fraction H$_2$")
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        img = ax.contourf(z[i], x[i], h[i], levels=levels, cmap="RdYlBu_r")
+        if animate.first:
+
+            plt.colorbar(img, ax=ax)
+            animate.first = False
+
+    animate.first = True
+    import matplotlib.animation as animation
+
+    ani = animation.FuncAnimation(fig, animate, len(m.fs.time), interval=100)
+    plt.show()
+
+    ani.save("animation.gif", writer=animation.PillowWriter(fps=2))
+
+    # m.fs.anode.xflux_x0.display()
+    # m.fs.anode.conc_x0.display()
+    # m.fs.anode.current_density.display()
+    # m.fs.anode.conc.display()
+    m.fs.chan.temperature.display()
+    # m.fs.anode.int_energy_density_solid.display()
 
 
 if __name__ == "__main__":
