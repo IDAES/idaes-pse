@@ -383,7 +383,7 @@ def binary_diffusion_coefficient_expr(temperature, p, c1, c2):
     omega = (
         a / tr ** b + b / pyo.exp(d * tr) + e / pyo.exp(f * tr) + g / pyo.exp(h * tr)
     )
-    cm2_to_m2 = 0.01*0.01
+    cm2_to_m2 = 0.01 * 0.01
     Pa_to_bar = 1e-5
     return (
         0.002666
@@ -1192,7 +1192,7 @@ class SofcElectrodeData(UnitModelBlockData):
         self.mole_frac_comp = pyo.Var(
             tset, ixnodes, iznodes, comps, doc="Component mole fraction at node centers"
         )
-        self.qflux_to_electrolyte = pyo.Var(
+        self.qflux_x1 = pyo.Var(
             tset,
             iznodes,
             doc="Heat flux from electrode to electrolyte",
@@ -1359,7 +1359,8 @@ class SofcElectrodeData(UnitModelBlockData):
                 faces=xfaces,
                 phi_func=lambda ixf: b.conc[t, ixf, iz, i] / b.length_x,
                 phi_bound_0=(b.conc_x0[t, iz, i] - b.conc[t, 1, iz, i])
-                / (xfaces.at(1) - xnodes.at(1)) / b.length_x,
+                / (xfaces.at(1) - xnodes.at(1))
+                / b.length_x,
                 phi_bound_1=0,
                 derivative=True,
             )
@@ -1385,10 +1386,16 @@ class SofcElectrodeData(UnitModelBlockData):
                 nodes=xnodes,
                 faces=xfaces,
                 phi_func=lambda ixf: b.temperature[t, ixf, iz] / b.length_x,
-                phi_bound_0=(b.temperature_x0[t, iz] - b.temperature[t, ixnodes.first(), iz])
-                / (xfaces.first() - xnodes.first()) / b.length_x,
-                phi_bound_1=(b.temperature[t, ixnodes.last(), iz] - b.temperature_x1[t, iz])
-                / (xnodes.last() - xfaces.last()) / b.length_x,
+                phi_bound_0=(
+                    b.temperature_x0[t, iz] - b.temperature[t, ixnodes.first(), iz]
+                )
+                / (xfaces.first() - xnodes.first())
+                / b.length_x,
+                phi_bound_1=(
+                    b.temperature[t, ixnodes.last(), iz] - b.temperature_x1[t, iz]
+                )
+                / (xnodes.last() - xfaces.last())
+                / b.length_x,
                 derivative=True,
             )
 
@@ -1493,15 +1500,6 @@ class SofcElectrodeData(UnitModelBlockData):
             self.qflux_x0 = pyo.Reference(self.config.qflux_x0)
 
             @self.Constraint(tset, iznodes)
-            def qflux_from_channel_conserve_eqn(b, t, iz):
-                return (
-                    b.qflux_x0[t, iz]
-                    == -(1 - b.porosity)
-                    * b.electrode_thermal_conductivity
-                    * b.dTdx[t, 1, iz]
-                )
-
-            @self.Constraint(tset, iznodes)
             def qflux_from_channel_htc_eqn(b, t, iz):
                 return b.qflux_x0[t, iz] == b.channel_htc[t, iz] * (
                     b.channel_tempeature[t, iz] - b.temperature_x0[t, iz]
@@ -1509,20 +1507,13 @@ class SofcElectrodeData(UnitModelBlockData):
 
         @self.Expression(tset, ixfaces, iznodes)
         def qxflux(b, t, ix, iz):
-            if ix == ixfaces.first():
-                return self.qflux_x0[t, iz]
             return (
                 -(1 - b.porosity) * b.electrode_thermal_conductivity * b.dTdx[t, ix, iz]
             )
 
         @self.Constraint(tset, iznodes)
         def qflux_x0_eqn(b, t, iz):
-            return (
-                self.qflux_x0[t, iz]
-                == -(1 - b.porosity)
-                * b.electrode_thermal_conductivity
-                * b.dTdx[t, ixfaces.first(), iz]
-            )
+            return self.qflux_x0[t, iz] == b.qxflux[t, ixfaces.first(), iz]
 
         @self.Expression(tset, ixnodes, izfaces)
         def qzflux(b, t, ix, iz):
@@ -1533,10 +1524,10 @@ class SofcElectrodeData(UnitModelBlockData):
             )
 
         @self.Constraint(tset, iznodes)
-        def qflux_to_electrolyte_eqn(b, t, iz):
+        def qflux_x1_eqn(b, t, iz):
             if "H2" in comps:
                 rxn = (
-                    b.xflux[t, ixnodes.last(), iz, "H2"]
+                    b.xflux[t, ixfaces.last(), iz, "H2"]
                     * b.temperature_x1[t, iz]
                     * (
                         comp_entropy_expr(b.temperature_x1[t, iz], "H2O")
@@ -1549,9 +1540,9 @@ class SofcElectrodeData(UnitModelBlockData):
 
             return (
                 b.electrode_thermal_conductivity
-                * b.dTdx[t, ixnodes.last(), iz]
+                * b.dTdx[t, ixfaces.last(), iz]
                 * (1 - b.porosity)
-                == b.qflux_to_electrolyte[t, iz] + rxn
+                == b.qflux_x1[t, iz] + rxn
             )
 
         @self.Constraint(tset, ixnodes, izfaces, comps)
@@ -1903,11 +1894,17 @@ class SofcElectrolyteData(UnitModelBlockData):
                 ifaces=ixfaces,
                 nodes=xnodes,
                 faces=xfaces,
-                phi_func=lambda ixf: b.temperature[t, ixf, iz]/b.length_x,
-                phi_bound_0=(b.temperature_x0[t, iz] - b.temperature[t, ixnodes.first(), iz])
-                / (xfaces.first() - xnodes.first()) / b.length_x,
-                phi_bound_1=(b.temperature[t, ixnodes.last(), iz] - b.temperature_x1[t, iz])
-                / (xnodes.last() - xfaces.last()) / b.length_x,
+                phi_func=lambda ixf: b.temperature[t, ixf, iz] / b.length_x,
+                phi_bound_0=(
+                    b.temperature_x0[t, iz] - b.temperature[t, ixnodes.first(), iz]
+                )
+                / (xfaces.first() - xnodes.first())
+                / b.length_x,
+                phi_bound_1=(
+                    b.temperature[t, ixnodes.last(), iz] - b.temperature_x1[t, iz]
+                )
+                / (xnodes.last() - xfaces.last())
+                / b.length_x,
                 derivative=True,
             )
 
@@ -1926,25 +1923,15 @@ class SofcElectrolyteData(UnitModelBlockData):
 
         @self.Expression(tset, ixfaces, iznodes)
         def qxflux(b, t, ix, iz):
-            if ix == ixfaces.first():
-                return self.qflux_x0[t, iz]
-            if ix == ixfaces.last():
-                return self.qflux_x1[t, iz]
             return -b.thermal_conductivity * b.dTdx[t, ix, iz]
 
         @self.Constraint(tset, iznodes)
         def qflux_x1_eqn(b, t, iz):
-            return (
-                self.qflux_x1[t, iz]
-                == -b.thermal_conductivity * b.dTdx[t, ixfaces.last(), iz]
-            )
+            return b.qflux_x1[t, iz] == b.qxflux[t, ixfaces.last(), iz]
 
         @self.Constraint(tset, iznodes)
         def qflux_x0_eqn(b, t, iz):
-            return (
-                self.qflux_x0[t, iz]
-                == -b.thermal_conductivity * b.dTdx[t, ixfaces.first(), iz]
-            )
+            return b.qflux_x0[t, iz] == b.qxflux[t, ixfaces.first(), iz]
 
         @self.Expression(tset, ixnodes, izfaces)
         def qzflux(b, t, ix, iz):
@@ -2088,13 +2075,29 @@ def use_elecrode():
             "channel_htc": m.fs.fuel_chan.htc,
         }
     )
+    m.fs.oxygen_electrode = SofcElectrode(
+        default={
+            "cv_zfaces": zfaces,
+            "cv_xfaces": xfaces,
+            "tpb_stoich_dict": {"O2": -0.25, "N2": 0.0},
+            "comp_list": ["O2", "N2"],
+            "current_density": m.fs.fuel_electrode.current_density,
+            "conc_x0": m.fs.oxygen_chan.conc,
+            "xflux_x0": m.fs.oxygen_chan.xflux,
+            "qflux_x0": m.fs.oxygen_chan.qxflux_el,
+            "channel_tempeature": m.fs.oxygen_chan.temperature,
+            "channel_htc": m.fs.oxygen_chan.htc,
+        }
+    )
     m.fs.electrolyte = SofcElectrolyte(
         default={
             "cv_zfaces": zfaces,
             "cv_xfaces": xfaces,
             "current_density": m.fs.fuel_electrode.current_density,
             "temperature_x0": m.fs.fuel_electrode.temperature_x1,
-            "qflux_x0": m.fs.fuel_electrode.qflux_to_electrolyte,
+            "qflux_x0": m.fs.fuel_electrode.qflux_x1,
+            "temperature_x1": m.fs.oxygen_electrode.temperature_x1,
+            "qflux_x1": m.fs.oxygen_electrode.qflux_x1,
         }
     )
 
@@ -2110,8 +2113,16 @@ def use_elecrode():
         m.fs.oxygen_chan.flow_mol[0, :].fix(1e-5)
         m.fs.oxygen_chan.mole_frac_comp[0, :, "O2"].fix(0.20)
 
-        m.fs.fuel_electrode.conc[0, :, :, :].fix(pyo.value(1.02e5 / _constR / 1023.15 / 2))
+        m.fs.fuel_electrode.conc[0, :, :, :].fix(
+            pyo.value(1.02e5 / _constR / 1023.15 / 2)
+        )
         m.fs.fuel_electrode.temperature[0, :, :].fix(1023.15)
+
+        m.fs.oxygen_electrode.conc[0, :, :, :].fix(
+            pyo.value(1.02e5 / _constR / 1023.15 / 2)
+        )
+        m.fs.oxygen_electrode.temperature[0, :, :].fix(1023.15)
+
         m.fs.electrolyte[0, :, :].fix(1023.15)
 
     m.fs.fuel_chan.temperature_inlet.fix(1023.15)
@@ -2148,10 +2159,7 @@ def use_elecrode():
     m.fs.fuel_electrode.temperature[:, :, :].set_value(1023.15)
     m.fs.fuel_electrode.temperature_x0.fix(1023.15)
     m.fs.fuel_electrode.temperature_x1[:, :].set_value(1023.15)
-    m.fs.fuel_electrode.qflux_to_electrolyte.fix(0)
     m.fs.fuel_electrode.current_density.fix(-200)
-    # m.fs.fuel_electrode.conc_x0.fix(pyo.value(2e5 / _constR / 1023.0 / 2))
-
     m.fs.fuel_electrode.length_x.fix(1e-4)
     m.fs.fuel_electrode.length_y.fix(0.05)
     m.fs.fuel_electrode.length_z.fix(0.05)
@@ -2162,6 +2170,22 @@ def use_elecrode():
     m.fs.fuel_electrode.electrode_thermal_conductivity.fix(1.6)
     m.fs.fuel_electrode.a_res.fix(2.98e-5)
     m.fs.fuel_electrode.b_res.fix(-1392.0)
+
+    m.fs.oxygen_electrode.pressure[:, :, :].set_value(1.02e5)
+    m.fs.oxygen_electrode.temperature[:, :, :].set_value(1023.15)
+    m.fs.oxygen_electrode.temperature_x0.fix(1023.15)
+    m.fs.oxygen_electrode.temperature_x1[:, :].set_value(1023.15)
+    m.fs.oxygen_electrode.current_density.fix(-200)
+    m.fs.oxygen_electrode.length_x.fix(1e-4)
+    m.fs.oxygen_electrode.length_y.fix(0.05)
+    m.fs.oxygen_electrode.length_z.fix(0.05)
+    m.fs.oxygen_electrode.porosity.fix(0.48)
+    m.fs.oxygen_electrode.tortuosity.fix(3.0)
+    m.fs.oxygen_electrode.electrode_heat_capacity.fix(430)
+    m.fs.oxygen_electrode.electrode_density.fix(3030)
+    m.fs.oxygen_electrode.electrode_thermal_conductivity.fix(1.6)
+    m.fs.oxygen_electrode.a_res.fix(2.98e-5)
+    m.fs.oxygen_electrode.b_res.fix(-1392.0)
 
     m.fs.electrolyte.temperature[:, :, :].set_value(1023.15)
     m.fs.electrolyte.length_x.fix(1e-3)
@@ -2178,11 +2202,14 @@ def use_elecrode():
     m.fs.fuel_chan.initialize()
     m.fs.oxygen_chan.initialize()
     m.fs.fuel_chan.xflux.unfix()
+    m.fs.oxygen_chan.xflux.unfix()
     m.fs.fuel_electrode.initialize()
+    m.fs.oxygen_electrode.initialize()
 
     m.fs.fuel_electrode.temperature_x0.unfix()
     m.fs.fuel_chan.qxflux_el.unfix()
-    m.fs.fuel_electrode.qflux_to_electrolyte.unfix()
+    m.fs.oxygen_electrode.temperature_x0.unfix()
+    m.fs.oxygen_chan.qxflux_el.unfix()
 
     # see = pyo.TransformationFactory("simple_equality_eliminator")
     # see.apply_to(m)
@@ -2192,14 +2219,14 @@ def use_elecrode():
         m,
         tee=True,
         symbolic_solver_labels=True,
-        options={"tol": 1e-6, "halt_on_ampl_error": "yes"},
+        options={"tol": 1e-6, "halt_on_ampl_error": "no"},
     )
 
     z, x, h = contour_grid_data(
         var=pyo.Reference(m.fs.fuel_electrode.mole_frac_comp[:, :, :, "H2"]),
-        #var=m.fs.fuel_electrode.pressure,
-        #var=m.fs.fuel_electrode.temperature,
-        #var=m.fs.electrolyte.temperature,
+        # var=m.fs.fuel_electrode.pressure,
+        # var=m.fs.fuel_electrode.temperature,
+        # var=m.fs.electrolyte.temperature,
         time=m.fs.time,
         xnodes=m.fs.fuel_electrode.xnodes,
         znodes=m.fs.fuel_electrode.znodes,
@@ -2238,10 +2265,12 @@ def use_elecrode():
     # m.fs.fuel_electrode.int_energy_density_solid.display()
     # m.fs.fuel_electrode.temperature.display()
     # m.fs.electrolyte.temperature.display()
-
+    return m
 
 if __name__ == "__main__":
-    use_elecrode()
+    m = use_elecrode()
 
+    import idaes.core.util.model_statistics as mstat
 
+    print(mstat.degrees_of_freedom(m))
     print(binary_diffusion_coefficient_expr(590, 1e5, "CO2", "N2"))
