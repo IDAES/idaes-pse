@@ -312,13 +312,13 @@ h_params = {
         "H": 52.46694,
     },
     "H2": {  # 1000K-2500K
-        "A": 18.563083,
-        "B": 12.257357,
-        "C": -2.859786,
-        "D": 0.268238,
-        "E": 1.977990,
-        "F": -1.147438,
-        "G": 156.288133,
+        "A": 33.066178,
+        "B": -11.363417,
+        "C": 11.432816,
+        "D": -2.772874,
+        "E": -0.158558,
+        "F": -9.980797,
+        "G": 172.707974,
         "H": 0.0,
     },
     "H2O": {  # 500K-1700K
@@ -442,7 +442,6 @@ def comp_entropy_expr(temperature, comp):
             + d["D"] * t ** 3 / 3.0
             - d["E"] / 2.0 / t ** 2
             + d["G"]
-            - d["H"]
         )
         * pyo.units.J
         / pyo.units.mol
@@ -2314,7 +2313,7 @@ def use_elecrode():
     m.fs.oxygen_chan.htc.fix(10)
 
     m.fs.fuel_electrode.pressure[:, :, :].set_value(1.02e5)
-    m.fs.fuel_electrode.current_density.fix(-2000)
+    m.fs.fuel_electrode.current_density.fix(-200)
     m.fs.fuel_electrode.length_x.fix(750e-6)
     m.fs.fuel_electrode.length_y.fix(0.05)
     m.fs.fuel_electrode.length_z.fix(0.05)
@@ -2396,9 +2395,9 @@ def use_elecrode():
     #m.fs.potential_cell.fix(1.5)
 
     @m.fs.Expression(m.fs.time, m.fs.fuel_electrode.iznodes)
-    def potential_nerst(b, t, iz):
+    def potential_nernst(b, t, iz):
         T = b.fuel_electrode.temperature_x1[t, iz]
-        Pae = b.oxygen_electrode.pressure_x1[t, iz]
+        Poe = b.oxygen_electrode.pressure_x1[t, iz]
         yH2 = b.fuel_electrode.mole_frac_comp_x1[t, iz, "H2"]
         yO2 = b.oxygen_electrode.mole_frac_comp_x1[t, iz, "O2"]
         yH2O = b.fuel_electrode.mole_frac_comp_x1[t, iz, "H2O"]
@@ -2409,7 +2408,7 @@ def use_elecrode():
             * T
             / 2.0
             / _constF
-            * pyo.log(yH2 / yH2O * (Pae * yO2 / 1e5) ** 0.5)
+            * pyo.log(yH2 / yH2O * (Poe * yO2 / 1e5) ** 0.5)
         )
 
     @m.fs.Expression(m.fs.time, m.fs.fuel_electrode.iznodes)
@@ -2427,7 +2426,8 @@ def use_elecrode():
         yh2 = b.fuel_electrode.mole_frac_comp_x1[t, iz, "H2"]
         yh2o = b.fuel_electrode.mole_frac_comp_x1[t, iz, "H2O"]
         T = b.fuel_electrode.temperature_x1[t, iz]
-        return k * yh2 * yh2o * pyo.exp(-E / _constR / T)
+        A = b.fuel_electrode.xface_area[iz]
+        return k * A * yh2 * yh2o * pyo.exp(-E / _constR / T)
 
     @m.fs.Expression(m.fs.time, m.fs.oxygen_electrode.iznodes)
     def oe_ecd(b, t, iz):
@@ -2435,7 +2435,8 @@ def use_elecrode():
         E = b.oxygen_electrode.eec
         yo2 = b.oxygen_electrode.mole_frac_comp_x1[t, iz, "O2"]
         T = b.oxygen_electrode.temperature_x1[t, iz]
-        return k * yo2 ** 0.25 * pyo.exp(-E / _constR / T)
+        A = b.oxygen_electrode.xface_area[iz]
+        return k * A * yo2 ** 0.25 * pyo.exp(-E / _constR / T)
 
     @m.fs.Expression(m.fs.time, m.fs.oxygen_electrode.iznodes)
     def eta_fe(b, t, iz):
@@ -2443,8 +2444,7 @@ def use_elecrode():
         ecd = b.fe_ecd[t, iz]
         I = b.fuel_electrode.current_density[t, iz]
         alpha = b.fuel_electrode.alpha
-        A = b.fuel_electrode.xface_area[iz]
-        return _constR * A * T / alpha / _constF * pyo.asinh(I / ecd / 2.0)
+        return _constR * T / alpha / _constF * pyo.asinh(I / ecd / 2.0)
 
     @m.fs.Expression(m.fs.time, m.fs.oxygen_electrode.iznodes)
     def eta_oe(b, t, iz):
@@ -2452,12 +2452,11 @@ def use_elecrode():
         ecd = b.oe_ecd[t, iz]
         I = b.oxygen_electrode.current_density[t, iz]
         alpha = b.oxygen_electrode.alpha
-        A = b.oxygen_electrode.xface_area[iz]
-        return _constR * A * T / alpha / _constF * pyo.asinh(I / ecd / 2.0)
+        return _constR * T / alpha / _constF * pyo.asinh(I / ecd / 2.0)
 
     @m.fs.Constraint(m.fs.time, m.fs.oxygen_electrode.iznodes)
     def potential_eqn(b, t, iz):
-        return b.potential[t, iz] == b.potential_nerst[t, iz] - (
+        return b.potential[t, iz] == b.potential_nernst[t, iz] - (
             b.eta_ohm[t, iz] + b.eta_fe[t, iz] + b.eta_oe[t, iz]
         )
 
@@ -2468,7 +2467,7 @@ def use_elecrode():
         options={"tol": 1e-6, "halt_on_ampl_error": "no"},
     )
 
-
+    """
     @m.fs.Constraint(m.fs.time, m.fs.fuel_electrode.iznodes)
     def potential_cell_eqn(b, t, iz):
         return b.potential[t, iz] == b.potential_cell[t]
@@ -2481,7 +2480,7 @@ def use_elecrode():
         symbolic_solver_labels=True,
         options={"tol": 1e-6, "halt_on_ampl_error": "no"},
     )
-
+    """
 
     z, x, h = contour_grid_data(
         var=pyo.Reference(m.fs.fuel_electrode.mole_frac_comp[:, :, :, "H2"]),
@@ -2545,11 +2544,18 @@ if __name__ == "__main__":
     m.fs.fuel_electrode.temperature_x1.display()
     m.fs.fuel_electrode.conc_x1.display()
 
-    m.fs.potential_nerst.display()
+    m.fs.potential_nernst.display()
     m.fs.fe_ecd.display()
     m.fs.oe_ecd.display()
     m.fs.potential.display()
     m.fs.fuel_electrode.current_density.display()
+    m.fs.electrolyte.resistance_total.display()
+    m.fs.fuel_electrode.resistance_total.display()
+    m.fs.oxygen_electrode.resistance_total.display()
+    m.fs.eta_oe.display()
+    m.fs.eta_fe.display()
+    m.fs.eta_ohm.display()
+
 
 
     print(mstat.degrees_of_freedom(m))
@@ -2575,3 +2581,19 @@ if __name__ == "__main__":
             print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
         print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
     """
+
+    for temperature in [273, 298, 300, 400, 500, 600, 700, 800, 900, 1000, 1100]:
+        ds = pyo.value(
+            comp_entropy_expr(temperature, "H2O")
+            - comp_entropy_expr(temperature, "H2")
+            - 0.5 * comp_entropy_expr(temperature, "O2")
+        )
+        dh = pyo.value(
+            comp_enthalpy_expr(temperature, "H2O")
+            - comp_enthalpy_expr(temperature, "H2")
+            - 0.5 * comp_enthalpy_expr(temperature, "O2")
+        )
+        dg = dh - temperature*ds
+        dg_approx = pyo.value(-2*_constF*(1.253 - 0.00024516*temperature))
+
+        print(f"{temperature}, {ds}, {dh}, {dg}, {dg_approx}")
