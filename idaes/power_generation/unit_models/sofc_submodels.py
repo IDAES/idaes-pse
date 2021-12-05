@@ -26,6 +26,7 @@ from idaes.core import declare_process_block_class, UnitModelBlockData, useDefau
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
 )
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
@@ -54,6 +55,12 @@ class CV_Interpolation(enum.Enum):
     CDS = 2  # Linear interpolation from upstream and downstream node centers
     QUICK = 3  # Quadratic upwind interpolation, quadratic from two upwind
     # centers and one downwind
+
+
+def _set_default_factor(c, s):
+    for i in c:
+        if iscale.get_scaling_factor(c[i]) is None:
+            iscale.set_scaling_factor(c[i], s)
 
 
 def _set_if_unfixed(v, val):
@@ -624,7 +631,7 @@ class SofcChannelData(UnitModelBlockData):
             tset, iznodes, comps, doc="Component mole fraction at node centers"
         )
         self.flow_mol_inlet = pyo.Var(tset, doc="Inlet face molar flow rate")
-        self.pressure_inlet = pyo.Var(tset, doc="Inlet presssure")
+        self.pressure_inlet = pyo.Var(tset, doc="Inlet pressure")
         self.temperature_inlet = pyo.Var(tset, doc="Inlet temperature")
         self.temperature_outlet = pyo.Var(tset, doc="Outlet temperature")
         self.mole_frac_comp_inlet = pyo.Var(
@@ -853,7 +860,7 @@ class SofcChannelData(UnitModelBlockData):
             return b.pressure_face[t, izfout]
 
         @self.Expression(tset, comps)
-        def mol_frac_comp_outlet(b, t, i):
+        def mole_frac_comp_outlet(b, t, i):
             return b.flow_mol_comp_outlet[t, i] / b.flow_mol_outlet[t]
 
         @self.Expression(tset)
@@ -865,7 +872,7 @@ class SofcChannelData(UnitModelBlockData):
         def temperature_outlet_eqn(b, t):
             return b.enth_mol_outlet[t] == sum(
                 comp_enthalpy_expr(b.temperature_outlet[t], i)
-                * b.mol_frac_comp_outlet[t, i]
+                * b.mole_frac_comp_outlet[t, i]
                 for i in comps
             )
 
@@ -926,6 +933,56 @@ class SofcChannelData(UnitModelBlockData):
 
         solver = get_solver(solver, optarg)
         solver.solve(self, tee=True)
+
+    def calculate_scaling_factors(self):
+        # Base default scaling on typical conditions and dimensions
+        _set_default_factor(self.pressure, 1e-5)
+        _set_default_factor(self.temperature, 1e-2)
+        _set_default_factor(self.conc, 1e-1)
+        _set_default_factor(self.mole_frac_comp, 10)
+        _set_default_factor(self.flow_mol, 1e4)
+        _set_default_factor(self.velocity, 10)
+        _set_default_factor(self.xflux, 100)
+        iscale.propagate_indexed_component_scaling_factors(self)
+        s_length_y = 1 / pyo.value(self.length_y[None])
+        s_length_z = 1 / pyo.value(self.length_z[None])
+        s_length_x = 1 / pyo.value(self.length_x[None])
+        _set_default_factor(self.length_x, s_length_x)
+        _set_default_factor(self.length_y, s_length_y)
+        _set_default_factor(self.length_z, s_length_z)
+        s_deltaz = len(self.iznodes) / s_length_z
+
+        # estimate conc scaling
+        for i in self.conc:
+            if iscale.get_scaling_factor(self.conc[i]) is None:
+                sp = iscale.get_scaling_factor(self.pressure[i[0], i[1]])
+                sx = iscale.get_scaling_factor(self.mole_frac_comp[i])
+                st = iscale.get_scaling_factor(self.temperature[i[0], i[1]])
+                sr = 1  # scale for gas constant
+                iscale.set_scaling_factor(self.conc[i], sp * sx / sr / st)
+
+        for i in self.conc_eqn:
+            sp = iscale.get_scaling_factor(self.pressure[i[0], i[1]])
+            sx = iscale.get_scaling_factor(self.mole_frac_comp[i])
+            iscale.constraint_scaling_transform(self.conc_eqn[i], sp * sx)
+
+        for i, c in self.flow_mol_eqn.items():
+            s = iscale.get_scaling_factor(self.flow_mol[i])
+            iscale.constraint_scaling_transform(c, s)
+
+        for i in self.mole_frac_eqn:
+            iscale.constraint_scaling_transform(self.mole_frac_eqn[i], 10)
+
+        # for i in self.p_eqn:
+        #    sP = iscale.get_scaling_factor(self.pressure[i])
+        #    iscale.constraint_scaling_transform(self.p_eqn[i], sP)
+
+        for t, iz, i in self.mass_balance_eqn:
+            sc = iscale.get_scaling_factor(self.conc[t, iz, i])
+            sv = iscale.get_scaling_factor(self.velocity[t, iz])
+            iscale.constraint_scaling_transform(
+                self.mass_balance_eqn[t, iz, i], sc * sv / s_deltaz
+            )
 
 
 @declare_process_block_class("SofcElectrode")
@@ -1118,6 +1175,9 @@ class SofcElectrodeData(UnitModelBlockData):
         self.tortuosity = pyo.Var(
             initialize=2.0, doc="Electrode tortuosity", units=pyo.units.dimensionless
         )
+        self.kec = pyo.Var(units=pyo.units.A)
+        self.eec = pyo.Var(units=pyo.units.J/pyo.units.mol)
+        self.alpha = pyo.Var()
 
         # flux variables
         self.zflux = pyo.Var(
@@ -1146,6 +1206,14 @@ class SofcElectrodeData(UnitModelBlockData):
             iznodes,
             comps,
             doc="Component concentration at node centers",
+            units=pyo.units.mol / pyo.units.m ** 3,
+        )
+        self.conc_x1 = pyo.Var(
+            tset,
+            iznodes,
+            comps,
+            doc="Concentration of components at the x=1 boundary",
+            initialize=0.0,
             units=pyo.units.mol / pyo.units.m ** 3,
         )
         self.enth_mol = pyo.Var(
@@ -1337,6 +1405,18 @@ class SofcElectrodeData(UnitModelBlockData):
         def mole_frac_eqn(b, t, ix, iz):
             return 1 == sum(b.mole_frac_comp[t, ix, iz, i] for i in comps)
 
+        @self.Expression(tset, iznodes, comps)
+        def mole_frac_comp_x1(b, t, iz, i):
+            return b.conc_x1[t, iz, i] / sum(b.conc_x1[t, iz, j] for j in comps)
+
+        @self.Expression(tset, iznodes)
+        def pressure_x1(b, t, iz):
+            return (
+                _constR
+                * sum(b.conc_x1[t, iz, j] for j in comps)
+                * b.temperature_x1[t, iz]
+            )
+
         @self.Expression(tset, ixnodes, iznodes, comps)
         def diff_eff_coeff(b, t, ix, iz, i):
             T = b.temperature[t, ix, iz]
@@ -1358,10 +1438,12 @@ class SofcElectrodeData(UnitModelBlockData):
                 nodes=xnodes,
                 faces=xfaces,
                 phi_func=lambda ixf: b.conc[t, ixf, iz, i] / b.length_x,
-                phi_bound_0=(b.conc_x0[t, iz, i] - b.conc[t, 1, iz, i])
-                / (xfaces.at(1) - xnodes.at(1))
+                phi_bound_0=(b.conc_x0[t, iz, i] - b.conc[t, ixnodes.first(), iz, i])
+                / (xfaces.first() - xnodes.first())
                 / b.length_x,
-                phi_bound_1=0,
+                phi_bound_1=(b.conc_x1[t, iz, i] - b.conc[t, ixnodes.last(), iz, i])
+                / (xfaces.last() - xnodes.last())
+                / b.length_x,
                 derivative=True,
             )
 
@@ -1420,8 +1502,12 @@ class SofcElectrodeData(UnitModelBlockData):
                 nodes=xnodes,
                 faces=xfaces,
                 phi_func=lambda ixf: b.diff_eff_coeff[t, ixf, iz, i],
-                phi_bound_0=b.diff_eff_coeff[t, 1, iz, i],  # use node value
-                phi_bound_1=0,  # don't need this one
+                phi_bound_0=b.diff_eff_coeff[
+                    t, ixnodes.first(), iz, i
+                ],  # use node value
+                phi_bound_1=b.diff_eff_coeff[
+                    t, ixnodes.last(), iz, i
+                ],  # use node value
                 derivative=False,
             )
 
@@ -1462,6 +1548,14 @@ class SofcElectrodeData(UnitModelBlockData):
                 phi_bound_0=b.temperature[t, ix, iznodes.first()],
                 phi_bound_1=b.temperature[t, ix, iznodes.last()],
                 derivative=False,
+            )
+
+        @self.Constraint(tset, iznodes, comps)
+        def conc_x1_eqn(b, t, iz, i):
+            return (
+                b.xflux[t, ixfaces.last(), iz, i]
+                == -b.dcdx[t, ixfaces.last(), iz, i]
+                * b.diff_eff_coeff_xfaces[t, ixfaces.last(), iz, i]
             )
 
         @self.Constraint(tset, ixfaces, iznodes, comps)
@@ -1511,22 +1605,20 @@ class SofcElectrodeData(UnitModelBlockData):
                 -(1 - b.porosity) * b.electrode_thermal_conductivity * b.dTdx[t, ix, iz]
             )
 
-        @self.Constraint(tset, iznodes)
-        def qflux_x0_eqn(b, t, iz):
-            return self.qflux_x0[t, iz] == b.qxflux[t, ixfaces.first(), iz]
-
         @self.Expression(tset, ixnodes, izfaces)
         def qzflux(b, t, ix, iz):
-            if iz == izfaces.first() or iz == izfaces.last():
-                return 0
             return (
                 -(1 - b.porosity) * b.electrode_thermal_conductivity * b.dTdz[t, ix, iz]
             )
 
         @self.Constraint(tset, iznodes)
-        def qflux_x1_eqn(b, t, iz):
+        def qflux_x0_eqn(b, t, iz):
+            return self.qflux_x0[t, iz] == b.qxflux[t, ixfaces.first(), iz]
+
+        @self.Expression(tset, iznodes)
+        def qflux_tpb(b, t, iz):
             if "H2" in comps:
-                rxn = (
+                return (
                     b.xflux[t, ixfaces.last(), iz, "H2"]
                     * b.temperature_x1[t, iz]
                     * (
@@ -1536,13 +1628,21 @@ class SofcElectrodeData(UnitModelBlockData):
                     )
                 )
             else:
-                rxn = 0
+                return 0 * pyo.units.J / pyo.units.m ** 2 / time_units
 
+        @self.Expression(tset, iznodes)
+        def h2_tpb_delta_s(b, t, iz):
             return (
-                b.electrode_thermal_conductivity
-                * b.dTdx[t, ixfaces.last(), iz]
-                * (1 - b.porosity)
-                == b.qflux_x1[t, iz] + rxn
+                comp_entropy_expr(b.temperature_x1[t, iz], "H2O")
+                - comp_entropy_expr(b.temperature_x1[t, iz], "H2")
+                - 0.5 * comp_entropy_expr(b.temperature_x1[t, iz], "O2")
+            )
+
+        @self.Constraint(tset, iznodes)
+        def qflux_x1_eqn(b, t, iz):
+            return (
+                -b.qxflux[t, ixfaces.last(), iz] + b.qflux_x1[t, iz]
+                == b.qflux_tpb[t, iz]
             )
 
         @self.Constraint(tset, ixnodes, izfaces, comps)
@@ -1555,6 +1655,26 @@ class SofcElectrodeData(UnitModelBlockData):
         @self.Expression(tset, ixnodes, iznodes)
         def resistivity(b, t, ix, iz):
             return b.a_res * pyo.exp(b.b_res / b.temperature[t, ix, iz])
+
+        @self.Expression(tset, ixnodes, iznodes)
+        def resistance(b, t, ix, iz):
+            return b.resistivity[t, ix, iz] * b.length_x * b.dx[ix] / b.xface_area[iz]
+
+        @self.Expression(tset, iznodes)
+        def current(b, t, iz):
+            return b.current_density[t, iz] * b.xface_area[iz]
+
+        @self.Expression(tset, ixnodes, iznodes)
+        def voltage_drop(b, t, ix, iz):
+            return b.current[t, iz] * b.resistance[t, ix, iz]
+
+        @self.Expression(tset, iznodes)
+        def resistance_total(b, t, iz):
+            return sum(b.resistance[t, ix, iz] for ix in ixnodes)
+
+        @self.Expression(tset, iznodes)
+        def voltage_drop_total(b, t, iz):
+            return sum(b.voltage_drop[t, ix, iz] for ix in ixnodes)
 
         @self.Constraint(tset, ixnodes, iznodes, comps)
         def mass_balance_eqn(b, t, ix, iz, i):
@@ -1574,6 +1694,7 @@ class SofcElectrodeData(UnitModelBlockData):
                 * b.xface_area[iz]
                 / (1 - b.porosity)
                 * b.dx[ix]
+                * b.length_x
             )
 
         @self.Constraint(tset, ixnodes, iznodes)
@@ -1593,6 +1714,7 @@ class SofcElectrodeData(UnitModelBlockData):
         solver=None,
         optarg=None,
         temperature_guess=None,
+        pressure_guess=None,
         mole_frac_guess=None,
     ):
         comps = self.config.comp_list
@@ -1603,6 +1725,10 @@ class SofcElectrodeData(UnitModelBlockData):
                 for ix in self.ixnodes:
                     if temperature_guess is not None:
                         _set_if_unfixed(self.temperature[t, ix, iz], temperature_guess)
+                        _set_if_unfixed(self.temperature_x0[t, iz], temperature_guess)
+                        _set_if_unfixed(self.temperature_x1[t, iz], temperature_guess)
+                    if pressure_guess is not None:
+                        _set_if_unfixed(self.pressure[t, ix, iz], pressure_guess)
                     for i in comps:
                         _set_if_unfixed(self.conc[t, ix, iz, i], self.conc_x0[t, iz, i])
                     mol_dens = pyo.value(sum(self.conc[t, ix, iz, i] for i in comps))
@@ -1639,6 +1765,13 @@ class SofcElectrodeData(UnitModelBlockData):
                     #    self.int_energy_density_solid[t, ix, iz],
                     #    self.electrode_heat_capacity * self.electrode_density * (self.temperature[t, ix, iz] - 1000 * pyo.units.K)
                     # )
+        # solver = get_solver(solver, optarg)
+        # solver.solve(self, tee=True)
+
+    def calculate_scaling_factors(self):
+        # Base default scaling on typical conditions and dimensions
+        _set_default_factor(self.pressure, 1e-5)
+        _set_default_factor(self.int_energy_density_solid, 1e-10)
 
 
 @declare_process_block_class("SofcElectrolyte")
@@ -1927,7 +2060,7 @@ class SofcElectrolyteData(UnitModelBlockData):
 
         @self.Constraint(tset, iznodes)
         def qflux_x1_eqn(b, t, iz):
-            return b.qflux_x1[t, iz] == b.qxflux[t, ixfaces.last(), iz]
+            return -b.qflux_x1[t, iz] == b.qxflux[t, ixfaces.last(), iz]
 
         @self.Constraint(tset, iznodes)
         def qflux_x0_eqn(b, t, iz):
@@ -1935,13 +2068,31 @@ class SofcElectrolyteData(UnitModelBlockData):
 
         @self.Expression(tset, ixnodes, izfaces)
         def qzflux(b, t, ix, iz):
-            if iz == izfaces.first() or iz == izfaces.last():
-                return 0
             return -b.thermal_conductivity * b.dTdz[t, ix, iz]
 
         @self.Expression(tset, ixnodes, iznodes)
         def resistivity(b, t, ix, iz):
             return b.a_res * pyo.exp(b.b_res / b.temperature[t, ix, iz])
+
+        @self.Expression(tset, ixnodes, iznodes)
+        def resistance(b, t, ix, iz):
+            return b.resistivity[t, ix, iz] * b.length_x * b.dx[ix] / b.xface_area[iz]
+
+        @self.Expression(tset, iznodes)
+        def current(b, t, iz):
+            return b.current_density[t, iz] * b.xface_area[iz]
+
+        @self.Expression(tset, ixnodes, iznodes)
+        def voltage_drop(b, t, ix, iz):
+            return b.current[t, iz] * b.resistance[t, ix, iz]
+
+        @self.Expression(tset, iznodes)
+        def resistance_total(b, t, iz):
+            return sum(b.resistance[t, ix, iz] for ix in ixnodes)
+
+        @self.Expression(tset, iznodes)
+        def voltage_drop_total(b, t, iz):
+            return sum(b.voltage_drop[t, ix, iz] for ix in ixnodes)
 
         @self.Expression(tset, ixnodes, iznodes)
         def joule_heating(b, t, ix, iz):
@@ -1952,6 +2103,7 @@ class SofcElectrolyteData(UnitModelBlockData):
                 * b.resistivity[t, ix, iz]
                 * b.xface_area[iz]
                 * b.dx[ix]
+                * b.length_x
             )
 
         @self.Constraint(tset, ixnodes, iznodes)
@@ -1964,6 +2116,10 @@ class SofcElectrolyteData(UnitModelBlockData):
                 + b.zface_area[ix] * (b.qzflux[t, ix, iz] - b.qzflux[t, ix, iz + 1])
                 + b.joule_heating[t, ix, iz]
             )
+
+    def calculate_scaling_factors(self):
+        # Base default scaling on typical conditions and dimensions
+        _set_default_factor(self.int_energy_density_solid, 1e-10)
 
 
 def use_channel():
@@ -2008,10 +2164,10 @@ def use_channel():
     m.fs.chan.mole_frac_comp_inlet[:, "H2"].fix(0.7)
     m.fs.chan.mole_frac_comp_inlet[:, "H2O"].fix(0.3)
 
-    m.fs.chan.xflux[:, :, "H2"].fix(0.02)
-    m.fs.chan.xflux[:, :, "H2O"].fix(0.01)
-    m.fs.chan.qxflux_el[:, :].fix(400000)
-    m.fs.chan.qxflux_ic[:, :].fix(100000)
+    m.fs.chan.xflux[:, :, "H2"].fix(100)
+    m.fs.chan.xflux[:, :, "H2O"].fix(-100)
+    m.fs.chan.qxflux_el[:, :].fix(0)
+    m.fs.chan.qxflux_ic[:, :].fix(0)
 
     m.fs.chan.length_x.fix(0.01)
     m.fs.chan.length_y.fix(0.01)
@@ -2023,6 +2179,8 @@ def use_channel():
 
     m.fs.chan.display()
     m.fs.chan.temperature.display()
+
+    return m
 
 
 def use_elecrode():
@@ -2128,7 +2286,7 @@ def use_elecrode():
     m.fs.fuel_chan.temperature_inlet.fix(1023.15)
     m.fs.fuel_chan.pressure_inlet.fix(1.02e5)
     m.fs.fuel_chan.pressure.fix(1.02e5)
-    m.fs.fuel_chan.flow_mol_inlet.fix(1e-5)
+    m.fs.fuel_chan.flow_mol_inlet.fix(1e-4)
     m.fs.fuel_chan.mole_frac_comp_inlet[:, "H2"].fix(0.1)
     m.fs.fuel_chan.mole_frac_comp_inlet[:, "H2O"].fix(0.9)
     m.fs.fuel_chan.xflux[:, :, "H2"].set_value(0.0)
@@ -2143,7 +2301,7 @@ def use_elecrode():
     m.fs.oxygen_chan.temperature_inlet.fix(1023.15)
     m.fs.oxygen_chan.pressure_inlet.fix(1.02e5)
     m.fs.oxygen_chan.pressure.fix(1.02e5)
-    m.fs.oxygen_chan.flow_mol_inlet.fix(1e-5)
+    m.fs.oxygen_chan.flow_mol_inlet.fix(1e-4)
     m.fs.oxygen_chan.mole_frac_comp_inlet[:, "O2"].fix(0.2)
     m.fs.oxygen_chan.mole_frac_comp_inlet[:, "N2"].fix(0.8)
     m.fs.oxygen_chan.xflux[:, :, "O2"].set_value(0.0)
@@ -2156,11 +2314,8 @@ def use_elecrode():
     m.fs.oxygen_chan.htc.fix(10)
 
     m.fs.fuel_electrode.pressure[:, :, :].set_value(1.02e5)
-    m.fs.fuel_electrode.temperature[:, :, :].set_value(1023.15)
-    m.fs.fuel_electrode.temperature_x0.fix(1023.15)
-    m.fs.fuel_electrode.temperature_x1[:, :].set_value(1023.15)
-    m.fs.fuel_electrode.current_density.fix(-200)
-    m.fs.fuel_electrode.length_x.fix(1e-4)
+    m.fs.fuel_electrode.current_density.fix(-2000)
+    m.fs.fuel_electrode.length_x.fix(750e-6)
     m.fs.fuel_electrode.length_y.fix(0.05)
     m.fs.fuel_electrode.length_z.fix(0.05)
     m.fs.fuel_electrode.porosity.fix(0.48)
@@ -2172,40 +2327,47 @@ def use_elecrode():
     m.fs.fuel_electrode.b_res.fix(-1392.0)
 
     m.fs.oxygen_electrode.pressure[:, :, :].set_value(1.02e5)
-    m.fs.oxygen_electrode.temperature[:, :, :].set_value(1023.15)
-    m.fs.oxygen_electrode.temperature_x0.fix(1023.15)
-    m.fs.oxygen_electrode.temperature_x1[:, :].set_value(1023.15)
-    m.fs.oxygen_electrode.current_density.fix(-200)
-    m.fs.oxygen_electrode.length_x.fix(1e-4)
+    m.fs.oxygen_electrode.length_x.fix(40e-6)
     m.fs.oxygen_electrode.length_y.fix(0.05)
     m.fs.oxygen_electrode.length_z.fix(0.05)
-    m.fs.oxygen_electrode.porosity.fix(0.48)
+    m.fs.oxygen_electrode.porosity.fix(0.35)
     m.fs.oxygen_electrode.tortuosity.fix(3.0)
     m.fs.oxygen_electrode.electrode_heat_capacity.fix(430)
     m.fs.oxygen_electrode.electrode_density.fix(3030)
     m.fs.oxygen_electrode.electrode_thermal_conductivity.fix(1.6)
-    m.fs.oxygen_electrode.a_res.fix(2.98e-5)
-    m.fs.oxygen_electrode.b_res.fix(-1392.0)
+    m.fs.oxygen_electrode.a_res.fix(8.115e-5)
+    m.fs.oxygen_electrode.b_res.fix(600.0)
 
     m.fs.electrolyte.temperature[:, :, :].set_value(1023.15)
-    m.fs.electrolyte.length_x.fix(1e-3)
+    m.fs.electrolyte.length_x.fix(30e-6)
     m.fs.electrolyte.length_y.fix(0.05)
     m.fs.electrolyte.length_z.fix(0.05)
     m.fs.electrolyte.heat_capacity.fix(430)
     m.fs.electrolyte.density.fix(3030)
     m.fs.electrolyte.thermal_conductivity.fix(1.6)
-    m.fs.electrolyte.a_res.fix(2.98e-5)
-    m.fs.electrolyte.b_res.fix(-1392.0)
+    m.fs.electrolyte.a_res.fix(2.94e-5)
+    m.fs.electrolyte.b_res.fix(10350.0)
+
+    iscale.calculate_scaling_factors(m)
+    use_idaes_solver_configuration_defaults()
 
     m.fs.fuel_chan.xflux.fix()
     m.fs.oxygen_chan.xflux.fix()
     m.fs.fuel_chan.initialize()
     m.fs.oxygen_chan.initialize()
+
+    # m.fs.fuel_electrode.qflux_x1.fix(0)
+    # m.fs.oxygen_electrode.qflux_x1.fix(0)
+    m.fs.fuel_electrode.initialize(temperature_guess=1023)
+    m.fs.oxygen_electrode.initialize(temperature_guess=1023)
+
     m.fs.fuel_chan.xflux.unfix()
     m.fs.oxygen_chan.xflux.unfix()
-    m.fs.fuel_electrode.initialize()
-    m.fs.oxygen_electrode.initialize()
 
+    # m.fs.fuel_electrode.qflux_x1.unfix()
+    # m.fs.oxygen_electrode.qflux_x1.unfix()
+    m.fs.fuel_electrode.channel_tempeature.unfix()
+    m.fs.oxygen_electrode.channel_tempeature.unfix()
     m.fs.fuel_electrode.temperature_x0.unfix()
     m.fs.fuel_chan.qxflux_el.unfix()
     m.fs.oxygen_electrode.temperature_x0.unfix()
@@ -2221,6 +2383,105 @@ def use_elecrode():
         symbolic_solver_labels=True,
         options={"tol": 1e-6, "halt_on_ampl_error": "no"},
     )
+
+    m.fs.potential = pyo.Var(m.fs.time, m.fs.fuel_electrode.iznodes, initialize=1.2, units=pyo.units.V)
+    m.fs.potential_cell = pyo.Var(m.fs.time, initialize=1.25, units=pyo.units.V)
+
+    m.fs.fuel_electrode.kec.fix(1.35e10)
+    m.fs.fuel_electrode.eec.fix(110000)
+    m.fs.fuel_electrode.alpha.fix(0.4)
+    m.fs.oxygen_electrode.kec.fix(8.7e7*300)
+    m.fs.oxygen_electrode.eec.fix(120000)
+    m.fs.oxygen_electrode.alpha.fix(0.5)
+    #m.fs.potential_cell.fix(1.5)
+
+    @m.fs.Expression(m.fs.time, m.fs.fuel_electrode.iznodes)
+    def potential_nerst(b, t, iz):
+        T = b.fuel_electrode.temperature_x1[t, iz]
+        Pae = b.oxygen_electrode.pressure_x1[t, iz]
+        yH2 = b.fuel_electrode.mole_frac_comp_x1[t, iz, "H2"]
+        yO2 = b.oxygen_electrode.mole_frac_comp_x1[t, iz, "O2"]
+        yH2O = b.fuel_electrode.mole_frac_comp_x1[t, iz, "H2O"]
+        return (
+            1.253
+            - 0.00024516 * T
+            + _constR
+            * T
+            / 2.0
+            / _constF
+            * pyo.log(yH2 / yH2O * (Pae * yO2 / 1e5) ** 0.5)
+        )
+
+    @m.fs.Expression(m.fs.time, m.fs.fuel_electrode.iznodes)
+    def eta_ohm(b, t, iz):
+        return b.fuel_electrode.current[t, iz] * (
+            b.electrolyte.resistance_total[t, iz]
+            + b.fuel_electrode.resistance_total[t, iz]
+            + b.oxygen_electrode.resistance_total[t, iz]
+        )
+
+    @m.fs.Expression(m.fs.time, m.fs.fuel_electrode.iznodes)
+    def fe_ecd(b, t, iz):
+        k = b.fuel_electrode.kec
+        E = b.fuel_electrode.eec
+        yh2 = b.fuel_electrode.mole_frac_comp_x1[t, iz, "H2"]
+        yh2o = b.fuel_electrode.mole_frac_comp_x1[t, iz, "H2O"]
+        T = b.fuel_electrode.temperature_x1[t, iz]
+        return k * yh2 * yh2o * pyo.exp(-E / _constR / T)
+
+    @m.fs.Expression(m.fs.time, m.fs.oxygen_electrode.iznodes)
+    def oe_ecd(b, t, iz):
+        k = b.oxygen_electrode.kec
+        E = b.oxygen_electrode.eec
+        yo2 = b.oxygen_electrode.mole_frac_comp_x1[t, iz, "O2"]
+        T = b.oxygen_electrode.temperature_x1[t, iz]
+        return k * yo2 ** 0.25 * pyo.exp(-E / _constR / T)
+
+    @m.fs.Expression(m.fs.time, m.fs.oxygen_electrode.iznodes)
+    def eta_fe(b, t, iz):
+        T = b.fuel_electrode.temperature_x1[t, iz]
+        ecd = b.fe_ecd[t, iz]
+        I = b.fuel_electrode.current_density[t, iz]
+        alpha = b.fuel_electrode.alpha
+        A = b.fuel_electrode.xface_area[iz]
+        return _constR * A * T / alpha / _constF * pyo.asinh(I / ecd / 2.0)
+
+    @m.fs.Expression(m.fs.time, m.fs.oxygen_electrode.iznodes)
+    def eta_oe(b, t, iz):
+        T = b.oxygen_electrode.temperature_x1[t, iz]
+        ecd = b.oe_ecd[t, iz]
+        I = b.oxygen_electrode.current_density[t, iz]
+        alpha = b.oxygen_electrode.alpha
+        A = b.oxygen_electrode.xface_area[iz]
+        return _constR * A * T / alpha / _constF * pyo.asinh(I / ecd / 2.0)
+
+    @m.fs.Constraint(m.fs.time, m.fs.oxygen_electrode.iznodes)
+    def potential_eqn(b, t, iz):
+        return b.potential[t, iz] == b.potential_nerst[t, iz] - (
+            b.eta_ohm[t, iz] + b.eta_fe[t, iz] + b.eta_oe[t, iz]
+        )
+
+    solver.solve(
+        m,
+        tee=True,
+        symbolic_solver_labels=True,
+        options={"tol": 1e-6, "halt_on_ampl_error": "no"},
+    )
+
+
+    @m.fs.Constraint(m.fs.time, m.fs.fuel_electrode.iznodes)
+    def potential_cell_eqn(b, t, iz):
+        return b.potential[t, iz] == b.potential_cell[t]
+
+    m.fs.fuel_electrode.current_density.unfix()
+
+    solver.solve(
+        m,
+        tee=True,
+        symbolic_solver_labels=True,
+        options={"tol": 1e-6, "halt_on_ampl_error": "no"},
+    )
+
 
     z, x, h = contour_grid_data(
         var=pyo.Reference(m.fs.fuel_electrode.mole_frac_comp[:, :, :, "H2"]),
@@ -2260,17 +2521,57 @@ def use_elecrode():
     # m.fs.fuel_electrode.current_density.display()
     # m.fs.fuel_electrode.conc.display()
     # m.fs.fuel_chan.temperature.display()
-    # m.fs.fuel_chan.mole_frac_comp.display()
+    # m.fs.oxygen_chan.temperature.display()
     # m.fs.fuel_electrode.mole_frac_comp.display()
+    # m.fs.fuel_chan.mole_frac_comp.display()
     # m.fs.fuel_electrode.int_energy_density_solid.display()
     # m.fs.fuel_electrode.temperature.display()
     # m.fs.electrolyte.temperature.display()
     return m
+
 
 if __name__ == "__main__":
     m = use_elecrode()
 
     import idaes.core.util.model_statistics as mstat
 
+    # m.fs.chan.temperature.display()
+    # m.fs.chan.mole_frac_comp.display()
+
+    m.fs.fuel_chan.velocity.display()
+    m.fs.oxygen_chan.velocity.display()
+    m.fs.fuel_electrode.qflux_tpb.display()
+    m.fs.fuel_electrode.h2_tpb_delta_s.display()
+    m.fs.fuel_electrode.temperature_x1.display()
+    m.fs.fuel_electrode.conc_x1.display()
+
+    m.fs.potential_nerst.display()
+    m.fs.fe_ecd.display()
+    m.fs.oe_ecd.display()
+    m.fs.potential.display()
+    m.fs.fuel_electrode.current_density.display()
+
+
     print(mstat.degrees_of_freedom(m))
     print(binary_diffusion_coefficient_expr(590, 1e5, "CO2", "N2"))
+    print(pyo.value(comp_enthalpy_expr(1023.15, "H2O")) + 241.8264 * 1000)
+    """
+    check_scaling=False
+    if check_scaling:
+        jac, nlp = iscale.get_jacobian(m, scaled=True)
+        print("Extreme Jacobian entries:")
+        for i in iscale.extreme_jacobian_entries(jac=jac, nlp=nlp, large=100):
+            print(f"    {i[0]:.2e}, [{i[1]}, {i[2]}]")
+        #print("Unscaled constraints:")
+        #for c in iscale.unscaled_constraints_generator(m):
+        #    print(f"    {c}")
+        #print("Scaled constraints by factor:")
+        #for c, s in iscale.constraints_with_scale_factor_generator(m):
+        #    print(f"    {c}, {s}")
+        print("Badly scaled variables:")
+        for v, sv in iscale.badly_scaled_var_generator(
+            m, large=1e2, small=1e-2, zero=1e-12
+        ):
+            print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
+        print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
+    """
