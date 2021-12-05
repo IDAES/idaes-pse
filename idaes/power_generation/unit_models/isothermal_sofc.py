@@ -1861,8 +1861,10 @@ def soec_example():
     m.fs.soec.inlet_fc.display()
     m.fs.soec.outlet_fc.display()
     m.fs.soec.E_nerst.display()
-    m.fs.soec.eta_ae_expr.display()
     m.fs.soec.eta_fe_expr.display()
+    m.fs.soec.eta_ae_expr.display()
+    m.fs.soec.fe_ecd.display()
+    m.fs.soec.ae_ecd.display()
     return m
 
 
