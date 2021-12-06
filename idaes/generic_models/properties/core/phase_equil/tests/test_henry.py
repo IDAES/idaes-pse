@@ -13,16 +13,19 @@
 """
 Library of common forms for phase equilibrium constraints
 """
-from pyomo.environ import ConcreteModel, Expression, Var, units as pyunits
+from pyomo.environ import ConcreteModel, Expression, value, Var, \
+    units as pyunits
 
+from pyomo.util.check_units import assert_units_consistent
 from idaes.generic_models.properties.core.generic.generic_property import \
     GenericParameterBlock
 from idaes.generic_models.properties.core.state_definitions import FTPx
 
 from idaes.generic_models.properties.core.phase_equil.henry import \
-    ConstantH, HenryType
+    ConstantH, HenryType, henry_equilibrium_ratio
 from idaes.generic_models.properties.core.phase_equil.forms import \
     fugacity
+from pytest import approx
 import pytest
 from idaes.core.util.exceptions import ConfigurationError
 
@@ -145,3 +148,46 @@ def test_constant_H():
     assert isinstance(m.state[0].henry, Expression)
     assert len(m.state[0].henry) == 1
     assert m.state[0].henry["Liq", "H2O"]._expr is m.params.H2O.henry_ref_Liq
+    
+@pytest.mark.component
+def test_equilibrium_ratio():
+    config_dict = {
+        "components": {"H2O": {"parameter_data": {"temperature_crit": 647.3,
+                                                  "henry_ref": {
+                                                      "Liq": 7}},
+                               "henry_component": {
+                                   "Liq": {"method": ConstantH,
+                                           "type": None}},
+                               "phase_equilibrium_form": {
+                                   ("Vap", "Liq"): fugacity}}},
+        "phases": {"Liq": {"equation_of_state": DummyEoS},
+                   "Vap": {"equation_of_state": DummyEoS}},
+        "state_definition": FTPx,
+        "pressure_ref": 1e5,
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K}}
+
+    
+    henry_types = [HenryType.Hcp, HenryType.Kpc, HenryType.Hxp, HenryType.Kpx]
+    expected_split = [3/(5*7),(3*7)/5,1/(5*7),7/5]
+    
+    for htype,split in zip(henry_types,expected_split):
+        config_dict["components"]["H2O"]["henry_component"]["Liq"]["type"] = htype
+        m = ConcreteModel()
+        m.params = GenericParameterBlock(default=config_dict)
+        
+        m.state = m.params.build_state_block([0])
+        m.state[0].mole_frac_phase_comp["Liq","H2O"].value = 2
+        m.state[0].dens_mol_phase = Var(["Vap", "Liq"], initialize=0,
+                                        units=pyunits.mol/(pyunits.m**3))
+        m.state[0].dens_mol_phase["Liq"].value = 3
+        m.state[0].pressure.value = 5
+        
+        assert approx(split,1E-6) == value(
+                            henry_equilibrium_ratio(m.state[0],"Liq","H2O"))
+        assert pyunits.get_units(
+            henry_equilibrium_ratio(m.state[0],"Liq","H2O")) is None

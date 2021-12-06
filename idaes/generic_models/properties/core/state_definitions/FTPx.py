@@ -26,7 +26,7 @@ from idaes.generic_models.properties.core.generic.utility import \
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
     _valid_VL_component_list
 from idaes.generic_models.properties.core.phase_equil.henry import \
-    HenryType
+    HenryType, henry_equilibrium_ratio
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 from .electrolyte_states import \
@@ -366,10 +366,7 @@ def state_initialization(b):
                 # one, then calling the henry_pressure method. Reset mole
                 # fraction to original value to "do no harm"
                 henry_mole_frac.append(j)
-                tmp = b.mole_frac_phase_comp[l_phase,j].value
-                b.mole_frac_phase_comp[l_phase, j].value = 1
-                K[j] = value(b.henry_pressure(l_phase, j)/b.pressure)
-                b.mole_frac_phase_comp[l_phase, j].value = tmp
+                K[j] = value(henry_equilibrium_ratio(b,l_phase, j))
                 
                 if K[j] < 0:
                     raise UserModelError(f"Component {j} has a negative "
@@ -460,10 +457,7 @@ def state_initialization(b):
                 # With initial guesses for the mole fractions, there is a
                 # decent value for density to calculate the concentration with
                 for j in henry_conc:
-                    tmp = b.mole_frac_phase_comp[l_phase,j].value
-                    b.mole_frac_phase_comp[l_phase, j].value = 1
-                    K[j] = value(b.henry_pressure(l_phase, j)/b.pressure)
-                    b.mole_frac_phase_comp[l_phase, j].value = tmp
+                    K[j] = value(henry_equilibrium_ratio(b,l_phase, j))
                     
                     if K[j] < 0:
                         raise UserModelError(f"Component {j} has a negative "

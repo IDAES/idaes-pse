@@ -18,7 +18,7 @@ is prototype code
 """
 from enum import Enum
 
-from pyomo.environ import log, Var
+from pyomo.environ import log, value, Var
 
 from idaes.generic_models.properties.core.generic.utility import (
     StateIndex)
@@ -31,7 +31,7 @@ class HenryType(Enum):
     'Henry Volatiltiy' types are numbered 51-100 (i.e. K = pressure/conc)
     We use this fact to simplify determining wheterh to multiply or divide
     by Henry's constant
-    Any differnt forms can use values 101+, but will need ot add the custom
+    Any differnt forms can use values 101+, but will need to add the custom
     code in if branches where necessary
     """
     # TODO: Add more forms as needed
@@ -119,6 +119,46 @@ def log_henry_pressure(b, p, j, T=None):
 
     return log_h_press
 
+def henry_equilibrium_ratio(b, p, j):
+    """
+    Returns vapor/liquid equilibrium mole ratio of Henry component j at the
+    temperature and pressure of block b.
+
+    Arguments:
+        b: Property block for which this calculation is taking place
+        p: Liquid phase for which this ratio is being calculated
+        j: Henry component in phase p
+        
+    Returns:
+        Molar ratio of component j in the vapor phase to that in liquid phase p
+        
+    Notes:
+        If Henry's law is defined in terms of mole fraction, this method
+        gives a meaningful answer whether or not the liquid phase composition
+        has been set. If it is defined in terms of concentration, a reasonable
+        value is given only if a reasonable liquid phase composition has been
+        specified.
+        
+        This function returns a value regardless of whether or not block b
+        is experiencing phase equilibrium at its current conditions.
+    """
+    
+    henry_def = b.params.get_component(j).config.henry_component[p]
+    henry_constant = b.henry[p, j]
+    if henry_def["type"] == HenryType.Hcp:
+        henry_constant /= b.dens_mol_phase[p]
+    elif henry_def["type"] == HenryType.Kpc:
+        henry_constant *= b.dens_mol_phase[p]
+        
+    if henry_def["type"].value <= 50:
+        # H = c/P type
+        return 1/(henry_constant*b.pressure)
+    elif henry_def["type"].value <= 100:
+        # K = P/c type
+        return henry_constant/b.pressure
+    else:
+        _raise_henry_type_error(henry_def['type'])
+    
 
 # Define units for Henry's constant
 def henry_units(henry_type, units):
