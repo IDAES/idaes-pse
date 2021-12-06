@@ -190,9 +190,9 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].enth_mol_phase["Vap"]), 1e-5) == 78048.7
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -367.558
+                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -361.794
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -269.0553
+                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -264.0181
 
     @pytest.mark.component
     def test_T350_P5_x5(self, m):
@@ -252,9 +252,9 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].enth_mol_phase["Vap"]), 1e-5) == 75150.7
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -367.6064
+                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -361.8433
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -287.3318
+                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -281.9703
 
     @pytest.mark.component
     def test_T450_P1_x5(self, m):
@@ -314,9 +314,9 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].enth_mol_phase["Vap"]), 1e-5) == 84175.1
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -333.836
+                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -328.766
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -247.385
+                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -241.622
 
     @pytest.mark.component
     def test_T450_P5_x5(self, m):
@@ -376,9 +376,9 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].enth_mol_phase["Vap"]), 1e-5) == 83362.3
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -331.676
+                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -326.299
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -261.961
+                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -256.198
 
     @pytest.mark.component
     def test_T368_P1_x5(self, m):
@@ -426,6 +426,7 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].mole_frac_phase_comp["Liq", "toluene"]),
                 1e-5) == 0.5987872
+        
         assert pytest.approx(
                 value(m.fs.state[1].mole_frac_phase_comp["Vap", "benzene"]),
                 1e-5) == 0.6141738
@@ -441,9 +442,9 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].enth_mol_phase["Vap"]), 1e-5) == 77155.4
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -364.856
+                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -359.256
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -267.892
+                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -262.348
 
     @pytest.mark.component
     def test_T376_P1_x2(self, m):
@@ -503,9 +504,9 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].enth_mol_phase["Vap"]), 1e-5) == 69175.3
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -372.869
+                value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -369.033
         assert pytest.approx(
-                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -278.766
+                value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -273.513
 
     @pytest.mark.unit
     def test_basic_scaling(self, m):
