@@ -558,6 +558,13 @@ class _CubicStateBlock(StateBlock):
         )
 
         # ---------------------------------------------------------------------
+        if (results.solver.termination_condition !=
+                TerminationCondition.optimal or
+                results.solver.status != SolverStatus.ok):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
+
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
@@ -565,12 +572,6 @@ class _CubicStateBlock(StateBlock):
                 blk.release_state(flags, outlvl=outlvl)
 
         init_log.info("Initialization complete.")
-
-        if (res.solver.termination_condition != TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok):
-            raise InitializationError(
-                f"{blk.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         '''

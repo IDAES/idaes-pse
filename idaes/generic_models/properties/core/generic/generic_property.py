@@ -1133,6 +1133,8 @@ class _GenericStateBlock(StateBlock):
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
 
         init_log.info('Starting initialization')
+        
+        res = None
 
         for k in blk.keys():
             # Deactivate the constraints specific for outlet block i.e.
@@ -1376,6 +1378,14 @@ class _GenericStateBlock(StateBlock):
                         .state_definition.do_not_initialize):
                     c.activate()
 
+        if (res is not None and (
+                res.solver.termination_condition !=
+                TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok)):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
+
         if state_vars_fixed is False:
             if hold_state is True:
                 return flag_dict
@@ -1384,12 +1394,6 @@ class _GenericStateBlock(StateBlock):
 
         init_log.info("Property package initialization: {}.".format(
             idaeslog.condition(res)))
-
-        if (res.solver.termination_condition != TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok):
-            raise InitializationError(
-                f"{blk.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         '''

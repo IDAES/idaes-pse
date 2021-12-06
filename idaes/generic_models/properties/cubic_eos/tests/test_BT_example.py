@@ -16,8 +16,10 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.cubic_eos.cubic_prop_pack import \
     cubic_roots_available
 from idaes.generic_models.properties.cubic_eos import BT_PR
+from idaes.core.util.exceptions import InitializationError
 
 from pyomo.environ import (ConcreteModel,
+                           Constraint,
                            Objective,
                            TerminationCondition,
                            value)
@@ -87,6 +89,32 @@ class TestBTExample(object):
             default={"defined_state": True})
 
         assert_units_consistent(m)
+
+    @pytest.mark.component
+    def test_initialization_failure(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={'dynamic': False})
+
+        m.fs.props = BT_PR.BTParameterBlock(
+                default={'valid_phase': ('Vap', 'Liq')})
+
+        m.fs.state = m.fs.props.build_state_block(
+            default={"defined_state": True})
+
+        m.fs.state.flow_mol.fix(100)
+        m.fs.state.mole_frac_comp["benzene"].fix(0.5)
+        m.fs.state.mole_frac_comp["toluene"].fix(0.5)
+        m.fs.state.temperature.fix(300)
+        m.fs.state.pressure.fix(1e5)
+
+        m.fs.state.p_bound = Constraint(expr=m.fs.state.pressure <= 1e4)
+
+        with pytest.raises(InitializationError,
+                           match="fs.state failed to initialize successfully. "
+                           "Please check the output logs for more "
+                           "information."):
+            m.fs.state.initialize()
 
     @pytest.mark.integration
     def test_T_sweep(self):

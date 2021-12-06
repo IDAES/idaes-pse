@@ -397,6 +397,12 @@ class _ActivityCoeffStateBlock(StateBlock):
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Initialization Step 5 {}.".format(idaeslog.condition(res)))
 
+        if (res.solver.termination_condition != TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
+
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
@@ -404,12 +410,6 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk.release_state(flags, outlvl=outlvl)
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        
-        if (res.solver.termination_condition != TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok):
-            raise InitializationError(
-                f"{blk.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
 
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):

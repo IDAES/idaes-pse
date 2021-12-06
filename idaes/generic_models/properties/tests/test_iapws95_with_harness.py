@@ -27,6 +27,8 @@ class TestBasicMix(PropertyTestHarness):
         self.param_args = {"phase_presentation": iapws95.PhaseType.MIX}
         self.prop_args = {}
         self.has_density_terms = True
+        # Helmholt package initialization has not solver calls, so can't fail
+        self.skip_initialization_exception = True
 
 
 @pytest.mark.unit
@@ -36,6 +38,8 @@ class TestBasicLV(PropertyTestHarness):
         self.param_args = {"phase_presentation": iapws95.PhaseType.LG}
         self.prop_args = {}
         self.has_density_terms = True
+        # Helmholt package initialization has not solver calls, so can't fail
+        self.skip_initialization_exception = True
 
 
 @pytest.mark.unit
@@ -45,6 +49,8 @@ class TestBasicL(PropertyTestHarness):
         self.param_args = {"phase_presentation": iapws95.PhaseType.L}
         self.prop_args = {}
         self.has_density_terms = True
+        # Helmholt package initialization has not solver calls, so can't fail
+        self.skip_initialization_exception = True
 
 
 @pytest.mark.unit
@@ -54,3 +60,5 @@ class TestBasicV(PropertyTestHarness):
         self.param_args = {"phase_presentation": iapws95.PhaseType.G}
         self.prop_args = {}
         self.has_density_terms = True
+        # Helmholt package initialization has not solver calls, so can't fail
+        self.skip_initialization_exception = True

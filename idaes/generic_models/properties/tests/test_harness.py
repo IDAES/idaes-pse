@@ -29,6 +29,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import InitializationError
 
 
 from pyomo.core.base.var import _VarData
@@ -51,11 +52,14 @@ class PropertyTestHarness(object):
 
         self.has_density_terms = True
 
+        self.skip_initialization_exception = False
+
         self.configure()
 
         # Need to attach these to m for later use
         m.has_density_terms = self.has_density_terms
         m.prop_args = self.prop_args
+        m.skip_initialization_exception = self.skip_initialization_exception
 
     def configure(self):
         # Placeholder method to allow user to setup test harness
@@ -258,7 +262,7 @@ class PropertyTestHarness(object):
 
         if degrees_of_freedom(frame.fs.props[1]) != 0:
             raise Exception(
-                "initialize did not result in a State BLock with 0 "
+                "initialize did not result in a State Block with 0 "
                 "degrees of freedom.")
 
     def test_release_state(self, frame):
@@ -273,6 +277,25 @@ class PropertyTestHarness(object):
             raise Exception(
                 "release state did not restore State Block to original "
                 "degrees of freedom.")
+
+    def test_initialize_failure(self, frame):
+        if not frame.skip_initialization_exception:
+            for n, v in frame.fs.props[1].define_state_vars().items():
+                for i in v:
+                    frame.fs.props[1].add_component(
+                        "_init_test_"+str(v)+str(i),
+                        Constraint(expr=v[i] <= 0))
+
+            with pytest.raises(
+                    InitializationError,
+                    match="fs.props failed to initialize successfully. Please "
+                    "check the output logs for more information."):
+                frame.fs.props.initialize()
+
+            for n, v in frame.fs.props[1].define_state_vars().items():
+                for i in v:
+                    frame.fs.props[1].del_component(
+                        "_init_test_"+str(v)+str(i))
 
     def test_CV_integration(self, frame):
         frame.fs.cv = ControlVolume0DBlock(default={
