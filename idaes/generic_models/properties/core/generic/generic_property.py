@@ -1897,8 +1897,7 @@ class GenericStateBlockData(StateBlockData):
                 abbrv = "p"
                 sf_pt = sf_P
             else:
-                raise BurntToast("Users shouldn't be calling this function. "
-                                 "If you're a dev, you know what you did.")
+                _raise_dev_burnt_toast()
             
             if short_name.endswith("bubble"):
                 phase = VaporPhase
@@ -1936,13 +1935,8 @@ class GenericStateBlockData(StateBlockData):
                         iscale.set_scaling_factor(v, sf_mf[p, i[2]])
                         if log_eq is not None and (
                                 iscale.get_scaling_factor(log_eq[i]) is None):
-                            sf_x = iscale.get_scaling_factor(
-                                sf_mf[p, i[2]],
-                                default=10,
-                                warning=True,
-                                hint="for log_mole_frac_"+abbrv)
                             iscale.constraint_scaling_transform(
-                                log_eq[i], sf_x, overwrite=False)
+                                log_eq[i], sf_mf[p, i[2]], overwrite=False)
                     except KeyError:
                         # component i[2] is not in the new phase, so this
                         # variable is likely unused and scale doesn't matter
