@@ -18,16 +18,12 @@ from pyomo.environ import exp, units as pyunits, Var
 from idaes.core.util.exceptions import ConfigurationError
 
 
-# -----------------------------------------------------------------------------
-# Common expression forms
-# TODO: Need to look into non-exponential form - is there only one term?
-
-def _parameters_exponential(cobj, prop, ndict, tdict):
+def parameters_exponential(cobj, prop, ndict, tdict):
     if len(ndict) != len(tdict):
         raise ConfigurationError(
-            f"{cobj.name} mismatched length between n and t parameters for "
-            f"CoolProp exponential form for property {prop}. Please ensure "
-            f"the number of n and t parameters are equal.")
+            f"{cobj.name} mismatched length between n and t parameters "
+            f"for CoolProp exponential form for property {prop}. Please "
+            f"ensure the number of n and t parameters are equal.")
 
     for i, nval in ndict.items():
         cobj.add_component(
@@ -59,7 +55,7 @@ def _exponential_sum(cobj, prop, theta):
     return s
 
 
-def _expression_exponential(cobj, prop, T, yc):
+def expression_exponential(cobj, prop, T, yc):
     # y = yc * exp(Tc/T * sum(ni*theta^ti))
     Tc = cobj.temperature_crit
     theta = 1 - T/Tc
@@ -69,7 +65,7 @@ def _expression_exponential(cobj, prop, T, yc):
     return yc*exp(s)
 
 
-def _expression_exponential_tau(cobj, prop, T, yc):
+def expression_exponential_tau(cobj, prop, T, yc):
     # y = yc * exp(Tc/T * sum(ni*theta^ti))
     Tc = cobj.temperature_crit
     theta = 1 - T/Tc
@@ -79,7 +75,7 @@ def _expression_exponential_tau(cobj, prop, T, yc):
     return yc*exp(Tc/T*s)
 
 
-def _parameters_polynomial(cobj, prop, prop_units, adict, bdict):
+def parameters_polynomial(cobj, prop, prop_units, adict, bdict):
     # TODO : Get number of terms to build
     for i, aval in adict.items():
         if i == 0:
@@ -104,7 +100,7 @@ def _parameters_polynomial(cobj, prop, prop_units, adict, bdict):
         getattr(cobj, prop+"_coeff_B"+str(i)).fix(bval)
 
 
-def _expression_polynomial(cobj, prop, T):
+def expression_polynomial(cobj, prop, T):
     i = 0
     asum = 0
     while True:

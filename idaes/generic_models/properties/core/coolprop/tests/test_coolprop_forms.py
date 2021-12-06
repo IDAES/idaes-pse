@@ -21,7 +21,8 @@ import pytest
 from pyomo.environ import ConcreteModel, Block, value, Var, units as pyunits
 from pyomo.util.check_units import assert_units_equivalent
 
-import idaes.generic_models.properties.core.pure.coolprop as coolprop
+import idaes.generic_models.properties.core.coolprop.coolprop_forms as cforms
+
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -43,7 +44,7 @@ class TestBaseForms:
                            "parameters for CoolProp exponential form for "
                            "property pressure_sat. Please ensure the number "
                            "of n and t parameters are equal."):
-            coolprop._parameters_exponential(
+            cforms.parameters_exponential(
                 model.params,
                 "pressure_sat",
                 {1: -7.645535357,
@@ -61,7 +62,7 @@ class TestBaseForms:
     @pytest.mark.unit
     def test_exponential_parameters(self, model):
         # Using parameters for O2 saturation pressure as test case
-        coolprop._parameters_exponential(
+        cforms.parameters_exponential(
             model.params,
             "pressure_sat",
             {1: -7.645535357,
@@ -119,7 +120,7 @@ class TestBaseForms:
 
     @pytest.mark.unit
     def test_exponential_sum(self, model):
-        expr = coolprop._exponential_sum(
+        expr = cforms._exponential_sum(
             model.params, "pressure_sat", 42)
 
         assert str(expr) == str(
@@ -153,7 +154,7 @@ class TestBaseForms:
                 150: 4218667.236}
 
         for T, Psat in data.items():
-            expr = coolprop._expression_exponential_tau(
+            expr = cforms.expression_exponential_tau(
                 model.params,
                 "pressure_sat",
                 T*pyunits.K,
@@ -173,7 +174,7 @@ class TestBaseForms:
                 150: 4241040.16}
 
         for T, Psat in data.items():
-            expr = coolprop._expression_exponential(
+            expr = cforms.expression_exponential(
                 model.params,
                 "pressure_sat",
                 T*pyunits.K,
@@ -185,7 +186,7 @@ class TestBaseForms:
     @pytest.mark.unit
     def test_polynomial_parameters(self, model):
         # Using parameters for O2 saturation pressure as test case
-        coolprop._parameters_polynomial(
+        cforms.parameters_polynomial(
             model.params,
             "enth_mol_liq_comp",
             pyunits.J/pyunits.mol,
@@ -255,7 +256,7 @@ class TestBaseForms:
         h_anchor = 2002.355546
 
         for T, hL in data.items():
-            expr = coolprop._expression_polynomial(
+            expr = cforms.expression_polynomial(
                 model.params,
                 "enth_mol_liq_comp",
                 T*pyunits.K)
