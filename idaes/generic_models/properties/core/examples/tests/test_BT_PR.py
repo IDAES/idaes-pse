@@ -56,14 +56,14 @@ solver.options["max_iter"] = 60
 # -----------------------------------------------------------------------------
 # Test robustness and some outputs
 class TestBTExample(object):
-    #@pytest.fixture()
+    @pytest.fixture()
     def m(self):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(default={'dynamic': False})
 
         m.fs.props = GenericParameterBlock(default=configuration)
-        m.fs.props.set_default_scaling("mole_frac_comp", 1e1)
+        m.fs.props.set_default_scaling("mole_frac_comp", 1e3)
 
         m.fs.state = m.fs.props.build_state_block(
                 [1],
@@ -73,7 +73,7 @@ class TestBTExample(object):
         iscale.calculate_scaling_factors(m.fs.state[1])
         return m
 
-    #@pytest.mark.integration
+    @pytest.mark.integration
     def test_T_sweep(self, m):
         assert_units_consistent(m)
 
