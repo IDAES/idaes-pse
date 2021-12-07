@@ -70,6 +70,20 @@ class TestWrapper:
         assert "R732" not in CoolPropWrapper.cached_components
 
     @pytest.mark.unit
+    def test_load_component_by_alias(self):
+        # Load CO2 data using one of its aliases
+        prop_dict = CoolPropWrapper._load_component_data("R744")
+
+        assert CoolPropWrapper.cached_components["R744"] is prop_dict
+        assert "R744" in CoolPropWrapper.cached_components
+
+        # Retrieve CO2 data using its normal name
+        prop_dict2 = CoolPropWrapper.get_component_data("CO2")
+
+        assert prop_dict2 is prop_dict
+        assert "CO2" not in CoolPropWrapper.cached_components
+
+    @pytest.mark.unit
     def test_get_component_invalid(self):
         with pytest.raises(RuntimeError,
                            match="Failed to find component foo in CoolProp "
@@ -85,33 +99,65 @@ class TestWrapper:
     @pytest.mark.unit
     def test_get_critical_properties(self):
         Tc = CoolPropWrapper.get_critical_property(
-            "Acetone", "temperature_crit")
+            "Acetone", "T")
         assert Tc == (508.1, pyunits.K)
 
         Pc = CoolPropWrapper.get_critical_property(
-            "Acetone", "pressure_crit")
+            "Acetone", "p")
         assert Pc == (4700000.0, pyunits.Pa)
 
         rhoc = CoolPropWrapper.get_critical_property(
-            "Acetone", "dens_mol_crit")
+            "Acetone", "rhomolar")
         assert rhoc[0] == 4699.999999999999
         assert_units_equivalent(rhoc[1], pyunits.mol/pyunits.m**3)
 
         hc = CoolPropWrapper.get_critical_property(
-            "Acetone", "enth_mol_crit")
+            "Acetone", "hmolar")
         assert hc[0] == 31614.73051047263
         assert_units_equivalent(hc[1], pyunits.J/pyunits.mol)
 
         sc = CoolPropWrapper.get_critical_property(
-            "Acetone", "entr_mol_crit")
+            "Acetone", "smolar")
         assert sc[0] == 72.97112978635582
         assert_units_equivalent(sc[1], pyunits.J/pyunits.mol/pyunits.K)
 
     @pytest.mark.unit
     def test_get_eos_properties(self):
-        omega = CoolPropWrapper.get_eos_property("Acetone", "omega")
+        omega = CoolPropWrapper.get_eos_property("Acetone", "acentric")
         assert omega == (0.3071, pyunits.dimensionless)
 
-        mw = CoolPropWrapper.get_eos_property("Acetone", "mw")
+        mw = CoolPropWrapper.get_eos_property("Acetone", "molar_mass")
+        assert mw[0] == 0.05807914
+        assert_units_equivalent(mw[1], pyunits.kg/pyunits.mol)
+
+    @pytest.mark.unit
+    def test_get_parameter_value(self):
+        Tc = CoolPropWrapper.get_parameter_value(
+            "Acetone", "temperature_crit")
+        assert Tc == (508.1, pyunits.K)
+
+        Pc = CoolPropWrapper.get_parameter_value(
+            "Acetone", "pressure_crit")
+        assert Pc == (4700000.0, pyunits.Pa)
+
+        rhoc = CoolPropWrapper.get_parameter_value(
+            "Acetone", "dens_mol_crit")
+        assert rhoc[0] == 4699.999999999999
+        assert_units_equivalent(rhoc[1], pyunits.mol/pyunits.m**3)
+
+        hc = CoolPropWrapper.get_parameter_value(
+            "Acetone", "enth_mol_crit")
+        assert hc[0] == 31614.73051047263
+        assert_units_equivalent(hc[1], pyunits.J/pyunits.mol)
+
+        sc = CoolPropWrapper.get_parameter_value(
+            "Acetone", "entr_mol_crit")
+        assert sc[0] == 72.97112978635582
+        assert_units_equivalent(sc[1], pyunits.J/pyunits.mol/pyunits.K)
+
+        omega = CoolPropWrapper.get_parameter_value("Acetone", "omega")
+        assert omega == (0.3071, pyunits.dimensionless)
+
+        mw = CoolPropWrapper.get_parameter_value("Acetone", "mw")
         assert mw[0] == 0.05807914
         assert_units_equivalent(mw[1], pyunits.kg/pyunits.mol)

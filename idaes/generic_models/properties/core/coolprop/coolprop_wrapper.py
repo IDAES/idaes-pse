@@ -26,9 +26,43 @@ except ModuleNotFoundError:
 
 from pyomo.environ import units as pyunits
 
+from idaes.core.util.exceptions import BurntToast
+
+
+# Map IDAES names to Coolprop names and where to look for them
+name_map = {"dens_mol_crit": ("rhomolar", "CRITICAL"),
+            "enth_mol_crit": ("hmolar", "CRITICAL"),
+            "entr_mol_crit": ("smolar", "CRITICAL"),
+            "mw": ("molar_mass", "EOS"),
+            "omega": ("acentric", "EOS"),
+            "pressure_crit": ("p", "CRITICAL"),
+            "temperature_crit": ("T", "CRITICAL")}
+
 
 class CoolPropWrapper:
     cached_components = {}
+
+    @staticmethod
+    def get_parameter_value(comp_name, param):
+        try:
+            map_tuple = name_map[param]
+        except KeyError:
+            raise BurntToast(
+                "Unrecognized property name in CoolProp wrapper. Please "
+                "contact the IDAES developers with this bug.")
+
+        if map_tuple[1] == "CRITICAL":
+            ptuple = CoolPropWrapper.get_critical_property(
+                comp_name, map_tuple[0])
+        elif map_tuple[1] == "EOS":
+            ptuple = CoolPropWrapper.get_eos_property(
+                comp_name, map_tuple[0])
+        else:
+            raise BurntToast(
+                "Unrecognized argument in CoolProp wrapper. Please contact "
+                "the IDAES developers with this bug.")
+
+        return ptuple
 
     @staticmethod
     def flush_cached_components():
@@ -42,7 +76,8 @@ class CoolPropWrapper:
         else:
             # Check to see if comp_name is an alias for a cached component
             for v in CoolPropWrapper.cached_components.values():
-                if comp_name in v["INFO"]["ALIASES"]:
+                if (comp_name in v["INFO"]["ALIASES"] or
+                        comp_name in v["INFO"]["NAME"]):
                     return v
 
         # If we haven't returned yet, then we need to load the component
@@ -50,7 +85,6 @@ class CoolPropWrapper:
 
     @staticmethod
     def _load_component_data(comp_name):
-        # TODO : Handle alternative names for components
         try:
             prop_str = CoolProp.get_fluid_param_string(comp_name, "JSON")
         except RuntimeError:
@@ -67,16 +101,9 @@ class CoolPropWrapper:
     def get_critical_property(comp_name, prop_name):
         cdict = CoolPropWrapper.get_component_data(comp_name)
 
-        # Map IDAES names to Coolprop names
-        name_map = {"dens_mol_crit": "rhomolar",
-                    "enth_mol_crit": "hmolar",
-                    "entr_mol_crit": "smolar",
-                    "pressure_crit": "p",
-                    "temperature_crit": "T"}
-
-        pc = cdict["STATES"]["critical"][name_map[prop_name]]
+        pc = cdict["STATES"]["critical"][prop_name]
         punits = getattr(pyunits, cdict["STATES"]["critical"][
-            name_map[prop_name]+"_units"])
+            prop_name+"_units"])
 
         return (pc, punits)
 
@@ -84,12 +111,8 @@ class CoolPropWrapper:
     def get_eos_property(comp_name, prop_name):
         cdict = CoolPropWrapper.get_component_data(comp_name)
 
-        # Map IDAES names to Coolprop names
-        name_map = {"omega": "acentric",
-                    "mw": "molar_mass"}
-
-        pc = cdict["EOS"][0][name_map[prop_name]]
-        punits = cdict["EOS"][0][name_map[prop_name]+"_units"]
+        pc = cdict["EOS"][0][prop_name]
+        punits = cdict["EOS"][0][prop_name+"_units"]
         if punits == "-":
             punits = pyunits.dimensionless
         else:
