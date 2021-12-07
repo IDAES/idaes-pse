@@ -1792,7 +1792,7 @@ class GenericStateBlockData(StateBlockData):
             self.pressure, default=1, warning=True)
         sf_mf = {}
         for i, v in self.mole_frac_phase_comp.items():
-            sf_mf[i] = iscale.get_scaling_factor(v, default=10, warning=True)
+            sf_mf[i] = iscale.get_scaling_factor(v, default=1E3, warning=True)
 
         # Add scaling for components in build method
         # Phase equilibrium temperature
@@ -1966,7 +1966,7 @@ class GenericStateBlockData(StateBlockData):
             for j, v in self.log_mole_frac_comp_eqn.items():
                 sf_x = iscale.get_scaling_factor(
                     self.mole_frac_comp[j],
-                    default=10,
+                    default=1E3,
                     warning=True,
                     hint="for log_mole_frac_comp")
                 iscale.constraint_scaling_transform(
@@ -2102,7 +2102,7 @@ class GenericStateBlockData(StateBlockData):
             for (p, j), v in self.log_mole_frac_phase_comp_eqn.items():
                 sf_x = iscale.get_scaling_factor(
                     self.mole_frac_phase_comp[p, j],
-                    default=10,
+                    default=1E3,
                     warning=True,
                     hint="for log_mole_frac_phase_comp")
                 iscale.constraint_scaling_transform(
