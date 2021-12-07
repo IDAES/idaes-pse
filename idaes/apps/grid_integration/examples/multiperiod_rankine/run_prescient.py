@@ -7,6 +7,8 @@ options = {'data_directory': '/home/jhjalvi/git/Prescient/downloads/rts_gmlc/det
            'start_date':'07-11-2020',\
            'num_days': 1,\
            'sced_horizon':4,\
+           'ruc_horizon':4,\
+           'ruc_every_hours':4,\
            'compute_market_settlements': True,\
            'day_ahead_pricing': 'LMP',\
            'ruc_mipgap':0.01,\

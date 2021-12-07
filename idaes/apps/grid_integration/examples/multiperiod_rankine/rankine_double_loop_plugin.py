@@ -15,7 +15,7 @@ from utils import assemble_generator_data
 
 generator = "102_STEAM_3" #bidding generator
 tracking_horizon = 4  #hours
-bidding_horizon = 4  #hours
+bidding_horizon = 4   #hours
 n_scenario = 10       #for bidding
 n_tracking_hour = 1   #advance n_tracking_hour (i.e. assume we solve every hour)
 
@@ -27,7 +27,7 @@ price_forecasts_df = pd.read_csv('lmp_forecasts_concat.csv')
 forecaster = PlaceHolderForecaster(price_forecasts_df = price_forecasts_df)
 
 # create solver
-solver = pyo.SolverFactory('cbc')
+solver = pyo.SolverFactory('ipopt')
 
 #Generator data 
 generator_data = assemble_generator_data(generator_name=generator, gen_params=rts_gmlc_dataframe)

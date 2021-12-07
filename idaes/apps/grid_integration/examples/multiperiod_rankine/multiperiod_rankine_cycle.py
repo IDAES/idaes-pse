@@ -7,8 +7,10 @@ from idaes.apps.rankine.simple_rankine_cycle import create_model, set_inputs, in
 
 #Create a steady-state ranking cycle model, not yet setup for multi-period
 def create_ss_rankine_model():
-    p_lower_bound = 175
-    p_upper_bound = 450
+    # p_lower_bound = 175
+    # p_upper_bound = 450
+    p_lower_bound = 30
+    p_upper_bound = 76
 
     m = pyo.ConcreteModel()
     m.rankine = create_model(heat_recovery=True)
@@ -25,7 +27,7 @@ def create_ss_rankine_model():
         expr=m.rankine.fs.net_cycle_power_output <= p_upper_bound*1e6)
 
     m.rankine.fs.boiler.inlet.flow_mol[0].unfix()
-    m.rankine.fs.boiler.inlet.flow_mol[0].setlb(1)
+    m.rankine.fs.boiler.inlet.flow_mol[0].setlb(0.01)
 
     return m
 
@@ -33,17 +35,17 @@ def create_ss_rankine_model():
 #user-provided function to a MultiPeriod class
 def create_mp_rankine_block():
     m = create_ss_rankine_model()
-    turbine_ramp_rate = 100
+    turbine_ramp_rate = 120
     battery_ramp_rate = 50
     b1 = m.rankine
 
     #Add coupling variable (next_power_output) to represent power output in next time period
-    b1.power_output = pyo.Expression(expr = b1.fs.net_cycle_power_output*1e-6)  #MW
-    b1.next_power_output = pyo.Var(within=pyo.NonNegativeReals, initialize=1.5) #MW
-
+    b1.previous_power_output = pyo.Var(within=pyo.NonNegativeReals, initialize=1.5) #MW
+    b1.power_output = pyo.Expression(expr = b1.fs.net_cycle_power_output*1e-6)      #MW
+    
     #Use coupling variable to add ramping constraint
-    b1.ramp1 = pyo.Constraint(expr=b1.power_output - b1.next_power_output <= turbine_ramp_rate)
-    b1.ramp2 = pyo.Constraint(expr=b1.next_power_output - b1.power_output <= turbine_ramp_rate)
+    b1.ramp1 = pyo.Constraint(expr=b1.power_output - b1.previous_power_output <= turbine_ramp_rate)
+    b1.ramp2 = pyo.Constraint(expr=b1.previous_power_output - b1.power_output <= turbine_ramp_rate)
 
     #Add battery integration to rankine cycle
     b1.P_to_battery = pyo.Var(within=pyo.NonNegativeReals,initialize = 0.0)
@@ -55,15 +57,15 @@ def create_mp_rankine_block():
     b2=m.battery
 
     #soc = state of charge
+    b2.previous_soc = pyo.Var(within=pyo.NonNegativeReals,initialize=0.0, bounds=(0,100))
     b2.soc = pyo.Var(within=pyo.NonNegativeReals,initialize=0.0, bounds=(0,100))
-    b2.next_soc = pyo.Var(within=pyo.NonNegativeReals,initialize=0.0, bounds=(0,100))
-
+    
     #Amount discharged to grid this time period (assume discharge is positive)
     b2.efficiency = np.sqrt(0.88)
     b2.discharge = pyo.Var(initialize = 0.0)
-    b2.energy_change = pyo.Constraint(expr = b2.next_soc == b2.soc - b2.discharge/b2.efficiency + b1.P_to_battery*b2.efficiency)
-    b2.energy_down_ramp = pyo.Constraint(expr = b2.soc - b2.next_soc <= battery_ramp_rate)
-    b2.energy_up_ramp = pyo.Constraint(expr = b2.next_soc - b2.soc <= battery_ramp_rate)
+    b2.energy_change = pyo.Constraint(expr = b2.soc == b2.previous_soc - b2.discharge/b2.efficiency + b1.P_to_battery*b2.efficiency)
+    b2.energy_down_ramp = pyo.Constraint(expr = b2.previous_soc - b2.soc <= battery_ramp_rate)
+    b2.energy_up_ramp = pyo.Constraint(expr = b2.soc - b2.previous_soc <= battery_ramp_rate)
 
     return m
 
@@ -73,8 +75,8 @@ def get_rankine_link_variable_pairs(t1,t2):
         t1: current time block
         t2: next time block
     """
-    return [(t1.rankine.next_power_output,t2.rankine.power_output),
-            (t1.battery.next_soc,t2.battery.soc)]
+    return [(t1.rankine.power_output,t2.rankine.previous_power_output),
+            (t1.battery.soc,t2.battery.previous_soc)]
 
 #the final power output and battery state must be the same as the intial power output and battery state
 def get_rankine_periodic_variable_pairs(t1,t2):
@@ -82,7 +84,7 @@ def get_rankine_periodic_variable_pairs(t1,t2):
         t1: final time block
         t2: first time block
     """
-    return [(t1.battery.next_soc,t2.battery.soc)]
+    return [(t1.battery.soc,t2.battery.previous_soc)]
 
 
 def create_multiperiod_rankine_model(n_time_points=4):

@@ -36,9 +36,12 @@ class MultiPeriodRankine:
 
         mp_rankine = create_multiperiod_rankine_model(n_time_points=self.horizon)
         blk.rankine = mp_rankine
+        blk.rankine_model = mp_rankine.pyomo_model
 
         active_blks = mp_rankine.get_active_process_blocks()
-        active_blks[0].battery.soc.fix(0) #initial charge is zero
+        active_blks[0].battery.previous_soc.fix(0)
+        active_blks[0].rankine.previous_power_output.fix(50.0)
+        #active_blks[0].battery.soc.fix(0) #initial charge is zero
         
         #create expression that references underlying power variables in multi-period rankine
         blk.HOUR = pyo.Set(initialize = range(self.horizon))
@@ -53,7 +56,7 @@ class MultiPeriodRankine:
 
     #def update_model(self, b, implemented_shut_down,implemented_start_up, implemented_power_output):
     #NOTE: the profiles passed in here come from `get_implemented_profile`
-    def update_model(self, blk, implemented_battery_charge, implemented_battery_discharge):
+    def update_model(self, blk, implemented_power_output, realized_soc):
 
         '''
         Update `blk` variables using the actual implemented power output. 
@@ -62,26 +65,25 @@ class MultiPeriodRankine:
             blk: the block that needs to be updated
             implemented_battery_charge: list of power ,length n_tracking_horizon
             implemented_battery_discharge: 
+            implemented_power_output:
 
          Returns:
              None
         '''
-        mp_rankine = blk.mp_rankine 
+        mp_rankine = blk.rankine 
         active_blks = mp_rankine.get_active_process_blocks()
 
-        # power = round(implemented_power_output[-1])
-        charge = round(implemented_battery_charge[-1]) 
-        discharge = round(implemented_battery_discharge[-1]) 
-        
+        implemented_power = round(implemented_power_output[-1])
+        realized_soc = round(realized_soc[-1])
+
         #update battery and power output based on implemented values
-        battery_soc = active_blks[0].battery.soc
-        new_battery_soc = value(battery_soc) + charge - discharge
-        battery_soc.fix(new_battery_soc)
+        active_blks[0].rankine.previous_power_output.fix(implemented_power)
+        active_blks[0].battery.previous_soc.fix(realized_soc)
 
         return
 
     @staticmethod
-    def get_last_delivered_power(blk, last_implemented_time_step):
+    def get_last_delivered_power(b, last_implemented_time_step):
 
         '''
         Returns the last delivered power output.
@@ -94,11 +96,11 @@ class MultiPeriodRankine:
         Returns:
             Float64: Value of power output in last time step
         '''
-
+        blk = b
         return pyo.value(blk.P_T[last_implemented_time_step])
 
     @staticmethod
-    def get_implemented_profile(blk, last_implemented_time_step):
+    def get_implemented_profile(b, last_implemented_time_step):
 
         '''
         This method gets the implemented variable profiles in the last optimization solve.
@@ -110,21 +112,15 @@ class MultiPeriodRankine:
          Returns:
              profile: the intended profile, {unit: [...]}
         '''
-        #QUESTION: what is deque for?
-        #implemented_battery_charge = deque([pyo.value(b.P_T[t]) for t in range(last_implemented_time_step + 1)])
-        #implemented_battery_discharge = deque([pyo.value(b.P_T[t]) for t in range(last_implemented_time_step + 1)])
-        mp_rankine = blk.mp_rankine
+        blk = b
+        mp_rankine = blk.rankine
         active_blks = mp_rankine.get_active_process_blocks()
-        implemented_battery_charge = deque([pyo.value(active_blks[t].rankine.P_to_battery*active_blks[t].battery.efficiency) for t in range(last_implemented_time_step + 1)])
-        implemented_battery_discharge = deque([pyo.value(active_blks[t].battery.discharge/active_blks[t].battery.efficiency) for t in range(last_implemented_time_step + 1)])
+        implemented_power_output = deque([pyo.value(active_blks[t].rankine.power_output) for t in range(last_implemented_time_step + 1)])
+        realized_soc = deque([pyo.value(active_blks[t].battery.soc) for t in range(last_implemented_time_step + 1)])
 
-        # return {'implemented_power_output':implemented_power_output,'implemented_battery_discharge':implemented_battery_discharge}
+        return {'implemented_power_output':implemented_power_output,'realized_soc':realized_soc}
 
-        return {'implemented_power_output':implemented_battery_charge,'implemented_battery_discharge':implemented_battery_discharge}
-
-
-    
-    def record_results(self, blk, date=None, hour=None, **kwargs):
+    def record_results(self, b, date=None, hour=None, **kwargs):
 
         '''
         Record the operations stats for the model.
@@ -138,7 +134,7 @@ class MultiPeriodRankine:
             None
 
         '''
-
+        blk = b
         df_list = []
         for t in blk.HOUR:
             result_dict = {}
