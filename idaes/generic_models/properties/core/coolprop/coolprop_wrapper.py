@@ -26,6 +26,7 @@ except ModuleNotFoundError:
 
 from pyomo.environ import units as pyunits
 
+import idaes.generic_models.properties.core.coolprop.coolprop_forms as cforms
 from idaes.core.util.exceptions import BurntToast
 
 
@@ -52,10 +53,10 @@ class CoolPropWrapper:
                 "contact the IDAES developers with this bug.")
 
         if map_tuple[1] == "CRITICAL":
-            ptuple = CoolPropWrapper.get_critical_property(
+            ptuple = CoolPropWrapper._get_critical_property(
                 comp_name, map_tuple[0])
         elif map_tuple[1] == "EOS":
-            ptuple = CoolPropWrapper.get_eos_property(
+            ptuple = CoolPropWrapper._get_eos_property(
                 comp_name, map_tuple[0])
         else:
             raise BurntToast(
@@ -68,8 +69,38 @@ class CoolPropWrapper:
     def flush_cached_components():
         CoolPropWrapper.cached_components = {}
 
+    # -------------------------------------------------------------------------
+    # Pure component property methods
+    class pressure_sat_comp():
+
+        @staticmethod
+        def build_parameters(cobj):
+            cname = cobj.local_name
+            cdict = CoolPropWrapper._get_component_data(cname)
+
+            ndict = cdict["ANCILLARIES"]["pS"]["n"]
+            tdict = cdict["ANCILLARIES"]["pS"]["t"]
+
+            cforms.parameters_exponential(cobj, "pressure_sat", ndict, tdict)
+
+        @staticmethod
+        def return_expression(b, cobj, T, dT=False):
+            if dT:
+                return CoolPropWrapper.pressure_sat_comp.dT_expression(
+                    b, cobj, T)
+
+            return cforms.expression_exponential_tau(
+                cobj, "pressure_sat", T, cobj.pressure_crit)
+
+        @staticmethod
+        def dT_expression(b, cobj, T):
+            pass
+
+    # -------------------------------------------------------------------------
+    # Internal methods
+
     @staticmethod
-    def get_component_data(comp_name):
+    def _get_component_data(comp_name):
         if comp_name in CoolPropWrapper.cached_components:
             # First check to see if component present by comp_name
             return CoolPropWrapper.cached_components[comp_name]
@@ -98,8 +129,8 @@ class CoolPropWrapper:
         return comp_prop
 
     @staticmethod
-    def get_critical_property(comp_name, prop_name):
-        cdict = CoolPropWrapper.get_component_data(comp_name)
+    def _get_critical_property(comp_name, prop_name):
+        cdict = CoolPropWrapper._get_component_data(comp_name)
 
         pc = cdict["STATES"]["critical"][prop_name]
         punits = getattr(pyunits, cdict["STATES"]["critical"][
@@ -108,8 +139,8 @@ class CoolPropWrapper:
         return (pc, punits)
 
     @staticmethod
-    def get_eos_property(comp_name, prop_name):
-        cdict = CoolPropWrapper.get_component_data(comp_name)
+    def _get_eos_property(comp_name, prop_name):
+        cdict = CoolPropWrapper._get_component_data(comp_name)
 
         pc = cdict["EOS"][0][prop_name]
         punits = cdict["EOS"][0][prop_name+"_units"]

@@ -18,26 +18,28 @@ from pyomo.environ import exp, units as pyunits, Var
 from idaes.core.util.exceptions import ConfigurationError
 
 
-def parameters_exponential(cobj, prop, ndict, tdict):
-    if len(ndict) != len(tdict):
+def parameters_exponential(cobj, prop, nlist, tlist):
+    if len(nlist) != len(tlist):
         raise ConfigurationError(
             f"{cobj.name} mismatched length between n and t parameters "
             f"for CoolProp exponential form for property {prop}. Please "
             f"ensure the number of n and t parameters are equal.")
 
-    for i, nval in ndict.items():
+    for i in range(0, len(nlist)):
+        nval = nlist[i]
         cobj.add_component(
-            prop+"_coeff_n"+str(i),
+            prop+"_coeff_n"+str(i+1),
             Var(doc="Multiplying parameter for CoolProp exponential form",
                 units=pyunits.dimensionless))
-        getattr(cobj, prop+"_coeff_n"+str(i)).fix(nval)
+        getattr(cobj, prop+"_coeff_n"+str(i+1)).fix(nval)
 
-    for i, tval in tdict.items():
+    for i in range(0, len(tlist)):
+        tval = tlist[i]
         cobj.add_component(
-            prop+"_coeff_t"+str(i),
+            prop+"_coeff_t"+str(i+1),
             Var(doc="Exponent parameter for CoolProp exponential form",
                 units=pyunits.dimensionless))
-        getattr(cobj, prop+"_coeff_t"+str(i)).fix(tval)
+        getattr(cobj, prop+"_coeff_t"+str(i+1)).fix(tval)
 
 
 def _exponential_sum(cobj, prop, theta):
@@ -75,9 +77,10 @@ def expression_exponential_tau(cobj, prop, T, yc):
     return yc*exp(Tc/T*s)
 
 
-def parameters_polynomial(cobj, prop, prop_units, adict, bdict):
+def parameters_polynomial(cobj, prop, prop_units, alist, blist):
     # TODO : Get number of terms to build
-    for i, aval in adict.items():
+    for i in range(0, len(alist)):
+        aval = alist[i]
         if i == 0:
             param_units = prop_units
         else:
@@ -88,7 +91,8 @@ def parameters_polynomial(cobj, prop, prop_units, adict, bdict):
                 units=param_units))
         getattr(cobj, prop+"_coeff_A"+str(i)).fix(aval)
 
-    for i, bval in bdict.items():
+    for i in range(0, len(blist)):
+        bval = blist[i]
         if i == 0:
             param_units = pyunits.dimensionless
         else:

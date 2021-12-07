@@ -47,17 +47,17 @@ class TestBaseForms:
             cforms.parameters_exponential(
                 model.params,
                 "pressure_sat",
-                {1: -7.645535357,
-                 2: 2.42142887,
-                 3: 9.642620061,
-                 4: -10.09482287,
-                 5: -1.685668959,
-                 6: 1.277640761},
-                {1: 1.019,
-                 2: 1.177,
-                 3: 2.44,
-                 4: 2.493,
-                 5: 5.646})  # Missing one term for t
+                [-7.645535357,
+                 2.42142887,
+                 9.642620061,
+                 -10.09482287,
+                 -1.685668959,
+                 1.277640761],
+                [1.019,
+                 1.177,
+                 2.44,
+                 2.493,
+                 5.646])  # Missing one term for t
 
     @pytest.mark.unit
     def test_exponential_parameters(self, model):
@@ -65,18 +65,18 @@ class TestBaseForms:
         cforms.parameters_exponential(
             model.params,
             "pressure_sat",
-            {1: -7.645535357,
-             2: 2.42142887,
-             3: 9.642620061,
-             4: -10.09482287,
-             5: -1.685668959,
-             6: 1.277640761},
-            {1: 1.019,
-             2: 1.177,
-             3: 2.44,
-             4: 2.493,
-             5: 5.646,
-             6: 10.887})
+            [-7.645535357,
+             2.42142887,
+             9.642620061,
+             -10.09482287,
+             -1.685668959,
+             1.277640761],
+            [1.019,
+             1.177,
+             2.44,
+             2.493,
+             5.646,
+             10.887])
 
         assert isinstance(model.params.pressure_sat_coeff_n1, Var)
         assert isinstance(model.params.pressure_sat_coeff_n2, Var)
@@ -190,16 +190,16 @@ class TestBaseForms:
             model.params,
             "enth_mol_liq_comp",
             pyunits.J/pyunits.mol,
-            {0: -9025.64288846283,
-             1: -35.0797393389397,
-             2: 4.78790950986069,
-             3: -8.95948250127742e-2,
-             4: 9.20005110933356e-4,
-             5: -5.57355242293296E-06,
-             6: 1.85555931770993E-08,
-             7: -2.63480658094238E-11},
-            {0: 1,
-             1: -6.39773824359397e-3})
+            [-9025.64288846283,
+             -35.0797393389397,
+             4.78790950986069,
+             -8.95948250127742e-2,
+             9.20005110933356e-4,
+             -5.57355242293296E-06,
+             1.85555931770993E-08,
+             -2.63480658094238E-11],
+            [1,
+             -6.39773824359397e-3])
 
         assert isinstance(model.params.enth_mol_liq_comp_coeff_A0, Var)
         assert isinstance(model.params.enth_mol_liq_comp_coeff_A1, Var)

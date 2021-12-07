@@ -726,7 +726,6 @@ class GenericParameterData(PhysicalParameterBlock):
 
         for p in self.phase_list:
             pobj = self.get_phase(p)
-            # pobj.config.equation_of_state.build_parameters(pobj)
 
             for a, v in pobj.config.items():
                 # Check to see if v has an attribute build_parameters
@@ -747,7 +746,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     except KeyError:
                         raise ConfigurationError(
                             "{} values were not defined for parameter {} in "
-                            "phase{}. Please check the parameter_data "
+                            "phase {}. Please check the parameter_data "
                             "argument to ensure values are provided."
                             .format(self.name, a, p))
 
