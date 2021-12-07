@@ -46,11 +46,9 @@ prop_available = cubic_roots_available()
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-use_idaes_solver_configuration_defaults()
-idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
 solver = get_solver()
 # Limit iterations to make sure sweeps aren;t getting out of hand
-solver.options["max_iter"] = 60
+solver.options["max_iter"] = 50
 
 
 # -----------------------------------------------------------------------------
@@ -63,7 +61,6 @@ class TestBTExample(object):
         m.fs = FlowsheetBlock(default={'dynamic': False})
 
         m.fs.props = GenericParameterBlock(default=configuration)
-        m.fs.props.set_default_scaling("mole_frac_comp", 1e3)
 
         m.fs.state = m.fs.props.build_state_block(
                 [1],
@@ -127,6 +124,7 @@ class TestBTExample(object):
             while m.fs.state[1].pressure.value <= 1e6:
                 m.fs.state[1].pressure.value = (
                     m.fs.state[1].pressure.value + 1e5)
+
                 results = solver.solve(m)
                 assert results.solver.termination_condition == \
                     TerminationCondition.optimal
