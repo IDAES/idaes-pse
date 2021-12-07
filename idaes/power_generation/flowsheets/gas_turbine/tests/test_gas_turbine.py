@@ -86,17 +86,17 @@ def test_initialize():
         "CO2":0.0,
         "N2":0.0,
         "Ar":0.0}
+    with idaes.temporary_config_ctx():
+        use_idaes_solver_configuration_defaults()
+        idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
+        idaes.cfg.ipopt["options"]["bound_push"] = 1e-6
 
-    use_idaes_solver_configuration_defaults()
-    idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
-    idaes.cfg.ipopt["options"]["bound_push"] = 1e-6
-
-    m, solver = main(
-        comps=comps,
-        rxns=rxns,
-        phases=phases,
-        air_comp=air_comp,
-        ng_comp=ng_comp,
-        initialize=True)
-    res = run_full_load(m, solver)
+        m, solver = main(
+            comps=comps,
+            rxns=rxns,
+            phases=phases,
+            air_comp=air_comp,
+            ng_comp=ng_comp,
+            initialize=True)
+        res = run_full_load(m, solver)
     assert res.solver.status == pyo.SolverStatus.ok
