@@ -94,7 +94,8 @@ class CoolPropWrapper:
 
         @staticmethod
         def dT_expression(b, cobj, T):
-            pass
+            return cforms.dT_expression_exponential_tau(
+                cobj, "pressure_sat", T, cobj.pressure_crit)
 
     # -------------------------------------------------------------------------
     # Internal methods

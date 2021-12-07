@@ -18,6 +18,9 @@ from pyomo.environ import exp, units as pyunits, Var
 from idaes.core.util.exceptions import ConfigurationError
 
 
+# TODO : Onlt have temperature derivative expression for exponential_tau form
+# TODO : Add other derivative forms as/if required
+
 def parameters_exponential(cobj, prop, nlist, tlist):
     if len(nlist) != len(tlist):
         raise ConfigurationError(
@@ -57,6 +60,23 @@ def _exponential_sum(cobj, prop, theta):
     return s
 
 
+def _exponential_sum_dT(cobj, prop, T, Tc):
+    Tr = T/Tc
+
+    # Build sum term
+    i = 1
+    sdT = 0
+    while True:
+        try:
+            ni = getattr(cobj, prop+"_coeff_n"+str(i))
+            ti = getattr(cobj, prop+"_coeff_t"+str(i))
+            sdT += -ni*(1-Tr)**(ti-1)*((ti-1)*Tr+1)
+            i += 1
+        except AttributeError:
+            break
+    return sdT/Tr**2/Tc
+
+
 def expression_exponential(cobj, prop, T, yc):
     # y = yc * exp(Tc/T * sum(ni*theta^ti))
     Tc = cobj.temperature_crit
@@ -75,6 +95,19 @@ def expression_exponential_tau(cobj, prop, T, yc):
     s = _exponential_sum(cobj, prop, theta)
 
     return yc*exp(Tc/T*s)
+
+
+def dT_expression_exponential_tau(cobj, prop, T, yc):
+    # y = yc * exp(Tc/T * sum(ni*theta^ti))
+    # Need d(y)/dT
+
+    y = expression_exponential_tau(cobj, prop, T, yc)
+
+    Tc = cobj.temperature_crit
+
+    sdT = _exponential_sum_dT(cobj, prop, T, Tc)
+
+    return y*sdT
 
 
 def parameters_polynomial(cobj, prop, prop_units, alist, blist):

@@ -26,6 +26,10 @@ import idaes.generic_models.properties.core.coolprop.coolprop_forms as cforms
 from idaes.core.util.exceptions import ConfigurationError
 
 
+def between(y, x1, x2):
+    return 0 > (y-x1)*(y-x2)
+
+
 class TestBaseForms:
     # Use parameters for O2 for testing purposes
     @pytest.fixture(scope="class")
@@ -162,6 +166,40 @@ class TestBaseForms:
 
             assert value(expr) == pytest.approx(Psat, rel=1e-8)
             assert_units_equivalent(expr, pyunits.Pa)
+
+    @pytest.mark.unit
+    def test_expression_exponential_tau_dT(self, model):
+
+        fdiff = 1e-5
+        for T in range(10, 101, 10):
+            dT = value(cforms.dT_expression_exponential_tau(
+                model.params,
+                "pressure_sat",
+                T*pyunits.K,
+                model.params.pressure_crit))
+
+            em = cforms.expression_exponential_tau(
+                model.params,
+                "pressure_sat",
+                (T-fdiff)*pyunits.K,
+                model.params.pressure_crit)
+            e = cforms.expression_exponential_tau(
+                model.params,
+                "pressure_sat",
+                T*pyunits.K,
+                model.params.pressure_crit)
+            ep = cforms.expression_exponential_tau(
+                model.params,
+                "pressure_sat",
+                (T+fdiff)*pyunits.K,
+                model.params.pressure_crit)
+
+            dT_fe_m = value((e-em)/fdiff)
+            dT_fe_p = value((ep-e)/fdiff)
+
+            assert between(dT, dT_fe_m, dT_fe_p)
+            assert pytest.approx(dT_fe_m, rel=1e-4) == dT
+            assert pytest.approx(dT_fe_p, rel=1e-4) == dT
 
     @pytest.mark.unit
     def test_expression_exponential(self, model):
