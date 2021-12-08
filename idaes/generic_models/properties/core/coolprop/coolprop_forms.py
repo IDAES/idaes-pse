@@ -18,7 +18,7 @@ from pyomo.environ import exp, units as pyunits, Var
 from idaes.core.util.exceptions import ConfigurationError
 
 
-# TODO : Onlt have temperature derivative expression for exponential_tau form
+# TODO : Only have temperature derivative expression for exponential_tau form
 # TODO : Add other derivative forms as/if required
 
 def parameters_exponential(cobj, prop, nlist, tlist):
@@ -111,7 +111,6 @@ def dT_expression_exponential_tau(cobj, prop, T, yc):
 
 
 def parameters_polynomial(cobj, prop, prop_units, alist, blist):
-    # TODO : Get number of terms to build
     for i in range(0, len(alist)):
         aval = alist[i]
         if i == 0:

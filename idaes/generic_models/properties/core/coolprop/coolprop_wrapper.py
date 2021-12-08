@@ -12,7 +12,7 @@
 #################################################################################
 """
 This module contains methods for looking up and using CoolProp parameters
-within the IDAES generic proeprties framework.
+within the IDAES generic properties framework.
 """
 import json
 
