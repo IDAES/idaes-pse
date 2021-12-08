@@ -24,7 +24,8 @@ try:
 except ModuleNotFoundError:
     coolprop_present = False
 
-from pyomo.environ import ConcreteModel, Param, units as pyunits, value, Var
+from pyomo.environ import (
+    Block, ConcreteModel, Param, units as pyunits, value, Var)
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core import FlowsheetBlock, Component, LiquidPhase
@@ -37,7 +38,7 @@ from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
 
 
 from idaes.generic_models.properties.core.coolprop.coolprop_wrapper import \
-    CoolPropWrapper
+    CoolPropWrapper, CoolPropExpressionError, CoolPropPropertyError
 
 
 @pytest.mark.skipif(not coolprop_present, reason="CoolProp not installed")
@@ -171,11 +172,61 @@ class TestWrapper:
         assert mw[0] == 0.05807914
         assert_units_equivalent(mw[1], pyunits.kg/pyunits.mol)
 
+    @pytest.mark.unit
+    def test_pressure_sat_no_params(self):
+        m = ConcreteModel()
+        # Dummy a Component object with the name of a property which does not
+        # have data for saturation pressure
+        m.Air = Block()
+
+        with pytest.raises(CoolPropPropertyError,
+                           match="Could not retrieve parameters for "
+                           "pressure_sat of component Air from CoolProp. This "
+                           "likely indicates that CoolProp does not have "
+                           "values for the necessary parameters."):
+            CoolPropWrapper.pressure_sat_comp.build_parameters(m.Air)
+
+    @pytest.mark.unit
+    def test_pressure_sat_unrecognised_form(self):
+        m = ConcreteModel()
+        # First, add a dummy component to the cached components which uses
+        # unsupoorted form
+        CoolPropWrapper.cached_components["TestComp"] = {
+            "ANCILLARIES": {
+                "pS": {"type": "foo",
+                       "using_tau_r": True}},
+            "INFO": {"ALIASES": ["testcomp"],
+                     "NAME": "TestComp"}}
+        m.TestComp = Block()
+
+        with pytest.raises(CoolPropExpressionError,
+                           match="Found unsupported expression form for "
+                           "pressure_sat of component TestComp. This likely "
+                           "occured due to changes in CoolProp and the "
+                           "interface should be updated."):
+            CoolPropWrapper.pressure_sat_comp.build_parameters(m.TestComp)
+
+        # Pressure_sat uses has two parts to form. Set type to supported form
+        # and using_tau_r to False (unsupported)
+        CoolPropWrapper.cached_components[
+            "TestComp"]["ANCILLARIES"]["pS"]["type"] = "pL"
+        CoolPropWrapper.cached_components[
+            "TestComp"]["ANCILLARIES"]["pS"]["using_tau_r"] = False
+        with pytest.raises(CoolPropExpressionError,
+                           match="Found unsupported expression form for "
+                           "pressure_sat of component TestComp. This likely "
+                           "occured due to changes in CoolProp and the "
+                           "interface should be updated."):
+            CoolPropWrapper.pressure_sat_comp.build_parameters(m.TestComp)
+
 
 @pytest.mark.skipif(not coolprop_present, reason="CoolProp not installed")
 class TestCoolPropIntegration(object):
     @pytest.fixture(scope="class")
     def m(self):
+        # Clear cached components to ensure clean slate
+        CoolPropWrapper.flush_cached_components()
+
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(default={'dynamic': False})
@@ -184,8 +235,6 @@ class TestCoolPropIntegration(object):
             # Specifying components
             "components": {
                 'benzene': {"type": Component,
-                            # "enth_mol_ig_comp": RPP4,
-                            # "entr_mol_ig_comp": RPP4,
                             "pressure_sat_comp": CoolPropWrapper,
                             "parameter_data": {
                                 "mw": CoolPropWrapper,

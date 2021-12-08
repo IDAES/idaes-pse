@@ -40,6 +40,32 @@ name_map = {"dens_mol_crit": ("rhomolar", "CRITICAL"),
             "temperature_crit": ("T", "CRITICAL")}
 
 
+class CoolPropExpressionError(ValueError):
+    # Error message for when an unexpected expression form is used
+    def __init__(self, prop, comp):
+        self.prop = prop
+        self.comp = comp
+
+    def __str__(self):
+        return (f"Found unsupported expression form for {self.prop} "
+                f"of component {self.comp}. This likely occured due to "
+                f"changes in CoolProp and the interface should be "
+                f"updated.")
+
+
+class CoolPropPropertyError(KeyError):
+    # Error message for when CoolProp is missing entry for a property
+    def __init__(self, prop, comp):
+        self.prop = prop
+        self.comp = comp
+
+    def __str__(self):
+        return (f"Could not retrieve parameters for {self.prop} of "
+                f"component {self.comp} from CoolProp. This likely indicates "
+                f"that CoolProp does not have values for the necessary "
+                f"parameters.")
+
+
 class CoolPropWrapper:
     cached_components = {}
 
@@ -78,8 +104,20 @@ class CoolPropWrapper:
             cname = cobj.local_name
             cdict = CoolPropWrapper._get_component_data(cname)
 
-            ndict = cdict["ANCILLARIES"]["pS"]["n"]
-            tdict = cdict["ANCILLARIES"]["pS"]["t"]
+            try:
+                # First, check to make sure the listed expression form is
+                # supported.
+                # 8-Dec-21: CoolProp only has two "types" for pressure_sat
+                # which appear to be equivalent.
+                if (cdict["ANCILLARIES"]["pS"]["type"] not in ["pL", "pV"] or
+                        not cdict["ANCILLARIES"]["pS"]["using_tau_r"]):
+                    # If not one of the forms we recognise, raise an exception
+                    raise CoolPropExpressionError("pressure_sat", cname)
+
+                ndict = cdict["ANCILLARIES"]["pS"]["n"]
+                tdict = cdict["ANCILLARIES"]["pS"]["t"]
+            except KeyError:
+                raise CoolPropPropertyError("pressure_sat", cname)
 
             cforms.parameters_exponential(cobj, "pressure_sat", ndict, tdict)
 
