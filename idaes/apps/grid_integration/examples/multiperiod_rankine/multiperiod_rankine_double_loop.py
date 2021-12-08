@@ -56,7 +56,7 @@ class MultiPeriodRankine:
 
     #def update_model(self, b, implemented_shut_down,implemented_start_up, implemented_power_output):
     #NOTE: the profiles passed in here come from `get_implemented_profile`
-    def update_model(self, blk, implemented_power_output, realized_soc):
+    def update_model(self, b, implemented_power_output, realized_soc):
 
         '''
         Update `blk` variables using the actual implemented power output. 
@@ -70,6 +70,7 @@ class MultiPeriodRankine:
          Returns:
              None
         '''
+        blk = b
         mp_rankine = blk.rankine 
         active_blks = mp_rankine.get_active_process_blocks()
 

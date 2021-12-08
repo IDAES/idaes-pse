@@ -4,18 +4,20 @@ import numpy as np
 from random import random
 from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
 from idaes.apps.rankine.simple_rankine_cycle import create_model, set_inputs, initialize_model, close_flowsheet_loop, add_operating_cost
+from idaes.core.util import from_json
 
 #Create a steady-state ranking cycle model, not yet setup for multi-period
 def create_ss_rankine_model():
-    # p_lower_bound = 175
-    # p_upper_bound = 450
-    p_lower_bound = 30
-    p_upper_bound = 76
+    p_lower_bound = 30 #175
+    p_upper_bound = 76 #450
 
     m = pyo.ConcreteModel()
     m.rankine = create_model(heat_recovery=True)
     m.rankine = set_inputs(m.rankine)
-    m.rankine = initialize_model(m.rankine)
+    
+    #We are initializing from a json file
+    #m.rankine = initialize_model(m.rankine)
+    from_json(m.rankine, fname="initialized_rankine_state.json.gz", gz=True)
     m.rankine = close_flowsheet_loop(m.rankine)
     m.rankine = add_operating_cost(m.rankine)
 

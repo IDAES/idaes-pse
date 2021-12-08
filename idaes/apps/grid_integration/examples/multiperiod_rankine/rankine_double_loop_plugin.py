@@ -15,7 +15,7 @@ from utils import assemble_generator_data
 
 generator = "102_STEAM_3" #bidding generator
 tracking_horizon = 4  #hours
-bidding_horizon = 4   #hours
+bidding_horizon = 48   #hours
 n_scenario = 10       #for bidding
 n_tracking_hour = 1   #advance n_tracking_hour (i.e. assume we solve every hour)
 

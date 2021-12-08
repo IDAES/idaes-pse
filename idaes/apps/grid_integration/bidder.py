@@ -15,11 +15,28 @@ class Bidder:
             n_scenario: number of LMP scenarios
             solver: a Pyomo mathematical programming solver object
             forecaster: an initialized LMP forecaster object
-            **kwarg: necessary arguments to initialize the selected model object
+
 
         Returns:
             None
         '''
+        #methods that `bidding_model_object` needs to define:
+        #fs = populate_model(b::Block)
+        #update_model(b::Block,**kwargs)
+
+
+        #attributes that `fs` needs to contain:
+        #power_output_ref
+
+        #attributes that `bidding_model_object` needs to contain:
+        #generator
+        #power_output::string
+
+        #parameters that get added to flowsheet
+        #power_output_ref::Reference
+        #energy_price
+        #energy_price.index_set() and power_output_ref.index_set()
+
 
         # create an instance
         self.bidding_model_object = bidding_model_object
@@ -129,10 +146,9 @@ class Bidder:
         for k in scenario_comb:
             time_index = self.model.fs[k[0]].power_output_ref.index_set()
             for t in time_index:
-                self.model.bidding_constraints.add((self.model.fs[k[0]].power_output_ref[t] \
-                                                    - self.model.fs[k[1]].power_output_ref[t])\
-                                                    * (self.model.fs[k[0]].energy_price[t] \
-                                                    - self.model.fs[k[0]].energy_price[t]) >= 0)
+                self.model.bidding_constraints.add(
+                    (self.model.fs[k[0]].power_output_ref[t] - self.model.fs[k[1]].power_output_ref[t])
+                    *(self.model.fs[k[0]].energy_price[t] - self.model.fs[k[1]].energy_price[t]) >= 0)
         return
 
     def _add_bidding_objective(self):
@@ -282,6 +298,7 @@ class Bidder:
                     pre_power = power
                     continue
                 bids[t][gen][power] = max(bids[t][gen][power],bids[t][gen][pre_power])
+                pre_power = power
 
             # calculate the actual cost
             pre_power = 0
