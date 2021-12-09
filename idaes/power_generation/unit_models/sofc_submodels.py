@@ -44,14 +44,9 @@ _constR = 8.3145 * pyo.units.J / pyo.units.mol / pyo.units.K  # or Pa*m3/K/mol
 _constF = 96485 * pyo.units.coulomb / pyo.units.mol
 
 
-class CV_Direction(enum.Enum):
-    Z = 1
-    X = 2
-    Y = 3
-
-
 class CV_Bound(enum.Enum):
     EXTRAPOLATE = 1
+    NODE_VALUE = 2
 
 
 class CV_Interpolation(enum.Enum):
@@ -59,6 +54,7 @@ class CV_Interpolation(enum.Enum):
     CDS = 2  # Linear interpolation from upstream and downstream node centers
     QUICK = 3  # Quadratic upwind interpolation, quadratic from two upwind
     # centers and one downwind
+
 
 def _set_default_factor(c, s):
     for i in c:
@@ -128,7 +124,6 @@ def _interpolate_2D(
     phi_bound_1,
     derivative=False,
     method=CV_Interpolation.CDS,
-    direction=CV_Direction.Z,
 ):
     """PRIVATE Function: Interpolate faces of control volumes in 1D
 
@@ -439,7 +434,7 @@ def comp_entropy_expr(temperature, comp):
     t = temperature / 1000.0 / pyo.units.K
     return (
         (
-            d["A"] * pyo.log(t)
+            d["A"] * safe_log(t, eps=1e-6)
             + d["B"] * t
             + d["C"] * t ** 2 / 2.0
             + d["D"] * t ** 3 / 3.0
@@ -2086,7 +2081,7 @@ class SofcElectrolyteData(UnitModelBlockData):
                     - comp_entropy_expr(b.temperature_x0[t, iz], "H2")
                     - 0.5 * comp_entropy_expr(b.temperature_x0[t, iz], "O2")
                     + _constR
-                    * pyo.log(
+                    * safe_log(
                         b.mole_frac_comp_x0[t, iz, "H2"]
                         * (
                             b.pressure_x1[t, iz]
@@ -2094,7 +2089,7 @@ class SofcElectrolyteData(UnitModelBlockData):
                             / (1e5 * pyo.units.Pa)
                         )
                         ** 0.5
-                        / b.mole_frac_comp_x0[t, iz, "H2O"]
+                        / b.mole_frac_comp_x0[t, iz, "H2O"], eps=1e-6
                     )
                 )
 
@@ -2122,7 +2117,7 @@ class SofcElectrolyteData(UnitModelBlockData):
                     - comp_entropy_expr(b.temperature_x0[t, iz], "CO")
                     - 0.5 * comp_entropy_expr(b.temperature_x0[t, iz], "O2")
                     + _constR
-                    * pyo.log(
+                    * safe_log(
                         b.mole_frac_comp_x0[t, iz, "CO"]
                         * (
                             b.pressure_x1[t, iz]
@@ -2130,7 +2125,7 @@ class SofcElectrolyteData(UnitModelBlockData):
                             / (1e5 * pyo.units.Pa)
                         )
                         ** 0.5
-                        / b.mole_frac_comp_x0[t, iz, "CO2"]
+                        / b.mole_frac_comp_x0[t, iz, "CO2"], eps=1e-6
                     )
                 )
 
