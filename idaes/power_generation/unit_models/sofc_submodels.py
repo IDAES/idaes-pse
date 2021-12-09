@@ -16,10 +16,14 @@ import numpy as np
 from scipy.interpolate import griddata
 from itertools import combinations
 import enum
+import sys
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.dae import ContinuousSet, DerivativeVar
 import pyomo.environ as pyo
+from pyomo.common import Executable
+from pyomo.network import Port
+
 
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
@@ -28,12 +32,12 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
 import idaes
 from idaes.core.util.math import safe_log
 from idaes.core.util import get_solver
-from pyomo.network import Port
+import idaes.core.util.model_serializer as ms
+import idaes.core.util.model_statistics as mstat
 
 
 _constR = 8.3145 * pyo.units.J / pyo.units.mol / pyo.units.K  # or Pa*m3/K/mol
@@ -55,6 +59,97 @@ class CV_Interpolation(enum.Enum):
     CDS = 2  # Linear interpolation from upstream and downstream node centers
     QUICK = 3  # Quadratic upwind interpolation, quadratic from two upwind
     # centers and one downwind
+
+class PetscSolverType(enum.Enum):
+    """PETSc solver types, TAO (optimization) is not yet implimented
+    """
+    SNES = 0
+    TS = 1
+    TAO = 2
+
+def petsc_default_options(solver_type=PetscSolverType.SNES):
+    """Get a default options dictionary for a PETSc solver.  This provides a
+    convenient way to get a resonable set of solver options for a nonlinear
+    system or DAE.
+    Args:
+        solver_type (PetscSolverType): In {PetscSolverType.SNES,
+            PetscSolverType.DAE}
+    Returns:
+        (dict): Solver options dictionary
+    """
+
+    if solver_type == PetscSolverType.SNES:
+        return {
+            "--snes_monitor":"",
+            "--pc_type":"lu",             #direct solve MUMPS default LU fact
+            "--ksp_type":"preonly",       #no ksp used direct solve preconditioner
+        }
+    elif solver_type == PetscSolverType.TS:
+        return {
+            "--dae_solve":"",             #tell solver to expect dae problem
+            "--ts_monitor":"",            #show progess of TS solver
+            "--ts_max_snes_failures":40,  #max nonlin solve fails before give up
+            "--ts_max_reject":20,         #max steps to reject
+            "--ts_type":"beuler",         #ts_solver
+            #"--ts_dt":0.1,
+            #"--ts_adapt_monitor":"",
+            #"--snes_monitor":"",          #show progress on nonlinear solves
+            #"--pc_type":"lu",             #direct solve MUMPS default LU fact
+            #"--ksp_type":"preonly",       #no ksp used direct solve preconditioner
+            #"--show_jac":"",
+            #"--show_initial":"",
+            #"--snes_type":"newtonls",     # newton line search for nonliner solver
+            "--ts_adapt_type":"basic",
+            #"--ts_init_time":0,           # initial time
+            #"--ts_max_time":1,            # final time
+            #"--ts_save_trajectory":1,
+            #"--ts_trajectory_type":"visualization",
+            #"--ts_exact_final_time":"stepover",
+            "--ts_exact_final_time":"matchstep",
+            #"--ts_exact_final_time":"interpolate",
+            #"--ts_view":"",
+        }
+    elif solver_type == PetscSolverType.TAO:
+        raise NotImplementedError("Tao optimization solvers not yet implimented")
+    raise ValueError(f"{solver_type} is not a supported solver type")
+
+
+def get_petsc_solver(options=None, wsl=None, solver_type=None):
+    """Get a Pyomo PETSc solver object. The IDAES solver distribution does not
+    contain a PETSc executable for Windows, so the recomended method of using
+    PETSc on Windows is to use the WSL to run the Linux executable.  This
+    function provides a wrapper for the SovlerFactory that allows the same
+    function to be used to get the PETSc solver whether using the WSL or not.
+    For more information on how to set the PETSc solver up on Windows see the
+    IDAES documentation.
+    Args:
+        options (dict): Solver options, default=None
+        wsl (bool): If True force WSL version, if False force not WSL version,
+            if None, try non-WSL version then try WSL version
+        solver_type (PetscSolverType): If a type is provided the default options
+            dictionary for the specified type will used and updated with any
+            options provided.
+    Returns:
+        PETSc Pyomo solver object
+    """
+    if solver_type is not None:
+        opt = petsc_default_options(solver_type=solver_type)
+        if options is not None:
+            opt.update(options)
+        options = opt
+    if not wsl or wsl is None:
+        if Executable("petsc"): # checking this first avoids lot of error log
+            return pyo.SolverFactory("petsc", type="asl", options=options)
+    if sys.platform.startswith('win32') and (wsl or wsl is None):
+        # On Windows, assume running the solver using WSL, user will need to
+        # add batch file to `idaes bin-directory`
+        if Executable("petsc_wsl.bat"):
+            return pyo.SolverFactory(
+                "petsc_wsl",
+                executable="petsc_wsl.bat",
+                type='asl',
+                options=options)
+    return None # didn't find PETSc at all
 
 
 def _set_default_factor(c, s):
@@ -1005,11 +1100,10 @@ class SofcChannelData(UnitModelBlockData):
         for i, c in self.temperature_el_eqn.items():
             sh = iscale.get_scaling_factor(self.htc[i])
             st = iscale.get_scaling_factor(self.temperature_el[i])
-            iscale.constraint_scaling_transform(c, sh*st)
+            iscale.constraint_scaling_transform(c, sh * st)
 
         for i in self.mole_frac_eqn:
             iscale.constraint_scaling_transform(self.mole_frac_eqn[i], 10)
-
 
         # for i in self.p_eqn:
         #    sP = iscale.get_scaling_factor(self.pressure[i])
@@ -1624,6 +1718,7 @@ class SofcElectrodeData(UnitModelBlockData):
 
         if self.config.qflux_x0 is not None:
             self.qflux_x0 = pyo.Reference(self.config.qflux_x0)
+
             @self.Constraint(tset, iznodes)
             def qflux_x0_eqn(b, t, iz):
                 return self.qflux_x0[t, iz] == b.qxflux[t, ixfaces.first(), iz]
@@ -1805,12 +1900,18 @@ class SofcElectrodeData(UnitModelBlockData):
                 sr = 1  # scale for gas constant
                 iscale.set_scaling_factor(self.conc[i], sp * sx / sr / st)
 
-        for i in self.conc_eqn:
+        for i, c in self.conc_eqn.items():
             sp = iscale.get_scaling_factor(self.pressure[i[0], i[1], i[2]])
             sx = iscale.get_scaling_factor(self.mole_frac_comp[i], default=1)
-            iscale.constraint_scaling_transform(self.conc_eqn[i], sp * sx)
+            iscale.constraint_scaling_transform(c, sp * sx)
+
+        # for i, c in self.conc_x1_eqn.items():
+        #    iscale.constraint_scaling_transform(c, 1e-1)
 
         for i, c in self.energy_balance_solid_eqn.items():
+            iscale.constraint_scaling_transform(c, 1e-3)
+
+        for i, c in self.xflux_eqn.items():
             iscale.constraint_scaling_transform(c, 1e-3)
 
         for i, c in self.enth_mol_eqn.items():
@@ -2382,8 +2483,8 @@ def use_elecrode():
     import idaes.core.plugins
 
     dynamic = False
-    time_nfe = 15
-    time_set = [0, 10] if dynamic else [0]
+    time_nfe = 20
+    time_set = [0, 15] if dynamic else [0]
 
     zfaces = np.linspace(0, 1, 11).tolist()
     xfaces_electrode = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9, 1.0]
@@ -2396,8 +2497,9 @@ def use_elecrode():
             "time_units": pyo.units.s,
         }
     )
-    m.fs.current_density = pyo.Var(m.fs.time, list(range(1, len(zfaces) + 1)))
+    m.fs.current_density = pyo.Var(m.fs.time, list(range(1, len(zfaces))))
     _set_default_factor(m.fs.current_density, 1e-3)
+    m.fs.potential_cell = pyo.Var(m.fs.time, initialize=1.25, units=pyo.units.V)
 
     m.fs.fuel_chan = SofcChannel(
         default={
@@ -2476,8 +2578,6 @@ def use_elecrode():
         m.fs.oxygen_electrode.temperature[0, :, :].fix(1023.15)
 
         m.fs.electrolyte.temperature[0, :, :].fix(1023.15)
-        m.fs.fuel_electrode.temperature_x1[0, :].fix(1023.15)
-        m.fs.oxygen_electrode.temperature_x1[0, :].fix(1023.15)
 
     m.fs.fuel_chan.temperature_inlet.fix(1023.15)
     m.fs.fuel_chan.pressure_inlet.fix(1.02e5)
@@ -2589,15 +2689,23 @@ def use_elecrode():
     # see = pyo.TransformationFactory("simple_equality_eliminator")
     # see.apply_to(m)
     solver = pyo.SolverFactory("ipopt")
+    #solver = get_petsc_solver(
+    #    options={
+    #        "--snes_type":"newtonls",
+    #        #"--pc_type":"lu",
+    #        #"--pc_factor_mat_solver_type":"strumpack",
+    #    },
+    #    solver_type=PetscSolverType.SNES
+    #)
+
     # see.revert()
+    print(mstat.degrees_of_freedom(m))
     solver.solve(
         m,
         tee=True,
-        symbolic_solver_labels=True,
-        options={"tol": 1e-6, "halt_on_ampl_error": "no"},
+        #symbolic_solver_labels=True,
+        #options={"tol": 1e-6, "halt_on_ampl_error": "no"},
     )
-
-    m.fs.potential_cell = pyo.Var(m.fs.time, initialize=1.25, units=pyo.units.V)
 
     @m.fs.Constraint(m.fs.time, m.fs.oxygen_electrode.iznodes)
     def potential_eqn(b, t, iz):
@@ -2606,41 +2714,31 @@ def use_elecrode():
         )
 
     m.fs.fuel_electrode.current_density.unfix()
-    m.fs.potential_cell.fix(1.24)
+    m.fs.potential_cell.fix(1.286)
 
     solver.solve(
         m,
         tee=True,
-        symbolic_solver_labels=True,
-        options={"tol": 1e-6, "halt_on_ampl_error": "no"},
+        #symbolic_solver_labels=True,
+        #options={"tol": 1e-6, "halt_on_ampl_error": "no"},
     )
-
-    """
-    m.fs.potential_cell.fix(1.29)
-
-    solver.solve(
-        m,
-        tee=True,
-        symbolic_solver_labels=True,
-        options={"tol": 1e-6, "halt_on_ampl_error": "no"},
-    )
-    """
 
     z, x, h = contour_grid_data(
-        # var=pyo.Reference(m.fs.fuel_electrode.mole_frac_comp[:, :, :, "H2"]),
+        var=pyo.Reference(m.fs.fuel_electrode.mole_frac_comp[:, :, :, "H2"]),
         # var=m.fs.fuel_electrode.pressure,
         # var=m.fs.fuel_electrode.temperature,
-        var=m.fs.electrolyte.temperature,
+        #var=m.fs.electrolyte.temperature,
         time=m.fs.time,
-        # xnodes=m.fs.fuel_electrode.xnodes,
-        # znodes=m.fs.fuel_electrode.znodes,
-        xnodes=m.fs.electrolyte.xnodes,
-        znodes=m.fs.electrolyte.znodes,
+        xnodes=m.fs.fuel_electrode.xnodes,
+        znodes=m.fs.fuel_electrode.znodes,
+        #xnodes=m.fs.electrolyte.xnodes,
+        #znodes=m.fs.electrolyte.znodes,
     )
 
     fig, ax = plt.subplots()
     # levels = np.linspace(800, 1400, 40)
-    levels = 40
+    levels = np.linspace(0.0, 1.0, 40)
+    # levels = 40
 
     def animate(i):
         ax.clear()
@@ -2660,24 +2758,12 @@ def use_elecrode():
 
     ani.save("animation.gif", writer=animation.PillowWriter(fps=2))
 
-    # m.fs.fuel_electrode.xflux_x0.display()
-    # m.fs.fuel_electrode.conc_x0.display()
-    # m.fs.fuel_electrode.current_density.display()
-    # m.fs.fuel_electrode.conc.display()
-    # m.fs.fuel_chan.temperature.display()
-    # m.fs.oxygen_chan.temperature.display()
-    # m.fs.fuel_electrode.mole_frac_comp.display()
-    # m.fs.fuel_chan.mole_frac_comp.display()
-    # m.fs.fuel_electrode.int_energy_density_solid.display()
-    # m.fs.fuel_electrode.temperature.display()
-    # m.fs.electrolyte.temperature.display()
     return m
 
 
 if __name__ == "__main__":
     m = use_elecrode()
-
-    import idaes.core.util.model_statistics as mstat
+    #ms.to_json(m, fname="save.json.gz")
 
     # m.fs.chan.temperature.display()
     # m.fs.chan.mole_frac_comp.display()
@@ -2749,9 +2835,7 @@ if __name__ == "__main__":
         f"Electric Power: {pyo.value(sum(m.fs.potential_disc[0, iz]*m.fs.electrolyte.current[0, iz] for iz in m.fs.electrolyte.iznodes))}"
     )
 
-    m.fs.potential_disc.display()
-
-    check_scaling = True
+    check_scaling = False
     if check_scaling:
         jac, nlp = iscale.get_jacobian(m, scaled=True)
         print("Extreme Jacobian entries:")
