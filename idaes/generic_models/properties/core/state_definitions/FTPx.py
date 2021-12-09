@@ -663,8 +663,8 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps,
     # Validate split ratios K are nonnegative
     for j in vl_comps:
         if K[j]<0:
-            _log.warning("While initializing block {}, the molar ratio of "
-                         "Component {} was calculated to be negative. "
+            _log.warning("While initializing block {}, the vapor/liquid split "
+                         "ratio of Component {} was calculated to be negative. "
                          "Check the implementation of the saturation pressure, "
                          "Henry's law method, or liquid density."\
                              .format(b.name, j))
@@ -672,8 +672,12 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps,
     
     # Calculate harmonic and arithmatic means of the split ratios KS
     if len(l_only_comps) == 0:
-        K_bar_H = 1/(sum([value(b.mole_frac_comp[j])/K[j]
-                            for j in vl_comps]))
+        tmp = sum([value(b.mole_frac_comp[j])/K[j]
+                            for j in vl_comps])
+        if tmp < 1e-14:
+            K_bar_H = float('inf')
+        else:
+            K_bar_H = 1/tmp
     else:
         K_bar_H = 0
     if len(v_only_comps) == 0:
