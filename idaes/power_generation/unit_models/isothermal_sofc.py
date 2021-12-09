@@ -779,36 +779,13 @@ class IsothermalSofcElectrolyteData(UnitModelBlockData):
     CONFIG.declare(
         "width", ConfigValue(default=None, description="Width variable from parent")
     )
-    CONFIG.decalre(
-        "xflux_x0", ConfigValue(default=None, description="Var for component mole flux from electrode at x = 0")
-    )
-    CONFIG.decalre(
-        "xflux_x1", ConfigValue(default=None, description="Var for component mole flux from electrode at x = 1")
-    )
-    CONFIG.decalre(
-        "pressure_x0", ConfigValue(default=None, description="Var for pressure at x = 0")
-    )
-    CONFIG.decalre(
-        "pressure_x1", ConfigValue(default=None, description="Var pressure at x = 1")
-    )
+
 
     def build(self):
         #
         super().build()
 
-        if self.config.xflux_x0 is None:
-            raise RuntimeError("Missing required config option xflux_x0")
-        if self.config.xflux_x1 is None:
-            raise RuntimeError("Missing required config option xflux_x1")
-        if self.config.pressure_x0 is None:
-            raise RuntimeError("Missing required config option pressure_x0")
-        if self.config.pressure_x1 is None:
-            raise RuntimeError("Missing required config option pressure_x1")
 
-        self.xflux_x0 = Reference(self.config.xflux_x0)
-        self.xflux_x1 = Reference(self.config.xflux_x1)
-        self.pressure_x0 = Reference(self.config.pressure_x0)
-        self.pressure_x1 = Reference(self.config.pressure_x1)
 
         tset = self.flowsheet().config.time
         zset = self.config.zset
