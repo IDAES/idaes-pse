@@ -1081,7 +1081,7 @@ class TestGenericStateBlock(object):
                     frame.props[1],
                     frame.params.get_metadata().properties[p]["method"])
                 continue
-            elif p.endswith(("bubble", "dew")):
+            elif p.endswith(("bubble", 'bub', "dew")):
                 # Bubble and dew properties require phase equilibria, which are
                 # not tested here
                 # Check that method exists and continue

@@ -181,9 +181,13 @@ def flash_flowsheet():
     )
     # Flash unit
     m.fs.flash = Flash(default={"property_package": m.fs.properties})
-    m.fs.flash.inlet.flow_mol.fix(np.NINF)
+    # TODO: move this to fix(np.NINF, skip_validation=True) once
+    # Pyomo#2180 is merged
+    m.fs.flash.inlet.flow_mol[:].set_value(np.NINF, True)
+    m.fs.flash.inlet.flow_mol.fix()
     m.fs.flash.inlet.temperature.fix(np.inf)
-    m.fs.flash.inlet.pressure.fix(np.nan)
+    m.fs.flash.inlet.pressure[:].set_value(np.nan, True)
+    m.fs.flash.inlet.pressure.fix()
     m.fs.flash.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
     m.fs.flash.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
     m.fs.flash.heat_duty.fix(0)

@@ -305,6 +305,10 @@ class EoSBase():
     @staticmethod
     def vol_mol_phase(b, p):
         raise NotImplementedError(_msg(b, "vol_mol_phase"))
+        
+    @staticmethod
+    def vol_mol_phase_comp(b,p,j):
+        raise NotImplementedError(_msg(b, "vol_mol_phase_comp"))
 
 
 def _msg(b, attr):

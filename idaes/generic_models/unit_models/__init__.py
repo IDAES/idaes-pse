@@ -15,6 +15,7 @@ from .flash import Flash
 from .gibbs_reactor import GibbsReactor
 from .heat_exchanger import HeatExchanger, HeatExchangerFlowPattern
 from .heater import Heater
+from .heat_exchanger_ntu import HeatExchangerNTU
 from .heat_exchanger_1D import HeatExchanger1D
 from .mixer import Mixer, MomentumMixingType, MixingType
 from .plug_flow_reactor import PFR
