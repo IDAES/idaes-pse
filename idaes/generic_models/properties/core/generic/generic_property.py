@@ -1263,9 +1263,17 @@ class _GenericStateBlock(StateBlock):
                             blk[k].true_to_appr_species[p, j])
                     # Need to calculate all flows before doing mole fractions
                     for p, j in blk[k].params.apparent_phase_component_set:
-                        calculate_variable_from_constraint(
-                            blk[k].mole_frac_phase_comp_apparent[p, j],
-                            blk[k].appr_mole_frac_constraint[p, j])
+                        x = value(
+                            blk[k].flow_mol_phase_comp_apparent[p, j] /
+                            sum(blk[k].flow_mol_phase_comp_apparent[p, jj]
+                                for jj in blk[k].params.apparent_species_set))
+                        lb = blk[k].mole_frac_phase_comp_apparent[p, j]._lb
+                        if lb is not None and x <= lb:
+                            blk[k].mole_frac_phase_comp_apparent[
+                                p, j].set_value(lb)
+                        else:
+                            blk[k].mole_frac_phase_comp_apparent[
+                                p, j].set_value(x)
                 elif blk[k].params.config.state_components == \
                         StateIndex.apparent:
                     # First calculate initial values for true species flows
@@ -1275,9 +1283,15 @@ class _GenericStateBlock(StateBlock):
                             blk[k].appr_to_true_species[p, j])
                     # Need to calculate all flows before doing mole fractions
                     for p, j in blk[k].params.true_phase_component_set:
-                        calculate_variable_from_constraint(
-                            blk[k].mole_frac_phase_comp_true[p, j],
-                            blk[k].true_mole_frac_constraint[p, j])
+                        x = value(
+                            blk[k].flow_mol_phase_comp_true[p, j] /
+                            sum(blk[k].flow_mol_phase_comp_true[p, jj]
+                                for jj in blk[k].params.true_species_set))
+                        lb = blk[k].mole_frac_phase_comp_true[p, j]._lb
+                        if lb is not None and x <= lb:
+                            blk[k].mole_frac_phase_comp_true[p, j].set_value(lb)
+                        else:
+                            blk[k].mole_frac_phase_comp_true[p, j].set_value(x)
 
             # If state block has phase equilibrium, use the average of all
             # _teq's as an initial guess for T

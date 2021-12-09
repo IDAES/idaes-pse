@@ -155,7 +155,7 @@ class TestStripperVaporFlow(object):
                 value(model.fs.unit.vapor_outlet.flow_mol[0]))
         assert (pytest.approx(0.976758, rel=1e-5) ==
                 value(model.fs.unit.vapor_outlet.mole_frac_comp[0, 'CO2']))
-        assert (pytest.approx(0.0232416, rel=1e-5) ==
+        assert (pytest.approx(0.0232423, rel=1e-5) ==
                 value(model.fs.unit.vapor_outlet.mole_frac_comp[0, 'H2O']))
         assert (pytest.approx(184360, rel=1e-5) ==
                 value(model.fs.unit.vapor_outlet.pressure[0]))
@@ -306,7 +306,7 @@ class TestStripperHeatDuty(object):
                 value(model.fs.unit.vapor_outlet.flow_mol[0]))
         assert (pytest.approx(0.976758, rel=1e-5) ==
                 value(model.fs.unit.vapor_outlet.mole_frac_comp[0, 'CO2']))
-        assert (pytest.approx(0.0232505, rel=1e-5) ==
+        assert (pytest.approx(0.0232509, rel=1e-5) ==
                 value(model.fs.unit.vapor_outlet.mole_frac_comp[0, 'H2O']))
         assert (pytest.approx(184360, rel=1e-5) ==
                 value(model.fs.unit.vapor_outlet.pressure[0]))
