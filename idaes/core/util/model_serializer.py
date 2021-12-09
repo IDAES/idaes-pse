@@ -44,10 +44,14 @@ def _set_active(o, d):
     Returns:
         None
     """
-    if d:
-        o.activate()
-    else:
-        o.deactivate()
+    try:
+        if d:
+            o.activate()
+        else:
+            o.deactivate()
+    except AttributeError:
+        # Pyomo component that can't be activated or deactivated
+        pass
 
 def _set_fixed(o, d):
     """
@@ -490,7 +494,10 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
                 and not isinstance(o, Component):
                 el = o
             else:
-                el = o[key]
+                try:
+                    el = o[key]
+                except TypeError:
+                    el = key
             if frst: # assume all item are same type, use first to get alist
                 alist, ff = wts.get_data_class_attr_list(el) # get attributes
                 if alist is None: return # if None then skip writing
@@ -705,7 +712,10 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
             and not isinstance(o, Component):
             el = o
         else:
-            el = o[key]
+            try:
+                el = o[key]
+            except TypeError:
+                continue
         if c == 0: # if first data item assume all itmes are same and get alist
             alist, ff = wts.get_data_class_attr_list(el) #ff is fileter function
             if alist is None: return #skip reading this type

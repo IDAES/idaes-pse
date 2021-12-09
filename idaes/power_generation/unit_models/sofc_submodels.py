@@ -23,6 +23,7 @@ from pyomo.dae import ContinuousSet, DerivativeVar
 import pyomo.environ as pyo
 from pyomo.common import Executable
 from pyomo.network import Port
+from pyomo.dae.flatten import flatten_dae_components
 
 
 from idaes.core.util.config import is_physical_parameter_block
@@ -31,18 +32,19 @@ from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
 )
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
 import idaes
 from idaes.core.util.math import safe_log
 from idaes.core.util import get_solver
 import idaes.core.util.model_serializer as ms
 import idaes.core.util.model_statistics as mstat
+from idaes.core.solvers import petsc
+import idaes.logger as idaeslog
+
 
 
 _constR = 8.3145 * pyo.units.J / pyo.units.mol / pyo.units.K  # or Pa*m3/K/mol
 _constF = 96485 * pyo.units.coulomb / pyo.units.mol
-
 
 class CV_Bound(enum.Enum):
     EXTRAPOLATE = 1
@@ -1684,7 +1686,7 @@ class SofcElectrodeData(UnitModelBlockData):
             if is_dynamic and t == tset.first():
                 return pyo.Constraint.Skip
             return (
-                b.node_volume[ix, iz] * (1 - b.porosity) * b.dcedt_solid[t, ix, iz]
+                b.node_volume[ix, iz] * ((1 - b.porosity) * b.dcedt_solid[t, ix, iz] + b.porosity * b.dcedt[t, ix, iz])
                 == b.xface_area[iz] * (b.qxflux[t, ix, iz] - b.qxflux[t, ix + 1, iz])
                 + b.zface_area[ix] * (b.qzflux[t, ix, iz] - b.qzflux[t, ix, iz + 1])
                 + b.joule_heating[t, ix, iz]
@@ -2385,7 +2387,7 @@ def use_elecrode():
     from idaes.core import FlowsheetBlock
     import idaes.core.plugins
 
-    dynamic = False
+    dynamic = True
     time_nfe = 20
     time_set = [0, 15] if dynamic else [0]
 
@@ -2458,29 +2460,55 @@ def use_elecrode():
         }
     )
 
+    @m.fs.Expression(m.fs.time, m.fs.fuel_electrode.iznodes)
+    def eta_ohm(b, t, iz):
+        return (
+            b.electrolyte.voltage_drop_total[t, iz]
+            + b.fuel_electrode.voltage_drop_total[t, iz]
+            + b.oxygen_electrode.voltage_drop_total[t, iz]
+        )
+
+    @m.fs.Constraint(m.fs.time, m.fs.oxygen_electrode.iznodes)
+    def potential_eqn(b, t, iz):
+        return b.potential_cell[t] == b.electrolyte.potential_nernst[t, iz] - (
+            b.eta_ohm[t, iz] + b.electrolyte.eta_fe[t, iz] + b.electrolyte.eta_oe[t, iz]
+        )
+    m.fs.potential_eqn.deactivate()
+
     if dynamic:
         pyo.TransformationFactory("dae.finite_difference").apply_to(
             m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
         )
-        m.fs.fuel_chan.temperature[0, :].fix(1023.15)
-        m.fs.fuel_chan.flow_mol[0, :].fix(1e-5)
-        m.fs.fuel_chan.mole_frac_comp[0, :, "H2"].fix(0.1)
+        # Start from a steady state
+        ms.from_json(m, fname="save_steady.json.gz", wts=ms.StoreSpec.value())
 
-        m.fs.oxygen_chan.temperature[0, :].fix(1023.15)
-        m.fs.oxygen_chan.flow_mol[0, :].fix(1e-5)
-        m.fs.oxygen_chan.mole_frac_comp[0, :, "O2"].fix(0.10)
+        # Copy initial conditions to rest of model for initialization
+        regular_vars, time_vars = flatten_dae_components(m, m.fs.time, pyo.Var)
+        m.fs.current_density.unfix()
+        m.fs.potential_eqn.activate()
+        for t in m.fs.time:
+            for v in time_vars:
+                if not v[t].fixed:
+                    v[t].set_value(pyo.value(v[m.fs.time.first()]))
+        m.fs.fuel_chan.temperature[0, :].fix()
+        m.fs.fuel_chan.flow_mol[0, :].fix()
+        m.fs.fuel_chan.mole_frac_comp[0, :, "H2"].fix()
+        m.fs.oxygen_chan.temperature[0, :].fix()
+        m.fs.oxygen_chan.flow_mol[0, :].fix()
+        m.fs.oxygen_chan.mole_frac_comp[0, :, "O2"].fix()
+        m.fs.fuel_electrode.conc[0, :, :, :].fix()
+        m.fs.fuel_electrode.temperature[0, :, :].fix()
+        m.fs.oxygen_electrode.conc[0, :, :, :].fix()
+        m.fs.oxygen_electrode.temperature[0, :, :].fix()
+        m.fs.electrolyte.temperature[0, :, :].fix()
 
-        m.fs.fuel_electrode.conc[0, :, :, :].fix(
-            pyo.value(1.02e5 / _constR / 1023.15 / 2)
-        )
-        m.fs.fuel_electrode.temperature[0, :, :].fix(1023.15)
+        m.fs.potential_cell.fix(1.286)
 
-        m.fs.oxygen_electrode.conc[0, :, :, :].fix(
-            pyo.value(1.02e5 / _constR / 1023.15 / 2)
-        )
-        m.fs.oxygen_electrode.temperature[0, :, :].fix(1023.15)
 
-        m.fs.electrolyte.temperature[0, :, :].fix(1023.15)
+    else:
+        m.fs.current_density.fix(-3500)
+
+
 
     m.fs.fuel_chan.temperature_inlet.fix(1023.15)
     m.fs.fuel_chan.pressure_inlet.fix(1.02e5)
@@ -2513,9 +2541,6 @@ def use_elecrode():
     m.fs.oxygen_chan.htc.fix(100)
 
     m.fs.fuel_electrode.pressure[:, :, :].set_value(1.02e5)
-    m.fs.fuel_electrode.current_density.fix(-3500)
-    m.fs.fuel_electrode.current_density[:, 1].fix(-5000)
-    m.fs.fuel_electrode.current_density[:, 1].fix(-4500)
     m.fs.fuel_electrode.length_x.fix(750e-6)
     m.fs.fuel_electrode.length_y.fix(0.05)
     m.fs.fuel_electrode.length_z.fix(0.05)
@@ -2552,13 +2577,14 @@ def use_elecrode():
     iscale.calculate_scaling_factors(m)
     use_idaes_solver_configuration_defaults()
 
+
     m.fs.fuel_chan.xflux.fix()
     m.fs.oxygen_chan.xflux.fix()
-    m.fs.fuel_chan.initialize()
-    m.fs.oxygen_chan.initialize()
-
-    m.fs.fuel_electrode.initialize(temperature_guess=1023.15)
-    m.fs.oxygen_electrode.initialize(temperature_guess=1023.15)
+    if not dynamic:
+        m.fs.fuel_chan.initialize()
+        m.fs.oxygen_chan.initialize()
+        m.fs.fuel_electrode.initialize(temperature_guess=1023.15)
+        m.fs.oxygen_electrode.initialize(temperature_guess=1023.15)
 
     m.fs.fuel_chan.xflux.unfix()
     m.fs.oxygen_chan.xflux.unfix()
@@ -2575,33 +2601,24 @@ def use_elecrode():
     m.fs.oxygen_electrode.eec.fix(120000)
     m.fs.oxygen_electrode.alpha.fix(0.5)
 
-    @m.fs.Expression(m.fs.time, m.fs.fuel_electrode.iznodes)
-    def eta_ohm(b, t, iz):
-        return (
-            b.electrolyte.voltage_drop_total[t, iz]
-            + b.fuel_electrode.voltage_drop_total[t, iz]
-            + b.oxygen_electrode.voltage_drop_total[t, iz]
-        )
-
-    @m.fs.Expression(m.fs.time, m.fs.oxygen_electrode.iznodes)
-    def potential_disc(b, t, iz):
-        return b.electrolyte.potential_nernst[t, iz] - (
-            b.eta_ohm[t, iz] + b.electrolyte.eta_fe[t, iz] + b.electrolyte.eta_oe[t, iz]
-        )
-
     # see = pyo.TransformationFactory("simple_equality_eliminator")
     # see.apply_to(m)
-    solver = pyo.SolverFactory("ipopt")
-    #solver = get_petsc_solver(
-    #    options={
-    #        "--snes_type":"newtonls",
-    #        #"--pc_type":"lu",
-    #        #"--pc_factor_mat_solver_type":"strumpack",
-    #    },
-    #    solver_type=PetscSolverType.SNES
-    #)
+    #solver = pyo.SolverFactory("ipopt")
+    solver = petsc.get_petsc_solver(
+        options={
+            "--snes_type":"newtonls",
+            "--snes_rtol":1e-12,
+            "--snes_stol":1e-12,
+            "--snes_atol":1e-20,
+            "--show_cl":"",
+            #"--pc_type":"lu",
+            #"--pc_factor_mat_solver_type":"strumpack",
+        },
+        solver_type=petsc.PetscSolverType.SNES
+    )
 
     # see.revert()
+    #return m
     print(mstat.degrees_of_freedom(m))
     solver.solve(
         m,
@@ -2610,26 +2627,23 @@ def use_elecrode():
         #options={"tol": 1e-6, "halt_on_ampl_error": "no"},
     )
 
-    @m.fs.Constraint(m.fs.time, m.fs.oxygen_electrode.iznodes)
-    def potential_eqn(b, t, iz):
-        return b.potential_cell[t] == b.electrolyte.potential_nernst[t, iz] - (
-            b.eta_ohm[t, iz] + b.electrolyte.eta_fe[t, iz] + b.electrolyte.eta_oe[t, iz]
+    if not dynamic:
+        m.fs.current_density.unfix()
+        m.fs.potential_eqn.activate()
+        m.fs.potential_cell.fix(1.286)
+
+        solver.solve(
+            m,
+            tee=True,
+            #symbolic_solver_labels=True,
+            #options={"tol": 1e-6, "halt_on_ampl_error": "no"},
         )
 
-    m.fs.fuel_electrode.current_density.unfix()
-    m.fs.potential_cell.fix(1.286)
-
-    solver.solve(
-        m,
-        tee=True,
-        #symbolic_solver_labels=True,
-        #options={"tol": 1e-6, "halt_on_ampl_error": "no"},
-    )
 
     z, x, h = contour_grid_data(
         var=pyo.Reference(m.fs.fuel_electrode.mole_frac_comp[:, :, :, "H2"]),
         # var=m.fs.fuel_electrode.pressure,
-        # var=m.fs.fuel_electrode.temperature,
+        #var=m.fs.fuel_electrode.temperature,
         #var=m.fs.electrolyte.temperature,
         time=m.fs.time,
         xnodes=m.fs.fuel_electrode.xnodes,
@@ -2661,12 +2675,15 @@ def use_elecrode():
 
     ani.save("animation.gif", writer=animation.PillowWriter(fps=2))
 
+
+    if not dynamic:
+        ms.to_json(m, fname="save_steady.json.gz")
+
     return m
 
 
 if __name__ == "__main__":
     m = use_elecrode()
-    #ms.to_json(m, fname="save.json.gz")
 
     # m.fs.chan.temperature.display()
     # m.fs.chan.mole_frac_comp.display()
@@ -2735,7 +2752,7 @@ if __name__ == "__main__":
     print(f"Mass Change: {dmfc + dmoc}")
     print(f"Enthalpy Change: {dhfc + dhoc}")
     print(
-        f"Electric Power: {pyo.value(sum(m.fs.potential_disc[0, iz]*m.fs.electrolyte.current[0, iz] for iz in m.fs.electrolyte.iznodes))}"
+        f"Electric Power: {pyo.value(sum(m.fs.potential_cell[m.fs.time.last()]*m.fs.electrolyte.current[m.fs.time.last(), iz] for iz in m.fs.electrolyte.iznodes))}"
     )
 
     check_scaling = False
