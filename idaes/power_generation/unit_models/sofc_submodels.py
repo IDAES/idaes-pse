@@ -2388,8 +2388,8 @@ def use_elecrode():
     import idaes.core.plugins
 
     dynamic = True
-    time_nfe = 20
-    time_set = [0, 15] if dynamic else [0]
+    time_nfe = 200
+    time_set = [0, 100] if dynamic else [0]
 
     zfaces = np.linspace(0, 1, 11).tolist()
     xfaces_electrode = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9, 1.0]
@@ -2603,29 +2603,34 @@ def use_elecrode():
 
     # see = pyo.TransformationFactory("simple_equality_eliminator")
     # see.apply_to(m)
-    #solver = pyo.SolverFactory("ipopt")
-    solver = petsc.get_petsc_solver(
-        options={
-            "--snes_type":"newtonls",
-            "--snes_rtol":1e-12,
-            "--snes_stol":1e-12,
-            "--snes_atol":1e-20,
-            "--show_cl":"",
-            #"--pc_type":"lu",
-            #"--pc_factor_mat_solver_type":"strumpack",
-        },
-        solver_type=petsc.PetscSolverType.SNES
-    )
+    solver = pyo.SolverFactory("ipopt")
 
     # see.revert()
     #return m
-    print(mstat.degrees_of_freedom(m))
-    solver.solve(
-        m,
-        tee=True,
-        #symbolic_solver_labels=True,
-        #options={"tol": 1e-6, "halt_on_ampl_error": "no"},
-    )
+    #print(mstat.degrees_of_freedom(m))
+    if not dynamic:
+        solver.solve(
+            m,
+            tee=True,
+            #symbolic_solver_labels=True,
+            #options={"tol": 1e-6, "halt_on_ampl_error": "no"},
+        )
+    if dynamic:
+        m.fs.fuel_chan.flow_mol_inlet.fix(2e-4)
+        m.fs.fuel_chan.flow_mol_inlet[0].fix(1e-4)
+        petsc.petsc_dae_by_time_element(
+            m,
+            time=m.fs.time,
+            ts_options={
+                "--ts_type":"beuler",
+                "--ts_dt":0.1,
+                "--ts_monitor":"", # set initial step to 0.1
+                "--show_cl":"",
+            },
+            initial_constraints=[],
+            initial_variables=[],
+            skip_initial=False,
+        )
 
     if not dynamic:
         m.fs.current_density.unfix()
@@ -2678,7 +2683,8 @@ def use_elecrode():
 
     if not dynamic:
         ms.to_json(m, fname="save_steady.json.gz")
-
+    if not dynamic:
+        ms.to_json(m, fname="save_dynamic.json.gz")
     return m
 
 
@@ -2688,7 +2694,6 @@ if __name__ == "__main__":
     # m.fs.chan.temperature.display()
     # m.fs.chan.mole_frac_comp.display()
 
-    print(mstat.degrees_of_freedom(m))
     print(binary_diffusion_coefficient_expr(590, 1e5, "CO2", "N2"))
     print(pyo.value(comp_enthalpy_expr(1023.15, "H2O")) + 241.8264 * 1000)
 

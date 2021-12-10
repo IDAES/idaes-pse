@@ -239,6 +239,7 @@ def petsc_dae_by_time_element(
     time,
     initial_constraints=None,
     initial_variables=None,
+    skip_initial=False,
     snes_options=None,
     ts_options=None,
     wsl=None,
@@ -250,11 +251,18 @@ def petsc_dae_by_time_element(
         m (Block): Pyomo model to solve
         time (ContinuousSet): Time set
         initial_constraints (list): Constraints to solve with in the initial
-            condition solve step.  This can include initial condition constraints
-            as well as other non-time-indexed constraints
+            condition solve step.  Since the time indexed constraints are picked
+            up automaticly, this generally inlcudes non-time-inded constraints.
         initial_variables (list): This is a list of variables to fix after the
             initial condition solve step.  If these variables were origially
-            unfixed, they will be unfixed at the end of the solve.
+            unfixed, they will be unfixed at the end of the solve. This usually
+            includes non-time-indexed varaibles that are calculated allong with
+            the initial condition calculations.
+        skip_initial (bool): Don't do the initial condition calculation step, and
+            assume that the initial condition values have already been calculated.
+            This can be usful, for example, if you read initial conditions from a
+            speratly solved steady state problem, or otherwise have a know initial
+            condition.
         snes_options (dict): PETSc nonlinear equation solver options
         ts_options (dict): PETSc time-stepping solver options.
         wsl (bool): if True use WSL to run PETSc, if False don't use WSL to run
@@ -280,15 +288,16 @@ def petsc_dae_by_time_element(
 
     # First calculate the inital conditions and non-time-tindexed constraints
     t = time.first()
-    with TemporarySubsystemManager(to_deactivate=tdisc, to_fix=initial_variables):
-        constraints = [con[t] for con in time_cons if t in con]
-        variables = [var[t] for var in time_vars]
-        t_block = create_subsystem_block(
-            constraints + initial_constraints,
-            variables
-        )
-        with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
-            res = solver_snes.solve(t_block, tee=slc.tee)
+    if not skip_initial:
+        with TemporarySubsystemManager(to_deactivate=tdisc, to_fix=initial_variables):
+            constraints = [con[t] for con in time_cons if t in con]
+            variables = [var[t] for var in time_vars]
+            t_block = create_subsystem_block(
+                constraints + initial_constraints,
+                variables
+            )
+            with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
+                res = solver_snes.solve(t_block, tee=slc.tee)
     tprev = t
     with TemporarySubsystemManager(to_deactivate=tdisc):
         # Solver time steps
