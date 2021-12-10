@@ -24,11 +24,15 @@ __author__ = "Andrew Lee"
 def test_BalanceTypeNotSupportedError():
     with pytest.raises(NotImplementedError):
         raise BalanceTypeNotSupportedError()
+    with pytest.raises(IdaesError):
+        raise BalanceTypeNotSupportedError()
 
 
 @pytest.mark.unit
 def test_ConfigurationError():
     with pytest.raises(ValueError):
+        raise ConfigurationError()
+    with pytest.raises(IdaesError):
         raise ConfigurationError()
 
 
@@ -36,17 +40,21 @@ def test_ConfigurationError():
 def test_DynamicError():
     with pytest.raises(ValueError):
         raise DynamicError()
+    with pytest.raises(IdaesError):
+        raise DynamicError()
 
 
 @pytest.mark.unit
 def test_BurntToast():
-    with pytest.raises(Exception):
+    with pytest.raises(IdaesError):
         raise BurntToast()
 
 
 @pytest.mark.unit
 def test_PropertyNotSupportedError():
     with pytest.raises(AttributeError):
+        raise PropertyNotSupportedError()
+    with pytest.raises(IdaesError):
         raise PropertyNotSupportedError()
 
 
@@ -55,9 +63,13 @@ def test_PropertyPackageError():
     with pytest.raises(AttributeError):
         # This MUST be an AttributeError due to behaviour in Pyomo
         raise PropertyPackageError()
+    with pytest.raises(IdaesError):
+        raise PropertyPackageError()
 
 
 @pytest.mark.unit
 def test_InitializationError():
     with pytest.raises(ArithmeticError):
+        raise InitializationError()
+    with pytest.raises(IdaesError):
         raise InitializationError()
