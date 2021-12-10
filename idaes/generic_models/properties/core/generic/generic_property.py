@@ -1267,7 +1267,7 @@ class _GenericStateBlock(StateBlock):
                             blk[k].flow_mol_phase_comp_apparent[p, j] /
                             sum(blk[k].flow_mol_phase_comp_apparent[p, jj]
                                 for jj in blk[k].params.apparent_species_set))
-                        lb = blk[k].mole_frac_phase_comp_apparent[p, j]._lb
+                        lb = blk[k].mole_frac_phase_comp_apparent[p, j].lb
                         if lb is not None and x <= lb:
                             blk[k].mole_frac_phase_comp_apparent[
                                 p, j].set_value(lb)
@@ -1287,7 +1287,7 @@ class _GenericStateBlock(StateBlock):
                             blk[k].flow_mol_phase_comp_true[p, j] /
                             sum(blk[k].flow_mol_phase_comp_true[p, jj]
                                 for jj in blk[k].params.true_species_set))
-                        lb = blk[k].mole_frac_phase_comp_true[p, j]._lb
+                        lb = blk[k].mole_frac_phase_comp_true[p, j].lb
                         if lb is not None and x <= lb:
                             blk[k].mole_frac_phase_comp_true[p, j].set_value(lb)
                         else:
