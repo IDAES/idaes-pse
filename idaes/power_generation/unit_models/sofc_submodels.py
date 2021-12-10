@@ -2320,76 +2320,15 @@ class SofcElectrolyteData(UnitModelBlockData):
             iscale.constraint_scaling_transform(c, s)
 
 
-def use_channel():
-    from idaes.core import FlowsheetBlock
-
-    dynamic = True
-    time_nfe = 10
-    time_set = [0, 10] if dynamic else [0]
-
-    zfaces = [0.0, 0.1, 0.2, 0.3, 0.7, 0.8, 0.9, 1.0]
-    # zfaces = np.linspace(0, 1, 40).tolist()
-    m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(
-        default={
-            "dynamic": dynamic,
-            "time_set": time_set,
-            "time_units": pyo.units.s,
-        }
-    )
-    m.fs.chan = SofcChannel(
-        default={
-            "cv_zfaces": zfaces,
-            "interpolation_scheme": CV_Interpolation.UDS,
-            "oposite_flow": True,
-        }
-    )
-
-    if dynamic:
-        pyo.TransformationFactory("dae.finite_difference").apply_to(
-            m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
-        )
-        m.fs.chan.temperature[0, :].fix(1023.15)
-        m.fs.chan.flow_mol[0, :].fix(1)
-        m.fs.chan.mole_frac_comp[0, :, "H2"].fix(0.7)
-
-    m.fs.chan.temperature_inlet.fix(1023.15)
-
-    m.fs.chan.pressure_inlet.fix(20e5)
-    m.fs.chan.pressure.fix(20e5)
-
-    m.fs.chan.flow_mol_inlet.fix(10)
-    m.fs.chan.mole_frac_comp_inlet[:, "H2"].fix(0.7)
-    m.fs.chan.mole_frac_comp_inlet[:, "H2O"].fix(0.3)
-
-    m.fs.chan.xflux[:, :, "H2"].fix(100)
-    m.fs.chan.xflux[:, :, "H2O"].fix(-100)
-    m.fs.chan.qflux_x1[:, :].fix(0)
-    m.fs.chan.qflux_x0[:, :].fix(0)
-
-    m.fs.chan.length_x.fix(0.01)
-    m.fs.chan.length_y.fix(0.01)
-    m.fs.chan.length_z.fix(2)
-
-    m.fs.chan.initialize()
-    solver = pyo.SolverFactory("ipopt")
-    solver.solve(m, tee=True, options={"tol": 1e-6})
-
-    m.fs.chan.display()
-    m.fs.chan.temperature.display()
-
-    return m
-
-
-def use_elecrode():
+def cell_flowsheet():
     import matplotlib.pyplot as plt
     from matplotlib import cm as color_map
     from idaes.core import FlowsheetBlock
     import idaes.core.plugins
 
     dynamic = True
-    time_nfe = 200
-    time_set = [0, 100] if dynamic else [0]
+    time_nfe = 30
+    time_set = [0, 10] if dynamic else [0]
 
     zfaces = np.linspace(0, 1, 11).tolist()
     xfaces_electrode = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9, 1.0]
@@ -2689,7 +2628,7 @@ def use_elecrode():
 
 
 if __name__ == "__main__":
-    m = use_elecrode()
+    m = cell_flowsheet()
 
     # m.fs.chan.temperature.display()
     # m.fs.chan.mole_frac_comp.display()
