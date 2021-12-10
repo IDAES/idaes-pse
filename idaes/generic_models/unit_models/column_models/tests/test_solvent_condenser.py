@@ -70,6 +70,15 @@ class TestStripperVaporFlow(object):
         m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(0.1183)
 
         m.fs.unit.reflux.flow_mol[0].fix(0.1083)
+        
+        iscale.set_scaling_factor(
+            m.fs.unit.vapor_phase.properties_out[0].fug_phase_comp[
+                "Vap", "CO2"], 1e-5)
+        iscale.set_scaling_factor(
+            m.fs.unit.vapor_phase.properties_out[0].fug_phase_comp[
+                "Vap", "H2O"], 1e-3)
+
+        iscale.calculate_scaling_factors(m.fs.unit)
 
         return m
 
