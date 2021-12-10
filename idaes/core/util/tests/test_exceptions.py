@@ -59,5 +59,5 @@ def test_PropertyPackageError():
 
 @pytest.mark.unit
 def test_InitializationError():
-    with pytest.raises(ValueError):
+    with pytest.raises(ArithmeticError):
         raise InitializationError()

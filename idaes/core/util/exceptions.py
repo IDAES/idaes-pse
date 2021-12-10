@@ -68,11 +68,11 @@ class PropertyPackageError(AttributeError):
     pass  # Bread stuck
 
 
-class InitializationError(ValueError):
+class InitializationError(ArithmeticError):
     """
     IDAES exception to be used when initialization routines fail. All
     initialization routines should raise this Exception if the final step
-    fails ot converge, and can raise this exception earlier if the routine
+    fails to converge, and can raise this exception earlier if the routine
     enters a state from which recovery is impossible.
     """
     pass

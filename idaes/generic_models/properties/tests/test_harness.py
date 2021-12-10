@@ -52,14 +52,15 @@ class PropertyTestHarness(object):
 
         self.has_density_terms = True
 
-        self.skip_initialization_exception = False
+        self.skip_initialization_raises_exception_test = False
 
         self.configure()
 
         # Need to attach these to m for later use
         m.has_density_terms = self.has_density_terms
         m.prop_args = self.prop_args
-        m.skip_initialization_exception = self.skip_initialization_exception
+        m.skip_initialization_raises_exception_test = \
+            self.skip_initialization_raises_exception_test
 
     def configure(self):
         # Placeholder method to allow user to setup test harness
@@ -279,7 +280,7 @@ class PropertyTestHarness(object):
                 "degrees of freedom.")
 
     def test_initialize_failure(self, frame):
-        if not frame.skip_initialization_exception:
+        if not frame.skip_initialization_raises_exception_test:
             for n, v in frame.fs.props[1].define_state_vars().items():
                 for i in v:
                     frame.fs.props[1].add_component(
