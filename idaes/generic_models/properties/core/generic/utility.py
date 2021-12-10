@@ -20,7 +20,7 @@ from enum import Enum
 from pyomo.environ import units as pyunits
 
 from idaes.core.util.exceptions import \
-    BurntToast, ConfigurationError, PropertyPackageError, IdaesError
+    BurntToast, ConfigurationError, PropertyPackageError
 import idaes.logger as idaeslog
 
 # Set up logger
@@ -32,7 +32,7 @@ class StateIndex(Enum):
     apparent = 2
 
 
-class GenericPropertyPackageError(PropertyPackageError, IdaesError):
+class GenericPropertyPackageError(PropertyPackageError):
     # Error message for when a property is called for but no option provided
     def __init__(self, block, prop):
         self.prop = prop

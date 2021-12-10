@@ -21,7 +21,7 @@ __author__ = "Andrew Lee"
 class IdaesError(Exception):
     """
     General exception for all IDAES errors. Intended to be used for multiple
-    inheritance in derived expcetions to allow catching of all IDAES-related
+    inheritance in derived exceptions to allow catching of all IDAES-related
     exceptions.
     """
     pass  # Problem with toaster
