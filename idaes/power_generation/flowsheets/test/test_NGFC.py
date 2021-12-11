@@ -94,16 +94,16 @@ def test_initialize(m):
     initialize_reformer(m)
 
     assert (pyo.value(m.fs.reformer.lagrange_mult[(0, 'H')]) ==
-            pytest.approx(81235, 1e-3))
+            pytest.approx(83163, 1e-3))
     assert (pyo.value(m.fs.prereformer.lagrange_mult[(0, 'H')]) ==
-            pytest.approx(62743, 1e-3))
+            pytest.approx(63608, 1e-3))
     assert (pyo.value(m.fs.anode.lagrange_mult[(0, 'H')]) ==
-            pytest.approx(78300, 1e-3))
+            pytest.approx(76820, 1e-3))
 
     assert (pyo.value(m.fs.bypass_rejoin.outlet.temperature[0]) ==
-            pytest.approx(621.6, 1e-3))
+            pytest.approx(640.6, 1e-3))
     assert (pyo.value(m.fs.anode_hx.shell_outlet.temperature[0]) ==
-            pytest.approx(826.5, 1e-3))
+            pytest.approx(827.6, 1e-3))
     assert (pyo.value(m.fs.cathode_hx.shell_outlet.temperature[0]) ==
             pytest.approx(475.8, 1e-3))
 

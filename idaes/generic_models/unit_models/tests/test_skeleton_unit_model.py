@@ -73,24 +73,24 @@ class TestSkeletonDefault(object):
             expr=m.fs.skeleton.pressure_out[0] ==
             m.fs.skeleton.pressure_in[0] - 10)
 
+        inlet_dict = \
+            {"flow_mol_comp": m.fs.skeleton.flow_comp_in,
+             "temperature": m.fs.skeleton.temperature_in,
+             "pressure": m.fs.skeleton.pressure_in}
+        outlet_dict = \
+            {"flow_mol_comp": m.fs.skeleton.flow_comp_out,
+             "temperature": m.fs.skeleton.temperature_out,
+             "pressure": m.fs.skeleton.pressure_out}
+
+        m.fs.skeleton.add_ports(
+            name="inlet", member_dict=inlet_dict)
+        m.fs.skeleton.add_ports(
+            name="outlet", member_dict=outlet_dict)
+
         return m
 
     @pytest.mark.unit
     def test_ports(self, skeleton_default):
-
-        inlet_dict = \
-            {"flow_mol_comp": skeleton_default.fs.skeleton.flow_comp_in,
-             "temperature": skeleton_default.fs.skeleton.temperature_in,
-             "pressure": skeleton_default.fs.skeleton.pressure_in}
-        outlet_dict = \
-            {"flow_mol_comp": skeleton_default.fs.skeleton.flow_comp_out,
-             "temperature": skeleton_default.fs.skeleton.temperature_out,
-             "pressure": skeleton_default.fs.skeleton.pressure_out}
-
-        skeleton_default.fs.skeleton.add_ports(
-            name="inlet", member_dict=inlet_dict)
-        skeleton_default.fs.skeleton.add_ports(
-            name="outlet", member_dict=outlet_dict)
 
         # Check inlet port and port members
         assert hasattr(skeleton_default.fs.skeleton, "inlet")
@@ -213,24 +213,24 @@ class TestSkeletonCustom(object):
             expr=m.fs.skeleton.pressure_out[0] ==
             m.fs.skeleton.pressure_in[0] - 10)
 
+        inlet_dict = \
+            {"flow_mol_comp": m.fs.skeleton.flow_comp_in,
+             "temperature": m.fs.skeleton.temperature_in,
+             "pressure": m.fs.skeleton.pressure_in}
+        outlet_dict = \
+            {"flow_mol_comp": m.fs.skeleton.flow_comp_out,
+             "temperature": m.fs.skeleton.temperature_out,
+             "pressure": m.fs.skeleton.pressure_out}
+
+        m.fs.skeleton.add_ports(
+            name="inlet", member_dict=inlet_dict)
+        m.fs.skeleton.add_ports(
+            name="outlet", member_dict=outlet_dict)
+
         return m
 
     @pytest.mark.unit
     def test_ports(self, skeleton_custom):
-
-        inlet_dict = \
-            {"flow_mol_comp": skeleton_custom.fs.skeleton.flow_comp_in,
-             "temperature": skeleton_custom.fs.skeleton.temperature_in,
-             "pressure": skeleton_custom.fs.skeleton.pressure_in}
-        outlet_dict = \
-            {"flow_mol_comp": skeleton_custom.fs.skeleton.flow_comp_out,
-             "temperature": skeleton_custom.fs.skeleton.temperature_out,
-             "pressure": skeleton_custom.fs.skeleton.pressure_out}
-
-        skeleton_custom.fs.skeleton.add_ports(
-            name="inlet", member_dict=inlet_dict)
-        skeleton_custom.fs.skeleton.add_ports(
-            name="outlet", member_dict=outlet_dict)
 
         # Check inlet port and port members
         assert hasattr(skeleton_custom.fs.skeleton, "inlet")
