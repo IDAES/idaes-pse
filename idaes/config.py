@@ -19,7 +19,7 @@ import importlib
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "2.5.0"
+default_binary_release = "2.5.1"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -34,6 +34,7 @@ binary_platform_map = {
     "ubuntu1910": "ubuntu1804",
     "ubuntu2010": "ubuntu2004",
     "ubuntu2104": "ubuntu2004",
+    "ubuntu2110": "ubuntu2004",
     "linux": "centos7",
 }
 # Set of known platforms with available binaries and descriptions of them
