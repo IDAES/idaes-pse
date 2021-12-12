@@ -1366,8 +1366,8 @@ class TestBT_Generic_cocurrent(object):
         assert hasattr(btx.fs.unit, "area_calc_tube")
         assert hasattr(btx.fs.unit, "area_calc_shell")
 
-        assert number_variables(btx) == 1601
-        assert number_total_constraints(btx) == 1469
+        assert number_variables(btx) == 2021
+        assert number_total_constraints(btx) == 1889
         assert number_unused_variables(btx) == 34
 
     @pytest.mark.integration

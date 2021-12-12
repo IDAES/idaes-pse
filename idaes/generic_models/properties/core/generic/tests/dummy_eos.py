@@ -133,6 +133,10 @@ class DummyEoS(EoSBase):
     @staticmethod
     def vol_mol_phase(b, p):
         return 42
+    
+    @staticmethod
+    def vol_mol_phase_comp(b, p, j):
+        return 42
 
     @staticmethod
     def log_act_phase_comp(b, p, j):

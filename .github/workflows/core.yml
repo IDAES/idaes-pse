@@ -29,6 +29,7 @@ env:
   # default Python version to use for checks that do not require multiple versions
   DEFAULT_PYTHON_VERSION: '3.7'
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
+  PYTEST_ADDOPTS: "--color=yes"
 
 defaults:
   run:
@@ -51,6 +52,11 @@ jobs:
         os:
           - ubuntu-18.04
           - windows-latest
+        include:
+          - python-version: '3.8'
+            # only generate coverage report for a single python version in the matrix
+            # to avoid overloading Codecov
+            cov-report: true
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
@@ -63,12 +69,19 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: -r requirements-dev.txt
-      - name: Run pytest (not integration) with coverage
+      - name: Add pytest CLI options for coverage
+        if: matrix.cov-report
         run: |
-          which python
-          pytest -m "not integration" --cov
+          echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
+      - name: Run pytest (not integration)
+        run: |
+          pytest -m "not integration"
       - name: Upload coverage report to Codecov
-        uses: codecov/codecov-action@v1
+        if: matrix.cov-report
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
+
   build-docs:
     name: Build Sphinx docs
     runs-on: ubuntu-latest

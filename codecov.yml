@@ -11,3 +11,10 @@ coverage:
       default:
         target: auto
         threshold: 1%
+codecov:
+  require_ci_to_pass: false
+  notify:
+    wait_for_ci: false
+    # after_n_builds should match the number of CI jobs configured to upload reports to Codecov
+    # in IDAES there are 2 such jobs (1 Windows + 1 Linux for a single sample Python version)
+    after_n_builds: 2

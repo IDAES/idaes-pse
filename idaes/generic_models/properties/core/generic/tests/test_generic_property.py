@@ -31,6 +31,9 @@ from idaes.core import (declare_process_block_class, Component,
                         Phase, LiquidPhase, VaporPhase, MaterialFlowBasis, Solvent)
 from idaes.core.phases import PhaseType as PT
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.generic_models.properties.core.phase_equil.henry import \
+    HenryType
+
 import idaes.logger as idaeslog
 
 
@@ -45,7 +48,7 @@ def calculate_scaling_factors(b):
 
 
 # Dummy build_parameter methods for tests
-def build_parameters(cobj, p):
+def build_parameters(cobj, p, *args, **kwargs):
     cobj.add_component("test_param_"+p, Var(initialize=42))
 
 
@@ -698,7 +701,9 @@ class TestGenericParameterBlock(object):
 
         m.params = DummyParameterBlock(default={
                 "components": {
-                    "a": {"henry_component": {"p1": modules[__name__]}},
+                    "a": {"henry_component": {"p1": {
+                        "method": modules[__name__],
+                        "type": HenryType.Kpx}}},
                     "b": {},
                     "c": {}},
                 "phases": {
@@ -1076,7 +1081,7 @@ class TestGenericStateBlock(object):
                     frame.props[1],
                     frame.params.get_metadata().properties[p]["method"])
                 continue
-            elif p.endswith(("bubble", "dew")):
+            elif p.endswith(("bubble", 'bub', "dew")):
                 # Bubble and dew properties require phase equilibria, which are
                 # not tested here
                 # Check that method exists and continue

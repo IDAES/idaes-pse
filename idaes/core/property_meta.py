@@ -258,6 +258,8 @@ class PropertyClassMetadata(object):
                               self.default_units["time"]**-1),
                 "flow_mole": (self.default_units["amount"] *
                               self.default_units["time"]**-1),
+                "flow_vol": (self.default_units["length"]**3 *
+                             self.default_units["time"]**-1),
                 "flux_mass": (self.default_units["mass"] *
                               self.default_units["time"]**-1 *
                               self.default_units["length"]**-2),
