@@ -2327,8 +2327,8 @@ def cell_flowsheet():
     import idaes.core.plugins
 
     dynamic = True
-    time_nfe = 30
-    time_set = [0, 10] if dynamic else [0]
+    time_nfe = 41
+    time_set = [0, 4] if dynamic else [0]
 
     zfaces = np.linspace(0, 1, 11).tolist()
     xfaces_electrode = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9, 1.0]
@@ -2662,32 +2662,32 @@ if __name__ == "__main__":
     dhfc = pyo.value(
         m.fs.fuel_chan.flow_area
         * (
-            m.fs.fuel_chan.zflux_enth[0, m.fs.fuel_chan.izfaces.last()]
-            - m.fs.fuel_chan.zflux_enth[0, m.fs.fuel_chan.izfaces.first()]
+            m.fs.fuel_chan.zflux_enth[m.fs.time.last(), m.fs.fuel_chan.izfaces.last()]
+            - m.fs.fuel_chan.zflux_enth[m.fs.time.last(), m.fs.fuel_chan.izfaces.first()]
         )
     )
 
     dhoc = pyo.value(
         m.fs.oxygen_chan.flow_area
         * (
-            m.fs.oxygen_chan.zflux_enth[0, m.fs.oxygen_chan.izfaces.last()]
-            - m.fs.oxygen_chan.zflux_enth[0, m.fs.oxygen_chan.izfaces.first()]
+            m.fs.oxygen_chan.zflux_enth[m.fs.time.last(), m.fs.oxygen_chan.izfaces.last()]
+            - m.fs.oxygen_chan.zflux_enth[m.fs.time.last(), m.fs.oxygen_chan.izfaces.first()]
         )
     )
     dmfc = pyo.value(
         m.fs.fuel_chan.flow_area
         * sum(
-            m.fs.fuel_chan.zflux[0, m.fs.fuel_chan.izfaces.last(), i] * bin_diff_M[i]
-            - m.fs.fuel_chan.zflux[0, m.fs.fuel_chan.izfaces.first(), i] * bin_diff_M[i]
+            m.fs.fuel_chan.zflux[m.fs.time.last(), m.fs.fuel_chan.izfaces.last(), i]
+            - m.fs.fuel_chan.zflux[m.fs.time.last(), m.fs.fuel_chan.izfaces.first(), i]
             for i in m.fs.fuel_chan.config.comp_list
         )
     )
     dmoc = pyo.value(
         m.fs.oxygen_chan.flow_area
         * sum(
-            m.fs.oxygen_chan.zflux[0, m.fs.oxygen_chan.izfaces.last(), i]
+            m.fs.oxygen_chan.zflux[m.fs.time.last(), m.fs.oxygen_chan.izfaces.last(), i]
             * bin_diff_M[i]
-            - m.fs.oxygen_chan.zflux[0, m.fs.oxygen_chan.izfaces.first(), i]
+            - m.fs.oxygen_chan.zflux[m.fs.time.last(), m.fs.oxygen_chan.izfaces.first(), i]
             * bin_diff_M[i]
             for i in m.fs.oxygen_chan.config.comp_list
         )
