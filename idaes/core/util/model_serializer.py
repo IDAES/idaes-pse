@@ -50,14 +50,15 @@ def _set_active(o, d):
         else:
             o.deactivate()
     except AttributeError:
-        # Pyomo component that can't be activated or deactivated
+        # if the object doesn't have activate and deactivate that's fine just
+        # keep going
         pass
 
 def _set_fixed(o, d):
     """
     Set if variable is fixed, used for read fixed attribute callback.
     Args:
-        o: object whoes attribute is to be set
+        o: object whose attribute is to be set
         d: attribute value
     Returns:
         None
@@ -117,6 +118,25 @@ def _set_ub(o, d):
         None
     """
     o.setub(d)
+
+def _value_if_not_fixed(o, d):
+    """
+    Returns a list of attributes to read for a variable, only whether it is
+    fixed for non-fixed variables and if it is fixed and the value for fixed
+    variables.  The allows you to set up a serializer that only reads fixed
+    variable values.
+
+    Args:
+        o: Pyomo component being loaded
+        d: State dictionary for the component o.
+    Returns:
+        An attribute list to read. Loads fixed for either fixed or un-fixed
+        variables, but only reads in values for unfixed variables.  This is
+        useful for intialization functions.
+    """
+    if o.fixed:
+        return ()
+    return ("value",)
 
 def _only_fixed(o, d):
     """
@@ -305,8 +325,13 @@ class StoreSpec(object):
             suffix=False)
 
     @classmethod
-    def value(cls):
+    def value(cls, only_not_fixed=False):
         """Returns a StoreSpec object to store variable values only."""
+        if only_not_fixed:
+            return cls(
+                classes=((Var, ()),),
+                data_classes=((pyomo.core.base.var._VarData, ("value",), _value_if_not_fixed),),
+                suffix=False)
         return cls(
             classes=((Var, ()),),
             data_classes=((pyomo.core.base.var._VarData, ("value",)),),
@@ -490,14 +515,10 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
         except AttributeError:
             item_keys = [None]
         for key in item_keys:
-            if key is None and isinstance(o, ComponentData) \
-                and not isinstance(o, Component):
+            if key is None and isinstance(o, ComponentData):
                 el = o
             else:
-                try:
-                    el = o[key]
-                except TypeError:
-                    el = key
+                el = o[key]
             if frst: # assume all item are same type, use first to get alist
                 alist, ff = wts.get_data_class_attr_list(el) # get attributes
                 if alist is None: return # if None then skip writing
@@ -708,14 +729,10 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
     except AttributeError:
         item_keys = [None]
     for key in item_keys:
-        if key is None and isinstance(o, ComponentData) \
-            and not isinstance(o, Component):
+        if key is None and isinstance(o, ComponentData):
             el = o
         else:
-            try:
-                el = o[key]
-            except TypeError:
-                continue
+            el = o[key]
         if c == 0: # if first data item assume all itmes are same and get alist
             alist, ff = wts.get_data_class_attr_list(el) #ff is fileter function
             if alist is None: return #skip reading this type
@@ -731,7 +748,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
             # new a list based on the model and whats stored for the state
             # this lets you contionally load things, for example only load
             # values for unfixed variables.
-            alist = ff(o, edict)
+            alist = ff(el, edict)
         if wts.include_suffix: # if loading suffixes make lookup table id to item
             lookup[edict['__id__']] = el
         for a in alist: # read in desired attributes
