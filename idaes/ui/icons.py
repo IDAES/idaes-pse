@@ -17,8 +17,6 @@ class UnitModelIcon:
     """Represents icon display information for a given unit model.
     """
 
-    _link_positions_map = {}  # cache 'built' link positions
-
     #: Name of default unit_model to use
     DEFAULT = "default"
 
@@ -123,12 +121,7 @@ class UnitModelIcon:
 
     def _build_link_positions(self) -> Dict:
         """Fill in boilerplate based on raw info and place built value in class cache.
-        Side-effects: set self._pos and add entry to class' _link_positions_map
         """
-        # look in cache, return if found
-        if self._model in self._link_positions_map:
-            return self._link_positions_map[self._model]
-
         # build link positions from info
         groups, items = {}, []
         for group_name, group_config in self._model_details["port_groups"].items():
@@ -147,7 +140,6 @@ class UnitModelIcon:
 
         # set new link positions attr and place in cache
         positions = {"groups": groups, "items": []}
-        self._link_positions_map[self._model] = positions
         return positions
 
     # === Data ===

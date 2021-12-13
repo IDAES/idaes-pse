@@ -19,7 +19,6 @@ import copy
 import json
 import logging
 import re
-import uuid
 from typing import Dict, List, Tuple
 
 # third-party
@@ -500,12 +499,14 @@ class FlowsheetSerializer:
 
     def _add_port_item(self, cell_index, group, id):
         """Add port item to jointjs element"""
-        self._out_json["cells"][cell_index]["ports"]["items"].append(
-            {
-                "group": group,
-                "id": id
-            }
-        )
+        new_port_item = {
+            "group": group,
+            "id": id
+        }
+        if new_port_item not in self._out_json["cells"][cell_index]["ports"]["items"]:
+            self._out_json["cells"][cell_index]["ports"]["items"].append(
+                new_port_item
+            )
 
     def _construct_jointjs_json(self):
         def create_jointjs_image(unit_icon: UnitModelIcon, unit_name, unit_type, x_pos, y_pos):
@@ -557,6 +558,8 @@ class FlowsheetSerializer:
 
         track_jointjs_elements = {}
 
+        port_index_increment = 0
+
         # Go through all the edges/links and create the necessary Unit models
         # that are connected to these edges.
         for link_name, ports_dict in self.edges.items():
@@ -602,8 +605,10 @@ class FlowsheetSerializer:
 
             # We create port ids for both ends: Source and Destination elements
             # and pass it to the link jointjs element for accurate port representation
-            src_port_id = str(uuid.uuid4())
-            dest_port_id = str(uuid.uuid4())
+            src_port_id = port_index_increment
+            port_index_increment += 1
+            dest_port_id = port_index_increment
+            port_index_increment += 1
 
             # Add source port
             self._add_port_item(
@@ -645,7 +650,6 @@ class FlowsheetSerializer:
                     }
                 # The port group has to be specified in the routing config
                 self._out_json["routing_config"][link_name]["destination"] = dest_unit_icon.routing_config[dest_port]
-
 
         # Make sure that all registered Unit Models are created
         for _, unit_attrs in self.unit_models.items():
