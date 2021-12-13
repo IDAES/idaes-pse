@@ -15,7 +15,6 @@ Framework for generic property packages
 """
 # Import Python libraries
 import types
-from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (Block,
@@ -28,7 +27,9 @@ from pyomo.environ import (Block,
                            value,
                            Var,
                            units as pyunits,
-                           Reference)
+                           Reference,
+                           TerminationCondition,
+                           SolverStatus)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -49,7 +50,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError,
-                                        PropertyNotSupportedError)
+                                        PropertyNotSupportedError,
+                                        InitializationError)
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver
 import idaes.logger as idaeslog
@@ -1142,6 +1144,8 @@ class _GenericStateBlock(StateBlock):
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
 
         init_log.info('Starting initialization')
+        
+        res = None
 
         for k in blk.keys():
             # Deactivate the constraints specific for outlet block i.e.
@@ -1263,9 +1267,17 @@ class _GenericStateBlock(StateBlock):
                             blk[k].true_to_appr_species[p, j])
                     # Need to calculate all flows before doing mole fractions
                     for p, j in blk[k].params.apparent_phase_component_set:
-                        calculate_variable_from_constraint(
-                            blk[k].mole_frac_phase_comp_apparent[p, j],
-                            blk[k].appr_mole_frac_constraint[p, j])
+                        x = value(
+                            blk[k].flow_mol_phase_comp_apparent[p, j] /
+                            sum(blk[k].flow_mol_phase_comp_apparent[p, jj]
+                                for jj in blk[k].params.apparent_species_set))
+                        lb = blk[k].mole_frac_phase_comp_apparent[p, j].lb
+                        if lb is not None and x <= lb:
+                            blk[k].mole_frac_phase_comp_apparent[
+                                p, j].set_value(lb)
+                        else:
+                            blk[k].mole_frac_phase_comp_apparent[
+                                p, j].set_value(x)
                 elif blk[k].params.config.state_components == \
                         StateIndex.apparent:
                     # First calculate initial values for true species flows
@@ -1275,9 +1287,15 @@ class _GenericStateBlock(StateBlock):
                             blk[k].appr_to_true_species[p, j])
                     # Need to calculate all flows before doing mole fractions
                     for p, j in blk[k].params.true_phase_component_set:
-                        calculate_variable_from_constraint(
-                            blk[k].mole_frac_phase_comp_true[p, j],
-                            blk[k].true_mole_frac_constraint[p, j])
+                        x = value(
+                            blk[k].flow_mol_phase_comp_true[p, j] /
+                            sum(blk[k].flow_mol_phase_comp_true[p, jj]
+                                for jj in blk[k].params.true_species_set))
+                        lb = blk[k].mole_frac_phase_comp_true[p, j].lb
+                        if lb is not None and x <= lb:
+                            blk[k].mole_frac_phase_comp_true[p, j].set_value(lb)
+                        else:
+                            blk[k].mole_frac_phase_comp_true[p, j].set_value(x)
 
             # If state block has phase equilibrium, use the average of all
             # _teq's as an initial guess for T
@@ -1397,6 +1415,14 @@ class _GenericStateBlock(StateBlock):
                         .state_definition.do_not_initialize):
                     c.activate()
 
+        if (res is not None and (
+                res.solver.termination_condition !=
+                TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok)):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
+
         if state_vars_fixed is False:
             if hold_state is True:
                 return flag_dict
@@ -1404,8 +1430,7 @@ class _GenericStateBlock(StateBlock):
                 blk.release_state(flag_dict)
 
         init_log.info("Property package initialization: {}.".format(
-            idaeslog.condition(res))
-        )
+            idaeslog.condition(res)))
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         '''
