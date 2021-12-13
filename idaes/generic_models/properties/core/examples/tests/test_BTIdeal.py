@@ -39,10 +39,28 @@ from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.examples.BT_ideal \
     import configuration
 
+from idaes.generic_models.properties.tests.test_harness import \
+    PropertyTestHarness
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
+def _as_quantity(x):
+    unit = pyunits.get_units(x)
+    if unit is None:
+        unit = pyunits.dimensionless
+    return value(x) * unit._get_pint_unit()
+
+
+@pytest.mark.unit
+class TestBTIdeal(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = GenericParameterBlock
+        self.param_args = configuration
+        self.prop_args = {}
+        self.has_density_terms = True
 
 
 class TestParamBlock(object):
@@ -78,8 +96,7 @@ class TestParamBlock(object):
             {"flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
              "temperature": (273.15, 300, 450, pyunits.K),
              "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
-            item_callback=lambda x: value(x) * (
-                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+            item_callback=_as_quantity,
         )
 
         assert model.params.config.phase_equilibrium_state == {

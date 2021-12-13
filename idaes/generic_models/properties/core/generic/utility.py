@@ -27,6 +27,11 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
+class StateIndex(Enum):
+    true = 1
+    apparent = 2
+
+
 class GenericPropertyPackageError(PropertyPackageError):
     # Error message for when a property is called for but no option provided
     def __init__(self, block, prop):
