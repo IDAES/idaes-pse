@@ -149,6 +149,7 @@ class UnitModelIcon:
     # Notes for updating:
     #  - Use 'cstr' as your template for new entries
     #  - Do not remove in/out entries in existing entries, or arcs won't connect
+    # TODO: Move this mapping to its own directory/files.
     _mapping = {
         "cstr": {
             "image": "reactor_c.svg",
