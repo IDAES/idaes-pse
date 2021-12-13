@@ -19,7 +19,15 @@ Standard IDAES pressure changer model.
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import value, Var, Block, Expression, Constraint, Reference
+from pyomo.environ import (
+    value,
+    Var,
+    Block,
+    Expression,
+    Constraint,
+    Reference,
+    SolverStatus,
+    TerminationCondition)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
@@ -33,7 +41,8 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.util.exceptions import PropertyNotSupportedError
+from idaes.core.util.exceptions import (
+    PropertyNotSupportedError, InitializationError)
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 import idaes.core.util.unit_costing as costing
@@ -793,6 +802,15 @@ see property package for documentation.}""",
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
+
+        if (res is not None and (
+                res.solver.termination_condition !=
+                TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok)):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
+
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def init_isentropic(blk, state_args, outlvl, solver, optarg):
@@ -994,6 +1012,15 @@ see property package for documentation.}""",
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
+
+        if (res is not None and (
+                res.solver.termination_condition !=
+                TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok)):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
+
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):

@@ -45,8 +45,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables)
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
-from idaes.core.util import get_solver
-from idaes.core.util import scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
 
 
 # Imports to assemble BT-PR with different units
@@ -349,6 +348,8 @@ class TestBTX_countercurrent(object):
         m.fs.unit.tube_inlet.pressure[0].fix(101325)  # Pa
         m.fs.unit.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        iscale.calculate_scaling_factors(m.fs.unit)
 
         return m
 
