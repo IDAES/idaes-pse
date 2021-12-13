@@ -2677,8 +2677,8 @@ if __name__ == "__main__":
     dmfc = pyo.value(
         m.fs.fuel_chan.flow_area
         * sum(
-            m.fs.fuel_chan.zflux[m.fs.time.last(), m.fs.fuel_chan.izfaces.last(), i]
-            - m.fs.fuel_chan.zflux[m.fs.time.last(), m.fs.fuel_chan.izfaces.first(), i]
+            m.fs.fuel_chan.zflux[m.fs.time.last(), m.fs.fuel_chan.izfaces.last(), i] * bin_diff_M[i]
+            - m.fs.fuel_chan.zflux[m.fs.time.last(), m.fs.fuel_chan.izfaces.first(), i] * bin_diff_M[i]
             for i in m.fs.fuel_chan.config.comp_list
         )
     )
