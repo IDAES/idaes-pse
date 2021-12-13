@@ -26,7 +26,14 @@ Assumptions:
 __author__ = "Andrew Lee, Paul Akula"
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Param, Reference, units as pyunits, value
+from pyomo.environ import (
+    Constraint,
+    Param,
+    Reference,
+    SolverStatus,
+    TerminationCondition,
+    units as pyunits,
+    value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
@@ -42,7 +49,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
 
 _log = idaeslog.getIdaesLogger(__name__)
@@ -544,6 +551,13 @@ see property package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.vapor_phase.release_state(flags, outlvl)
+
+        if (results.solver.termination_condition !=
+                TerminationCondition.optimal or
+                results.solver.status != SolverStatus.ok):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
         init_log.info('Initialization Complete: {}'
                       .format(idaeslog.condition(results)))

@@ -25,7 +25,15 @@ from pandas import DataFrame
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var, Constraint, value, Set
+from pyomo.environ import (
+    Reference,
+    Expression,
+    Var,
+    Constraint,
+    value,
+    Set,
+    SolverStatus,
+    TerminationCondition)
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -38,7 +46,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import PropertyPackageError, \
-    PropertyNotSupportedError, ConfigurationError
+    PropertyNotSupportedError, ConfigurationError, InitializationError
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -633,6 +641,13 @@ see property package for documentation.}"""))
                 "for reboiler is not zero during "
                 "initialization. Please ensure that the boilup_ratio "
                 "or the outlet temperature is fixed.")
+
+        if (res.solver.termination_condition !=
+                TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
         self.control_volume.properties_in.\
             release_state(flags=flags, outlvl=outlvl)
