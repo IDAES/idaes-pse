@@ -237,6 +237,7 @@ def _set_dae_suffixes_from_variables(m, variables):
 def petsc_dae_by_time_element(
     m,
     time,
+    time_var=None,
     initial_constraints=None,
     initial_variables=None,
     skip_initial=False,
@@ -250,6 +251,7 @@ def petsc_dae_by_time_element(
     Args:
         m (Block): Pyomo model to solve
         time (ContinuousSet): Time set
+        time_var (Var): Optional sepcification of a time variable
         initial_constraints (list): Constraints to solve with in the initial
             condition solve step.  Since the time indexed constraints are picked
             up automaticly, this generally inlcudes non-time-inded constraints.

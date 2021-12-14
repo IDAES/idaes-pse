@@ -175,9 +175,21 @@ def _interpolate_2D(
         return (phi_func(icd) - phi_func(icu)) / (cd - cu)
 
 
-def contour_grid_data(var, time, xnodes, znodes):
-    nx = len(xnodes)
-    nz = len(znodes)
+def contour_grid_data(var, time, xnodes, znodes, left=None, right=None, top=None, bottom=None):
+    if left is None and right is None:
+        nz = len(znodes)
+    elif left is not None and right is not None:
+        nz = len(znodes) + 2
+    else:
+        nz = len(znodes) + 1
+
+    if top is None and bottom is None:
+        nx = len(xnodes)
+    elif top is not None and bottom is not None:
+        nx = len(xnodes) + 2
+    else:
+        nx = len(xnodes) + 1
+
     data_z = [None] * nx
     data_x = [None] * nx
     data_w = [None] * nx
@@ -198,6 +210,63 @@ def contour_grid_data(var, time, xnodes, znodes):
             zg[it][iz] = copy.copy(data_z)
             xg[it][iz] = copy.copy(data_x)
             hg[it][iz] = copy.copy(data_w)
+        # Add top and/or bottom
+        for iz, z in enumerate(znodes):
+            if bottom is not None:
+                zg[it][iz].pop()
+                xg[it][iz].pop()
+                hg[it][iz].pop()
+                zg[it][iz].insert(0, z)
+                xg[it][iz].insert(0, 0.0)
+                hg[it][iz].insert(0, pyo.value(bottom[t, iz + 1]))
+            if top is not None:
+                zg[it][iz][-1] = z
+                xg[it][iz][-1] = 1.0
+                hg[it][iz][-1] = pyo.value(top[t, iz + 1])
+        if left is not None:
+            zg[it].pop()
+            xg[it].pop()
+            hg[it].pop()
+            zg[it].insert(0, copy.copy(data_z))
+            xg[it].insert(0, copy.copy(data_z))
+            hg[it].insert(0, copy.copy(data_z))
+            if bottom is not None:
+                offset = 1
+                zg[it][0][0] = 0.0
+                xg[it][0][0] = 0.0
+                hg[it][0][0] = None
+            else:
+                offset = 0
+            if top is not None:
+                offset = 1
+                zg[it][0][-1] = 0.0
+                xg[it][0][-1] = 1.0
+                hg[it][0][-1] = None
+            for ix, x in enumerate(xnodes):
+                zg[it][0][ix + offset] = 0.0
+                xg[it][0][ix + offset] = x
+                hg[it][0][ix + offset] = pyo.value(left[t, ix + 1])
+        if right is not None:
+            zg[it][-1] = copy.copy(data_z)
+            xg[it][-1] = copy.copy(data_z)
+            hg[it][-1] = copy.copy(data_z)
+            if bottom is not None:
+                offset = 1
+                zg[it][-1][0] = 1.0
+                xg[it][-1][0] = 0.0
+                hg[it][-1][0] = None
+            else:
+                offset = 0
+            if top is not None:
+                offset = 1
+                zg[it][-1][-1] = 1.0
+                xg[it][-1][-1] = 1.0
+                hg[it][-1][-1] = None
+            for ix, x in enumerate(xnodes):
+                zg[it][-1][ix + offset] = 1.0
+                xg[it][-1][ix + offset] = x
+                hg[it][-1][ix + offset] = pyo.value(right[t, ix + 1])
+
     return zg, xg, hg
 
 
@@ -1429,6 +1498,10 @@ class SofcElectrodeData(UnitModelBlockData):
             return 1 == sum(b.mole_frac_comp[t, ix, iz, i] for i in comps)
 
         @self.Expression(tset, iznodes, comps)
+        def mole_frac_comp_x0(b, t, iz, i):
+            return b.conc_x0[t, iz, i] / sum(b.conc_x0[t, iz, j] for j in comps)
+
+        @self.Expression(tset, iznodes, comps)
         def mole_frac_comp_x1(b, t, iz, i):
             return b.conc_x1[t, iz, i] / sum(b.conc_x1[t, iz, j] for j in comps)
 
@@ -2323,12 +2396,13 @@ class SofcElectrolyteData(UnitModelBlockData):
 def cell_flowsheet():
     import matplotlib.pyplot as plt
     from matplotlib import cm as color_map
+    import matplotlib.animation as animation
     from idaes.core import FlowsheetBlock
     import idaes.core.plugins
 
     dynamic = True
-    time_nfe = 41
-    time_set = [0, 4] if dynamic else [0]
+    time_nfe = 121
+    time_set = [0, 15] if dynamic else [0]
 
     zfaces = np.linspace(0, 1, 11).tolist()
     xfaces_electrode = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9, 1.0]
@@ -2357,7 +2431,7 @@ def cell_flowsheet():
         default={
             "cv_zfaces": zfaces,
             "interpolation_scheme": CV_Interpolation.UDS,
-            "oposite_flow": False,
+            "oposite_flow": True,
             "comp_list": ["O2", "H2O"],
         }
     )
@@ -2398,6 +2472,22 @@ def cell_flowsheet():
             "current_density": m.fs.current_density,
         }
     )
+
+    @m.fs.Expression(m.fs.time)
+    def h2_in(b, t):
+        return b.fuel_chan.flow_mol_inlet[t] * b.fuel_chan.mole_frac_comp_inlet[t, "H2"]
+
+    @m.fs.Expression(m.fs.time)
+    def h2_out(b, t):
+        return b.fuel_chan.flow_mol_outlet[t] * b.fuel_chan.mole_frac_comp_outlet[t, "H2"]
+
+    @m.fs.Expression(m.fs.time)
+    def h2_production(b, t):
+        return b.h2_out[t] - b.h2_in[t]
+
+    @m.fs.Expression(m.fs.time)
+    def h2_production_mass(b, t):
+        return (b.h2_out[t] - b.h2_in[t])*0.002*pyo.units.kg/pyo.units.mol
 
     @m.fs.Expression(m.fs.time, m.fs.fuel_electrode.iznodes)
     def eta_ohm(b, t, iz):
@@ -2441,20 +2531,20 @@ def cell_flowsheet():
         m.fs.oxygen_electrode.temperature[0, :, :].fix()
         m.fs.electrolyte.temperature[0, :, :].fix()
 
-        m.fs.potential_cell.fix(1.286)
+        m.fs.potential_cell.fix(1.285)
 
 
     else:
-        m.fs.current_density.fix(-3500)
+        m.fs.current_density.fix(-2400)
 
 
 
     m.fs.fuel_chan.temperature_inlet.fix(1023.15)
     m.fs.fuel_chan.pressure_inlet.fix(1.02e5)
     m.fs.fuel_chan.pressure.fix(1.02e5)
-    m.fs.fuel_chan.flow_mol_inlet.fix(1e-4)
-    m.fs.fuel_chan.mole_frac_comp_inlet[:, "H2"].fix(0.10)
-    m.fs.fuel_chan.mole_frac_comp_inlet[:, "H2O"].fix(0.90)
+    m.fs.fuel_chan.flow_mol_inlet.fix(6e-5)
+    m.fs.fuel_chan.mole_frac_comp_inlet[:, "H2"].fix(0.03)
+    m.fs.fuel_chan.mole_frac_comp_inlet[:, "H2O"].fix(0.97)
     m.fs.fuel_chan.xflux[:, :, "H2"].set_value(0.0)
     m.fs.fuel_chan.xflux[:, :, "H2O"].set_value(0.0)
     m.fs.fuel_chan.qflux_x1[:, :].fix(0)
@@ -2467,9 +2557,9 @@ def cell_flowsheet():
     m.fs.oxygen_chan.temperature_inlet.fix(1023.15)
     m.fs.oxygen_chan.pressure_inlet.fix(1.02e5)
     m.fs.oxygen_chan.pressure.fix(1.02e5)
-    m.fs.oxygen_chan.flow_mol_inlet.fix(1e-4)
-    m.fs.oxygen_chan.mole_frac_comp_inlet[:, "O2"].fix(0.1)
-    m.fs.oxygen_chan.mole_frac_comp_inlet[:, "H2O"].fix(0.9)
+    m.fs.oxygen_chan.flow_mol_inlet.fix(6e-5)
+    m.fs.oxygen_chan.mole_frac_comp_inlet[:, "O2"].fix(0.15)
+    m.fs.oxygen_chan.mole_frac_comp_inlet[:, "H2O"].fix(0.85)
     m.fs.oxygen_chan.xflux[:, :, "O2"].set_value(0.0)
     m.fs.oxygen_chan.xflux[:, :, "H2O"].set_value(0.0)
     m.fs.oxygen_chan.qflux_x1[:, :].fix(0)
@@ -2480,36 +2570,36 @@ def cell_flowsheet():
     m.fs.oxygen_chan.htc.fix(100)
 
     m.fs.fuel_electrode.pressure[:, :, :].set_value(1.02e5)
-    m.fs.fuel_electrode.length_x.fix(750e-6)
+    m.fs.fuel_electrode.length_x.fix(1e-3)
     m.fs.fuel_electrode.length_y.fix(0.05)
     m.fs.fuel_electrode.length_z.fix(0.05)
-    m.fs.fuel_electrode.porosity.fix(0.30)
-    m.fs.fuel_electrode.tortuosity.fix(3.0)
-    m.fs.fuel_electrode.electrode_heat_capacity.fix(430)
-    m.fs.fuel_electrode.electrode_density.fix(3030)
-    m.fs.fuel_electrode.electrode_thermal_conductivity.fix(1.6)
+    m.fs.fuel_electrode.porosity.fix(0.48)
+    m.fs.fuel_electrode.tortuosity.fix(5.4)
+    m.fs.fuel_electrode.electrode_heat_capacity.fix(450)
+    m.fs.fuel_electrode.electrode_density.fix(3210.0)
+    m.fs.fuel_electrode.electrode_thermal_conductivity.fix(1.86)
     m.fs.fuel_electrode.a_res.fix(2.98e-5)
     m.fs.fuel_electrode.b_res.fix(-1392.0)
 
     m.fs.oxygen_electrode.pressure[:, :, :].set_value(1.02e5)
-    m.fs.oxygen_electrode.length_x.fix(40e-6)
+    m.fs.oxygen_electrode.length_x.fix(20e-6)
     m.fs.oxygen_electrode.length_y.fix(0.05)
     m.fs.oxygen_electrode.length_z.fix(0.05)
     m.fs.oxygen_electrode.porosity.fix(0.35)
     m.fs.oxygen_electrode.tortuosity.fix(3.0)
     m.fs.oxygen_electrode.electrode_heat_capacity.fix(430)
     m.fs.oxygen_electrode.electrode_density.fix(3030)
-    m.fs.oxygen_electrode.electrode_thermal_conductivity.fix(1.6)
+    m.fs.oxygen_electrode.electrode_thermal_conductivity.fix(5.84)
     m.fs.oxygen_electrode.a_res.fix(8.115e-5)
     m.fs.oxygen_electrode.b_res.fix(600.0)
 
     m.fs.electrolyte.temperature[:, :, :].set_value(1023.15)
-    m.fs.electrolyte.length_x.fix(30e-6)
+    m.fs.electrolyte.length_x.fix(9e-6)
     m.fs.electrolyte.length_y.fix(0.05)
     m.fs.electrolyte.length_z.fix(0.05)
-    m.fs.electrolyte.heat_capacity.fix(430)
-    m.fs.electrolyte.density.fix(3030)
-    m.fs.electrolyte.thermal_conductivity.fix(1.6)
+    m.fs.electrolyte.heat_capacity.fix(470)
+    m.fs.electrolyte.density.fix(5160)
+    m.fs.electrolyte.thermal_conductivity.fix(2.16)
     m.fs.electrolyte.a_res.fix(2.94e-5)
     m.fs.electrolyte.b_res.fix(10350.0)
 
@@ -2536,7 +2626,7 @@ def cell_flowsheet():
     m.fs.fuel_electrode.kec.fix(1.35e10)
     m.fs.fuel_electrode.eec.fix(110000)
     m.fs.fuel_electrode.alpha.fix(0.4)
-    m.fs.oxygen_electrode.kec.fix(8.7e7 * 300)
+    m.fs.oxygen_electrode.kec.fix(26.1e8)
     m.fs.oxygen_electrode.eec.fix(120000)
     m.fs.oxygen_electrode.alpha.fix(0.5)
 
@@ -2555,26 +2645,33 @@ def cell_flowsheet():
             #options={"tol": 1e-6, "halt_on_ampl_error": "no"},
         )
     if dynamic:
-        m.fs.fuel_chan.flow_mol_inlet.fix(2e-4)
-        m.fs.fuel_chan.flow_mol_inlet[0].fix(1e-4)
-        petsc.petsc_dae_by_time_element(
-            m,
-            time=m.fs.time,
-            ts_options={
-                "--ts_type":"beuler",
-                "--ts_dt":0.1,
-                "--ts_monitor":"", # set initial step to 0.1
-                "--show_cl":"",
-            },
-            initial_constraints=[],
-            initial_variables=[],
-            skip_initial=False,
-        )
+        for t in m.fs.time:
+            if t == m.fs.time.first():
+                continue
+            m.fs.fuel_chan.flow_mol_inlet[t].fix(0.75e-5)
+            m.fs.oxygen_chan.flow_mol_inlet[t].fix(0.75e-5)
+
+        try:
+            from_json(m, fname="save_dynamic.json.gz")
+        except:
+            petsc.petsc_dae_by_time_element(
+                m,
+                time=m.fs.time,
+                ts_options={
+                    "--ts_type":"beuler",
+                    "--ts_dt":0.1,
+                    "--ts_monitor":"", # set initial step to 0.1
+                    "--show_cl":"",
+                },
+                initial_constraints=[],
+                initial_variables=[],
+                skip_initial=False,
+            )
 
     if not dynamic:
         m.fs.current_density.unfix()
         m.fs.potential_eqn.activate()
-        m.fs.potential_cell.fix(1.286)
+        m.fs.potential_cell.fix(1.285)
 
         solver.solve(
             m,
@@ -2584,8 +2681,13 @@ def cell_flowsheet():
         )
 
 
-    z, x, h = contour_grid_data(
+    zfe, xfe, hfe = contour_grid_data(
         var=pyo.Reference(m.fs.fuel_electrode.mole_frac_comp[:, :, :, "H2"]),
+        bottom=pyo.Reference(m.fs.fuel_electrode.mole_frac_comp_x0[:, :, "H2"]),
+        top=pyo.Reference(m.fs.fuel_electrode.mole_frac_comp_x1[:, :, "H2"]),
+        left=pyo.Reference(m.fs.fuel_electrode.mole_frac_comp[:, :, m.fs.fuel_electrode.iznodes.first(), "H2"]),
+        right=pyo.Reference(m.fs.fuel_electrode.mole_frac_comp[:, :, m.fs.fuel_electrode.iznodes.last(), "H2"]),
+
         # var=m.fs.fuel_electrode.pressure,
         #var=m.fs.fuel_electrode.temperature,
         #var=m.fs.electrolyte.temperature,
@@ -2596,28 +2698,122 @@ def cell_flowsheet():
         #znodes=m.fs.electrolyte.znodes,
     )
 
-    fig, ax = plt.subplots()
+    zoe, xoe, hoe = contour_grid_data(
+        var=pyo.Reference(m.fs.oxygen_electrode.mole_frac_comp[:, :, :, "O2"]),
+        bottom=pyo.Reference(m.fs.oxygen_electrode.mole_frac_comp_x0[:, :, "O2"]),
+        top=pyo.Reference(m.fs.oxygen_electrode.mole_frac_comp_x1[:, :, "O2"]),
+        left=pyo.Reference(m.fs.oxygen_electrode.mole_frac_comp[:, :, m.fs.fuel_electrode.iznodes.first(), "O2"]),
+        right=pyo.Reference(m.fs.oxygen_electrode.mole_frac_comp[:, :, m.fs.fuel_electrode.iznodes.last(), "O2"]),
+        time=m.fs.time,
+        xnodes=m.fs.oxygen_electrode.xnodes,
+        znodes=m.fs.oxygen_electrode.znodes,
+    )
+
+    fig, ax = plt.subplots(nrows=2, sharex=True)
     # levels = np.linspace(800, 1400, 40)
-    levels = np.linspace(0.0, 1.0, 40)
+    levels_fe = np.linspace(0.0, 1.0, 60)
+    levels_oe = np.linspace(0.0, 1.0, 60)
+    fig.tight_layout(pad=3.0)
     # levels = 40
 
     def animate(i):
-        ax.clear()
-        ax.set_title("Mole Fraction H$_2$")
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        img = ax.contourf(z[i], x[i], h[i], levels=levels, cmap="RdYlBu_r")
+        ax[1].clear()
+        ax[1].set_title("Mole Fraction H$_2$ Fuel Electrode")
+        ax[1].set_xlabel("z/L$_z$")
+        ax[1].set_ylabel("x/L$_x$")
+        ax[1].set_xlim(0, 1)
+        ax[1].set_ylim(0, 1)
+
+        ax[0].clear()
+        ax[0].set_title("Mole Fraction O$_2$ Oxygen Electrode")
+        ax[0].set_xlim(0, 1)
+        ax[0].set_ylim(0, 1)
+        #ax[0].set_xlabel("z/L$_z$")
+        ax[0].set_ylabel("x/L$_x$")
+
+
+        img1 = ax[1].contourf(zfe[i], xfe[i], hfe[i], levels=levels_fe, cmap="RdYlBu_r")
+        img0 = ax[0].contourf(zoe[i], xoe[i], hoe[i], levels=levels_oe, cmap="RdYlBu_r")
+        ax[0].invert_yaxis()
         if animate.first:
-            plt.colorbar(img, ax=ax)
+            plt.colorbar(img0, ax=ax[0])
+            plt.colorbar(img1, ax=ax[1])
             animate.first = False
 
+
     animate.first = True
-    import matplotlib.animation as animation
 
     ani = animation.FuncAnimation(fig, animate, len(m.fs.time), interval=100)
     plt.show()
+    ani.save("animation_ex.gif", writer=animation.PillowWriter(fps=2))
 
-    ani.save("animation.gif", writer=animation.PillowWriter(fps=2))
+
+    zfe, xfe, hfe = contour_grid_data(
+        var=pyo.Reference(m.fs.fuel_electrode.temperature[:, :, :]),
+        bottom=pyo.Reference(m.fs.fuel_electrode.temperature_x0[:, :]),
+        top=pyo.Reference(m.fs.fuel_electrode.temperature_x1[:, :]),
+        left=pyo.Reference(m.fs.fuel_electrode.temperature[:, :, m.fs.fuel_electrode.iznodes.first()]),
+        right=pyo.Reference(m.fs.fuel_electrode.temperature[:, :, m.fs.fuel_electrode.iznodes.last()]),
+
+        # var=m.fs.fuel_electrode.pressure,
+        #var=m.fs.fuel_electrode.temperature,
+        #var=m.fs.electrolyte.temperature,
+        time=m.fs.time,
+        xnodes=m.fs.fuel_electrode.xnodes,
+        znodes=m.fs.fuel_electrode.znodes,
+        #xnodes=m.fs.electrolyte.xnodes,
+        #znodes=m.fs.electrolyte.znodes,
+    )
+
+    zoe, xoe, hoe = contour_grid_data(
+        var=pyo.Reference(m.fs.oxygen_electrode.temperature[:, :, :]),
+        bottom=pyo.Reference(m.fs.oxygen_electrode.temperature_x0[:, :]),
+        top=pyo.Reference(m.fs.oxygen_electrode.temperature_x1[:, :]),
+        left=pyo.Reference(m.fs.oxygen_electrode.temperature[:, :, m.fs.fuel_electrode.iznodes.first()]),
+        right=pyo.Reference(m.fs.oxygen_electrode.temperature[:, :, m.fs.fuel_electrode.iznodes.last()]),
+        time=m.fs.time,
+        xnodes=m.fs.oxygen_electrode.xnodes,
+        znodes=m.fs.oxygen_electrode.znodes,
+    )
+
+    fig, ax = plt.subplots(nrows=2, sharex=True)
+    # levels = np.linspace(800, 1400, 40)
+    levels_fe = np.linspace(1020, 1028, 60)
+    levels_oe = np.linspace(1020, 1028, 60)
+    fig.tight_layout(pad=3.0)
+    # levels = 40
+
+    def animate2(i):
+        ax[1].clear()
+        ax[1].set_title("Mole Fraction H$_2$ Fuel Electrode")
+        ax[1].set_xlabel("z/L$_z$")
+        ax[1].set_ylabel("x/L$_x$")
+        ax[1].set_xlim(0, 1)
+        ax[1].set_ylim(0, 1)
+
+        ax[0].clear()
+        ax[0].set_title("Mole Fraction O$_2$ Oxygen Electrode")
+        ax[0].set_xlim(0, 1)
+        ax[0].set_ylim(0, 1)
+        #ax[0].set_xlabel("z/L$_z$")
+        ax[0].set_ylabel("x/L$_x$")
+
+
+        img1 = ax[1].contourf(zfe[i], xfe[i], hfe[i], levels=levels_fe, cmap="RdYlBu_r")
+        img0 = ax[0].contourf(zoe[i], xoe[i], hoe[i], levels=levels_oe, cmap="RdYlBu_r")
+        ax[0].invert_yaxis()
+        if animate2.first:
+            plt.colorbar(img0, ax=ax[0])
+            plt.colorbar(img1, ax=ax[1])
+            animate2.first = False
+
+
+    animate2.first = True
+
+    ani = animation.FuncAnimation(fig, animate2, len(m.fs.time), interval=100)
+    plt.show()
+    ani.save("animation_et.gif", writer=animation.PillowWriter(fps=2))
+
 
 
     if not dynamic:
@@ -2658,6 +2854,7 @@ if __name__ == "__main__":
     m.fs.oxygen_chan.temperature.display()
     m.fs.fuel_electrode.temperature_x1.display()
     m.fs.oxygen_electrode.temperature_x1.display()
+    m.fs.fuel_chan.mole_frac_comp.display()
 
     dhfc = pyo.value(
         m.fs.fuel_chan.flow_area
@@ -2698,6 +2895,8 @@ if __name__ == "__main__":
     print(
         f"Electric Power: {pyo.value(sum(m.fs.potential_cell[m.fs.time.last()]*m.fs.electrolyte.current[m.fs.time.last(), iz] for iz in m.fs.electrolyte.iznodes))}"
     )
+
+    m.fs.h2_production_mass.display()
 
     check_scaling = False
     if check_scaling:
