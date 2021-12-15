@@ -34,7 +34,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
 import idaes
-from idaes.core.util.math import safe_log
+from idaes.core.util.math import safe_log, smooth_min
 from idaes.core.util import get_solver
 import idaes.core.util.model_serializer as ms
 import idaes.core.util.model_statistics as mstat
@@ -2392,6 +2392,11 @@ class SofcElectrolyteData(UnitModelBlockData):
             s = iscale.get_scaling_factor(self.int_energy_density_solid[i])
             iscale.constraint_scaling_transform(c, s)
 
+        for i, c in self.qflux_x0_eqn.items():
+            iscale.constraint_scaling_transform(c, 1e-4)
+
+        for i, c in self.qflux_x1_eqn.items():
+            iscale.constraint_scaling_transform(c, 1e-6)
 
 def cell_flowsheet():
     import matplotlib.pyplot as plt
@@ -2401,8 +2406,8 @@ def cell_flowsheet():
     import idaes.core.plugins
 
     dynamic = True
-    time_nfe = 121
-    time_set = [0, 15] if dynamic else [0]
+    time_nfe = 1
+    time_set = [0, 16] if dynamic else [0]
 
     zfaces = np.linspace(0, 1, 11).tolist()
     xfaces_electrode = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9, 1.0]
@@ -2645,29 +2650,52 @@ def cell_flowsheet():
             #options={"tol": 1e-6, "halt_on_ampl_error": "no"},
         )
     if dynamic:
+        m.fs.timevar = pyo.Var(m.fs.time, initialize=0)
+        m.fs.ramp_rate = pyo.Var()
+        m.fs.ramp_rate.fix(0.5e-5)
+        @m.fs.Constraint(m.fs.time)
+        def feed_flow_fuel(b, t):
+            return m.fs.fuel_chan.flow_mol_inlet[t] * 1e4 == smooth_min((6e-5 - b.ramp_rate*b.timevar[t])*1e4, 0.75e-5*1e4)
+        @m.fs.Constraint(m.fs.time)
+        def feed_flow_ox(b, t):
+            return m.fs.oxygen_chan.flow_mol_inlet[t] * 1e4 == smooth_min((6e-5 - b.ramp_rate*b.timevar[t])*1e4, 0.75e-5*1e4)
+
+        m.fs.fuel_chan.flow_mol_inlet.unfix()
+        m.fs.oxygen_chan.flow_mol_inlet.unfix()
+        m.fs.timevar[0.0].fix()
+
         for t in m.fs.time:
             if t == m.fs.time.first():
                 continue
-            m.fs.fuel_chan.flow_mol_inlet[t].fix(0.75e-5)
-            m.fs.oxygen_chan.flow_mol_inlet[t].fix(0.75e-5)
+            #m.fs.fuel_chan.flow_mol_inlet[t].fix(0.75e-5)
+            #m.fs.oxygen_chan.flow_mol_inlet[t].fix(0.75e-5)
 
-        try:
-            from_json(m, fname="save_dynamic.json.gz")
-        except:
-            petsc.petsc_dae_by_time_element(
-                m,
-                time=m.fs.time,
-                ts_options={
-                    "--ts_type":"beuler",
-                    "--ts_dt":0.1,
-                    "--ts_monitor":"", # set initial step to 0.1
-                    "--show_cl":"",
-                },
-                initial_constraints=[],
-                initial_variables=[],
-                skip_initial=False,
-            )
 
+        petsc.petsc_dae_by_time_element(
+            m,
+            time=m.fs.time,
+            timevar=m.fs.timevar,
+            keepfiles=True,
+            symbolic_solver_labels=True,
+            ts_options={
+                "--ts_type":"beuler",
+                "--ts_dt":0.001,
+                "--ts_rtol":1e-3,
+                #"--ts_max_snes_failures":-1000,
+                #"--ts_adapt_clip":"0.01,1.0",
+                #"--ksp_monitor":"",
+                "--ksp_rtol":1e-10,
+                "--snes_type":"newtontr",
+                #"--snes_monitor":"",
+                "--ts_monitor":"",
+                "--ts_save_trajectory":1,
+                "--ts_trajectory_type":"visualization",
+                "--show_cl":"",
+            },
+            initial_constraints=[],
+            initial_variables=[],
+            skip_initial=False,
+        )
     if not dynamic:
         m.fs.current_density.unfix()
         m.fs.potential_eqn.activate()
@@ -2778,21 +2806,21 @@ def cell_flowsheet():
 
     fig, ax = plt.subplots(nrows=2, sharex=True)
     # levels = np.linspace(800, 1400, 40)
-    levels_fe = np.linspace(1020, 1028, 60)
-    levels_oe = np.linspace(1020, 1028, 60)
+    levels_fe = np.linspace(1020, 1030, 60)
+    levels_oe = np.linspace(1020, 1030, 60)
     fig.tight_layout(pad=3.0)
     # levels = 40
 
     def animate2(i):
         ax[1].clear()
-        ax[1].set_title("Mole Fraction H$_2$ Fuel Electrode")
+        ax[1].set_title("Temperature Fuel Electrode")
         ax[1].set_xlabel("z/L$_z$")
         ax[1].set_ylabel("x/L$_x$")
         ax[1].set_xlim(0, 1)
         ax[1].set_ylim(0, 1)
 
         ax[0].clear()
-        ax[0].set_title("Mole Fraction O$_2$ Oxygen Electrode")
+        ax[0].set_title("Temperature Oxygen Electrode")
         ax[0].set_xlim(0, 1)
         ax[0].set_ylim(0, 1)
         #ax[0].set_xlabel("z/L$_z$")
@@ -2802,10 +2830,10 @@ def cell_flowsheet():
         img1 = ax[1].contourf(zfe[i], xfe[i], hfe[i], levels=levels_fe, cmap="RdYlBu_r")
         img0 = ax[0].contourf(zoe[i], xoe[i], hoe[i], levels=levels_oe, cmap="RdYlBu_r")
         ax[0].invert_yaxis()
-        if animate2.first:
+        if animate.first:
             plt.colorbar(img0, ax=ax[0])
             plt.colorbar(img1, ax=ax[1])
-            animate2.first = False
+            animate.first = False
 
 
     animate2.first = True
@@ -2813,8 +2841,6 @@ def cell_flowsheet():
     ani = animation.FuncAnimation(fig, animate2, len(m.fs.time), interval=100)
     plt.show()
     ani.save("animation_et.gif", writer=animation.PillowWriter(fps=2))
-
-
 
     if not dynamic:
         ms.to_json(m, fname="save_steady.json.gz")
@@ -2900,13 +2926,13 @@ if __name__ == "__main__":
 
     check_scaling = False
     if check_scaling:
-        jac, nlp = iscale.get_jacobian(m, scaled=True)
+        jac, nlp = iscale.get_jacobian(m, scaled=False)
         print("Extreme Jacobian entries:")
         for i in iscale.extreme_jacobian_entries(jac=jac, nlp=nlp, large=100, small=0):
             print(f"    {i[0]:.2e}, [{i[1]}, {i[2]}]")
-        print("Badly scaled variables:")
-        for v, sv in iscale.badly_scaled_var_generator(
-            m, large=1e2, small=1e-2, zero=1e-12
-        ):
-            print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
+        #print("Badly scaled variables:")
+        #for v, sv in iscale.badly_scaled_var_generator(
+        #    m, large=1e2, small=1e-2, zero=1e-12
+        #):
+        #    print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
         print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")

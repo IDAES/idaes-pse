@@ -237,13 +237,15 @@ def _set_dae_suffixes_from_variables(m, variables):
 def petsc_dae_by_time_element(
     m,
     time,
-    time_var=None,
+    timevar=None,
     initial_constraints=None,
     initial_variables=None,
     skip_initial=False,
     snes_options=None,
     ts_options=None,
     wsl=None,
+    keepfiles=False,
+    symbolic_solver_labels=False,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -251,7 +253,7 @@ def petsc_dae_by_time_element(
     Args:
         m (Block): Pyomo model to solve
         time (ContinuousSet): Time set
-        time_var (Var): Optional sepcification of a time variable
+        timevar (Var): Optional sepcification of a time variable
         initial_constraints (list): Constraints to solve with in the initial
             condition solve step.  Since the time indexed constraints are picked
             up automaticly, this generally inlcudes non-time-inded constraints.
@@ -313,14 +315,16 @@ def petsc_dae_by_time_element(
             # the rest of the model.
             t_block = create_subsystem_block(constraints, variables)
             differential_vars = _set_dae_suffixes_from_variables(t_block, variables)
+            if timevar is not None:
+                t_block.dae_suffix[timevar[t]] = 3
             # Take initial conditions for this step from the result of previous
             _copy_time(time_vars, tprev, t)
             with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
                 res = solver_dae.solve(
                     t_block,
                     tee=slc.tee,
-                    #keepfiles=True,
-                    #symbolic_solver_labels=True,
+                    keepfiles=keepfiles,
+                    symbolic_solver_labels=symbolic_solver_labels,
                     export_nonlinear_variables=differential_vars,
                     options={"--ts_init_time":tprev, "--ts_max_time":t}
                 )
