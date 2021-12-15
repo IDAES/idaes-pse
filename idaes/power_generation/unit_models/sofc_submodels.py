@@ -34,7 +34,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
 import idaes
-from idaes.core.util.math import safe_log, smooth_min
+from idaes.core.util.math import safe_log, smooth_max
 from idaes.core.util import get_solver
 import idaes.core.util.model_serializer as ms
 import idaes.core.util.model_statistics as mstat
@@ -2407,7 +2407,7 @@ def cell_flowsheet():
 
     dynamic = True
     time_nfe = 1
-    time_set = [0, 16] if dynamic else [0]
+    time_set = [0, 20] if dynamic else [0]
 
     zfaces = np.linspace(0, 1, 11).tolist()
     xfaces_electrode = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9, 1.0]
@@ -2535,10 +2535,7 @@ def cell_flowsheet():
         m.fs.oxygen_electrode.conc[0, :, :, :].fix()
         m.fs.oxygen_electrode.temperature[0, :, :].fix()
         m.fs.electrolyte.temperature[0, :, :].fix()
-
         m.fs.potential_cell.fix(1.285)
-
-
     else:
         m.fs.current_density.fix(-2400)
 
@@ -2655,14 +2652,18 @@ def cell_flowsheet():
         m.fs.ramp_rate.fix(0.5e-5)
         @m.fs.Constraint(m.fs.time)
         def feed_flow_fuel(b, t):
-            return m.fs.fuel_chan.flow_mol_inlet[t] * 1e4 == smooth_min((6e-5 - b.ramp_rate*b.timevar[t])*1e4, 0.75e-5*1e4)
+            if t == m.fs.time.first():
+                return pyo.Constraint.Skip
+            return m.fs.fuel_chan.flow_mol_inlet[t] * 1e4 == smooth_max((6e-5 - b.ramp_rate*b.timevar[t]) * 1e4, 0.75e-5 * 1e4)
         @m.fs.Constraint(m.fs.time)
         def feed_flow_ox(b, t):
-            return m.fs.oxygen_chan.flow_mol_inlet[t] * 1e4 == smooth_min((6e-5 - b.ramp_rate*b.timevar[t])*1e4, 0.75e-5*1e4)
+            if t == m.fs.time.first():
+                return pyo.Constraint.Skip
+            return m.fs.oxygen_chan.flow_mol_inlet[t] * 1e4 == smooth_max((6e-5 - b.ramp_rate*b.timevar[t]) * 1e4, 0.75e-5 * 1e4)
 
         m.fs.fuel_chan.flow_mol_inlet.unfix()
         m.fs.oxygen_chan.flow_mol_inlet.unfix()
-        m.fs.timevar[0.0].fix()
+        #m.fs.timevar[0.0].fix()
 
         for t in m.fs.time:
             if t == m.fs.time.first():
@@ -2690,7 +2691,7 @@ def cell_flowsheet():
                 "--ts_monitor":"",
                 "--ts_save_trajectory":1,
                 "--ts_trajectory_type":"visualization",
-                "--show_cl":"",
+                #"--show_cl":"",
             },
             initial_constraints=[],
             initial_variables=[],
@@ -2923,6 +2924,7 @@ if __name__ == "__main__":
     )
 
     m.fs.h2_production_mass.display()
+    m.fs.fuel_chan.flow_mol_inlet.display()
 
     check_scaling = False
     if check_scaling:
