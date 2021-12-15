@@ -25,7 +25,6 @@ from omlt import OmltBlock, OffsetScaling
 from omlt.neuralnet import (FullSpaceContinuousFormulation, ReducedSpaceContinuousFormulation,
                             ReLUBigMFormulation, ReLUComplementarityFormulation, load_keras_sequential)
 
-
 class KerasSurrogate(SurrogateBase):
     def __init__(self, keras_model, input_labels, output_labels, input_bounds,
                  input_scaler=None, output_scaler=None):
@@ -228,7 +227,16 @@ class KerasSurrogate(SurrogateBase):
                               input_bounds=info['input_bounds'],
                               input_scaler=input_scaler,
                               output_scaler=output_scaler)
-    
-        
 
-    
+def save_keras_json_hd5(nn, path, name):
+    json_model = nn.to_json()
+    with open(os.path.join(path, '{}.json'.format(name)), 'w') as json_file:
+        json_file.write(json_model)
+    nn.save_weights(os.path.join(path, '{}.h5'.format(name)))
+
+def load_keras_json_hd5(path, name):
+    with open(os.path.join(path, '{}.json'.format(name)), 'r') as json_file:
+        json_model = json_file.read()
+        nn = keras.models.model_from_json(json_model)
+    nn.load_weights(os.path.join(path, '{}.h5'.format(name)))
+    return nn

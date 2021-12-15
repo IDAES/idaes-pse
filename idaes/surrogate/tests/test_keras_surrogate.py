@@ -21,7 +21,7 @@ from pyomo.common.tempfiles import TempfileManager
 from pyomo.environ import (ConcreteModel, Var, SolverFactory,
                            assert_optimal_termination, value,
                            Objective)
-from idaes.surrogate.keras_surrogate import KerasSurrogate
+from idaes.surrogate.keras_surrogate import KerasSurrogate, load_keras_json_hd5
 from idaes.surrogate.surrogate_block import SurrogateBlock
 from idaes.surrogate.sampling.scaling import OffsetScaler
 import tensorflow.keras as keras
@@ -30,8 +30,10 @@ rtol = 1e-4
 atol = 1e-4
 
 def create_keras_model(name='T_data_1_10_10_2_sigmoid', return_keras_model_only=True):
-    keras_folder_name = os.path.join(this_file_dir(), 'data', 'keras_models', name)
-    keras_model = keras.models.load_model(keras_folder_name)
+#    keras_folder_name = os.path.join(this_file_dir(), 'data', 'keras_models', name)
+#    keras_model = keras.models.load_model(keras_folder_name)
+    keras_folder_name = os.path.join(this_file_dir(), 'data', 'keras_models')
+    keras_model = load_keras_json_hd5(keras_folder_name, name)
     if return_keras_model_only:
         return keras_model
 
@@ -486,8 +488,9 @@ def test_save_load():
 @pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
 @pytest.mark.skipif(not SolverFactory('glpk').available(False), reason="no glpk")
 def test_noscalers():
-    keras_folder_name = os.path.join(this_file_dir(), 'data', 'keras_models', 'PT_data_2_10_10_2_sigmoid')
-    keras_model = keras.models.load_model(keras_folder_name)
+    keras_folder_name = os.path.join(this_file_dir(), 'data', 'keras_models')
+    keras_model = load_keras_json_hd5(keras_folder_name, 'PT_data_2_10_10_2_sigmoid')
+
     input_labels=['Temperature_K', 'Pressure_Pa']
     output_labels=['EnthMol', 'VapFrac']
     input_bounds={'Temperature_K': (-3.0, 3.0), 'Pressure_Pa': (-3.0, 3.0)}

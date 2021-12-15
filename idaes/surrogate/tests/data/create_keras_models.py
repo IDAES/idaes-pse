@@ -23,12 +23,17 @@ import matplotlib.pyplot as plt
 
 import idaes.surrogate.sampling as sampling
 from idaes.surrogate.sampling.scaling import OffsetScaler
+import idaes.surrogate.keras_surrogate as foo
+print(dir(foo))
+from idaes.surrogate.keras_surrogate import save_keras_json_hd5
 from pyomo.common.fileutils import this_file_dir
 import os
+import json
 
 keras.utils.set_random_seed(42)
 
 generate_fit_comparison_files = True
+
 def compare_fit(nn, x_test, y_test, input_scaler, output_scaler):
     scaled_x_test = input_scaler.scale(x_test)
     scaled_y_test_hat = nn.predict(scaled_x_test.to_numpy())
@@ -71,7 +76,8 @@ mcp_save = ModelCheckpoint('.mdl_wts.hdf5', save_best_only=True, monitor='val_lo
 history = nn.fit(
     x=x, y=y, validation_split=0.2, batch_size=16, verbose=1, epochs=1000, callbacks=[mcp_save]
 )
-nn.save(os.path.join(this_file_dir(), 'keras_models', nn.name))
+#nn.save(os.path.join(this_file_dir(), 'keras_models', nn.name))
+save_keras_json_hd5(nn, os.path.join(this_file_dir(), 'keras_models'), nn.name)
 
 if generate_fit_comparison_files:
     #x_test = pd.DataFrame({'Temperature_K': [365, 370, 375]})
@@ -89,7 +95,8 @@ mcp_save = ModelCheckpoint('.mdl_wts.hdf5', save_best_only=True, monitor='val_lo
 history = nn.fit(
     x=x, y=y, validation_split=0.2, batch_size=16, verbose=1, epochs=500, callbacks=[mcp_save]
 )
-nn.save(os.path.join(this_file_dir(), 'keras_models', nn.name))
+#nn.save(os.path.join(this_file_dir(), 'keras_models', nn.name))
+save_keras_json_hd5(nn, os.path.join(this_file_dir(), 'keras_models'), nn.name)
 
 if generate_fit_comparison_files:
     #x_test = pd.DataFrame({'Temperature_K': [365, 370, 375]})
@@ -128,7 +135,8 @@ mcp_save = ModelCheckpoint('.mdl_wts.hdf5', save_best_only=True, monitor='val_lo
 history = nn.fit(
     x=x, y=y, validation_split=0.2, batch_size=16, verbose=1, epochs=200, callbacks=[mcp_save]
 )
-nn.save(os.path.join(this_file_dir(), 'keras_models', nn.name))
+#nn.save(os.path.join(this_file_dir(), 'keras_models', nn.name))
+save_keras_json_hd5(nn, os.path.join(this_file_dir(), 'keras_models'), nn.name)
 
 if generate_fit_comparison_files:
     compare_fit(nn, testing[input_labels], testing[output_labels], input_scaler, output_scaler)
@@ -144,7 +152,8 @@ mcp_save = ModelCheckpoint('.mdl_wts.hdf5', save_best_only=True, monitor='val_lo
 history = nn.fit(
     x=x, y=y, validation_split=0.2, batch_size=16, verbose=1, epochs=50, callbacks=[mcp_save]
 )
-nn.save(os.path.join(this_file_dir(), 'keras_models', nn.name))
+#nn.save(os.path.join(this_file_dir(), 'keras_models', nn.name))
+save_keras_json_hd5(nn, os.path.join(this_file_dir(), 'keras_models'), nn.name)
 
 if generate_fit_comparison_files:
     compare_fit(nn, testing[input_labels], testing[output_labels], input_scaler, output_scaler)
