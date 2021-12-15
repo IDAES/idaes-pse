@@ -142,6 +142,8 @@ def test_keras_evaluate():
     pd.testing.assert_frame_equal(y, expected_y)
 
 @pytest.mark.unit
+@pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.skipif(not SolverFactory('glpk').available(False), reason="no glpk")
 def test_keras_surrogate_auto_creating_variables():
     ###
     # Test 1->2 sigmoid
@@ -301,6 +303,8 @@ def test_keras_surrogate_auto_creating_variables():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.skipif(not SolverFactory('glpk').available(False), reason="no glpk")
 def test_keras_surrogate_with_variables():
     keras_surrogate = create_keras_model(name='PT_data_2_10_10_2_sigmoid',
                                          return_keras_model_only=False)
@@ -403,6 +407,8 @@ def test_keras_surrogate_with_variables():
     pd.testing.assert_frame_equal(y_test, y_test_pyomo)
 
 @pytest.mark.unit
+@pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.skipif(not SolverFactory('glpk').available(False), reason="no glpk")
 def test_save_load():
     keras_surrogate = create_keras_model(name='PT_data_2_10_10_2_sigmoid',
                                          return_keras_model_only=False)
@@ -474,6 +480,8 @@ def test_save_load():
     pd.testing.assert_frame_equal(y_test, y_test_pyomo)
 
 @pytest.mark.unit
+@pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.skipif(not SolverFactory('glpk').available(False), reason="no glpk")
 def test_noscalers():
     keras_folder_name = os.path.join(this_file_dir(), 'data', 'keras_models', 'PT_data_2_10_10_2_sigmoid')
     keras_model = keras.models.load_model(keras_folder_name)
