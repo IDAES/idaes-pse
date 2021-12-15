@@ -672,6 +672,7 @@ def test_conf_set(runner):
 ##############
 
 @pytest.mark.unit
+@pytest.mark.skip
 def test_env_info1(runner):
     result = runner.invoke(env_info.environment_info)
     assert result.exit_code == 0
