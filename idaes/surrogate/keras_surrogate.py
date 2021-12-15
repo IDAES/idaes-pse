@@ -17,31 +17,53 @@ import numpy as np
 import json
 import os.path
 import keras
+from enum import Enum
+import pandas as pd
 from idaes.surrogate.base.surrogate_base import SurrogateBase
-from idaes.surrogate.sampling.scaling import StandardScaler
+from idaes.surrogate.sampling.scaling import OffsetScaler
 from omlt import OmltBlock, OffsetScaling
-from omlt.neuralnet import FullSpaceContinuousFormulation, ReducedSpaceContinuousFormulation, \
-    ReLUBigMFormulation, load_keras_sequential
+from omlt.neuralnet import (FullSpaceContinuousFormulation, ReducedSpaceContinuousFormulation,
+                            ReLUBigMFormulation, ReLUComplementarityFormulation, load_keras_sequential)
 
 
 class KerasSurrogate(SurrogateBase):
-    """
-    Standard SurrogateObject for surrogates based on Keras models. 
-    Utilizes the OMLT framework for importing Keras models to IDAES.
-
-    Contains methods to both populate a Pyomo Block with constraints
-    representing the surrogate and to evaluate the surrogate a set of user
-    provided points.
-    """
     def __init__(self, keras_model, input_labels, output_labels, input_bounds,
                  input_scaler=None, output_scaler=None):
+        """
+        Standard SurrogateObject for surrogates based on Keras models. 
+        Utilizes the OMLT framework for importing Keras models to IDAES.
+
+        Contains methods to both populate a Pyomo Block with constraints
+        representing the surrogate and to evaluate the surrogate a set of user
+        provided points.
+
+        This constructor should only be used when first creating the surrogate within IDAES.
+        Once created, this object can be stored to disk using save_to_folder and loaded
+        with load_from_folder
+
+        Args:
+           keras_model: Keras Sequential model
+              This is the Keras Sequential model that will be loaded. Note that
+              specialized layers may not be supported at this time.
+           input_labels: list of str
+              The ordered list of labels corresponding to the inputs in the keras model
+           output_labels: list of str
+              The ordered list of labels corresponding to the outputs in the keras model
+           input_bounds: None of dict of tuples
+              Keys correspond to each of the input labels and values are the tuples of
+              bounds (lb, ub)
+           input_scaler: None or OffsetScaler
+              The scaler to be used for the inputs. If None, then no scaler is used
+           output_scaler: None of OffsetScaler
+              The scaler to be used for the outputs. If None, then no scaler is used
+        """
         super().__init__(input_labels=input_labels, output_labels=output_labels, \
                          input_bounds=input_bounds)
 
         # make sure we are using the standard scaler
-        if input_scaler is not None and type(input_scaler) is not StandardScaler or \
-           output_scaler is not None and type(output_scaler) is not StandardScaler:
-            raise NotImplementedError('KerasSurrogate only supports the StandardScaler.')
+        if input_scaler is not None and type(input_scaler) is not OffsetScaler or \
+           output_scaler is not None and type(output_scaler) is not OffsetScaler:
+            raise NotImplementedError('KerasSurrogate only supports the OffsetScaler.')
 
         # check that the input labels match
         if input_scaler is not None and input_scaler.expected_columns() != input_labels:
@@ -66,18 +88,26 @@ class KerasSurrogate(SurrogateBase):
         self._keras_model = keras_model
         
 
-    def populate_block(self, block, **kwargs):
+    class Formulation(Enum):
+        FULL_SPACE=1
+        REDUCED_SPACE=2
+        RELU_BIGM=3
+        RELU_COMPLEMENTARITY=4
+
+    def populate_block(self, block, additional_options=None):
         """
         Method to populate a Pyomo Block with the keras model constraints.
 
         Args:
            block: Pyomo Block component
               The block to be populated with variables and/or constraints.
-           formulation: string
-              The formulation to use with OMLT. Possible values are 'full-space', 
-              'reduced-space', 'relu-bigm', or 'relu-complementarity' (default is 'full-space')
+           additional_options: dict or None
+              If not None, then should be a dict with the following keys:
+                 'formulation': KerasSurrogate.Formulation
+                    The formulation to use with OMLT. Possible values are FULL_SPACE,
+                    REDUCED_SPACE, RELU_BIGM, or RELU_COMPLEMENTARITY (default is FULL_SPACE)
         """
-        formulation = kwargs.pop('formulation', 'full-space')
+        formulation = additional_options.pop('formulation', KerasSurrogate.Formulation.FULL_SPACE)
         offset_inputs = np.zeros(self.n_inputs())
         factor_inputs = np.ones(self.n_inputs())
         offset_outputs = np.zeros(self.n_outputs())
@@ -89,26 +119,33 @@ class KerasSurrogate(SurrogateBase):
             offset_outputs = self._output_scaler.offset_series()[self.output_labels()].to_numpy()
             factor_outputs = self._output_scaler.factor_series()[self.output_labels()].to_numpy()
 
-        omlt_scaling = OffsetScaling(offset_inputs=scaling_x_offset,
-                                      factor_inputs=scaling_x_factor,
-                                      offset_outputs=scaling_y_offset,
-                                      factor_outputs=scaling_y_factor)
-        net = load_keras_sequential(self._keras_model, omlt_scaling, self.input_bounds())
+        # build the OMLT scaler object
+        omlt_scaling = OffsetScaling(offset_inputs=offset_inputs,
+                                     factor_inputs=factor_inputs,
+                                     offset_outputs=offset_outputs,
+                                     factor_outputs=factor_outputs)
 
-        if formulation == 'full-space':
+        # omlt takes input bounds as a list
+        input_bounds = self.input_bounds()
+        input_bounds = [input_bounds[k] for k in self.input_labels()]
+        net = load_keras_sequential(self._keras_model, omlt_scaling, input_bounds)
+
+        if formulation == KerasSurrogate.Formulation.FULL_SPACE:
             formulation_object = FullSpaceContinuousFormulation(net)
-        elif formulation == 'reduced-space':
+        elif formulation == KerasSurrogate.Formulation.REDUCED_SPACE:
             formulation_object = ReducedSpaceContinuousFormulation(net)
-        elif formulation == 'relu-bigm':
+        elif formulation == KerasSurrogate.Formulation.RELU_BIGM:
             formulation_object = ReLUBigMFormulation(net)
-        elif formulation == 'relu-complementarity':
+        elif formulation == KerasSurrogate.Formulation.RELU_COMPLEMENTARITY:
             formulation_object = ReLUComplementarityFormulation(net)
-
-        block.neural_network.build_formulation(formulation_object,
-                                               input_vars=block._input_vars_as_list(),
-                                               output_vars=block._output_vars_as_list())
-
-
+        else:
+            raise ValueError('An unrecognized formulation "{}" was passed to '
+                             'KerasSurrogate.populate_block. Please pass a valid '
+                             'formulation.'.format(formulation))
+        block.nn=OmltBlock()
+        block.nn.build_formulation(formulation_object,
+                                   input_vars=block._input_vars_as_list(),
+                                   output_vars=block._output_vars_as_list())
 
     def evaluate_surrogate(self, inputs):
         """
@@ -125,19 +162,15 @@ class KerasSurrogate(SurrogateBase):
         x = inputs
         if self._input_scaler is not None:
             x = self._input_scaler.scale(x)
-            
         y = self._keras_model.predict(x.to_numpy())
 
         # y is a numpy array, make it a dataframe
-        y = pd.Dataframe(data=y, columns=self.output_labels(), index=inputs.index)
-
+        y = pd.DataFrame(data=y, columns=self.output_labels(), index=inputs.index)
         if self._output_scaler is not None:
             y = self._output_scaler.unscale(y)
-
         return y
 
-    @classmethod
-    def save_to_file(cls, keras_folder_name):
+    def save_to_folder(self, keras_folder_name):
         """
         Save the surrogate object to disk by providing the name of the
         folder to contain the keras model and additional IDAES metadata
@@ -165,7 +198,7 @@ class KerasSurrogate(SurrogateBase):
             json.dump(info, fd)
 
     @classmethod
-    def load_from_file(cls, keras_folder_name):
+    def load_from_folder(cls, keras_folder_name):
         """
         Load the surrogate object from disk by providing the name of the
         folder holding the keras model
@@ -183,11 +216,11 @@ class KerasSurrogate(SurrogateBase):
 
         input_scaler = None
         if info['input_scaler'] is not None:
-            input_scaler = StandardScaler.from_dict(info['input_scaler'])
+            input_scaler = OffsetScaler.from_dict(info['input_scaler'])
 
         output_scaler = None
         if info['output_scaler'] is not None:
-            output_scaler = StandardScaler.from_dict(info['output_scaler'])
+            output_scaler = OffsetScaler.from_dict(info['output_scaler'])
 
         return KerasSurrogate(keras_model=keras_model,
                               input_labels=info['input_labels'],

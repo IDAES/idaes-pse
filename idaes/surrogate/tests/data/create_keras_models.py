@@ -49,6 +49,12 @@ outputs = train_val[output_labels]
 
 input_scaler = OffsetScaler.create_from_mean_std(inputs)
 output_scaler = OffsetScaler.create_from_mean_std(outputs)
+print('input_scaler for T_data')
+print(input_scaler._offset)
+print(input_scaler._factor)
+print('output_scaler for T_data')
+print(output_scaler._offset)
+print(output_scaler._factor)
 scaled_inputs = input_scaler.scale(inputs)
 scaled_outputs = output_scaler.scale(outputs)
 
@@ -68,6 +74,8 @@ history = nn.fit(
 nn.save(os.path.join(this_file_dir(), 'keras_models', nn.name))
 
 if generate_fit_comparison_files:
+    #x_test = pd.DataFrame({'Temperature_K': [365, 370, 375]})
+    #compare_fit(nn, x_test, testing[output_labels], input_scaler, output_scaler)
     compare_fit(nn, testing[input_labels], testing[output_labels], input_scaler, output_scaler)
 
 # RELU Network
@@ -84,6 +92,8 @@ history = nn.fit(
 nn.save(os.path.join(this_file_dir(), 'keras_models', nn.name))
 
 if generate_fit_comparison_files:
+    #x_test = pd.DataFrame({'Temperature_K': [365, 370, 375]})
+    #compare_fit(nn, xtest, testing[output_labels], input_scaler, output_scaler)
     compare_fit(nn, testing[input_labels], testing[output_labels], input_scaler, output_scaler)
 
 # PT DATA
@@ -98,6 +108,12 @@ input_scaler = OffsetScaler.create_from_mean_std(inputs)
 output_scaler = OffsetScaler.create_from_mean_std(outputs)
 scaled_inputs = input_scaler.scale(inputs)
 scaled_outputs = output_scaler.scale(outputs)
+print('input_scaler for PT_data')
+print(input_scaler._offset)
+print(input_scaler._factor)
+print('output_scaler for PT_data')
+print(output_scaler._offset)
+print(output_scaler._factor)
 
 x=scaled_inputs.to_numpy()
 y=scaled_outputs.to_numpy()

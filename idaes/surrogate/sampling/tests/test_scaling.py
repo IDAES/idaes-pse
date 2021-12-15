@@ -15,15 +15,15 @@ Tests for surrogates/sampling/scaling module
 """
 import pytest
 import pandas as pd
-from idaes.surrogate.sampling.scaling import StandardScaler
+from idaes.surrogate.sampling.scaling import OffsetScaler
 
 class TestScaling:
     
     @pytest.mark.unit
-    def test_StandardScaler(self):
+    def test_OffsetScaler(self):
         df = pd.DataFrame({'A': [1.0,2.0,3.0,4.0,5.0], 'B':[2.0,5.0,6.0,10.0,12.0]})
 
-        scaler = StandardScaler.create_from_mean_std(df)
+        scaler = OffsetScaler.create_from_mean_std(df)
         pd.testing.assert_series_equal(scaler._offset, pd.Series({'A':3.0, 'B':7.0}))
         pd.testing.assert_series_equal(scaler._factor, pd.Series({'A': 1.58113, 'B': 4.0}))
 
@@ -41,26 +41,26 @@ class TestScaling:
             scaled_df2 = scaler.scale(df2)
 
         with pytest.raises(ValueError) as excinfo:
-            scaler = StandardScaler(expected_columns=['A', 'B'],
+            scaler = OffsetScaler(expected_columns=['A', 'B'],
                                     offset_series=pd.Series({'A':1, 'C':2}),
                                     factor_series=pd.Series({'A':3, 'B':4}))
         assert str(excinfo.value) == \
-            'StandardScaler was passed an offset series with an index that' \
+            'OffsetScaler was passed an offset series with an index that' \
             ' does not match expected_columns. Please make sure these labels match.'
 
         with pytest.raises(ValueError) as excinfo:
-            scaler = StandardScaler(expected_columns=['A', 'B'],
+            scaler = OffsetScaler(expected_columns=['A', 'B'],
                                     offset_series=pd.Series({'A':1, 'B':2}),
                                     factor_series=pd.Series({'A':3, 'C':4}))
         assert str(excinfo.value) == \
-            'StandardScaler was passed a factor series with an index that' \
+            'OffsetScaler was passed a factor series with an index that' \
             ' does not match expected_columns. Please make sure these labels match.'
 
 
     @pytest.mark.unit
-    def test_StandardScaler_serialization(self):
+    def test_OffsetScaler_serialization(self):
         df = pd.DataFrame({'A': [4.0,10.0,12.0,20.0,24.0], 'B':[2.0,5.0,6.0,10.0,12.0]})
-        scaler = StandardScaler.create_from_mean_std(df)
+        scaler = OffsetScaler.create_from_mean_std(df)
 
         d = scaler.to_dict()
         assert d['expected_columns'] == ['A', 'B']
@@ -69,7 +69,7 @@ class TestScaling:
         assert d['factor']['A'] == pytest.approx(8)
         assert d['factor']['B'] == pytest.approx(4)
 
-        scaler = StandardScaler.from_dict(d)
+        scaler = OffsetScaler.from_dict(d)
         assert scaler._expected_columns == ['A', 'B']
         pd.testing.assert_series_equal(scaler._offset, pd.Series({'A':14.0, 'B':7.0}))
         pd.testing.assert_series_equal(scaler._factor, pd.Series({'A': 8.0, 'B': 4.0}))

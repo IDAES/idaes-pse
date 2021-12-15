@@ -12,7 +12,7 @@
 #################################################################################
 import pandas as pd
 
-class StandardScaler(object):
+class OffsetScaler(object):
     @staticmethod
     def create_from_mean_std(dataframe):
         """
@@ -27,7 +27,7 @@ class StandardScaler(object):
         expected_columns = list(dataframe.columns)
         offset = dataframe.mean()
         factor = dataframe.std()
-        return StandardScaler(expected_columns, offset, factor)
+        return OffsetScaler(expected_columns, offset, factor)
         
     def __init__(self, expected_columns, offset_series, factor_series):
         """
@@ -52,15 +52,15 @@ class StandardScaler(object):
         self._offset = offset_series
         self._factor = factor_series
         if list(offset_series.index) != expected_columns:
-            raise ValueError('StandardScaler was passed an offset series with an index that'
+            raise ValueError('OffsetScaler was passed an offset series with an index that'
                              ' does not match expected_columns. Please make sure these labels match.')
         if list(factor_series.index) != expected_columns:
-            raise ValueError('StandardScaler was passed a factor series with an index that'
+            raise ValueError('OffsetScaler was passed a factor series with an index that'
                              ' does not match expected_columns. Please make sure these labels match.')
 
     def _verify_columns_match(self, dataframe):
         if self._expected_columns != list(dataframe.columns):
-            raise ValueError('StandardScaler was passed a dataframe that did not contain'
+            raise ValueError('OffsetScaler was passed a dataframe that did not contain'
                              ' the same column labels as those used to create the scaler.'
                              ' Please make sure the column labels match.')
         
@@ -134,9 +134,9 @@ class StandardScaler(object):
            d : dict
               The dict created with to_dict
 
-        Returns: new StandardScaler
+        Returns: new OffsetScaler
         """
         expected_columns = d['expected_columns']
         offset = pd.Series(d['offset'])
         factor = pd.Series(d['factor'])
-        return StandardScaler(expected_columns, offset, factor)
+        return OffsetScaler(expected_columns, offset, factor)
