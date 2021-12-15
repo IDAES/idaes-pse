@@ -26,6 +26,9 @@ from idaes.surrogate.surrogate_block import SurrogateBlock
 from idaes.surrogate.sampling.scaling import OffsetScaler
 import tensorflow.keras as keras
 
+rtol = 1e-4
+atol = 1e-4
+
 def create_keras_model(name='T_data_1_10_10_2_sigmoid', return_keras_model_only=True):
     keras_folder_name = os.path.join(this_file_dir(), 'data', 'keras_models', name)
     keras_model = keras.models.load_model(keras_folder_name)
@@ -117,14 +120,14 @@ def test_keras_evaluate():
     y = keras_surrogate.evaluate_surrogate(x)
     expected_y = pd.DataFrame({'EnthMol': [42686.447275464394, 64437.55629480346, 74746.81533134825],
                                'VapFrac': [0.07522893986296653, 0.6880093482449651, 0.9981742834334373]})
-    pd.testing.assert_frame_equal(y, expected_y)
+    pd.testing.assert_frame_equal(y, expected_y, rtol=rtol, atol=atol)
 
     keras_surrogate = create_keras_model(name='T_data_1_10_10_2_relu',
                                          return_keras_model_only=False)
     y = keras_surrogate.evaluate_surrogate(x)
     expected_y = pd.DataFrame({'EnthMol': [40840.90843482576, 63775.05649622617, 74718.54808966955],
                                'VapFrac': [-0.001302339421510701, 0.6879003097360135, 0.9980593485100269]})
-    pd.testing.assert_frame_equal(y, expected_y)
+    pd.testing.assert_frame_equal(y, expected_y, rtol=rtol, atol=atol)
 
     x = pd.DataFrame({'Temperature_K': [360,370,380], 'Pressure_Pa': [1.05*101325, 1.10*101325, 1.15*101325]})
     keras_surrogate = create_keras_model(name='PT_data_2_10_10_2_sigmoid',
@@ -132,14 +135,14 @@ def test_keras_evaluate():
     y = keras_surrogate.evaluate_surrogate(x)
     expected_y = pd.DataFrame({'EnthMol': [40194.5586954288, 48660.288218426984, 75178.30324367314],
                                'VapFrac': [0.002291496299564877, 0.21942246438431742, 0.9996716243380308]})
-    pd.testing.assert_frame_equal(y, expected_y)
+    pd.testing.assert_frame_equal(y, expected_y, rtol=rtol, atol=atol)
 
     keras_surrogate = create_keras_model(name='PT_data_2_10_10_2_relu',
                                          return_keras_model_only=False)
     y = keras_surrogate.evaluate_surrogate(x)
     expected_y = pd.DataFrame({'EnthMol': [39989.02657637386, 48329.89586985675, 75212.99707375483],
                                'VapFrac': [-0.0028634298195242547, 0.2095949409658313, 0.9991636803734303]})
-    pd.testing.assert_frame_equal(y, expected_y)
+    pd.testing.assert_frame_equal(y, expected_y, rtol=rtol, atol=atol)
 
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
@@ -166,7 +169,7 @@ def test_keras_surrogate_auto_creating_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     # Test reduced-space
     m = ConcreteModel()
@@ -181,7 +184,7 @@ def test_keras_surrogate_auto_creating_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     ###
     # Test 1->2 relu
@@ -204,7 +207,7 @@ def test_keras_surrogate_auto_creating_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     # Test relu complementarity
     m = ConcreteModel()
@@ -219,7 +222,7 @@ def test_keras_surrogate_auto_creating_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     ###
     # Test 2->2 sigmoid
@@ -243,7 +246,7 @@ def test_keras_surrogate_auto_creating_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     # Test reduced-space
     m = ConcreteModel()
@@ -259,7 +262,7 @@ def test_keras_surrogate_auto_creating_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     ###
     # Test 2->2 relu
@@ -283,7 +286,7 @@ def test_keras_surrogate_auto_creating_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     # Test relu complementarity
     m = ConcreteModel()
@@ -299,7 +302,7 @@ def test_keras_surrogate_auto_creating_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
 
 @pytest.mark.unit
@@ -328,7 +331,7 @@ def test_keras_surrogate_with_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     # Test provide indexed inputs, auto create outputs
     m = ConcreteModel()
@@ -346,7 +349,7 @@ def test_keras_surrogate_with_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     # Test auto-create inputs, provide scalar outputs
     m = ConcreteModel()
@@ -365,7 +368,7 @@ def test_keras_surrogate_with_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.H)],
                                  'VapFrac': [value(m.V)]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     # Test auto-create inputs, provide indexed outputs
     m = ConcreteModel()
@@ -383,7 +386,7 @@ def test_keras_surrogate_with_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.outputs['H'])],
                                  'VapFrac': [value(m.outputs['V'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     # Test provide scalar inputs, provide indexed outputs
     m = ConcreteModel()
@@ -404,7 +407,7 @@ def test_keras_surrogate_with_variables():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.outputs['H'])],
                                  'VapFrac': [value(m.outputs['V'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
@@ -441,8 +444,8 @@ def test_save_load():
     factor_series = pd.Series({'Temperature_K': 5.836047, 'Pressure_Pa': 5917.954504})
     scaler = new_keras_surrogate._input_scaler
     assert scaler._expected_columns == expected_columns
-    pd.testing.assert_series_equal(scaler._offset, offset_series)
-    pd.testing.assert_series_equal(scaler._factor, factor_series)
+    pd.testing.assert_series_equal(scaler._offset, offset_series, rtol=rtol, atol=atol)
+    pd.testing.assert_series_equal(scaler._factor, factor_series, rtol=rtol, atol=atol)
 
     # check output scaler
     expected_columns=['EnthMol','VapFrac']
@@ -450,15 +453,15 @@ def test_save_load():
     factor_series = pd.Series({'EnthMol': 14654.226615, 'VapFrac': 0.430181})
     scaler = new_keras_surrogate._output_scaler
     assert scaler._expected_columns == expected_columns
-    pd.testing.assert_series_equal(scaler._offset, offset_series)
-    pd.testing.assert_series_equal(scaler._factor, factor_series)
+    pd.testing.assert_series_equal(scaler._offset, offset_series, rtol=rtol, atol=atol)
+    pd.testing.assert_series_equal(scaler._factor, factor_series, rtol=rtol, atol=atol)
 
     # check evaluation
     x_test = pd.DataFrame({'Temperature_K': [360,370,380], 'Pressure_Pa': [1.05*101325, 1.10*101325, 1.15*101325]})
     y_test = keras_surrogate.evaluate_surrogate(x_test)
     expected_y = pd.DataFrame({'EnthMol': [40194.5586954288, 48660.288218426984, 75178.30324367314],
                                'VapFrac': [0.002291496299564877, 0.21942246438431742, 0.9996716243380308]})
-    pd.testing.assert_frame_equal(y_test, expected_y)
+    pd.testing.assert_frame_equal(y_test, expected_y, rtol=rtol, atol=atol)
 
     # check solve with pyomo
     x_test = pd.DataFrame({'Temperature_K': [370], 'Pressure_Pa': [1.1*101325]})
@@ -477,7 +480,7 @@ def test_save_load():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
@@ -510,7 +513,7 @@ def test_noscalers():
 
     y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
                                  'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo, check_dtype=False)
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, check_dtype=False, rtol=rtol, atol=atol)
     
 
 @pytest.mark.unit
