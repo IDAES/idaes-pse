@@ -148,7 +148,6 @@ def test_keras_evaluate():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
-@pytest.mark.skipif(not SolverFactory('glpk').available(False), reason="no glpk")
 def test_keras_surrogate_auto_creating_variables():
     ###
     # Test 1->2 sigmoid
@@ -195,21 +194,6 @@ def test_keras_surrogate_auto_creating_variables():
                                          return_keras_model_only=False)
     x_test = pd.DataFrame({'Temperature_K': [370]})
     y_test = keras_surrogate.evaluate_surrogate(x_test)
-
-    # Test relu bigm
-    m = ConcreteModel()
-    m.obj = Objective(expr=1)
-    m.surrogate = SurrogateBlock()
-    m.surrogate.build_model(surrogate_object=keras_surrogate,
-                            formulation=KerasSurrogate.Formulation.RELU_BIGM)
-    m.surrogate.inputs['Temperature_K'].fix(370)
-    solver = SolverFactory('glpk')
-    status = solver.solve(m, tee=True)
-    assert_optimal_termination(status)
-
-    y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
-                                 'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     # Test relu complementarity
     m = ConcreteModel()
@@ -274,22 +258,6 @@ def test_keras_surrogate_auto_creating_variables():
     x_test = pd.DataFrame({'Temperature_K': [370], 'Pressure_Pa': [1.1*101325]})
     y_test = keras_surrogate.evaluate_surrogate(x_test)
 
-    # Test relu bigm
-    m = ConcreteModel()
-    m.obj = Objective(expr=1)
-    m.surrogate = SurrogateBlock()
-    m.surrogate.build_model(surrogate_object=keras_surrogate,
-                            formulation=KerasSurrogate.Formulation.RELU_BIGM)
-    m.surrogate.inputs['Temperature_K'].fix(370)
-    m.surrogate.inputs['Pressure_Pa'].fix(1.1*101325)
-    solver = SolverFactory('glpk')
-    status = solver.solve(m, tee=True)
-    assert_optimal_termination(status)
-
-    y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
-                                 'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
-    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
-
     # Test relu complementarity
     m = ConcreteModel()
     m.obj = Objective(expr=1)
@@ -308,8 +276,57 @@ def test_keras_surrogate_auto_creating_variables():
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
 @pytest.mark.skipif(not SolverFactory('glpk').available(False), reason="no glpk")
+def test_keras_surrogate_auto_creating_variables_glpk():
+    ###
+    # Test 1->2 relu
+    ###
+    keras_surrogate = create_keras_model(name='T_data_1_10_10_2_relu',
+                                         return_keras_model_only=False)
+    x_test = pd.DataFrame({'Temperature_K': [370]})
+    y_test = keras_surrogate.evaluate_surrogate(x_test)
+
+    # Test relu bigm
+    m = ConcreteModel()
+    m.obj = Objective(expr=1)
+    m.surrogate = SurrogateBlock()
+    m.surrogate.build_model(surrogate_object=keras_surrogate,
+                            formulation=KerasSurrogate.Formulation.RELU_BIGM)
+    m.surrogate.inputs['Temperature_K'].fix(370)
+    solver = SolverFactory('glpk')
+    status = solver.solve(m, tee=True)
+    assert_optimal_termination(status)
+
+    y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
+                                 'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
+
+    ###
+    # Test 2->2 relu
+    ###
+    keras_surrogate = create_keras_model(name='PT_data_2_10_10_2_relu',
+                                         return_keras_model_only=False)
+    x_test = pd.DataFrame({'Temperature_K': [370], 'Pressure_Pa': [1.1*101325]})
+    y_test = keras_surrogate.evaluate_surrogate(x_test)
+
+    # Test relu bigm
+    m = ConcreteModel()
+    m.obj = Objective(expr=1)
+    m.surrogate = SurrogateBlock()
+    m.surrogate.build_model(surrogate_object=keras_surrogate,
+                            formulation=KerasSurrogate.Formulation.RELU_BIGM)
+    m.surrogate.inputs['Temperature_K'].fix(370)
+    m.surrogate.inputs['Pressure_Pa'].fix(1.1*101325)
+    solver = SolverFactory('glpk')
+    status = solver.solve(m, tee=True)
+    assert_optimal_termination(status)
+
+    y_test_pyomo = pd.DataFrame({'EnthMol': [value(m.surrogate.outputs['EnthMol'])],
+                                 'VapFrac': [value(m.surrogate.outputs['VapFrac'])]})
+    pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
+
+@pytest.mark.unit
+@pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
 def test_keras_surrogate_with_variables():
     keras_surrogate = create_keras_model(name='PT_data_2_10_10_2_sigmoid',
                                          return_keras_model_only=False)
@@ -413,7 +430,6 @@ def test_keras_surrogate_with_variables():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
-@pytest.mark.skipif(not SolverFactory('glpk').available(False), reason="no glpk")
 def test_save_load():
     keras_surrogate = create_keras_model(name='PT_data_2_10_10_2_sigmoid',
                                          return_keras_model_only=False)
@@ -486,7 +502,6 @@ def test_save_load():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
-@pytest.mark.skipif(not SolverFactory('glpk').available(False), reason="no glpk")
 def test_noscalers():
     keras_folder_name = os.path.join(this_file_dir(), 'data', 'keras_models')
     keras_model = load_keras_json_hd5(keras_folder_name, 'PT_data_2_10_10_2_sigmoid')
