@@ -1,6 +1,9 @@
 from prescient.simulator import Prescient
 
-options = {'data_directory': '/home/jhjalvi/git/Prescient/downloads/rts_gmlc/deterministic_with_network_scenarios',\
+#NOTE: `rts_gmlc_data_dir` should point to a directory containing RTS-GMLC scenarios
+rts_gmlc_data_dir = '/home/jhjalvi/git/Prescient/downloads/rts_gmlc/deterministic_with_network_scenarios'
+
+options = {'data_directory': rts_gmlc_data_dir,\
            'simulate_out_of_sample': True,\
            'run_sced_with_persistent_forecast_errors': True,\
            'output_directory': 'bidding_plugin_test_multiperiod_rankine',\
