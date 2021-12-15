@@ -16,7 +16,7 @@ Interface for importing Keras models into IDAES
 import numpy as np
 import json
 import os.path
-import keras
+import tensorflow.keras as keras
 from enum import Enum
 import pandas as pd
 from idaes.surrogate.base.surrogate_base import SurrogateBase
