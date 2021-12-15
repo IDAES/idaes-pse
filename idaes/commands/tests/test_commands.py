@@ -126,6 +126,7 @@ def test_examples_cli_explicit_version(runner, tempdir):
 
 
 @pytest.mark.integration()
+@pytest.mark.skip
 def test_examples_cli_default_version(runner, tempdir):
     dirname = str(tempdir / "examples")
     result = runner.invoke(examples.get_examples, ["-d", dirname])
@@ -216,7 +217,6 @@ def test_examples_find_python_directories():
 
 
 @pytest.mark.integration()
-@pytest.mark.skip
 def test_examples_check_github_response():
     # ok result
     examples.check_github_response([{"result": "ok"}], {})
