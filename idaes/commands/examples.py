@@ -159,6 +159,7 @@ def get_examples(directory, no_install, list_releases, no_download, version,
                  unstable, local_dir):
     """Get the examples from Github and put them in a local directory.
     """
+    global PKG_VERSION
     # list-releases mode
     if list_releases:
         try:
@@ -198,6 +199,11 @@ def get_examples(directory, no_install, list_releases, no_download, version,
                 sys.exit(-1)
             ex_version = version if version else PKG_VERSION
         else:
+            if V.releaselevel not in ["final"]:
+                _log.debug(f'V.releaselevel: {V.releaselevel}')
+                unstable = True
+                PKG_VERSION += V.releaselevel
+                _log.debug(f'Forcing unstable: {PKG_VERSION}')
             try:
                 releases = get_releases(unstable)
             except GithubError as err:
