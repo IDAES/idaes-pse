@@ -26,7 +26,6 @@ import uuid
 # third-party
 from click.testing import CliRunner
 import pytest
-pytestmark = pytest.mark.skip
 
 # package
 from idaes.commands import examples, extensions, convergence, config, env_info
@@ -126,6 +125,7 @@ def test_examples_cli_explicit_version(runner, tempdir):
     assert result.exit_code == 0
 
 
+@pytest.mark.skip("Erroneously fails when latest ideas version is a pre-release")
 @pytest.mark.integration()
 def test_examples_cli_default_version(runner, tempdir):
     dirname = str(tempdir / "examples")
