@@ -6,6 +6,10 @@ import os
 
 class Tracker:
 
+    '''
+    Wrap a model object to do tracking.
+    '''
+
     def __init__(self, tracking_model_object, n_tracking_hour, solver):
 
         '''
@@ -209,9 +213,10 @@ class Tracker:
         record the results from the solve and update the model.
 
         Arguments:
-            market_dispatch: a dictionary that contains the market dispatch signals
-                             that we want to track. {generator name: [float]}
+            market_dispatch: a dictionary that contains the market dispatch signals that we want to track. {generator name: [float]}
+
             date: current simulation date
+
             hour: current simulation hour
 
         Returns:
@@ -262,8 +267,7 @@ class Tracker:
         Pass the received market signals into model parameters.
 
         Arguments:
-            market_dispatch: a dictionary that contains the market dispatch signals
-                             that we want to track.
+            market_dispatch: a dictionary that contains the market dispatch signals that we want to track.
 
         Returns:
             None
@@ -294,8 +298,7 @@ class Tracker:
         Record the operations stats for the model.
 
         Arguments:
-            kwargs: key word arguments that can be passed into tracking model
-                    object's record result function.
+            kwargs: key word arguments that can be passed into tracking model object's record result function.
 
         Returns:
             None

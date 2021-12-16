@@ -13,8 +13,11 @@ class Bidder:
 
         Arguments:
             bidding_model_object: the model object for tracking for bidding
+
             n_scenario: number of LMP scenarios
+
             solver: a Pyomo mathematical programming solver object
+
             forecaster: an initialized LMP forecaster object
 
         Returns:
@@ -230,9 +233,10 @@ class Bidder:
         from the solve.
 
         Arguments:
-            price_forecasts: price forecasts needed to solve the bidding problem.
-                            {LMP scenario: [forecast timeseries] }
+            price_forecasts: price forecasts needed to solve the bidding problem. {LMP scenario: [forecast timeseries] }
+
             date: current simulation date
+
             hour: current simulation hour
 
         Returns:
@@ -256,8 +260,7 @@ class Bidder:
         step.
 
         Arguments:
-            **kwargs: necessary profiles to update the underlying model.
-                      {stat_name: [...]}
+            kwargs: necessary profiles to update the underlying model. {stat_name: [...]}
 
         Returns:
             None
@@ -272,8 +275,7 @@ class Bidder:
         Pass the price forecasts into model parameters.
 
         Arguments:
-            price_forecasts: price forecasts needed to solve the bidding problem.
-                             {LMP scenario: [forecast timeseries] }
+            price_forecasts: price forecasts needed to solve the bidding problem. {LMP scenario: [forecast timeseries] }
 
         Returns:
             None
@@ -295,8 +297,7 @@ class Bidder:
         Arguments:
 
         Returns:
-            bids: the bid we computed. It is a dictionary that has this structure
-            {t: {gen:{power: cost}}}.
+            bids: the bid we computed. It is a dictionary that has this structure. {t: {gen:{power: cost}}}.
         '''
 
         bids = {}
@@ -365,7 +366,9 @@ class Bidder:
 
         Arguments:
             bids: the obtained bids for this date.
+
             date: the date we bid into
+
             hour: the hour we bid into
 
         Returns:
