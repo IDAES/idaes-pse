@@ -4,6 +4,55 @@ import pandas as pd
 import pyomo.environ as pyo
 from idaes.apps.grid_integration.tracker import Tracker
 
+class TestMissingModel:
+
+    method_list = ['populate_model', 'get_implemented_profile', 'update_model',\
+                    'get_last_delivered_power','record_results', 'write_results']
+    method_dict = {k: lambda: None for k in method_list}
+
+    attr_dict = {'power_output': 'power_output',\
+                 'total_cost': ('tot_cost',1) }
+
+    def __init__(self, missing_method = None, missing_attr = None):
+
+        for m in self.method_dict:
+            if m != missing_method:
+                setattr(self, m, self.method_dict[m])
+
+        for a in self.attr_dict:
+            if a != missing_attr:
+                setattr(self, a, self.attr_dict[a])
+
+@pytest.mark.unit
+def test_model_object_missing_methods():
+
+    n_tracking_hour = 1
+    solver = pyo.SolverFactory('cbc')
+
+    method_list = ['populate_model', 'get_implemented_profile', 'update_model',\
+                    'get_last_delivered_power','record_results', 'write_results']
+
+    for m in method_list:
+        tracking_model_object = TestMissingModel(missing_method = m)
+        with pytest.raises(AttributeError, match = r".*{}().*".format(m)):
+            tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                     n_tracking_hour = n_tracking_hour, \
+                                     solver = solver)
+
+@pytest.mark.unit
+def test_model_object_missing_attr():
+
+    n_tracking_hour = 1
+    solver = pyo.SolverFactory('cbc')
+    attr_list = ['power_output','total_cost']
+
+    for a in attr_list:
+        tracking_model_object = TestMissingModel(missing_attr = a)
+        with pytest.raises(AttributeError, match = r".*{}.*".format(a)):
+            tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                     n_tracking_hour = n_tracking_hour, \
+                                     solver = solver)
+
 # declare a testing model class
 class TestingModel:
 
@@ -223,6 +272,37 @@ class TestingModel:
         return {p: self.marginal_cost for p in [20.00, 40.00, 60.00, 80.00, 100.00]}
 
 horizon = 4
+
+@pytest.mark.unit
+def test_n_tracking_hour_checker():
+
+    solver = pyo.SolverFactory('cbc')
+    tracking_model_object = TestingModel(horizon = horizon)
+
+    n_tracking_hour = -1
+    with pytest.raises(ValueError, match = r".*greater than zero.*"):
+        tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                 n_tracking_hour = n_tracking_hour, \
+                                 solver = solver)
+
+    n_tracking_hour = 3.0
+    with pytest.raises(TypeError, match = r".*should be an integer.*"):
+        tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                 n_tracking_hour = n_tracking_hour, \
+                                 solver = solver)
+
+@pytest.mark.unit
+def test_solver_checker():
+
+    n_tracking_hour = 1
+    tracking_model_object = TestingModel(horizon = horizon)
+
+    invalid_solvers = [5, 'cbc', 'ipopt']
+    for s in invalid_solvers:
+        with pytest.raises(TypeError, match = r".*not a valid Pyomo solver.*"):
+            tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                     n_tracking_hour = n_tracking_hour, \
+                                     solver = s)
 
 @pytest.fixture
 def tracker_object():

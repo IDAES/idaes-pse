@@ -4,6 +4,10 @@ from pyomo.common.config import ConfigDict, ConfigValue
 
 class DoubleLoopCoordinator:
 
+    '''
+    Coordinate Prescient, tracker and bidder.
+    '''
+
     def __init__(self, bidder, tracker, projection_tracker):
 
         '''
@@ -12,7 +16,9 @@ class DoubleLoopCoordinator:
 
         Arguments:
             bidder: an initialized bidder object
+
             tracker: an initialized bidder object
+
             projection_tracker: an initialized bidder object, this object is for
                                 projecting the system states and updating bidder
                                 model
@@ -228,9 +234,11 @@ class DoubleLoopCoordinator:
 
         Arguments:
             options: Prescient options.
+
             ruc_instance: Prescient RUC object
-            bids: the bids we want to pass into the day-ahead market. It is a
-            dictionary that has this structure {t: {generator: {power: cost}}}.
+
+            bids: the bids we want to pass into the day-ahead market. It is a dictionary that has this structure {t: {generator: {power: cost}}}.
+
         Returns:
             None
         '''
@@ -254,8 +262,11 @@ class DoubleLoopCoordinator:
 
         Arguments:
             options: Prescient options.
+
             simulator: Prescient simulator.
+
             hour: the simulation hour.
+
         Returns:
             market_signals: the market signals to be tracked.
         '''
@@ -293,8 +304,11 @@ class DoubleLoopCoordinator:
 
         Arguments:
             options: Prescient options.
+
             simulator: Prescient simulator.
+
             ruc_hour: the hour RUC is being solved
+
         Returns:
             full_projected_trajectory: the full projected power dispatch trajectory.
         '''
@@ -347,9 +361,13 @@ class DoubleLoopCoordinator:
 
         Arguments:
             options: Prescient options.
+
             simulator: Prescient simulator.
+
             ruc_instance: Prescient RUC object.
+
             ruc_date: the date of the day-ahead market we bid into.
+
             ruc_hour: the hour the RUC is being solved in the day before.
 
         Returns:
@@ -390,11 +408,15 @@ class DoubleLoopCoordinator:
 
         Arguments:
             options: Prescient options.
+
             simulator: Prescient simulator.
+
             sced_instance: Prescient SCED object
-            bids: the bids we want to pass into the real-time market. It is a
-            dictionary that has this structure {t: {generator: {power: cost}}}.
+
+            bids: the bids we want to pass into the real-time market. It is a dictionary that has this structure {t: {generator: {power: cost}}}.
+
             hour: the hour of the real-time market.
+
         Returns:
             None
         '''
@@ -417,7 +439,9 @@ class DoubleLoopCoordinator:
 
         Arguments:
             options: Prescient options.
+
             simulator: Prescient simulator.
+
             sced_instance: Prescient SCED object.
 
         Returns:
@@ -440,9 +464,13 @@ class DoubleLoopCoordinator:
 
         Arguments:
             options: Prescient options.
+
             simulator: Prescient simulator.
+
             sced_instance: Prescient SCED object
+
             hour: the simulation hour.
+
         Returns:
             market_signals: the market signals to be tracked.
         '''
@@ -496,7 +524,9 @@ class DoubleLoopCoordinator:
 
         Arguments:
             options: Prescient options.
+
             simulator: Prescient simulator.
+
             sced_instance: Prescient SCED object
 
         Returns:
@@ -529,7 +559,9 @@ class DoubleLoopCoordinator:
 
         Arguments:
             options: Prescient options.
+
             simulator: Prescient simulator.
+
             ops_stats: Prescient operation statitstic object
 
         Returns:
@@ -549,6 +581,7 @@ class DoubleLoopCoordinator:
 
         Arguments:
             options: Prescient options.
+
             simulator: Prescient simulator.
 
         Returns:
@@ -570,6 +603,7 @@ class DoubleLoopCoordinator:
 
         Arguments:
             options: Prescient options.
+
             simulator: Prescient simulator.
 
         Returns:

@@ -1,15 +1,15 @@
 import pyomo.environ as pyo
 from collections import deque
 import pandas as pd
-# from idaes.apps.grid_integration.tracker import Tracker
-import sys
-sys.path.append('../')
-from tracker import Tracker
-from bidder import Bidder
-from forecaster import PlaceHolderForecaster
+from idaes.apps.grid_integration.tracker import Tracker
+from idaes.apps.grid_integration.bidder import Bidder
+from idaes.apps.grid_integration.forecaster import PlaceHolderForecaster
 from prescient.simulator import Prescient
 
 class ThermalGenerator:
+
+    # Using 4 segments to be consistent with models in RTS-GMLC dataset
+    segment_number = 4
 
     def __init__(self, rts_gmlc_dataframe, horizon = 48, generator = "102_STEAM_3"):
 
@@ -124,15 +124,13 @@ class ThermalGenerator:
 
         return
 
-    def populate_model(self, b, segment_number = 4):
+    def populate_model(self, b):
 
         '''
         This function builds the model for a thermal generator.
 
         Arguments:
             b: a pyomo block
-            segment_number: number of segments used in the piecewise linear
-            production model.
 
         Returns:
             b: the constructed block.
@@ -142,7 +140,7 @@ class ThermalGenerator:
 
         ## define the sets
         b.HOUR = pyo.Set(initialize = list(range(self.horizon)))
-        b.SEGMENTS = pyo.Set(initialize = list(range(1, segment_number)))
+        b.SEGMENTS = pyo.Set(initialize = list(range(1, self.segment_number)))
 
         ## define the parameters
 
@@ -521,8 +519,8 @@ if __name__ == "__main__":
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
     solver = pyo.SolverFactory('cbc')
 
-    run_tracker = False
-    run_bidder = False
+    run_tracker = True
+    run_bidder = True
     run_prescient = True
 
     if run_tracker:

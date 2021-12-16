@@ -1,5 +1,6 @@
 import pandas as pd
 import pyomo.environ as pyo
+from pyomo.opt.base.solvers import OptSolver
 import os
 from itertools import combinations
 
@@ -11,9 +12,12 @@ class Bidder:
         Initializes the bidder object.
 
         Arguments:
-            bidding_model_class: the model object class for tracking for bidding
+            bidding_model_object: the model object for tracking for bidding
+
             n_scenario: number of LMP scenarios
+
             solver: a Pyomo mathematical programming solver object
+
             forecaster: an initialized LMP forecaster object
 
 
@@ -38,13 +42,19 @@ class Bidder:
         #energy_price.index_set() and power_output_ref.index_set()
 
 
-        # create an instance
+        # copy the inputs
         self.bidding_model_object = bidding_model_object
+        self.n_scenario = n_scenario
+        self.solver = solver
+        self.forecaster = forecaster
+
+        self._check_inputs()
+
+        # get the generator name
         self.generator = self.bidding_model_object.generator
 
         # add flowsheets to model
         self.model = pyo.ConcreteModel()
-        self.n_scenario = n_scenario
 
         # declare scenario set
         self.model.SCENARIOS = pyo.Set(initialize = range(self.n_scenario))
@@ -57,14 +67,68 @@ class Bidder:
         # save power output variable in the model object
         self._save_power_outputs()
 
-        # copy the inputs
-        self.solver = solver
-        self.forecaster = forecaster
-
         self.formulate_bidding_problem()
 
         # declare a list to store results
         self.bids_result_list = []
+
+    def _check_inputs(self):
+
+        '''
+        Check if the inputs to construct the tracker is valid. If not raise errors.
+        '''
+
+        self._check_bidding_model_object()
+        self._check_n_scenario()
+        self._check_solver()
+
+    def _check_bidding_model_object(self):
+
+        '''
+        Check if tracking model object has the necessary methods and attributes.
+        '''
+
+        method_list = ['populate_model', 'update_model']
+        attr_list = ['power_output','total_cost','generator','pmin', 'default_bids']
+        msg = 'Tracking model object does not have a '
+
+        for m in method_list:
+            obtained_m = getattr(self.bidding_model_object, m, None)
+            if obtained_m is None:
+                raise AttributeError(msg + m + '() method. ' + \
+                                    'The bidder object needs the users to ' + \
+                                    'implement this method in their model object.')
+
+        for attr in attr_list:
+            obtained_attr = getattr(self.bidding_model_object, attr, None)
+            if obtained_attr is None:
+                raise AttributeError(msg + attr + ' property. ' + \
+                                    'The bidder object needs the users to ' + \
+                                    'specify this property in their model object.')
+
+    def _check_n_scenario(self):
+
+        '''
+        Check if the number of LMP scenarios is an integer and greater than 0.
+        '''
+
+        # check if it is an integer
+        if not isinstance(self.n_scenario, int):
+            raise TypeError("The number of LMP scenarios should be an integer, " +\
+                            "but a {} was given.".format(type(self.n_scenario).__name__))
+
+        if self.n_scenario <= 0:
+            raise ValueError("The number of LMP scenarios should be greater than zero, " +\
+                            "but {} was given.".format(self.n_scenario))
+
+    def _check_solver(self):
+
+        '''
+        Check if provides solver is a valid Pyomo solver object.
+        '''
+
+        if not isinstance(self.solver, OptSolver):
+            raise TypeError("The provided solver {} is not a valid Pyomo solver.".format(self.solver))
 
     def _save_power_outputs(self):
 
@@ -186,9 +250,10 @@ class Bidder:
         from the solve.
 
         Arguments:
-            price_forecasts: price forecasts needed to solve the bidding problem.
-                            {LMP scenario: [forecast timeseries] }
+            price_forecasts: price forecasts needed to solve the bidding problem. {LMP scenario: [forecast timeseries] }
+
             date: current simulation date
+
             hour: current simulation hour
 
         Returns:
@@ -212,8 +277,7 @@ class Bidder:
         step.
 
         Arguments:
-            **kwargs: necessary profiles to update the underlying model.
-                      {stat_name: [...]}
+            kwargs: necessary profiles to update the underlying model. {stat_name: [...]}
 
         Returns:
             None
@@ -228,8 +292,7 @@ class Bidder:
         Pass the price forecasts into model parameters.
 
         Arguments:
-            price_forecasts: price forecasts needed to solve the bidding problem.
-                             {LMP scenario: [forecast timeseries] }
+            price_forecasts: price forecasts needed to solve the bidding problem. {LMP scenario: [forecast timeseries] }
 
         Returns:
             None
@@ -251,8 +314,7 @@ class Bidder:
         Arguments:
 
         Returns:
-            bids: the bid we computed. It is a dictionary that has this structure
-            {t: {gen:{power: cost}}}.
+            bids: the bid we computed. It is a dictionary that has this structure. {t: {gen:{power: cost}}}.
         '''
 
         bids = {}
@@ -322,7 +384,9 @@ class Bidder:
 
         Arguments:
             bids: the obtained bids for this date.
+
             date: the date we bid into
+
             hour: the hour we bid into
 
         Returns:

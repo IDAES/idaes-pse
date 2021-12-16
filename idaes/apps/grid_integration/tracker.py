@@ -1,9 +1,14 @@
 import pandas as pd
 import pyomo.environ as pyo
+from pyomo.opt.base.solvers import OptSolver
 from collections import deque
 import os
 
 class Tracker:
+
+    '''
+    Wrap a model object to do tracking.
+    '''
 
     def __init__(self, tracking_model_object, n_tracking_hour, solver):
 
@@ -14,14 +19,16 @@ class Tracker:
             tracking_model_class: the model object class for tracking
             n_tracking_hour: number of implemented hours after each solve
             solver: a Pyomo mathematical programming solver object
-            **kwarg: necessary arguments to initialize the selected model object
 
         Returns:
             None
         '''
 
-        # create an instance
+        # copy and check model object
         self.tracking_model_object = tracking_model_object
+        self.n_tracking_hour = n_tracking_hour
+        self.solver = solver
+        self._check_inputs()
 
         # add flowsheet to model
         self.model = pyo.ConcreteModel()
@@ -35,12 +42,69 @@ class Tracker:
         # get the time index set
         self.time_set = self.power_output.index_set()
 
-        self.n_tracking_hour = n_tracking_hour
-        self.solver = solver
         self.formulate_tracking_problem()
 
         self.daily_stats = None
         self.projection = None
+
+    def _check_inputs(self):
+
+        '''
+        Check if the inputs to construct the tracker is valid. If not raise errors.
+        '''
+
+        self._check_tracking_model_object()
+        self._check_n_tracking_hour()
+        self._check_solver()
+
+    def _check_tracking_model_object(self):
+
+        '''
+        Check if tracking model object has the necessary methods and attributes.
+        '''
+
+        method_list = ['populate_model', 'get_implemented_profile', 'update_model',\
+                        'get_last_delivered_power','record_results', 'write_results']
+        attr_list = ['power_output','total_cost']
+        msg = 'Tracking model object does not have a '
+
+        for m in method_list:
+            obtained_m = getattr(self.tracking_model_object, m, None)
+            if obtained_m is None:
+                raise AttributeError(msg + m + '() method. ' + \
+                                    'The tracker object needs the users to ' + \
+                                    'implement this method in their model object.')
+
+        for attr in attr_list:
+            obtained_attr = getattr(self.tracking_model_object, attr, None)
+            if obtained_attr is None:
+                raise AttributeError(msg + attr + ' property. ' + \
+                                    'The tracker object needs the users to ' + \
+                                    'specify this property in their model object.')
+
+    def _check_n_tracking_hour(self):
+
+        '''
+        Check if the number of hour for tracking is an integer and greater than 0.
+        '''
+
+        # check if it is an integer
+        if not isinstance(self.n_tracking_hour, int):
+            raise TypeError("The number of hour for tracking should be an integer, " +\
+                            "but a {} was given.".format(type(self.n_tracking_hour).__name__))
+
+        if self.n_tracking_hour <= 0:
+            raise ValueError("The number of hour for tracking should be greater than zero, " +\
+                            "but {} was given.".format(self.n_tracking_hour))
+
+    def _check_solver(self):
+
+        '''
+        Check if provides solver is a valid Pyomo solver object.
+        '''
+
+        if not isinstance(self.solver, OptSolver):
+            raise TypeError("The provided solver {} is not a valid Pyomo solver.".format(self.solver))
 
     def formulate_tracking_problem(self):
 
@@ -149,9 +213,10 @@ class Tracker:
         record the results from the solve and update the model.
 
         Arguments:
-            market_dispatch: a dictionary that contains the market dispatch signals
-                             that we want to track. {generator name: [float]}
+            market_dispatch: a dictionary that contains the market dispatch signals that we want to track. {generator name: [float]}
+
             date: current simulation date
+
             hour: current simulation hour
 
         Returns:
@@ -202,8 +267,7 @@ class Tracker:
         Pass the received market signals into model parameters.
 
         Arguments:
-            market_dispatch: a dictionary that contains the market dispatch signals
-                             that we want to track.
+            market_dispatch: a dictionary that contains the market dispatch signals that we want to track.
 
         Returns:
             None
@@ -234,8 +298,7 @@ class Tracker:
         Record the operations stats for the model.
 
         Arguments:
-            kwargs: key word arguments that can be passed into tracking model
-                    object's record result function.
+            kwargs: key word arguments that can be passed into tracking model object's record result function.
 
         Returns:
             None
