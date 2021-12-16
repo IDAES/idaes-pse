@@ -43,7 +43,7 @@ h2 {
 
 .index-table.docutils tbody td {
 	vertical-align: top;
-    padding: 16px;
+    padding-top: 16px;
 }
 
 /* Set defined list to more generic styling in index-table*/
