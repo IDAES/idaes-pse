@@ -12,4 +12,4 @@
 #################################################################################
 
 from .data_utils import (
-    split_training_validation, split_training_validation_testing)
+    split_training_validation, split_training_validation_testing, split_dataframe)
