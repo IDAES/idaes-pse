@@ -1,15 +1,15 @@
-#################################################################################
+###############################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
 # by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University,
+# West Virginia University Research Corporation, et al.  All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-#################################################################################
+###############################################################################
 """
 IDAES Moving Bed Model.
 
@@ -36,10 +36,10 @@ from __future__ import division
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
-from pyomo.environ import (Var, Param, Reals, value, SolverFactory,
+from pyomo.environ import (Var, Param, Reals, value,
                            TransformationFactory, Constraint,
                            TerminationCondition)
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae import ContinuousSet
 
@@ -162,7 +162,7 @@ solid side flows from 1 to 0"""))
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -184,7 +184,7 @@ constructed,
     _PhaseTemplate = UnitModelBlockData.CONFIG()
     _PhaseTemplate.declare("has_equilibrium_reactions", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
 should be constructed,
@@ -326,6 +326,9 @@ see reaction package for documentation.}"""))
                                 initialize=self.config.length_domain_set,
                                 doc="Normalized length domain")
 
+        self.bed_height = Var(domain=Reals, initialize=1,
+                              doc='Bed length [m]')
+
     # =========================================================================
         """ Build Control volume 1D for gas phase and
             populate gas control volume"""
@@ -348,6 +351,7 @@ see reaction package for documentation.}"""))
         self.gas_phase.add_geometry(
                 length_domain=self.length_domain,
                 length_domain_set=self.config.length_domain_set,
+                length_var=self.bed_height,
                 flow_direction=set_direction_gas)
 
         self.gas_phase.add_state_blocks(
@@ -399,6 +403,7 @@ see reaction package for documentation.}"""))
         self.solid_phase.add_geometry(
                 length_domain=self.length_domain,
                 length_domain_set=self.config.length_domain_set,
+                length_var=self.bed_height,
                 flow_direction=set_direction_solid)
 
         self.solid_phase.add_state_blocks(
@@ -515,8 +520,6 @@ see reaction package for documentation.}"""))
         self.bed_area = Var(domain=Reals,
                             initialize=1,
                             doc='Reactor cross-sectional area [m2]')
-        self.bed_height = Var(domain=Reals, initialize=1,
-                              doc='Bed length [m]')
 
         # Phase specific variables
         self.velocity_superficial_gas = Var(
@@ -582,15 +585,6 @@ see reaction package for documentation.}"""))
         def solid_phase_area(b, t, x):
             return (b.solid_phase.area[t, x] ==
                     b.bed_area*(1-b.bed_voidage))
-
-        # Length of gas side, and solid side
-        @self.Constraint(doc="Gas side length")
-        def gas_phase_length(b):
-            return (b.gas_phase.length == b.bed_height)
-
-        @self.Constraint(doc="Solid side length")
-        def solid_phase_length(b):
-            return (b.solid_phase.length == b.bed_height)
 
         # ---------------------------------------------------------------------
         # Hydrodynamic contraints
@@ -736,7 +730,7 @@ see reaction package for documentation.}"""))
             def prandtl_number(b, t, x):
                 return (b.Pr[t, x] *
                         b.gas_phase.properties[t, x].therm_cond ==
-                        b.solid_phase.properties[t, x].cp_mass *
+                        b.gas_phase.properties[t, x].cp_mass *
                         b.gas_phase.properties[t, x].visc_d)
 
             # Particle Nusselt number
@@ -803,7 +797,7 @@ see reaction package for documentation.}"""))
     def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
-        Initialisation routine for MB unit.
+        Initialization routine for MB unit.
 
         Keyword Arguments:
             gas_phase_state_args : a dict of arguments to be passed to the
@@ -988,7 +982,7 @@ see reaction package for documentation.}"""))
                         for j in gas_phase.property_package.component_list:
                             (gas_rxn_gen[t, x, p, j].unfix())
                             if not (
-                                (blk.gas_phase.config.transformation_scheme 
+                                (blk.gas_phase.config.transformation_scheme
                                     != "FORWARD"
                                  and x == blk.length_domain.first()) or
                                 (blk.gas_phase.config.transformation_scheme
@@ -1038,7 +1032,7 @@ see reaction package for documentation.}"""))
                         for j in solid_phase.property_package.component_list:
                             (solid_rxn_gen[t, x, p, j].unfix())
                             if not (
-                                (blk.solid_phase.config.transformation_scheme 
+                                (blk.solid_phase.config.transformation_scheme
                                     != "FORWARD"
                                  and x == blk.length_domain.first()) or
                                 (blk.solid_phase.config.transformation_scheme

@@ -24,12 +24,11 @@ from pyomo.environ import (
     Reals,
     Reference,
     Set,
-    SolverFactory,
     Var,
     value,
 )
 from pyomo.network import Port
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
 from idaes.core import (
     declare_process_block_class,
@@ -41,7 +40,6 @@ from idaes.core import (
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_state_block,
-    list_of_strings,
 )
 from idaes.core.util.exceptions import (
     BurntToast,
@@ -147,7 +145,7 @@ see property package for documentation.}""",
     CONFIG.declare(
         "outlet_list",
         ConfigValue(
-            domain=list_of_strings,
+            domain=ListOf(str),
             description="List of outlet names",
             doc="""A list containing names of outlets,
 **default** - None.
@@ -212,7 +210,7 @@ balance type
         "has_phase_equilibrium",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Calculate phase equilibrium in mixed stream",
             doc="""Argument indicating whether phase equilibrium should be
 calculated for the resulting mixed stream,
@@ -243,7 +241,7 @@ flows. Does not work with component or phase-component splitting.}""",
         "ideal_separation",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Ideal splitting flag",
             doc="""Argument indicating whether ideal splitting should be used.
 Ideal splitting assumes perfect spearation of material, and attempts to
@@ -287,7 +285,7 @@ Separator block,
         "construct_ports",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Construct inlet and outlet Port objects",
             doc="""Argument indicating whether model should construct Port
 objects linked the mixed state and all outlet states,
@@ -1438,17 +1436,20 @@ objects linked the mixed state and all outlet states,
                                             == SplittingType.phaseComponentFlow):
                                         s_vars[v][k].fix(
                                             value(m_var[k] *
-                                            blk.split_fraction[(t, o)+k]))
+                                                  blk.split_fraction[
+                                                      (t, o)+(k,)]))
                                     elif (blk.config.split_basis
                                             == SplittingType.phaseFlow):
                                         s_vars[v][k].fix(value(
                                             m_var[k] *
-                                            blk.split_fraction[(t, o)+k[0]]))
+                                            blk.split_fraction[(t, o)+(k[0],)]
+                                            ))
                                     elif (blk.config.split_basis
                                             == SplittingType.componentFlow):
                                         s_vars[v][k].fix(value(
                                             m_var[k] *
-                                            blk.split_fraction[(t, o)+k[1]]))
+                                            blk.split_fraction[(t, o)+(k[1],)]
+                                            ))
                                     else:
                                         raise BurntToast(
                                             "{} encountered unrecognised "
@@ -1470,7 +1471,7 @@ objects linked the mixed state and all outlet states,
                                             == SplittingType.phaseFlow):
                                         s_vars[v][k].fix(value(
                                             m_var[k] *
-                                            blk.split_fraction[(t, o)+k]))
+                                            blk.split_fraction[(t, o)+(k,)]))
                                     elif (blk.config.split_basis
                                             == SplittingType.componentFlow):
                                         # Need average split fraction
@@ -1510,7 +1511,7 @@ objects linked the mixed state and all outlet states,
                                             == SplittingType.componentFlow):
                                         s_vars[v][k].fix(value(
                                             m_var[k] *
-                                            blk.split_fraction[(t, o)+k]))
+                                            blk.split_fraction[(t, o)+(k,)]))
                                     else:
                                         raise BurntToast(
                                             "{} encountered unrecognised "

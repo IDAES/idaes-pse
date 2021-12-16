@@ -65,7 +65,7 @@ def test_condenser_steady():
 def test_condenser_dynamic():
     m = pyo.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock(
-        default={"dynamic": True, "time_set":[0,3]})
+        default={"dynamic": True, "time_set":[0,3], "time_units": pyo.units.s})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = HelmNtuCondenser(
         default={

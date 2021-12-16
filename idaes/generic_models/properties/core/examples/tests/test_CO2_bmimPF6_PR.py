@@ -45,6 +45,11 @@ from idaes.generic_models.properties.core.examples.CO2_bmimPF6_PR \
 # Get default solver for testing
 solver = get_solver()
 
+def _as_quantity(x):
+    unit = pyunits.get_units(x)
+    if unit is None:
+        unit = pyunits.dimensionless
+    return value(x) * unit._get_pint_unit()
 
 # Test for configuration dictionaries with parameters from Properties of Gases
 # and liquids 4th edition
@@ -82,8 +87,7 @@ class TestParamBlock(object):
             { "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
               "temperature": (10, 300, 500, pyunits.K),
               "pressure": (5e-4, 1e5, 1e10, pyunits.Pa) },
-            item_callback=lambda x: value(x) * (
-                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+            item_callback=_as_quantity,
         )
 
         assert model.param.config.phase_equilibrium_state == {
@@ -294,14 +298,14 @@ class TestFlashIntegration(object):
     @pytest.mark.component
     def test_solution(self, model):
         # Check phase equilibrium results
-        assert model.fs.unit.liq_outlet.mole_frac_comp[
-            0, "carbon_dioxide"].value == \
+        assert value(model.fs.unit.liq_outlet.mole_frac_comp[
+            0, "carbon_dioxide"]) == \
             pytest.approx(0.3119, abs=1e-4)
-        assert model.fs.unit.vap_outlet.mole_frac_comp[
-            0, "carbon_dioxide"].value == \
+        assert value(model.fs.unit.vap_outlet.mole_frac_comp[
+            0, "carbon_dioxide"]) == \
             pytest.approx(1.0000, abs=1e-4)
-        assert (model.fs.unit.vap_outlet.flow_mol[0].value /
-                model.fs.unit.liq_outlet.flow_mol[0].value) == \
+        assert value(model.fs.unit.vap_outlet.flow_mol[0] /
+                     model.fs.unit.liq_outlet.flow_mol[0]) == \
             pytest.approx(0.37619, abs=1e-4)
 
     @pytest.mark.ui

@@ -1,7 +1,7 @@
 Flash Unit
 ==========
 
-The IDAES Flash model represents a unit operation where a single stream undergoes a flash separation into two phases. The Flash model supports mutile types of flash operations, including pressure changes and addition or removal of heat.
+The IDAES Flash model represents a unit operation where a single stream undergoes a flash separation into two phases. The Flash model supports multiple types of flash operations, including pressure changes and addition or removal of heat.
 
 Degrees of Freedom
 ------------------
@@ -13,14 +13,14 @@ Typical fixed variables are:
 * heat duty or outlet temperature (see note),
 * pressure change or outlet pressure.
 
-Note: When setting the outlet temeprature of a Flash unit, it is best to set control_volume.properties_out[t].temperature. Setting the temperature in one of the outlet streams directly results in a much harder problme to solve, and may be degenerate or unbounded in some cases.
+Note: When setting the outlet temperature of a Flash unit, it is best to set control_volume.properties_out[t].temperature. Setting the temperature in one of the outlet streams directly results in a much harder problem to solve, and may be degenerate or unbounded in some cases.
 
 Model Structure
 ---------------
 
 The core Flash unit model consists of a single ControlVolume0DBlock (named control_volume) with one Inlet Port (named inlet) connected to a Separator unit model with two outlet Ports named 'vap_outlet' and 'liq_outlet'. The Flash model utilizes the separator unit model in IDAES to split the outlets by phase flows to the liquid and vapor outlets respectively.
 
-The Separator unit model supports both direct splitting of state variables and writting of full splitting constraints via the `ideal_separation` construction argument. Full details on the Separator unit model can be found in the documentation for that unit. To support direct splitting, the property package must use one of a specified set of state variables and support a certain set of property calacuations, as outlined in the table below.
+The Separator unit model supports both direct splitting of state variables and writing of full splitting constraints via the `ideal_separation` construction argument. Full details on the Separator unit model can be found in the documentation for that unit. To support direct splitting, the property package must use one of a specified set of state variables and support a certain set of property calacuations, as outlined in the table below.
 
 ==================================== ===================================
 State Variables                      Required Properties

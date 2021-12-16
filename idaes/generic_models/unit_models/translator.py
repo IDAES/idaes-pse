@@ -14,9 +14,7 @@
 Generic template for a translator block.
 """
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.environ import SolverFactory
-
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.config import is_physical_parameter_block
@@ -61,7 +59,7 @@ class TranslatorData(UnitModelBlockData):
         "outlet_state_defined",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Indicated whether outlet state will be fully defined",
             doc="""Indicates whether unit model will fully define outlet state.
 If False, the outlet property package will enforce constraints such as sum
@@ -77,7 +75,7 @@ constraints.}""",
         "has_phase_equilibrium",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Indicates whether outlet is in phase equilibrium",
             doc="""Indicates whether outlet property package should enforce
 phase equilibrium constraints.

@@ -16,13 +16,12 @@ IDAES Component objects
 @author: alee
 """
 from pyomo.environ import Set, Param, Var, units as pyunits
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 from pyomo.core.base.units_container import _PyomoUnit
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
-from .phases import PhaseType as PT
-from .util.config import list_of_phase_types
+from .phases import PhaseType
 from .util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
@@ -37,7 +36,7 @@ class ComponentData(ProcessBlockData):
     CONFIG = ConfigBlock()
 
     CONFIG.declare("valid_phase_types", ConfigValue(
-            domain=list_of_phase_types,
+            domain=ListOf(PhaseType),
             doc="List of valid PhaseTypes (Enums) for this Component."))
 
     CONFIG.declare("elemental_composition", ConfigValue(
@@ -90,9 +89,13 @@ class ComponentData(ProcessBlockData):
     CONFIG.declare("entr_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component molar entropies"))
 
+    CONFIG.declare("diffus_phase_comp", ConfigValue(
+        description="Method to calculate component diffusivities in each "
+        "phase. Must be a dict with keys being phase names."))
+
     CONFIG.declare("has_vapor_pressure", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Flag indicating whether component has a vapor pressure"))
     CONFIG.declare("pressure_sat_comp", ConfigValue(
         description="Method to use to calculate saturation pressure"))
@@ -132,14 +135,9 @@ class ComponentData(ProcessBlockData):
                 self._add_to_electrolyte_component_list()
 
         base_units = self.parent_block().get_metadata().default_units
-        if isinstance(base_units["mass"], _PyomoUnit):
-            # Backwards compatability check
-            p_units = (base_units["mass"] /
-                       base_units["length"] /
-                       base_units["time"]**2)
-        else:
-            # Backwards compatability check
-            p_units = None
+        p_units = (base_units["mass"] /
+                   base_units["length"] /
+                   base_units["time"]**2)
 
         # Create Param for molecular weight if provided
         if "mw" in self.config.parameter_data:
@@ -220,19 +218,20 @@ class ComponentData(ProcessBlockData):
             # Check if this is an aqueous phase
             if phase.is_aqueous_phase():
                 if (self._is_aqueous_phase_valid() and
-                        PT.aqueousPhase in self.config.valid_phase_types):
+                        PhaseType.aqueousPhase in
+                        self.config.valid_phase_types):
                     return True
                 else:
                     return False
-            elif PT.liquidPhase in self.config.valid_phase_types:
+            elif PhaseType.liquidPhase in self.config.valid_phase_types:
                 return True
             else:
                 return False
         elif (phase.is_vapor_phase() and
-                PT.vaporPhase in self.config.valid_phase_types):
+                PhaseType.vaporPhase in self.config.valid_phase_types):
             return True
         elif (phase.is_solid_phase() and
-                PT.solidPhase in self.config.valid_phase_types):
+                PhaseType.solidPhase in self.config.valid_phase_types):
             return True
         else:
             return False

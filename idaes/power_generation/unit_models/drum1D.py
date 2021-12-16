@@ -64,11 +64,10 @@ from idaes.core import (
 import idaes.logger as idaeslog
 # Import Pyomo libraries
 from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from idaes.core.util.config import is_physical_parameter_block
 # Additional import for the unit operation
-from pyomo.environ import (SolverFactory,
-                           value,
+from pyomo.environ import (value,
                            Var,
                            Param,
                            Reference,
@@ -142,7 +141,7 @@ class Drum1DData(UnitModelBlockData):
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -151,7 +150,7 @@ class Drum1DData(UnitModelBlockData):
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,

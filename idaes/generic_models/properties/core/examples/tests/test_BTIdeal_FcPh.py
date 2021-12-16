@@ -46,10 +46,19 @@ from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
 import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 
+from idaes.generic_models.properties.tests.test_harness import \
+    PropertyTestHarness
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
+def _as_quantity(x):
+    unit = pyunits.get_units(x)
+    if unit is None:
+        unit = pyunits.dimensionless
+    return value(x) * unit._get_pint_unit()
 
 config_dict = {
     "components": {
@@ -134,6 +143,15 @@ config_dict = {
     "bubble_dew_method": IdealBubbleDew}
 
 
+@pytest.mark.unit
+class TestBTIdeal_FcPh(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = GenericParameterBlock
+        self.param_args = config_dict
+        self.prop_args = {}
+        self.has_density_terms = False
+
+
 class TestParamBlock(object):
     @pytest.mark.unit
     def test_build(self):
@@ -168,8 +186,7 @@ class TestParamBlock(object):
               "enth_mol": (1e4, 5e4, 2e5, pyunits.J/pyunits.mol),
               "temperature": (273.15, 300, 450, pyunits.K),
               "pressure": (5e4, 1e5, 1e6, pyunits.Pa) },
-            item_callback=lambda x: value(x) * (
-                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+            item_callback=_as_quantity,
         )
 
         assert model.params.config.phase_equilibrium_state == {

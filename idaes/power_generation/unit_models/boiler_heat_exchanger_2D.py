@@ -23,10 +23,10 @@ model)
 
 """
 # Import Pyomo libraries
-from pyomo.environ import (SolverFactory, Var, Param, Constraint,
+from pyomo.environ import (Var, Param, Constraint,
                            TransformationFactory, Reference,
                            value, exp, sqrt, log, log10, sin, cos)
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
@@ -96,7 +96,7 @@ class HeatExchangerCrossFlow2D_HeaderData(UnitModelBlockData):
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     _SideTemplate.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -203,7 +203,7 @@ tube side flows from 1 to 0"""))
         domain (default=5)."""))
     CONFIG.declare("has_header", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Flag to include tube header",
         doc="""If has_header is True, user must provide header thickness and
         inner diameter."""))
@@ -318,22 +318,22 @@ tube side flows from 1 to 0"""))
                                      'tube_thickness')
         # header inputs:
         if self.config.has_header is False and \
-            self.config.header_inner_diameter is True:
+                self.config.header_inner_diameter is True:
             _log.info_high("User set has_header to False "
                            "and provided header_inner_diameter")
 
         if self.config.has_header and \
-            self.config.header_inner_diameter is None:
+                self.config.header_inner_diameter is None:
             raise ConfigurationError('If has_heder is True, user must '
                                      'provide header_inner_diameter')
 
         if self.config.has_header is False and \
-            self.config.header_wall_thickness is True:
+                self.config.header_wall_thickness is True:
             _log.info_high("User set has_header to False "
                            "and provided header_wall_thickness")
 
         if self.config.has_header and \
-            self.config.header_wall_thickness is None:
+                self.config.header_wall_thickness is None:
             raise ConfigurationError(
                 'If has_heder is True, user must '
                 'provide header_wall_thickness')
@@ -802,14 +802,14 @@ tube side flows from 1 to 0"""))
                 term = b.dTdt[t, x, b.r.first()]
             else:
                 term = 0
-            return term == 4 * b.diff_therm_wall * (b.r.first()+b.r[2]) / \
-                (b.r[2]-b.r.first())**2/(3*b.r.first()+b.r[2]) \
+            return term == 4 * b.diff_therm_wall * (b.r.first()+b.r.at(2)) / \
+                (b.r.at(2)-b.r.first())**2/(3*b.r.first()+b.r.at(2)) \
                 / b.ri_scaling**2 \
-                * (b.tube_wall_temperature[t, x, b.r[2]]
+                * (b.tube_wall_temperature[t, x, b.r.at(2)]
                    - b.tube_wall_temperature[t, x, b.r.first()]) \
                 + 8*b.diff_therm_wall/b.therm_cond_wall \
                 * b.hconv_tube_foul[t, x] * b.r.first() / \
-                (b.r[2]-b.r.first())/(3*b.r.first()+b.r[2]) \
+                (b.r.at(2)-b.r.first())/(3*b.r.first()+b.r.at(2)) \
                 / b.ri_scaling*(b.tube.properties[t, x].temperature
                                 - b.tube_wall_temperature[t, x, b.r.first()])
 
@@ -821,14 +821,14 @@ tube side flows from 1 to 0"""))
                 term = b.dTdt[t, x, b.r.last()]
             else:
                 term = 0
-            return term == 4 * b.diff_therm_wall * (b.r.last() + b.r[-2]) / \
-                (b.r.last() - b.r[-2])**2 / (3*b.r.last() + b.r[-2])\
+            return term == 4 * b.diff_therm_wall * (b.r.last() + b.r.at(-2)) / \
+                (b.r.last() - b.r.at(-2))**2 / (3*b.r.last() + b.r.at(-2))\
                 / b.ri_scaling**2\
-                * (b.tube_wall_temperature[t, x, b.r[-2]]
+                * (b.tube_wall_temperature[t, x, b.r.at(-2)]
                    - b.tube_wall_temperature[t, x, b.r.last()]) \
                 + 8*b.diff_therm_wall/b.therm_cond_wall \
                 * b.hconv_shell_foul[t, x] * b.r.last() / \
-                (b.r.last()-b.r[-2])/(3*b.r.last()+b.r[-2])/b.ri_scaling\
+                (b.r.last()-b.r.at(-2))/(3*b.r.last()+b.r.at(-2))/b.ri_scaling\
                 * (b.shell.properties[t, x].temperature
                    - b.tube_wall_temperature[t, x, b.r.last()])
 
@@ -1313,10 +1313,11 @@ tube side flows from 1 to 0"""))
                          self.tube.length_domain,
                          doc="Mean Temperature across the Wall")
         def mean_temperature(b, t, x):
-            return 2 * (b.r[2]-b.r[1]) * b.ri_scaling**2 / (b.tube_ro**2
-                                                            - b.tube_ri**2) * \
-                (sum(0.5 * (b.r[i-1] * b.tube_wall_temperature[t, x, b.r[i-1]]
-                            + b.r[i] * b.tube_wall_temperature[t, x, b.r[i]])
+            return 2 * (b.r.at(2)-b.r.at(1)) * b.ri_scaling**2 / (
+                b.tube_ro**2 - b.tube_ri**2) * \
+                (sum(0.5 * (
+                    b.r.at(i-1) * b.tube_wall_temperature[t, x, b.r.at(i-1)]
+                    + b.r.at(i) * b.tube_wall_temperature[t, x, b.r.at(i)])
                      for i in range(2, len(b.r)+1)))
 
         for index_r, value_r in enumerate(self.r, 1):
@@ -1330,13 +1331,13 @@ tube side flows from 1 to 0"""))
             if b.rindex[r].value == 1:
                 return b.tube_wall_temperature[t, x, b.r.first()]
             else:
-                return 2 * (b.r[2] - b.r[1]) * b.ri_scaling**2 \
-                    / ((b.r[b.rindex[r].value] * b.ri_scaling)**2
+                return 2 * (b.r.at(2) - b.r.at(1)) * b.ri_scaling**2 \
+                    / ((b.r.at(b.rindex[r].value) * b.ri_scaling)**2
                        - b.tube_ri**2) *\
-                    (sum(0.5 * (b.r[j-1] *
-                                b.tube_wall_temperature[t, x, b.r[j-1]]
-                                + b.r[j] *
-                                b.tube_wall_temperature[t, x, b.r[j]])
+                    (sum(0.5 * (b.r.at(j-1) *
+                                b.tube_wall_temperature[t, x, b.r.at(j-1)]
+                                + b.r.at(j) *
+                                b.tube_wall_temperature[t, x, b.r.at(j)])
                          for j in range(2, b.rindex[r].value+1)))
 
         @self.Expression(self.flowsheet().time,
@@ -1693,18 +1694,18 @@ tube side flows from 1 to 0"""))
                 return term == \
                     (4 * b.therm_diffus_header
                      * (b.head_r.first()
-                        + b.head_r[2]) / (b.head_r[2]
+                        + b.head_r.at(2)) / (b.head_r.at(2)
                                           - b.head_r.first())**2
-                        / (3 * b.head_r.first() + b.head_r[2])
+                        / (3 * b.head_r.first() + b.head_r.at(2))
                         / b.head_ri_scaling**2
-                        * (b.header_wall_temperature[t, b.head_r[2]]
+                        * (b.header_wall_temperature[t, b.head_r.at(2)]
                            - b.header_wall_temperature[t, b.head_r.first()])
                         + 8 * b.therm_diffus_header / b.therm_cond_header
                         * b.head_hin[t]
-                        * b.head_r.first() / (b.head_r[2]
+                        * b.head_r.first() / (b.head_r.at(2)
                                               - b.head_r.first())
                         / (3 * b.head_r.first()
-                           + b.head_r[2]) / b.head_ri_scaling
+                           + b.head_r.at(2)) / b.head_ri_scaling
                         * (b.tube.properties[t, b.tube.length_domain.first()].
                            temperature
                            - b.header_wall_temperature[t, b.head_r.first()]))
@@ -1719,16 +1720,17 @@ tube side flows from 1 to 0"""))
                     term = 0
                 return term == \
                     (4 * b.therm_diffus_header * (b.head_r.last()
-                                                  + b.head_r[-2])
-                     / (b.head_r.last() - b.head_r[-2])**2
+                                                  + b.head_r.at(-2))
+                     / (b.head_r.last() - b.head_r.at(-2))**2
                      / (3 * b.head_r.last()
-                        + b.head_r[-2]) / b.head_ri_scaling**2
-                     * (b.header_wall_temperature[t, b.head_r[-2]]
+                        + b.head_r.at(-2)) / b.head_ri_scaling**2
+                     * (b.header_wall_temperature[t, b.head_r.at(-2)]
                         - b.header_wall_temperature[t, b.head_r.last()])
                      + 8 * b.therm_diffus_header / b.therm_cond_header
                      * b.head_hout[t]
-                     * b.head_r.last() / (b.head_r.last() - b.head_r[-2])
-                     / (3 * b.head_r.last() + b.head_r[-2]) / b.head_ri_scaling
+                     * b.head_r.last() / (b.head_r.last() - b.head_r.at(-2))
+                     / (3 * b.head_r.last() + b.head_r.at(-2)) 
+                     / b.head_ri_scaling
                      * (b.temperature_ambient[t]
                      - b.header_wall_temperature[t, b.head_r.last()]))
 
@@ -1829,13 +1831,14 @@ tube side flows from 1 to 0"""))
             @self.Expression(self.flowsheet().time,
                              doc="Mean Temperature for Header")
             def mean_temperature_header(b, t):
-                return 2 * (b.head_r[2] - b.head_r[1]) * b.head_ri_scaling**2 \
-                        / (b.head_ro**2 - b.head_ri**2) \
-                        * (sum(0.5 * (b.head_r[i-1] * b.
-                                      header_wall_temperature[t, b.head_r[i-1]]
-                                      + b.head_r[i] * b.
-                                      header_wall_temperature[t, b.head_r[i]])
-                               for i in range(2, len(b.head_r)+1)))
+                return 2 * (b.head_r.at(2) - b.head_r.at(1)) \
+                    * b.head_ri_scaling**2 \
+                    / (b.head_ro**2 - b.head_ri**2) \
+                    * (sum(0.5 * (b.head_r.at(i-1) * b.
+                                  header_wall_temperature[t, b.head_r.at(i-1)]
+                                  + b.head_r.at(i) * b.
+                                  header_wall_temperature[t, b.head_r.at(i)])
+                           for i in range(2, len(b.head_r)+1)))
 
             for head_index_r, head_value_r in enumerate(self.head_r, 1):
                 self.head_rindex[head_value_r] = head_index_r
@@ -1847,16 +1850,16 @@ tube side flows from 1 to 0"""))
                     return b.header_wall_temperature[t, b.head_r.first()]
                 else:
                     return 2 * (
-                        b.head_r[2] - b.head_r[1]
+                        b.head_r.at(2) - b.head_r.at(1)
                         ) * b.head_ri_scaling**2 / (
-                            (b.head_r[b.head_rindex[r].value]
+                            (b.head_r.at(b.head_rindex[r].value)
                              * b.head_ri_scaling)**2 - b.head_ri**2
                             ) * (sum(
                                 0.5 * (
-                                    b.head_r[j-1] * b.
-                                    header_wall_temperature[t, b.head_r[j-1]]
-                                    + b.head_r[j] * b.
-                                    header_wall_temperature[t, b.head_r[j]]
+                                    b.head_r.at(j-1) * b.
+                                    header_wall_temperature[t, b.head_r.at(j-1)]
+                                    + b.head_r.at(j) * b.
+                                    header_wall_temperature[t, b.head_r.at(j)]
                                     ) for j in range(
                                         2, b.head_rindex[r].value + 1)))
 

@@ -79,7 +79,7 @@ def define_state(b):
                      doc=' Total molar flowrate',
                      units=units["flow_mole"])
     b.mole_frac_comp = Var(b.component_list,
-                           bounds=(0, None),
+                           bounds=(1e-20, 1.001),
                            initialize=1 / len(b.component_list),
                            doc='Mixture mole fractions',
                            units=None)
@@ -110,7 +110,7 @@ def define_state(b):
     b.mole_frac_phase_comp = Var(
         b.phase_component_set,
         initialize=1/len(b.component_list),
-        bounds=(0, None),
+        bounds=(1e-20, 1.001),
         doc='Phase mole fractions',
         units=None)
 
@@ -140,12 +140,12 @@ def define_state(b):
 
     if len(b.phase_list) == 1:
         def rule_total_mass_balance(b):
-            return b.flow_mol_phase[b.phase_list[1]] == b.flow_mol
+            return b.flow_mol_phase[b.phase_list.first()] == b.flow_mol
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
             return b.mole_frac_comp[i] == \
-                b.mole_frac_phase_comp[b.phase_list[1], i]
+                b.mole_frac_phase_comp[b.phase_list.first(), i]
         b.component_flow_balances = Constraint(b.component_list,
                                                rule=rule_comp_mass_balance)
 
@@ -170,12 +170,12 @@ def define_state(b):
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b):
-            return sum(b.mole_frac_phase_comp[b.phase_list[1], i]
+            return sum(b.mole_frac_phase_comp[b.phase_list.first(), i]
                        for i in b.component_list
-                       if (b.phase_list[1], i) in b.phase_component_set) -\
-                sum(b.mole_frac_phase_comp[b.phase_list[2], i]
+                       if (b.phase_list.first(), i) in b.phase_component_set) -\
+                sum(b.mole_frac_phase_comp[b.phase_list.last(), i]
                     for i in b.component_list
-                    if (b.phase_list[2], i) in b.phase_component_set) == 0
+                    if (b.phase_list.last(), i) in b.phase_component_set) == 0
         b.sum_mole_frac = Constraint(rule=rule_mole_frac)
 
         def rule_phase_frac(b, p):

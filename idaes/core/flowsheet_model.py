@@ -18,14 +18,14 @@ IDAES modeling framework.
 import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
 from pyomo.network import Arc
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue, ListOf
 from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core import (ProcessBlockData, declare_process_block_class,
                         UnitModelBlockData, useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_time_domain,
-                                    list_of_floats)
+                                    DefaultBool)
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import DynamicError, ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -62,7 +62,7 @@ class FlowsheetBlockData(ProcessBlockData):
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic,
 **default** - useDefault.
@@ -80,7 +80,7 @@ search for a parent with a time domain or create a new time domain and
 reference it here."""))
     CONFIG.declare("time_set", ConfigValue(
         default=[0],
-        domain=list_of_floats,
+        domain=ListOf(float),
         description="Set of points for initializing time domain",
         doc="""Set of points for initializing time domain. This should be a
 list of floating point numbers,
@@ -265,14 +265,15 @@ within this flowsheet if not otherwise specified,
                         .format(self.name))
 
         # Validate units for time domain
-        if self.config.time_units is None and self.config.dynamic:
-            _log.warning("DEPRECATED: No units were specified for the time "
-                         "domain. Users should provide units via the "
-                         "time_units configuration argument.")
+        if self.config.time is None and fs is not None:
+            # We will get units from parent
+            pass
+        elif self.config.time_units is None and self.config.dynamic:
+            raise ConfigurationError(
+                f"{self.name} - no units were specified for the time domain. "
+                f"Units must be be specified for dynamic models.")
         elif self.config.time_units is None and not self.config.dynamic:
-            _log.info_high("DEPRECATED: No units were specified for the time "
-                            "domain. Users should provide units via the "
-                            "time_units configuration argument.")
+            _log.debug("No units specified for stady-state time domain.")
         elif not isinstance(self.config.time_units, _PyomoUnit):
             raise ConfigurationError(
                 "{} unrecognised value for time_units argument. This must be "

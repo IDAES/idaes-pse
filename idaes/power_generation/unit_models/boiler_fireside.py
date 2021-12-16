@@ -68,7 +68,7 @@ The surrogate models are typically a function of:
 
 """
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -77,18 +77,16 @@ from idaes.core import (declare_process_block_class,
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 
 # Additional import for the unit operation
-from pyomo.environ import \
-    SolverFactory, Var, Param, exp, log, RangeSet, Constraint
+from pyomo.environ import Var, Param, exp, RangeSet, Constraint, log
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
 from idaes.core.util import get_solver
-from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Boiler Team (J. Ma, M. Zamarripa)"
 __version__ = "1.0.0"
@@ -103,7 +101,7 @@ Boiler fire-side surrogate model with enforced mass and energy balance
 
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
@@ -114,7 +112,7 @@ Boiler fire-side surrogate model with enforced mass and energy balance
 **False** - set as a steady-state model.}"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Holdup construction flag",
         doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
@@ -141,7 +139,7 @@ and used when constructing these,
 see property package for documentation.}"""))
     CONFIG.declare("calculate_PA_SA_flows", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether the primary air and secondary air calculations
 have to be constructed or not,
@@ -156,7 +154,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         doc='number of boiler zones'))
     CONFIG.declare("has_platen_superheater", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="True if boiler includes a platen superheater",
         doc="""Indicates if boiler includes a platen superheater,
 **default** - True.
@@ -165,7 +163,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
 **False** - exclude heat duty to platen superheater.}"""))
     CONFIG.declare("has_roof_superheater", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="True if roof is treated as a superheater",
         doc="""Indicates if roof is a section of superheater,
 **default** - True.

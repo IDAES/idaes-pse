@@ -15,14 +15,21 @@ Common methods used by generic framework
 
 Author: A Lee
 """
+from enum import Enum
 
 from pyomo.environ import units as pyunits
 
-from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.util.exceptions import \
+    BurntToast, ConfigurationError, PropertyPackageError
 import idaes.logger as idaeslog
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class StateIndex(Enum):
+    true = 1
+    apparent = 2
 
 
 class GenericPropertyPackageError(PropertyPackageError):
@@ -202,3 +209,61 @@ def get_bounds_from_config(b, state, base_units):
         default_val = var_config[1]
 
     return bounds, default_val
+
+
+# Enumerate concentration form options
+class ConcentrationForm(Enum):
+    molarity = 1
+    activity = 2
+    molality = 3
+    moleFraction = 4
+    massFraction = 5
+    partialPressure = 6
+
+
+def get_concentration_term(blk, r_idx, log=False):
+    cfg = blk.params.config
+    if "rate_reactions" in cfg:
+        try:
+            conc_form = cfg.rate_reactions[r_idx].concentration_form
+        except KeyError:
+            conc_form = cfg.equilibrium_reactions[r_idx].concentration_form
+        state = blk.state_ref
+    else:
+        conc_form = cfg.inherent_reactions[r_idx].concentration_form
+        state = blk
+
+    if hasattr(state.params, "_electrolyte") and state.params._electrolyte:
+        sub = "_true"
+    else:
+        sub = ""
+
+    if log:
+        pre = "log_"
+    else:
+        pre = ""
+
+    if conc_form is None:
+        raise ConfigurationError(
+            "{} concentration_form configuration argument was not set. "
+            "Please ensure that this argument is included in your "
+            "configuration dict.".format(blk.name))
+    elif conc_form == ConcentrationForm.molarity:
+        conc_term = getattr(state, pre+"conc_mol_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.activity:
+        conc_term = getattr(state, pre+"act_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.molality:
+        conc_term = getattr(state, pre+"molality_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.moleFraction:
+        conc_term = getattr(state, pre+"mole_frac_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.massFraction:
+        conc_term = getattr(state, pre+"mass_frac_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.partialPressure:
+        conc_term = (getattr(state, pre+"pressure_phase_comp"+sub))
+    else:
+        raise BurntToast(
+            "{} get_concentration_term received unrecognised "
+            "ConcentrationForm ({}). This should not happen - please contact "
+            "the IDAES developers with this bug.".format(blk.name, conc_form))
+
+    return conc_term

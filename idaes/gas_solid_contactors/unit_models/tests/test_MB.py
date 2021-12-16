@@ -190,8 +190,6 @@ class TestIronOC(object):
         assert isinstance(iron_oc.fs.unit.bed_area_eqn, Constraint)
         assert isinstance(iron_oc.fs.unit.gas_phase_area, Constraint)
         assert isinstance(iron_oc.fs.unit.solid_phase_area, Constraint)
-        assert isinstance(iron_oc.fs.unit.gas_phase_length, Constraint)
-        assert isinstance(iron_oc.fs.unit.solid_phase_length, Constraint)
         assert isinstance(iron_oc.fs.unit.gas_super_vel, Constraint)
         assert isinstance(iron_oc.fs.unit.solid_super_vel, Constraint)
         assert isinstance(iron_oc.fs.unit.gas_phase_config_pressure_drop,
@@ -203,9 +201,9 @@ class TestIronOC(object):
                           Constraint)
         assert isinstance(iron_oc.fs.unit.gas_comp_hetero_rxn, Constraint)
 
-        assert number_variables(iron_oc) == 809
-        assert number_total_constraints(iron_oc) == 772
-        assert number_unused_variables(iron_oc) == 15
+        assert number_variables(iron_oc) == 819
+        assert number_total_constraints(iron_oc) == 781
+        assert number_unused_variables(iron_oc) == 16
 
     @pytest.mark.unit
     def test_dof(self, iron_oc):
@@ -397,9 +395,9 @@ class TestIronOC_EnergyBalanceType(object):
         assert isinstance(iron_oc.fs.unit.isothermal_gas_phase, Constraint)
         assert isinstance(iron_oc.fs.unit.isothermal_solid_phase, Constraint)
 
-        assert number_variables(iron_oc) == 589
-        assert number_total_constraints(iron_oc) == 510
-        assert number_unused_variables(iron_oc) == 58
+        assert number_variables(iron_oc) == 588
+        assert number_total_constraints(iron_oc) == 508
+        assert number_unused_variables(iron_oc) == 59
         print(unused_variables_set(iron_oc))
 
     @pytest.mark.unit

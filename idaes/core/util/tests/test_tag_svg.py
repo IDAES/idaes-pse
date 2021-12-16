@@ -11,6 +11,9 @@
 # license information.
 #################################################################################
 """
+DEPRECATED this module provides tests for functions that have been deprecated,
+and will be removed.
+
 This module contains miscalaneous utility functions for use in IDAES models.
 """
 __author__ = "John Eslick"
@@ -268,7 +271,6 @@ def test_tag_reference_tag_format_conditional():
     test_tag["TAGME@4.f"] = TagReference(m.f[:], description="z tag")
     m.tag = test_tag
 
-
     xml_str = svg_tag(
         m.tag,
         svg_test_str,
@@ -278,3 +280,7 @@ def test_tag_reference_tag_format_conditional():
     assert("10,000 kPa" in xml_str)
     assert("1.10 kPa" in xml_str)
     assert("4.50 kPa" in xml_str)
+
+if __name__ == "__main__":
+    # Check deprication warnings
+    test_tag_reference_tag_format_conditional()

@@ -21,9 +21,8 @@ and roof superheater, model main equations:
 
 """
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.environ import SolverFactory, value, Var, \
-    Param, asin, cos, Reference
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.environ import value, Var, Param, asin, cos, Reference
 from pyomo.core.expr.current import Expr_if
 from pyomo.dae import DerivativeVar
 
@@ -91,7 +90,7 @@ class SteamHeaterData(UnitModelBlockData):
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -100,7 +99,7 @@ class SteamHeaterData(UnitModelBlockData):
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -127,7 +126,7 @@ and used when constructing these,
 see property package for documentation.}"""))
     CONFIG.declare("single_side_only", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Flag indicating the heat is from one side of tubes only",
         doc="""Indicates whether tubes are heated from one side only,
 **default** - True.

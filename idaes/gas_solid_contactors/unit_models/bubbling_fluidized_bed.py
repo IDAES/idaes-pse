@@ -1,15 +1,15 @@
-#################################################################################
+###############################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
 # by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University,
+# West Virginia University Research Corporation, et al.  All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-#################################################################################
+###############################################################################
 """
 IDAES Bubbling Fluidized Bed Model.
 The 2-region bubbling fluidized bed model is a 1D axially discretized model
@@ -32,10 +32,10 @@ Solid superficial velocity is constant throughout the bed
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
-from pyomo.environ import (Var, Param, Reals, SolverFactory,
+from pyomo.environ import (Var, Param, Reals,
                            TerminationCondition, Constraint,
                            TransformationFactory, sqrt, value)
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae import ContinuousSet, DerivativeVar
 
@@ -161,7 +161,7 @@ discretizing length domain (default=3)"""))
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -174,7 +174,7 @@ constructed,
     _PhaseTemplate = UnitModelBlockData.CONFIG()
     _PhaseTemplate.declare("has_equilibrium_reactions", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
 should be constructed,
@@ -312,6 +312,10 @@ see reaction package for documentation.}"""))
                                 initialize=self.config.length_domain_set,
                                 doc="Normalized length domain")
 
+        self.bed_height = Var(domain=Reals,
+                              initialize=1,
+                              doc='Bed Height [m]')
+
     # =========================================================================
         """ Build Control volume 1D for the bubble region and
             populate its control volume"""
@@ -332,6 +336,7 @@ see reaction package for documentation.}"""))
         self.bubble.add_geometry(
                 length_domain=self.length_domain,
                 length_domain_set=self.config.length_domain_set,
+                length_var=self.bed_height,
                 flow_direction=set_direction_gas)
 
         self.bubble.add_state_blocks(
@@ -379,8 +384,8 @@ see reaction package for documentation.}"""))
 
         self.gas_emulsion.add_geometry(
                 length_domain=self.length_domain,
-                length_domain_set=self.config.
-                length_domain_set,
+                length_domain_set=self.config.length_domain_set,
+                length_var=self.bed_height,
                 flow_direction=set_direction_gas)
 
         self.gas_emulsion.add_state_blocks(
@@ -429,8 +434,8 @@ see reaction package for documentation.}"""))
 
         self.solid_emulsion.add_geometry(
             length_domain=self.length_domain,
-            length_domain_set=self.config.
-            length_domain_set,
+            length_domain_set=self.config.length_domain_set,
+            length_var=self.bed_height,
             flow_direction=set_direction_solid)
 
         self.solid_emulsion.add_state_blocks(
@@ -546,9 +551,6 @@ see reaction package for documentation.}"""))
         self.bed_area = Var(domain=Reals,
                             initialize=1,
                             doc='Reactor Cross-sectional Area [m2]')
-        self.bed_height = Var(domain=Reals,
-                              initialize=1,
-                              doc='Bed Height [m]')
 
         # Distributor Design
         self.area_orifice = Var(
@@ -810,19 +812,6 @@ see reaction package for documentation.}"""))
         def solid_emulsion_area(b, t, x):
             return (b.solid_emulsion.area[t, x] ==
                     b.bed_area*b.delta_e[t, x]*(1-b.voidage_emulsion[t, x]))
-
-        # Length of bubble, gas_emulsion, solid_emulsion
-        @self.Constraint(doc="Bubble Region Length")
-        def bubble_length(b):
-            return (b.bubble.length == b.bed_height)
-
-        @self.Constraint(doc="Gas Emulsion Region Length")
-        def gas_emulsion_length(b):
-            return (b.gas_emulsion.length == b.bed_height)
-
-        @self.Constraint(doc="Solid Emulsion Region Length")
-        def solid_emulsion_length(b):
-            return (b.solid_emulsion.length == b.bed_height)
 
         # ---------------------------------------------------------------------
         # Hydrodynamic contraints
@@ -1520,7 +1509,7 @@ see reaction package for documentation.}"""))
     def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
-        Initialisation routine for Bubbling Fluidized Bed unit
+        Initialization routine for Bubbling Fluidized Bed unit
 
         Keyword Arguments:
             gas_phase_state_args : a dict of arguments to be passed to the
