@@ -213,7 +213,7 @@ def _handle_existing_save_path(name, save_path, max_versions=10, overwrite=None)
     # Handle simple cases: overwrite, and no existing file
     if overwrite:
         if save_path.exists():
-            _log.warning("Overwriting existing save file '{save_path}'")
+            _log.warning(f"Overwriting existing save file '{save_path}'")
             save_path.open("w")  # blank file
         return save_path
     elif not save_path.exists():
