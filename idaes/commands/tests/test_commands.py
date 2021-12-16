@@ -26,6 +26,7 @@ import uuid
 # third-party
 from click.testing import CliRunner
 import pytest
+pytestmark = pytest.mark.skip
 
 # package
 from idaes.commands import examples, extensions, convergence, config, env_info
