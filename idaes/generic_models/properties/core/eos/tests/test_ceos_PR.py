@@ -678,3 +678,17 @@ def test_gibbs_mol_phase_comp(m):
                     m.props[1].enth_mol_phase_comp[p, j] -
                     m.props[1].entr_mol_phase_comp[p, j] *
                     m.props[1].temperature)
+
+
+@pytest.mark.unit
+def test_vol_mol_phase(m):
+    assert value(Cubic.vol_mol_phase(m.props[1], "Vap")) == pytest.approx(
+            1/44.800, rel=1e-3)
+    assert value(Cubic.vol_mol_phase(m.props[1], "Liq")) == pytest.approx(
+            1/41.157, rel=1e-3)
+
+
+@pytest.mark.unit
+def test_vol_mol_phase_invalid_phase(m_sol):
+    with pytest.raises(PropertyNotSupportedError):
+        Cubic.vol_mol_phase(m_sol.props[1], "Sol")

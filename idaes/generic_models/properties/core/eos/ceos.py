@@ -812,6 +812,16 @@ class Cubic(EoSBase):
                 b.entr_mol_phase_comp[p, j] *
                 b.temperature)
 
+    @staticmethod
+    def vol_mol_phase(b, p):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
+            return (Cubic.gas_constant(b)*b.temperature *
+                    b.compress_fact_phase[p] /
+                    b.pressure)
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
 
 def _invalid_phase_msg(name, phase):
     return ("{} received unrecognized phase name {}. Ideal property "

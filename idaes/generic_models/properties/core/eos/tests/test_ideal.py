@@ -226,8 +226,9 @@ def test_dens_mol_phase_liq(m):
         m.params.get_component(j).config.dens_mol_liq_comp = dummy_call
 
     assert str(Ideal.dens_mol_phase(m.props[1], "Liq")) == str(
-        sum(m.props[1].mole_frac_phase_comp["Liq", j]*42
-            for j in m.params.component_list))
+                1/(1/42*m.props[1].mole_frac_phase_comp["Liq", "a"] +
+                   1/42*m.props[1].mole_frac_phase_comp["Liq", "b"] +
+                   1/42*m.props[1].mole_frac_phase_comp["Liq", "c"]))
 
 
 @pytest.mark.unit
@@ -241,10 +242,11 @@ def test_dens_mol_phase_vap(m):
 def test_dens_mol_phase_sol(m_sol):
     for j in m_sol.params.component_list:
         m_sol.params.get_component(j).config.dens_mol_sol_comp = dummy_call
+        m_sol.params.get_component(j).config.dens_mol_liq_comp = dummy_call
 
     assert str(Ideal.dens_mol_phase(m_sol.props[1], "Sol")) == str(
-        sum(m_sol.props[1].mole_frac_phase_comp["Sol", j]*42
-            for j in m_sol.params.component_list))
+        1/sum(m_sol.props[1].mole_frac_phase_comp["Sol", j]/42
+              for j in m_sol.params.component_list))
 
 
 @pytest.mark.unit
@@ -503,6 +505,7 @@ def test_pressure_osm_phase(m):
             m.props[1].conc_mol_phase_comp["Liq", "c"])))
     assert len(m.props[1].pressure_osm_phase) == 1
 
+
 @pytest.mark.unit
 def test_pressure_osm_phase_w_apparent_component():
     m = ConcreteModel()
@@ -555,3 +558,61 @@ def test_pressure_osm_phase_w_apparent_component():
             m.props[1].conc_mol_phase_comp["Liq", "b"] +
             2*m.props[1].conc_mol_phase_comp["Liq", "c"])))
     assert len(m.props[1].pressure_osm_phase) == 1
+
+
+@pytest.mark.unit
+def test_vol_mol_phase_no_methods(m):
+    with pytest.raises(ConfigurationError,
+                       match="does not have a method defined to use when "
+                       "calculating molar volume and density for component a "
+                       "in phase liq. Each component must define a method for "
+                       "either vol_mol_liq_comp or dens_mol_liq_comp."):
+        Ideal.vol_mol_phase(m.props[1], "Liq")
+
+
+@pytest.mark.unit
+def test_vol_mol_phase():
+    m = ConcreteModel()
+
+    # Dummy params block
+    m.params = DummyParameterBlock(default={
+                "components": {
+                    "a": {"dens_mol_liq_comp": dummy_call},
+                    "b": {"dens_mol_liq_comp": dummy_call},
+                    "c": {"vol_mol_liq_comp": dummy_call}},
+                "phases": {
+                    "Vap": {"type": VaporPhase,
+                            "equation_of_state": Ideal},
+                    "Liq": {"type": LiquidPhase,
+                            "equation_of_state": Ideal}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
+
+    m.props = m.params.state_block_class([1],
+                                         default={"defined_state": False,
+                                         "parameters": m.params})
+
+    # Add common variables
+    m.props[1].pressure = Var(initialize=101325)
+    m.props[1].temperature = Var(initialize=300, units=pyunits.K)
+    m.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
+    m.props[1].mole_frac_phase_comp = Var(m.params.phase_list,
+                                          m.params.component_list,
+                                          initialize=0.5)
+
+    for p in m.params.phase_list:
+        if p == "Vap":
+            assert str(Ideal.vol_mol_phase(m.props[1], p)) == (
+                "kg*m**2/J/s**2*(8.314462618*(J)/mol/K)*"
+                "props[1].temperature/props[1].pressure")
+        else:
+            assert str(Ideal.vol_mol_phase(m.props[1], p)) == str(
+                1/42*m.props[1].mole_frac_phase_comp["Liq", "a"] +
+                1/42*m.props[1].mole_frac_phase_comp["Liq", "b"] +
+                42*m.props[1].mole_frac_phase_comp["Liq", "c"])

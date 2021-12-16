@@ -169,9 +169,9 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
 
     # "Integration" loop
     for i in fe_in_range:
-        t_prev = time[(i-1)*ncp+1]
+        t_prev = time.at((i-1)*ncp+1)
 
-        fe = [time[k] for k in range((i-1)*ncp+2, i*ncp+2)]
+        fe = [time.at(k) for k in range((i-1)*ncp+2, i*ncp+2)]
 
         con_list = []
         for t in fe:

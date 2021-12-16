@@ -72,12 +72,7 @@ def test_sipopt_available():
         raise Exception("Could not find ipopt_sens.")
 
 @pytest.mark.unit
-def test_clp_available():
-    if not SolverFactory('clp').available():
-        raise Exception("Could not find clp.")
-
-@pytest.mark.unit
-def test_clp_available():
+def test_cbc_available():
     if not SolverFactory('cbc').available():
         raise Exception("Could not find cbc.")
 
@@ -112,18 +107,6 @@ def test_couenne_idaes_solve():
     m, x = minlp()
     solver = SolverFactory('couenne')
     solver.solve(m)
-    assert pytest.approx(x) == pyo.value(m.x)
-
-@pytest.mark.unit
-def test_clp_idaes_solve():
-    """
-    Make sure there is no issue with the solver class or default settings that
-    break the solver object.  Passing a bad solver option will result in failure
-    """
-    m, x = lp()
-    solver = SolverFactory('clp')
-    solver.solve(m)
-    m.display()
     assert pytest.approx(x) == pyo.value(m.x)
 
 @pytest.mark.unit

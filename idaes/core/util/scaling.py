@@ -44,11 +44,20 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-def __none_mult(x, y):
-    """PRIVATE FUNCTION, If x or y is None return None, else return x * y"""
-    if x is not None and y is not None:
+def __none_left_mult(x, y):
+    """PRIVATE FUNCTION, If x is None return None, else return x * y"""
+    if x is not None:
         return x * y
     return None
+
+
+def __scale_constraint(c, v):
+    """PRIVATE FUNCTION, scale Constraint c to value v"""
+    if c.equality:
+        c.set_value((c.lower*v, c.body*v))
+    else:
+        c.set_value(
+            (__none_left_mult(c.lower, v), c.body*v, __none_left_mult(c.upper, v)))
 
 
 def scale_arc_constraints(blk):
@@ -367,8 +376,7 @@ def constraint_scaling_transform(c, s, overwrite=True):
         st = 1
 
     v = s/st
-    c.set_value(
-        (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v)))
+    __scale_constraint(c, v)
     __set_constraint_transform_applied_scaling_factor(c, s)
 
 
@@ -386,8 +394,7 @@ def constraint_scaling_transform_undo(c):
     v = get_constraint_transform_applied_scaling_factor(c)
     if v is None:
         return # hasn't been transformed, so nothing to do.
-    c.set_value(
-        (__none_mult(c.lower, 1/v), __none_mult(c.body, 1/v), __none_mult(c.upper, 1/v)))
+    __scale_constraint(c, 1/v)
     __unset_constraint_transform_applied_scaling_factor(c)
 
 
@@ -798,8 +805,7 @@ def scale_single_constraint(c):
         _log.warning(
             f"{c.name} constraint has no scaling factor, so it was not scaled.")
         return
-    c.set_value(
-        (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v)))
+    __scale_constraint(c, v)
     unset_scaling_factor(c)
 
 

@@ -21,7 +21,7 @@ import textwrap
 from pandas import DataFrame
 
 from pyomo.core.base.block import _BlockData
-from pyomo.core.base.misc import tabular_writer
+from pyomo.common.formatting import tabular_writer
 from pyomo.environ import Block, value
 from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock

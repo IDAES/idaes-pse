@@ -560,11 +560,11 @@ def to_json(o, fname=None, human_read=False, wts=None, metadata=None, gz=None,
         human_read: if True, add indents and spacing to make the json file more
             readable, if false cut out whitespace and make as compact as
             possilbe
-        metadata: A dictionary of addtional metadata to add.
+        metadata: A dictionary of additional metadata to add.
         wts: is What To Save, this is a StoreSpec object that specifies what
             object types and attributes to save.  If None, the default is used
             which saves the state of the compelte model state.
-        metadata: addtional metadata to save beyond the standard format_version,
+        metadata: additional metadata to save beyond the standard format_version,
             date, and time.
         return_dict: default is False if true returns a dictionary representation
         return_json_string: default is False returns a json string

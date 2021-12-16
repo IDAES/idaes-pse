@@ -325,5 +325,5 @@ class TestControllerBlock(object):
             pwc_expr = controller.pwc_constraint[i,t].expr
             tn = time.next(t)
             inputs = controller.vectors.input
-            pred_expr = (inputs[i, tn] - inputs[i, t] == 0.)
+            pred_expr = (inputs[i, tn] == inputs[i, t])
             assert pwc_expr.to_string() == pred_expr.to_string()

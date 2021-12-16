@@ -1122,6 +1122,10 @@ class TestSaponification(object):
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
+    @pytest.mark.component
+    def test_scaling(self, sapon):
+        sapon.fs.unit.calculate_scaling_factors()
+
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, sapon):

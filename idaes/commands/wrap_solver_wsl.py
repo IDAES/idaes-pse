@@ -28,10 +28,10 @@ from idaes.commands import cb
 @cb.command(
     name="solver-wsl",
     context_settings={"ignore_unknown_options": True},
-    help="Run a linux solver on Windows using WSL")
-@click.option("--distribution", "-d", required=True, help="Linux distribution")
-@click.option("--user", "-u", required=True, help="User")
-@click.option("--executable", "-e", required=True, help="Executable path on WSL")
+    help="Run a Linux solver on Windows using WSL")
+@click.option("--distribution", required=True, help="Linux distribution")
+@click.option("--user", required=True, help="User")
+@click.option("--executable", required=True, help="Executable path on WSL")
 @click.argument('args', nargs=-1)
 def solver_wsl(distribution, user, executable, args):
     al = [None]*len(args)

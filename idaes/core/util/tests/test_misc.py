@@ -106,7 +106,7 @@ def test_port_copy():
     assert_copied_right()
     reset()
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AttributeError):
         copy_port_values(arc=m.b1.port)
 
     with pytest.raises(RuntimeError):
@@ -115,7 +115,7 @@ def test_port_copy():
     with pytest.raises(RuntimeError):
         copy_port_values(source=m.b1.port, arc=m.arc)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AttributeError):
         copy_port_values(source=m.b1.port, destination=m.arc)
 
 
