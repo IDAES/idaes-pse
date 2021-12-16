@@ -8,6 +8,7 @@ from prescient.simulator import Prescient
 
 class ThermalGenerator:
 
+    # Using 4 segments to be consistent with models in RTS-GMLC dataset
     segment_number = 4
 
     def __init__(self, rts_gmlc_dataframe, horizon = 48, generator = "102_STEAM_3"):
