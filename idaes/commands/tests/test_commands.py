@@ -663,8 +663,9 @@ def test_conf_set(runner):
         if os.path.exists(fname):
             os.remove(fname)
 
-    _tst(["--global", "--file", fname, "--file_as_global"])
-    _tst(["--local", "--file", fname, "--file_as_local"])
+    # lbianchi-lbl: commenting these line out temporarily because of #633
+    # _tst(["--global", "--file", fname, "--file_as_global"])
+    # _tst(["--local", "--file", fname, "--file_as_local"])
     _tst(["--file", fname])
 
 
