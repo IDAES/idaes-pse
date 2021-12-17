@@ -39,6 +39,9 @@ from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.examples.ASU_PR \
     import configuration
 
+from idaes.generic_models.properties.tests.test_harness import \
+    PropertyTestHarness
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -49,6 +52,16 @@ def _as_quantity(x):
     if unit is None:
         unit = pyunits.dimensionless
     return value(x) * unit._get_pint_unit()
+
+
+@pytest.mark.unit
+class TestASUPR(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = GenericParameterBlock
+        self.param_args = configuration
+        self.prop_args = {}
+        self.has_density_terms = False
+
 
 # Test for configuration dictionaries with parameters from Properties of Gases
 # and liquids 4th edition
