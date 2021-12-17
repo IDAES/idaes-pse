@@ -48,7 +48,7 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables_in_activated_equalities)
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"
@@ -114,30 +114,30 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # H_comp = H - H(298.15) = A*T + B*T^2/2 + C*T^3/3 +
         # D*T^4/4 - E/T + F - H where T = Temp (K)/1000 and H_comp = (kJ/mol)
         cp_param_dict = {
-                        ('Al2O3', 1): 102.4290,
-                        ('Al2O3', 2): 38.74980,
-                        ('Al2O3', 3): -15.91090,
-                        ('Al2O3', 4): 2.628181,
-                        ('Al2O3', 5): -3.007551,
-                        ('Al2O3', 6): -1717.930,
-                        ('Al2O3', 7): 146.9970,
-                        ('Al2O3', 8): -1675.690,
-                        ('Fe3O4', 1): 200.8320000,
-                        ('Fe3O4', 2): 1.586435e-7,
-                        ('Fe3O4', 3): -6.661682e-8,
-                        ('Fe3O4', 4): 9.452452e-9,
-                        ('Fe3O4', 5): 3.18602e-8,
-                        ('Fe3O4', 6): -1174.1350000,
-                        ('Fe3O4', 7): 388.0790000,
-                        ('Fe3O4', 8): -1120.8940000,
-                        ('Fe2O3', 1): 110.9362000,
-                        ('Fe2O3', 2): 32.0471400,
-                        ('Fe2O3', 3): -9.1923330,
-                        ('Fe2O3', 4): 0.9015060,
-                        ('Fe2O3', 5): 5.4336770,
-                        ('Fe2O3', 6): -843.1471000,
-                        ('Fe2O3', 7): 228.3548000,
-                        ('Fe2O3', 8): -825.5032000}
+                        ('Al2O3', 1): 102.4290*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('Al2O3', 2): 38.74980*pyunits.kJ/pyunits.mol/pyunits.K**2,
+                        ('Al2O3', 3): -15.91090*pyunits.kJ/pyunits.mol/pyunits.K**3,
+                        ('Al2O3', 4): 2.628181*pyunits.kJ/pyunits.mol/pyunits.K**4,
+                        ('Al2O3', 5): -3.007551*pyunits.kJ/pyunits.mol*pyunits.K,
+                        ('Al2O3', 6): -1717.930*pyunits.kJ/pyunits.mol,
+                        ('Al2O3', 7): 146.9970*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('Al2O3', 8): -1675.690*pyunits.kJ/pyunits.mol,
+                        ('Fe3O4', 1): 200.8320000*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('Fe3O4', 2): 1.586435e-7*pyunits.kJ/pyunits.mol/pyunits.K**2,
+                        ('Fe3O4', 3): -6.661682e-8*pyunits.kJ/pyunits.mol/pyunits.K**3,
+                        ('Fe3O4', 4): 9.452452e-9*pyunits.kJ/pyunits.mol/pyunits.K**4,
+                        ('Fe3O4', 5): 3.18602e-8*pyunits.kJ/pyunits.mol*pyunits.K,
+                        ('Fe3O4', 6): -1174.1350000*pyunits.kJ/pyunits.mol,
+                        ('Fe3O4', 7): 388.0790000*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('Fe3O4', 8): -1120.8940000*pyunits.kJ/pyunits.mol,
+                        ('Fe2O3', 1): 110.9362000*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('Fe2O3', 2): 32.0471400*pyunits.kJ/pyunits.mol/pyunits.K**2,
+                        ('Fe2O3', 3): -9.1923330*pyunits.kJ/pyunits.mol/pyunits.K**3,
+                        ('Fe2O3', 4): 0.9015060*pyunits.kJ/pyunits.mol/pyunits.K**4,
+                        ('Fe2O3', 5): 5.4336770*pyunits.kJ/pyunits.mol*pyunits.K,
+                        ('Fe2O3', 6): -843.1471000*pyunits.kJ/pyunits.mol,
+                        ('Fe2O3', 7): 228.3548000*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('Fe2O3', 8): -825.5032000*pyunits.kJ/pyunits.mol}
         self.cp_param = Param(self.component_list,
                               range(1, 10),
                               mutable=False,
@@ -404,8 +404,8 @@ class SolidPhaseStateBlockData(StateBlockData):
         # Sum mass fractions if not inlet block
         if self.config.defined_state is False:
             def sum_component_eqn(b):
-                return 1e2 == 1e2 * sum(b.mass_frac_comp[j]
-                                        for j in b._params.component_list)
+                return 1 == sum(b.mass_frac_comp[j]
+                                for j in b._params.component_list)
             self.sum_component_eqn = Constraint(rule=sum_component_eqn)
 
     def _dens_mass_skeletal(self):
@@ -462,8 +462,13 @@ class SolidPhaseStateBlockData(StateBlockData):
                 units=pyunits.kJ/pyunits.mol/pyunits.K)
 
         def pure_component_cp_mol(b, j):
+            # for simplicity, coefficients using K/1000 to different powers
+            # are used as if in K to different powers (cp_param_dict), and
+            # temperatures are converted from K/1000 to K below. The equation
+            # gives heat capacity in J/mol-K, so we multiply by 1e-3 to get kJ
+            # since the coefficients are defined in kJ above
             return b.cp_mol_comp[j] == 1e-3*(
-                        b._params.cp_param[j, 1] +
+                        b._params.cp_param[j, 1] + 1e-23*b.temperature +
                         b._params.cp_param[j, 2]*(b.temperature*1e-3) +
                         b._params.cp_param[j, 3]*(b.temperature*1e-3)**2 +
                         b._params.cp_param[j, 4]*(b.temperature*1e-3)**3 +
@@ -508,14 +513,20 @@ class SolidPhaseStateBlockData(StateBlockData):
                 units=pyunits.kJ/pyunits.mol)
 
         def pure_comp_enthalpy(b, j):
+            # for simplicity, coefficients using K/1000 to different powers
+            # are used as if in K to different powers (cp_param_dict), and
+            # temperatures are converted from K/1000 to K below. The equation
+            # gives enthalpy in kJ/mol, so no conversion factor is needed
+            # since the coefficients are defined in kJ above
+            # SHOULDN'T HAVE TO ADD UNITS MANUALLY, SHOULD COME FROM CP_PARAM
             return b.enth_mol_comp[j] == (
-                    b._params.cp_param[j, 1]*(b.temperature*1e-3) +
-                    b._params.cp_param[j, 2]*((b.temperature*1e-3)**2)/2 +
-                    b._params.cp_param[j, 3]*((b.temperature*1e-3)**3)/3 +
-                    b._params.cp_param[j, 4]*((b.temperature*1e-3)**4)/4 -
-                    b._params.cp_param[j, 5]/(b.temperature*1e-3) +
+                    b._params.cp_param[j, 1]*(b.temperature*1e-3/pyunits.K) +
+                    b._params.cp_param[j, 2]*((b.temperature*1e-3/pyunits.K)**2)/2 +
+                    b._params.cp_param[j, 3]*((b.temperature*1e-3/pyunits.K)**3)/3 +
+                    b._params.cp_param[j, 4]*((b.temperature*1e-3/pyunits.K)**4)/4 -
+                    b._params.cp_param[j, 5]/(b.temperature*1e-3/pyunits.K) +
                     b._params.cp_param[j, 6] -
-                    b._params.cp_param[j, 8])
+                    b._params.cp_param[j, 8])*pyunits.kJ/pyunits.mol
         try:
             # Try to build constraint
             self.enthalpy_shomate_eqn = Constraint(self._params.component_list,
@@ -585,3 +596,10 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def default_energy_balance_type(blk):
         return EnergyBalanceType.enthalpyTotal
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        if hasattr(self, "sum_component_eqn"):
+            for t, v in self.sum_component_eqn.items():
+                iscale.set_scaling_factor(v, 1e2)

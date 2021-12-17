@@ -51,7 +51,7 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables_in_activated_equalities)
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"
@@ -123,30 +123,30 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # H_comp = H - H(298.15) = A*T + B*T^2/2 + C*T^3/3 +
         # D*T^4/4 - E/T + F - H where T = Temp (K)/1000 and H_comp = (kJ/mol)
         cp_param_dict = {
-                        ('CH4', 1): -0.7030290,
-                        ('CH4', 2): 108.4773000,
-                        ('CH4', 3): -42.5215700,
-                        ('CH4', 4): 5.8627880,
-                        ('CH4', 5): 0.6785650,
-                        ('CH4', 6): -76.8437600,
-                        ('CH4', 7): 158.7163000,
-                        ('CH4', 8): -74.8731000,
-                        ('CO2', 1): 24.9973500,
-                        ('CO2', 2): 55.1869600,
-                        ('CO2', 3): -33.6913700,
-                        ('CO2', 4): 7.9483870,
-                        ('CO2', 5): -0.1366380,
-                        ('CO2', 6): -403.6075000,
-                        ('CO2', 7): 228.2431000,
-                        ('CO2', 8): -393.5224000,
-                        ('H2O', 1): 30.0920000,
-                        ('H2O', 2): 6.8325140,
-                        ('H2O', 3): 6.7934350,
-                        ('H2O', 4): -2.5344800,
-                        ('H2O', 5): 0.0821390,
-                        ('H2O', 6): -250.8810000,
-                        ('H2O', 7): 223.3967000,
-                        ('H2O', 8): -241.8264000
+                        ('CH4', 1): -0.7030290*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('CH4', 2): 108.4773000*pyunits.kJ/pyunits.mol/pyunits.K**2,
+                        ('CH4', 3): -42.5215700*pyunits.kJ/pyunits.mol/pyunits.K**3,
+                        ('CH4', 4): 5.8627880*pyunits.kJ/pyunits.mol/pyunits.K**4,
+                        ('CH4', 5): 0.6785650*pyunits.kJ/pyunits.mol*pyunits.K,
+                        ('CH4', 6): -76.8437600*pyunits.kJ/pyunits.mol,
+                        ('CH4', 7): 158.7163000*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('CH4', 8): -74.8731000*pyunits.kJ/pyunits.mol,
+                        ('CO2', 1): 24.9973500*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('CO2', 2): 55.1869600*pyunits.kJ/pyunits.mol/pyunits.K**2,
+                        ('CO2', 3): -33.6913700*pyunits.kJ/pyunits.mol/pyunits.K**3,
+                        ('CO2', 4): 7.9483870*pyunits.kJ/pyunits.mol/pyunits.K**4,
+                        ('CO2', 5): -0.1366380*pyunits.kJ/pyunits.mol*pyunits.K,
+                        ('CO2', 6): -403.6075000*pyunits.kJ/pyunits.mol,
+                        ('CO2', 7): 228.2431000*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('CO2', 8): -393.5224000*pyunits.kJ/pyunits.mol,
+                        ('H2O', 1): 30.0920000*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('H2O', 2): 6.8325140*pyunits.kJ/pyunits.mol/pyunits.K**2,
+                        ('H2O', 3): 6.7934350*pyunits.kJ/pyunits.mol/pyunits.K**3,
+                        ('H2O', 4): -2.5344800*pyunits.kJ/pyunits.mol/pyunits.K**4,
+                        ('H2O', 5): 0.0821390*pyunits.kJ/pyunits.mol*pyunits.K,
+                        ('H2O', 6): -250.8810000*pyunits.kJ/pyunits.mol,
+                        ('H2O', 7): 223.3967000*pyunits.kJ/pyunits.mol/pyunits.K,
+                        ('H2O', 8): -241.8264000*pyunits.kJ/pyunits.mol
                         }
         self.cp_param = Param(self.component_list,
                               range(1, 10),
@@ -440,8 +440,8 @@ class GasPhaseStateBlockData(StateBlockData):
         # Sum mole fractions if not inlet block
         if self.config.defined_state is False:
             def sum_component_eqn(b):
-                return 1e2 == 1e2 * sum(b.mole_frac_comp[j]
-                                        for j in b._params.component_list)
+                return 1 == sum(b.mole_frac_comp[j]
+                                for j in b._params.component_list)
             self.sum_component_eqn = Constraint(rule=sum_component_eqn)
 
     def _mw(self):
@@ -472,8 +472,11 @@ class GasPhaseStateBlockData(StateBlockData):
                             units=pyunits.mol/pyunits.m**3)
 
         def ideal_gas(b):
-            return (b.dens_mol*b._params.gas_const*b.temperature*1e-2 ==
-                    b.pressure)
+            return (b.dens_mol * pyunits.convert(
+                b._params.gas_const,
+                to_units=pyunits.J/pyunits.mol/pyunits.K) *
+                    b.temperature ==
+                    pyunits.convert(b.pressure, to_units=pyunits.Pa))
         try:
             # Try to build constraint
             self.ideal_gas = Constraint(rule=ideal_gas)
@@ -532,20 +535,21 @@ class GasPhaseStateBlockData(StateBlockData):
 
         def visc_d_comp(i):
             return self._params.visc_d_param[i, 1] * \
-                    (self.temperature**self._params.visc_d_param[i, 2]) \
-                    / ((1 + (self._params.visc_d_param[i, 3]/self.temperature))
+                    ((self.temperature/pyunits.K) **
+                     self._params.visc_d_param[i, 2]) \
+                    / ((1 + (self._params.visc_d_param[i, 3] /
+                             (self.temperature/pyunits.K)))
                         + (self._params.visc_d_param[i, 4] /
-                           (self.temperature**2)))
+                           ((self.temperature/pyunits.K)**2))) * \
+                    pyunits.kg/pyunits.m/pyunits.s
 
         def visc_d_constraint(b):
-            return 1e6*b.visc_d == 1e6*sum(b.mole_frac_comp[i]*visc_d_comp(i)
-                                           / (sum(b.mole_frac_comp[j]
-                                                  * (b._params.mw_comp[j] /
-                                                     b._params.mw_comp[i])**0.5
-                                                  for j in
-                                                  b._params.component_list))
-                                           for i in
-                                           b._params.component_list)
+            return b.visc_d == sum(b.mole_frac_comp[i]*visc_d_comp(i)
+                                   / (sum(b.mole_frac_comp[j]
+                                          * (b._params.mw_comp[j] /
+                                             b._params.mw_comp[i])**0.5
+                                          for j in b._params.component_list))
+                                   for i in b._params.component_list)
         try:
             # Try to build constraint
             self.visc_d_constraint = Constraint(rule=visc_d_constraint)
@@ -565,12 +569,17 @@ class GasPhaseStateBlockData(StateBlockData):
                                   units=pyunits.cm**2/pyunits.s)
 
         def D_bin(i, j):
-            # 1e3 used to multiply MW to convert from kg/mol to kg/kmol
             return ((1.43e-3*(self.temperature**1.75) *
-                     ((1e3 * self._params.mw_comp[i] +
-                       1e3 * self._params.mw_comp[j])
-                     / (2 * (1e3 * self._params.mw_comp[i]) *
-                        (1e3*self._params.mw_comp[j])))**0.5)
+                     ((pyunits.convert(self._params.mw_comp[i],
+                                       to_units=pyunits.kg/pyunits.kmol) +
+                       pyunits.convert(self._params.mw_comp[j],
+                                       to_units=pyunits.kg/pyunits.kmol))
+                     / (2 *
+                        (pyunits.convert(self._params.mw_comp[i],
+                                         to_units=pyunits.kg/pyunits.kmol)) *
+                        (pyunits.convert(self._params.mw_comp[j],
+                                         to_units=pyunits.kg/pyunits.kmol))
+                        ))**0.5)
                     / ((self.pressure)
                         * ((self._params.diff_vol_param[i]**(1/3))
                             + (self._params.diff_vol_param[j]**(1/3)))**2))
@@ -599,12 +608,14 @@ class GasPhaseStateBlockData(StateBlockData):
                               units=pyunits.kJ/pyunits.m/pyunits.K/pyunits.s)
 
         def therm_cond_comp(i):
-            return self._params.therm_cond_param[i, 1] \
-                    * (self.temperature**self._params.therm_cond_param[i, 2]) \
+            return (self._params.therm_cond_param[i, 1]
+                    * ((self.temperature/pyunits.K) **
+                       self._params.therm_cond_param[i, 2])
                     / ((1 + (self._params.therm_cond_param[i, 3] /
-                             self.temperature))
+                             (self.temperature/pyunits.K)))
                         + (self._params.therm_cond_param[i, 4] /
-                       (self.temperature**2)))
+                       ((self.temperature/pyunits.K)**2)))) * \
+                pyunits.J/pyunits.m/pyunits.K/pyunits.s  # units from source
 
         def A_bin(i, j):
             return (1 + ((therm_cond_comp(j)/therm_cond_comp(i))**0.5)
@@ -614,8 +625,7 @@ class GasPhaseStateBlockData(StateBlockData):
                              self._params.mw_comp[i])))**0.5
 
         def therm_cond_constraint(b):
-            # The 1e-3 term is used as a conversion factor to a kJ basis
-            return 1e6*b.therm_cond == 1e6*(1e-3) * \
+            return b.therm_cond == pyunits.convert(
                                        sum(b.mole_frac_comp[i]
                                            * therm_cond_comp(i)
                                            / (sum(b.mole_frac_comp[j] *
@@ -623,7 +633,9 @@ class GasPhaseStateBlockData(StateBlockData):
                                                   for j in
                                                   b._params.component_list))
                                            for i in
-                                           b._params.component_list)
+                                           b._params.component_list),
+                                       to_units=pyunits.kJ/pyunits.m /
+                                       pyunits.K/pyunits.s)
         try:
             # Try to build constraint
             self.therm_cond_constraint = Constraint(rule=therm_cond_constraint)
@@ -643,12 +655,19 @@ class GasPhaseStateBlockData(StateBlockData):
                                units=pyunits.kJ/pyunits.mol/pyunits.K)
 
         def pure_component_cp_mol(b, j):
+            # for simplicity, coefficients using K/1000 to different powers
+            # are used as if in K to different powers (cp_param_dict), and
+            # temperatures are converted from K/1000 to K below. The equation
+            # gives heat capacity in J/mol-K, so we multiply by 1e-3 to get kJ
+            # since the coefficients are defined in kJ above
+            # SHOULDN'T HAVE TO ADD UNITS MANUALLY, SHOULD COME FROM CP_PARAM
             return b.cp_mol_comp[j] == 1e-3*(
                         b._params.cp_param[j, 1] +
-                        b._params.cp_param[j, 2]*(b.temperature*1e-3) +
-                        b._params.cp_param[j, 3]*(b.temperature*1e-3)**2 +
-                        b._params.cp_param[j, 4]*(b.temperature*1e-3)**3 +
-                        b._params.cp_param[j, 5]/((b.temperature*1e-3)**2))
+                        b._params.cp_param[j, 2]*(b.temperature*1e-3/pyunits.K) +
+                        b._params.cp_param[j, 3]*(b.temperature*1e-3/pyunits.K)**2 +
+                        b._params.cp_param[j, 4]*(b.temperature*1e-3/pyunits.K)**3 +
+                        b._params.cp_param[j, 5]/((b.temperature*1e-3/pyunits.K)**2)) * \
+                pyunits.kJ/pyunits.mol/pyunits.K
         try:
             # Try to build constraint
             self.cp_shomate_eqn = Constraint(self._params.component_list,
@@ -707,14 +726,20 @@ class GasPhaseStateBlockData(StateBlockData):
                 units=pyunits.kJ/pyunits.mol)
 
         def pure_comp_enthalpy(b, j):
+            # for simplicity, coefficients using K/1000 to different powers
+            # are used as if in K to different powers (cp_param_dict), and
+            # temperatures are converted from K/1000 to K below. The equation
+            # gives enthalpy in kJ/mol, so no conversion factor is needed
+            # since the coefficients are defined in kJ above
+            # SHOULDN'T HAVE TO ADD UNITS MANUALLY, SHOULD COME FROM CP_PARAM
             return b.enth_mol_comp[j] == (
-                    b._params.cp_param[j, 1]*(b.temperature*1e-3) +
-                    b._params.cp_param[j, 2]*((b.temperature*1e-3)**2)/2 +
-                    b._params.cp_param[j, 3]*((b.temperature*1e-3)**3)/3 +
-                    b._params.cp_param[j, 4]*((b.temperature*1e-3)**4)/4 -
-                    b._params.cp_param[j, 5]/(b.temperature*1e-3) +
+                    b._params.cp_param[j, 1]*(b.temperature*1e-3/pyunits.K) +
+                    b._params.cp_param[j, 2]*((b.temperature*1e-3/pyunits.K)**2)/2 +
+                    b._params.cp_param[j, 3]*((b.temperature*1e-3/pyunits.K)**3)/3 +
+                    b._params.cp_param[j, 4]*((b.temperature*1e-3/pyunits.K)**4)/4 -
+                    b._params.cp_param[j, 5]/(b.temperature*1e-3/pyunits.K) +
                     b._params.cp_param[j, 6] -
-                    b._params.cp_param[j, 8])
+                    b._params.cp_param[j, 8])*pyunits.kJ/pyunits.mol
         try:
             # Try to build constraint
             self.enthalpy_shomate_eqn = Constraint(self._params.component_list,
@@ -789,3 +814,18 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def default_energy_balance_type(blk):
         return EnergyBalanceType.enthalpyTotal
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        if hasattr(self, "sum_component_eqn"):
+            for t, v in self.sum_component_eqn.items():
+                iscale.set_scaling_factor(v, 1e2)
+
+        if hasattr(self._k_rxn, "visc_d_constraint"):
+            for t, v in self.visc_d_constraint.items():
+                iscale.set_scaling_factor(v, 1e6)
+
+        if hasattr(self._k_rxn, "therm_cond_constraint"):
+            for t, v in self.therm_cond_constraint.items():
+                iscale.set_scaling_factor(v, 1e6)

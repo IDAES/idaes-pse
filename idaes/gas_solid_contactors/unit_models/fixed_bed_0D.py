@@ -16,7 +16,7 @@ IDAES 0D Fixed Bed Reactor model.
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Var, units as pyunits
-from pyomo.dae import DerivativeVar
+from pyomo.dae import DerivativeVar, ContinuousSet
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -174,7 +174,7 @@ see reaction package for documentation.}"""))
                               units=units_meta_solid('length'))
         self.volume_bed = Var(initialize=1.0,
                               doc="Volume of the reactor bed",
-                              units=units_meta_solid('length')**3)
+                              units=units_meta_solid('volume'))
 
         @self.Constraint(doc="Calculating volume of the reactor bed")
         def volume_bed_constraint(b):
@@ -188,7 +188,7 @@ see reaction package for documentation.}"""))
                     self.flowsheet().config.time,
                     initialize=1.0,
                     doc="Solids phase volume including particle pores",
-                    units=units_meta_solid('length')**3)
+                    units=units_meta_solid('volume'))
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Calculating solid phase volume")
@@ -217,13 +217,16 @@ see reaction package for documentation.}"""))
                     self.solids_material_holdup,
                     wrt=self.flowsheet().config.time,
                     doc="Solids material accumulation",
-                    units=units_meta_solid('mass')/units_meta_solid('time'))
+                    units=units_meta_solid('mass'))
+        # should be mass/time, to get around DAE limitations var is
+        # divided by time units when used
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.solid_property_package.component_list,
                          doc="Solid phase material accumulation constraints")
         def solids_material_accumulation_constraints(b, t, j):
-            return (b.solids_material_accumulation[t, j] ==
+            return (b.solids_material_accumulation[t, j] /
+                    units_meta_solid('time') ==
                     b.volume_solid[t] *
                     b.solids[t]._params.mw_comp[j] *
                     sum(b.reactions[t].reaction_rate[r] *
@@ -268,24 +271,31 @@ see reaction package for documentation.}"""))
             def solids_energy_holdup_constraints(b, t):
                 return b.solids_energy_holdup[t] == (
                       self.volume_solid[t] *
-                      b.solids[t].get_energy_density_terms("Sol"))
+                      pyunits.convert(
+                          b.solids[t].get_energy_density_terms("Sol"),
+                          to_units=units_meta_solid('energy') /
+                          units_meta_solid('volume')))
 
             self.solids_energy_accumulation = DerivativeVar(
                         self.solids_energy_holdup,
                         wrt=self.flowsheet().config.time,
                         doc="Solids energy accumulation",
-                        units=units_meta_solid('energy') /
-                            units_meta_solid('time'))
+                        units=units_meta_solid('energy'))
+            # should be energy/time, to get around DAE limitations var is
+            # divided by time units when used
 
             @self.Constraint(self.flowsheet().config.time,
                              doc="Solid phase energy accumulation constraints")
             def solids_energy_accumulation_constraints(b, t):
-                return b.solids_energy_accumulation[t] == \
-                    - sum(b.reactions[t].reaction_rate[r] *
-                          b.volume_solid[t] *
-                          b.reactions[t].dh_rxn[r]
-                          for r in b.config.reaction_package.
-                          rate_reaction_idx)
+                return (b.solids_energy_accumulation[t] /
+                        units_meta_solid('time') ==
+                        - sum(b.reactions[t].reaction_rate[r] *
+                              b.volume_solid[t] *
+                              pyunits.convert(
+                              b.reactions[t].dh_rxn[r],
+                              to_units=units_meta_solid('energy_mole'))
+                              for r in b.config.reaction_package.
+                              rate_reaction_idx))
         if self.config.energy_balance_type == EnergyBalanceType.none:
             # Fix solids temperature to initial value for isothermal conditions
             @self.Constraint(
