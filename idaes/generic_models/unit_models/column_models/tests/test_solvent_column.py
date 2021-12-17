@@ -22,6 +22,7 @@ from pyomo.environ import \
 from pyomo.util.check_units import assert_units_consistent
 
 # Import IDAES Libraries
+import idaes
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.column_models.solvent_column \
     import PackedColumn
@@ -81,19 +82,19 @@ class TestAbsorberColumn:
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.11602)
 
         # Fix vapor phase mass transfer coefficient values
-        k_v_values = [[0, 0], [2.837e-05, 3.728e-05], [2.862e-05, 3.757e-05],
+        mass_transfer_coeff_vap_values = [[0, 0], [2.837e-05, 3.728e-05], [2.862e-05, 3.757e-05],
                       [2.891e-05, 3.788e-05], [2.924e-05, 3.825e-05],
                       [2.965e-05, 3.87e-05], [3.018e-05, 3.929e-05],
                       [3.092e-05, 4.011e-05], [3.195e-05, 4.126e-05],
                       [3.305e-05, 4.251e-05], [3.18e-05, 4.121e-05]]
 
         # Fix liquid phase mass transfer coefficient values
-        k_l_values = [9.613e-05, 9.861e-05, 0.0001012, 0.000104,
+        mass_transfer_coeff_liq_values = [9.613e-05, 9.861e-05, 0.0001012, 0.000104,
                       0.0001072, 0.0001111, 0.0001159, 0.0001222,
                       0.0001294, 0.0001311, 0.001]
 
         # Fix vapor phase heat transfer coefficient values
-        h_v_values = [100, 102.3, 103.1, 103.9, 104.9, 106.1, 107.6, 109.7,
+        heat_transfer_coeff_values = [100, 102.3, 103.1, 103.9, 104.9, 106.1, 107.6, 109.7,
                       112.6, 115.5, 111.8]
 
         # Fix interfacial area values
@@ -110,20 +111,20 @@ class TestAbsorberColumn:
             for i, x in enumerate(m.fs.unit.vapor_phase.length_domain):
                 for j, comp in enumerate(['CO2', 'H2O']):
                     if x == m.fs.unit.vapor_phase.length_domain.first():
-                        m.fs.unit.k_v[t, x, comp].fix(0.001)
+                        m.fs.unit.mass_transfer_coeff_vap[t, x, comp].fix(0.001)
                     else:
-                        m.fs.unit.k_v[t, x, comp].fix(k_v_values[i][j])
+                        m.fs.unit.mass_transfer_coeff_vap[t, x, comp].fix(mass_transfer_coeff_vap_values[i][j])
 
                 for j, comp in enumerate(['CO2']):
                     if x == m.fs.unit.liquid_phase.length_domain.last():
-                        m.fs.unit.k_l[t, x, comp].fix(0.001)
+                        m.fs.unit.mass_transfer_coeff_liq[t, x, comp].fix(0.001)
                     else:
-                        m.fs.unit.k_l[t, x, comp].fix(k_l_values[i])
+                        m.fs.unit.mass_transfer_coeff_liq[t, x, comp].fix(mass_transfer_coeff_liq_values[i])
 
                 if x == m.fs.unit.vapor_phase.length_domain.first():
-                    m.fs.unit.h_v[t, x].fix(100)
+                    m.fs.unit.heat_transfer_coeff[t, x].fix(100)
                 else:
-                    m.fs.unit.h_v[t, x].fix(h_v_values[i])
+                    m.fs.unit.heat_transfer_coeff[t, x].fix(heat_transfer_coeff_values[i])
 
                 if x == m.fs.unit.vapor_phase.length_domain.first():
                     m.fs.unit.area_interfacial[t, x].fix(0)
@@ -161,7 +162,8 @@ class TestAbsorberColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        initialization_tester(model, optarg={"tol": 1e-8})
+        with idaes.temporary_config_ctx():
+            initialization_tester(model, optarg={"tol": 1e-8})
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -251,19 +253,19 @@ class TestStripperColumn:
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.1122)
 
         # Fix vapor phase mass transfer coefficient values
-        k_v_values = [[0, 0], [2.837e-05, 3.728e-05], [2.862e-05, 3.757e-05],
+        mass_transfer_coeff_vap_values = [[0, 0], [2.837e-05, 3.728e-05], [2.862e-05, 3.757e-05],
                       [2.891e-05, 3.788e-05], [2.924e-05, 3.825e-05],
                       [2.965e-05, 3.87e-05], [3.018e-05, 3.929e-05],
                       [3.092e-05, 4.011e-05], [3.195e-05, 4.126e-05],
                       [3.305e-05, 4.251e-05], [3.18e-05, 4.121e-05]]
 
         # Fix liquid phase mass transfer coefficient values
-        k_l_values = [9.613e-05, 9.861e-05, 0.0001012, 0.000104,
+        mass_transfer_coeff_liq_values = [9.613e-05, 9.861e-05, 0.0001012, 0.000104,
                       0.0001072, 0.0001111, 0.0001159, 0.0001222,
                       0.0001294, 0.0001311, 0.001]
 
         # Fix vapor phase heat transfer coefficient values
-        h_v_values = [100, 102.3, 103.1, 103.9, 104.9, 106.1, 107.6, 109.7,
+        heat_transfer_coeff_values = [100, 102.3, 103.1, 103.9, 104.9, 106.1, 107.6, 109.7,
                       112.6, 115.5, 111.8]
 
         # Fix interfacial area values
@@ -280,20 +282,20 @@ class TestStripperColumn:
             for i, x in enumerate(m.fs.unit.vapor_phase.length_domain):
                 for j, comp in enumerate(['CO2', 'H2O']):
                     if x == m.fs.unit.vapor_phase.length_domain.first():
-                        m.fs.unit.k_v[t, x, comp].fix(0.001)
+                        m.fs.unit.mass_transfer_coeff_vap[t, x, comp].fix(0.001)
                     else:
-                        m.fs.unit.k_v[t, x, comp].fix(k_v_values[i][j])
+                        m.fs.unit.mass_transfer_coeff_vap[t, x, comp].fix(mass_transfer_coeff_vap_values[i][j])
 
                 for j, comp in enumerate(['CO2']):
                     if x == m.fs.unit.liquid_phase.length_domain.last():
-                        m.fs.unit.k_l[t, x, comp].fix(0.001)
+                        m.fs.unit.mass_transfer_coeff_liq[t, x, comp].fix(0.001)
                     else:
-                        m.fs.unit.k_l[t, x, comp].fix(k_l_values[i])
+                        m.fs.unit.mass_transfer_coeff_liq[t, x, comp].fix(mass_transfer_coeff_liq_values[i])
 
                 if x == m.fs.unit.vapor_phase.length_domain.first():
-                    m.fs.unit.h_v[t, x].fix(100)
+                    m.fs.unit.heat_transfer_coeff[t, x].fix(100)
                 else:
-                    m.fs.unit.h_v[t, x].fix(h_v_values[i])
+                    m.fs.unit.heat_transfer_coeff[t, x].fix(heat_transfer_coeff_values[i])
 
                 if x == m.fs.unit.vapor_phase.length_domain.first():
                     m.fs.unit.area_interfacial[t, x].fix(0)
