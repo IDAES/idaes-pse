@@ -27,7 +27,7 @@ from idaes.surrogate.surrogate_block import SurrogateBlock
 from idaes.surrogate.sampling.scaling import OffsetScaler
 
 if not keras_available:
-    pytestmark = pytest.mark.skip
+    pytestmark = pytest.mark.skip("tensorflow.keras not available")
 
 rtol = 1e-4
 atol = 1e-4
