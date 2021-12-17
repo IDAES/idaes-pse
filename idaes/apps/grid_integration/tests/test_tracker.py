@@ -6,6 +6,10 @@ from idaes.apps.grid_integration.tracker import Tracker
 
 class TestMissingModel:
 
+    """
+    A class for testing missing methods and attributes.
+    """
+
     method_list = ['populate_model', 'get_implemented_profile', 'update_model',\
                     'get_last_delivered_power','record_results', 'write_results']
     method_dict = {k: lambda: None for k in method_list}
@@ -32,6 +36,7 @@ def test_model_object_missing_methods():
     method_list = ['populate_model', 'get_implemented_profile', 'update_model',\
                     'get_last_delivered_power','record_results', 'write_results']
 
+    # test if the correct error message is raised if a model misses necessary methods
     for m in method_list:
         tracking_model_object = TestMissingModel(missing_method = m)
         with pytest.raises(AttributeError, match = r".*{}().*".format(m)):
@@ -46,6 +51,7 @@ def test_model_object_missing_attr():
     solver = pyo.SolverFactory('cbc')
     attr_list = ['power_output','total_cost']
 
+    # test if the correct error message is raised if a model misses necessary attributes
     for a in attr_list:
         tracking_model_object = TestMissingModel(missing_attr = a)
         with pytest.raises(AttributeError, match = r".*{}.*".format(a)):
@@ -55,6 +61,10 @@ def test_model_object_missing_attr():
 
 # declare a testing model class
 class TestingModel:
+
+    """
+    Simple model object for testing.
+    """
 
     pmin = 20.00
     pmax = 100.00
@@ -166,10 +176,11 @@ class TestingModel:
         solve.
 
         Arguments:
-            b: the block
-            model_var: intended variable name in str
-            last_implemented_time_step: time index for the last implemented time
-                                        step
+            b: the block.
+
+            model_var: intended variable name in str.
+
+            last_implemented_time_step: time index for the last implemented time step.
 
          Returns:
              profile: the intended profile, {unit: [...]}
@@ -201,8 +212,9 @@ class TestingModel:
 
         Arguments:
 
-            date: current simulation date
-            hour: current simulation hour
+            date: current simulation date.
+
+            hour: current simulation hour.
 
         Returns:
             None
@@ -279,12 +291,14 @@ def test_n_tracking_hour_checker():
     solver = pyo.SolverFactory('cbc')
     tracking_model_object = TestingModel(horizon = horizon)
 
+    # test if tracker raise error when negative number of hours is given
     n_tracking_hour = -1
     with pytest.raises(ValueError, match = r".*greater than zero.*"):
         tracker_object = Tracker(tracking_model_object = tracking_model_object,\
                                  n_tracking_hour = n_tracking_hour, \
                                  solver = solver)
 
+    # test if tracker raise error when floating number of hours is given
     n_tracking_hour = 3.0
     with pytest.raises(TypeError, match = r".*should be an integer.*"):
         tracker_object = Tracker(tracking_model_object = tracking_model_object,\
@@ -297,6 +311,7 @@ def test_solver_checker():
     n_tracking_hour = 1
     tracking_model_object = TestingModel(horizon = horizon)
 
+    # test if bidder raise error when invalid solver is provided
     invalid_solvers = [5, 'cbc', 'ipopt']
     for s in invalid_solvers:
         with pytest.raises(TypeError, match = r".*not a valid Pyomo solver.*"):

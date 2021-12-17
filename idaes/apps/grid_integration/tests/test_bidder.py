@@ -14,6 +14,10 @@ class TestingForecaster:
 
 class TestMissingModel:
 
+    """
+    A class for testing missing methods and attributes.
+    """
+
     method_dict = {k: lambda: None for k in ['populate_model', 'update_model']}
     attr_dict = {'power_output': 'power_output',\
                  'total_cost': ('tot_cost',1),\
@@ -42,6 +46,7 @@ def test_model_object_missing_methods():
 
     method_list = ['populate_model', 'update_model']
 
+    # test if the correct error message is raised if a model misses necessary methods
     for m in method_list:
         bidding_model_object = TestMissingModel(missing_method = m)
         with pytest.raises(AttributeError, match = r".*{}().*".format(m)):
@@ -58,6 +63,7 @@ def test_model_object_missing_attr():
 
     attr_list = ['power_output','total_cost','generator','pmin', 'default_bids']
 
+    # test if the correct error message is raised if a model misses necessary attributes
     for attr in attr_list:
         bidding_model_object = TestMissingModel(missing_attr = attr)
         with pytest.raises(AttributeError, match = r".*{}().*".format(attr)):
@@ -73,12 +79,14 @@ def test_n_scenario_checker():
     forecaster = TestingForecaster(horizon = horizon, n_sample = n_scenario)
     bidding_model_object = TestingModel(horizon = horizon)
 
+    # test if bidder raise error when negative number of scenario is given
     with pytest.raises(ValueError, match = r".*greater than zero.*"):
         bidder_object = Bidder(bidding_model_object = bidding_model_object,\
                                n_scenario = -1,\
                                solver = solver,\
                                forecaster = forecaster)
 
+    # test if bidder raise error when float number of scenario is given
     with pytest.raises(TypeError, match = r".*should be an integer.*"):
         bidder_object = Bidder(bidding_model_object = bidding_model_object,\
                                n_scenario = 3.0,\
@@ -92,6 +100,7 @@ def test_solver_checker():
     forecaster = TestingForecaster(horizon = horizon, n_sample = n_scenario)
     bidding_model_object = TestingModel(horizon = horizon)
 
+    # test if bidder raise error when invalid solver is provided
     invalid_solvers = [5, 'cbc', 'ipopt']
     for s in invalid_solvers:
         with pytest.raises(TypeError, match = r".*not a valid Pyomo solver.*"):
@@ -124,7 +133,8 @@ def test_compute_bids(bidder_object):
     pmax = bidder_object.bidding_model_object.pmax
     date = '2021-08-20'
 
-    # test forecaster lower than marginal cost
+    # test bidding when price forecast lower than marginal cost
+    # expect default bids
     shift = 1
     fixed_forecast = marginal_cost - shift
     bids = bidder_object.compute_bids(date = date, \
@@ -135,7 +145,7 @@ def test_compute_bids(bidder_object):
 
     assert expected_bids == bids
 
-    # test forecaster lower than marginal cost
+    # test bidding when price forecast higher than marginal cost
     shift = 1
     fixed_forecast = marginal_cost + shift
     bids = bidder_object.compute_bids(date = date, \

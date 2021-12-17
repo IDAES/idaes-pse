@@ -52,6 +52,7 @@ def test_assemble_project_tracking_signal(coordinator_object):
     current_ruc_dispatch = {(gen_name, t): (t+1) * 10 for t in range(24)}
     sced_horizon = tracking_horizon
 
+    # test if it assembles correct signals within a day
     hour = 10
     expected_signal = [(hour + 1 + i) * 10 for i in range(sced_horizon)]
     signal = coordinator_object._assemble_project_tracking_signal(gen_name = gen_name,\
@@ -60,6 +61,7 @@ def test_assemble_project_tracking_signal(coordinator_object):
                                                                   sced_horizon = sced_horizon)
     assert signal == expected_signal
 
+    # test if it assembles correct signals between 2 days
     hour = 23
     expected_signal = [(hour + 1) * 10 for i in range(sced_horizon)]
     signal = coordinator_object._assemble_project_tracking_signal(gen_name = gen_name,\
@@ -76,7 +78,7 @@ def test_assemble_sced_tracking_market_signals(coordinator_object):
     sced_horizon = tracking_horizon
     current_ruc_dispatch = {(gen_name, t): (t+1) * 10 for t in range(24)}
 
-    # case 1
+    # test case 1: no ruc signals from next day
     hour = 10
     next_ruc_dispatch = None
     expected_signal = [sced_dispatch[0]] +\
@@ -89,7 +91,7 @@ def test_assemble_sced_tracking_market_signals(coordinator_object):
                                                                        next_ruc_dispatch = next_ruc_dispatch)
     assert signal == expected_signal
 
-    # case 2
+    # test case 2: no ruc signals, but between 2 days
     hour = 23
     next_ruc_dispatch = None
     expected_signal = sced_dispatch
@@ -101,7 +103,7 @@ def test_assemble_sced_tracking_market_signals(coordinator_object):
                                                                        next_ruc_dispatch = next_ruc_dispatch)
     assert signal == expected_signal
 
-    # case 3
+    # test case 3: with ruc signals, between 2 days
     hour = 23
     next_ruc_dispatch = {(gen_name, t): (t+1) * 10 for t in range(24)}
     expected_signal = [sced_dispatch[0]] +\
