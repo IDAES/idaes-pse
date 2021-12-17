@@ -17,12 +17,9 @@ import numpy as np
 import json
 import os.path
 
-try:
-    import tensorflow.keras as keras
-    keras_available = True
-except:
-    keras_available = False
-    
+from pyomo.common.dependencies import attempt_import
+keras, keras_available = attempt_import('tensorflow.keras')
+
 from enum import Enum
 import pandas as pd
 from idaes.surrogate.base.surrogate_base import SurrogateBase
