@@ -141,6 +141,7 @@ class PublicationDataset(Dataset):
             )
         pub_r.add_data_file(directory / file_, do_copy=self.copy_flag)
         pub_r.sources.append(meta)
+        pub_r.desc = pub.get("title", name)
         self._dmf.add(pub_r)
         _log.debug(f"publication_resource.create.end id={pub_r.id}")
 
@@ -178,6 +179,7 @@ class PublicationDataset(Dataset):
                     )
                 _log.debug(f"Adding table: path={table_path} desc={table_desc}")
                 tbl_r.add_table(table_path, desc=table_desc, do_copy=self.copy_flag)
+                tbl_r.desc = table_desc
                 tbl_r.name = table_name  # set name for this table
                 tbl_r.add_tag(name)  # add tag shared with publication
                 self._dmf.add(tbl_r)

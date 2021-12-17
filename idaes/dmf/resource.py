@@ -556,6 +556,26 @@ class Resource:
             self.v["aliases"].insert(0, value)
 
     @property
+    def desc(self):
+        """Get resource description"""
+        return self.v.get("desc", "")
+
+    @property
+    def description(self):
+        """Get resource description"""
+        return self.v.get("desc", "")
+
+    @desc.setter
+    def desc(self, value):
+        """Set resource description"""
+        self.v["desc"] = value
+
+    @description.setter
+    def description(self, value):
+        """Set resource description"""
+        self.v["desc"] = value
+
+    @property
     def type(self):
         """Get resource type."""
         return self.v[self.TYPE_FIELD]

@@ -62,11 +62,11 @@ class DataFormatError(Exception):
 class Table:
     """Represent a table stored in the DMF.
 
-    Tables are expected to have a header row with optional units,
-    encoded in [square brackets]. Whitespace is ignored between the column
+    Tables are expected to have a header row with optional units, which if present
+    are encoded in [square brackets]. Whitespace is ignored between the column
     name and the units. For example::
 
-            T [C], P [bar], G0/RT H2O [-], G0/RT NaCl [-], A phi [(kg/mol^0.5]
+            T [C], P [bar], G0/RT H2O, G0/RT NaCl [-], A phi [(kg/mol^0.5]
             0, 1, -23.4638, -13.836, 0.3767
     """
 
@@ -229,6 +229,12 @@ class Table:
         self._data.rename(columns=new_names, inplace=True)
         self._units = units_dict
 
+    #: Regular expression for extracting units from column names.
+    #: In plain English, the following forms are expected for a
+    #: column name: "Name", "Name[Units]", "Longer Name With $% Chars [ Units ]"
+    #: For both the Name and the Units, any sequence of characters valid
+    #: in the current encoding are acceptable (except, of course, a "["
+    #: in the name, which means start-of-units)
     UNITS_REGEX = r"""
         (?P<name>[^[]+) # column name
         (?:\s*\[        # start of [units] section
@@ -242,15 +248,15 @@ class Table:
         if m is None:
             raise DataFormatError(
                 name,
-                "No recognized column name. Expected format "
-                "is 'name [units]', where [units] is optional",
+                "No recognized column name. Expected syntax is "
+                "'name' or 'name [units]'",
             )
         new_name = m.group("name").strip()
         unit = m.group("units")
         if unit == "-" or unit is None:
             unit = ""  # normalize empty units to empty string
         else:
-            unit = unit.strip()
+            unit = unit.strip()  # note: may also end up
         return new_name, unit
 
     def add_to_resource(self, rsrc: Resource):
