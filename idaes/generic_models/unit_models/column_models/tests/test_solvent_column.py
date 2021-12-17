@@ -75,6 +75,7 @@ class TestAbsorberColumn:
         # Solvent liquid
         m.fs.unit.liquid_inlet.flow_mol.fix(37.55)
         m.fs.unit.liquid_inlet.temperature.fix(319.87)
+        m.fs.unit.liquid_inlet.pressure.fix(107650)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "CO2"].fix(0.00963)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "H2O"].fix(0.87435)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.11602)
@@ -160,7 +161,7 @@ class TestAbsorberColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        initialization_tester(model)
+        initialization_tester(model, optarg={"tol": 1e-8})
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -244,6 +245,7 @@ class TestStripperColumn:
         # Solvent liquid
         m.fs.unit.liquid_inlet.flow_mol.fix(84.48)
         m.fs.unit.liquid_inlet.temperature.fix(382.15)
+        m.fs.unit.liquid_inlet.pressure.fix(183430)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "CO2"].fix(0.0331)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "H2O"].fix(0.8547)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.1122)

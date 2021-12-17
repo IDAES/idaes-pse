@@ -118,9 +118,9 @@ def revert_state_vars(blk, flags):
                         v[i].unfix()
                 except KeyError:
                     raise ConfigurationError(
-                        'Indices of flags proved do not match with indices of'
-                        'the StateBlock. Please make sure you are using the '
-                        'correct StateBlock.')
+                        'Indices of flags provided do not match with indices '
+                        'of the StateBlock. Please make sure you are using '
+                        'the correct StateBlock.')
 
 
 def propagate_state(destination=None, source=None, arc=None,

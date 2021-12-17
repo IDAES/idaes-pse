@@ -35,6 +35,8 @@ from idaes.core.util.exceptions import InitializationError
 from idaes.core.control_volume1d import DistributedVars
 import idaes.logger as idaeslog
 
+from idaes.core.util.model_statistics import degrees_of_freedom
+
 
 __author__ = "Paul Akula, John Eslick, Anuja Deshpande, Andrew Lee"
 
@@ -395,10 +397,13 @@ and used when constructing these
         @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
                          doc='''Mechanical equilibruim: vapor-side pressure
-                                    equal liquid -side pressure''')
-        def mechanical_equil(bk, t, x):
-            return bk.liquid_phase.properties[t, x].pressure == \
-                    bk.vapor_phase.properties[t, x].pressure
+                         equal liquid -side pressure''')
+        def mechanical_equil(blk, t, x):
+            if x == self.liquid_phase.length_domain.first():
+                return Constraint.Skip
+            else:
+                return blk.liquid_phase.properties[t, x].pressure == \
+                    blk.vapor_phase.properties[t, x].pressure
 
         # Length of control volume : vapor side and liquid side
         @self.Constraint(doc="Vapor side length")
@@ -645,7 +650,7 @@ and used when constructing these
         # Set solver options
         opt = get_solver(solver, optarg)
 
-        dynamic_constraints = [
+        unit_constraints = [
             "pressure_at_interface",
             "mass_transfer_vapor",
             "liquid_phase_mass_transfer_handle",
@@ -655,9 +660,9 @@ and used when constructing these
             "liquid_phase_heat_transfer"]
 
         # ---------------------------------------------------------------------
-        # Deactivate unit model level constraints (asides geometry constraints)
+        # Deactivate unit model level constraints
         for c in blk.component_objects(Constraint, descend_into=True):
-            if c.local_name in dynamic_constraints:
+            if c.local_name in unit_constraints:
                 c.deactivate()
 
         # Fix variables
@@ -679,42 +684,17 @@ and used when constructing these
         # Provide state arguments for property package initialization
 
         init_log.info("Step 1: Property Package initialization")
-
-        vap_comp = blk.config.vapor_side.property_package.component_list
-        liq_apparent_comp = [
-            c[1] for c in blk.liquid_phase.properties.phase_component_set]
-
-        if vapor_phase_state_args is None:
-            vapor_phase_state_args = {
-                'flow_mol': blk.vapor_inlet.flow_mol[0].value,
-                'temperature': blk.vapor_inlet.temperature[0].value,
-                'pressure': blk.vapor_inlet.pressure[0].value,
-                'mole_frac_comp':
-                {j: blk.vapor_inlet.mole_frac_comp[0, j].value
-                 for j in vap_comp}}
-
-        if liquid_phase_state_args is None:
-            liquid_phase_state_args = {
-                'flow_mol': blk.liquid_inlet.flow_mol[0].value,
-                'temperature': blk.liquid_inlet.temperature[0].value,
-                'pressure': blk.vapor_inlet.pressure[0].value,
-                'mole_frac_comp':
-                {j: blk.liquid_inlet.mole_frac_comp[0, j].value
-                 for j in liq_apparent_comp}}
-
         # Initialize vapor_phase properties block
-        vflag = blk.vapor_phase.properties.initialize(
+        vflag = blk.vapor_phase.initialize(
             state_args=vapor_phase_state_args,
-            state_vars_fixed=False,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             hold_state=True)
 
         # Initialize liquid_phase properties block
-        lflag = blk.liquid_phase.properties.initialize(
+        lflag = blk.liquid_phase.initialize(
             state_args=liquid_phase_state_args,
-            state_vars_fixed=False,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -722,17 +702,9 @@ and used when constructing these
 
         init_log.info("Step 2: Steady-State isothermal mass balance")
 
-        # TODO : THis needs to be fixed!!!
-        blk.vapor_phase.properties.release_state(flags=vflag)
-        blk.liquid_phase.properties.release_state(flags=lflag)
-
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high("Step 2: {}.".format(idaeslog.condition(res)))
-
-        assert res.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert res.solver.status == SolverStatus.ok
 
         # ---------------------------------------------------------------------
         init_log.info('Step 3: Interface equilibrium')
@@ -765,12 +737,6 @@ and used when constructing these
         blk.liquid_phase_mass_transfer_handle.activate()
 
         # Fix this
-        optarg = {
-            "tol": 1e-8,
-            "max_iter": 150,
-            "bound_push": 1e-8}
-        opt.options = optarg
-
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high(
@@ -798,6 +764,9 @@ and used when constructing these
             "Step 5 complete: {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
+        blk.vapor_phase.release_state(flags=vflag)
+        blk.liquid_phase.release_state(flags=lflag)
+
         if (res.solver.termination_condition != TerminationCondition.optimal or
                 res.solver.status != SolverStatus.ok):
             raise InitializationError(
