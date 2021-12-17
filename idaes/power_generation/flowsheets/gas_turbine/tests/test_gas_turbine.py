@@ -15,9 +15,11 @@ __author__ = "John Eslick"
 
 import pytest
 import pyomo.environ as pyo
+import idaes
 from idaes.power_generation.flowsheets.gas_turbine.gas_turbine import (
     main, run_full_load)
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.solvers import use_idaes_solver_configuration_defaults
 
 solver_available = pyo.SolverFactory('ipopt').available()
 
@@ -35,18 +37,11 @@ def test_build():
         "h2_cmb":"H2"}
     phases = ["Vap"]
     air_comp = {
-        "CH4":0.0,
-        "C2H6":0.0,
-        "C2H4":0.0,
-        "CO":0.0,
-        "H2S":0.0,
-        "H2":0.0,
         "O2":0.2074,
         "H2O":0.0099,
         "CO2":0.0003,
         "N2":0.7732,
-        "Ar":0.0092,
-        "SO2":0.0}
+        "Ar":0.0092}
     ng_comp = {
         "CH4":0.87,
         "C2H6":0.0846,
@@ -79,7 +74,6 @@ def test_initialize():
     rxns = {"ch4_cmb":"CH4"}
     phases = ["Vap"]
     air_comp = {
-        "CH4":0.0,
         "O2":0.2074,
         "H2O":0.0099,
         "CO2":0.0003,
@@ -92,13 +86,17 @@ def test_initialize():
         "CO2":0.0,
         "N2":0.0,
         "Ar":0.0}
+    with idaes.temporary_config_ctx():
+        use_idaes_solver_configuration_defaults()
+        idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
+        idaes.cfg.ipopt["options"]["bound_push"] = 1e-6
 
-    m, solver = main(
-        comps=comps,
-        rxns=rxns,
-        phases=phases,
-        air_comp=air_comp,
-        ng_comp=ng_comp,
-        initialize=True)
-    res = run_full_load(m, solver)
+        m, solver = main(
+            comps=comps,
+            rxns=rxns,
+            phases=phases,
+            air_comp=air_comp,
+            ng_comp=ng_comp,
+            initialize=True)
+        res = run_full_load(m, solver)
     assert res.solver.status == pyo.SolverStatus.ok

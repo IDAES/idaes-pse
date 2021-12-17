@@ -975,16 +975,14 @@ class AlamoSurrogate(SurrogateBase):
 
         return pd.DataFrame(data=outputs, index=inputs.index, columns=self._output_labels)
 
-    def populate_block(self, block, **kwargs):
+    def populate_block(self, block, additional_options=None):
         """
         Method to populate a Pyomo Block with surrogate model constraints.
 
         Args:
             block: Pyomo Block component to be populated with constraints.
-            variables: dict mapping surrogate variable labels to existing
-                Pyomo Vars (default=None). If no mapping provided,
-                construct_variables will be called to create a set of new Vars.
-
+            additional_options: None
+               No additional options are required for this surrogate object
         Returns:
             None
         """
