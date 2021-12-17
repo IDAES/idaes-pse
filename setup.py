@@ -65,7 +65,6 @@ kwargs = dict(
         "numpy",
         "networkx",
         "omlt==0.3", # fix the version for now as package evolves
-        "tensorflow",
         "pandas",
         "pint",
         "psutil",
