@@ -217,7 +217,7 @@ and used when constructing these
 
         self.vapor_phase.apply_transformation()
 
-    # ==========================================================================
+        # =====================================================================
         """ Build Control volume 1D for liquid phase and
             populate liquid control volume
 
@@ -617,7 +617,6 @@ and used when constructing these
 
     # =========================================================================
     # Model initialization routine
-
     def initialize(blk,
                    vapor_phase_state_args=None,
                    liquid_phase_state_args=None,
@@ -626,7 +625,7 @@ and used when constructing these
                    solver=None,
                    optarg=None):
         """
-        Column initialization.
+        Standard Packed Column initialization.
 
         Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -637,7 +636,6 @@ and used when constructing these
                      default solver options)
             solver : str indicating which solver to use during initialization
                     (default = None, use IDAES default solver)
-
         """
 
         # Set up logger for initialization and solve
