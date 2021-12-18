@@ -30,7 +30,7 @@ def split_training_validation(dataframe, training_fraction, seed=None):
     Returns:
        tuple : (training_dataframe, validation_dataframe)
     """
-    return _split_dataframe(dataframe, [training_fraction], seed)
+    return split_dataframe(dataframe, [training_fraction], seed)
 
 def split_training_validation_testing(dataframe, training_fraction, validation_fraction, seed=None):
     """
@@ -54,11 +54,11 @@ def split_training_validation_testing(dataframe, training_fraction, validation_f
     Returns:
        tuple : (training_dataframe, validation_dataframe, testing_dataframe)
     """
-    return _split_dataframe(dataframe, [training_fraction, validation_fraction], seed)
+    return split_dataframe(dataframe, [training_fraction, validation_fraction], seed)
 
-def _split_dataframe(dataframe, fractions, seed=None):
+def split_dataframe(dataframe, fractions, seed=None):
     """
-    Randomly splits the dataframe into two dataframes.
+    Randomly splits the dataframe into multiple dataframes.
 
     Args:
        dataframe: pandas DataFrame
@@ -78,4 +78,8 @@ def _split_dataframe(dataframe, fractions, seed=None):
     # note seed=None is the default value for random_state (e.g., not seeded)
     shuffled_df = dataframe.sample(frac=1, random_state=seed).reset_index(drop=True)
     
-    return np.split(shuffled_df, [math.floor(f*len(shuffled_df)) for f in np.cumsum(fractions)])
+    dfs = np.split(shuffled_df, [math.floor(f*len(shuffled_df)) for f in np.cumsum(fractions)])
+    # reset all the indices
+    for df in dfs:
+        df.reset_index(drop=True, inplace=True)
+    return dfs
