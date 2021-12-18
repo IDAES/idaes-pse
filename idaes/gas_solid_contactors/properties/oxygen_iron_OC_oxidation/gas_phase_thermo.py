@@ -52,6 +52,7 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables_in_activated_equalities)
+from idaes.core.util.constants import Constants
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -112,10 +113,18 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 doc="Component molar heats of formation [kJ/mol]",
                 units=pyunits.kJ/pyunits.mol)
 
-        # Ideal gas spec. heat capacity parameters(Shomate) of
+        # Ideal gas spec. heat capacity parameters (Shomate) of
         # components - ref: NIST webbook. Shomate equations from NIST.
         # Parameters A-E are used for cp calcs while A-H are used for enthalpy
         # calc.
+        #
+        # Note that the temperature ranges over which these parameters are
+        # valid, per NIST webbook, are different depending on species. In
+        # addition they may not contain the entire operating region of a
+        # unit model. Really enthalpy should be a piecewise continuous
+        # function of temperature that uses parameters only in the range
+        # they are valid, but we have not implemented this.
+        #
         # 1e3*cp_comp = A + B*T + C*T^2 + D*T^3 + E/(T^2)
         # where T = Temperature (K)/1000, and cp_comp = (kJ/mol.K)
         # H_comp = H - H(298.15) = A*T + B*T^2/2 + C*T^3/3 +
@@ -194,6 +203,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         # Component diffusion volumes:
         # Ref: (1) Prop gas & liquids (2) Fuller et al. IECR, 58(5), 19, 1966
+        # NOTE: These parameters are dimensionless.
         diff_vol_param_dict = {'O2': 16.6, 'N2': 17.9,
                                'CO2': 26.9, 'H2O': 13.1}
         self.diff_vol_param = Param(self.component_list,
@@ -489,8 +499,12 @@ class GasPhaseStateBlockData(StateBlockData):
                             units=pyunits.mol/pyunits.m**3)
 
         def ideal_gas(b):
-            return (b.dens_mol*b._params.gas_const*b.temperature*1e-2 ==
-                    b.pressure)
+            return (
+                    b.dens_mol
+                    * Constants.gas_constant # [=] J/mol/K
+                    * b.temperature ==
+                    b.pressure*(1e5*pyunits.Pa/pyunits.bar)
+                    )
         try:
             # Try to build constraint
             self.ideal_gas = Constraint(rule=ideal_gas)
@@ -576,18 +590,26 @@ class GasPhaseStateBlockData(StateBlockData):
         # Component diffusion in a gas mixture - units of cm2/s to help scaling
         self.diffusion_comp = Var(self._params.component_list,
                                   domain=Reals,
-                                  initialize=1e-5,
+                                  initialize=1.0,
                                   doc='Component diffusion in a gas mixture'
                                   '[cm2/s]',
                                   units=pyunits.cm**2/pyunits.s)
 
         def D_bin(i, j):
+            emperical_coef_units = (
+                pyunits.cm**2 / pyunits.s
+                / pyunits.K**1.75
+                * pyunits.kg**0.5 / pyunits.kmol**0.5
+                * pyunits.bar
+            )
             # 1e3 used to multiply MW to convert from kg/mol to kg/kmol
-            return ((1.43e-3*(self.temperature**1.75) *
-                     ((1e3 * self._params.mw_comp[i] +
-                       1e3 * self._params.mw_comp[j])
-                     / (2 * (1e3 * self._params.mw_comp[i]) *
-                        (1e3*self._params.mw_comp[j])))**0.5)
+            return ((1.43e-3*emperical_coef_units*(self.temperature**1.75) *
+                     ((1e3*pyunits.mol/pyunits.kmol * self._params.mw_comp[i] +
+                       1e3*pyunits.mol/pyunits.kmol * self._params.mw_comp[j])
+                     / (2 * 
+                         (1e3*pyunits.mol/pyunits.kmol * self._params.mw_comp[i]) *
+                         (1e3*pyunits.mol/pyunits.kmol * self._params.mw_comp[j])
+                       ))**0.5)
                     / ((self.pressure)
                         * ((self._params.diff_vol_param[i]**(1/3))
                             + (self._params.diff_vol_param[j]**(1/3)))**2))
