@@ -383,7 +383,55 @@ class Bidder:
                 pre_power = power
                 pre_cost += marginal_cost * delta_p
 
+        # check if bids are convex
+        for t in bids:
+            for gen in bids[t]:
+                if not self._is_convex_bid(bids[t][gen]):
+                    raise RuntimeError(
+                        f"Bids for generator {gen} at hour {t} is not convex!"
+                    )
+
         return bids
+
+    @staticmethod
+    def _is_convex_bid(bids):
+
+        """
+        This method checks the convexity of a bid at a single time period from a
+         single generator.
+
+        Arguments:
+            bids: a bids at at a single time period from a single generator,
+            which is a dictionary whose keys are the power outputs and the values
+             are the corresponding costs. {power: cost}
+
+        Returns:
+            bids: the bid we computed. It is a dictionary that has this structure. {t: {gen:{power: cost}}}.
+        """
+
+        power = list(bids.keys())
+        power.sort()
+
+        idx = 0
+        delta_p = []
+        marginal_cost = []
+
+        # calculate marginal costs (slope)
+        while idx < len(power) - 1:
+            delta_p.append(power[idx + 1] - power[idx])
+            marginal_cost.append(
+                (bids[power[idx + 1]] - bids[power[idx]]) / delta_p[-1]
+            )
+            idx += 1
+
+        # check whether the marginal costs are sorted <=> convex
+        idx = 0
+        while idx < len(marginal_cost) - 1:
+            if marginal_cost[idx] > marginal_cost[idx + 1]:
+                return False
+            idx += 1
+
+        return True
 
     def record_bids(self, bids, date, hour):
 
