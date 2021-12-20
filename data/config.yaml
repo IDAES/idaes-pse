@@ -1,8 +1,8 @@
-_id: 5648dd0b011f42d2801381ea698df9d3
-created: '2021-10-20T20:55:37.739224'
-description: Standard IDAES datasets
+_id: d779730c7cc94155877a24e2e8be2ad1
+created: '2021-12-20T14:24:42.931905'
+description: Built-in IDAES workspace
 htmldocs:
 - https://idaes-pse.readthedocs.io/en/stable
 - '{dmf_root}/docs/build/html'
-modified: '2021-10-20T20:55:37.739224'
-name: idaes_data
+modified: '2021-12-20T14:24:42.931905'
+name: IDAES
