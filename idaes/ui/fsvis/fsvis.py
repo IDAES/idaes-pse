@@ -51,6 +51,7 @@ def visualize(
     flowsheet,
     name: str = "flowsheet",
     save: Optional[Union[Path, str, bool]] = None,
+    load_from_saved: bool = True,
     save_dir: Optional[Path] = None,
     overwrite: bool = False,
     browser: bool = True,
@@ -68,6 +69,8 @@ def visualize(
     Args:
         flowsheet: IDAES flowsheet to visualize
         name: Name of flowsheet to display as the title of the visualization
+        load_from_saved: If True load from saved file if any. Otherwise create
+          a new file or overwrite it (depending on 'overwrite' flag).
         save: Where to save the current flowsheet layout and values. If this argument is not specified,
           "``name``.json" will be used (if this file already exists, a "-`<version>`" number will be added
           between the name and the extension). If the value given is the boolean 'False', then nothing
@@ -127,14 +130,22 @@ def visualize(
     if save_path is None:
         datastore = persist.MemoryDataStore()
     else:
-        # deal with duplicate names
-        try:
-            save_path = _handle_existing_save_path(
-                name, save_path, max_versions=MAX_SAVED_VERSIONS, overwrite=overwrite
-            )
-        except errors.TooManySavedVersions as err:
-            raise RuntimeError(f"In visualize(): {err}")
-        datastore = persist.DataStore.create(save_path)
+        if save_path.exists() and load_from_saved:
+            # Load from saved
+            datastore = persist.DataStore.create(save_path)
+            print(f"Loading saved flowsheet from '{save_path}'")
+            datastore.load()
+        else:
+            # Create new file
+            # deal with duplicate names
+            try:
+                save_path = _handle_existing_save_path(
+                    name, save_path, max_versions=MAX_SAVED_VERSIONS, overwrite=overwrite
+                )
+            except errors.TooManySavedVersions as err:
+                raise RuntimeError(f"In visualize(): {err}")
+            datastore = persist.DataStore.create(save_path)
+
         if use_default:
             if not quiet:
                 cwd = save_path.parent.absolute()
@@ -202,7 +213,7 @@ def _handle_existing_save_path(name, save_path, max_versions=10, overwrite=None)
     # Handle simple cases: overwrite, and no existing file
     if overwrite:
         if save_path.exists():
-            _log.warning("Overwriting existing save file '{save_path}'")
+            _log.warning(f"Overwriting existing save file '{save_path}'")
             save_path.open("w")  # blank file
         return save_path
     elif not save_path.exists():
