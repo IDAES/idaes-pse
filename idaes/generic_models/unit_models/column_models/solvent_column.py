@@ -540,27 +540,6 @@ and used when constructing these
             initialize=100,
             doc='Vapor-liquid heat transfer coefficient')
 
-        # Vapor-liquid heat transfer coeff modified by Ackmann factor
-        def rule_heat_transfer_coeff_Ack(blk, t, x):
-            if x == self.vapor_phase.length_domain.first():
-                return Expression.Skip
-            else:
-                Ackmann_factor =\
-                    sum(blk.vapor_phase.properties[
-                            t, x].cp_mol_phase_comp['Vap', j] *
-                        blk.interphase_mass_transfer[t, x, j]
-                        for j in equilibrium_comp)
-                return Ackmann_factor /\
-                    (1 - exp(-Ackmann_factor /
-                             (blk.heat_transfer_coeff[t, x] *
-                              blk.area_interfacial[t, x] *
-                              blk.area_column)))
-        self.heat_transfer_coeff_Ack = Expression(
-            self.flowsheet().time,
-            self.vapor_phase.length_domain,
-            rule=rule_heat_transfer_coeff_Ack,
-            doc='Vap-Liq heat transfer coefficient corrected by Ackmann factor')
-
         # Heat transfer
         @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,
@@ -571,7 +550,7 @@ and used when constructing these
             else:
                 zb = self.liquid_phase.length_domain.prev(x)
                 return blk.vapor_phase.heat[t, x] == -(
-                    blk.heat_transfer_coeff_Ack[t, x] *
+                    blk.heat_transfer_coeff[t, x] *
                     (blk.liquid_phase.properties[t, zb].temperature -
                      blk.vapor_phase.properties[t, x].temperature))
 

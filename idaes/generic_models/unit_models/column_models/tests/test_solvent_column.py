@@ -84,7 +84,7 @@ class TestAbsorberColumn:
         m.fs.unit.mass_transfer_coeff_vap[0, :, "CO2"].fix(3e-5)
         m.fs.unit.mass_transfer_coeff_vap[0, :, "H2O"].fix(4e-5)
         m.fs.unit.mass_transfer_coeff_liq[0, :, "CO2"].fix(1e-4)
-        m.fs.unit.heat_transfer_coeff.fix(110)
+        m.fs.unit.heat_transfer_coeff.fix(7100)
         m.fs.unit.area_interfacial.fix(200)
         m.fs.unit.enhancement_factor.fix(30)
 
@@ -130,6 +130,8 @@ class TestAbsorberColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
+        model.fs.unit.vapor_outlet.display()
+        model.fs.unit.liquid_outlet.display()
         assert pytest.approx(22.6736, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0])
         assert pytest.approx(0.0296658, rel=1e-5) == value(
@@ -237,7 +239,7 @@ class TestStripperColumn:
         m.fs.unit.mass_transfer_coeff_vap[0, :, "CO2"].fix(3e-5)
         m.fs.unit.mass_transfer_coeff_vap[0, :, "H2O"].fix(4e-5)
         m.fs.unit.mass_transfer_coeff_liq[0, :, "CO2"].fix(1e-4)
-        m.fs.unit.heat_transfer_coeff.fix(110)
+        m.fs.unit.heat_transfer_coeff.fix(7100)
         m.fs.unit.area_interfacial.fix(200)
         m.fs.unit.enhancement_factor.fix(30)
 
@@ -282,6 +284,8 @@ class TestStripperColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
+        model.fs.unit.vapor_outlet.display()
+        model.fs.unit.liquid_outlet.display()
         assert pytest.approx(12.1819, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0])
         assert pytest.approx(0.0996618, rel=1e-5) == value(

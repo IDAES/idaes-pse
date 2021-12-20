@@ -36,6 +36,7 @@ from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_sol
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
+import idaes.logger as idaeslog
 
 
 # -----------------------------------------------------------------------------
@@ -120,7 +121,7 @@ class TestAbsorberColumn:
                     m.fs.unit.mass_transfer_coeff_liq[t, x, comp].fix(
                             mass_transfer_coeff_liq_values[i])
 
-                m.fs.unit.heat_transfer_coeff[t, x].fix(
+                m.fs.unit.heat_transfer_coeff_base[t, x].fix(
                         heat_transfer_coeff_values[i])
 
                 m.fs.unit.area_interfacial[t, x].fix(
@@ -314,7 +315,7 @@ class TestStripperColumn:
                     m.fs.unit.mass_transfer_coeff_liq[t, x, comp].fix(
                         mass_transfer_coeff_liq_values[i])
 
-                m.fs.unit.heat_transfer_coeff[t, x].fix(
+                m.fs.unit.heat_transfer_coeff_base[t, x].fix(
                     heat_transfer_coeff_values[i])
 
                 m.fs.unit.area_interfacial[t, x].fix(
@@ -347,7 +348,7 @@ class TestStripperColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        initialization_tester(model)
+        initialization_tester(model, outlvl=idaeslog.DEBUG)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
