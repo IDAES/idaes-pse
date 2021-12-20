@@ -50,6 +50,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables_in_activated_equalities)
+from idaes.core.util.constants import Constants
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver, scaling as iscale
 
@@ -123,30 +124,30 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # H_comp = H - H(298.15) = A*T + B*T^2/2 + C*T^3/3 +
         # D*T^4/4 - E/T + F - H where T = Temp (K)/1000 and H_comp = (kJ/mol)
         cp_param_dict = {
-                        ('CH4', 1): -0.7030290*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('CH4', 2): 108.4773000*pyunits.kJ/pyunits.mol/pyunits.K**2,
-                        ('CH4', 3): -42.5215700*pyunits.kJ/pyunits.mol/pyunits.K**3,
-                        ('CH4', 4): 5.8627880*pyunits.kJ/pyunits.mol/pyunits.K**4,
-                        ('CH4', 5): 0.6785650*pyunits.kJ/pyunits.mol*pyunits.K,
-                        ('CH4', 6): -76.8437600*pyunits.kJ/pyunits.mol,
-                        ('CH4', 7): 158.7163000*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('CH4', 8): -74.8731000*pyunits.kJ/pyunits.mol,
-                        ('CO2', 1): 24.9973500*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('CO2', 2): 55.1869600*pyunits.kJ/pyunits.mol/pyunits.K**2,
-                        ('CO2', 3): -33.6913700*pyunits.kJ/pyunits.mol/pyunits.K**3,
-                        ('CO2', 4): 7.9483870*pyunits.kJ/pyunits.mol/pyunits.K**4,
-                        ('CO2', 5): -0.1366380*pyunits.kJ/pyunits.mol*pyunits.K,
-                        ('CO2', 6): -403.6075000*pyunits.kJ/pyunits.mol,
-                        ('CO2', 7): 228.2431000*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('CO2', 8): -393.5224000*pyunits.kJ/pyunits.mol,
-                        ('H2O', 1): 30.0920000*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('H2O', 2): 6.8325140*pyunits.kJ/pyunits.mol/pyunits.K**2,
-                        ('H2O', 3): 6.7934350*pyunits.kJ/pyunits.mol/pyunits.K**3,
-                        ('H2O', 4): -2.5344800*pyunits.kJ/pyunits.mol/pyunits.K**4,
-                        ('H2O', 5): 0.0821390*pyunits.kJ/pyunits.mol*pyunits.K,
-                        ('H2O', 6): -250.8810000*pyunits.kJ/pyunits.mol,
-                        ('H2O', 7): 223.3967000*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('H2O', 8): -241.8264000*pyunits.kJ/pyunits.mol
+                        ('CH4', 1): -0.7030290,
+                        ('CH4', 2): 108.4773000,
+                        ('CH4', 3): -42.5215700,
+                        ('CH4', 4): 5.8627880,
+                        ('CH4', 5): 0.6785650,
+                        ('CH4', 6): -76.8437600,
+                        ('CH4', 7): 158.7163000,
+                        ('CH4', 8): -74.8731000,
+                        ('CO2', 1): 24.9973500,
+                        ('CO2', 2): 55.1869600,
+                        ('CO2', 3): -33.6913700,
+                        ('CO2', 4): 7.9483870,
+                        ('CO2', 5): -0.1366380,
+                        ('CO2', 6): -403.6075000,
+                        ('CO2', 7): 228.2431000,
+                        ('CO2', 8): -393.5224000,
+                        ('H2O', 1): 30.0920000,
+                        ('H2O', 2): 6.8325140,
+                        ('H2O', 3): 6.7934350,
+                        ('H2O', 4): -2.5344800,
+                        ('H2O', 5): 0.0821390,
+                        ('H2O', 6): -250.8810000,
+                        ('H2O', 7): 223.3967000,
+                        ('H2O', 8): -241.8264000
                         }
         self.cp_param = Param(self.component_list,
                               range(1, 10),
@@ -472,10 +473,10 @@ class GasPhaseStateBlockData(StateBlockData):
                             units=pyunits.mol/pyunits.m**3)
 
         def ideal_gas(b):
-            return (b.dens_mol * pyunits.convert(
-                b._params.gas_const,
-                to_units=pyunits.J/pyunits.mol/pyunits.K) *
-                    b.temperature ==
+            return (
+                    b.dens_mol
+                    * Constants.gas_constant # [=] J/mol/K
+                    * b.temperature ==
                     pyunits.convert(b.pressure, to_units=pyunits.Pa))
         try:
             # Try to build constraint

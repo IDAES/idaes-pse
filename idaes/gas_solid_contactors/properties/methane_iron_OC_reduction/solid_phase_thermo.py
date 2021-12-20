@@ -114,30 +114,31 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # H_comp = H - H(298.15) = A*T + B*T^2/2 + C*T^3/3 +
         # D*T^4/4 - E/T + F - H where T = Temp (K)/1000 and H_comp = (kJ/mol)
         cp_param_dict = {
-                        ('Al2O3', 1): 102.4290*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('Al2O3', 2): 38.74980*pyunits.kJ/pyunits.mol/pyunits.K**2,
-                        ('Al2O3', 3): -15.91090*pyunits.kJ/pyunits.mol/pyunits.K**3,
-                        ('Al2O3', 4): 2.628181*pyunits.kJ/pyunits.mol/pyunits.K**4,
-                        ('Al2O3', 5): -3.007551*pyunits.kJ/pyunits.mol*pyunits.K,
-                        ('Al2O3', 6): -1717.930*pyunits.kJ/pyunits.mol,
-                        ('Al2O3', 7): 146.9970*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('Al2O3', 8): -1675.690*pyunits.kJ/pyunits.mol,
-                        ('Fe3O4', 1): 200.8320000*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('Fe3O4', 2): 1.586435e-7*pyunits.kJ/pyunits.mol/pyunits.K**2,
-                        ('Fe3O4', 3): -6.661682e-8*pyunits.kJ/pyunits.mol/pyunits.K**3,
-                        ('Fe3O4', 4): 9.452452e-9*pyunits.kJ/pyunits.mol/pyunits.K**4,
-                        ('Fe3O4', 5): 3.18602e-8*pyunits.kJ/pyunits.mol*pyunits.K,
-                        ('Fe3O4', 6): -1174.1350000*pyunits.kJ/pyunits.mol,
-                        ('Fe3O4', 7): 388.0790000*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('Fe3O4', 8): -1120.8940000*pyunits.kJ/pyunits.mol,
-                        ('Fe2O3', 1): 110.9362000*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('Fe2O3', 2): 32.0471400*pyunits.kJ/pyunits.mol/pyunits.K**2,
-                        ('Fe2O3', 3): -9.1923330*pyunits.kJ/pyunits.mol/pyunits.K**3,
-                        ('Fe2O3', 4): 0.9015060*pyunits.kJ/pyunits.mol/pyunits.K**4,
-                        ('Fe2O3', 5): 5.4336770*pyunits.kJ/pyunits.mol*pyunits.K,
-                        ('Fe2O3', 6): -843.1471000*pyunits.kJ/pyunits.mol,
-                        ('Fe2O3', 7): 228.3548000*pyunits.kJ/pyunits.mol/pyunits.K,
-                        ('Fe2O3', 8): -825.5032000*pyunits.kJ/pyunits.mol}
+                        ('Al2O3', 1): 102.4290,
+                        ('Al2O3', 2): 38.74980,
+                        ('Al2O3', 3): -15.91090,
+                        ('Al2O3', 4): 2.628181,
+                        ('Al2O3', 5): -3.007551,
+                        ('Al2O3', 6): -1717.930,
+                        ('Al2O3', 7): 146.9970,
+                        ('Al2O3', 8): -1675.690,
+                        ('Fe3O4', 1): 200.8320000,
+                        ('Fe3O4', 2): 1.586435e-7,
+                        ('Fe3O4', 3): -6.661682e-8,
+                        ('Fe3O4', 4): 9.452452e-9,
+                        ('Fe3O4', 5): 3.18602e-8,
+                        ('Fe3O4', 6): -1174.1350000,
+                        ('Fe3O4', 7): 388.0790000,
+                        ('Fe3O4', 8): -1120.8940000,
+                        ('Fe2O3', 1): 110.9362000,
+                        ('Fe2O3', 2): 32.0471400,
+                        ('Fe2O3', 3): -9.1923330,
+                        ('Fe2O3', 4): 0.9015060,
+                        ('Fe2O3', 5): 5.4336770,
+                        ('Fe2O3', 6): -843.1471000,
+                        ('Fe2O3', 7): 228.3548000,
+                        ('Fe2O3', 8): -825.5032000
+                        }
         self.cp_param = Param(self.component_list,
                               range(1, 10),
                               mutable=False,
@@ -602,4 +603,5 @@ class SolidPhaseStateBlockData(StateBlockData):
 
         if hasattr(self, "sum_component_eqn"):
             for t, v in self.sum_component_eqn.items():
-                iscale.set_scaling_factor(v, 1e2)
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e2)
