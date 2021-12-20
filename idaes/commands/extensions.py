@@ -46,6 +46,20 @@ def print_extensions_version(library_only=False):
     click.echo("===================================================")
     return 0
 
+def print_license():
+    click.echo("---------------------------------------------------")
+    click.echo("IDAES Extensions License Information")
+    click.echo("===================================================")
+    fpath = os.path.join(idaes.bin_directory, "license.txt")
+    try:
+        with open(fpath, "r") as f:
+            for line in f.readlines():
+                click.echo(line.strip())
+    except FileNotFoundError:
+        click.echo("no license file found")
+    click.echo("")
+    click.echo("===================================================")
+    return 0
 
 @cb.command(name="get-extensions", help="Get solvers and libraries")
 @click.option(
@@ -105,6 +119,10 @@ def print_extensions_version(library_only=False):
     "--to",
     default=None,
     help="Put extensions in a alternate location")
+@click.option(
+    "--license",
+    is_flag=True,
+    help="Display currently installed license info, no install")
 @click.option("--verbose", help="Show details", is_flag=True)
 def get_extensions(
     release,
@@ -121,9 +139,13 @@ def get_extensions(
     show_extras,
     extras_only,
     extra,
-    to):
-
-    if show_platforms:
+    to,
+    license,
+    ):
+    if license:
+        print_license()
+        return
+    elif show_platforms:
         click.echo("\nSupported platforms for IDAES binary extensions.")
         for key, mes in sorted(idaes.config.known_binary_platform.items()):
             click.echo(f"    {key}: {mes}")

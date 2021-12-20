@@ -41,6 +41,7 @@ import idaes.generic_models.properties.core.pure.Perrys as Perrys
 import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         IdealBubbleDew
+from idaes.generic_models.properties.core.phase_equil.henry import HenryType
 
 import idaes.logger as idaeslog
 
@@ -141,6 +142,10 @@ class TestNoHenryComps(object):
         model.props[1].pressure.fix(101325)
         model.props[1].mole_frac_comp["A"].fix(0.5)
         model.props[1].mole_frac_comp["B"].fix(0.5)
+
+        # Trigger construction of some things we will test later
+        model.props[1].pressure_bubble
+        model.props[1].pressure_dew
 
         return model
 
@@ -321,7 +326,8 @@ configuration = {
                                               'C': -2.83433,
                                               'D': -2.79168}}},
         "C": {"type": Component,
-              "henry_component": {"Liq": ConstantH},
+              "henry_component": {"Liq": {"method": ConstantH,
+                                          "type": HenryType.Kpx}},
               "enth_mol_liq_comp": Perrys,
               "enth_mol_ig_comp": RPP4,
               "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
@@ -384,6 +390,10 @@ class TestHenryComps0(object):
         model.props[1].mole_frac_comp["A"].fix(0.5)
         model.props[1].mole_frac_comp["B"].fix(0.5)
         model.props[1].mole_frac_comp["C"].fix(1e-10)
+
+        # Trigger construction of some things we will test later
+        model.props[1].pressure_bubble
+        model.props[1].pressure_dew
 
         return model
 
@@ -529,6 +539,10 @@ class TestHenryComps(object):
         model.props[1].mole_frac_comp["A"].fix(0.45)
         model.props[1].mole_frac_comp["B"].fix(0.45)
         model.props[1].mole_frac_comp["C"].fix(0.1)
+
+        # Trigger construction of some things we will test later
+        model.props[1].pressure_bubble
+        model.props[1].pressure_dew
 
         return model
 

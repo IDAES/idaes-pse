@@ -27,8 +27,10 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
     GenericReactionParameterBlock)
 import idaes.generic_models.unit_models as um # um = unit models
 import idaes.core.util as iutil
+from idaes.core.util.initialization import propagate_state
 import idaes.core.util.tables as tables
 import idaes.core.util.scaling as iscale
+from idaes.core.util.misc import get_solver
 import idaes.core.plugins
 from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
@@ -271,6 +273,44 @@ def main(
         m = pyo.ConcreteModel("Gas Turbine Model")
     if not hasattr(m, "fs"):
         m.fs = FlowsheetBlock(default={"dynamic": False})
+        
+    air_species = {"CO2","Ar","H2O","O2","N2"}
+    cmb_species = {"CH4","C2H6","C2H4","C3H8","C4H10","CO",
+                    "H2S","H2","O2","H2O","CO2","N2","Ar","SO2"}
+    fuel_species = {"H2","CH4","C2H6","C2H4","C3H8","C4H10"}
+    flue_species = {"CO2","Ar","H2O","O2","N2","SO2"}
+    
+    # Assuming the turbine runs lean, so there's still oxygen left after
+    # combustion
+    for comp,conc in air_comp.items():
+        if conc < 1E-12:
+            air_species.remove(comp)
+            cmb_species.remove(comp)
+            flue_species.remove(comp)
+    for comp,conc in ng_comp.items():
+        if conc < 1E-12:
+            if comp in fuel_species:
+                cmb_species.remove(comp)
+            if comp == "H2S":
+                cmb_species.remove("H2S")
+                cmb_species.remove("SO2")
+                flue_species.remove("SO2")
+    for comp in fuel_species:
+        if comp not in ng_comp.keys():
+            cmb_species.remove(comp)
+            
+    
+    m.fs.air_prop_params = GenericParameterBlock(
+        default=get_prop(air_species, phases))
+    m.fs.cmb_prop_params = GenericParameterBlock(
+        default=get_prop(cmb_species, phases))
+    m.fs.flue_prop_params = GenericParameterBlock(
+        default=get_prop(flue_species, phases))
+    
+    prop_packages = {m.fs.air_prop_params,m.fs.cmb_prop_params,
+                     m.fs.flue_prop_params}
+
+    
     m.fs.gas_prop_params = GenericParameterBlock(default=get_prop(comps, phases))
     m.fs.gas_prop_params.set_default_scaling("mole_frac_comp", 10)
     m.fs.gas_prop_params.set_default_scaling("mole_frac_phase_comp", 10)
@@ -286,16 +326,20 @@ def main(
         "C3H8":1000,
         "C4H10":1000,
         "CO2":1000}
-    for c, s in _mf_scale.items():
-        m.fs.gas_prop_params.set_default_scaling(
-            "mole_frac_comp", s, index=c)
-        m.fs.gas_prop_params.set_default_scaling(
-            "mole_frac_phase_comp", s, index=("Vap", c))
-    m.fs.gas_prop_params.set_default_scaling(
-        "enth_mol_phase", 1e-3, index="Vap")
+    for pp in prop_packages:
+        pp.set_default_scaling("mole_frac_comp", 10)
+        pp.set_default_scaling("mole_frac_phase_comp", 10)
+        for c, s in _mf_scale.items():
+            if c in pp.component_list:
+                pp.set_default_scaling(
+                    "mole_frac_comp", s, index=c)
+                pp.set_default_scaling(
+                    "mole_frac_phase_comp", s, index=("Vap", c))
+        pp.set_default_scaling(
+            "enth_mol_phase", 1e-3, index="Vap")
 
     m.fs.gas_combustion = GenericReactionParameterBlock(
-        default=get_rxn(m.fs.gas_prop_params, rxns))
+        default=get_rxn(m.fs.cmb_prop_params, rxns))
     # Variable for mole-fraction of O2 in the flue gas.  To initialize the model
     # will use a fixed value here.
     m.fs.cmbout_o2_mol_frac = pyo.Var(m.fs.time, initialize=0.1157)
@@ -304,66 +348,82 @@ def main(
     # Unit models
     #
     # inlet/outlet blocks
-    m.fs.feed_air1 = um.Feed(default={"property_package": m.fs.gas_prop_params})
-    m.fs.feed_fuel1 = um.Feed(default={"property_package": m.fs.gas_prop_params})
-    m.fs.exhaust_1 = um.Product(default={"property_package": m.fs.gas_prop_params})
+    m.fs.feed_air1 = um.Feed(default={"property_package": m.fs.air_prop_params})
+    m.fs.feed_fuel1 = um.Feed(default={"property_package": m.fs.cmb_prop_params})
+    m.fs.exhaust_1 = um.Product(default={"property_package": m.fs.flue_prop_params})
     # Valve roughly approximating variable stator vanes to control air flow.
     m.fs.vsv = um.Valve(default={
         "valve_function_callback":um.ValveFunctionType.linear,
-        "property_package": m.fs.gas_prop_params})
+        "property_package": m.fs.air_prop_params})
     # Comprssor for air
     m.fs.cmp1 = um.Compressor(default={
-        "property_package": m.fs.gas_prop_params,
+        "property_package": m.fs.air_prop_params,
         "support_isentropic_performance_curves":True})
     # Blade cooling air splitter
     m.fs.splt1 = um.Separator(default={
-        "property_package": m.fs.gas_prop_params,
+        "property_package": m.fs.air_prop_params,
         "outlet_list":["air04", "air05", "air07", "air09"]})
     # Three valves for blade cooling air.
     m.fs.valve01 = um.Valve(default={
         "valve_function_callback":um.ValveFunctionType.linear,
-        "property_package": m.fs.gas_prop_params})
+        "property_package": m.fs.air_prop_params})
     m.fs.valve02 = um.Valve(default={
         "valve_function_callback":um.ValveFunctionType.linear,
-        "property_package": m.fs.gas_prop_params})
+        "property_package": m.fs.air_prop_params})
     m.fs.valve03 = um.Valve(default={
         "valve_function_callback":um.ValveFunctionType.linear,
-        "property_package": m.fs.gas_prop_params})
+        "property_package": m.fs.air_prop_params})
     # Mixer for fuel injection. Since this is a steady state model the pressure
     # drop on the fuel control valve is lumped into this mixer
+    m.fs.inject_translator = um.Translator(default={"inlet_property_package": m.fs.air_prop_params,
+                                      "outlet_property_package": m.fs.cmb_prop_params,
+                                      "outlet_state_defined": False})
+    
     m.fs.inject1 = um.Mixer(default={
-        "property_package": m.fs.gas_prop_params,
+        "property_package": m.fs.cmb_prop_params,
         "inlet_list":["gas", "air"],
         "momentum_mixing_type":um.MomentumMixingType.none})
     # Three blade cooling air mixers. The blade cooling isn't explicitly modeled
     # so these mainly just maintain the proper mass and enegy balance.
+    m.fs.translator1 = um.Translator(default={"inlet_property_package": m.fs.air_prop_params,
+                                      "outlet_property_package": m.fs.flue_prop_params,
+                                      "outlet_state_defined": False})
     m.fs.mx1 = um.Mixer(default={
-        "property_package": m.fs.gas_prop_params,
+        "property_package": m.fs.flue_prop_params,
         "inlet_list":["gas", "air"],
         "momentum_mixing_type":um.MomentumMixingType.equality})
+    m.fs.translator2 = um.Translator(default={"inlet_property_package": m.fs.air_prop_params,
+                                      "outlet_property_package": m.fs.flue_prop_params,
+                                      "outlet_state_defined": False})
     m.fs.mx2 = um.Mixer(default={
-        "property_package": m.fs.gas_prop_params,
+        "property_package": m.fs.flue_prop_params,
         "inlet_list":["gas", "air"],
         "momentum_mixing_type":um.MomentumMixingType.equality})
+    m.fs.translator3 = um.Translator(default={"inlet_property_package": m.fs.air_prop_params,
+                                      "outlet_property_package": m.fs.flue_prop_params,
+                                      "outlet_state_defined": False})
     m.fs.mx3 = um.Mixer(default={
-        "property_package": m.fs.gas_prop_params,
+        "property_package": m.fs.flue_prop_params,
         "inlet_list":["gas", "air"],
         "momentum_mixing_type":um.MomentumMixingType.equality})
     # Combustor, for now assuming complete reactions and no NOx
     m.fs.cmb1 = um.StoichiometricReactor(default={
-        "property_package": m.fs.gas_prop_params,
+        "property_package": m.fs.cmb_prop_params,
         "reaction_package": m.fs.gas_combustion,
         "has_pressure_change": True})
+    m.fs.flue_translator = um.Translator(default={"inlet_property_package": m.fs.cmb_prop_params,
+                                      "outlet_property_package": m.fs.flue_prop_params,
+                                      "outlet_state_defined": False})
     # Three gas turbine stages, with performance curves for all three added by
     # the performance_curves() fuctions.
     m.fs.gts1 = um.Turbine(default={
-        "property_package": m.fs.gas_prop_params,
+        "property_package": m.fs.flue_prop_params,
         "support_isentropic_performance_curves":True})
     m.fs.gts2 = um.Turbine(default={
-        "property_package": m.fs.gas_prop_params,
+        "property_package": m.fs.flue_prop_params,
         "support_isentropic_performance_curves":True})
     m.fs.gts3 = um.Turbine(default={
-        "property_package": m.fs.gas_prop_params,
+        "property_package": m.fs.flue_prop_params,
         "support_isentropic_performance_curves":True})
     performance_curves(m)
     #
@@ -409,6 +469,36 @@ def main(
     @m.fs.Constraint(m.fs.time)
     def gt_power_eqn(b, t):
         return b.gt_power[t] == b.gt_power_expr[t]
+    
+    # Rules for translator blocks
+    def rule_flow_mol_comp(blk,t,j):
+        return blk.properties_in[t].flow_mol_comp[j] == blk.properties_out[t].flow_mol_comp[j]
+    def rule_temperature(blk,t):
+        return blk.properties_in[t].temperature == blk.properties_out[t].temperature
+    def rule_pressure(blk,t):
+        return blk.properties_in[t].pressure == blk.properties_out[t].pressure
+    def rule_zero_flow(blk,t,j):
+        return blk.properties_out[t].flow_mol_comp[j] == 0
+
+    
+    for blk in {m.fs.inject_translator, m.fs.translator1, m.fs.translator2, m.fs.translator3,
+                m.fs.flue_translator}:
+        blk.temperature_eqn = pyo.Constraint(m.fs.time, rule=rule_temperature)
+        blk.pressure_eqn = pyo.Constraint(m.fs.time, rule=rule_pressure)
+
+    m.fs.inject_translator.flow_mole_comp_eqn = pyo.Constraint(m.fs.time, air_species,
+                                                  rule = rule_flow_mol_comp)   
+    m.fs.inject_translator.zero_flow_eqn = pyo.Constraint(m.fs.time,
+                        cmb_species-air_species, rule = rule_zero_flow)
+    
+    for blk in {m.fs.translator1, m.fs.translator2, m.fs.translator3}:
+        blk.flow_mole_comp_eqn = pyo.Constraint(m.fs.time, air_species,
+                                                      rule = rule_flow_mol_comp)
+        blk.zero_flow_eqn = pyo.Constraint(m.fs.time, flue_species-air_species,
+                                                     rule = rule_zero_flow)
+        
+    m.fs.flue_translator.flow_mole_comp_eqn = pyo.Constraint(m.fs.time, flue_species,
+                                                  rule = rule_flow_mol_comp)
     #
     # Arcs
     #
@@ -418,15 +508,20 @@ def main(
     m.fs.air01 = Arc(source=m.fs.feed_air1.outlet, destination=m.fs.vsv.inlet)
     m.fs.air02 = Arc(source=m.fs.vsv.outlet, destination=m.fs.cmp1.inlet)
     m.fs.air03 = Arc(source=m.fs.cmp1.outlet, destination=m.fs.splt1.inlet)
-    m.fs.air04 = Arc(source=m.fs.splt1.air04, destination=m.fs.inject1.air)
+    m.fs.air04a = Arc(source=m.fs.splt1.air04, destination=m.fs.inject_translator.inlet)
+    m.fs.air04b = Arc(source=m.fs.inject_translator.outlet, destination=m.fs.inject1.air)
     m.fs.air05 = Arc(source=m.fs.splt1.air05, destination=m.fs.valve01.inlet)
-    m.fs.air06 = Arc(source=m.fs.valve01.outlet, destination=m.fs.mx1.air)
+    m.fs.air06a = Arc(source=m.fs.valve01.outlet, destination=m.fs.translator1.inlet)
+    m.fs.air06b = Arc(source=m.fs.translator1.outlet, destination=m.fs.mx1.air)
     m.fs.air07 = Arc(source=m.fs.splt1.air07, destination=m.fs.valve02.inlet)
-    m.fs.air08 = Arc(source=m.fs.valve02.outlet, destination=m.fs.mx2.air)
+    m.fs.air08a = Arc(source=m.fs.valve02.outlet, destination=m.fs.translator2.inlet)
+    m.fs.air08b = Arc(source=m.fs.translator2.outlet, destination=m.fs.mx2.air)
     m.fs.air09 = Arc(source=m.fs.splt1.air09, destination=m.fs.valve03.inlet)
-    m.fs.air10 = Arc(source=m.fs.valve03.outlet, destination=m.fs.mx3.air)
+    m.fs.air10a = Arc(source=m.fs.valve03.outlet, destination=m.fs.translator3.inlet)
+    m.fs.air10b = Arc(source=m.fs.translator3.outlet, destination=m.fs.mx3.air)
     m.fs.g01 = Arc(source=m.fs.inject1.outlet, destination=m.fs.cmb1.inlet)
-    m.fs.g02 = Arc(source=m.fs.cmb1.outlet, destination=m.fs.gts1.inlet)
+    m.fs.g02a = Arc(source=m.fs.cmb1.outlet, destination=m.fs.flue_translator.inlet)
+    m.fs.g02b = Arc(source=m.fs.flue_translator.outlet, destination=m.fs.gts1.inlet)
     m.fs.g03 = Arc(source=m.fs.gts1.outlet, destination=m.fs.mx1.gas)
     m.fs.g04 = Arc(source=m.fs.mx1.outlet, destination=m.fs.gts2.inlet)
     m.fs.g05 = Arc(source=m.fs.gts2.outlet, destination=m.fs.mx2.gas)
@@ -464,6 +559,7 @@ def main(
         m.fs.gts2.control_volume.properties_out[0].flow_mol, 1e-5)
     iscale.set_scaling_factor(
         m.fs.gts3.control_volume.properties_out[0].flow_mol, 1e-5)
+
     for i, v in m.fs.cmb1.control_volume.rate_reaction_extent.items():
         if i[1] == "ch4_cmb":
             iscale.set_scaling_factor(v, 1e-2)
@@ -558,12 +654,12 @@ def main(
         m.fs.feed_air1.initialize()
         m.fs.feed_fuel1.initialize()
         # compressor
-        iutil.copy_port_values(m.fs.air01)
+        propagate_state(m.fs.air01)
         m.fs.vsv.initialize()
-        iutil.copy_port_values(m.fs.air02)
+        propagate_state(m.fs.air02)
         m.fs.cmp1.initialize()
         # splitter
-        iutil.copy_port_values(m.fs.air03)
+        propagate_state(m.fs.air03)
         m.fs.splt1.split_fraction[0, "air05"].fix(0.0916985*0.73)
         m.fs.splt1.split_fraction[0, "air07"].fix(0.0916985*0.27*0.59)
         m.fs.splt1.split_fraction[0, "air09"].fix(0.0916985*0.27*0.41)
@@ -572,19 +668,23 @@ def main(
         m.fs.splt1.split_fraction[0, "air07"].unfix()
         m.fs.splt1.split_fraction[0, "air09"].unfix()
         # inject
-        iutil.copy_port_values(m.fs.air04)
-        iutil.copy_port_values(m.fs.fuel01)
+        propagate_state(m.fs.air04a)
+        m.fs.inject_translator.initialize()
+        propagate_state(m.fs.air04b)
+        propagate_state(m.fs.fuel01)
         m.fs.inject1.mixed_state[0].pressure = pyo.value(m.fs.inject1.air.pressure[0])
         m.fs.inject1.initialize()
         # combustor
-        iutil.copy_port_values(m.fs.g01)
+        propagate_state(m.fs.g01)
         m.fs.cmb1.initialize()
         # gas turbine stage 1
-        iutil.copy_port_values(m.fs.g02)
+        propagate_state(m.fs.g02a)
+        m.fs.flue_translator.initialize()
+        propagate_state(m.fs.g02b)
         m.fs.gts1.ratioP[0] = 0.7
         m.fs.gts1.initialize()
         # blade cooling air valve01, and calculate a flow coefficent
-        iutil.copy_port_values(m.fs.air05)
+        propagate_state(m.fs.air05)
         m.fs.valve01.Cv = 2
         m.fs.valve01.Cv.unfix()
         m.fs.valve01.valve_opening.fix(0.85)
@@ -595,16 +695,18 @@ def main(
         m.fs.valve01.Cv.fix()
         m.fs.valve01.valve_opening.unfix()
         # mixer 1
-        iutil.copy_port_values(m.fs.air06)
-        iutil.copy_port_values(m.fs.g03)
+        propagate_state(m.fs.air06a)
+        m.fs.translator1.initialize()
+        propagate_state(m.fs.air06b)
+        propagate_state(m.fs.g03)
         m.fs.mx1.mixed_state[0].pressure = pyo.value(m.fs.mx1.gas.pressure[0])
         m.fs.mx1.initialize()
         # gas turbine stage 2
-        iutil.copy_port_values(m.fs.g04)
+        propagate_state(m.fs.g04)
         m.fs.gts2.ratioP[0] = 0.7
         m.fs.gts2.initialize()
         # blade cooling air valve02, and calculate a flow coefficent
-        iutil.copy_port_values(m.fs.air07)
+        propagate_state(m.fs.air07)
         m.fs.valve02.Cv = 2
         m.fs.valve02.Cv.unfix()
         m.fs.valve02.valve_opening.fix(0.85)
@@ -615,16 +717,18 @@ def main(
         m.fs.valve02.Cv.fix()
         m.fs.valve02.valve_opening.unfix()
         # mixer 2
-        iutil.copy_port_values(m.fs.air08)
-        iutil.copy_port_values(m.fs.g05)
+        propagate_state(m.fs.air08a)
+        m.fs.translator2.initialize()
+        propagate_state(m.fs.air08b)
+        propagate_state(m.fs.g05)
         m.fs.mx2.mixed_state[0].pressure = pyo.value(m.fs.mx2.gas.pressure[0])
         m.fs.mx2.initialize()
         # gas turbine stage 3
-        iutil.copy_port_values(m.fs.g06)
+        propagate_state(m.fs.g06)
         m.fs.gts3.ratioP[0] = 0.7
         m.fs.gts3.initialize()
         # blade cooling air valve03, and calculate a flow coefficent
-        iutil.copy_port_values(m.fs.air09)
+        propagate_state(m.fs.air09)
         m.fs.valve03.Cv = 2
         m.fs.valve03.Cv.unfix()
         m.fs.valve03.valve_opening.fix(0.85)
@@ -635,14 +739,17 @@ def main(
         m.fs.valve03.Cv.fix()
         m.fs.valve03.valve_opening.unfix()
         # mixer 3
-        iutil.copy_port_values(m.fs.air10)
-        iutil.copy_port_values(m.fs.g07)
+        propagate_state(m.fs.air10a)
+        m.fs.translator3.initialize()
+        propagate_state(m.fs.air10b)
+        propagate_state(m.fs.g07)
         m.fs.mx3.mixed_state[0].pressure = pyo.value(m.fs.mx3.gas.pressure[0])
-        m.fs.mx3.initialize()    # product blocks
+        m.fs.mx3.initialize()
         # product blocks
-        iutil.copy_port_values(m.fs.g08)
+        propagate_state(m.fs.g08)
         m.fs.exhaust_1.initialize()
         # Solve
+        iscale.constraint_autoscale_large_jac(m)
         solver.solve(m, tee=True)
     return m, solver
 
@@ -692,6 +799,7 @@ def run_full_load(m, solver):
     # Fix the gross power output
     m.fs.gt_power[0].fix(-480e6) # Watts negative because is power out
     # Solve
+    iscale.constraint_autoscale_large_jac(m)
     return solver.solve(m, tee=True)
 
 def run_series(m, solver):
@@ -763,18 +871,11 @@ if __name__ == "__main__":
         "h2_cmb":"H2"}
     phases = ["Vap"]
     air_comp = {
-        "CH4":0.0,
-        "C2H6":0.0,
-        "C2H4":0.0,
-        "CO":0.0,
-        "H2S":0.0,
-        "H2":0.0,
         "O2":0.2074,
         "H2O":0.0099,
         "CO2":0.0003,
         "N2":0.7732,
-        "Ar":0.0092,
-        "SO2":0.0}
+        "Ar":0.0092}
     ng_comp = {
         "CH4":0.87,
         "C2H6":0.0846,

@@ -292,12 +292,23 @@ class EoSBase():
         raise NotImplementedError(_msg(b, "gibbs_mol_phase_comp"))
 
     @staticmethod
+    def isentropic_speed_sound_phase(b, p):
+        raise NotImplementedError(_msg(b, "isentropic_speed_sound_phase"))
+
+    @staticmethod
+    def isothermal_speed_sound_phase(b, p):
+        raise NotImplementedError(_msg(b, "isothermal_speed_sound_phase"))
+        
     def pressure_osm_phase(b, p):
         raise NotImplementedError(_msg(b, "pressure_osm_phase"))
 
     @staticmethod
     def vol_mol_phase(b, p):
         raise NotImplementedError(_msg(b, "vol_mol_phase"))
+        
+    @staticmethod
+    def vol_mol_phase_comp(b,p,j):
+        raise NotImplementedError(_msg(b, "vol_mol_phase_comp"))
 
 
 def _msg(b, attr):

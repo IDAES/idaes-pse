@@ -71,7 +71,7 @@ The properties :math:`a_m` and :math:`b_m` are calculated from component specifi
 .. math:: a_m = \sum_i{\sum_j{y_iy_j(a_ia_j)^{1/2}(1-k_{ij})}}
 .. math:: b_m = \sum_i{y_ib_i}
 
-where :math:`P_{c,j}` and :math:`T_{c,j}` are the component critical pressures and temperatures, :math:`y_j` is the mole fraction of component :math`j`, :math:`k_{ij}` are a set of binary interaction parameters which are specific to the equation of state and :math:`\Omega_A`, :math:`\Omega_B` and :math:`\kappa_j` are taken from the table above. :math:`\omega_j` is the Pitzer acentric factor of each component.
+where :math:`P_{c,j}` and :math:`T_{c,j}` are the component critical pressures and temperatures, :math:`y_j` is the mole fraction of component :math:`j`, :math:`k_{ij}` are a set of binary interaction parameters which are specific to the equation of state and :math:`\Omega_A`, :math:`\Omega_B` and :math:`\kappa_j` are taken from the table above. :math:`\omega_j` is the Pitzer acentric factor of each component.
 
 The cubic equation of state is solved for each phase via a call to an external function which automatically identifies the correct root of the cubic and returns the value of :math:`Z` as a function of :math:`A` and :math:`B` along with the first and second partial derivatives.
 
@@ -172,6 +172,8 @@ List of Variables
    "``flow_mol_phase``", "Molar flow rate indexed by phase", "mol/s"
    "``mole_frac_phase_comp``", "Mole fraction indexed by phase and component", "None"
    "``pressure_sat``", "Saturation or vapor pressure indexed by component", "Pa"
+   "``cp_mol_phase``", "Isobaric molar heat capacity by phase", "J/mol/K"
+   "``cv_mol_phase``", "Isochoric molar heat capacity by phase", "J/mol/K"
    "``dens_mol_phase``", "Molar density indexed by phase", "mol/m3"
    "``dens_mass_phase``", "Mass density indexed by phase", "kg/m3"
    "``enth_mol_phase``", "Molar enthalpy indexed by phase ", "J/mol"
@@ -181,6 +183,9 @@ List of Variables
    "``fug_phase_comp``", "Fugacity indexed by phase and component", "Pa"
    "``fug_coeff_phase_comp``", "Fugacity coefficient indexed by phase and component", "None"
    "``gibbs_mol_phase``", "Molar Gibbs energy indexed by phase", "J/mol"
+   "``heat_capacity_ratio_phase``", "Heat capcity ratio by phase", "-"
+   "``isothermal_speed_sound_phase``", "Isothermal speed of sound by phase", "m/s"
+   "``isentropic_speed_sound_phase``", "Isentropic speed of sound by phase", "m/s"
    "``mw``", "Molecular weight of mixture", "kg/mol"
    "``mw_phase``", "Molecular weight by phase", "kg/mol"
    "``temperature_bubble``", "Bubble point temperature", "K"
