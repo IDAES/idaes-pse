@@ -14,7 +14,7 @@
 Packed Solvent Column Model for MEA systems
 """
 
-from pyomo.environ import Constraint, exp, SolverStatus, TerminationCondition, Var
+from pyomo.environ import Constraint, exp, Expression, SolverStatus, TerminationCondition, Var
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.generic_models.unit_models.column_models.solvent_column import \
@@ -49,6 +49,62 @@ class MEAColumnData(PackedColumnData):
         solvent_comp_list = \
             self.config.liquid_side.property_package.solvent_set
         solute_comp_list = self.config.liquid_side.property_package.solute_set
+
+        # ---------------------------------------------------------------------
+        # Liquid phase equilibrium pressure via Enhancement factor
+        self.mass_transfer_coeff_liq = Var(
+            self.flowsheet().time,
+            self.liquid_phase.length_domain,
+            equilibrium_comp,
+            doc='Liquid phase mass transfer coefficient')
+
+        self.enhancement_factor = Var(self.flowsheet().time,
+                                      self.liquid_phase.length_domain,
+                                      units=None,
+                                      initialize=160,
+                                      doc='Enhancement factor')
+
+        # Intermediate term
+        def rule_phi(blk, t, x, j):
+            if x == self.vapor_phase.length_domain.first():
+                return Expression.Skip
+            else:
+                zb = self.liquid_phase.length_domain.prev(x)
+                return (blk.enhancement_factor[t, zb] *
+                        blk.mass_transfer_coeff_liq[t, zb, j] /
+                        blk.mass_transfer_coeff_vap[t, x, j])
+
+        self.phi = Expression(
+            self.flowsheet().time,
+            self.vapor_phase.length_domain,
+            solute_comp_list,
+            rule=rule_phi,
+            doc='Equilibrium partial pressure intermediate term')
+
+        @self.Constraint(self.flowsheet().time,
+                         self.vapor_phase.length_domain,
+                         equilibrium_comp,
+                         doc='Equilibruim partial pressure at interface')
+        def pressure_at_interface(blk, t, x, j):
+            if x == self.vapor_phase.length_domain.first():
+                return Constraint.Skip
+            else:
+                zb = self.liquid_phase.length_domain.prev(x)
+                lprops = blk.liquid_phase.properties[t, zb]
+                henrycomp = lprops.params.get_component(j).config.henry_component
+                if henrycomp is not None and "Liq" in henrycomp:
+                    return blk.pressure_equil[t, x, j] == (
+                        (blk.vapor_phase.properties[t, x].mole_frac_comp[j] *
+                         blk.vapor_phase.properties[
+                             t, x].pressure + blk.phi[t, x, j] *
+                         lprops.conc_mol_phase_comp_true['Liq', j]) /
+                        (1 + blk.phi[t, x, j] /
+                         blk.liquid_phase.properties[t, zb].henry['Liq', j]))
+                else:
+                    return blk.pressure_equil[t, x, j] == (
+                        lprops.vol_mol_phase['Liq'] *
+                        lprops.conc_mol_phase_comp_true['Liq', j] *
+                        lprops.pressure_sat_comp[j])
 
         # ---------------------------------------------------------------------
         # Vapor-liquid heat transfer coeff modified by Ackmann factor

@@ -411,35 +411,6 @@ and used when constructing these
             equilibrium_comp,
             doc=' Vapor phase mass transfer coefficient')
 
-        self.mass_transfer_coeff_liq = Var(
-            self.flowsheet().time,
-            self.liquid_phase.length_domain,
-            equilibrium_comp,
-            doc='Liquid phase mass transfer coefficient')
-
-        self.enhancement_factor = Var(self.flowsheet().time,
-                                      self.liquid_phase.length_domain,
-                                      units=None,
-                                      initialize=160,
-                                      doc='Enhancement factor')
-
-        # Intermediate term
-        def rule_phi(blk, t, x, j):
-            if x == self.vapor_phase.length_domain.first():
-                return Expression.Skip
-            else:
-                zb = self.liquid_phase.length_domain.prev(x)
-                return (blk.enhancement_factor[t, zb] *
-                        blk.mass_transfer_coeff_liq[t, zb, j] /
-                        blk.mass_transfer_coeff_vap[t, x, j])
-
-        self.phi = Expression(
-            self.flowsheet().time,
-            self.vapor_phase.length_domain,
-            solute_comp_list,
-            rule=rule_phi,
-            doc='Equilibrium partial pressure intermediate term')
-
         # Equilibruim partial pressure of components at interface
         self.pressure_equil = Var(
             self.flowsheet().time,
@@ -449,6 +420,16 @@ and used when constructing these
             initialize=500,
             units=pyunits.Pa,
             doc='Equilibruim pressure of components at interface')
+
+        # Mass transfer constraints
+        self.interphase_mass_transfer = Var(
+            self.flowsheet().time,
+            self.liquid_phase.length_domain,
+            equilibrium_comp,
+            domain=Reals,
+            initialize=0.1,
+            units=pyunits.mol / (pyunits.s * pyunits.m),
+            doc='Interphase mass transfer rate')
 
         @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,
@@ -460,30 +441,8 @@ and used when constructing these
             else:
                 zb = self.liquid_phase.length_domain.prev(x)
                 lprops = blk.liquid_phase.properties[t, zb]
-                henrycomp = lprops.params.get_component(j).config.henry_component
-                if henrycomp is not None and "Liq" in henrycomp:
-                    return blk.pressure_equil[t, x, j] == (
-                        (blk.vapor_phase.properties[t, x].mole_frac_comp[j] *
-                         blk.vapor_phase.properties[
-                             t, x].pressure + blk.phi[t, x, j] *
-                         lprops.conc_mol_phase_comp_true['Liq', j]) /
-                        (1 + blk.phi[t, x, j] /
-                         blk.liquid_phase.properties[t, zb].henry['Liq', j]))
-                else:
-                    return blk.pressure_equil[t, x, j] == (
-                        lprops.vol_mol_phase['Liq'] *
-                        lprops.conc_mol_phase_comp_true['Liq', j] *
-                        lprops.pressure_sat_comp[j])
-
-        # Mass transfer constraints
-        self.interphase_mass_transfer = Var(
-            self.flowsheet().time,
-            self.liquid_phase.length_domain,
-            equilibrium_comp,
-            domain=Reals,
-            initialize=0.1,
-            units=pyunits.mol / (pyunits.s * pyunits.m),
-            doc='Interphase mass transfer rate')
+                return blk.pressure_equil[t, x, j] == (
+                    lprops.fug_phase_comp['Liq', j])
 
         @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,

@@ -83,10 +83,8 @@ class TestAbsorberColumn:
 
         m.fs.unit.mass_transfer_coeff_vap[0, :, "CO2"].fix(3e-5)
         m.fs.unit.mass_transfer_coeff_vap[0, :, "H2O"].fix(4e-5)
-        m.fs.unit.mass_transfer_coeff_liq[0, :, "CO2"].fix(1e-4)
         m.fs.unit.heat_transfer_coeff.fix(7100)
         m.fs.unit.area_interfacial.fix(200)
-        m.fs.unit.enhancement_factor.fix(30)
 
         return m
 
@@ -238,10 +236,8 @@ class TestStripperColumn:
 
         m.fs.unit.mass_transfer_coeff_vap[0, :, "CO2"].fix(3e-5)
         m.fs.unit.mass_transfer_coeff_vap[0, :, "H2O"].fix(4e-5)
-        m.fs.unit.mass_transfer_coeff_liq[0, :, "CO2"].fix(1e-4)
         m.fs.unit.heat_transfer_coeff.fix(7100)
         m.fs.unit.area_interfacial.fix(200)
-        m.fs.unit.enhancement_factor.fix(30)
 
         return m
 
