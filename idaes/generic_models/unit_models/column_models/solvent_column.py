@@ -397,7 +397,7 @@ and used when constructing these
                          self.liquid_phase.length_domain,
                          doc='Mechanical equilibruim constraint')
         def mechanical_equilibrium(blk, t, x):
-            if x == self.liquid_phase.length_domain.first():
+            if x == self.liquid_phase.length_domain.last():
                 return Constraint.Skip
             else:
                 return blk.liquid_phase.properties[t, x].pressure == \

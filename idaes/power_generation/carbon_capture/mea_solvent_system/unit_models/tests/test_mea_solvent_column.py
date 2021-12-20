@@ -24,8 +24,8 @@ from pyomo.util.check_units import assert_units_consistent
 # Import IDAES Libraries
 import idaes
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models.column_models.solvent_column \
-    import PackedColumn
+from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.mea_solvent_column \
+    import MEAColumn
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_vapor \
@@ -54,7 +54,7 @@ class TestAbsorberColumn:
         m.fs.liquid_properties = GenericParameterBlock(default=liquid_config)
 
         # Create an instance of the column in the flowsheet
-        m.fs.unit = PackedColumn(default={
+        m.fs.unit = MEAColumn(default={
             "finite_elements": 10,
             "has_pressure_change": False,
             "vapor_side": {"property_package": m.fs.vapor_properties},
@@ -81,12 +81,53 @@ class TestAbsorberColumn:
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "H2O"].fix(0.87435)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.11602)
 
-        m.fs.unit.mass_transfer_coeff_vap[0, :, "CO2"].fix(3e-5)
-        m.fs.unit.mass_transfer_coeff_vap[0, :, "H2O"].fix(4e-5)
-        m.fs.unit.mass_transfer_coeff_liq[0, :, "CO2"].fix(1e-4)
-        m.fs.unit.heat_transfer_coeff.fix(110)
-        m.fs.unit.area_interfacial.fix(200)
-        m.fs.unit.enhancement_factor.fix(30)
+        # Fix vapor phase mass transfer coefficient values
+        mass_transfer_coeff_vap_values = [
+            [0, 0], [2.837e-05, 3.728e-05], [2.862e-05, 3.757e-05],
+            [2.891e-05, 3.788e-05], [2.924e-05, 3.825e-05],
+            [2.965e-05, 3.87e-05], [3.018e-05, 3.929e-05],
+            [3.092e-05, 4.011e-05], [3.195e-05, 4.126e-05],
+            [3.305e-05, 4.251e-05], [3.18e-05, 4.121e-05]]
+
+        # Fix liquid phase mass transfer coefficient values
+        mass_transfer_coeff_liq_values = [
+            9.613e-05, 9.861e-05, 0.0001012, 0.000104,
+            0.0001072, 0.0001111, 0.0001159, 0.0001222,
+            0.0001294, 0.0001311, 0.001]
+
+        # Fix vapor phase heat transfer coefficient values
+        heat_transfer_coeff_values = [
+            100, 102.3, 103.1, 103.9, 104.9, 106.1, 107.6, 109.7,
+            112.6, 115.5, 111.8]
+
+        # Fix interfacial area values
+        interfacial_area_values = [0, 198.2, 198.5, 198.8, 199.2, 199.6,
+                                   200.2, 201, 202.2, 203.3, 201.3]
+
+        # Fix enhancement factor values
+        enhancement_factor_values = [11.81960366, 13.21436568, 14.8235168,
+                                     16.80737692, 19.43845149, 23.23126553,
+                                     29.47937877, 41.78076923, 74.63068006,
+                                     188.3501144, 10]
+
+        for t in m.fs.time:
+            for i, x in enumerate(m.fs.unit.vapor_phase.length_domain):
+                for j, comp in enumerate(['CO2', 'H2O']):
+                    m.fs.unit.mass_transfer_coeff_vap[t, x, comp].fix(
+                            mass_transfer_coeff_vap_values[i][j])
+
+                for j, comp in enumerate(['CO2']):
+                    m.fs.unit.mass_transfer_coeff_liq[t, x, comp].fix(
+                            mass_transfer_coeff_liq_values[i])
+
+                m.fs.unit.heat_transfer_coeff[t, x].fix(
+                        heat_transfer_coeff_values[i])
+
+                m.fs.unit.area_interfacial[t, x].fix(
+                        interfacial_area_values[i])
+
+                m.fs.unit.enhancement_factor[t, x].fix(
+                        enhancement_factor_values[i])
 
         return m
 
@@ -130,32 +171,32 @@ class TestAbsorberColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(22.6736, rel=1e-5) == value(
+        assert pytest.approx(22.8205, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0])
-        assert pytest.approx(0.0296658, rel=1e-5) == value(
+        assert pytest.approx(0.0284933, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.212249, rel=1e-5) == value(
+        assert pytest.approx(0.218304, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"])
-        assert pytest.approx(0.699349, rel=1e-5) == value(
+        assert pytest.approx(0.694845, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "N2"])
-        assert pytest.approx(0.0587362, rel=1e-5) == value(
+        assert pytest.approx(0.0583579, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "O2"])
         assert pytest.approx(107650, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.pressure[0])
-        assert pytest.approx(332.674, rel=1e-5) == value(
+        assert pytest.approx(338.572, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.temperature[0])
 
-        assert pytest.approx(36.3564, rel=1e-5) == value(
+        assert pytest.approx(36.2094, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.flow_mol[0])
-        assert pytest.approx(0.0591115, rel=1e-5) == value(
+        assert pytest.approx(0.0599699, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.821060, rel=1e-5) == value(
+        assert pytest.approx(0.819715, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"])
-        assert pytest.approx(0.119829, rel=1e-5) == value(
+        assert pytest.approx(0.120315, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"])
         assert pytest.approx(107650, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.pressure[0])
-        assert pytest.approx(323.300, rel=1e-5) == value(
+        assert pytest.approx(321.110, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.temperature[0])
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -190,7 +231,7 @@ class TestAbsorberColumn:
                     vap_out.get_material_flow_terms("Vap", j)))
 
         # Energy conservation
-        assert 1e-5 >= abs(value(
+        assert 1e-6 >= abs(value(
             vap_in.get_enthalpy_flow_terms("Vap") +
             liq_in.get_enthalpy_flow_terms("Liq") -
             vap_out.get_enthalpy_flow_terms("Vap") -
@@ -209,7 +250,7 @@ class TestStripperColumn:
         m.fs.liquid_properties = GenericParameterBlock(default=liquid_config)
 
         # Create an instance of the column in the flowsheet
-        m.fs.unit = PackedColumn(default={
+        m.fs.unit = MEAColumn(default={
             "finite_elements": 10,
             "has_pressure_change": False,
             "vapor_side": {"property_package": m.fs.vapor_properties},
@@ -234,12 +275,53 @@ class TestStripperColumn:
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "H2O"].fix(0.8547)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.1122)
 
-        m.fs.unit.mass_transfer_coeff_vap[0, :, "CO2"].fix(3e-5)
-        m.fs.unit.mass_transfer_coeff_vap[0, :, "H2O"].fix(4e-5)
-        m.fs.unit.mass_transfer_coeff_liq[0, :, "CO2"].fix(1e-4)
-        m.fs.unit.heat_transfer_coeff.fix(110)
-        m.fs.unit.area_interfacial.fix(200)
-        m.fs.unit.enhancement_factor.fix(30)
+        # Fix vapor phase mass transfer coefficient values
+        mass_transfer_coeff_vap_values = [
+            [0, 0], [2.837e-05, 3.728e-05], [2.862e-05, 3.757e-05],
+            [2.891e-05, 3.788e-05], [2.924e-05, 3.825e-05],
+            [2.965e-05, 3.87e-05], [3.018e-05, 3.929e-05],
+            [3.092e-05, 4.011e-05], [3.195e-05, 4.126e-05],
+            [3.305e-05, 4.251e-05], [3.18e-05, 4.121e-05]]
+
+        # Fix liquid phase mass transfer coefficient values
+        mass_transfer_coeff_liq_values = [
+            9.613e-05, 9.861e-05, 0.0001012, 0.000104,
+            0.0001072, 0.0001111, 0.0001159, 0.0001222,
+            0.0001294, 0.0001311, 0.001]
+
+        # Fix vapor phase heat transfer coefficient values
+        heat_transfer_coeff_values = [
+            100, 102.3, 103.1, 103.9, 104.9, 106.1, 107.6, 109.7,
+            112.6, 115.5, 111.8]
+
+        # Fix interfacial area values
+        interfacial_area_values = [0, 198.2, 198.5, 198.8, 199.2, 199.6,
+                                   200.2, 201, 202.2, 203.3, 201.3]
+
+        # Fix enhancement factor values
+        enhancement_factor_values = [11.81960366, 13.21436568, 14.8235168,
+                                     16.80737692, 19.43845149, 23.23126553,
+                                     29.47937877, 41.78076923, 74.63068006,
+                                     188.3501144, 10]
+
+        for t in m.fs.time:
+            for i, x in enumerate(m.fs.unit.vapor_phase.length_domain):
+                for j, comp in enumerate(['CO2', 'H2O']):
+                    m.fs.unit.mass_transfer_coeff_vap[t, x, comp].fix(
+                        mass_transfer_coeff_vap_values[i][j])
+
+                for j, comp in enumerate(['CO2']):
+                    m.fs.unit.mass_transfer_coeff_liq[t, x, comp].fix(
+                        mass_transfer_coeff_liq_values[i])
+
+                m.fs.unit.heat_transfer_coeff[t, x].fix(
+                    heat_transfer_coeff_values[i])
+
+                m.fs.unit.area_interfacial[t, x].fix(
+                        interfacial_area_values[i])
+
+                m.fs.unit.enhancement_factor[t, x].fix(
+                        enhancement_factor_values[i])
 
         return m
 
@@ -282,28 +364,28 @@ class TestStripperColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(12.1819, rel=1e-5) == value(
+        assert pytest.approx(12.1683, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0])
-        assert pytest.approx(0.0996618, rel=1e-5) == value(
+        assert pytest.approx(0.0988791, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.900338, rel=1e-5) == value(
+        assert pytest.approx(0.901121, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"])
         assert pytest.approx(183430, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.pressure[0])
-        assert pytest.approx(376.954, rel=1e-5) == value(
+        assert pytest.approx(376.457, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.temperature[0])
 
-        assert pytest.approx(89.7941, rel=1e-5) == value(
+        assert pytest.approx(89.8077, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.flow_mol[0])
-        assert pytest.approx(0.0204458, rel=1e-5) == value(
+        assert pytest.approx(0.0205638, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.873994, rel=1e-5) == value(
+        assert pytest.approx(0.873892, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"])
-        assert pytest.approx(0.105560, rel=1e-5) == value(
+        assert pytest.approx(0.105544, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"])
         assert pytest.approx(183430, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.pressure[0])
-        assert pytest.approx(393.675, rel=1e-5) == value(
+        assert pytest.approx(393.763, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.temperature[0])
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -337,7 +419,7 @@ class TestStripperColumn:
                     vap_out.get_material_flow_terms("Vap", j)))
 
         # Energy conservation
-        assert 2e-5 >= abs(value(
+        assert 1e-6 >= abs(value(
             vap_in.get_enthalpy_flow_terms("Vap") +
             liq_in.get_enthalpy_flow_terms("Liq") -
             vap_out.get_enthalpy_flow_terms("Vap") -
