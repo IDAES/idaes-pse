@@ -14,7 +14,13 @@
 Packed Solvent Column Model for MEA systems
 """
 
-from pyomo.environ import Constraint, exp, Expression, SolverStatus, TerminationCondition, Var
+from pyomo.environ import (Constraint,
+                           exp,
+                           Expression,
+                           SolverStatus,
+                           TerminationCondition,
+                           units as pyunits,
+                           Var)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.generic_models.unit_models.column_models.solvent_column import \
@@ -37,30 +43,26 @@ class MEAColumnData(PackedColumnData):
 
     CONFIG = PackedColumnData.CONFIG()
 
-    def build(self):
-
-        super().build()
-
-        # ---------------------------------------------------------------------
-        # Unit level sets
+    def liquid_phase_mass_transfer_model(self):
+        """
+        Enhancement factor based liquid phase mass transfer model.
+        """
         vap_comp = self.config.vapor_side.property_package.component_list
         liq_comp = self.config.liquid_side.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
-        solvent_comp_list = \
-            self.config.liquid_side.property_package.solvent_set
         solute_comp_list = self.config.liquid_side.property_package.solute_set
 
-        # ---------------------------------------------------------------------
         # Liquid phase equilibrium pressure via Enhancement factor
         self.mass_transfer_coeff_liq = Var(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
             equilibrium_comp,
+            units=pyunits.mol/pyunits.Pa/pyunits.m**3/pyunits.s,
             doc='Liquid phase mass transfer coefficient')
 
         self.enhancement_factor = Var(self.flowsheet().time,
                                       self.liquid_phase.length_domain,
-                                      units=None,
+                                      units=pyunits.dimensionless,
                                       initialize=160,
                                       doc='Enhancement factor')
 
@@ -95,8 +97,8 @@ class MEAColumnData(PackedColumnData):
                 if henrycomp is not None and "Liq" in henrycomp:
                     return blk.pressure_equil[t, x, j] == (
                         (blk.vapor_phase.properties[t, x].mole_frac_comp[j] *
-                         blk.vapor_phase.properties[
-                             t, x].pressure + blk.phi[t, x, j] *
+                         blk.vapor_phase.properties[t, x].pressure +
+                         blk.phi[t, x, j] *
                          lprops.conc_mol_phase_comp_true['Liq', j]) /
                         (1 + blk.phi[t, x, j] /
                          blk.liquid_phase.properties[t, zb].henry['Liq', j]))
@@ -106,23 +108,34 @@ class MEAColumnData(PackedColumnData):
                         lprops.conc_mol_phase_comp_true['Liq', j] *
                         lprops.pressure_sat_comp[j])
 
+    def build(self):
+
+        super().build()
+
+        # ---------------------------------------------------------------------
+        # Unit level sets
+        vap_comp = self.config.vapor_side.property_package.component_list
+        liq_comp = self.config.liquid_side.property_package.component_list
+        equilibrium_comp = vap_comp & liq_comp
+
         # ---------------------------------------------------------------------
         # Vapor-liquid heat transfer coeff modified by Ackmann factor
         self.heat_transfer_coeff_base = Var(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             initialize=100,
+            units=pyunits.W/pyunits.K/pyunits.m,
             doc='Uncorrected vapor-liquid heat transfer coefficient')
 
         def rule_heat_transfer_coeff_Ack(blk, t, x):
             if x == self.vapor_phase.length_domain.first():
                 return Constraint.Skip
             else:
-                Ackmann_factor =\
-                    sum(blk.vapor_phase.properties[
-                            t, x].cp_mol_phase_comp['Vap', j] *
-                        blk.interphase_mass_transfer[t, x, j]
-                        for j in equilibrium_comp)
+                Ackmann_factor = sum(
+                    blk.vapor_phase.properties[
+                        t, x].cp_mol_phase_comp['Vap', j] *
+                    blk.interphase_mass_transfer[t, x, j]
+                    for j in equilibrium_comp)
                 return blk.heat_transfer_coeff[t, x] == (
                     Ackmann_factor /
                     (1 - exp(-Ackmann_factor /

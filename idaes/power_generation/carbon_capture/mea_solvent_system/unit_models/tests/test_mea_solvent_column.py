@@ -82,6 +82,8 @@ class TestAbsorberColumn:
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "H2O"].fix(0.87435)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.11602)
 
+        m.fs.unit.holdup_liq.fix(1e-2)
+
         # Fix vapor phase mass transfer coefficient values
         mass_transfer_coeff_vap_values = [
             [0, 0], [2.837e-05, 3.728e-05], [2.862e-05, 3.757e-05],
@@ -275,6 +277,8 @@ class TestStripperColumn:
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "CO2"].fix(0.0331)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "H2O"].fix(0.8547)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.1122)
+
+        m.fs.unit.holdup_liq.fix(1e-2)
 
         # Fix vapor phase mass transfer coefficient values
         mass_transfer_coeff_vap_values = [

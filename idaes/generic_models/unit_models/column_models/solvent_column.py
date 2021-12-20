@@ -19,6 +19,7 @@ from pyomo.environ import (
     Constraint, Expression, Param, Reals, NonNegativeReals, value, Var, exp,
     SolverStatus, TerminationCondition, units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool, In
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES Libraries
 from idaes.core.util.constants import Constants
@@ -295,41 +296,16 @@ and used when constructing these
             expr=4 * self.eps_ref / self.packing_specific_area,
             doc="Hydraulic diameter")
 
-        self.velocity_vap = Var(self.flowsheet().time,
-                                self.vapor_phase.length_domain,
-                                domain=NonNegativeReals,
-                                initialize=2,
-                                units=pyunits.m / pyunits.s,
-                                doc='Vapor superficial velocity')
+        self.area_interfacial = Var(self.flowsheet().time,
+                                    self.vapor_phase.length_domain,
+                                    initialize=0.9,
+                                    doc='Specific interfacial area')
 
-        self.velocity_liq = Var(self.flowsheet().time,
-                                self.liquid_phase.length_domain,
-                                domain=NonNegativeReals,
-                                initialize=0.01,
-                                units=pyunits.m / pyunits.s,
-                                doc='Liquid superficial velocity')
-
-        # Vapor superficial velocity
-        @self.Constraint(self.flowsheet().time,
-                         self.vapor_phase.length_domain,
-                         doc="Vapor superficial velocity")
-        def eq_velocity_vap(blk, t, x):
-            return blk.velocity_vap[t, x] * blk.area_column * \
-                blk.vapor_phase.properties[t, x].dens_mol == \
-                blk.vapor_phase.properties[t, x].flow_mol
-
-        # Liquid superficial velocity
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         doc="Liquid superficial velocity")
-        def eq_velocity_liq(blk, t, x):
-            return blk.velocity_liq[t, x] * blk.area_column * \
-                blk.liquid_phase.properties[t, x].dens_mol == \
-                blk.liquid_phase.properties[t, x].flow_mol
-
+        # Liquid and vapor holdups
         self.holdup_liq = Var(self.flowsheet().time,
                               self.liquid_phase.length_domain,
                               initialize=0.001,
+                              units=pyunits.dimensionless,
                               doc='Volumetric liquid holdup [-]')
 
         def rule_holdup_vap(blk, t, x):
@@ -340,55 +316,20 @@ and used when constructing these
                                      rule=rule_holdup_vap,
                                      doc='Volumetric vapor holdup [-]')
 
-        # Define gas velocity at flooding point
-        self.gas_velocity_flood = Var(
-            self.flowsheet().time,
-            self.vapor_phase.length_domain,
-            initialize=1,
-            doc='Gas velocity at flooding point')
-
-        # Flooding fraction
-        def rule_flood_fraction(blk, t, x):
-            return blk.velocity_vap[t, x]/blk.gas_velocity_flood[t, x]
-
-        self.flood_fraction = Expression(
-            self.flowsheet().time,
-            self.vapor_phase.length_domain,
-            rule=rule_flood_fraction,
-            doc='Flooding fraction (expected to be below 0.8)')
-
-        # Interfacial Area model
-        self.area_interfacial = Var(self.flowsheet().time,
-                                    self.vapor_phase.length_domain,
-                                    initialize=0.9,
-                                    doc='Specific interfacial area')
-
         # Area of control volume : vapor side and liquid side
-        control_volume_area_definition = ''' column_area * phase_holdup.
-        The void fraction of the vapor phase (volumetric vapor holdup) and that
-        of the liquid phase(volumetric liquid holdup) are
-        lumped into the definition of the cross-sectional area of the
-        vapor-side and liquid-side control volume respectively. Hence, the
-        cross-sectional area of the control volume changes with time and space.
-        '''
-        # TODO : Fix this
-        if self.config.dynamic:
-            @self.Constraint(self.flowsheet().time,
-                             self.vapor_phase.length_domain,
-                             doc=control_volume_area_definition)
-            def vapor_side_area(bk, t, x):
-                return bk.vapor_phase.area[t, x] == (
-                    bk.area_column * bk.holdup_vap[t, x])
+        @self.Constraint(self.flowsheet().time,
+                         self.vapor_phase.length_domain,
+                         doc="Vapor phase cross-sectional area constraint")
+        def vapor_side_area(blk, t, x):
+            return blk.vapor_phase.area[t, x] == (
+                blk.area_column * blk.holdup_vap[t, x])
 
-            @self.Constraint(self.flowsheet().time,
-                             self.liquid_phase.length_domain,
-                             doc=control_volume_area_definition)
-            def liquid_side_area(bk, t, x):
-                return bk.liquid_phase.area[t, x] == (
-                    bk.area_column * bk.holdup_liq[t, x])
-        else:
-            self.vapor_phase.area.fix(value(self.area_column))
-            self.liquid_phase.area.fix(value(self.area_column))
+        @self.Constraint(self.flowsheet().time,
+                         self.liquid_phase.length_domain,
+                         doc="Liquid phase cross-sectional area constraint")
+        def liquid_side_area(blk, t, x):
+            return blk.liquid_phase.area[t, x] == (
+                blk.area_column * blk.holdup_liq[t, x])
 
         # =====================================================================
         # Add performance equations
@@ -409,7 +350,8 @@ and used when constructing these
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             equilibrium_comp,
-            doc=' Vapor phase mass transfer coefficient')
+            units=pyunits.mol/pyunits.Pa/pyunits.m**3/pyunits.s,
+            doc='Vapor phase mass transfer coefficient')
 
         # Equilibruim partial pressure of components at interface
         self.pressure_equil = Var(
@@ -431,18 +373,7 @@ and used when constructing these
             units=pyunits.mol / (pyunits.s * pyunits.m),
             doc='Interphase mass transfer rate')
 
-        @self.Constraint(self.flowsheet().time,
-                         self.vapor_phase.length_domain,
-                         equilibrium_comp,
-                         doc='Equilibruim partial pressure at interface')
-        def pressure_at_interface(blk, t, x, j):
-            if x == self.vapor_phase.length_domain.first():
-                return Constraint.Skip
-            else:
-                zb = self.liquid_phase.length_domain.prev(x)
-                lprops = blk.liquid_phase.properties[t, zb]
-                return blk.pressure_equil[t, x, j] == (
-                    lprops.fug_phase_comp['Liq', j])
+        self.liquid_phase_mass_transfer_model()
 
         @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,
@@ -497,6 +428,7 @@ and used when constructing these
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             initialize=100,
+            units=pyunits.W/pyunits.K/pyunits.m,
             doc='Vapor-liquid heat transfer coefficient')
 
         # Heat transfer
@@ -552,6 +484,34 @@ and used when constructing these
                 zf = self.vapor_phase.length_domain.next(x)
                 return blk.liquid_phase.enthalpy_transfer[t, x] == \
                     -blk.vapor_phase.enthalpy_transfer[t, zf]
+
+    def liquid_phase_mass_transfer_model(self):
+        """
+        Liquid phase mass transfer sub-model for calculating equilbrium
+        partial pressure used in driving force.
+
+        For the generic model, it is assumed that liquid phase mass transfer
+        is sufficiently fast that the equilibrium partial pressure is equal to
+        the fugacity of each component in the bulk.
+
+        Derived Classes should overload this method as required.
+        """
+        vap_comp = self.config.vapor_side.property_package.component_list
+        liq_comp = self.config.liquid_side.property_package.component_list
+        equilibrium_comp = vap_comp & liq_comp
+
+        @self.Constraint(self.flowsheet().time,
+                         self.vapor_phase.length_domain,
+                         equilibrium_comp,
+                         doc='Equilibruim partial pressure at interface')
+        def pressure_at_interface(blk, t, x, j):
+            if x == self.vapor_phase.length_domain.first():
+                return Constraint.Skip
+            else:
+                zb = self.liquid_phase.length_domain.prev(x)
+                lprops = blk.liquid_phase.properties[t, zb]
+                return blk.pressure_equil[t, x, j] == (
+                    lprops.fug_phase_comp['Liq', j])
 
     # =========================================================================
     # Model initialization routine
@@ -647,6 +607,11 @@ and used when constructing these
         # Activate interface pressure constraint
         blk.pressure_equil.unfix()
         blk.pressure_at_interface.activate()
+
+        for k in blk.pressure_at_interface:
+            calculate_variable_from_constraint(
+                blk.pressure_equil[k],
+                blk.pressure_at_interface[k])
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)

@@ -81,6 +81,7 @@ class TestAbsorberColumn:
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "H2O"].fix(0.87435)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.11602)
 
+        m.fs.unit.holdup_liq.fix(1e-2)
         m.fs.unit.mass_transfer_coeff_vap[0, :, "CO2"].fix(3e-5)
         m.fs.unit.mass_transfer_coeff_vap[0, :, "H2O"].fix(4e-5)
         m.fs.unit.heat_transfer_coeff.fix(7100)
@@ -234,6 +235,7 @@ class TestStripperColumn:
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "H2O"].fix(0.8547)
         m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.1122)
 
+        m.fs.unit.holdup_liq.fix(1e-2)
         m.fs.unit.mass_transfer_coeff_vap[0, :, "CO2"].fix(3e-5)
         m.fs.unit.mass_transfer_coeff_vap[0, :, "H2O"].fix(4e-5)
         m.fs.unit.heat_transfer_coeff.fix(7100)
