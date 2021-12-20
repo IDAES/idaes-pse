@@ -141,7 +141,7 @@ and used when constructing these
         # Call UnitModel.build to build default attributes
         super().build()
 
-        # TODO: Verify proepryy packages
+        # TODO: Verify property packages
 
         # Geometry
         self.diameter_column = Var(domain=Reals,
@@ -340,7 +340,7 @@ and used when constructing these
                                      rule=rule_holdup_vap,
                                      doc='Volumetric vapor holdup [-]')
 
-        # Define gas velocity at flooding point (m/s)
+        # Define gas velocity at flooding point
         self.gas_velocity_flood = Var(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
