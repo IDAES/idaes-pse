@@ -176,6 +176,20 @@ class UnitModelIcon:
                         }
                     }
                 }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
             }
         },
         "flash": {
@@ -196,10 +210,8 @@ class UnitModelIcon:
                     "position": {
                         "name": "left",
                         "args": {
-                            "x":  8,
-                            "y": 25,
-                            "dx": 1,
-                            "dy": 1
+                            "dx": 8,
+                            "dy": 0
                         }
                     }
                 },
@@ -214,19 +226,29 @@ class UnitModelIcon:
                         }
                     }
                 },
-                # added by AR
                 "out": {
                     "position": {
-                        "name": "left",
+                        "name": "right",
                         "args": {
-                            "x": 45,
-                            "y": 45,
-                            "dx": 1,
-                            "dy": 1
+                            "dx": -8,
+                            "dy": 0
                         }
                     }
+                }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
                 },
-                #end
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
             }
         },
         "gibbs_reactor": {
@@ -252,6 +274,20 @@ class UnitModelIcon:
                             "dx": 1,
                             "dy": 1
                         }
+                    }
+                }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
                     }
                 }
             }
@@ -281,6 +317,20 @@ class UnitModelIcon:
                         }
                     }
                 }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
             }
         },
         "heater": {
@@ -306,6 +356,20 @@ class UnitModelIcon:
                             "dx": 1,
                             "dy": 1
                         }
+                    }
+                }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
                     }
                 }
             }
@@ -335,6 +399,20 @@ class UnitModelIcon:
                         }
                     }
                 }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
             }
         },
         "mixer": {
@@ -361,8 +439,14 @@ class UnitModelIcon:
             "routing_config": {
                 "in": {
                     "gap": {
-                        "direction": "left",
-                        "distance": 30
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
                     }
                 }
             }
@@ -392,6 +476,20 @@ class UnitModelIcon:
                         }
                     }
                 }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
             }
         },
         "pressure_changer": {
@@ -400,23 +498,32 @@ class UnitModelIcon:
                 "in": {
                     "position": {
                         "name": "left",
-                        "args": {
-                            "x":  2,
-                            "y": 25,
-                            "dx": 1,
-                            "dy": 1
-                        }
+                        "args": {}
                     }
                 },
                 "out": {
                     "position": {
                         "name": "left",
                         "args": {
-                            "x": 48,
+                            "x": 50,
                             "y": 25,
                             "dx": 1,
                             "dy": 1
                         }
+                    }
+                }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
                     }
                 }
             }
@@ -438,12 +545,21 @@ class UnitModelIcon:
                 "out": {
                     "position": {
                         "name": "right",
-                        "args": {
-                            "x": 48,
-                            "y": 25,
-                            "dx": 1,
-                            "dy": 1
-                        }
+                        "args": {}
+                    }
+                }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
                     }
                 }
             }
@@ -473,6 +589,20 @@ class UnitModelIcon:
                         }
                     }
                 }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
             }
         },
         "equilibrium_reactor": {
@@ -500,6 +630,20 @@ class UnitModelIcon:
                         }
                     }
                 }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
             }
         },
         "feed": {
@@ -516,6 +660,14 @@ class UnitModelIcon:
                         }
                     }
                 }
+            },
+            "routing_config": {
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
             }
         },
         "product": {
@@ -530,6 +682,14 @@ class UnitModelIcon:
                             "dx": 1,
                             "dy": 1
                         }
+                    }
+                }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
                     }
                 }
             }
@@ -559,6 +719,20 @@ class UnitModelIcon:
                         }
                     }
                 }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
             }
         },
         "statejunction": {
@@ -584,6 +758,20 @@ class UnitModelIcon:
                             "dx": 1,
                             "dy": 1
                         }
+                    }
+                }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
                     }
                 }
             }
@@ -613,6 +801,20 @@ class UnitModelIcon:
                         }
                     }
                 }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
             }
         },
         "packed_column": {
@@ -638,6 +840,20 @@ class UnitModelIcon:
                             "dx": 1,
                             "dy": 1
                         }
+                    }
+                }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
                     }
                 }
             }
@@ -667,6 +883,20 @@ class UnitModelIcon:
                         }
                     }
                 }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
             }
         },
         "default": {
@@ -692,6 +922,20 @@ class UnitModelIcon:
                             "dx": 1,
                             "dy": 1
                         }
+                    }
+                }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "x": -30,
+                        "y": 0
+                    }
+                },
+                "out": {
+                    "gap": {
+                        "x": 30,
+                        "y": 0
                     }
                 }
             }

@@ -635,21 +635,29 @@ class FlowsheetSerializer:
             # Add routing config if edge/link has source or destination elements
             # that has routing specifications. e.g. If destination element requires
             # the link to connect horizontally from the left side.
-            if src_unit_icon.routing_config and src_port in src_unit_icon.routing_config:
-                if link_name not in self._out_json["routing_config"]:
-                    self._out_json["routing_config"][link_name] = {
-                        'cell_index': link_index
+            if link_name not in self._out_json["routing_config"]:
+                self._out_json["routing_config"][link_name] = {
+                    'cell_index': link_index,
+                    'cell_config': {
+                        'gap': {
+                            'source': {
+                                'x': 0,
+                                'y': 0
+                            },
+                            'destination': {
+                                'x': 0,
+                                'y': 0
+                            }
+                        }
                     }
+                }
+            if src_unit_icon.routing_config and src_port in src_unit_icon.routing_config:
                 # The port group has to be specified in the routing config
-                self._out_json["routing_config"][link_name]["source"] = src_unit_icon.routing_config[src_port]
+                self._out_json["routing_config"][link_name]["cell_config"]["gap"]["source"] = src_unit_icon.routing_config[src_port]["gap"]
 
             if dest_unit_icon.routing_config and dest_port in dest_unit_icon.routing_config:
-                if link_name not in self._out_json["routing_config"]:
-                    self._out_json["routing_config"][link_name] = {
-                        'cell_index': link_index
-                    }
                 # The port group has to be specified in the routing config
-                self._out_json["routing_config"][link_name]["destination"] = dest_unit_icon.routing_config[dest_port]
+                self._out_json["routing_config"][link_name]["cell_config"]["gap"]["destination"] = dest_unit_icon.routing_config[dest_port]["gap"]
 
         # Make sure that all registered Unit Models are created
         for _, unit_attrs in self.unit_models.items():
