@@ -139,11 +139,54 @@ class PhysicalParameterData(PhysicalParameterBlock):
                         ('Fe2O3', 7): 228.3548000,
                         ('Fe2O3', 8): -825.5032000
                         }
-        self.cp_param = Param(self.component_list,
-                              range(1, 10),
-                              mutable=False,
-                              initialize=cp_param_dict,
-                              doc="Shomate equation heat capacity parameters")
+        self.cp_param_1 = Param(self.component_list,
+                                mutable=False,
+                                initialize={k: v for (k, j), v in
+                                            cp_param_dict.items() if j == 1},
+                                doc="Shomate equation heat capacity coeff 1",
+                                units=pyunits.kJ/pyunits.mol/pyunits.K)
+        self.cp_param_2 = Param(self.component_list,
+                                mutable=False,
+                                initialize={k: v for (k, j), v in
+                                            cp_param_dict.items() if j == 2},
+                                doc="Shomate equation heat capacity coeff 2",
+                                units=pyunits.kJ/pyunits.mol/pyunits.K**2)
+        self.cp_param_3 = Param(self.component_list,
+                                mutable=False,
+                                initialize={k: v for (k, j), v in
+                                            cp_param_dict.items() if j == 3},
+                                doc="Shomate equation heat capacity coeff 3",
+                                units=pyunits.kJ/pyunits.mol/pyunits.K**3)
+        self.cp_param_4 = Param(self.component_list,
+                                mutable=False,
+                                initialize={k: v for (k, j), v in
+                                            cp_param_dict.items() if j == 4},
+                                doc="Shomate equation heat capacity coeff 4",
+                                units=pyunits.kJ/pyunits.mol/pyunits.K**4)
+        self.cp_param_5 = Param(self.component_list,
+                                mutable=False,
+                                initialize={k: v for (k, j), v in
+                                            cp_param_dict.items() if j == 5},
+                                doc="Shomate equation heat capacity coeff 5",
+                                units=pyunits.kJ/pyunits.mol*pyunits.K)
+        self.cp_param_6 = Param(self.component_list,
+                                mutable=False,
+                                initialize={k: v for (k, j), v in
+                                            cp_param_dict.items() if j == 6},
+                                doc="Shomate equation heat capacity coeff 6",
+                                units=pyunits.kJ/pyunits.mol)
+        self.cp_param_7 = Param(self.component_list,
+                                mutable=False,
+                                initialize={k: v for (k, j), v in
+                                            cp_param_dict.items() if j == 7},
+                                doc="Shomate equation heat capacity coeff 7",
+                                units=pyunits.kJ/pyunits.mol/pyunits.K)
+        self.cp_param_8 = Param(self.component_list,
+                                mutable=False,
+                                initialize={k: v for (k, j), v in
+                                            cp_param_dict.items() if j == 8},
+                                doc="Shomate equation heat capacity coeff 8",
+                                units=pyunits.kJ/pyunits.mol)
 
         # Std. heat of formation of comp. - units = kJ/(mol comp) - ref: NIST
         enth_mol_form_comp_dict = {'Fe2O3': -825.5032, 'Fe3O4': -1120.894,
@@ -463,17 +506,12 @@ class SolidPhaseStateBlockData(StateBlockData):
                 units=pyunits.kJ/pyunits.mol/pyunits.K)
 
         def pure_component_cp_mol(b, j):
-            # for simplicity, coefficients using K/1000 to different powers
-            # are used as if in K to different powers (cp_param_dict), and
-            # temperatures are converted from K/1000 to K below. The equation
-            # gives heat capacity in J/mol-K, so we multiply by 1e-3 to get kJ
-            # since the coefficients are defined in kJ above
-            return b.cp_mol_comp[j] == 1e-3*(
-                        b._params.cp_param[j, 1] + 1e-23*b.temperature +
-                        b._params.cp_param[j, 2]*(b.temperature*1e-3) +
-                        b._params.cp_param[j, 3]*(b.temperature*1e-3)**2 +
-                        b._params.cp_param[j, 4]*(b.temperature*1e-3)**3 +
-                        b._params.cp_param[j, 5]/((b.temperature*1e-3)**2))
+            return b.cp_mol_comp[j] == (
+                        b._params.cp_param_1[j] +
+                        b._params.cp_param_2[j]*(b.temperature*1e-3) +
+                        b._params.cp_param_3[j]*(b.temperature*1e-3)**2 +
+                        b._params.cp_param_4[j]*(b.temperature*1e-3)**3 +
+                        b._params.cp_param_5[j]/((b.temperature*1e-3)**2))
         try:
             # Try to build constraint
             self.cp_shomate_eqn = Constraint(self._params.component_list,
@@ -514,20 +552,14 @@ class SolidPhaseStateBlockData(StateBlockData):
                 units=pyunits.kJ/pyunits.mol)
 
         def pure_comp_enthalpy(b, j):
-            # for simplicity, coefficients using K/1000 to different powers
-            # are used as if in K to different powers (cp_param_dict), and
-            # temperatures are converted from K/1000 to K below. The equation
-            # gives enthalpy in kJ/mol, so no conversion factor is needed
-            # since the coefficients are defined in kJ above
-            # SHOULDN'T HAVE TO ADD UNITS MANUALLY, SHOULD COME FROM CP_PARAM
             return b.enth_mol_comp[j] == (
-                    b._params.cp_param[j, 1]*(b.temperature*1e-3/pyunits.K) +
-                    b._params.cp_param[j, 2]*((b.temperature*1e-3/pyunits.K)**2)/2 +
-                    b._params.cp_param[j, 3]*((b.temperature*1e-3/pyunits.K)**3)/3 +
-                    b._params.cp_param[j, 4]*((b.temperature*1e-3/pyunits.K)**4)/4 -
-                    b._params.cp_param[j, 5]/(b.temperature*1e-3/pyunits.K) +
-                    b._params.cp_param[j, 6] -
-                    b._params.cp_param[j, 8])*pyunits.kJ/pyunits.mol
+                    b._params.cp_param_1[j]*(b.temperature*1e-3) +
+                    b._params.cp_param_2[j]*((b.temperature*1e-3)**2)/2 +
+                    b._params.cp_param_3[j]*((b.temperature*1e-3)**3)/3 +
+                    b._params.cp_param_4[j]*((b.temperature*1e-3)**4)/4 -
+                    b._params.cp_param_5[j]/(b.temperature*1e-3) +
+                    b._params.cp_param_6[j] -
+                    b._params.cp_param_8[j])
         try:
             # Try to build constraint
             self.enthalpy_shomate_eqn = Constraint(self._params.component_list,
