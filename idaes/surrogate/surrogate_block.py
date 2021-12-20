@@ -106,7 +106,7 @@ class SurrogateBlockData(_BlockData):
                 v.setub(ub)
 
         # call populate block to fill-in the constraints
-        surrogate_object.populate_block(self, **kwargs)
+        surrogate_object.populate_block(self, additional_options=kwargs)
 
         # test that kwargs is empty
         # derived classes should call .pop when they use a keyword argument
