@@ -1,7 +1,30 @@
 How-to use the Data Management Framework
 ========================================
+The Data Management Framework (DMF) is used to organize data within IDAES. It is often not visible, but does have
+an API and command-line tool ('dmf') to view and edit its information.
 
 .. contents::
+
+Configure
+---------
+
+Create initial configuration (bootstrap)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The DMF uses a file in the user's home directory called, by default, ".dmf" to give the location of the currently
+active workpace (and, potentially, other things in the future). To create this file and initialize it with the
+default workspace for the current IDAES installation, you can use either a command-line or Python call. You only
+need to do this once per home-directory (which for most people means once, period).
+
+Command-line::
+
+    dmf setup
+
+API call::
+
+    from idaes.dmf import create_configuration
+    result = create_configuration()
+    # result will be the location of the configuration file, as a
+    # Python pathlib.Path object.
 
 
 Tabular Data
