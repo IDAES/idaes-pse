@@ -16,7 +16,7 @@ IDAES General Purpose Packed Solvent Column Model.
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Constraint, Expression, Param, Reals, NonNegativeReals, value, Var, exp,
+    Constraint, Expression, Param, Reals, NonNegativeReals, Var,
     SolverStatus, TerminationCondition, units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool, In
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -30,9 +30,9 @@ from idaes.core import (ControlVolume1DBlock,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         FlowDirection)
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import InitializationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.control_volume1d import DistributedVars
 import idaes.logger as idaeslog
 from idaes.core.util.config import DefaultBool
@@ -121,10 +121,10 @@ and used when constructing these
             """))
 
     # Create individual config blocks for vapor(gas) and liquid sides
-    CONFIG.declare("vapor_side",
+    CONFIG.declare("vapor_phase",
                    _PhaseCONFIG(doc="vapor side config arguments"))
 
-    CONFIG.declare("liquid_side",
+    CONFIG.declare("liquid_phase",
                    _PhaseCONFIG(doc="liquid side config arguments"))
 
     # =========================================================================
@@ -142,7 +142,23 @@ and used when constructing these
         # Call UnitModel.build to build default attributes
         super().build()
 
-        # TODO: Verify property packages
+        # Check phase lists match assumptions
+        if self.config.vapor_phase.property_package.phase_list != ["Vap"]:
+            raise ConfigurationError(
+                f"{self.name} SolventCondenser model requires that the vapor "
+                f"phase property package have a single phase named 'Vap'")
+        if self.config.liquid_phase.property_package.phase_list != ["Liq"]:
+            raise ConfigurationError(
+                f"{self.name} SolventCondenser model requires that the liquid "
+                f"phase property package have a single phase named 'Liq'")
+
+        # Check for at least one common component in component lists
+        if not any(j in self.config.vapor_phase.property_package.component_list for
+                   j in self.config.liquid_phase.property_package.component_list):
+            raise ConfigurationError(
+                f"{self.name} SolventCondenser model requires that the liquid "
+                f"and vapor phase property packages have at least one "
+                f"common component.")
 
         # Geometry
         self.diameter_column = Var(domain=Reals,
@@ -189,9 +205,9 @@ and used when constructing these
             "dynamic": self.config.dynamic,
             "has_holdup": self.config.has_holdup,
             "area_definition": DistributedVars.variant,
-            "property_package": self.config.vapor_side.property_package,
+            "property_package": self.config.vapor_phase.property_package,
             "property_package_args":
-                self.config.vapor_side.property_package_args})
+                self.config.vapor_phase.property_package_args})
 
         self.vapor_phase.add_geometry(
             flow_direction=set_direction_vapor,
@@ -230,9 +246,9 @@ and used when constructing these
             "dynamic": self.config.dynamic,
             "has_holdup": self.config.has_holdup,
             "area_definition": DistributedVars.variant,
-            "property_package": self.config.liquid_side.property_package,
+            "property_package": self.config.liquid_phase.property_package,
             "property_package_args":
-                self.config.liquid_side.property_package_args})
+                self.config.liquid_phase.property_package_args})
 
         self.liquid_phase.add_geometry(
             flow_direction=set_direction_liquid,
@@ -267,12 +283,9 @@ and used when constructing these
 
         # ======================================================================
         # Unit level sets
-        vap_comp = self.config.vapor_side.property_package.component_list
-        liq_comp = self.config.liquid_side.property_package.component_list
+        vap_comp = self.config.vapor_phase.property_package.component_list
+        liq_comp = self.config.liquid_phase.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
-        solvent_comp_list = \
-            self.config.liquid_side.property_package.solvent_set
-        solute_comp_list = self.config.liquid_side.property_package.solute_set
 
         # Hydrodynamics and cacking parameters
         self.eps_ref = Param(initialize=0.97,
@@ -308,6 +321,7 @@ and used when constructing these
                               units=pyunits.dimensionless,
                               doc='Volumetric liquid holdup [-]')
 
+        # TODO : Consider making this a Var & Constraint
         def rule_holdup_vap(blk, t, x):
             return blk.eps_ref - blk.holdup_liq[t, x]
 
@@ -320,14 +334,14 @@ and used when constructing these
         @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,
                          doc="Vapor phase cross-sectional area constraint")
-        def vapor_side_area(blk, t, x):
+        def vapor_phase_area(blk, t, x):
             return blk.vapor_phase.area[t, x] == (
                 blk.area_column * blk.holdup_vap[t, x])
 
         @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
                          doc="Liquid phase cross-sectional area constraint")
-        def liquid_side_area(blk, t, x):
+        def liquid_phase_area(blk, t, x):
             return blk.liquid_phase.area[t, x] == (
                 blk.area_column * blk.holdup_liq[t, x])
 
@@ -465,14 +479,10 @@ and used when constructing these
             else:
                 zb = self.liquid_phase.length_domain.prev(x)
                 return blk.vapor_phase.enthalpy_transfer[t, x] == -(
-                    (sum(blk.vapor_phase.properties[
-                        t, x].enth_mol_phase_comp['Vap', j] *
-                     blk.vapor_phase.mass_transfer_term[t, x, 'Vap', j]
-                     for j in solute_comp_list)) +
                     (sum(blk.liquid_phase.properties[
                         t, zb].enth_mol_phase_comp['Liq', j] *
                      blk.liquid_phase.mass_transfer_term[t, zb, 'Liq', j]
-                     for j in solvent_comp_list)))
+                     for j in equilibrium_comp)))
 
         @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
@@ -496,14 +506,14 @@ and used when constructing these
 
         Derived Classes should overload this method as required.
         """
-        vap_comp = self.config.vapor_side.property_package.component_list
-        liq_comp = self.config.liquid_side.property_package.component_list
+        vap_comp = self.config.vapor_phase.property_package.component_list
+        liq_comp = self.config.liquid_phase.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
 
         @self.Constraint(self.flowsheet().time,
                          self.vapor_phase.length_domain,
                          equilibrium_comp,
-                         doc='Equilibruim partial pressure at interface')
+                         doc='Equilibrium partial pressure at interface')
         def pressure_at_interface(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
                 return Constraint.Skip
@@ -512,6 +522,107 @@ and used when constructing these
                 lprops = blk.liquid_phase.properties[t, zb]
                 return blk.pressure_equil[t, x, j] == (
                     lprops.fug_phase_comp['Liq', j])
+
+    # =========================================================================
+    # Scaling routine
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        # ---------------------------------------------------------------------
+        # Scale variables
+        for (t, x, j), v in self.pressure_equil.items():
+            if iscale.get_scaling_factor(v) is None:
+                sf_pe = iscale.get_scaling_factor(
+                    self.pressure_equil, default=None, warning=True)
+                if sf_pe is None:
+                    sf_pe = iscale.get_scaling_factor(
+                        self.liquid_phase.properties[
+                            t, x].fug_phase_comp["Liq", j],
+                        default=None,
+                        warning=True)
+                if sf_pe is None:
+                    sf_pe = iscale.get_scaling_factor(
+                        self.liquid_phase.properties[t, x].pressure,
+                        default=1,
+                        warning=True)
+
+                iscale.set_scaling_factor(v, sf_pe)
+
+        for (t, x), v in self.vapor_phase.heat.items():
+            if iscale.get_scaling_factor(v) is None:
+                sf = iscale.get_scaling_factor(
+                    self.heat_transfer_coeff, default=1e-3, warning=True)
+                iscale.set_scaling_factor(v, sf)
+
+        for (t, x), v in self.liquid_phase.heat.items():
+            if iscale.get_scaling_factor(v) is None:
+                sf = iscale.get_scaling_factor(
+                    self.heat_transfer_coeff, default=1e-3, warning=True)
+                iscale.set_scaling_factor(v, sf)
+
+        # ---------------------------------------------------------------------
+        # Scale constraints
+        for (t, x), v in self.mechanical_equilibrium.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.vapor_phase.properties[t, x].pressure,
+                    default=1,
+                    warning=True))
+
+        for (t, x, j), v in self.pressure_at_interface.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.pressure_equil[t, x, j],
+                    default=1,
+                    warning=False))
+
+        for (t, x, j), v in self.interphase_mass_transfer_eqn.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.interphase_mass_transfer[t, x, j],
+                    default=1,
+                    warning=True))
+
+        for (t, x, j), v in self.liquid_mass_transfer_eqn.items():
+            try:
+                sf = iscale.get_scaling_factor(
+                    self.interphase_mass_transfer[t, x, j],
+                    default=1,
+                    warning=False)
+            except KeyError:
+                # This implies a non-volatile component
+                sf = 1
+            iscale.constraint_scaling_transform(v, sf)
+
+        for (t, x, j), v in self.vapor_mass_transfer_eqn.items():
+            try:
+                sf = iscale.get_scaling_factor(
+                    self.interphase_mass_transfer[t, x, j],
+                    default=1,
+                    warning=False)
+            except KeyError:
+                # This implies a non-volatile component
+                sf = 1
+            iscale.constraint_scaling_transform(v, sf)
+
+        for (t, x), v in self.heat_transfer_eqn1.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.vapor_phase.heat[t, x],
+                    default=1,
+                    warning=True))
+
+        for (t, x), v in self.heat_transfer_eqn2.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.vapor_phase.heat[t, x],
+                    default=1,
+                    warning=True))
 
     # =========================================================================
     # Model initialization routine

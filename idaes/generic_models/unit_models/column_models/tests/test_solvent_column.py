@@ -35,7 +35,10 @@ from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_sol
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
+
+import idaes.logger as idaeslog
+from idaes.core.util.model_statistics import variables_near_bounds_set
 
 
 # -----------------------------------------------------------------------------
@@ -57,8 +60,8 @@ class TestAbsorberColumn:
         m.fs.unit = PackedColumn(default={
             "finite_elements": 10,
             "has_pressure_change": False,
-            "vapor_side": {"property_package": m.fs.vapor_properties},
-            "liquid_side": {"property_package": m.fs.liquid_properties}})
+            "vapor_phase": {"property_package": m.fs.vapor_properties},
+            "liquid_phase": {"property_package": m.fs.liquid_properties}})
 
         # Fix column design variables
         m.fs.unit.diameter_column.fix(0.64135)
@@ -87,6 +90,35 @@ class TestAbsorberColumn:
         m.fs.unit.heat_transfer_coeff.fix(7100)
         m.fs.unit.area_interfacial.fix(200)
 
+        # Apply scaling
+        iscale.set_scaling_factor(m.fs.unit.pressure_equil, 1e-3)
+
+        for (t, x, j), v in m.fs.unit.interphase_mass_transfer.items():
+            if j == "H2O":
+                iscale.set_scaling_factor(v, 1e3)
+            elif j == "CO2":
+                iscale.set_scaling_factor(v, 1e3)
+
+        for (t, x, p, j), v in m.fs.unit.vapor_phase.mass_transfer_term.items():
+            if j == "H2O":
+                iscale.set_scaling_factor(v, 1e3)
+            elif j == "CO2":
+                iscale.set_scaling_factor(v, 1e3)
+
+        for (t, x, p, j), v in m.fs.unit.liquid_phase.mass_transfer_term.items():
+            if j == "H2O":
+                iscale.set_scaling_factor(v, 1e2)
+            elif j == "CO2":
+                iscale.set_scaling_factor(v, 1e2)
+
+        iscale.set_scaling_factor(m.fs.unit.heat_transfer_coeff, 1e-3)
+        iscale.set_scaling_factor(
+            m.fs.unit.vapor_phase.enthalpy_transfer, 1e-3)
+        iscale.set_scaling_factor(
+            m.fs.unit.liquid_phase.enthalpy_transfer, 1e-3)
+
+        iscale.calculate_scaling_factors(m.fs.unit)
+
         return m
 
     @pytest.mark.unit
@@ -111,14 +143,27 @@ class TestAbsorberColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        with idaes.temporary_config_ctx():
-            initialization_tester(model, optarg={"tol": 1e-8})
+        # with idaes.temporary_config_ctx():
+        initialization_tester(model, outlvl=idaeslog.DEBUG)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
-        results = solver.solve(model)
+        results = solver.solve(model, tee=True)
+
+        # model.fs.unit.display()
+        print()
+        print()
+        print()
+        print("Variables near bounds")
+        vb = variables_near_bounds_set(model)
+        for v in vb:
+            print(v.name, v.value, v.lb, v.ub)
+        print()
+        print()
+        print()
+        print(model.fs.liquid_properties.default_scaling_factor)
 
         # Solver status and condition
         assert results.solver.status == SolverStatus.ok
@@ -162,8 +207,8 @@ class TestAbsorberColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
-        vap_comp = model.fs.unit.config.vapor_side.property_package.component_list
-        liq_comp = model.fs.unit.config.liquid_side.property_package.apparent_species_set
+        vap_comp = model.fs.unit.config.vapor_phase.property_package.component_list
+        liq_comp = model.fs.unit.config.liquid_phase.property_package.apparent_species_set
 
         # Mass conservation test
         vap_in = model.fs.unit.vapor_phase.properties[0, 0]
@@ -213,8 +258,8 @@ class TestStripperColumn:
         m.fs.unit = PackedColumn(default={
             "finite_elements": 10,
             "has_pressure_change": False,
-            "vapor_side": {"property_package": m.fs.vapor_properties},
-            "liquid_side": {"property_package": m.fs.liquid_properties}})
+            "vapor_phase": {"property_package": m.fs.vapor_properties},
+            "liquid_phase": {"property_package": m.fs.liquid_properties}})
 
         # Fix column design variables
         m.fs.unit.diameter_column.fix(0.64135)
@@ -240,6 +285,9 @@ class TestStripperColumn:
         m.fs.unit.mass_transfer_coeff_vap[0, :, "H2O"].fix(4e-5)
         m.fs.unit.heat_transfer_coeff.fix(7100)
         m.fs.unit.area_interfacial.fix(200)
+
+        # Apply scaling
+        iscale.calculate_scaling_factors(m.fs.unit)
 
         return m
 
@@ -282,37 +330,35 @@ class TestStripperColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        model.fs.unit.vapor_outlet.display()
-        model.fs.unit.liquid_outlet.display()
-        assert pytest.approx(12.1819, rel=1e-5) == value(
+        assert pytest.approx(11.6609, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0])
-        assert pytest.approx(0.0996618, rel=1e-5) == value(
+        assert pytest.approx(0.125550, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.900338, rel=1e-5) == value(
+        assert pytest.approx(0.874450, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"])
         assert pytest.approx(183430, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.pressure[0])
-        assert pytest.approx(376.954, rel=1e-5) == value(
+        assert pytest.approx(377.736, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.temperature[0])
 
-        assert pytest.approx(89.7941, rel=1e-5) == value(
+        assert pytest.approx(90.3151, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.flow_mol[0])
-        assert pytest.approx(0.0204458, rel=1e-5) == value(
+        assert pytest.approx(0.0175602, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.873994, rel=1e-5) == value(
+        assert pytest.approx(0.877489, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"])
-        assert pytest.approx(0.105560, rel=1e-5) == value(
+        assert pytest.approx(0.104951, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"])
         assert pytest.approx(183430, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.pressure[0])
-        assert pytest.approx(393.675, rel=1e-5) == value(
+        assert pytest.approx(394.030, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.temperature[0])
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
-        vap_comp = model.fs.unit.config.vapor_side.property_package.component_list
-        liq_comp = model.fs.unit.config.liquid_side.property_package.apparent_species_set
+        vap_comp = model.fs.unit.config.vapor_phase.property_package.component_list
+        liq_comp = model.fs.unit.config.liquid_phase.property_package.apparent_species_set
 
         vap_in = model.fs.unit.vapor_phase.properties[0, 0]
         vap_out = model.fs.unit.vapor_phase.properties[0, 1]

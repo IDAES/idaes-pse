@@ -47,10 +47,9 @@ class MEAColumnData(PackedColumnData):
         """
         Enhancement factor based liquid phase mass transfer model.
         """
-        vap_comp = self.config.vapor_side.property_package.component_list
-        liq_comp = self.config.liquid_side.property_package.component_list
+        vap_comp = self.config.vapor_phase.property_package.component_list
+        liq_comp = self.config.liquid_phase.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
-        solute_comp_list = self.config.liquid_side.property_package.solute_set
 
         # Liquid phase equilibrium pressure via Enhancement factor
         self.mass_transfer_coeff_liq = Var(
@@ -79,7 +78,7 @@ class MEAColumnData(PackedColumnData):
         self.phi = Expression(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
-            solute_comp_list,
+            equilibrium_comp,
             rule=rule_phi,
             doc='Equilibrium partial pressure intermediate term')
 
@@ -114,8 +113,8 @@ class MEAColumnData(PackedColumnData):
 
         # ---------------------------------------------------------------------
         # Unit level sets
-        vap_comp = self.config.vapor_side.property_package.component_list
-        liq_comp = self.config.liquid_side.property_package.component_list
+        vap_comp = self.config.vapor_phase.property_package.component_list
+        liq_comp = self.config.liquid_phase.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
 
         # ---------------------------------------------------------------------

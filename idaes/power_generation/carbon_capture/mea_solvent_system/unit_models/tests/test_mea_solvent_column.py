@@ -58,8 +58,8 @@ class TestAbsorberColumn:
         m.fs.unit = MEAColumn(default={
             "finite_elements": 10,
             "has_pressure_change": False,
-            "vapor_side": {"property_package": m.fs.vapor_properties},
-            "liquid_side": {"property_package": m.fs.liquid_properties}})
+            "vapor_phase": {"property_package": m.fs.vapor_properties},
+            "liquid_phase": {"property_package": m.fs.liquid_properties}})
 
         # Fix column design variables
         m.fs.unit.diameter_column.fix(0.64135)
@@ -205,8 +205,8 @@ class TestAbsorberColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
-        vap_comp = model.fs.unit.config.vapor_side.property_package.component_list
-        liq_comp = model.fs.unit.config.liquid_side.property_package.apparent_species_set
+        vap_comp = model.fs.unit.config.vapor_phase.property_package.component_list
+        liq_comp = model.fs.unit.config.liquid_phase.property_package.apparent_species_set
 
         # Mass conservation test
         vap_in = model.fs.unit.vapor_phase.properties[0, 0]
@@ -256,8 +256,8 @@ class TestStripperColumn:
         m.fs.unit = MEAColumn(default={
             "finite_elements": 10,
             "has_pressure_change": False,
-            "vapor_side": {"property_package": m.fs.vapor_properties},
-            "liquid_side": {"property_package": m.fs.liquid_properties}})
+            "vapor_phase": {"property_package": m.fs.vapor_properties},
+            "liquid_phase": {"property_package": m.fs.liquid_properties}})
 
         # Fix column design variables
         m.fs.unit.diameter_column.fix(0.64135)
@@ -396,8 +396,8 @@ class TestStripperColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
-        vap_comp = model.fs.unit.config.vapor_side.property_package.component_list
-        liq_comp = model.fs.unit.config.liquid_side.property_package.apparent_species_set
+        vap_comp = model.fs.unit.config.vapor_phase.property_package.component_list
+        liq_comp = model.fs.unit.config.liquid_phase.property_package.apparent_species_set
 
         vap_in = model.fs.unit.vapor_phase.properties[0, 0]
         vap_out = model.fs.unit.vapor_phase.properties[0, 1]
