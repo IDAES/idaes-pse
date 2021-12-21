@@ -16,6 +16,7 @@ Utility functions.
 # stdlib
 from datetime import datetime, timedelta, timezone
 import importlib
+import inspect
 import json
 from json import JSONDecodeError
 import logging
@@ -560,3 +561,108 @@ def size_prefix(number, base2=False):
     else:
         num_str = f"{negative}{npow:.1f}{abbr}{extra}"
     return num_str
+
+# Simple log start/end functions
+
+
+class ZigZagLogger:
+    """You gotta zig before you zag.
+    """
+    def __init__(self, logger):
+        self._logger = logger
+        self._events = {}
+
+    def begin_info(self, event_name: str = None, **kwargs):
+        """Log beginning of an event at the INFO logging level.
+
+        The `kwargs` will be appended to the log message as a string
+        like "<key1>=<value1>;<key2>=<value2>;..etc.."
+
+        Args:
+            event_name: Name of the event
+            kwargs: Name/value pairs
+        """
+        self._begin(event_name, logging.INFO, 1, kwargs)
+
+    def begin_debug(self, event_name=None, **kwargs):
+        """Log beginning of an event at the DEBUG logging level.
+
+        The `kwargs` will be appended to the log message as a string
+        like "<key1>=<value1>;<key2>=<value2>;..etc.."
+
+        Args:
+            event_name: Name of the event
+            kwargs: Name/value pairs
+        """
+        self._begin(event_name, logging.DEBUG, 1, kwargs)
+
+    def end_info(self, event_name=None, **kwargs):
+        """Log end of an event at the INFO logging level.
+
+        The `kwargs` will be appended to the log message as a string
+        like "<key1>=<value1>;<key2>=<value2>;..etc.."
+
+        A final key/value of "dur=<float>" will be added, if there was a
+        `begin_info` or `begin_debug` call with the same `event_name`, with the
+        duration (in seconds) since that call.
+
+        Args:
+            event_name: Name of the event
+            kwargs: Name/value pairs
+        """
+        self._end(event_name, logging.INFO, 1, kwargs)
+
+    def end_debug(self, event_name=None, **kwargs):
+        """Log end of an event at the DEBUG logging level.
+
+        The `kwargs` will be appended to the log message as a string
+        like "<key1>=<value1>;<key2>=<value2>;..etc.."
+
+        A final key/value of "dur=<float>" will be added, if there was a
+        `begin_info` or `begin_debug` call with the same `event_name`, with the
+        duration (in seconds) since that call.
+
+        Args:
+            event_name: Name of the event
+            kwargs: Name/value pairs
+        """
+        self._end(event_name, logging.DEBUG, 1, kwargs)
+
+    def _begin(self, event_name, level, depth, kwargs):
+        ts = time.time()
+        name = self._event_name("begin", event_name, depth + 1)
+        self._event(name, level, kwargs)
+        self._events[name] = ts
+
+    def _end(self, event_name, level, depth, kwargs):
+        ts = time.time()
+        name = self._event_name("begin", event_name, depth + 1)
+        ts0 = self._events.get(name, -1)
+        if ts0 > 0:
+            dur = ts - ts0
+            kwargs["dur"] = f"{dur:.6f}"
+            del self._events[name]
+        name = name[:-5] + "end"
+        self._event(name, level, kwargs)
+
+    @staticmethod
+    def _event_name(location, event_name, depth):
+        ctx = "event"
+        current_frame = inspect.currentframe()
+        if current_frame is not None:
+            try:
+                stack = inspect.getouterframes(current_frame)
+                frame = stack[depth + 1]
+                ctx = f"{frame.function}"
+            finally:
+                del frame
+                del current_frame
+        if event_name:
+            return f"{ctx}.{event_name}.{location}"
+        else:
+            return f"{ctx}.{location}"
+
+    def _event(self, name, level, kwargs):
+        keyword_values = ";".join((f"{k}={v}" for k, v in kwargs.items()))
+        event = f"{name} {keyword_values}"
+        self._logger.log(level, event)
