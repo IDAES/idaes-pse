@@ -21,9 +21,11 @@ from json import JSONDecodeError
 import logging
 from math import floor, log
 import os
+from pathlib import Path
 import re
 import shutil
 import time
+from typing import Union
 import yaml
 
 # third-party
@@ -52,6 +54,34 @@ def get_file(file_or_path, mode="r"):
     if hasattr(file_or_path, "read"):
         return file_or_path
     return open(file_or_path, mode)
+
+
+def as_path(f: Union[Path, str, None],
+            must_exist: bool = False,
+            must_be_dir: bool = False,
+            must_be_file: bool = False) -> Path:
+    """Simply coerce input to a `Path`.
+
+    Args:
+        f: Path, string path, or None
+        must_exist: Path must exist
+
+    Returns:
+        Input if it's a Path or None, else the Path(input).
+
+    Raises:
+        ValueError: if one of the 'must' conditions fails
+    """
+    if f is not None:
+        f = Path(f)
+        must_exist = must_exist or (must_be_dir or must_be_file)
+        if must_exist and not f.exists():
+            raise ValueError(f"Path '{f}' must exist")
+        if must_be_file and not f.is_file():
+            raise ValueError(f"Path '{f}' must be a file")
+        if must_be_dir and not f.is_dir():
+            raise ValueError(f"Path '{f}' must be a directory")
+    return f
 
 
 def import_module(name):

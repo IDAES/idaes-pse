@@ -26,6 +26,7 @@ import uuid
 from typing import Generator, Union
 
 # third-party
+import pkg_resources
 from traitlets import HasTraits, default, observe
 from traitlets import Unicode
 import yaml
@@ -35,12 +36,15 @@ from . import errors
 from .resource import Resource
 from . import resourcedb
 from . import workspace
-from .util import mkdir_p, yaml_load
+from .util import mkdir_p, yaml_load, as_path
 
 
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
+
+# Used to discover the package 'data' directory
+IDAES_DIST_NAME = "idaes-pse"
 
 
 class DMFConfig(object):
@@ -140,6 +144,83 @@ class DMFConfig(object):
             for k, v in y.items():
                 if k in self._keys:
                     self.c[k] = v
+
+
+def create_configuration(config_path: Union[pathlib.Path, str] = None,
+                         workspace_path: Union[pathlib.Path, str] = None,
+                         overwrite: bool = True) -> pathlib.Path:
+    """Create the configuration file that tells the DMF where to find its workspace.
+
+    By default, this will write the built-in workspace location into the default
+    DMF configuration file.
+
+    Args:
+        config_path: If given, a file path for the new configuration. If not given,
+              use the default value in :class:`DMFConfig`
+        workspace_path: If given, set the workspace path in the configuration
+              file to this value. Otherwise, use the default data workspace of the
+              installed idaes-pse package (i.e. where the 'datasets' are stored).
+        overwrite: If True, overwrite an existing configuration. If False, do not
+              overwrite an existing one.
+
+    Return:
+        Configuration path
+
+    Raises:
+        ValueError: if a given (or inferred) path is invalid
+        KeyError: if overwrite was False and the config_path already existed
+    """
+    _log.debug("create_configuration.begin")
+    # get configuration path
+    try:
+        config_path = as_path(config_path, must_be_file=True)
+    except ValueError as err:
+        raise ValueError(f"Invalid configuration path: {err}")
+    if config_path is None:
+        config_path = as_path(DMFConfig.configuration_path())
+    exists = config_path.exists()
+    if (exists and overwrite) or (not exists):
+        _log.debug(f"create_configuration.create.begin: path={config_path}")
+        try:
+            config_path.open("w", encoding="utf-8")
+        except FileNotFoundError:
+            raise ValueError(f"Cannot create configuration: {err}")
+        _log.debug(f"create_configuration.create.end: path={config_path}")
+    elif exists and not overwrite:
+        raise KeyError(f"Configuration path '{config_path}' exists and overwrite "
+                       f"not allowed")
+    # get workspace path
+    try:
+        workspace_path = as_path(workspace_path, must_be_dir=True)
+    except ValueError as err:
+        raise ValueError(f"Invalid workspace path: {err}")
+    if workspace_path is None:
+        _log.debug("create_configuration.get_workspace_from_package.begin")
+        try:
+            workspace_path = _get_workspace_from_package()
+        except (KeyError, NotADirectoryError) as err:
+            raise ValueError(f"Error getting workspace from package: {err}")
+        _log.debug(f"create_configuration.get_workspace_from_package.end "
+                   f"path={workspace_path}")
+    # write configuration file
+    _log.debug(f"create_configuration.write.begin path={config_path} "
+               f"workspace={workspace_path}")
+    with config_path.open("w", encoding="utf-8") as f:
+        f.write(f"workspace: {workspace_path}\n")
+    _log.debug(f"create_configuration.write.end")
+    return config_path
+
+
+def _get_workspace_from_package():
+    dist = pkg_resources.get_distribution(IDAES_DIST_NAME)
+    rsrc = "data"
+    if not dist.has_resource(rsrc):
+        raise KeyError(f"No '{rsrc}' resource found in package")
+    if not dist.resource_isdir(rsrc):
+        raise NotADirectoryError(f"The '{rsrc}' resource is not a directory")
+    mgr = pkg_resources.ResourceManager()
+    path = pathlib.Path(dist.get_resource_filename(mgr, rsrc))
+    return path
 
 
 class DMF(workspace.Workspace, HasTraits):

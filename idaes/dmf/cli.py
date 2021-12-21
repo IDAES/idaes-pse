@@ -33,7 +33,7 @@ import yaml
 import click
 
 # package
-from idaes.dmf import DMF, DMFConfig, resource, workspace
+from idaes.dmf import DMF, DMFConfig, resource, workspace, create_configuration
 from idaes.dmf.resource import Predicates
 from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
@@ -158,6 +158,7 @@ class URLType(click.ParamType):
         "list": "ls",
         "delete": "rm",
         "graph": "related",
+        "workspace": "init",
     },
     help="Data management framework command wrapper",
 )
@@ -188,6 +189,21 @@ def base_command(verbose, quiet):
         _dmf_log.setLevel(level_from_verbosity(verbose))
     else:
         _dmf_log.setLevel(level_from_verbosity(-quiet))
+
+
+@click.command(
+    help="Set up the DMF configuration file."
+)
+@click.option("--dir", "-d", "config_path", type=click.Path(),
+              default=None,
+              help="Specify non-default directory for configuration")
+def setup(config_path):
+    try:
+        path = create_configuration(config_path=config_path)
+    except ValueError as err:
+        click.echo(f"Error creating DMF configuration: {err}")
+        sys.exit(Code.DMF_OPER.value)
+    click.echo(f"Created configuration in '{path}'")
 
 
 @click.command(
@@ -1358,6 +1374,7 @@ _show_fields = {
 ######################################################################################
 
 # Register base commands
+base_command.add_command(setup)
 base_command.add_command(init)
 base_command.add_command(register)
 base_command.add_command(status)
