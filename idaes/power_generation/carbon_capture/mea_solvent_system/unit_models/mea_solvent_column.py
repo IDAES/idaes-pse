@@ -51,12 +51,15 @@ class MEAColumnData(PackedColumnData):
         liq_comp = self.config.liquid_phase.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
 
+        lunits = self.config.liquid_phase.property_package.get_metadata(
+            ).get_derived_units
+
         # Liquid phase equilibrium pressure via Enhancement factor
         self.mass_transfer_coeff_liq = Var(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
             equilibrium_comp,
-            units=pyunits.mol/pyunits.Pa/pyunits.m**3/pyunits.s,
+            units=lunits("time")**-1,
             doc='Liquid phase mass transfer coefficient')
 
         self.enhancement_factor = Var(self.flowsheet().time,
@@ -96,7 +99,9 @@ class MEAColumnData(PackedColumnData):
                 if henrycomp is not None and "Liq" in henrycomp:
                     return blk.pressure_equil[t, x, j] == (
                         (blk.vapor_phase.properties[t, x].mole_frac_comp[j] *
-                         blk.vapor_phase.properties[t, x].pressure +
+                         pyunits.convert(
+                             blk.vapor_phase.properties[t, x].pressure,
+                             to_units=lunits("pressure")) +
                          blk.phi[t, x, j] *
                          lprops.conc_mol_phase_comp_true['Liq', j]) /
                         (1 + blk.phi[t, x, j] /
@@ -116,13 +121,16 @@ class MEAColumnData(PackedColumnData):
         liq_comp = self.config.liquid_phase.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
 
+        lunits = self.config.liquid_phase.property_package.get_metadata(
+            ).get_derived_units
+
         # ---------------------------------------------------------------------
         # Vapor-liquid heat transfer coeff modified by Ackmann factor
         self.heat_transfer_coeff_base = Var(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             initialize=100,
-            units=pyunits.W/pyunits.K/pyunits.m,
+            units=lunits("power")/lunits("temperature")/lunits("length")**3,
             doc='Uncorrected vapor-liquid heat transfer coefficient')
 
         def rule_heat_transfer_coeff_Ack(blk, t, x):
