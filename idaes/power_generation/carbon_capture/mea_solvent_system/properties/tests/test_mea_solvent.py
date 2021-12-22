@@ -144,7 +144,7 @@ class TestStateBlock(object):
         assert pytest.approx(0.0533310121, rel=1e-8) == value(
             model.props[1].surf_tens_phase["Liq"])
 
-        assert pytest.approx(9.83334347e-09, rel=1e-8) == value(
+        assert pytest.approx(8.2258789e-9, rel=1e-8) == value(
             model.props[1].diffus_phase_comp_true["Liq", "CO2"])
         assert pytest.approx(4.47017415e-09, rel=1e-8) == value(
             model.props[1].diffus_phase_comp_true["Liq", "MEA"])

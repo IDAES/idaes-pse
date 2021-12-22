@@ -18,6 +18,8 @@ __author__ = "Alejandro Garciadiego"
 
 import pytest
 
+import numpy as np
+
 import idaes.logger as idaeslog
 
 from pyomo.environ import ConcreteModel
@@ -213,9 +215,11 @@ def test_Txy_data_no_dew():
     model = ConcreteModel()
 
     model.params = GenericParameterBlock(default=configuration)
-
+    
+    # Again, add more calculation points because the PR for single-phase
+    # component VLE initialization hasn't been accepted
     TD = Txy_data(model, "carbon_dioxide", "bmimPF6", 101325,
-                  num_points=3, temperature=150.15,
+                  num_points=9, temperature=150.15,
                   print_level=idaeslog.CRITICAL, solver_op={'tol': 1e-6})
 
     assert TD.Component_1 == 'carbon_dioxide'
@@ -223,18 +227,18 @@ def test_Txy_data_no_dew():
     assert_units_equivalent(TD.Punits, pyunits.kg / pyunits.m / pyunits.s ** 2)
     assert_units_equivalent(TD.Tunits, pyunits.K)
     assert TD.P == 101325
-    assert TD.TBubb == [pytest.approx(185.6468, abs=1e-4),
-                        pytest.approx(191.4697, abs=1e-4),
-                        pytest.approx(331.1625, abs=1e-4)]
+    TBubb_ref = np.array([185.6468, 183.9464, 185.2789, 187.8233, 191.4697,
+                         196.6568, 204.6795, 220.183 , 331.1625])
+    assert TD.TBubb == pytest.approx(TBubb_ref, abs=1e-2)
     assert TD.TDew == []
-    assert TD.x == [pytest.approx(0.99, abs=1e-4),
-                    pytest.approx(0.5, abs=1e-4),
-                    pytest.approx(0.01, abs=1e-4)]
+    x_ref = np.array([0.99, 0.8675, 0.745, 0.6225, 0.5, 0.3775, 0.255, 0.1325,
+       0.01  ])
+    assert TD.x == pytest.approx(x_ref, abs=1e-4)
 
 
 # Author: Alejandro Garciadiego
 @pytest.mark.component
-def test_Txy_data_no_liq():
+def test_Txy_data_no_bub():
     configuration = {
         # Specifying components
         "components": {
@@ -296,8 +300,12 @@ def test_Txy_data_no_liq():
 
     model.params = GenericParameterBlock(default=configuration)
 
+    # TODO: There probably should be a config option to run initialization at
+    # each x or to use the initialization from the previous x. In the meantime,
+    # add more points to avoid convergence issues. Besides, better 
+    # initialization for noncondensables is still languishing
     TD = Txy_data(model, 'methane', 'ethane', 101325,
-                  num_points=3, temperature=298,
+                  num_points=9, temperature=298,
                   print_level=idaeslog.CRITICAL, solver_op={'tol': 1e-6})
 
     assert TD.Component_1 == 'methane'
@@ -306,9 +314,9 @@ def test_Txy_data_no_liq():
     assert_units_equivalent(TD.Tunits, pyunits.K)
     assert TD.P == 101325
     assert TD.TBubb == []
-    assert TD.TDew == [pytest.approx(126.9025, abs=1e-2),
-                       pytest.approx(172.1489, abs=1e-4),
-                       pytest.approx(184.2534, abs=1e-4)]
-    assert TD.x == [pytest.approx(0.99, abs=1e-4),
-                    pytest.approx(0.5, abs=1e-4),
-                    pytest.approx(0.01, abs=1e-4)]
+    TDew_ref = np.array([126.9026, 153.1591, 161.8914, 167.6907, 172.1489,
+                         175.8221, 178.9746, 181.7545, 184.2535])
+    assert TD.TDew == pytest.approx(TDew_ref, abs=1e-2)
+    x_ref = np.array([0.99, 0.8675, 0.745, 0.6225, 0.5,
+                      0.3775, 0.255, 0.1325, 0.01])
+    assert TD.x == pytest.approx(x_ref, abs=1e-4)
