@@ -103,8 +103,7 @@ class MEAColumnData(PackedColumnData):
                          blk.liquid_phase.properties[t, zb].henry['Liq', j]))
                 else:
                     return blk.pressure_equil[t, x, j] == (
-                        lprops.vol_mol_phase['Liq'] *
-                        lprops.conc_mol_phase_comp_true['Liq', j] *
+                        lprops.mole_frac_phase_comp_true['Liq', j] *
                         lprops.pressure_sat_comp[j])
 
     def build(self):

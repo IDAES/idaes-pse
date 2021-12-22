@@ -174,32 +174,34 @@ class TestAbsorberColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(22.8205, rel=1e-5) == value(
+        model.fs.unit.vapor_outlet.display()
+        model.fs.unit.liquid_outlet.display()
+        assert pytest.approx(22.9137, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0])
-        assert pytest.approx(0.0284933, rel=1e-5) == value(
+        assert pytest.approx(0.0284069, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.218304, rel=1e-5) == value(
+        assert pytest.approx(0.221452, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"])
-        assert pytest.approx(0.694845, rel=1e-5) == value(
+        assert pytest.approx(0.692020, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "N2"])
-        assert pytest.approx(0.0583579, rel=1e-5) == value(
+        assert pytest.approx(0.0581207, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "O2"])
         assert pytest.approx(107650, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.pressure[0])
-        assert pytest.approx(338.572, rel=1e-5) == value(
+        assert pytest.approx(332.635, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.temperature[0])
 
-        assert pytest.approx(36.2094, rel=1e-5) == value(
+        assert pytest.approx(36.1162, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.flow_mol[0])
-        assert pytest.approx(0.0599699, rel=1e-5) == value(
+        assert pytest.approx(0.0601059, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.819715, rel=1e-5) == value(
+        assert pytest.approx(0.819268, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"])
-        assert pytest.approx(0.120315, rel=1e-5) == value(
+        assert pytest.approx(0.120626, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"])
         assert pytest.approx(107650, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.pressure[0])
-        assert pytest.approx(321.110, rel=1e-5) == value(
+        assert pytest.approx(321.139, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.temperature[0])
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -369,28 +371,30 @@ class TestStripperColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(12.1683, rel=1e-5) == value(
+        model.fs.unit.vapor_outlet.display()
+        model.fs.unit.liquid_outlet.display()
+        assert pytest.approx(12.1496, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0])
-        assert pytest.approx(0.0988791, rel=1e-5) == value(
+        assert pytest.approx(0.0989845, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.901121, rel=1e-5) == value(
+        assert pytest.approx(0.901015, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"])
         assert pytest.approx(183430, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.pressure[0])
-        assert pytest.approx(376.457, rel=1e-5) == value(
+        assert pytest.approx(378.131, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.temperature[0])
 
-        assert pytest.approx(89.8077, rel=1e-5) == value(
+        assert pytest.approx(89.8264, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.flow_mol[0])
-        assert pytest.approx(0.0205638, rel=1e-5) == value(
+        assert pytest.approx(0.0205659, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.873892, rel=1e-5) == value(
+        assert pytest.approx(0.873912, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"])
-        assert pytest.approx(0.105544, rel=1e-5) == value(
+        assert pytest.approx(0.105522, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"])
         assert pytest.approx(183430, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.pressure[0])
-        assert pytest.approx(393.763, rel=1e-5) == value(
+        assert pytest.approx(393.762, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.temperature[0])
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
