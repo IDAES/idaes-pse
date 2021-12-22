@@ -16,6 +16,9 @@ Command Line Interface for IDAES DMF.
 Uses "Click" to handle command-line parsing and dispatch.
 """
 # stdlib
+import time
+
+import_t0 = time.time()
 from collections import namedtuple
 from datetime import datetime
 from enum import Enum
@@ -38,12 +41,22 @@ from idaes.dmf.resource import Predicates
 from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
 from idaes.dmf import util
-from idaes.dmf.util import ColorTerm, yaml_load, parse_datetime, size_prefix
+from idaes.dmf.util import (
+    ColorTerm,
+    yaml_load,
+    parse_datetime,
+    size_prefix,
+    Timings,
+)
+
+import_t1 = time.time()
+Timings.save("import", begin_time=import_t0, end_time=import_t1)
 
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
 _dmf_log = logging.getLogger("idaes.dmf")
+_timing_log = logging.getLogger("idaes.dmf.tm")
 
 
 class Code(Enum):
@@ -100,6 +113,7 @@ class AliasedGroup(click.Group):
         self._aliases = aliases
 
     def get_command(self, ctx, cmd_name):
+        t0 = time.time()
         command = click.Group.get_command(self, ctx, cmd_name)
         if command is None:
             commands = self.list_commands(ctx)
@@ -130,6 +144,8 @@ class AliasedGroup(click.Group):
                     f"Command '{cmd_name}' could be a prefix for multiple commands: "
                     f"{' '.join(sorted(matches))}"
                 )
+        Timings.save("AliasedGroup.get_command", begin_time=t0, end_time=time.time(),
+                     lod=2)
         # Return found command
         return command  # matched, or None
 
@@ -177,33 +193,57 @@ class URLType(click.ParamType):
     "only show critical messages. If "
     "given twice, show no messages.",
 )
-def base_command(verbose, quiet):
+@click.option(
+    "--timings",
+    "-t",
+    count=True,
+    help="Include timings in logs. Repeat for more timing detail.",
+)
+def base_command(verbose, quiet, timings):
     """Data management framework command wrapper.
 
     This command does nothing by itself except provide global
     options and list subcommands.
     """
+    import_t2 = time.time()
+    Timings.save("import_to_base", begin_time=import_t1, end_time=import_t2)
     if quiet > 0 and verbose > 0:
         raise click.BadArgumentUsage("Options for verbosity and quietness conflict")
     if verbose > 0:
         _dmf_log.setLevel(level_from_verbosity(verbose))
     else:
         _dmf_log.setLevel(level_from_verbosity(-quiet))
+    # Set up timings logging
+    Timings.lod = int(timings)
+    if Timings.lod > 1:
+        _timing_log.setLevel(logging.DEBUG)
+    elif Timings.lod > 0:
+        _timing_log.setLevel(logging.INFO)
+    Timings.func_name = "dmf.cli"
+    Timings.set_logger(_timing_log)
+    Timings.save("base", begin_time=import_t2, end_time=time.time())
+    Timings.log_saved()
 
 
-@click.command(
-    help="Set up the DMF configuration file."
+@click.command(help="Set up the DMF configuration file.")
+@click.option(
+    "--dir",
+    "-d",
+    "config_path",
+    type=click.Path(),
+    default=None,
+    help="Specify non-default directory for configuration",
 )
-@click.option("--dir", "-d", "config_path", type=click.Path(),
-              default=None,
-              help="Specify non-default directory for configuration")
 def setup(config_path):
+    Timings.begin(1, "setup")
     try:
         path = create_configuration(config_path=config_path)
     except ValueError as err:
         click.echo(f"Error creating DMF configuration: {err}")
+        Timings.end(1, "setup", Code.DMF_OPER.value)
         sys.exit(Code.DMF_OPER.value)
     click.echo(f"Created configuration in '{path}'")
+    Timings.end(1, "setup", 0)
 
 
 @click.command(
@@ -228,6 +268,7 @@ def init(path, create, name, desc, html):
     """Initialize the current workspace used for the data management framework commands.
     Optionally, create a new workspace.
     """
+    Timings.begin(1, "init")
     _log.info(f"Initialize with workspace path={path} cwd={os.path.abspath(os.curdir)}")
     if create:
         _log.info("Create new workspace")
@@ -244,6 +285,7 @@ def init(path, create, name, desc, html):
                 sys.exit(Code.DMF_OPER.value)
         except PermissionError:
             click.echo(f"Cannot create workspace: path '{path}' not accessible")
+            Timings.end(1, "init", Code.DMF_OPER.value)
             sys.exit(Code.DMF_OPER.value)
         if not name:
             name = click.prompt("New workspace name")
@@ -263,6 +305,7 @@ def init(path, create, name, desc, html):
             )
         except errors.WorkspaceError as err:
             click.echo(f"Cannot create workspace: {err}")
+            Timings.end(1, "init", Code.DMF_OPER.value)
             sys.exit(Code.DMF_OPER.value)
         click.echo(f"Configuration in '{d.configuration_file}")
     else:
@@ -272,11 +315,14 @@ def init(path, create, name, desc, html):
         _ = DMF(path=path, create=False, save_path=True)  # noqa: F841
     except errors.WorkspaceConfNotFoundError:
         click.echo(f"Workspace configuration not found at path='{path}'")
+        Timings.end(1, "init", Code.WORKSPACE_NOT_FOUND.value)
         sys.exit(Code.WORKSPACE_NOT_FOUND.value)
     except errors.WorkspaceNotFoundError:
         click.echo(f"Existing workspace not found at path='{path}'")
         click.echo("Add --create flag to create a workspace.")
+        Timings.end(1, "init", Code.WORKSPACE_NOT_FOUND.value)
         sys.exit(Code.WORKSPACE_NOT_FOUND.value)
+    Timings.end(1, "init", 0)
 
 
 @click.command(help="Get status of workspace")
@@ -566,6 +612,7 @@ def register(
 )
 @click.option("--reverse", "-r", "reverse", flag_value="yes", help="Reverse sort order")
 def ls(color, show, sort_by, reverse, prefix):
+    Timings.begin(1, "ls")
     try:
         d = DMF()
     except errors.WorkspaceError as e:
@@ -584,6 +631,7 @@ def ls(color, show, sort_by, reverse, prefix):
         sort_by = ["id"]
     resources = list(d.find())
     _print_resource_table(resources, show, sort_by, reverse, prefix, color)
+    Timings.end(1, "ls", 0)
 
 
 def _split_and_validate_fields(fields: List[str]) -> List[str]:
