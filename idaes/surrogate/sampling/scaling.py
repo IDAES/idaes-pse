@@ -13,6 +13,24 @@
 import pandas as pd
 
 class OffsetScaler(object):
+
+    @staticmethod
+    def create_normalizing_scaler(dataframe):
+        """
+        Creates a scaling object that normalizes the data between 0 and 1
+
+        Args:
+           dataframe: pandas DataFrame
+              The dataframe containing the data (usually the training data)
+              that will be used to compute the scaling factor and offset
+        """
+        expected_columns = list(dataframe.columns)
+        offset = dataframe.min()
+        factor = dataframe.max()-dataframe.min()
+        print(offset)
+        print(factor)
+        return OffsetScaler(expected_columns, offset, factor)
+
     @staticmethod
     def create_from_mean_std(dataframe):
         """
