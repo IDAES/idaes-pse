@@ -27,8 +27,6 @@ class OffsetScaler(object):
         expected_columns = list(dataframe.columns)
         offset = dataframe.min()
         factor = dataframe.max()-dataframe.min()
-        print(offset)
-        print(factor)
         return OffsetScaler(expected_columns, offset, factor)
 
     @staticmethod
