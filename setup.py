@@ -103,6 +103,7 @@ kwargs = dict(
             "*.json.gz",
             "*.dat",
             "*.h5",
+            "*.trc",
         ]
     },
     include_package_data=True,
