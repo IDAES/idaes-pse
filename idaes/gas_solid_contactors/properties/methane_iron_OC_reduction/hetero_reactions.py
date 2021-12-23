@@ -494,11 +494,11 @@ class ReactionBlockData(ReactionBlockDataBase):
             for t, v in self.rate_constant_eqn.items():
                 iscale.set_scaling_factor(v, 1e6)
 
-        if hasattr(self._k_rxn, "OC_conv_eqn"):
+        if hasattr(self, "OC_conv_eqn"):
             for t, v in self.OC_conv_eqn.items():
                 iscale.set_scaling_factor(v, 1e6)
 
-        if hasattr(self._k_rxn, "OC_conv_temp_eqn"):
+        if hasattr(self, "OC_conv_temp_eqn"):
             for t, v in self.OC_conv_temp_eqn.items():
                 iscale.set_scaling_factor(v, 1e3)
 
