@@ -193,3 +193,34 @@ jobs:
         working-directory: ${{ runner.temp }}
         run: |
           cat *errors.txt || echo "No error logs found"
+
+  pytest-site-packages:
+    name: Run tests from site-packages (non-editable) installation
+    runs-on: ubuntu-latest
+    needs: [precheck]
+    if: >-
+      (
+        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
+        || needs.precheck.outputs.workflow-trigger == 'not_pr'
+        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
+      )
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
+        with:
+          activate-environment: idaes-env
+          python-version: '3.8'
+      - name: Set up idaes (non-editable installation)
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: '.'
+      - name: Install test dependencies and run pytest in empty directory
+        run: |
+          pushd "$(mktemp -d)"
+          # TODO this could be an optional [testing] dependency
+          pip install pytest addheader
+          # TODO downloading pytest.ini is still needed for the tests to pass
+          # eventually it will be moved to the root conftest.py so that is installed as Python code
+          wget https://raw.githubusercontent.com/IDAES/idaes-pse/main/pytest.ini 
+          pytest --pyargs idaes
