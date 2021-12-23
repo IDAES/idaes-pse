@@ -198,7 +198,7 @@ jobs:
 
   pytest-site-packages:
     name: Run tests from site-packages (non-editable) installation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [precheck]
     # if: >-
     #   (
