@@ -26,6 +26,7 @@ on:
 
 env:
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
+  PYTEST_ADDOPTS: "--color=yes"
 
 defaults:
   run:
