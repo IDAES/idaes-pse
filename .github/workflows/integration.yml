@@ -216,7 +216,7 @@ jobs:
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: '.'
+          install-target: '.[optional]'
       - name: Install test dependencies and run pytest in empty directory
         run: |
           pushd "$(mktemp -d)"
