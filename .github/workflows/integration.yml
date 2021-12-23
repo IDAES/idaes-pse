@@ -152,13 +152,12 @@ jobs:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     needs: [precheck]
-    # if: >-
-    #   (
-    #     needs.precheck.outputs.workflow-trigger == 'user_dispatch'
-    #     || needs.precheck.outputs.workflow-trigger == 'not_pr'
-    #     || needs.precheck.outputs.workflow-trigger == 'approved_pr'
-    #   )
-    if: "false"
+    if: >-
+      (
+        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
+        || needs.precheck.outputs.workflow-trigger == 'not_pr'
+        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
+      )
     strategy:
       fail-fast: false
       matrix:
@@ -198,14 +197,15 @@ jobs:
 
   pytest-site-packages:
     name: Run tests from site-packages (non-editable) installation
+    # NOTE: using ubuntu-latest (20.04) instead of 18.04 results in failures in power_generation/carbon_capture/mea_solvent_system/unit_models/tests/test_column.py
     runs-on: ubuntu-18.04
     needs: [precheck]
-    # if: >-
-    #   (
-    #     needs.precheck.outputs.workflow-trigger == 'user_dispatch'
-    #     || needs.precheck.outputs.workflow-trigger == 'not_pr'
-    #     || needs.precheck.outputs.workflow-trigger == 'approved_pr'
-    #   )
+    if: >-
+      (
+        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
+        || needs.precheck.outputs.workflow-trigger == 'not_pr'
+        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
+      )
     steps:
       - uses: actions/checkout@v2
       - name: Set up Conda environment
@@ -225,4 +225,4 @@ jobs:
           # TODO downloading pytest.ini is still needed for the tests to pass
           # eventually it will be moved to the root conftest.py so that is installed as Python code
           wget https://raw.githubusercontent.com/IDAES/idaes-pse/main/pytest.ini 
-          pytest --pyargs idaes -k TestColumn -v
+          pytest --pyargs idaes
