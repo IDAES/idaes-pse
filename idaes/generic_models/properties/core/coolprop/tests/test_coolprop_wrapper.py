@@ -18,30 +18,27 @@ Authors: Andrew Lee
 
 import pytest
 
-try:
-    from CoolProp.CoolProp import PropsSI
-    coolprop_present = True
-except ModuleNotFoundError:
-    coolprop_present = False
-
 from pyomo.environ import (
     Block, ConcreteModel, Param, units as pyunits, value, Var)
 from pyomo.util.check_units import assert_units_equivalent
+from pyomo.common.dependencies import attempt_import
 
 from idaes.core import FlowsheetBlock, Component, LiquidPhase
-from idaes.generic_models.properties.core.eos.ceos import \
-    cubic_roots_available
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
 
 
-from idaes.generic_models.properties.core.coolprop.coolprop_wrapper import \
-    CoolPropWrapper, CoolPropExpressionError, CoolPropPropertyError
+from idaes.generic_models.properties.core.coolprop.coolprop_wrapper import (
+    CoolPropWrapper,
+    CoolPropExpressionError,
+    CoolPropPropertyError)
+
+CoolProp, coolprop_available = attempt_import('CoolProp.CoolProp')
 
 
-@pytest.mark.skipif(not coolprop_present, reason="CoolProp not installed")
+@pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
 class TestWrapper:
     @pytest.mark.unit
     def test_load_component(self):
@@ -220,7 +217,7 @@ class TestWrapper:
             CoolPropWrapper.pressure_sat_comp.build_parameters(m.TestComp)
 
 
-@pytest.mark.skipif(not coolprop_present, reason="CoolProp not installed")
+@pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
 class TestCoolPropIntegration(object):
     @pytest.fixture(scope="class")
     def m(self):
@@ -281,21 +278,21 @@ class TestCoolPropIntegration(object):
         # Benzene parameters
         assert isinstance(m.fs.props.benzene.temperature_crit, Var)
         assert m.fs.props.benzene.temperature_crit.fixed
-        assert value(m.fs.props.benzene.temperature_crit) == PropsSI(
+        assert value(m.fs.props.benzene.temperature_crit) == CoolProp.PropsSI(
             "TCRIT", "Benzene")
 
         assert isinstance(m.fs.props.benzene.pressure_crit, Var)
         assert m.fs.props.benzene.pressure_crit.fixed
-        assert value(m.fs.props.benzene.pressure_crit) == PropsSI(
+        assert value(m.fs.props.benzene.pressure_crit) == CoolProp.PropsSI(
             "PCRIT", "Benzene")
 
         assert isinstance(m.fs.props.benzene.mw, Param)
-        assert value(m.fs.props.benzene.mw) == PropsSI(
+        assert value(m.fs.props.benzene.mw) == CoolProp.PropsSI(
             "molarmass", "Benzene")
 
         assert isinstance(m.fs.props.benzene.omega, Var)
         assert m.fs.props.benzene.omega.fixed
-        assert value(m.fs.props.benzene.omega) == PropsSI(
+        assert value(m.fs.props.benzene.omega) == CoolProp.PropsSI(
             "acentric", "Benzene")
 
     @pytest.mark.unit
@@ -349,5 +346,6 @@ class TestCoolPropIntegration(object):
         for T in range(300, 401, 10):
             m.fs.state[0].temperature.fix(T)
             assert pytest.approx(
-                PropsSI("P", "T", T, "Q", 0.5, "benzene"), rel=5e-4) == value(
-                    m.fs.state[0].pressure_sat_comp["benzene"])
+                CoolProp.PropsSI(
+                    "P", "T", T, "Q", 0.5, "benzene"), rel=5e-4) == value(
+                        m.fs.state[0].pressure_sat_comp["benzene"])

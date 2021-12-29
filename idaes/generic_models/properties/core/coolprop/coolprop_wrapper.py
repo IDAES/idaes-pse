@@ -16,18 +16,13 @@ within the IDAES generic properties framework.
 """
 import json
 
-try:
-    from CoolProp import CoolProp
-except ModuleNotFoundError:
-    raise ModuleNotFoundError(
-        "The optional dependency CoolProp is required to use the IDAES "
-        "CoolProp wrapper. Please consult the installation instructions for "
-        "how to install CoolProp.")
-
+from pyomo.common.dependencies import attempt_import
 from pyomo.environ import units as pyunits
 
 import idaes.generic_models.properties.core.coolprop.coolprop_forms as cforms
 from idaes.core.util.exceptions import BurntToast
+
+CoolProp, coolprop_available = attempt_import('CoolProp.CoolProp')
 
 
 # Map IDAES names to Coolprop names and where to look for them
