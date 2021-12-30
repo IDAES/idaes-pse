@@ -88,7 +88,7 @@ kwargs = dict(
     extras_require={
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
-            "tensorflow"  # idaes.surrogate.keras_surrogate
+            "tensorflow",  # idaes.surrogate.keras_surrogate
             "coolprop"  # idaes.generic_models.properties.general.coolprop
         ]
     },
