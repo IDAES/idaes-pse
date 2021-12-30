@@ -154,13 +154,12 @@ def set_param_from_config(b, param, config=None, index=None):
 
     This method supports three forms for defining the parameter value:
 
-        - a 2-tuple of the form (value, units) where units are the units that
-          the value are defined in
-        - a float where the flaot is assumed to be the value of the parameter
-          value in the base units of the property package
-        - a Python Class which has a get_parameter_value method which will
-          return a 2-tuple of (value, units) based on a lookup of the parameter
-          name
+    1. a 2-tuple of the form (value, units) where units are the units that
+    the value are defined in
+    2. a float where the float is assumed to be the value of the parameter
+    value in the base units of the property package
+    3. a Python Class which has a get_parameter_value method which will
+    return a 2-tuple of (value, units) based on a lookup of the parameter name
 
     Args:
         b - block on which parameter and config block are defined

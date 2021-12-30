@@ -21,7 +21,7 @@ from idaes.core.util.exceptions import ConfigurationError
 # TODO : Only have temperature derivative expression for exponential_tau form
 # TODO : Add other derivative forms as/if required
 
-def parameters_exponential(cobj, prop, nlist, tlist):
+def parameters_nt_sum(cobj, prop, nlist, tlist):
     if len(nlist) != len(tlist):
         raise ConfigurationError(
             f"{cobj.name} mismatched length between n and t parameters "
@@ -45,7 +45,7 @@ def parameters_exponential(cobj, prop, nlist, tlist):
         getattr(cobj, prop+"_coeff_t"+str(i+1)).fix(tval)
 
 
-def _exponential_sum(cobj, prop, theta):
+def _nt_sum(cobj, prop, theta):
     # Build sum term
     i = 1
     s = 0
@@ -60,7 +60,7 @@ def _exponential_sum(cobj, prop, theta):
     return s
 
 
-def _exponential_sum_dT(cobj, prop, T, Tc):
+def _nt_sum_dT(cobj, prop, T, Tc):
     Tr = T/Tc
 
     # Build sum term
@@ -82,7 +82,7 @@ def expression_exponential(cobj, prop, T, yc):
     Tc = cobj.temperature_crit
     theta = 1 - T/Tc
 
-    s = _exponential_sum(cobj, prop, theta)
+    s = _nt_sum(cobj, prop, theta)
 
     return yc*exp(s)
 
@@ -92,7 +92,7 @@ def expression_exponential_tau(cobj, prop, T, yc):
     Tc = cobj.temperature_crit
     theta = 1 - T/Tc
 
-    s = _exponential_sum(cobj, prop, theta)
+    s = _nt_sum(cobj, prop, theta)
 
     return yc*exp(Tc/T*s)
 
@@ -105,9 +105,19 @@ def dT_expression_exponential_tau(cobj, prop, T, yc):
 
     Tc = cobj.temperature_crit
 
-    sdT = _exponential_sum_dT(cobj, prop, T, Tc)
+    sdT = _nt_sum_dT(cobj, prop, T, Tc)
 
     return y*sdT
+
+
+def expression_nonexponential(cobj, prop, T, yc):
+    # y = yc * (1 + sum(ni*theta^ti))
+    Tc = cobj.temperature_crit
+    theta = 1 - T/Tc
+
+    s = _nt_sum(cobj, prop, theta)
+
+    return yc*(1+s)
 
 
 def parameters_polynomial(cobj, prop, prop_units, alist, blist):

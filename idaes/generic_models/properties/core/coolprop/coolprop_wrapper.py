@@ -92,6 +92,33 @@ class CoolPropWrapper:
 
     # -------------------------------------------------------------------------
     # Pure component property methods
+    class dens_mol_liq_comp():
+
+        @staticmethod
+        def build_parameters(cobj):
+            cname = cobj.local_name
+            cdict = CoolPropWrapper._get_component_data(cname)
+
+            try:
+                # First, check to make sure the listed expression form is
+                # supported.
+                # 8-Dec-21: CoolProp only has one type for liquid density
+                if (cdict["ANCILLARIES"]["rhoL"]["type"] != "rhoLnoexp"):
+                    # If not one of the forms we recognise, raise an exception
+                    raise CoolPropExpressionError("dens_mol_liq_comp", cname)
+
+                ndict = cdict["ANCILLARIES"]["rhoL"]["n"]
+                tdict = cdict["ANCILLARIES"]["rhoL"]["t"]
+            except KeyError:
+                raise CoolPropPropertyError("dens_mol_liq_comp", cname)
+
+            cforms.parameters_nt_sum(cobj, "dens_mol_liq_comp", ndict, tdict)
+
+        @staticmethod
+        def return_expression(b, cobj, T):
+            return cforms.expression_nonexponential(
+                cobj, "dens_mol_liq_comp", T, cobj.dens_mol_crit)
+
     class enth_mol_liq_comp():
 
         @staticmethod
@@ -274,7 +301,7 @@ class CoolPropWrapper:
             except KeyError:
                 raise CoolPropPropertyError("pressure_sat", cname)
 
-            cforms.parameters_exponential(cobj, "pressure_sat", ndict, tdict)
+            cforms.parameters_nt_sum(cobj, "pressure_sat", ndict, tdict)
 
         @staticmethod
         def return_expression(b, cobj, T, dT=False):

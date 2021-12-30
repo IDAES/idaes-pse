@@ -19,7 +19,14 @@ Authors: Andrew Lee
 import pytest
 
 from pyomo.environ import (
-    Block, ConcreteModel, Param, units as pyunits, value, Var)
+    Block,
+    ConcreteModel,
+    Param,
+    SolverStatus,
+    TerminationCondition,
+    units as pyunits,
+    value,
+    Var)
 from pyomo.util.check_units import assert_units_equivalent
 from pyomo.common.dependencies import attempt_import
 
@@ -28,6 +35,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
+from idaes.core.util import get_solver
 
 
 from idaes.generic_models.properties.core.coolprop.coolprop_wrapper import (
@@ -232,6 +240,7 @@ class TestCoolPropIntegration(object):
             # Specifying components
             "components": {
                 'benzene': {"type": Component,
+                            "dens_mol_liq_comp": CoolPropWrapper,
                             "enth_mol_liq_comp": CoolPropWrapper,
                             "enth_mol_ig_comp": CoolPropWrapper,
                             "entr_mol_liq_comp": CoolPropWrapper,
@@ -239,6 +248,7 @@ class TestCoolPropIntegration(object):
                             "pressure_sat_comp": CoolPropWrapper,
                             "parameter_data": {
                                 "mw": CoolPropWrapper,
+                                "dens_mol_crit": CoolPropWrapper,
                                 "pressure_crit": CoolPropWrapper,
                                 "temperature_crit": CoolPropWrapper,
                                 "omega": CoolPropWrapper}}},
@@ -290,6 +300,11 @@ class TestCoolPropIntegration(object):
         assert value(m.fs.props.benzene.pressure_crit) == CoolProp.PropsSI(
             "PCRIT", "Benzene")
 
+        assert isinstance(m.fs.props.benzene.dens_mol_crit, Var)
+        assert m.fs.props.benzene.dens_mol_crit.fixed
+        assert value(m.fs.props.benzene.dens_mol_crit) == CoolProp.PropsSI(
+            "RHOMOLAR_CRITICAL", "Benzene")
+
         assert isinstance(m.fs.props.benzene.mw, Param)
         assert value(m.fs.props.benzene.mw) == CoolProp.PropsSI(
             "molarmass", "Benzene")
@@ -298,6 +313,69 @@ class TestCoolPropIntegration(object):
         assert m.fs.props.benzene.omega.fixed
         assert value(m.fs.props.benzene.omega) == CoolProp.PropsSI(
             "acentric", "Benzene")
+
+    @pytest.mark.unit
+    def test_dens_mol_liq_comp(self, m):
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_n1, Var)
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_n2, Var)
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_n3, Var)
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_n4, Var)
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_n5, Var)
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_n6, Var)
+
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_t1, Var)
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_t2, Var)
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_t3, Var)
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_t4, Var)
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_t5, Var)
+        assert isinstance(m.fs.props.benzene.dens_mol_liq_comp_coeff_t6, Var)
+
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n1.value == \
+            pytest.approx(2.852587673922022, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n1.fixed
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n2.value == \
+            pytest.approx(-0.5596547795188646, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n2.fixed
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n3.value == \
+            pytest.approx(14.872052666571532, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n3.fixed
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n4.value == \
+            pytest.approx(-66.42959110979461, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n4.fixed
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n5.value == \
+            pytest.approx(1158.1329856052375, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n5.fixed
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n6.value == \
+            pytest.approx(-3128.774352224071, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_n6.fixed
+
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t1.value == \
+            pytest.approx(0.407, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t1.fixed
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t2.value == \
+            pytest.approx(0.565, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t2.fixed
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t3.value == \
+            pytest.approx(4.029, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t3.fixed
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t4.value == \
+            pytest.approx(5.699, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t4.fixed
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t5.value == \
+            pytest.approx(9.989, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t5.fixed
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t6.value == \
+            pytest.approx(12.299, rel=1e-10)
+        assert m.fs.props.benzene.dens_mol_liq_comp_coeff_t6.fixed
+
+        # CoolProp results are non-ideal, which results in deviations
+        for T in range(300, 401, 10):
+            m.fs.state[0].temperature.fix(T)
+            assert pytest.approx(
+                CoolProp.PropsSI(
+                    "DMOLAR", "T", T, "Q", 0, "benzene"), rel=5e-3) == value(
+                        CoolPropWrapper.dens_mol_liq_comp.return_expression(
+                            m.fs.state[0], m.fs.props.benzene, T*pyunits.K))
 
     @pytest.mark.unit
     def test_enth_mol_liq(self, m):
@@ -583,3 +661,26 @@ class TestCoolPropIntegration(object):
                 CoolProp.PropsSI(
                     "P", "T", T, "Q", 0.5, "benzene"), rel=5e-4) == value(
                         m.fs.state[0].pressure_sat_comp["benzene"])
+
+    # @pytest.mark.component
+    # def test_cubic_flash(self, m):
+    #     m.fs.state.initialize()
+
+    #     solver = get_solver()
+
+    #     for T in range(300, 401, 10):
+    #         for P in range(100000, 1000001, 100000):
+    #             print(T, P)
+    #             m.fs.state[0].temperature.fix(T)
+    #             m.fs.state[0].pressure.fix(P)
+
+    #             results = solver.solve(m.fs)
+
+    #             assert results.solver.termination_condition == \
+    #                 TerminationCondition.optimal
+    #             assert results.solver.status == SolverStatus.ok
+
+    #             assert pytest.approx(
+    #                 CoolProp.PropsSI(
+    #                     "Z", "T", T, "P", P, "PR::benzene"), rel=1e-8) == value(
+    #                         m.fs.state[0].compress_fact_phase["Liq"])

@@ -48,7 +48,7 @@ class TestBaseForms:
                            "parameters for CoolProp exponential form for "
                            "property pressure_sat. Please ensure the number "
                            "of n and t parameters are equal."):
-            cforms.parameters_exponential(
+            cforms.parameters_nt_sum(
                 model.params,
                 "pressure_sat",
                 [-7.645535357,
@@ -66,7 +66,7 @@ class TestBaseForms:
     @pytest.mark.unit
     def test_exponential_parameters(self, model):
         # Using parameters for O2 saturation pressure as test case
-        cforms.parameters_exponential(
+        cforms.parameters_nt_sum(
             model.params,
             "pressure_sat",
             [-7.645535357,
@@ -124,7 +124,7 @@ class TestBaseForms:
 
     @pytest.mark.unit
     def test_exponential_sum(self, model):
-        expr = cforms._exponential_sum(
+        expr = cforms._nt_sum(
             model.params, "pressure_sat", 42)
 
         assert str(expr) == str(
@@ -213,6 +213,26 @@ class TestBaseForms:
 
         for T, Psat in data.items():
             expr = cforms.expression_exponential(
+                model.params,
+                "pressure_sat",
+                T*pyunits.K,
+                model.params.pressure_crit)
+
+            assert value(expr) == pytest.approx(Psat, rel=1e-8)
+            assert_units_equivalent(expr, pyunits.Pa)
+
+    @pytest.mark.unit
+    def test_expression_nonexponential(self, model):
+        # Manufacture results using O2 paramters for Psat
+        data = {100: -4706232.585007142,
+                110: -2952092.3626429834,
+                120: -1204991.804869883,
+                130: 552017.5795317084,
+                140: 2335733.299130539,
+                150: 4169589.797731975}
+
+        for T, Psat in data.items():
+            expr = cforms.expression_nonexponential(
                 model.params,
                 "pressure_sat",
                 T*pyunits.K,

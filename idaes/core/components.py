@@ -135,6 +135,7 @@ class ComponentData(ProcessBlockData):
                 self._add_to_electrolyte_component_list()
 
         base_units = self.parent_block().get_metadata().default_units
+        der_units = self.parent_block().get_metadata().derived_units
         p_units = (base_units["mass"] /
                    base_units["length"] /
                    base_units["time"]**2)
@@ -147,7 +148,8 @@ class ComponentData(ProcessBlockData):
                 set_param_from_config(self, p)
 
         # Create Vars for common parameters
-        var_dict = {"omega": pyunits.dimensionless,
+        var_dict = {"dens_mol_crit": der_units["density_mole"],
+                    "omega": pyunits.dimensionless,
                     "pressure_crit": p_units,
                     "temperature_crit": base_units["temperature"]}
         for p, u in var_dict.items():
