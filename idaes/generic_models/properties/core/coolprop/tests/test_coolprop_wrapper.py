@@ -232,6 +232,10 @@ class TestCoolPropIntegration(object):
             # Specifying components
             "components": {
                 'benzene': {"type": Component,
+                            "enth_mol_liq_comp": CoolPropWrapper,
+                            "enth_mol_ig_comp": CoolPropWrapper,
+                            "entr_mol_liq_comp": CoolPropWrapper,
+                            "entr_mol_ig_comp": CoolPropWrapper,
                             "pressure_sat_comp": CoolPropWrapper,
                             "parameter_data": {
                                 "mw": CoolPropWrapper,
@@ -296,6 +300,230 @@ class TestCoolPropIntegration(object):
             "acentric", "Benzene")
 
     @pytest.mark.unit
+    def test_enth_mol_liq(self, m):
+        assert isinstance(m.fs.props.benzene.enth_mol_liq_comp_coeff_A0, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_liq_comp_coeff_A1, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_liq_comp_coeff_A2, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_liq_comp_coeff_A3, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_liq_comp_coeff_A4, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_liq_comp_coeff_A5, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_liq_comp_coeff_A6, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_liq_comp_coeff_A7, Var)
+
+        assert isinstance(m.fs.props.benzene.enth_mol_liq_comp_coeff_B0, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_liq_comp_coeff_B1, Var)
+
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A0.value == \
+            pytest.approx(-59920.08975429371, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A0.fixed
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A1.value == \
+            pytest.approx(-435.3004255527287, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A1.fixed
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A2.value == \
+            pytest.approx(5.686269274827653, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A2.fixed
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A3.value == \
+            pytest.approx(-0.026551688405615677, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A3.fixed
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A4.value == \
+            pytest.approx(7.158706209734695e-05, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A4.fixed
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A5.value == \
+            pytest.approx(-1.1450245890590754e-07, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A5.fixed
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A6.value == \
+            pytest.approx(1.0020646255928023e-10, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A6.fixed
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A7.value == \
+            pytest.approx(-3.714155743547148e-14, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_A7.fixed
+
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_B0.value == \
+            pytest.approx(1, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_B0.fixed
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_B1.value == \
+            pytest.approx(-0.0017636924804910123, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_liq_comp_coeff_B1.fixed
+
+        assert m.fs.props.benzene.enth_mol_liq_comp_anchor.value == \
+            pytest.approx(54228.40275249632, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_liq_comp_anchor.fixed
+
+        for T in range(300, 401, 10):
+            m.fs.state[0].temperature.fix(T)
+            assert pytest.approx(
+                CoolProp.PropsSI(
+                    "Hmolar", "T", T, "Q", 0, "benzene"), rel=5e-4) == value(
+                        CoolPropWrapper.enth_mol_liq_comp.return_expression(
+                            m.fs.state[0], m.fs.props.benzene, T*pyunits.K))
+
+    @pytest.mark.unit
+    def test_enth_mol_ig(self, m):
+        assert isinstance(m.fs.props.benzene.enth_mol_ig_comp_coeff_A0, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_ig_comp_coeff_A1, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_ig_comp_coeff_A2, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_ig_comp_coeff_A3, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_ig_comp_coeff_A4, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_ig_comp_coeff_A5, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_ig_comp_coeff_A6, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_ig_comp_coeff_A7, Var)
+
+        assert isinstance(m.fs.props.benzene.enth_mol_ig_comp_coeff_B0, Var)
+        assert isinstance(m.fs.props.benzene.enth_mol_ig_comp_coeff_B1, Var)
+
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A0.value == \
+            pytest.approx(-72325.6503937073, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A0.fixed
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A1.value == \
+            pytest.approx(2230.356360119971, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A1.fixed
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A2.value == \
+            pytest.approx(-19.220224456239638, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A2.fixed
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A3.value == \
+            pytest.approx(0.08579743322690633, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A3.fixed
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A4.value == \
+            pytest.approx(-0.00022509135257932873, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A4.fixed
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A5.value == \
+            pytest.approx(3.4964051978046773e-07, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A5.fixed
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A6.value == \
+            pytest.approx(-2.9861697218437715e-10, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A6.fixed
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A7.value == \
+            pytest.approx(1.0849858354638855e-13, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_A7.fixed
+
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_B0.value == \
+            pytest.approx(1, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_B0.fixed
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_B1.value == \
+            pytest.approx(-0.0017620752364379978, rel=1e-10)
+        assert m.fs.props.benzene.enth_mol_ig_comp_coeff_B1.fixed
+
+        for T in range(300, 401, 10):
+            m.fs.state[0].temperature.fix(T)
+            assert pytest.approx(
+                CoolProp.PropsSI(
+                    "Hmolar", "T", T, "Q", 1, "benzene"), rel=5e-4) == value(
+                        CoolPropWrapper.enth_mol_ig_comp.return_expression(
+                            m.fs.state[0], m.fs.props.benzene, T*pyunits.K))
+
+    @pytest.mark.unit
+    def test_entr_mol_liq(self, m):
+        assert isinstance(m.fs.props.benzene.entr_mol_liq_comp_coeff_A0, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_liq_comp_coeff_A1, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_liq_comp_coeff_A2, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_liq_comp_coeff_A3, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_liq_comp_coeff_A4, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_liq_comp_coeff_A5, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_liq_comp_coeff_A6, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_liq_comp_coeff_A7, Var)
+
+        assert isinstance(m.fs.props.benzene.entr_mol_liq_comp_coeff_B0, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_liq_comp_coeff_B1, Var)
+
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A0.value == \
+            pytest.approx(-367.28736141903704, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A0.fixed
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A1.value == \
+            pytest.approx(1.9742974534821924, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A1.fixed
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A2.value == \
+            pytest.approx(-0.0044315658996985936, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A2.fixed
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A3.value == \
+            pytest.approx(1.3891733323299664e-06, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A3.fixed
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A4.value == \
+            pytest.approx(2.2861650201840276e-08, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A4.fixed
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A5.value == \
+            pytest.approx(-6.533821280556607e-11, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A5.fixed
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A6.value == \
+            pytest.approx(7.560967575590022e-14, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A6.fixed
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A7.value == \
+            pytest.approx(-3.327152569338899e-17, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_A7.fixed
+
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_B0.value == \
+            pytest.approx(1, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_B0.fixed
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_B1.value == \
+            pytest.approx(-0.0017637184112409214, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_liq_comp_coeff_B1.fixed
+
+        assert m.fs.props.benzene.entr_mol_liq_comp_anchor.value == \
+            pytest.approx(108.66827371730366, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_liq_comp_anchor.fixed
+
+        for T in range(300, 401, 10):
+            m.fs.state[0].temperature.fix(T)
+            assert pytest.approx(
+                CoolProp.PropsSI(
+                    "Smolar", "T", T, "Q", 0, "benzene"), rel=5e-4) == value(
+                        CoolPropWrapper.entr_mol_liq_comp.return_expression(
+                            m.fs.state[0], m.fs.props.benzene, T*pyunits.K))
+
+    @pytest.mark.unit
+    def test_entr_mol_ig(self, m):
+        assert isinstance(m.fs.props.benzene.entr_mol_ig_comp_coeff_A0, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_ig_comp_coeff_A1, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_ig_comp_coeff_A2, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_ig_comp_coeff_A3, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_ig_comp_coeff_A4, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_ig_comp_coeff_A5, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_ig_comp_coeff_A6, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_ig_comp_coeff_A7, Var)
+
+        assert isinstance(m.fs.props.benzene.entr_mol_ig_comp_coeff_B0, Var)
+        assert isinstance(m.fs.props.benzene.entr_mol_ig_comp_coeff_B1, Var)
+
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A0.value == \
+            pytest.approx(805.7903359684354, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A0.fixed
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A1.value == \
+            pytest.approx(-7.054023595110686, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A1.fixed
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A2.value == \
+            pytest.approx(0.026948845504297693, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A2.fixed
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A3.value == \
+            pytest.approx(-4.872969272569453e-05, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A3.fixed
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A4.value == \
+            pytest.approx(1.4263950361676005e-08, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A4.fixed
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A5.value == \
+            pytest.approx(9.666423804354728e-11, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A5.fixed
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A6.value == \
+            pytest.approx(-1.5555968001310246e-13, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A6.fixed
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A7.value == \
+            pytest.approx(7.656482336490157e-17, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_A7.fixed
+
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_B0.value == \
+            pytest.approx(1, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_B0.fixed
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_B1.value == \
+            pytest.approx(-0.0017620273519612887, rel=1e-10)
+        assert m.fs.props.benzene.entr_mol_ig_comp_coeff_B1.fixed
+
+        for T in range(300, 401, 10):
+            m.fs.state[0].temperature.fix(T)
+            assert pytest.approx(
+                CoolProp.PropsSI(
+                    "Smolar", "T", T, "Q", 1, "benzene"), rel=5e-4) == value(
+                        CoolPropWrapper.entr_mol_ig_comp.return_expression(
+                            m.fs.state[0], m.fs.props.benzene, T*pyunits.K))
+
+    @pytest.mark.unit
     def test_psat(self, m):
         assert isinstance(m.fs.props.benzene.pressure_sat_coeff_n1, Var)
         assert isinstance(m.fs.props.benzene.pressure_sat_coeff_n2, Var)
@@ -312,35 +540,41 @@ class TestCoolPropIntegration(object):
         assert isinstance(m.fs.props.benzene.pressure_sat_coeff_t6, Var)
 
         assert m.fs.props.benzene.pressure_sat_coeff_n1.value == \
-            0.005561906558935796
+            pytest.approx(0.005561906558935796, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_n1.fixed
         assert m.fs.props.benzene.pressure_sat_coeff_n2.value == \
-            -0.08662136922915314
+            pytest.approx(-0.08662136922915314, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_n2.fixed
         assert m.fs.props.benzene.pressure_sat_coeff_n3.value == \
-            -6.964182734154488
+            pytest.approx(-6.964182734154488, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_n3.fixed
         assert m.fs.props.benzene.pressure_sat_coeff_n4.value == \
-            1.1249288132278856
+            pytest.approx(1.1249288132278856, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_n4.fixed
         assert m.fs.props.benzene.pressure_sat_coeff_n5.value == \
-            -3.961859460597414
+            pytest.approx(-3.961859460597414, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_n5.fixed
         assert m.fs.props.benzene.pressure_sat_coeff_n6.value == \
-            -13.106880507410812
+            pytest.approx(-13.106880507410812, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_n6.fixed
 
-        assert m.fs.props.benzene.pressure_sat_coeff_t1.value == 0.037
+        assert m.fs.props.benzene.pressure_sat_coeff_t1.value == \
+            pytest.approx(0.037, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_t1.fixed
-        assert m.fs.props.benzene.pressure_sat_coeff_t2.value == 0.505
+        assert m.fs.props.benzene.pressure_sat_coeff_t2.value == \
+            pytest.approx(0.505, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_t2.fixed
-        assert m.fs.props.benzene.pressure_sat_coeff_t3.value == 1.014
+        assert m.fs.props.benzene.pressure_sat_coeff_t3.value == \
+            pytest.approx(1.014, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_t3.fixed
-        assert m.fs.props.benzene.pressure_sat_coeff_t4.value == 1.469
+        assert m.fs.props.benzene.pressure_sat_coeff_t4.value == \
+            pytest.approx(1.469, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_t4.fixed
-        assert m.fs.props.benzene.pressure_sat_coeff_t5.value == 3.711
+        assert m.fs.props.benzene.pressure_sat_coeff_t5.value == \
+            pytest.approx(3.711, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_t5.fixed
-        assert m.fs.props.benzene.pressure_sat_coeff_t6.value == 12.647
+        assert m.fs.props.benzene.pressure_sat_coeff_t6.value == \
+            pytest.approx(12.647, rel=1e-10)
         assert m.fs.props.benzene.pressure_sat_coeff_t6.fixed
 
         for T in range(300, 401, 10):

@@ -17,7 +17,7 @@ within the IDAES generic properties framework.
 import json
 
 from pyomo.common.dependencies import attempt_import
-from pyomo.environ import units as pyunits
+from pyomo.environ import units as pyunits, Var
 
 import idaes.generic_models.properties.core.coolprop.coolprop_forms as cforms
 from idaes.core.util.exceptions import BurntToast
@@ -92,6 +92,166 @@ class CoolPropWrapper:
 
     # -------------------------------------------------------------------------
     # Pure component property methods
+    class enth_mol_liq_comp():
+
+        @staticmethod
+        def build_parameters(cobj):
+            cname = cobj.local_name
+            cdict = CoolPropWrapper._get_component_data(cname)
+
+            try:
+                # First, check to make sure the listed expression form is
+                # supported.
+                # 29-Dec-21: CoolProp only uses rational_polynomial.
+                if (cdict["ANCILLARIES"]["hL"]["type"] !=
+                        "rational_polynomial"):
+                    # If not one of the forms we recognise, raise an exception
+                    raise CoolPropExpressionError("enth_mol_liq_comp", cname)
+
+                Alist = cdict["ANCILLARIES"]["hL"]["A"]
+                Blist = cdict["ANCILLARIES"]["hL"]["B"]
+                href = cdict["EOS"][0]["STATES"]["hs_anchor"]["hmolar"]
+            except KeyError:
+                raise CoolPropPropertyError("enth_mol_liq_comp", cname)
+
+            cforms.parameters_polynomial(
+                cobj, "enth_mol_liq_comp", pyunits.J/pyunits.mol, Alist, Blist)
+
+            cobj.add_component(
+                "enth_mol_liq_comp_anchor",
+                Var(doc="Reference heat of formation",
+                    units=pyunits.J/pyunits.mol))
+            getattr(cobj, "enth_mol_liq_comp_anchor").fix(href)
+
+        @staticmethod
+        def return_expression(b, cobj, T):
+            h = (cforms.expression_polynomial(cobj, "enth_mol_liq_comp", T) +
+                 cobj.enth_mol_liq_comp_anchor)
+
+            units = b.params.get_metadata().derived_units
+            return pyunits.convert(h, units["energy_mole"])
+
+    class enth_mol_ig_comp():
+
+        @staticmethod
+        def build_parameters(cobj):
+            cname = cobj.local_name
+            cdict = CoolPropWrapper._get_component_data(cname)
+
+            try:
+                # First, check to make sure the listed expression form is
+                # supported.
+                # 29-Dec-21: CoolProp only uses rational_polynomial.
+                if (cdict["ANCILLARIES"]["hLV"]["type"] !=
+                        "rational_polynomial"):
+                    # If not one of the forms we recognise, raise an exception
+                    raise CoolPropExpressionError("enth_mol_ig_comp", cname)
+
+                Alist = cdict["ANCILLARIES"]["hLV"]["A"]
+                Blist = cdict["ANCILLARIES"]["hLV"]["B"]
+            except KeyError:
+                raise CoolPropPropertyError("enth_mol_ig_comp", cname)
+
+            cforms.parameters_polynomial(
+                cobj, "enth_mol_ig_comp", pyunits.J/pyunits.mol, Alist, Blist)
+
+            # Next, build parameters for enth_mol_liq_comp if necessary
+            if not hasattr(cobj, "enth_mol_liq_comp_coeff_A0"):
+                CoolPropWrapper.enth_mol_liq_comp.build_parameters(cobj)
+
+        @staticmethod
+        def return_expression(b, cobj, T):
+            h = (cforms.expression_polynomial(cobj, "enth_mol_ig_comp", T) +
+                 CoolPropWrapper.enth_mol_liq_comp.return_expression(
+                     b, cobj, T))
+
+            units = b.params.get_metadata().derived_units
+            return pyunits.convert(h, units["energy_mole"])
+
+    class entr_mol_liq_comp():
+
+        @staticmethod
+        def build_parameters(cobj):
+            cname = cobj.local_name
+            cdict = CoolPropWrapper._get_component_data(cname)
+
+            try:
+                # First, check to make sure the listed expression form is
+                # supported.
+                # 29-Dec-21: CoolProp only uses rational_polynomial.
+                if (cdict["ANCILLARIES"]["sL"]["type"] !=
+                        "rational_polynomial"):
+                    # If not one of the forms we recognise, raise an exception
+                    raise CoolPropExpressionError("entr_mol_liq_comp", cname)
+
+                Alist = cdict["ANCILLARIES"]["sL"]["A"]
+                Blist = cdict["ANCILLARIES"]["sL"]["B"]
+                sref = cdict["EOS"][0]["STATES"]["hs_anchor"]["smolar"]
+            except KeyError:
+                raise CoolPropPropertyError("entr_mol_liq_comp", cname)
+
+            cforms.parameters_polynomial(
+                cobj,
+                "entr_mol_liq_comp",
+                pyunits.J/pyunits.mol/pyunits.K,
+                Alist,
+                Blist)
+
+            cobj.add_component(
+                "entr_mol_liq_comp_anchor",
+                Var(doc="Reference heat of formation",
+                    units=pyunits.J/pyunits.mol/pyunits.K))
+            getattr(cobj, "entr_mol_liq_comp_anchor").fix(sref)
+
+        @staticmethod
+        def return_expression(b, cobj, T):
+            s = (cforms.expression_polynomial(cobj, "entr_mol_liq_comp", T) +
+                 cobj.entr_mol_liq_comp_anchor)
+
+            units = b.params.get_metadata().derived_units
+            return pyunits.convert(s, units["entropy_mole"])
+
+    class entr_mol_ig_comp():
+
+        @staticmethod
+        def build_parameters(cobj):
+            cname = cobj.local_name
+            cdict = CoolPropWrapper._get_component_data(cname)
+
+            try:
+                # First, check to make sure the listed expression form is
+                # supported.
+                # 29-Dec-21: CoolProp only uses rational_polynomial.
+                if (cdict["ANCILLARIES"]["sLV"]["type"] !=
+                        "rational_polynomial"):
+                    # If not one of the forms we recognise, raise an exception
+                    raise CoolPropExpressionError("entr_mol_ig_comp", cname)
+
+                Alist = cdict["ANCILLARIES"]["sLV"]["A"]
+                Blist = cdict["ANCILLARIES"]["sLV"]["B"]
+            except KeyError:
+                raise CoolPropPropertyError("entr_mol_ig_comp", cname)
+
+            cforms.parameters_polynomial(
+                cobj,
+                "entr_mol_ig_comp",
+                pyunits.J/pyunits.mol/pyunits.K,
+                Alist,
+                Blist)
+
+            # Next, build parameters for entr_mol_liq_comp if necessary
+            if not hasattr(cobj, "entr_mol_liq_comp_coeff_A0"):
+                CoolPropWrapper.entr_mol_liq_comp.build_parameters(cobj)
+
+        @staticmethod
+        def return_expression(b, cobj, T):
+            s = (cforms.expression_polynomial(cobj, "entr_mol_ig_comp", T) +
+                 CoolPropWrapper.entr_mol_liq_comp.return_expression(
+                     b, cobj, T))
+
+            units = b.params.get_metadata().derived_units
+            return pyunits.convert(s, units["entropy_mole"])
+
     class pressure_sat_comp():
 
         @staticmethod
