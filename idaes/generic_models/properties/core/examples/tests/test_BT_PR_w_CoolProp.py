@@ -16,12 +16,6 @@ Author: Andrew Lee
 
 import pytest
 
-try:
-    from CoolProp.CoolProp import PropsSI
-    coolprop_present = True
-except ModuleNotFoundError:
-    coolprop_present = False
-
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.eos.ceos import \
     cubic_roots_available
@@ -32,11 +26,14 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from pyomo.util.check_units import assert_units_consistent
 
 from pyomo.environ import (ConcreteModel, Param, value, Var)
+from pyomo.common.dependencies import attempt_import
 
 from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 SOUT = idaeslog.INFO
+
+CoolProp, coolprop_available = attempt_import('CoolProp.CoolProp')
 
 # Set module level pyest marker
 pytestmark = pytest.mark.cubic_root
@@ -50,7 +47,7 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 # Test loading parameters
-@pytest.mark.skipif(not coolprop_present, reason="CoolProp not installed")
+@pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
 class TestCoolPropParameters(object):
     @pytest.fixture()
     def m(self):
@@ -67,39 +64,39 @@ class TestCoolPropParameters(object):
         # Benzene parameters
         assert isinstance(m.fs.props.benzene.temperature_crit, Var)
         assert m.fs.props.benzene.temperature_crit.fixed
-        assert value(m.fs.props.benzene.temperature_crit) == PropsSI(
+        assert value(m.fs.props.benzene.temperature_crit) == CoolProp.PropsSI(
             "TCRIT", "Benzene")
 
         assert isinstance(m.fs.props.benzene.pressure_crit, Var)
         assert m.fs.props.benzene.pressure_crit.fixed
-        assert value(m.fs.props.benzene.pressure_crit) == PropsSI(
+        assert value(m.fs.props.benzene.pressure_crit) == CoolProp.PropsSI(
             "PCRIT", "Benzene")
 
         assert isinstance(m.fs.props.benzene.mw, Param)
-        assert value(m.fs.props.benzene.mw) == PropsSI(
+        assert value(m.fs.props.benzene.mw) == CoolProp.PropsSI(
             "molarmass", "Benzene")
 
         assert isinstance(m.fs.props.benzene.omega, Var)
         assert m.fs.props.benzene.omega.fixed
-        assert value(m.fs.props.benzene.omega) == PropsSI(
+        assert value(m.fs.props.benzene.omega) == CoolProp.PropsSI(
             "acentric", "Benzene")
 
         # Toluene parameters
         assert isinstance(m.fs.props.toluene.temperature_crit, Var)
         assert m.fs.props.toluene.temperature_crit.fixed
-        assert value(m.fs.props.toluene.temperature_crit) == PropsSI(
+        assert value(m.fs.props.toluene.temperature_crit) == CoolProp.PropsSI(
             "TCRIT", "toluene")
 
         assert isinstance(m.fs.props.toluene.pressure_crit, Var)
         assert m.fs.props.toluene.pressure_crit.fixed
-        assert value(m.fs.props.toluene.pressure_crit) == PropsSI(
+        assert value(m.fs.props.toluene.pressure_crit) == CoolProp.PropsSI(
             "PCRIT", "toluene")
 
         assert isinstance(m.fs.props.toluene.mw, Param)
-        assert value(m.fs.props.toluene.mw) == PropsSI(
+        assert value(m.fs.props.toluene.mw) == CoolProp.PropsSI(
             "molarmass", "toluene")
 
         assert isinstance(m.fs.props.toluene.omega, Var)
         assert m.fs.props.toluene.omega.fixed
-        assert value(m.fs.props.toluene.omega) == PropsSI(
+        assert value(m.fs.props.toluene.omega) == CoolProp.PropsSI(
             "acentric", "toluene")
