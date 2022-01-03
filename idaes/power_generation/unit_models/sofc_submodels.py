@@ -2407,7 +2407,7 @@ def cell_flowsheet():
 
     dynamic = True
     time_nfe = 1
-    time_set = [0, 20] if dynamic else [0]
+    time_set = [0, 22] if dynamic else [0]
 
     zfaces = np.linspace(0, 1, 11).tolist()
     xfaces_electrode = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9, 1.0]
@@ -2649,7 +2649,7 @@ def cell_flowsheet():
     if dynamic:
         m.fs.timevar = pyo.Var(m.fs.time, initialize=0)
         m.fs.ramp_rate = pyo.Var()
-        m.fs.ramp_rate.fix(0.5e-5)
+        m.fs.ramp_rate.fix(0)#(0.5e-5)
         @m.fs.Constraint(m.fs.time)
         def feed_flow_fuel(b, t):
             if t == m.fs.time.first():
@@ -2682,7 +2682,7 @@ def cell_flowsheet():
                 "--ts_type":"beuler",
                 "--ts_dt":0.001,
                 "--ts_rtol":1e-3,
-                #"--ts_max_snes_failures":-1000,
+                "--ts_max_snes_failures":1000,
                 #"--ts_adapt_clip":"0.01,1.0",
                 #"--ksp_monitor":"",
                 "--ksp_rtol":1e-10,

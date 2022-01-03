@@ -13,6 +13,7 @@
 
 import sys
 import enum
+import copy
 import idaes
 import pyomo.environ as pyo
 from pyomo.opt.base.solvers import UnknownSolver
@@ -24,6 +25,7 @@ from pyomo.util.subsystems import (
     TemporarySubsystemManager,
     create_subsystem_block,
 )
+from pyomo.solvers.plugins.solvers.ASL import ASL
 from pyomo.common.errors import ApplicationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
@@ -45,6 +47,66 @@ class PetscSolverType(enum.Enum):
     SNES = 0
     TS = 1
     TAO = 2
+
+
+@pyo.SolverFactory.register('petsc', doc='ASL PETSc interface')
+class Petsc(ASL):
+    def __init__(self, **kwds):
+        self._wsl = kwds.pop("wsl", None)
+        super().__init__(**kwds)
+        self.options.solver = "petsc"
+
+    def _default_executable(self):
+        executable = False
+        if not self._wsl or self._wsl is None:
+            executable = Executable("petsc")
+        if sys.platform.startswith('win32') and (not executable):
+            # On Windows, if wsl was requested or a normal petsc solver
+            # executable was not found, look for a batch file to run it with WSL
+            executable = Executable("petsc_wsl.bat")
+        if not executable:
+            raise RuntimeError("No PETSc executable found.")
+        return executable.path()
+
+@pyo.SolverFactory.register('petsc_snes', doc='ASL PETSc SNES interface')
+class PetscSNES(Petsc):
+    def __init__(self, **kwds):
+        if "options" in kwds and kwds["options"] is not None:
+            kwds["options"] = copy.deepcopy(kwds["options"])
+        else:
+            kwds["options"] = {}
+        kwds["options"]["--snes_monitor"] = ""
+        if "petsc_snes" in idaes.cfg:
+            if "options" in idaes.cfg["petsc_snes"]:
+                default_options = dict(idaes.cfg["petsc_snes"]["options"])
+                default_options.update(kwds["options"])
+                kwds["options"] = default_options
+        super().__init__(**kwds)
+        self.options.solver = "petsc_snes"
+
+@pyo.SolverFactory.register('petsc_ts', doc='ASL PETSc TS interface')
+class PetscTS(Petsc):
+    def __init__(self, **kwds):
+        if "options" in kwds and kwds["options"] is not None:
+            kwds["options"] = copy.deepcopy(kwds["options"])
+        else:
+            kwds["options"] = {}
+        kwds["options"]["--dae_solve"] = ""
+        kwds["options"]["--ts_monitor"] = ""
+        if "petsc_ts" in idaes.cfg:
+            if "options" in idaes.cfg["petsc_ts"]:
+                default_options = dict(idaes.cfg["petsc_ts"]["options"])
+                default_options.update(kwds["options"])
+                kwds["options"] = default_options
+        super().__init__(**kwds)
+        self.options.solver = "petsc_ts"
+
+@pyo.SolverFactory.register('petsc_tao', doc='ASL PETSc TAO interface')
+class PetscTAO(Petsc):
+    def __init__(self, **kwds):
+        raise NotImplementedError(
+            "The PETSc TAO interface has not yet been implimented")
+
 
 
 def get_petsc_solver(options=None, wsl=None, solver_type=None):
@@ -72,19 +134,8 @@ def get_petsc_solver(options=None, wsl=None, solver_type=None):
         if options is not None:
             opt.update(options)
         options = opt
-    if not wsl or wsl is None:
-        if Executable("petsc"): # checking this first avoids lot of error log
-            return pyo.SolverFactory("petsc", type="asl", options=options)
-    if sys.platform.startswith('win32') and (wsl or wsl is None):
-        # On Windows, assume running the solver using WSL, user will need to
-        # add batch file to `idaes bin-directory`
-        if Executable("petsc_wsl.bat"):
-            return pyo.SolverFactory(
-                "petsc_wsl",
-                executable="petsc_wsl.bat",
-                type='asl',
-                options=options)
-    return None # didn't find PETSc at all
+    return pyo.SolverFactory("petsc", wsl=wsl, options=options)
+
 
 
 def petsc_available(wsl=None):
@@ -97,7 +148,7 @@ def petsc_available(wsl=None):
     Returns:
         (bool): True is PETSc is available
     """
-    solver = get_petsc_solver(wsl=wsl)
+    solver = pyo.SolverFactory("petsc", wsl=wsl)
     if solver is not None:
         return solver.available()
     return False
@@ -281,14 +332,8 @@ def petsc_dae_by_time_element(
     tdisc = list(_generate_time_discretization(m, time))
 
     #_set_dae_suffixes(m, time)
-    solver_snes = get_petsc_solver(
-        solver_type=PetscSolverType.SNES,
-        options=snes_options,
-        wsl=wsl)
-    solver_dae = get_petsc_solver(
-        solver_type=PetscSolverType.TS,
-        options=ts_options,
-        wsl=wsl)
+    solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options, wsl=wsl)
+    solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options, wsl=wsl)
 
     # First calculate the inital conditions and non-time-tindexed constraints
     t = time.first()
@@ -317,6 +362,11 @@ def petsc_dae_by_time_element(
             differential_vars = _set_dae_suffixes_from_variables(t_block, variables)
             if timevar is not None:
                 t_block.dae_suffix[timevar[t]] = 3
+            t_block.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+            if hasattr(m, "scaling_factor"):
+                for c in t_block.component_data_objects((pyo.Var, pyo.Constraint)):
+                    if c in m.scaling_factor:
+                        t_block.scaling_factor[c] = m.scaling_factor[c]
             # Take initial conditions for this step from the result of previous
             _copy_time(time_vars, tprev, t)
             with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
