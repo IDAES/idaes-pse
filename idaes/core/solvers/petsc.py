@@ -11,7 +11,9 @@
 # license information.
 #################################################################################
 
+import os
 import sys
+import shutil
 import enum
 import copy
 import idaes
@@ -26,6 +28,8 @@ from pyomo.util.subsystems import (
     create_subsystem_block,
 )
 from pyomo.solvers.plugins.solvers.ASL import ASL
+from pyomo.opt.solver import SystemCallSolver
+from pyomo.common.tempfiles import TempfileManager
 from pyomo.common.errors import ApplicationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
@@ -97,6 +101,7 @@ class PetscTS(Petsc):
     """PETSc solver plugin that sets options for SNES solver.  This turns on
     TS monitoring, sets the DAE flag, and checks the config for default options."""
     def __init__(self, **kwds):
+        self._ts_vars_stub = kwds.pop("vars_stub", None)
         if "options" in kwds and kwds["options"] is not None:
             kwds["options"] = copy.deepcopy(kwds["options"])
         else:
@@ -110,6 +115,21 @@ class PetscTS(Petsc):
                 kwds["options"] = default_options
         super().__init__(**kwds)
         self.options.solver = "petsc_ts"
+
+    def _postsolve(self):
+        stub = os.path.splitext(self._soln_file)[0]
+        typ_file = stub + ".typ"
+        TempfileManager.add_tempfile(typ_file)
+        if self._ts_vars_stub is not None:
+            try:
+                shutil.copyfile(f"{stub}.col", f"{self._ts_vars_stub}.col")
+            except:
+                pass
+            try:
+                shutil.copyfile(f"{stub}.typ", f"{self._ts_vars_stub}.typ")
+            except:
+                pass
+        return ASL._postsolve(self)
 
 @pyo.SolverFactory.register('petsc_tao', doc='ASL PETSc TAO interface')
 class PetscTAO(Petsc):
@@ -250,7 +270,8 @@ def petsc_dae_by_time_element(
     ts_options=None,
     wsl=None,
     keepfiles=False,
-    symbolic_solver_labels=False,
+    symbolic_solver_labels=True,
+    vars_stub=None,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -259,7 +280,7 @@ def petsc_dae_by_time_element(
         m (Block): Pyomo model to solve
         time (ContinuousSet): Time set
         timevar (Var): Optional sepcification of a time variable
-        initial_constraints (list): Constraints to solve with in the initial
+        initial_constraints (list): Constraints to solve within the initial
             condition solve step.  Since the time indexed constraints are picked
             up automaticly, this generally inlcudes non-time-inded constraints.
         initial_variables (list): This is a list of variables to fix after the
@@ -276,6 +297,13 @@ def petsc_dae_by_time_element(
         ts_options (dict): PETSc time-stepping solver options.
         wsl (bool): if True use WSL to run PETSc, if False don't use WSL to run
             PETSc, if None automatic. The WSL is only for Windows.
+        keepfiles (bool): pass to keepfile arg for solvers
+        symbolic_solver_labels (bool): pass to symoblic_solver_labels arg for
+            solvers. If you want to read trajectory data from the time-stepping
+            solver, this should be True.
+        vars_stub (str): Copy the *.col and *.typ files to the working directry
+            using this stub if not None.  These are needed to interperate the
+            trajectory data. 
 
     Returns:
         None (for now, should return some status)
@@ -287,7 +315,7 @@ def petsc_dae_by_time_element(
 
     #_set_dae_suffixes(m, time)
     solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options, wsl=wsl)
-    solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options, wsl=wsl)
+    solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options, wsl=wsl, vars_stub=vars_stub)
 
     # First calculate the inital conditions and non-time-tindexed constraints
     t = time.first()
@@ -307,10 +335,10 @@ def petsc_dae_by_time_element(
     with TemporarySubsystemManager(to_deactivate=tdisc):
         # Solver time steps
         for t in time:
-            constraints = [con[t] for con in time_cons if t in con]
-            variables = [var[t] for var in time_vars]
             if t == time.first():
                 continue
+            constraints = [con[t] for con in time_cons if t in con]
+            variables = [var[t] for var in time_vars]
             # Create a temporary block with references to original constraints
             # and variables so we can integrate this "subsystem" without altering
             # the rest of the model.

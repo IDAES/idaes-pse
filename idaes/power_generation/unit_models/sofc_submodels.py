@@ -2676,8 +2676,6 @@ def cell_flowsheet():
             m,
             time=m.fs.time,
             timevar=m.fs.timevar,
-            keepfiles=True,
-            symbolic_solver_labels=True,
             ts_options={
                 "--ts_type":"beuler",
                 "--ts_dt":0.001,
@@ -2696,6 +2694,7 @@ def cell_flowsheet():
             initial_constraints=[],
             initial_variables=[],
             skip_initial=False,
+            vars_stub="trajectory_vars",
         )
     if not dynamic:
         m.fs.current_density.unfix()
