@@ -32,6 +32,8 @@ from pyomo.environ import (ConcreteModel,
                            value)
 
 from idaes.core.util import get_solver
+from idaes.generic_models.properties.tests.test_harness import \
+    PropertyTestHarness
 
 import idaes.logger as idaeslog
 SOUT = idaeslog.INFO
@@ -46,6 +48,15 @@ prop_available = cubic_roots_available()
 solver = get_solver()
 # Limit iterations to make sure sweeps aren;t getting out of hand
 solver.options["max_iter"] = 50
+
+
+@pytest.mark.unit
+class TestBTPR(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = GenericParameterBlock
+        self.param_args = configuration
+        self.prop_args = {}
+        self.has_density_terms = False
 
 
 # -----------------------------------------------------------------------------

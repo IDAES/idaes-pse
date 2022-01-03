@@ -43,7 +43,7 @@ def build_costing():
     return m
 
 
-@pytest.mark.unit
+@pytest.mark.component
 def test_get_costing(build_costing):
     m = build_costing
     assert hasattr(m.fs.costing, "CE_index")
