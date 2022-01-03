@@ -17,6 +17,7 @@ Authors: Andrew Lee
 """
 
 import pytest
+from numpy import arange
 
 from pyomo.environ import (
     Block,
@@ -30,7 +31,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_equivalent
 from pyomo.common.dependencies import attempt_import
 
-from idaes.core import FlowsheetBlock, Component, LiquidPhase
+from idaes.core import FlowsheetBlock, Component, LiquidPhase, VaporPhase
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.generic_models.properties.core.state_definitions import FTPx
@@ -226,7 +227,7 @@ class TestWrapper:
 
 
 @pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
-class TestCoolPropIntegration(object):
+class TestCoolPropProperties(object):
     @pytest.fixture(scope="class")
     def m(self):
         # Clear cached components to ensure clean slate
@@ -662,25 +663,248 @@ class TestCoolPropIntegration(object):
                     "P", "T", T, "Q", 0.5, "benzene"), rel=5e-4) == value(
                         m.fs.state[0].pressure_sat_comp["benzene"])
 
-    # @pytest.mark.component
-    # def test_cubic_flash(self, m):
-    #     m.fs.state.initialize()
 
-    #     solver = get_solver()
+# @pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
+# class TestCoolPropIntegrationLiq(object):
+#     @pytest.fixture(scope="class")
+#     def m(self):
+#         # Clear cached components to ensure clean slate
+#         CoolPropWrapper.flush_cached_components()
 
-    #     for T in range(300, 401, 10):
-    #         for P in range(100000, 1000001, 100000):
-    #             print(T, P)
-    #             m.fs.state[0].temperature.fix(T)
-    #             m.fs.state[0].pressure.fix(P)
+#         m = ConcreteModel()
 
-    #             results = solver.solve(m.fs)
+#         m.fs = FlowsheetBlock(default={'dynamic': False})
 
-    #             assert results.solver.termination_condition == \
-    #                 TerminationCondition.optimal
-    #             assert results.solver.status == SolverStatus.ok
+#         configuration = {
+#             # Specifying components
+#             "components": {
+#                 'benzene': {"type": Component,
+#                             "elemental_composition": {'H': 6, 'C': 6},
+#                             "dens_mol_liq_comp": CoolPropWrapper,
+#                             "enth_mol_liq_comp": CoolPropWrapper,
+#                             "enth_mol_ig_comp": CoolPropWrapper,
+#                             "entr_mol_liq_comp": CoolPropWrapper,
+#                             "entr_mol_ig_comp": CoolPropWrapper,
+#                             "pressure_sat_comp": CoolPropWrapper,
+#                             "parameter_data": {
+#                                 "mw": CoolPropWrapper,
+#                                 "dens_mol_crit": CoolPropWrapper,
+#                                 "pressure_crit": CoolPropWrapper,
+#                                 "temperature_crit": CoolPropWrapper,
+#                                 "omega": CoolPropWrapper}}},
+#             # Specifying phases
+#             "phases":  {'Liq': {"type": LiquidPhase,
+#                                 "equation_of_state": Cubic,
+#                                 "equation_of_state_options": {
+#                                     "type": CubicType.PR}}},
 
-    #             assert pytest.approx(
-    #                 CoolProp.PropsSI(
-    #                     "Z", "T", T, "P", P, "PR::benzene"), rel=1e-8) == value(
-    #                         m.fs.state[0].compress_fact_phase["Liq"])
+#             # Set base units of measurement
+#             "base_units": {"time": pyunits.s,
+#                            "length": pyunits.m,
+#                            "mass": pyunits.kg,
+#                            "amount": pyunits.mol,
+#                            "temperature": pyunits.K},
+
+#             # Specifying state definition
+#             "state_definition": FTPx,
+#             "state_bounds": {"flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
+#                              "temperature": (273.15, 300, 500, pyunits.K),
+#                              "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
+#             "pressure_ref": (101325, pyunits.Pa),
+#             "temperature_ref": (298.15, pyunits.K),
+
+#             "parameter_data": {"PR_kappa": {("benzene", "benzene"): 0.000}}}
+
+#         m.fs.props = GenericParameterBlock(default=configuration)
+
+#         m.fs.state = m.fs.props.build_state_block(
+#             [0], default={"defined_state": True})
+
+#         m.fs.state[0].flow_mol.fix(1)
+#         m.fs.state[0].mole_frac_comp["benzene"].fix(1)
+
+#         return m
+
+#     @pytest.mark.integration
+#     def test_cubic_liquid(self, m):
+#         solver = get_solver()
+
+#         for P in range(1, 11):
+#             Td = CoolProp.PropsSI("T", "P", P*1e5, "Q", 0.5, "PR::benzene")
+#             Tmin = CoolProp.PropsSI("TMIN", "benzene")
+
+#             m.fs.state[0].pressure.fix(P*1e5)
+#             m.fs.state[0].temperature.fix(Tmin)
+
+#             m.fs.state.initialize()
+
+#             for T in arange(Tmin, Td, 10):
+#                 print(P, T)
+#                 m.fs.state[0].temperature.fix(T)
+
+#                 results = solver.solve(m.fs)
+
+#                 assert results.solver.termination_condition == \
+#                     TerminationCondition.optimal
+#                 assert results.solver.status == SolverStatus.ok
+
+#                 # Check results
+#                 assert pytest.approx(
+#                     CoolProp.PropsSI("Z", "T", T, "P", P*1e5, "PR::benzene"),
+#                     rel=1e-8) == value(
+#                         m.fs.state[0].compress_fact_phase["Liq"])
+
+#                 assert pytest.approx(
+#                     CoolProp.PropsSI(
+#                         "DMOLAR", "T", T, "P", P*1e5, "PR::benzene"),
+#                     rel=1e-6) == value(
+#                         m.fs.state[0].dens_mol_phase["Liq"])
+
+#                 assert pytest.approx(
+#                     CoolProp.PropsSI(
+#                         "HMOLAR", "T", T, "P", P*1e5, "PR::benzene"),
+#                     rel=1e-6) == value(
+#                         m.fs.state[0].enth_mol_phase["Liq"])
+
+#                 # assert pytest.approx(
+#                 #     CoolProp.PropsSI(
+#                 #         "SMOLAR", "T", T, "P", P*1e5, "PR::benzene"),
+#                 #     rel=1e-6) == value(
+#                 #         m.fs.state[0].entr_mol_phase["Liq"])
+
+#                 # assert pytest.approx(
+#                 #     CoolProp.PropsSI(
+#                 #         "GMOLAR", "T", T, "P", P*1e5, "PR::benzene"),
+#                 #     rel=1e-6) == value(
+#                 #         m.fs.state[0].gibbs_mol_phase["Liq"])
+
+#                 # assert pytest.approx(
+#                 #     CoolProp.PropsSI(
+#                 #         "UMOLAR", "T", T, "P", P*1e5, "PR::benzene"),
+#                 #     rel=1e-6) == value(
+#                 #         m.fs.state[0].energy_internal_mol_phase["Liq"])
+
+#         assert False
+
+
+@pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
+class TestCoolPropIntegrationVap(object):
+    @pytest.fixture(scope="class")
+    def m(self):
+        # Clear cached components to ensure clean slate
+        CoolPropWrapper.flush_cached_components()
+
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={'dynamic': False})
+
+        configuration = {
+            # Specifying components
+            "components": {
+                'benzene': {"type": Component,
+                            "elemental_composition": {'H': 6, 'C': 6},
+                            "dens_mol_liq_comp": CoolPropWrapper,
+                            "enth_mol_liq_comp": CoolPropWrapper,
+                            "enth_mol_ig_comp": CoolPropWrapper,
+                            "entr_mol_liq_comp": CoolPropWrapper,
+                            "entr_mol_ig_comp": CoolPropWrapper,
+                            "pressure_sat_comp": CoolPropWrapper,
+                            "parameter_data": {
+                                "mw": CoolPropWrapper,
+                                "dens_mol_crit": CoolPropWrapper,
+                                "pressure_crit": CoolPropWrapper,
+                                "temperature_crit": CoolPropWrapper,
+                                "omega": CoolPropWrapper}}},
+            # Specifying phases
+            "phases":  {'Vap': {"type": VaporPhase,
+                                "equation_of_state": Cubic,
+                                "equation_of_state_options": {
+                                    "type": CubicType.PR}}},
+
+            # Set base units of measurement
+            "base_units": {"time": pyunits.s,
+                           "length": pyunits.m,
+                           "mass": pyunits.kg,
+                           "amount": pyunits.mol,
+                           "temperature": pyunits.K},
+
+            # Specifying state definition
+            "state_definition": FTPx,
+            "state_bounds": {"flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
+                             "temperature": (273.15, 300, 730, pyunits.K),
+                             "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
+            "pressure_ref": (101325, pyunits.Pa),
+            "temperature_ref": (298.15, pyunits.K),
+
+            "parameter_data": {"PR_kappa": {("benzene", "benzene"): 0.000}}}
+
+        m.fs.props = GenericParameterBlock(default=configuration)
+
+        m.fs.state = m.fs.props.build_state_block(
+            [0], default={"defined_state": True})
+
+        m.fs.state[0].flow_mol.fix(1)
+        m.fs.state[0].mole_frac_comp["benzene"].fix(1)
+
+        return m
+
+    @pytest.mark.integration
+    def test_cubic_vapor(self, m):
+        solver = get_solver()
+
+        for P in range(1, 11):
+            Tb = CoolProp.PropsSI("T", "P", P*1e5, "Q", 0.5, "PR::benzene")
+            Tmax = CoolProp.PropsSI("TMAX", "benzene")
+
+            m.fs.state[0].pressure.fix(P*1e5)
+            m.fs.state[0].temperature.fix(Tb+1)
+
+            m.fs.state.initialize()
+
+            for T in arange(Tb+1, Tmax, 10):
+                print(P, T)
+                m.fs.state[0].temperature.fix(T)
+
+                results = solver.solve(m.fs)
+
+                assert results.solver.termination_condition == \
+                    TerminationCondition.optimal
+                assert results.solver.status == SolverStatus.ok
+
+                # Check results
+                assert pytest.approx(
+                    CoolProp.PropsSI("Z", "T", T, "P", P*1e5, "PR::benzene"),
+                    rel=1e-8) == value(
+                        m.fs.state[0].compress_fact_phase["Vap"])
+
+                assert pytest.approx(
+                    CoolProp.PropsSI(
+                        "DMOLAR", "T", T, "P", P*1e5, "PR::benzene"),
+                    rel=1e-6) == value(
+                        m.fs.state[0].dens_mol_phase["Vap"])
+
+                assert pytest.approx(
+                    CoolProp.PropsSI(
+                        "HMOLAR", "T", T, "P", P*1e5, "PR::benzene"),
+                    rel=3e-2) == value(
+                        m.fs.state[0].enth_mol_phase["Vap"])
+
+                # assert pytest.approx(
+                #     CoolProp.PropsSI(
+                #         "SMOLAR", "T", T, "P", P*1e5, "PR::benzene"),
+                #     rel=1e-6) == value(
+                #         m.fs.state[0].entr_mol_phase["Vap"])
+
+                # assert pytest.approx(
+                #     CoolProp.PropsSI(
+                #         "GMOLAR", "T", T, "P", P*1e5, "PR::benzene"),
+                #     rel=1e-6) == value(
+                #         m.fs.state[0].gibbs_mol_phase["Vap"])
+
+                # assert pytest.approx(
+                #     CoolProp.PropsSI(
+                #         "UMOLAR", "T", T, "P", P*1e5, "PR::benzene"),
+                #     rel=1e-6) == value(
+                #         m.fs.state[0].energy_internal_mol_phase["Vap"])
+
+        assert False
