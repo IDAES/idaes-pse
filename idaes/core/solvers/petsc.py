@@ -51,12 +51,18 @@ class PetscSolverType(enum.Enum):
 
 @pyo.SolverFactory.register('petsc', doc='ASL PETSc interface')
 class Petsc(ASL):
+    """ASL solver plugin for the PETSc solver.  This adds the option to use an
+    alternative executable batch file to run the solver through the WSL."""
     def __init__(self, **kwds):
         self._wsl = kwds.pop("wsl", None)
         super().__init__(**kwds)
         self.options.solver = "petsc"
 
     def _default_executable(self):
+        """In addition to looking for the petsc executable, optionally check for
+        a WSL batch file on Windows. Users could potentially also compile a
+        cygwin exectable on Windows, so WSL isn't the only option, but it is the
+        easiest for Windows."""
         executable = False
         if not self._wsl or self._wsl is None:
             executable = Executable("petsc")
@@ -70,6 +76,8 @@ class Petsc(ASL):
 
 @pyo.SolverFactory.register('petsc_snes', doc='ASL PETSc SNES interface')
 class PetscSNES(Petsc):
+    """PETSc solver plugin that sets options for SNES solver.  This turns on
+    SNES monitoring, and checks the config for default options"""
     def __init__(self, **kwds):
         if "options" in kwds and kwds["options"] is not None:
             kwds["options"] = copy.deepcopy(kwds["options"])
@@ -86,6 +94,8 @@ class PetscSNES(Petsc):
 
 @pyo.SolverFactory.register('petsc_ts', doc='ASL PETSc TS interface')
 class PetscTS(Petsc):
+    """PETSc solver plugin that sets options for SNES solver.  This turns on
+    TS monitoring, sets the DAE flag, and checks the config for default options."""
     def __init__(self, **kwds):
         if "options" in kwds and kwds["options"] is not None:
             kwds["options"] = copy.deepcopy(kwds["options"])
@@ -103,39 +113,10 @@ class PetscTS(Petsc):
 
 @pyo.SolverFactory.register('petsc_tao', doc='ASL PETSc TAO interface')
 class PetscTAO(Petsc):
+    """This is a place holder for optimation solvers"""
     def __init__(self, **kwds):
         raise NotImplementedError(
             "The PETSc TAO interface has not yet been implimented")
-
-
-
-def get_petsc_solver(options=None, wsl=None, solver_type=None):
-    """Get a Pyomo PETSc solver object. The IDAES solver distribution does not
-    contain a PETSc executable for Windows, so the recomended method of using
-    PETSc on Windows is to use the WSL to run the Linux executable.  This
-    function provides a wrapper for the SovlerFactory that allows the same
-    function to be used to get the PETSc solver whether using the WSL or not.
-    For more information on how to set the PETSc solver up on Windows see the
-    IDAES documentation.
-
-    Args:
-        options (dict): Solver options, default=None
-        wsl (bool): If True force WSL version, if False force not WSL version,
-            if None, try non-WSL version then try WSL version
-        solver_type (PetscSolverType): If a type is provided the default options
-            dictionary for the specified type will used and updated with any
-            options provided.
-
-    Returns:
-        PETSc Pyomo solver object
-    """
-    if solver_type is not None:
-        opt = petsc_default_options(solver_type=solver_type)
-        if options is not None:
-            opt.update(options)
-        options = opt
-    return pyo.SolverFactory("petsc", wsl=wsl, options=options)
-
 
 
 def petsc_available(wsl=None):
@@ -152,55 +133,6 @@ def petsc_available(wsl=None):
     if solver is not None:
         return solver.available()
     return False
-
-
-def petsc_default_options(solver_type=PetscSolverType.SNES):
-    """Get a default options dictionary for a PETSc solver.  This provides a
-    convenient way to get a resonable set of solver options for a nonlinear
-    system or DAE.
-
-    Args:
-        solver_type (PetscSolverType): In {PetscSolverType.SNES,
-            PetscSolverType.DAE}
-
-    Returns:
-        (dict): Solver options dictionary
-    """
-
-    if solver_type == PetscSolverType.SNES:
-        return {
-            "--snes_monitor":"",
-            "--pc_type":"lu",             #direct solve MUMPS default LU fact
-            "--ksp_type":"preonly",       #no ksp used direct solve preconditioner
-        }
-    elif solver_type == PetscSolverType.TS:
-        return {
-            "--dae_solve":"",             #tell solver to expect dae problem
-            "--ts_monitor":"",            #show progess of TS solver
-            "--ts_max_snes_failures":40,  #max nonlin solve fails before give up
-            "--ts_max_reject":20,         #max steps to reject
-            "--ts_type":"beuler",         #ts_solver
-            #"--ts_dt":0.1,
-            #"--ts_adapt_monitor":"",
-            #"--snes_monitor":"",          #show progress on nonlinear solves
-            #"--pc_type":"lu",             #direct solve MUMPS default LU fact
-            #"--ksp_type":"preonly",       #no ksp used direct solve preconditioner
-            #"--show_jac":"",
-            #"--show_initial":"",
-            #"--snes_type":"newtonls",     # newton line search for nonliner solver
-            "--ts_adapt_type":"basic",
-            #"--ts_init_time":0,           # initial time
-            #"--ts_max_time":1,            # final time
-            #"--ts_save_trajectory":1,
-            #"--ts_trajectory_type":"visualization",
-            #"--ts_exact_final_time":"stepover",
-            "--ts_exact_final_time":"matchstep",
-            #"--ts_exact_final_time":"interpolate",
-            #"--ts_view":"",
-        }
-    elif solver_type == PetscSolverType.TAO:
-        raise NotImplementedError("Tao optimization solvers not yet implimented")
-    raise ValueError(f"{solver_type} is not a supported solver type")
 
 
 def _copy_time(time_vars, t_from, t_to):
@@ -285,6 +217,28 @@ def _set_dae_suffixes_from_variables(m, variables):
             dae_var_link_index += 1
     return differential_vars
 
+
+def _sub_problem_scaling_suffix(m, t_block):
+    """Copy scaling factors from the full model to the submodel.  This assumes
+    the scaling suffixes could be in two places.  First check the parent block
+    of the compoent (typical place for idaes models) then check the top-level
+    model.  The top level model will take precedence.
+    """
+    if not hasattr(t_block, "scaling_factor"):
+        # if the subsystem block doesn't already have a scaling suffix, make one
+        t_block.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+    # first check the parent block for scaling factors
+    for c in t_block.component_data_objects((pyo.Var, pyo.Constraint)):
+        if hasattr(c.parent_block(), "scaling_factor"):
+            if c in c.parent_block().scaling_factor:
+                t_block.scaling_factor[c] = c.parent_block().scaling_factor[c]
+    # now check the top level model
+    if hasattr(m, "scaling_factor"):
+        for c in t_block.component_data_objects((pyo.Var, pyo.Constraint)):
+            if c in m.scaling_factor:
+                t_block.scaling_factor[c] = m.scaling_factor[c]
+
+
 def petsc_dae_by_time_element(
     m,
     time,
@@ -345,6 +299,8 @@ def petsc_dae_by_time_element(
                 constraints + initial_constraints,
                 variables
             )
+            # set up the scaling factor suffix
+            _sub_problem_scaling_suffix(m, t_block)
             with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
                 res = solver_snes.solve(t_block, tee=slc.tee)
     tprev = t
@@ -362,11 +318,8 @@ def petsc_dae_by_time_element(
             differential_vars = _set_dae_suffixes_from_variables(t_block, variables)
             if timevar is not None:
                 t_block.dae_suffix[timevar[t]] = 3
-            t_block.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-            if hasattr(m, "scaling_factor"):
-                for c in t_block.component_data_objects((pyo.Var, pyo.Constraint)):
-                    if c in m.scaling_factor:
-                        t_block.scaling_factor[c] = m.scaling_factor[c]
+            # Set up the scaling factor suffix
+            _sub_problem_scaling_suffix(m, t_block)
             # Take initial conditions for this step from the result of previous
             _copy_time(time_vars, tprev, t)
             with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
