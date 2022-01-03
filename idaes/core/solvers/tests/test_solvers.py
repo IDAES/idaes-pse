@@ -93,7 +93,7 @@ def test_petsc_idaes_solve():
     break the solver object.  Passing a bad solver option will result in failure
     """
     m, x = nle()
-    solver = petsc.get_petsc_solver(solver_type=petsc.PetscSolverType.SNES)
+    solver = pyo.SolverFactory("petsc_snes")
     solver.solve(m, tee=True)
     assert pytest.approx(x) == pyo.value(m.x) or pytest.approx(x) == pyo.value(-m.x)
 
@@ -107,7 +107,7 @@ def test_bonmin_idaes_solve():
     solver = pyo.SolverFactory('bonmin')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
-    assert i == pyo.value(m.i)    
+    assert i == pyo.value(m.i)
 
 @pytest.mark.unit
 def test_couenne_idaes_solve():
