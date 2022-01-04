@@ -46,6 +46,9 @@ from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
 import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 
+from idaes.generic_models.properties.tests.test_harness import \
+    PropertyTestHarness
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -138,6 +141,15 @@ config_dict = {
     "phases_in_equilibrium": [("Vap", "Liq")],
     "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": IdealBubbleDew}
+
+
+@pytest.mark.unit
+class TestBTIdeal_FcPh(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = GenericParameterBlock
+        self.param_args = config_dict
+        self.prop_args = {}
+        self.has_density_terms = False
 
 
 class TestParamBlock(object):

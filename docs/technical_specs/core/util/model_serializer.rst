@@ -41,7 +41,7 @@ test models.  The second model is a little more complicated and includes suffixe
   def setup_model01():
       model = ConcreteModel()
       model.b = Block([1,2,3])
-      a = model.b[1].a = Var(bounds=(-100, 100), initialize=2)
+      a = model.b[1].a = Var(bounds=(-1e5, 1e5), initialize=2)
       b = model.b[1].b = Var(bounds=(-100, 100), initialize=20)
       model.b[1].c = Constraint(expr=b==10*a)
       a.fix(2)
