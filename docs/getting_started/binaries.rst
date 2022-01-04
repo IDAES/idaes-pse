@@ -88,16 +88,36 @@ The Linux binary builds can be run on Windows using the
 when solvers depend on POSIX standards.  Currently the optional PETSc solver is
 the only one which does not run on Windows.
 
-In the WSL environment, download and extract the desired Linux release containing
-the solver you would like to run.  In the Windows IDAES binary directory, create a
-batch file with the format ``{solver}_wsl.bat`` for example for PETSc
-``petsc_wsl.bat``.
+In the WSL environment, download and extract the desired Linux release of
+the solver (i.e. PETSc) you would like to run following the instructions under manual
+installation above. Install required libraries libfortran, libblas, liblapack i.e.
+``apt-get install liblapack3 libblas3 ligbomp1 libgfortran5``.
 
-Assuming you have put the binary file in the ``$HOME/loacl/bin`` and your WSL
-user name is ``john``, and the distribution installed is ``Ubuntu-20.04`` the
-contents of the batch file to run the petsc are below:
+In the WSL environment you can check that PETSc is installed correctly. In your 
+desired Linux release navigate to the folder containint the compiled PETSc binary
+and run the command ``./petsc --version``. If setup correctly details of the PETSc
+release will be printed on the screen.
+
+In the Windows IDAES binary directory, create a
+batch file with the format ``{solver}_wsl.bat`` for example for PETSc
+``petsc_wsl.bat``. Assuming you have put the binary file in the ``$HOME/local/bin``
+and your WSL user name is ``john``, and the distribution installed is ``Ubuntu-20.04``
+the contents of the batch file to run the petsc are below:
 
 .. code-block ::
 
   @echo off
   idaes solver-wsl --distribution Ubuntu-20.04 --user john --executable ~/local/bin/petsc %*
+
+If you are unsure of the name of your installed distribution, navigate to your linux
+release and run the command ``wsl --list --all``. This will list all your linux
+distributions (if you have more than one) with their names.
+
+There are a few options to check that your ``{solver}_wsl.bat`` is installed
+correctly. In a power shell window run the command
+``$Env:LOCALAPPDATA\idaes\bin\petsc_wsl.bat --version``. If setup correctly details
+of the solver release version will be printed on the screen. For users of git bash,
+open a git bash window and navigate to the environment (if you used environments)
+where the solver i.e. PETSc was installed. Run the command
+``$LOCALAPPDATA/idaes/bin/petsc_wsl.bat --version``.  If setup correctly details of
+the PETSc release version will be printed on the screen.
