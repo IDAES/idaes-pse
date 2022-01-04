@@ -45,14 +45,6 @@ class DaeVarTypes(enum.Enum):
     TIME = 3
 
 
-class PetscSolverType(enum.Enum):
-    """PETSc solver types, TAO (optimization) is not yet implimented
-    """
-    SNES = 0
-    TS = 1
-    TAO = 2
-
-
 @pyo.SolverFactory.register('petsc', doc='ASL PETSc interface')
 class Petsc(ASL):
     """ASL solver plugin for the PETSc solver.  This adds the option to use an
@@ -118,8 +110,14 @@ class PetscTS(Petsc):
 
     def _postsolve(self):
         stub = os.path.splitext(self._soln_file)[0]
+        # There is a type file created by the solver to give the varaible types
+        # this is needed to read the trajectory data, and we want to delete it
+        # with other tmp files
         typ_file = stub + ".typ"
         TempfileManager.add_tempfile(typ_file)
+        # If the vars_stub option was specified, copy the col and typ files to
+        # the working directory. These files are need to get the names and
+        # types of variables, and are need to make sense of trajectory data.
         if self._ts_vars_stub is not None:
             try:
                 shutil.copyfile(f"{stub}.col", f"{self._ts_vars_stub}.col")
@@ -130,6 +128,7 @@ class PetscTS(Petsc):
             except:
                 pass
         return ASL._postsolve(self)
+
 
 @pyo.SolverFactory.register('petsc_tao', doc='ASL PETSc TAO interface')
 class PetscTAO(Petsc):
@@ -168,7 +167,7 @@ def _copy_time(time_vars, t_from, t_to):
         time_vars (list): list of variables or refernces to variables indexed
             only by time
         t_from (float): time point to copy from
-        t_to (float): time point to copy to, only unfix vars will be overwritten
+        t_to (float): time point to copy to, only unfixed vars will be overwritten
 
     Returns:
         None
@@ -301,9 +300,9 @@ def petsc_dae_by_time_element(
         symbolic_solver_labels (bool): pass to symoblic_solver_labels arg for
             solvers. If you want to read trajectory data from the time-stepping
             solver, this should be True.
-        vars_stub (str): Copy the *.col and *.typ files to the working directry
-            using this stub if not None.  These are needed to interperate the
-            trajectory data. 
+        vars_stub (str or None): Copy the *.col and *.typ files to the working
+            directry using this stub if not None.  These are needed to
+            interperate the trajectory data.
 
     Returns:
         None (for now, should return some status)
@@ -320,19 +319,22 @@ def petsc_dae_by_time_element(
     # First calculate the inital conditions and non-time-tindexed constraints
     t = time.first()
     if not skip_initial:
-        with TemporarySubsystemManager(to_deactivate=tdisc, to_fix=initial_variables):
-            constraints = [con[t] for con in time_cons if t in con]
-            variables = [var[t] for var in time_vars]
-            t_block = create_subsystem_block(
-                constraints + initial_constraints,
-                variables
-            )
-            # set up the scaling factor suffix
-            _sub_problem_scaling_suffix(m, t_block)
-            with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
-                res = solver_snes.solve(t_block, tee=slc.tee)
+        with TemporarySubsystemManager(to_deactivate=tdisc):
+            constraints = [con[t] for con in time_cons if t in con] + initial_constraints
+            variables = [var[t] for var in time_vars] + initial_variables
+            if len(constraints) > 0:
+                # if the initial condition is specified and there are no
+                # initial constraints, don't try to solve. 
+                t_block = create_subsystem_block(
+                    constraints,
+                    variables,
+                )
+                # set up the scaling factor suffix
+                _sub_problem_scaling_suffix(m, t_block)
+                with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
+                    res = solver_snes.solve(t_block, tee=slc.tee)
     tprev = t
-    with TemporarySubsystemManager(to_deactivate=tdisc):
+    with TemporarySubsystemManager(to_deactivate=tdisc, to_fix=initial_variables):
         # Solver time steps
         for t in time:
             if t == time.first():
