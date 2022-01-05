@@ -148,7 +148,10 @@ def petsc_available(wsl=None):
     Returns:
         (bool): True is PETSc is available
     """
-    solver = pyo.SolverFactory("petsc", wsl=wsl)
+    try:
+        solver = pyo.SolverFactory("petsc", wsl=wsl)
+    except RuntimeError:
+        return False
     if solver is not None:
         return solver.available()
     return False
