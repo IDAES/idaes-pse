@@ -14,8 +14,8 @@
 #
 #  Pyomo: Python Optimization Modeling Objects
 #  Copyright 2017 National Technology and Engineering Solutions of Sandia, LLC
-#  Under the terms of Contract DE-NA0003525 with National Technology and 
-#  Engineering Solutions of Sandia, LLC, the U.S. Government retains certain 
+#  Under the terms of Contract DE-NA0003525 with National Technology and
+#  Engineering Solutions of Sandia, LLC, the U.S. Government retains certain
 #  rights in this software.
 #  This software is distributed under the 3-clause BSD License.
 #  ___________________________________________________________________________
@@ -38,7 +38,7 @@ class TestNumpyEvaluator:
     @pytest.mark.unit
     def test_eval_numpy(self):
         m = ConcreteModel()
-        m.p = Param([1,2], mutable=True)   
+        m.p = Param([1,2], mutable=True)
         m.x = Var()
 
         data = np.array([[0,-1,2],
@@ -52,24 +52,24 @@ class TestNumpyEvaluator:
         npe = NumpyEvaluator(cMap)
 
         result = npe.walk_expression(sin(m.x))
-        assert result[0] == sin(4)
-        assert result[1] == sin(5)
-        assert result[2] == sin(6)
+        assert result[0] == pytest.approx(sin(4))
+        assert result[1] == pytest.approx(sin(5))
+        assert result[2] == pytest.approx(sin(6))
 
         result = npe.walk_expression(abs(m.x * m.p[1] - m.p[2]))
-        assert result[0] == .1
-        assert result[1] == -((-1*5)-.2)
-        assert result[2] == (2*6-.3)
+        assert result[0] == pytest.approx(0.1)
+        assert result[1] == pytest.approx(-((-1*5)-0.2))
+        assert result[2] == pytest.approx((2*6-0.3))
 
         result = npe.walk_expression(atan(m.x))
-        assert result[0] == atan(4)
-        assert result[1] == atan(5)
-        assert result[2] == atan(6)
+        assert result[0] == pytest.approx(atan(4))
+        assert result[1] == pytest.approx(atan(5))
+        assert result[2] == pytest.approx(atan(6))
 
         result = npe.walk_expression(atanh(m.p[2]))
-        assert result[0] == atanh(.1)
-        assert result[1] == atanh(.2)
-        assert result[2] == atanh(.3)
+        assert result[0] == pytest.approx(atanh(0.1))
+        assert result[1] == pytest.approx(atanh(0.2))
+        assert result[2] == pytest.approx(atanh(0.3))
 
     @pytest.mark.unit
     def test_eval_constant(self):
