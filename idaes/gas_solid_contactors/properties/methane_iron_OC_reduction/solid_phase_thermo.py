@@ -144,31 +144,31 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 1},
                                 doc="Shomate equation heat capacity coeff 1",
-                                units=pyunits.kJ/pyunits.mol/pyunits.kK)
+                                units=pyunits.J/pyunits.mol/pyunits.kK)
         self.cp_param_2 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 2},
                                 doc="Shomate equation heat capacity coeff 2",
-                                units=pyunits.kJ/pyunits.mol/pyunits.kK**2)
+                                units=pyunits.J/pyunits.mol/pyunits.kK**2)
         self.cp_param_3 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 3},
                                 doc="Shomate equation heat capacity coeff 3",
-                                units=pyunits.kJ/pyunits.mol/pyunits.kK**3)
+                                units=pyunits.J/pyunits.mol/pyunits.kK**3)
         self.cp_param_4 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 4},
                                 doc="Shomate equation heat capacity coeff 4",
-                                units=pyunits.kJ/pyunits.mol/pyunits.kK**4)
+                                units=pyunits.J/pyunits.mol/pyunits.kK**4)
         self.cp_param_5 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 5},
                                 doc="Shomate equation heat capacity coeff 5",
-                                units=pyunits.kJ/pyunits.mol*pyunits.kK)
+                                units=pyunits.J/pyunits.mol*pyunits.kK)
         self.cp_param_6 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
@@ -180,7 +180,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 7},
                                 doc="Shomate equation heat capacity coeff 7",
-                                units=pyunits.kJ/pyunits.mol/pyunits.kK)
+                                units=pyunits.J/pyunits.mol/pyunits.kK)
         self.cp_param_8 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
@@ -666,8 +666,7 @@ class SolidPhaseStateBlockData(StateBlockData):
         super().calculate_scaling_factors()
 
         if self.is_property_constructed("sum_component_eqn"):
-            for t, v in self.sum_component_eqn.items():
-                iscale.constraint_scaling_transform(
-                    v,
-                    iscale.get_scaling_factor(self.mass_frac_comp[t]),
-                    overwrite=False)
+            iscale.constraint_scaling_transform(
+                self.sum_component_eqn,
+                iscale.get_scaling_factor(self.mole_frac_comp['CH4']),
+                overwrite=False)

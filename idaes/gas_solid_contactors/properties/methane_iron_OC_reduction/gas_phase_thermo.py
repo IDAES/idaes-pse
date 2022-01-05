@@ -87,12 +87,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.CO2 = Component()
         self.H2O = Component()
 
-        # Gas Constant
-        self.gas_const = Param(within=PositiveReals,
-                               default=8.314459848e-3,
-                               doc='Gas Constant [kJ/mol.K]',
-                               units=pyunits.kJ/pyunits.mol/pyunits.K)
-
     # -------------------------------------------------------------------------
         """ Pure gas component properties"""
 
@@ -154,31 +148,31 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 1},
                                 doc="Shomate equation heat capacity coeff 1",
-                                units=pyunits.kJ/pyunits.mol/pyunits.kK)
+                                units=pyunits.J/pyunits.mol/pyunits.kK)
         self.cp_param_2 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 2},
                                 doc="Shomate equation heat capacity coeff 2",
-                                units=pyunits.kJ/pyunits.mol/pyunits.kK**2)
+                                units=pyunits.J/pyunits.mol/pyunits.kK**2)
         self.cp_param_3 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 3},
                                 doc="Shomate equation heat capacity coeff 3",
-                                units=pyunits.kJ/pyunits.mol/pyunits.kK**3)
+                                units=pyunits.J/pyunits.mol/pyunits.kK**3)
         self.cp_param_4 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 4},
                                 doc="Shomate equation heat capacity coeff 4",
-                                units=pyunits.kJ/pyunits.mol/pyunits.kK**4)
+                                units=pyunits.J/pyunits.mol/pyunits.kK**4)
         self.cp_param_5 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 5},
                                 doc="Shomate equation heat capacity coeff 5",
-                                units=pyunits.kJ/pyunits.mol*pyunits.kK)
+                                units=pyunits.J/pyunits.mol*pyunits.kK)
         self.cp_param_6 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
@@ -190,7 +184,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 7},
                                 doc="Shomate equation heat capacity coeff 7",
-                                units=pyunits.kJ/pyunits.mol/pyunits.kK)
+                                units=pyunits.J/pyunits.mol/pyunits.kK)
         self.cp_param_8 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
@@ -213,6 +207,9 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                                 if j == 1},
                                     doc="Dynamic viscosity constants",
                                     units=pyunits.kg/pyunits.m/pyunits.s)
+        # The units of parameter 1 are dependent upon the value of parameter 2:
+        # [visc_d_param_1] = kg/m-s * K^(-(value([visc_d_param_2)))
+        # this is accounted for in the equation on line 655
         self.visc_d_param_2 = Param(self.component_list,
                                     mutable=True,
                                     initialize={k: v for (k, j), v in
@@ -250,6 +247,9 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                                     if j == 1},
                                         doc="Dynamic viscosity constants",
                                         units=pyunits.J/pyunits.m/pyunits.s)
+        # The units of parameter 1 are dependent upon the value of parameter 2:
+        # [therm_cond_param_1] = J/m-s * K^(-(1 + value([therm_cond_param_2)))
+        # this is accounted for in the equation on line 734
         self.therm_cond_param_2 = Param(self.component_list,
                                         mutable=True,
                                         initialize={k: v for (k, j), v in
@@ -278,12 +278,21 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.diff_vol_param = Param(self.component_list,
                                     mutable=True,
                                     initialize=diff_vol_param_dict,
-                                    doc="Component diffusion volumes")
+                                    doc="Component diffusion volumes",
+                                    units=pyunits.dimensionless)
 
-        # Set default scaling for mole fractions
+        # Set default scaling
         self.set_default_scaling("mole_frac_comp", 1)
         for comp in self.component_list:
             self.set_default_scaling("mole_frac_comp", 1e2, index=comp)
+
+        self.set_default_scaling("visc_d", 1)
+        for comp in self.component_list:
+            self.set_default_scaling("visc_d", 1e6, index=comp)
+
+        self.set_default_scaling("therm_cond", 1)
+        for comp in self.component_list:
+            self.set_default_scaling("visc_d", 1e6, index=comp)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -689,7 +698,7 @@ class GasPhaseStateBlockData(StateBlockData):
                         (pyunits.convert(self._params.mw_comp[j],
                                          to_units=pyunits.kg/pyunits.kmol))
                         ))**0.5)
-                    / ((self.pressure)
+                    / ((pyunits.convert(self.pressure, to_units=pyunits.atm))
                         * ((self._params.diff_vol_param[i]**(1/3))
                             + (self._params.diff_vol_param[j]**(1/3)))**2))
 
@@ -712,13 +721,14 @@ class GasPhaseStateBlockData(StateBlockData):
     def _therm_cond(self):
         # Thermal conductivity of gas
         units_meta = self._params.get_metadata().default_units
+        units_therm_cond = (units_meta['energy'] *
+                            units_meta['length']**-1 *
+                            units_meta['temperature']**-1 *
+                            units_meta['time']**-1)
         self.therm_cond = Var(domain=Reals,
                               initialize=1e-5,
                               doc="Thermal conductivity of gas",
-                              units=units_meta['energy'] *
-                              units_meta['length']**-1 *
-                              units_meta['temperature']**-1 *
-                              units_meta['time']**-1)
+                              units=units_therm_cond)
 
         def therm_cond_comp(i):
             therm_cond_param_1 = self._params.therm_cond_param_1[i] * \
@@ -747,8 +757,7 @@ class GasPhaseStateBlockData(StateBlockData):
                                                   b._params.component_list))
                                            for i in
                                            b._params.component_list),
-                                       to_units=pyunits.kJ/pyunits.m /
-                                       pyunits.K/pyunits.s)
+                                       to_units=units_therm_cond)
         try:
             # Try to build constraint
             self.therm_cond_constraint = Constraint(rule=therm_cond_constraint)
@@ -938,16 +947,21 @@ class GasPhaseStateBlockData(StateBlockData):
         super().calculate_scaling_factors()
 
         if self.is_property_constructed("sum_component_eqn"):
-            for t, v in self.sum_component_eqn.items():
+            iscale.constraint_scaling_transform(
+                self.sum_component_eqn,
+                iscale.get_scaling_factor(self.mole_frac_comp['CH4']),
+                overwrite=False)
+
+        if self.is_property_constructed("visc_d_constraint"):
+            for t, v in self.visc_d_constraint.items():
                 iscale.constraint_scaling_transform(
                     v,
-                    iscale.get_scaling_factor(self.mole_frac_comp[t]),
+                    iscale.get_scaling_factor(self.visc_d[t]),
                     overwrite=False)
 
-        if hasattr(self, "visc_d_constraint"):
-            for t, v in self.visc_d_constraint.items():
-                iscale.set_scaling_factor(v, 1e6)
-
-        if hasattr(self, "therm_cond_constraint"):
+        if self.is_property_constructed("therm_cond_constraint"):
             for t, v in self.therm_cond_constraint.items():
-                iscale.set_scaling_factor(v, 1e6)
+                iscale.constraint_scaling_transform(
+                    v,
+                    iscale.get_scaling_factor(self.therm_cond[t]),
+                    overwrite=False)

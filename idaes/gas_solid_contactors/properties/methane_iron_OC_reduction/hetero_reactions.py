@@ -167,7 +167,7 @@ class ReactionParameterData(ReactionParameterBlock):
                           domain=Reals,
                           initialize=8e-4,
                           doc='Pre-exponential factor'
-                          '[mol^(1-N_reaction)m^(3*N_reaction -2)/s]',
+                          '[mol^(1-rxn_order)m^(3*rxn_order -2)/s]',
                           units=pyunits.mol**(1-1.3) *
                           pyunits.m**(3 * 1.3 - 2)/pyunits.s)
         self.k0_rxn.fix()
@@ -176,7 +176,7 @@ class ReactionParameterData(ReactionParameterBlock):
     def define_metadata(cls, obj):
         obj.add_properties({
                 'k_rxn': {'method': '_k_rxn',
-                          'units': 'mol^(1-N_reaction)m^(3*N_reaction -2)/s]'},
+                          'units': 'mol^(1-rxn_order)m^(3*rxn_order -2)/s]'},
                 'OC_conv': {'method': "_OC_conv", 'units': None},
                 'OC_conv_temp': {'method': "_OC_conv_temp", 'units': None},
                 'reaction_rate': {'method': "_reaction_rate",
@@ -374,7 +374,7 @@ class ReactionBlockData(ReactionBlockDataBase):
                          domain=Reals,
                          initialize=1,
                          doc='Rate constant '
-                         '[mol^(1-N_reaction)m^(3*N_reaction -2)/s]',
+                         '[mol^(1-rxn_order)m^(3*rxn_order -2)/s]',
                          units=pyunits.mol**(1-1.3) *
                          pyunits.m**(3 * 1.3 - 2)/pyunits.s)
 
@@ -400,7 +400,8 @@ class ReactionBlockData(ReactionBlockDataBase):
     # Conversion of oxygen carrier
     def _OC_conv(self):
         self.OC_conv = Var(domain=Reals, initialize=0.0,
-                           doc='Fraction of metal oxide converted')
+                           doc='Fraction of metal oxide converted',
+                           units=pyunits.dimensionless)
 
         def OC_conv_eqn(b):
             return b.OC_conv * \
@@ -425,7 +426,8 @@ class ReactionBlockData(ReactionBlockDataBase):
     def _OC_conv_temp(self):
         self.OC_conv_temp = Var(domain=Reals, initialize=1.0,
                                 doc='Reformulation term for'
-                                    'X to help eqn scaling')
+                                    'X to help eqn scaling',
+                                    units=pyunits.dimensionless)
 
         def OC_conv_temp_eqn(b):
             return b.OC_conv_temp**3 == (1-b.OC_conv)**2
@@ -490,18 +492,38 @@ class ReactionBlockData(ReactionBlockDataBase):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        if hasattr(self, "rate_constant_eqn"):
+        # Set default scaling
+        def _set_default_factor(v, s):
+            for i in v:
+                if iscale.get_scaling_factor(v[i]) is None:
+                    iscale.set_scaling_factor(v[i], s)
+        _set_default_factor(self.k_rxn, 1E6)
+        _set_default_factor(self.OC_conv, 1E6)
+        _set_default_factor(self.OC_conv_temp, 1e3)
+        _set_default_factor(self.reaction_rate, 1E4)
+
+        if self.is_property_constructed("rate_constant_eqn"):
             for t, v in self.rate_constant_eqn.items():
-                iscale.set_scaling_factor(v, 1e6)
+                iscale.constraint_scaling_transform(
+                    v,
+                    iscale.get_scaling_factor(self.k_rxn[t]),
+                    overwrite=False)
 
-        if hasattr(self, "OC_conv_eqn"):
-            for t, v in self.OC_conv_eqn.items():
-                iscale.set_scaling_factor(v, 1e6)
+        if self.is_property_constructed("OC_conv_eqn"):
+            iscale.constraint_scaling_transform(
+                self.OC_conv_eqn,
+                iscale.get_scaling_factor(self.OC_conv),
+                overwrite=False)
 
-        if hasattr(self, "OC_conv_temp_eqn"):
-            for t, v in self.OC_conv_temp_eqn.items():
-                iscale.set_scaling_factor(v, 1e3)
+        if self.is_property_constructed("OC_conv_temp_eqn"):
+            iscale.constraint_scaling_transform(
+                self.OC_conv_temp_eqn,
+                iscale.get_scaling_factor(self.OC_conv_temp),
+                overwrite=False)
 
-        if hasattr(self, "gen_rate_expression"):
+        if self.is_property_constructed("gen_rate_expression"):
             for t, v in self.gen_rate_expression.items():
-                iscale.set_scaling_factor(v, 1e4)
+                iscale.constraint_scaling_transform(
+                    v,
+                    iscale.get_scaling_factor(self.reaction_rate[t]),
+                    overwrite=False)
