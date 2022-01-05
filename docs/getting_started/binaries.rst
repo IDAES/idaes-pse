@@ -90,10 +90,9 @@ the only one which does not run on Windows.
 
 In the WSL environment, download and extract the desired Linux release (e.g. Ubuntu 20.04) of
 the solver (i.e. PETSc) you would like to run following the instructions under manual
-installation above. Install required libraries libfortran, libblas, liblapack i.e.
-``apt-get install liblapack3 libblas3 ligbomp1 libgfortran5``. Information on how to
-see the available Linux distributions for WSL, and to change the default distribution
-can be found `here <https://docs.microsoft.com/en-us/windows/wsl/install#change-the-default-linux-distribution-installed>`_.
+installation above. Then install required libraries for your release (see
+installation instructions `here <https://idaes-pse.readthedocs.io/en/stable/getting_started/index.html#linux>`_
+for supported distributions).
 
 In the WSL environment you can check that PETSc is installed correctly. In your 
 desired Linux release navigate to the folder containing the compiled PETSc binary
@@ -116,12 +115,15 @@ If you are unsure of the name of your installed distribution, navigate to your l
 release and run the command ``wsl --list --all``. This will list all your linux
 distributions (if you have more than one) with their names.
 
-There are a few options to check that your ``{solver}_wsl.bat`` is installed
-correctly. In an Anaconda Prompt window activate the environment (if you used environments)
-where the solver i.e. PETSc was installed and run the command
-``%LOCALAPPDATA%/idaes/bin/petsc_wsl.bat --version``. If setup correctly, details
-of the solver release version will be printed on the screen. For users of git bash,
-open a git bash window and activate the environment (if you used environments)
-where the solver i.e. PETSc was installed and run the command
-``$LOCALAPPDATA/idaes/bin/petsc_wsl.bat --version``.  If setup correctly, details of
-the PETSc release version will be printed on the screen.
+There are several options to check that your ``{solver}_wsl.bat``
+(e.g. ``petsc_wsl.bat``) file is installed correctly.
+In an Anaconda Prompt window or a Command Prompt window run the command
+``%LOCALAPPDATA%\idaes\bin\petsc_wsl.bat --version``. For users of Git Bash,
+open a Git Bash window and run the command
+``$LOCALAPPDATA/idaes/bin/petsc_wsl.bat --version``.
+While for powershell, open a powershell window and run the command
+``start-process -NoNewWindow -wait $Env:LOCALAPPDATA\idaes\bin\petsc_wsl.bat –version``.
+In all cases, the conda environment where the solver is installed has to be active (i.e. activate it with ``conda activate <env name>``).
+Details of the solver release version will be printed on the screen if the setup has been completed correctly.
+
+
