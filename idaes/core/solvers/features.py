@@ -106,7 +106,7 @@ def minlp():
 def dae():
     """This provides a DAE model for solver testing.
 
-    The problem and expected result are from A test problem from
+    The problem and expected result are from the problem given here:
     https://archimede.dm.uniba.it/~testset/report/chemakzo.pdf.
 
     Args:
@@ -207,7 +207,8 @@ def dae():
     )
 
 def dae_with_non_time_indexed_constraint():
-    """This provides a DAE model for solver testing.
+    """This provides a DAE model for solver testing. This model contains a non-
+    time-indexed variable and constraint.
 
     The problem and expected result are from A test problem from
     https://archimede.dm.uniba.it/~testset/report/chemakzo.pdf.

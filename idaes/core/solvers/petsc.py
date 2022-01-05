@@ -18,7 +18,7 @@ import enum
 import copy
 import idaes
 import pyomo.environ as pyo
-from pyomo.core.kernel.component_set import ComponentSet
+from pyomo.common.collections import ComponentSet
 import pyomo.dae as pyodae
 from pyomo.common import Executable
 from pyomo.common.collections import ComponentSet
