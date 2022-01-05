@@ -144,31 +144,31 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 1},
                                 doc="Shomate equation heat capacity coeff 1",
-                                units=pyunits.J/pyunits.mol/pyunits.kK)
+                                units=pyunits.J/pyunits.mol/pyunits.K)
         self.cp_param_2 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 2},
                                 doc="Shomate equation heat capacity coeff 2",
-                                units=pyunits.J/pyunits.mol/pyunits.kK**2)
+                                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK)
         self.cp_param_3 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 3},
                                 doc="Shomate equation heat capacity coeff 3",
-                                units=pyunits.J/pyunits.mol/pyunits.kK**3)
+                                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK**2)
         self.cp_param_4 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 4},
                                 doc="Shomate equation heat capacity coeff 4",
-                                units=pyunits.J/pyunits.mol/pyunits.kK**4)
+                                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK**3)
         self.cp_param_5 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 5},
                                 doc="Shomate equation heat capacity coeff 5",
-                                units=pyunits.J/pyunits.mol*pyunits.kK)
+                                units=pyunits.J/pyunits.mol/pyunits.K*pyunits.kK**2)
         self.cp_param_6 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
@@ -180,7 +180,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                 initialize={k: v for (k, j), v in
                                             cp_param_dict.items() if j == 7},
                                 doc="Shomate equation heat capacity coeff 7",
-                                units=pyunits.J/pyunits.mol/pyunits.kK)
+                                units=pyunits.J/pyunits.mol/pyunits.K)
         self.cp_param_8 = Param(self.component_list,
                                 mutable=False,
                                 initialize={k: v for (k, j), v in
@@ -581,15 +581,18 @@ class SolidPhaseStateBlockData(StateBlockData):
 
         def pure_comp_enthalpy(b, j):
             t = pyunits.convert(b.temperature, to_units=pyunits.kK)
-            return b.enth_mol_comp[j] == pyunits.convert((
+            return b.enth_mol_comp[j] == pyunits.convert(
+                    # parameters 1-5 are defined in J
                     b._params.cp_param_1[j]*t +
                     b._params.cp_param_2[j]*(t**2)/2 +
                     b._params.cp_param_3[j]*(t**3)/3 +
                     b._params.cp_param_4[j]*(t**4)/4 -
-                    b._params.cp_param_5[j]/(t) +
-                    b._params.cp_param_6[j] -
-                    b._params.cp_param_8[j]),
-                to_units=units_enth_mol)
+                    b._params.cp_param_5[j]/(t), to_units=units_enth_mol) + \
+                pyunits.convert(
+                    # parameters 6 and 8 are defined in kJ, and must be added
+                    # after converting to the enthalpy units set
+                    b._params.cp_param_6[j] - b._params.cp_param_8[j],
+                    to_units=units_enth_mol)
         try:
             # Try to build constraint
             self.enthalpy_shomate_eqn = Constraint(self._params.component_list,

@@ -51,6 +51,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.config import (is_state_block,
                                     is_physical_parameter_block,
                                     is_reaction_parameter_block)
+from idaes.core.util.constants import Constants
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver, scaling as iscale
 
@@ -383,7 +384,9 @@ class ReactionBlockData(ReactionBlockDataBase):
                 return self.k_rxn[j] == \
                         (self._params.k0_rxn[j] *
                          exp(-self._params.energy_activation[j] /
-                             (self.gas_state_ref._params.gas_const *
+                             (pyunits.convert(
+                                 Constants.gas_constant,  # J/mol/K
+                                 to_units=pyunits.kJ/pyunits.mol/pyunits.K) *
                               self.solid_state_ref.temperature)))
             else:
                 return Constraint.Skip
