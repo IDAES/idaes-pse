@@ -113,8 +113,6 @@ def test_petsc_dae_idaes_solve():
             "--ts_type":"cn", # Crank–Nicolson
             "--ts_adapt_type":"basic"
         },
-        initial_constraints=[m.H_eqn],
-        initial_variables=[m.H],
     )
     assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
     assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])

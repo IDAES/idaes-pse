@@ -18,7 +18,7 @@ import enum
 import copy
 import idaes
 import pyomo.environ as pyo
-from pyomo.opt.base.solvers import UnknownSolver
+from pyomo.core.kernel.component_set import ComponentSet
 import pyomo.dae as pyodae
 from pyomo.common import Executable
 from pyomo.common.collections import ComponentSet
@@ -264,6 +264,7 @@ def petsc_dae_by_time_element(
     timevar=None,
     initial_constraints=None,
     initial_variables=None,
+    detect_initial=True,
     skip_initial=False,
     snes_options=None,
     ts_options=None,
@@ -278,34 +279,40 @@ def petsc_dae_by_time_element(
     Args:
         m (Block): Pyomo model to solve
         time (ContinuousSet): Time set
-        timevar (Var): Optional sepcification of a time variable
-        initial_constraints (list): Constraints to solve within the initial
-            condition solve step.  Since the time indexed constraints are picked
-            up automaticly, this generally inlcudes non-time-inded constraints.
+        timevar (Var): Optional specification of a time variable, which can be
+            used to write constraints that are an explicit function of time.
+        initial_constraints (list): Constraints to solve in the initial
+            condition solve step.  Since the time-indexed constraints are picked
+            up automatically, this generally includes non-time-indexed constraints.
         initial_variables (list): This is a list of variables to fix after the
-            initial condition solve step.  If these variables were origially
+            initial condition solve step.  If these variables were originally
             unfixed, they will be unfixed at the end of the solve. This usually
-            includes non-time-indexed varaibles that are calculated allong with
-            the initial condition calculations.
+            includes non-time-indexed variables that are calculated along with
+            the initial conditions.
+        detect_initial (bool): If True, add non-time-indexed variables and
+            constraints to initial_variables and initial_constraints.
         skip_initial (bool): Don't do the initial condition calculation step, and
             assume that the initial condition values have already been calculated.
-            This can be usful, for example, if you read initial conditions from a
-            speratly solved steady state problem, or otherwise have a know initial
-            condition.
+            This can be useful, for example, if you read initial conditions from a
+            separately solved steady state problem, or otherwise know the initial
+            conditions.
         snes_options (dict): PETSc nonlinear equation solver options
-        ts_options (dict): PETSc time-stepping solver options.
+        ts_options (dict): PETSc time-stepping solver options
         wsl (bool): if True use WSL to run PETSc, if False don't use WSL to run
             PETSc, if None automatic. The WSL is only for Windows.
-        keepfiles (bool): pass to keepfile arg for solvers
-        symbolic_solver_labels (bool): pass to symoblic_solver_labels arg for
+        keepfiles (bool): pass to keepfiles arg for solvers
+        symbolic_solver_labels (bool): pass to symoblic_solver_labels argument for
             solvers. If you want to read trajectory data from the time-stepping
             solver, this should be True.
-        vars_stub (str or None): Copy the *.col and *.typ files to the working
-            directry using this stub if not None.  These are needed to
-            interperate the trajectory data.
+        vars_stub (str or None): Copy the `*.col` and `*.typ` files to the working
+            directory using this stub if not None.  These are needed to
+            interpret the trajectory data.
 
     Returns:
-        None (for now, should return some status)
+        List of solver results objects from each solve. If there are initial
+        condition constraints and they are not skipped, the fist object will
+        be from the initial condition solve.  Then there should be one for each
+        time elemenet for each TS solve.
     """
     solve_log = idaeslog.getSolveLogger("petsc-dae")
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
@@ -316,7 +323,21 @@ def petsc_dae_by_time_element(
     solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options, wsl=wsl)
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options, wsl=wsl, vars_stub=vars_stub)
 
+    if initial_variables is None:
+        initial_variables=[]
+    if initial_constraints is None:
+        initial_constraints=[]
+
+    if detect_initial:
+        rvset = ComponentSet(regular_vars)
+        rcset = ComponentSet(regular_cons)
+        icset = ComponentSet(initial_constraints)
+        ivset = ComponentSet(initial_variables)
+        initial_variables = list(ivset | rvset)
+        initial_constraints = list(icset | rcset)
+
     # First calculate the inital conditions and non-time-tindexed constraints
+    res_list = []
     t = time.first()
     if not skip_initial:
         with TemporarySubsystemManager(to_deactivate=tdisc):
@@ -324,7 +345,7 @@ def petsc_dae_by_time_element(
             variables = [var[t] for var in time_vars] + initial_variables
             if len(constraints) > 0:
                 # if the initial condition is specified and there are no
-                # initial constraints, don't try to solve. 
+                # initial constraints, don't try to solve.
                 t_block = create_subsystem_block(
                     constraints,
                     variables,
@@ -333,6 +354,7 @@ def petsc_dae_by_time_element(
                 _sub_problem_scaling_suffix(m, t_block)
                 with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
                     res = solver_snes.solve(t_block, tee=slc.tee)
+    res_list.append(res)
     tprev = t
     with TemporarySubsystemManager(to_deactivate=tdisc, to_fix=initial_variables):
         # Solver time steps
@@ -362,3 +384,5 @@ def petsc_dae_by_time_element(
                     options={"--ts_init_time":tprev, "--ts_max_time":t}
                 )
             tprev = t
+            res_list.append(res)
+    return res_list

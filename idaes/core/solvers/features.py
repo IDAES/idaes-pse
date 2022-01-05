@@ -326,7 +326,7 @@ def ipopt_has_linear_solver(linear_solver):
 
     Returns:
         (bool): True if Ipopt is available with the specified linear solver or False
-            if either Ipopt or the linear solver is not available.
+        if either Ipopt or the linear solver is not available.
     """
     m, x = nlp()
     solver = pyo.SolverFactory('ipopt', options={"linear_solver": linear_solver})
