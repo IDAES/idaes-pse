@@ -36,19 +36,20 @@ import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 
 
-class DaeVarTypes(enum.Enum):
-    """Enum DAE variable type for suffix
-    """
+class DaeVarTypes(enum.IntEnum):
+    """Enum DAE variable type for suffix"""
+
     ALGEBRAIC = 0
     DIFFERENTIAL = 1
     DERIVATIVE = 2
     TIME = 3
 
 
-@pyo.SolverFactory.register('petsc', doc='ASL PETSc interface')
+@pyo.SolverFactory.register("petsc", doc="ASL PETSc interface")
 class Petsc(ASL):
     """ASL solver plugin for the PETSc solver.  This adds the option to use an
     alternative executable batch file to run the solver through the WSL."""
+
     def __init__(self, **kwds):
         self._wsl = kwds.pop("wsl", None)
         super().__init__(**kwds)
@@ -62,7 +63,7 @@ class Petsc(ASL):
         executable = False
         if not self._wsl or self._wsl is None:
             executable = Executable("petsc")
-        if sys.platform.startswith('win32') and (not executable):
+        if sys.platform.startswith("win32") and (not executable):
             # On Windows, if wsl was requested or a normal petsc solver
             # executable was not found, look for a batch file to run it with WSL
             executable = Executable("petsc_wsl.bat")
@@ -70,10 +71,12 @@ class Petsc(ASL):
             raise RuntimeError("No PETSc executable found.")
         return executable.path()
 
-@pyo.SolverFactory.register('petsc_snes', doc='ASL PETSc SNES interface')
+
+@pyo.SolverFactory.register("petsc_snes", doc="ASL PETSc SNES interface")
 class PetscSNES(Petsc):
     """PETSc solver plugin that sets options for SNES solver.  This turns on
     SNES monitoring, and checks the config for default options"""
+
     def __init__(self, **kwds):
         if "options" in kwds and kwds["options"] is not None:
             kwds["options"] = copy.deepcopy(kwds["options"])
@@ -88,10 +91,12 @@ class PetscSNES(Petsc):
         super().__init__(**kwds)
         self.options.solver = "petsc_snes"
 
-@pyo.SolverFactory.register('petsc_ts', doc='ASL PETSc TS interface')
+
+@pyo.SolverFactory.register("petsc_ts", doc="ASL PETSc TS interface")
 class PetscTS(Petsc):
     """PETSc solver plugin that sets options for SNES solver.  This turns on
     TS monitoring, sets the DAE flag, and checks the config for default options."""
+
     def __init__(self, **kwds):
         self._ts_vars_stub = kwds.pop("vars_stub", None)
         if "options" in kwds and kwds["options"] is not None:
@@ -130,12 +135,14 @@ class PetscTS(Petsc):
         return ASL._postsolve(self)
 
 
-@pyo.SolverFactory.register('petsc_tao', doc='ASL PETSc TAO interface')
+@pyo.SolverFactory.register("petsc_tao", doc="ASL PETSc TAO interface")
 class PetscTAO(Petsc):
     """This is a place holder for optimation solvers"""
+
     def __init__(self, **kwds):
         raise NotImplementedError(
-            "The PETSc TAO interface has not yet been implimented")
+            "The PETSc TAO interface has not yet been implimented"
+        )
 
 
 def petsc_available(wsl=None):
@@ -179,6 +186,7 @@ def _copy_time(time_vars, t_from, t_to):
         if not v[t_to].fixed:
             v[t_to].value = v[t_from].value
 
+
 def _generate_time_discretization(m, time):
     """This is a generator for time discretization equations. Since we aren't
     solving the whole time period simulataneously, we'll want to deactivate
@@ -198,6 +206,7 @@ def _generate_time_discretization(m, time):
                 name = var.local_name + "_disc_eq"
                 disc_eq = getattr(parent, name)
                 yield disc_eq
+
 
 def _set_dae_suffixes_from_variables(m, variables):
     """Write suffixes used by the solver to identify different variable types
@@ -232,8 +241,8 @@ def _set_dae_suffixes_from_variables(m, variables):
             # only by time.
             difvar = parent.get_state_var()[t]
             differential_vars.append(difvar)
-            m.dae_suffix[difvar] = 1
-            m.dae_suffix[var] = 2
+            m.dae_suffix[difvar] = int(DaeVarTypes.DIFFERENTIAL)
+            m.dae_suffix[var] = int(DaeVarTypes.DERIVATIVE)
             m.dae_link[difvar] = dae_var_link_index
             m.dae_link[var] = dae_var_link_index
             dae_var_link_index += 1
@@ -322,14 +331,16 @@ def petsc_dae_by_time_element(
     regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
     tdisc = list(_generate_time_discretization(m, time))
 
-    #_set_dae_suffixes(m, time)
+    # _set_dae_suffixes(m, time)
     solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options, wsl=wsl)
-    solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options, wsl=wsl, vars_stub=vars_stub)
+    solver_dae = pyo.SolverFactory(
+        "petsc_ts", options=ts_options, wsl=wsl, vars_stub=vars_stub
+    )
 
     if initial_variables is None:
-        initial_variables=[]
+        initial_variables = []
     if initial_constraints is None:
-        initial_constraints=[]
+        initial_constraints = []
 
     if detect_initial:
         rvset = ComponentSet(regular_vars)
@@ -344,7 +355,9 @@ def petsc_dae_by_time_element(
     t = time.first()
     if not skip_initial:
         with TemporarySubsystemManager(to_deactivate=tdisc):
-            constraints = [con[t] for con in time_cons if t in con] + initial_constraints
+            constraints = [
+                con[t] for con in time_cons if t in con
+            ] + initial_constraints
             variables = [var[t] for var in time_vars] + initial_variables
             if len(constraints) > 0:
                 # if the initial condition is specified and there are no
@@ -372,7 +385,7 @@ def petsc_dae_by_time_element(
             t_block = create_subsystem_block(constraints, variables)
             differential_vars = _set_dae_suffixes_from_variables(t_block, variables)
             if timevar is not None:
-                t_block.dae_suffix[timevar[t]] = 3
+                t_block.dae_suffix[timevar[t]] = int(DaeVarTypes.TIME)
             # Set up the scaling factor suffix
             _sub_problem_scaling_suffix(m, t_block)
             # Take initial conditions for this step from the result of previous
@@ -384,7 +397,7 @@ def petsc_dae_by_time_element(
                     keepfiles=keepfiles,
                     symbolic_solver_labels=symbolic_solver_labels,
                     export_nonlinear_variables=differential_vars,
-                    options={"--ts_init_time":tprev, "--ts_max_time":t}
+                    options={"--ts_init_time": tprev, "--ts_max_time": t},
                 )
             tprev = t
             res_list.append(res)

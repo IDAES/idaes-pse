@@ -231,7 +231,11 @@ variables, and 3 specifies the time variable.  A variable for time is optional,
 and only one time variable can be specified. The other suffix is an integer
 suffix ``dae_link`` which contains differential and derivative variables. The
 integer in the suffix links the derivative to it's differential variable, by
-specifying an integer that is unique to the pair.
+specifying an integer greater than 0 that is unique to the pair.
+
+If there are differential variables that do not appear in the constraints,
+they can be supplied to the ``export_nonlinear_variables`` argument of solve.
+For the trajectory data, you will also want to use ``symbolic_solver_labels``.
 
 To solve the problem, start with the initial conditions in the Pyomo model.
 After the solve the finial conditions will be in the Pyomo model.  To get
