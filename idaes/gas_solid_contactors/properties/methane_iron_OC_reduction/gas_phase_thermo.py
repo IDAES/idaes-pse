@@ -966,10 +966,12 @@ class GasPhaseStateBlockData(StateBlockData):
 
         if self.is_property_constructed("visc_d_constraint"):
             iscale.constraint_scaling_transform(
+                self.visc_d_constraint,
                 iscale.get_scaling_factor(self.visc_d),
                 overwrite=False)
 
         if self.is_property_constructed("therm_cond_constraint"):
             iscale.constraint_scaling_transform(
+                self.therm_cond_constraint,
                 iscale.get_scaling_factor(self.therm_cond),
                 overwrite=False)
