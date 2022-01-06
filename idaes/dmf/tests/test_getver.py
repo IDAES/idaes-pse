@@ -89,19 +89,3 @@ def test_bad_import(garbage):
 def test_bad_pip(make_pip_garbage):
     ver = getver.Versioned("traitlets")
     assert ver is not None
-
-
-@pytest.mark.unit
-def test_repeated_calls():
-    import time
-
-    t0 = time.time()
-    vv = getver.Versioned("idaes")
-    i1 = vv.get_info()
-    t1 = time.time()
-    for i in range(20):
-        i2 = vv.get_info()
-        assert i2 == i1
-    t2 = time.time()
-    # time to get 1st should be much, much longer than subsequent
-    assert t2 - t1 < t1 - t0

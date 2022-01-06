@@ -35,13 +35,14 @@ from pyomo.environ import (Constraint,
                            ExternalFunction,
                            log,
                            NonNegativeReals,
-                           SolverFactory,
                            sqrt,
                            Param,
                            PositiveReals,
                            value,
                            Var,
-                           units as pyunits)
+                           units as pyunits,
+                           SolverStatus,
+                           TerminationCondition)
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -57,7 +58,8 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.initialization import (solve_indexed_blocks,
                                             fix_state_vars,
                                             revert_state_vars)
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import \
+    BurntToast, ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_equalities)
 from idaes.core.util.math import safe_log
@@ -556,6 +558,13 @@ class _CubicStateBlock(StateBlock):
         )
 
         # ---------------------------------------------------------------------
+        if (results.solver.termination_condition !=
+                TerminationCondition.optimal or
+                results.solver.status != SolverStatus.ok):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
+
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags

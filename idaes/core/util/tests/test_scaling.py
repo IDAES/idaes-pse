@@ -683,6 +683,21 @@ class TestScaleConstraintsPynumero():
 
 
     @pytest.mark.unit
+    def test_scale_with_ignore_constraint_scale(self):
+        """Make sure ignore_constraint_scaling ignores given scaling factors.
+        """
+        m = pyo.ConcreteModel()
+        m.a = pyo.Var([1,2], initialize=1)
+        m.c = pyo.Constraint(expr=(0, m.a[1] + m.a[2], 1))
+        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        m.scaling_factor[m.c] = 1e6
+
+        jac, jac_scaled, nlp = sc.constraint_autoscale_large_jac(
+            m, ignore_constraint_scaling=True)
+        assert m.scaling_factor[m.c] == pytest.approx(1)
+
+
+    @pytest.mark.unit
     def test_condition_number(self):
         """Calculate the condition number of the Jacobian
         """

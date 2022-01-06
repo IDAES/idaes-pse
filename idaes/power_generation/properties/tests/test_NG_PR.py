@@ -28,6 +28,7 @@ import pytest
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.eos.ceos import \
     cubic_roots_available
+from idaes.core.util.scaling import constraint_scaling_transform
 from idaes.power_generation.properties.natural_gas_PR import get_prop
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
@@ -140,8 +141,8 @@ class TestNaturalGasProps(object):
 
                 assert -70000 >= value(m.fs.state[1].enth_mol_phase['Vap'])
                 assert -105000 <= value(m.fs.state[1].enth_mol_phase['Vap'])
-                assert 175 <= value(m.fs.state[1].entr_mol_phase['Vap'])
-                assert 250 >= value(m.fs.state[1].entr_mol_phase['Vap'])
+                assert 185 <= value(m.fs.state[1].entr_mol_phase['Vap'])
+                assert 265 >= value(m.fs.state[1].entr_mol_phase['Vap'])
 
     @pytest.mark.component
     def test_gibbs(self, m):
@@ -168,7 +169,10 @@ class TestNaturalGasProps(object):
         m.fs.reactor.inlet.mole_frac_comp[0, "N2"].fix(0.05)
         m.fs.reactor.inlet.mole_frac_comp[0, "Ar"].fix(0.05)
         m.fs.reactor.inlet.mole_frac_comp[0, "CH4"].fix(0.4)
-
+        
+        constraint_scaling_transform(m.fs.reactor.control_volume.enthalpy_balances[0.0],1E-6)
+        m.fs.reactor.gibbs_scaling = 1E-6
+        
         results = solver.solve(m, tee=True)
 
         assert results.solver.termination_condition == \
