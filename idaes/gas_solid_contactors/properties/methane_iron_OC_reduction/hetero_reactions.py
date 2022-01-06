@@ -168,7 +168,7 @@ class ReactionParameterData(ReactionParameterBlock):
                           domain=Reals,
                           initialize=8e-4,
                           doc='Pre-exponential factor'
-                          '[mol^(1-rxn_order)m^(3*rxn_order -2)/s]',
+                          '[mol^(1-rxn_order) * m^(3*rxn_order -2)/s]',
                           units=pyunits.mol**(1-1.3) *
                           pyunits.m**(3 * 1.3 - 2)/pyunits.s)
         self.k0_rxn.fix()
@@ -375,7 +375,7 @@ class ReactionBlockData(ReactionBlockDataBase):
                          domain=Reals,
                          initialize=1,
                          doc='Rate constant '
-                         '[mol^(1-rxn_order)m^(3*rxn_order -2)/s]',
+                         '[mol^(1-rxn_order) * m^(3*rxn_order -2)/s]',
                          units=pyunits.mol**(1-1.3) *
                          pyunits.m**(3 * 1.3 - 2)/pyunits.s)
 
@@ -500,16 +500,16 @@ class ReactionBlockData(ReactionBlockDataBase):
             for i in v:
                 if iscale.get_scaling_factor(v[i]) is None:
                     iscale.set_scaling_factor(v[i], s)
-        _set_default_factor(self.k_rxn, 1E6)
-        _set_default_factor(self.OC_conv, 1E6)
+        _set_default_factor(self.k_rxn, 1e3)
+        _set_default_factor(self.OC_conv, 1e3)
         _set_default_factor(self.OC_conv_temp, 1e3)
-        _set_default_factor(self.reaction_rate, 1E4)
+        _set_default_factor(self.reaction_rate, 1e2)
 
         if self.is_property_constructed("rate_constant_eqn"):
-            for t, v in self.rate_constant_eqn.items():
+            for i, c in self.rate_constant_eqn.items():
                 iscale.constraint_scaling_transform(
-                    v,
-                    iscale.get_scaling_factor(self.k_rxn[t]),
+                    c,
+                    iscale.get_scaling_factor(self.k_rxn[i]),
                     overwrite=False)
 
         if self.is_property_constructed("OC_conv_eqn"):
@@ -525,8 +525,8 @@ class ReactionBlockData(ReactionBlockDataBase):
                 overwrite=False)
 
         if self.is_property_constructed("gen_rate_expression"):
-            for t, v in self.gen_rate_expression.items():
+            for i, c in self.gen_rate_expression.items():
                 iscale.constraint_scaling_transform(
-                    v,
-                    iscale.get_scaling_factor(self.reaction_rate[t]),
+                    c,
+                    iscale.get_scaling_factor(self.reaction_rate[i]),
                     overwrite=False)

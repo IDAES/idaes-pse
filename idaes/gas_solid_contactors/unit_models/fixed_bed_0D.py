@@ -16,7 +16,7 @@ IDAES 0D Fixed Bed Reactor model.
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Var, units as pyunits
-from pyomo.dae import DerivativeVar, ContinuousSet
+from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -373,9 +373,9 @@ see reaction package for documentation.}"""))
         super().calculate_scaling_factors()
 
         if hasattr(self, "mass_solids_constraint"):
-            for t, v in self.mass_solids_constraint.items():
-                iscale.set_scaling_factor(v, 1e2)
+            for t, c in self.mass_solids_constraint.items():
+                iscale.set_scaling_factor(c, 1e2)
 
         if hasattr(self, "sum_component_constraint"):
-            for t, v in self.sum_component_constraint.items():
-                iscale.set_scaling_factor(v, 1e2)
+            for t, c in self.sum_component_constraint.items():
+                iscale.set_scaling_factor(c, 1e2)

@@ -109,8 +109,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # components - ref: NIST webbook. Shomate equations from NIST.
         # Parameters A-E are used for cp calcs while A-H are used for enthalpy
         # calc.
-        # 1e3*cp_comp = A + B*T + C*T^2 + D*T^3 + E/(T^2)
-        # where T = Temperature (K)/1000, and cp_comp = (kJ/mol.K)
+        # cp_comp = A + B*T + C*T^2 + D*T^3 + E/(T^2)
+        # where T = Temperature (K)/1000, and cp_comp = (J/mol.K)
         # H_comp = H - H(298.15) = A*T + B*T^2/2 + C*T^3/3 +
         # D*T^4/4 - E/T + F - H where T = Temp (K)/1000 and H_comp = (kJ/mol)
         cp_param_dict = {
@@ -139,54 +139,62 @@ class PhysicalParameterData(PhysicalParameterBlock):
                         ('Fe2O3', 7): 228.3548000,
                         ('Fe2O3', 8): -825.5032000
                         }
-        self.cp_param_1 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 1},
-                                doc="Shomate equation heat capacity coeff 1",
-                                units=pyunits.J/pyunits.mol/pyunits.K)
-        self.cp_param_2 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 2},
-                                doc="Shomate equation heat capacity coeff 2",
-                                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK)
-        self.cp_param_3 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 3},
-                                doc="Shomate equation heat capacity coeff 3",
-                                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK**2)
-        self.cp_param_4 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 4},
-                                doc="Shomate equation heat capacity coeff 4",
-                                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK**3)
-        self.cp_param_5 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 5},
-                                doc="Shomate equation heat capacity coeff 5",
-                                units=pyunits.J/pyunits.mol/pyunits.K*pyunits.kK**2)
-        self.cp_param_6 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 6},
-                                doc="Shomate equation heat capacity coeff 6",
-                                units=pyunits.kJ/pyunits.mol)
-        self.cp_param_7 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 7},
-                                doc="Shomate equation heat capacity coeff 7",
-                                units=pyunits.J/pyunits.mol/pyunits.K)
-        self.cp_param_8 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 8},
-                                doc="Shomate equation heat capacity coeff 8",
-                                units=pyunits.kJ/pyunits.mol)
+        self.cp_param_1 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 1},
+                doc="Shomate equation heat capacity coeff 1",
+                units=pyunits.J/pyunits.mol/pyunits.K)
+        self.cp_param_2 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 2},
+                doc="Shomate equation heat capacity coeff 2",
+                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK)
+        self.cp_param_3 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 3},
+                doc="Shomate equation heat capacity coeff 3",
+                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK**2)
+        self.cp_param_4 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 4},
+                doc="Shomate equation heat capacity coeff 4",
+                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK**3)
+        self.cp_param_5 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 5},
+                doc="Shomate equation heat capacity coeff 5",
+                units=pyunits.J/pyunits.mol/pyunits.K*pyunits.kK**2)
+        self.cp_param_6 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 6},
+                doc="Shomate equation heat capacity coeff 6",
+                units=pyunits.kJ/pyunits.mol)
+        self.cp_param_7 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 7},
+                doc="Shomate equation heat capacity coeff 7",
+                units=pyunits.J/pyunits.mol/pyunits.K)
+        self.cp_param_8 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 8},
+                doc="Shomate equation heat capacity coeff 8",
+                units=pyunits.kJ/pyunits.mol)
 
         # Std. heat of formation of comp. - units = kJ/(mol comp) - ref: NIST
         enth_mol_form_comp_dict = {'Fe2O3': -825.5032, 'Fe3O4': -1120.894,
@@ -199,7 +207,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 units=pyunits.kJ/pyunits.mol)
 
         # Set default scaling for mass fractions
-        self.set_default_scaling("mass_frac_comp", 1)
         for comp in self.component_list:
             self.set_default_scaling("mass_frac_comp", 1e2, index=comp)
 
@@ -609,7 +616,7 @@ class SolidPhaseStateBlockData(StateBlockData):
         units_enth_mass = units_meta['energy'] * units_meta['mass']**-1
         self.enth_mass = Var(domain=Reals,
                              initialize=0.0,
-                             doc='Mixture specific enthalpy [kJ/kg]',
+                             doc='Mixture specific enthalpy',
                              units=units_enth_mass)
         try:
             # Try to build constraint

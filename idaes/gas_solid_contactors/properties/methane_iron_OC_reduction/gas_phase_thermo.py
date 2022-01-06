@@ -26,7 +26,6 @@ https://webbook.nist.gov/chemistry/ (accessed March 10, 2018).
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
                            Param,
-                           PositiveReals,
                            Reals,
                            value,
                            Var,
@@ -113,8 +112,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # components - ref: NIST webbook. Shomate equations from NIST.
         # Parameters A-E are used for cp calcs while A-H are used for enthalpy
         # calc.
-        # 1e3*cp_comp = A + B*T + C*T^2 + D*T^3 + E/(T^2)
-        # where T = Temperature (K)/1000, and cp_comp = (kJ/mol.K)
+        # cp_comp = A + B*T + C*T^2 + D*T^3 + E/(T^2)
+        # where T = Temperature (K)/1000, and cp_comp = (J/mol.K)
         # H_comp = H - H(298.15) = A*T + B*T^2/2 + C*T^3/3 +
         # D*T^4/4 - E/T + F - H where T = Temp (K)/1000 and H_comp = (kJ/mol)
         cp_param_dict = {
@@ -143,54 +142,62 @@ class PhysicalParameterData(PhysicalParameterBlock):
                         ('H2O', 7): 223.3967000,
                         ('H2O', 8): -241.8264000
                         }
-        self.cp_param_1 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 1},
-                                doc="Shomate equation heat capacity coeff 1",
-                                units=pyunits.J/pyunits.mol/pyunits.K)
-        self.cp_param_2 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 2},
-                                doc="Shomate equation heat capacity coeff 2",
-                                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK)
-        self.cp_param_3 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 3},
-                                doc="Shomate equation heat capacity coeff 3",
-                                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK**2)
-        self.cp_param_4 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 4},
-                                doc="Shomate equation heat capacity coeff 4",
-                                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK**3)
-        self.cp_param_5 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 5},
-                                doc="Shomate equation heat capacity coeff 5",
-                                units=pyunits.J/pyunits.mol/pyunits.K*pyunits.kK**2)
-        self.cp_param_6 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 6},
-                                doc="Shomate equation heat capacity coeff 6",
-                                units=pyunits.kJ/pyunits.mol)
-        self.cp_param_7 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 7},
-                                doc="Shomate equation heat capacity coeff 7",
-                                units=pyunits.J/pyunits.mol/pyunits.K)
-        self.cp_param_8 = Param(self.component_list,
-                                mutable=False,
-                                initialize={k: v for (k, j), v in
-                                            cp_param_dict.items() if j == 8},
-                                doc="Shomate equation heat capacity coeff 8",
-                                units=pyunits.kJ/pyunits.mol)
+        self.cp_param_1 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 1},
+                doc="Shomate equation heat capacity coeff 1",
+                units=pyunits.J/pyunits.mol/pyunits.K)
+        self.cp_param_2 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 2},
+                doc="Shomate equation heat capacity coeff 2",
+                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK)
+        self.cp_param_3 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 3},
+                doc="Shomate equation heat capacity coeff 3",
+                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK**2)
+        self.cp_param_4 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 4},
+                doc="Shomate equation heat capacity coeff 4",
+                units=pyunits.J/pyunits.mol/pyunits.K/pyunits.kK**3)
+        self.cp_param_5 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 5},
+                doc="Shomate equation heat capacity coeff 5",
+                units=pyunits.J/pyunits.mol/pyunits.K*pyunits.kK**2)
+        self.cp_param_6 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 6},
+                doc="Shomate equation heat capacity coeff 6",
+                units=pyunits.kJ/pyunits.mol)
+        self.cp_param_7 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 7},
+                doc="Shomate equation heat capacity coeff 7",
+                units=pyunits.J/pyunits.mol/pyunits.K)
+        self.cp_param_8 = Param(
+                self.component_list,
+                mutable=False,
+                initialize={k: v for (k, j), v in
+                            cp_param_dict.items() if j == 8},
+                doc="Shomate equation heat capacity coeff 8",
+                units=pyunits.kJ/pyunits.mol)
 
         # Viscosity constants:
         # Reference: Perry and Green Handbook; McGraw Hill, 2008
@@ -240,37 +247,41 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                  ('CO2', 3): 964, ('CO2', 4): 1.86e6,
                                  ('H2O', 1): 6.204e-6, ('H2O', 2): 1.3973,
                                  ('H2O', 3): 0, ('H2O', 4): 0}
-        self.therm_cond_param_1 = Param(self.component_list,
-                                        mutable=True,
-                                        initialize={k: v for (k, j), v in
-                                                    therm_cond_param_dict.items()
-                                                    if j == 1},
-                                        doc="Dynamic viscosity constants",
-                                        units=pyunits.J/pyunits.m/pyunits.s)
+        self.therm_cond_param_1 = Param(
+                self.component_list,
+                mutable=True,
+                initialize={k: v for (k, j), v in
+                            therm_cond_param_dict.items()
+                            if j == 1},
+                doc="Dynamic viscosity constants",
+                units=pyunits.J/pyunits.m/pyunits.s)
         # The units of parameter 1 are dependent upon the value of parameter 2:
         # [therm_cond_param_1] = J/m-s * K^(-(1 + value([therm_cond_param_2)))
         # this is accounted for in the equation on line 734
-        self.therm_cond_param_2 = Param(self.component_list,
-                                        mutable=True,
-                                        initialize={k: v for (k, j), v in
-                                                    therm_cond_param_dict.items()
-                                                    if j == 2},
-                                        doc="Dynamic viscosity constants",
-                                        units=pyunits.dimensionless)
-        self.therm_cond_param_3 = Param(self.component_list,
-                                        mutable=True,
-                                        initialize={k: v for (k, j), v in
-                                                    therm_cond_param_dict.items()
-                                                    if j == 3},
-                                        doc="Dynamic viscosity constants",
-                                        units=pyunits.K)
-        self.therm_cond_param_4 = Param(self.component_list,
-                                        mutable=True,
-                                        initialize={k: v for (k, j), v in
-                                                    therm_cond_param_dict.items()
-                                                    if j == 4},
-                                        doc="Dynamic viscosity constants",
-                                        units=pyunits.K**2)
+        self.therm_cond_param_2 = Param(
+                self.component_list,
+                mutable=True,
+                initialize={k: v for (k, j), v in
+                            therm_cond_param_dict.items()
+                            if j == 2},
+                doc="Dynamic viscosity constants",
+                units=pyunits.dimensionless)
+        self.therm_cond_param_3 = Param(
+                self.component_list,
+                mutable=True,
+                initialize={k: v for (k, j), v in
+                            therm_cond_param_dict.items()
+                            if j == 3},
+                doc="Dynamic viscosity constants",
+                units=pyunits.K)
+        self.therm_cond_param_4 = Param(
+                self.component_list,
+                mutable=True,
+                initialize={k: v for (k, j), v in
+                            therm_cond_param_dict.items()
+                            if j == 4},
+                doc="Dynamic viscosity constants",
+                units=pyunits.K**2)
 
         # Component diffusion volumes:
         # Ref: (1) Prop gas & liquids (2) Fuller et al. IECR, 58(5), 19, 1966
@@ -282,17 +293,11 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                     units=pyunits.dimensionless)
 
         # Set default scaling
-        self.set_default_scaling("mole_frac_comp", 1)
         for comp in self.component_list:
             self.set_default_scaling("mole_frac_comp", 1e2, index=comp)
 
-        self.set_default_scaling("visc_d", 1)
-        for comp in self.component_list:
-            self.set_default_scaling("visc_d", 1e6, index=comp)
-
-        self.set_default_scaling("therm_cond", 1)
-        for comp in self.component_list:
-            self.set_default_scaling("visc_d", 1e6, index=comp)
+        self.set_default_scaling("visc_d", 1e4)
+        self.set_default_scaling("therm_cond", 1e2)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -604,8 +609,7 @@ class GasPhaseStateBlockData(StateBlockData):
         self.dens_mol_comp = Var(self._params.component_list,
                                  domain=Reals,
                                  initialize=1.0,
-                                 doc='Component molar concentration'
-                                 '[mol/m3]',
+                                 doc='Component molar concentration',
                                  units=units_meta['amount'] *
                                  units_meta['length']**-3)
 
@@ -686,8 +690,13 @@ class GasPhaseStateBlockData(StateBlockData):
                                   '[cm2/s]',
                                   units=pyunits.cm**2/pyunits.s)
 
+        # Units of the parameter in the D_bin expression
+        param_units = (pyunits.atm * (pyunits.kg/pyunits.kmol)**0.5 *
+                       pyunits.K**-1.75 * pyunits.cm**2 * pyunits.s**-1)
+
         def D_bin(i, j):
-            return ((1.43e-3*(self.temperature**1.75) *
+            return (((1.43e-3 * param_units) *
+                     (self.temperature**1.75) *
                      ((pyunits.convert(self._params.mw_comp[i],
                                        to_units=pyunits.kg/pyunits.kmol) +
                        pyunits.convert(self._params.mw_comp[j],
@@ -956,15 +965,11 @@ class GasPhaseStateBlockData(StateBlockData):
                 overwrite=False)
 
         if self.is_property_constructed("visc_d_constraint"):
-            for t, v in self.visc_d_constraint.items():
-                iscale.constraint_scaling_transform(
-                    v,
-                    iscale.get_scaling_factor(self.visc_d[t]),
-                    overwrite=False)
+            iscale.constraint_scaling_transform(
+                iscale.get_scaling_factor(self.visc_d),
+                overwrite=False)
 
         if self.is_property_constructed("therm_cond_constraint"):
-            for t, v in self.therm_cond_constraint.items():
-                iscale.constraint_scaling_transform(
-                    v,
-                    iscale.get_scaling_factor(self.therm_cond[t]),
-                    overwrite=False)
+            iscale.constraint_scaling_transform(
+                iscale.get_scaling_factor(self.therm_cond),
+                overwrite=False)
