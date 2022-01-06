@@ -11,62 +11,79 @@ bidding_horizon = 48
 n_scenario = 3
 n_tracking_hour = 1
 
+
 @pytest.fixture
 def coordinator_object():
 
     # create solver
-    solver = pyo.SolverFactory('cbc')
+    solver = pyo.SolverFactory("cbc")
 
     ## create trackers
     # make a tracker
-    tracking_model_object = TestingModel(horizon = tracking_horizon)
-    thermal_tracker = Tracker(tracking_model_object = tracking_model_object,\
-                              n_tracking_hour = n_tracking_hour, \
-                              solver = solver)
+    tracking_model_object = TestingModel(horizon=tracking_horizon)
+    thermal_tracker = Tracker(
+        tracking_model_object=tracking_model_object,
+        n_tracking_hour=n_tracking_hour,
+        solver=solver,
+    )
 
     # make a projection tracker
-    projection_tracking_model_object = TestingModel(horizon = tracking_horizon)
-    thermal_projection_tracker = Tracker(tracking_model_object = projection_tracking_model_object,\
-                                         n_tracking_hour = n_tracking_hour, \
-                                         solver = solver)
+    projection_tracking_model_object = TestingModel(horizon=tracking_horizon)
+    thermal_projection_tracker = Tracker(
+        tracking_model_object=projection_tracking_model_object,
+        n_tracking_hour=n_tracking_hour,
+        solver=solver,
+    )
 
     ## create a bidder
-    forecaster = TestingForecaster(horizon = bidding_horizon, n_sample = n_scenario)
-    bidding_model_object = TestingModel(horizon = bidding_horizon)
-    thermal_bidder = Bidder(bidding_model_object = bidding_model_object,\
-                            n_scenario = n_scenario,\
-                            solver = solver,\
-                            forecaster = forecaster)
+    forecaster = TestingForecaster(horizon=bidding_horizon, n_sample=n_scenario)
+    bidding_model_object = TestingModel(horizon=bidding_horizon)
+    thermal_bidder = Bidder(
+        bidding_model_object=bidding_model_object,
+        n_scenario=n_scenario,
+        solver=solver,
+        forecaster=forecaster,
+    )
 
     ## create coordinator
-    coordinator_object = DoubleLoopCoordinator(bidder = thermal_bidder,\
-                                               tracker = thermal_tracker,\
-                                               projection_tracker = thermal_projection_tracker)
+    coordinator_object = DoubleLoopCoordinator(
+        bidder=thermal_bidder,
+        tracker=thermal_tracker,
+        projection_tracker=thermal_projection_tracker,
+    )
 
     return coordinator_object
+
 
 @pytest.mark.unit
 def test_assemble_project_tracking_signal(coordinator_object):
 
     gen_name = coordinator_object.bidder.generator
-    current_ruc_dispatch = {(gen_name, t): (t+1) * 10 for t in range(24)}
+    current_ruc_dispatch = {(gen_name, t): (t + 1) * 10 for t in range(24)}
     sced_horizon = tracking_horizon
 
+    # test if it assembles correct signals within a day
     hour = 10
     expected_signal = [(hour + 1 + i) * 10 for i in range(sced_horizon)]
-    signal = coordinator_object._assemble_project_tracking_signal(gen_name = gen_name,\
-                                                                  current_ruc_dispatch = current_ruc_dispatch,\
-                                                                  hour = hour,\
-                                                                  sced_horizon = sced_horizon)
+    signal = coordinator_object._assemble_project_tracking_signal(
+        gen_name=gen_name,
+        current_ruc_dispatch=current_ruc_dispatch,
+        hour=hour,
+        sced_horizon=sced_horizon,
+    )
     assert signal == expected_signal
 
+    # test if it assembles correct signals between 2 days
     hour = 23
     expected_signal = [(hour + 1) * 10 for i in range(sced_horizon)]
-    signal = coordinator_object._assemble_project_tracking_signal(gen_name = gen_name,\
-                                                                  current_ruc_dispatch = current_ruc_dispatch,\
-                                                                  hour = hour,\
-                                                                  sced_horizon = sced_horizon)
+    signal = coordinator_object._assemble_project_tracking_signal(
+        gen_name=gen_name,
+        current_ruc_dispatch=current_ruc_dispatch,
+        hour=hour,
+        sced_horizon=sced_horizon,
+    )
     assert signal == expected_signal
+
 
 @pytest.mark.unit
 def test_assemble_sced_tracking_market_signals(coordinator_object):
@@ -74,42 +91,51 @@ def test_assemble_sced_tracking_market_signals(coordinator_object):
     gen_name = coordinator_object.bidder.generator
     sced_dispatch = [20] * tracking_horizon
     sced_horizon = tracking_horizon
-    current_ruc_dispatch = {(gen_name, t): (t+1) * 10 for t in range(24)}
+    current_ruc_dispatch = {(gen_name, t): (t + 1) * 10 for t in range(24)}
 
-    # case 1
+    # test case 1: no ruc signals from next day
     hour = 10
     next_ruc_dispatch = None
-    expected_signal = [sced_dispatch[0]] +\
-                      [current_ruc_dispatch[(gen_name, t)] for t in range(hour + 1, hour + sced_horizon)]
-    signal = coordinator_object._assemble_sced_tracking_market_signals(gen_name = gen_name, \
-                                                                       hour = hour, \
-                                                                       sced_dispatch = sced_dispatch, \
-                                                                       sced_horizon = sced_horizon, \
-                                                                       current_ruc_dispatch = current_ruc_dispatch, \
-                                                                       next_ruc_dispatch = next_ruc_dispatch)
+    expected_signal = [sced_dispatch[0]] + [
+        current_ruc_dispatch[(gen_name, t)]
+        for t in range(hour + 1, hour + sced_horizon)
+    ]
+    signal = coordinator_object._assemble_sced_tracking_market_signals(
+        gen_name=gen_name,
+        hour=hour,
+        sced_dispatch=sced_dispatch,
+        sced_horizon=sced_horizon,
+        current_ruc_dispatch=current_ruc_dispatch,
+        next_ruc_dispatch=next_ruc_dispatch,
+    )
     assert signal == expected_signal
 
-    # case 2
+    # test case 2: no ruc signals, but between 2 days
     hour = 23
     next_ruc_dispatch = None
     expected_signal = sced_dispatch
-    signal = coordinator_object._assemble_sced_tracking_market_signals(gen_name = gen_name, \
-                                                                       hour = hour, \
-                                                                       sced_dispatch = sced_dispatch, \
-                                                                       sced_horizon = sced_horizon, \
-                                                                       current_ruc_dispatch = current_ruc_dispatch, \
-                                                                       next_ruc_dispatch = next_ruc_dispatch)
+    signal = coordinator_object._assemble_sced_tracking_market_signals(
+        gen_name=gen_name,
+        hour=hour,
+        sced_dispatch=sced_dispatch,
+        sced_horizon=sced_horizon,
+        current_ruc_dispatch=current_ruc_dispatch,
+        next_ruc_dispatch=next_ruc_dispatch,
+    )
     assert signal == expected_signal
 
-    # case 3
+    # test case 3: with ruc signals, between 2 days
     hour = 23
-    next_ruc_dispatch = {(gen_name, t): (t+1) * 10 for t in range(24)}
-    expected_signal = [sced_dispatch[0]] +\
-                      [next_ruc_dispatch[(gen_name, t)] for t in range(0, sced_horizon - 1)]
-    signal = coordinator_object._assemble_sced_tracking_market_signals(gen_name = gen_name, \
-                                                                       hour = hour, \
-                                                                       sced_dispatch = sced_dispatch, \
-                                                                       sced_horizon = sced_horizon, \
-                                                                       current_ruc_dispatch = current_ruc_dispatch, \
-                                                                       next_ruc_dispatch = next_ruc_dispatch)
+    next_ruc_dispatch = {(gen_name, t): (t + 1) * 10 for t in range(24)}
+    expected_signal = [sced_dispatch[0]] + [
+        next_ruc_dispatch[(gen_name, t)] for t in range(0, sced_horizon - 1)
+    ]
+    signal = coordinator_object._assemble_sced_tracking_market_signals(
+        gen_name=gen_name,
+        hour=hour,
+        sced_dispatch=sced_dispatch,
+        sced_horizon=sced_horizon,
+        current_ruc_dispatch=current_ruc_dispatch,
+        next_ruc_dispatch=next_ruc_dispatch,
+    )
     assert signal == expected_signal
