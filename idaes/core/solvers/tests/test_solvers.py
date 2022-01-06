@@ -111,7 +111,8 @@ def test_petsc_dae_idaes_solve():
         time=m.t,
         ts_options={
             "--ts_type":"cn", # Crank–Nicolson
-            "--ts_adapt_type":"basic"
+            "--ts_adapt_type":"basic",
+            "--ts_dt":0.1,
         },
     )
     assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
@@ -133,7 +134,8 @@ def test_petsc_dae_idaes_solve2():
         time=m.t,
         ts_options={
             "--ts_type":"cn", # Crank–Nicolson
-            "--ts_adapt_type":"basic"
+            "--ts_adapt_type":"basic",
+            "--ts_dt":0.1,
         },
     )
     assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
