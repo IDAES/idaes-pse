@@ -135,7 +135,7 @@ def test_petsc_dae_idaes_solve2():
         ts_options={
             "--ts_type":"cn", # Crank–Nicolson
             "--ts_adapt_type":"basic",
-            "--ts_dt":0.1,
+            "--ts_dt":0.01,
         },
     )
     assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])

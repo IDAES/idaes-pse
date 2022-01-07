@@ -34,7 +34,29 @@ from pyomo.common.errors import ApplicationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
+import idaes.config as icfg
 
+PetscBinaryIOTrajectory = None
+PetscBinaryIO = None
+
+def _import_petsc_binary_io():
+    global PetscBinaryIOTrajectory
+    global PetscBinaryIO
+    try:
+        import PetscBinaryIOTrajectory
+        import PetscBinaryIO
+    except ImportError:
+        petsc_dir = os.path.join(icfg.bin_directory, "petscpy")
+        if not os.path.isdir(petsc_dir):
+            return
+        sys.path.append(petsc_dir)
+        try:
+            import PetscBinaryIOTrajectory
+            import PetscBinaryIO
+        except ImportError:
+            pass
+
+_import_petsc_binary_io()
 
 class DaeVarTypes(enum.IntEnum):
     """Enum DAE variable type for suffix"""
@@ -402,3 +424,59 @@ def petsc_dae_by_time_element(
             tprev = t
             res_list.append(res)
     return res_list
+
+
+class PetscTrajectory(object):
+    def __init__(self, stub, pth=None, vis_dir="Visualization-data"):
+        _import_petsc_binary_io()
+        if pth is not None:
+            stub = os.path.join(pth, stub)
+            vis_dir = os.path.join(pth, vis_dir)
+        self.stub = stub
+        self.vis_dir = vis_dir
+        self.path = pth
+        self._read()
+
+    def _read(self):
+        with open(f'{self.stub}.col') as f:
+            names = list(map(str.strip, f.readlines()))
+        with open(f'{self.stub}.typ') as f:
+            typ = list(map(int,f.readlines()))
+        self.vars = [name for i, name in enumerate(names) if typ[i] in [0,1]]
+        (t, v, names) = PetscBinaryIOTrajectory.ReadTrajectory("Visualization-data")
+        self.time = t
+        self.vecs_by_time = v
+        self.vecs = dict.fromkeys(self.vars, None)
+        for k in self.vecs.keys():
+            self.vecs[k] = [0]*len(self.time)
+        self.vecs["time"] = list(self.time)
+        for i, v in enumerate(self.vars):
+            for j, vt in enumerate(self.vecs_by_time):
+                self.vecs[v][j] = vt[i]
+
+    def _var_name_list(self, vars):
+        if isinstance(vars, str):
+            vars = [vars]
+        if hasattr(vars, "ctype"):
+            if issubclass(vars.ctype, pyo.Var):
+                vars = [vars]
+        vars = list(map(str, vars))
+        for name in vars:
+            if name not in self.vars:
+                raise RuntimeError(f"Variable {name} not found.")
+        return vars
+
+    def get_vec(self, var):
+        var = str(var)
+        return self.vecs[var]
+
+    def get_dt(self):
+        dt = [None]*(len(self.time) - 1)
+        for i in range(len(self.time)-1):
+            dt[i] = self.time[i + 1] - self.time[i]
+        return dt
+
+    def plot_trajectory_original(self, vars):
+        PetscBinaryIOTrajectory.PlotTrajectories(
+            self.time, self.vecs_by_time, self.vars, self._var_name_list(vars)
+        )
