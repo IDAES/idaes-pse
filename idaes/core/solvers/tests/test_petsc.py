@@ -79,7 +79,8 @@ def test_set_dae_suffix():
     constraints = [con[t] for con in time_cons if t in con]
     variables = [var[t] for var in time_vars]
     t_block = create_subsystem_block(constraints, variables)
-    petsc._set_dae_suffixes_from_variables(t_block, variables)
+    deriv_diff_map =  petsc._get_derivative_differential_data_map(m, m.t)
+    petsc._set_dae_suffixes_from_variables(t_block, variables, deriv_diff_map)
     petsc._sub_problem_scaling_suffix(m, t_block)
 
     assert t_block.dae_suffix[m.ydot[180, 1]] == 2
