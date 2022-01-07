@@ -670,7 +670,7 @@ class TestCoolPropProperties(object):
 
 
 @pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
-class TestVerifyExcessVapLiq(object):
+class TestVerifyExcessLiq(object):
     @pytest.fixture(scope="class")
     def m(self):
         # Clear cached components to ensure clean slate
@@ -769,19 +769,35 @@ class TestVerifyExcessVapLiq(object):
                     rel=1e-6) == value(
                         m.fs.state[0].enth_mol_phase["Liq"])
 
-                # assert pytest.approx(
-                #     CoolProp.PropsSI(
-                #         "SMOLAR_RESIDUAL", "T", T, "P", P*1e5, "PR::benzene"),
-                #     rel=1e-6) == value(
-                #         m.fs.state[0].entr_mol_phase["Liq"])
+    @pytest.mark.integration
+    def test_cubic_liquid_entr(self, m):
+        Td = CoolProp.PropsSI("T", "P", 101325, "Q", 0.5, "PR::benzene")
+        Tmin = CoolProp.PropsSI("TMIN", "benzene")
 
-                # assert pytest.approx(
-                #     CoolProp.PropsSI(
-                #         "GMOLAR_RESIDUAL", "T", T, "P", P*1e5, "PR::benzene"),
-                #     rel=1e-6) == value(
-                #         m.fs.state[0].gibbs_mol_phase["Liq"])
+        for T in arange(Tmin, Td, 10):
+            m.fs.state[0].pressure.fix(101325)
+            m.fs.state[0].temperature.fix(T)
 
-        assert False
+            m.fs.state.initialize()
+
+            S0_CP = CoolProp.PropsSI(
+                "SMOLAR", "T", T, "P", 101325, "PR::benzene")
+            S0_I = value(m.fs.state[0].entr_mol_phase["Liq"])
+
+            for P in range(1, 11):
+                print(T, P)
+                m.fs.state[0].pressure.fix(P*1e5)
+
+                results = solver.solve(m.fs)
+
+                assert results.solver.termination_condition == \
+                    TerminationCondition.optimal
+                assert results.solver.status == SolverStatus.ok
+
+                assert pytest.approx(CoolProp.PropsSI(
+                    "SMOLAR", "T", T, "P", P*1e5, "PR::benzene") - S0_CP,
+                    rel=1e-4) == value(
+                        m.fs.state[0].entr_mol_phase["Liq"] - S0_I)
 
 
 @pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
@@ -863,7 +879,6 @@ class TestVerifyExcessVap(object):
             m.fs.state.initialize()
 
             for T in arange(Tb+1, Tmax, 10):
-                print(P, T)
                 m.fs.state[0].temperature.fix(T)
 
                 results = solver.solve(m.fs)
@@ -890,17 +905,32 @@ class TestVerifyExcessVap(object):
                     rel=1e-6) == value(
                         m.fs.state[0].enth_mol_phase["Vap"])
 
-                S_res_D = CoolProp.PropsSI(
-                        "SMOLAR_RESIDUAL", "T", T, "P", P*1e5, "PR::benzene")
-                S_res_P = value(m.fs.state[0].entr_mol_phase["Vap"])
-                S_corr = value(-Constants.gas_constant*log(1e5*P/101325))
-                print(1+(S_res_D - S_corr) / S_res_P)
-                # assert pytest.approx(S_res_D - S_corr, rel=1e-1) == S_res_P
+    @pytest.mark.integration
+    def test_cubic_vapor_entr(self, m):
+        Tb = CoolProp.PropsSI("T", "P", 1e6, "Q", 0.5, "PR::benzene")
+        Tmax = CoolProp.PropsSI("TMAX", "benzene")
 
-                # assert pytest.approx(
-                #     CoolProp.PropsSI(
-                #         "GMOLAR", "T", T, "P", P*1e5, "PR::benzene"),
-                #     rel=1e-6) == value(
-                #         m.fs.state[0].gibbs_mol_phase["Vap"])
+        for T in arange(Tb+1, Tmax, 10):
+            m.fs.state[0].pressure.fix(101325)
+            m.fs.state[0].temperature.fix(T)
 
-        assert False
+            m.fs.state.initialize()
+
+            S0_CP = CoolProp.PropsSI(
+                "SMOLAR", "T", T, "P", 101325, "PR::benzene")
+            S0_I = value(m.fs.state[0].entr_mol_phase["Vap"])
+
+            for P in range(1, 11):
+                print(T, P)
+                m.fs.state[0].pressure.fix(P*1e5)
+
+                results = solver.solve(m.fs)
+
+                assert results.solver.termination_condition == \
+                    TerminationCondition.optimal
+                assert results.solver.status == SolverStatus.ok
+
+                assert pytest.approx(CoolProp.PropsSI(
+                    "SMOLAR", "T", T, "P", P*1e5, "PR::benzene") - S0_CP,
+                    rel=1e-4) == value(
+                        m.fs.state[0].entr_mol_phase["Vap"] - S0_I)
