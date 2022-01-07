@@ -178,7 +178,8 @@ data to the current working directory.
 The ``PetscTrajectory`` class has methods to read in trajectory data and
 interpolate time points as needed.
 
-..autoclass:: idaes.core.solvers.petsc.PetscTrajectory
+.. autoclass:: idaes.core.solvers.petsc.PetscTrajectory
+    :members:
 
 Using TS Solvers without Pyomo.DAE
 """"""""""""""""""""""""""""""""""
