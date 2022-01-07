@@ -212,7 +212,7 @@ def _copy_time(time_vars, t_from, t_to):
 
 def _generate_time_discretization(m, time):
     """This is a generator for time discretization equations. Since we aren't
-    solving the whole time period simulataneously, we'll want to deactivate
+    solving the whole time period simultaneously, we'll want to deactivate
     these constraints.
 
     Args:
@@ -233,7 +233,7 @@ def _generate_time_discretization(m, time):
 
 def _set_dae_suffixes_from_variables(m, variables):
     """Write suffixes used by the solver to identify different variable types
-    and assocciate derivative and differential variables.
+    and associated derivative and differential variables.
 
     Note:  This is a method that allows us to build a "local" suffix, which only
     contains variables at a single point. This method is unfortunately very
