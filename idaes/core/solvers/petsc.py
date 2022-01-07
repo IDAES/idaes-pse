@@ -375,13 +375,13 @@ def petsc_dae_by_time_element(
 
     # First calculate the inital conditions and non-time-tindexed constraints
     res_list = []
-    t = time.first()
+    t0 = time.first()
     if not skip_initial:
         with TemporarySubsystemManager(to_deactivate=tdisc):
             constraints = [
-                con[t] for con in time_cons if t in con
+                con[t0] for con in time_cons if t0 in con
             ] + initial_constraints
-            variables = [var[t] for var in time_vars] + initial_variables
+            variables = [var[t0] for var in time_vars] + initial_variables
             if len(constraints) > 0:
                 # if the initial condition is specified and there are no
                 # initial constraints, don't try to solve.
@@ -394,11 +394,13 @@ def petsc_dae_by_time_element(
                 with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
                     res = solver_snes.solve(t_block, tee=slc.tee)
     res_list.append(res)
-    tprev = t
+
+    tprev = t0
     with TemporarySubsystemManager(to_deactivate=tdisc, to_fix=initial_variables):
         # Solver time steps
         for t in time:
             if t == time.first():
+                # t == time.first() was handled above
                 continue
             constraints = [con[t] for con in time_cons if t in con]
             variables = [var[t] for var in time_vars]
