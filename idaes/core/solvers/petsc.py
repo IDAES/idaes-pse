@@ -243,6 +243,8 @@ def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
     Args:
         m: model to search for variables and write suffixes to
         variables (list): List of time indexed variables at a specific time point
+        deriv_diff_map (ComponentMap): Maps DerivativeVar data objects to
+            differential variable data objects
 
     Returns:
         None
@@ -264,6 +266,17 @@ def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
 
 
 def _get_derivative_differential_data_map(m, time):
+    """Get a map from data objects of derivative variables to the
+    corresponding data objects of differential variables.
+    
+    Args:
+        m: Model to search for DerivativeVars
+        time: Set with respect to which DerivativeVars must be derived
+
+    Returns:
+        (ComponentMap): Map from derivative data objects to differential
+            data objects
+    """
     deriv_diff_list = []
     for var in m.component_objects(pyo.Var):
         if (isinstance(var, pyodae.DerivativeVar) and
