@@ -160,7 +160,7 @@ class PetscTS(Petsc):
 
 @pyo.SolverFactory.register("petsc_tao", doc="ASL PETSc TAO interface")
 class PetscTAO(Petsc):
-    """This is a place holder for optimation solvers"""
+    """This is a place holder for optimization solvers"""
 
     def __init__(self, **kwds):
         raise NotImplementedError(
@@ -242,8 +242,8 @@ def _set_dae_suffixes_from_variables(m, variables):
     the flatten_component_along_sets function added in Pyomo PR #2141
 
     Args:
-        m: model search for varaibles and write suffixes to
-        variables (list): List of time indexed variables at a sepcific time point
+        m: model to search for variables and write suffixes to
+        variables (list): List of time indexed variables at a specific time point
 
     Returns:
         None
