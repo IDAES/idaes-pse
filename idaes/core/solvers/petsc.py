@@ -255,14 +255,12 @@ def _set_dae_suffixes_from_variables(m, variables):
     n = 0
     for var in variables:
         # Getting an index from a vardata is unfortunately very slow
-        t = var.index()
+        idx = var.index()
         # this recovers the original component from the reference
         parent = var.parent_component()
         if isinstance(parent, pyodae.DerivativeVar):
             n += 1
-            # This works because the original component is also indexed
-            # only by time.
-            difvar = parent.get_state_var()[t]
+            difvar = parent.get_state_var()[idx]
             differential_vars.append(difvar)
             m.dae_suffix[difvar] = int(DaeVarTypes.DIFFERENTIAL)
             m.dae_suffix[var] = int(DaeVarTypes.DERIVATIVE)
