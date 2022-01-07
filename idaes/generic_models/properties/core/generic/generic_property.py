@@ -1267,10 +1267,17 @@ class _GenericStateBlock(StateBlock):
                             blk[k].true_to_appr_species[p, j])
                     # Need to calculate all flows before doing mole fractions
                     for p, j in blk[k].params.apparent_phase_component_set:
-                        x = value(
-                            blk[k].flow_mol_phase_comp_apparent[p, j] /
-                            sum(blk[k].flow_mol_phase_comp_apparent[p, jj]
-                                for jj in blk[k].params.apparent_species_set))
+                        sum_flow = sum(
+                            blk[k].flow_mol_phase_comp_apparent[p, jj]
+                            for jj in blk[k].params.apparent_species_set
+                            if (p, jj) in
+                            blk[k].params.apparent_phase_component_set)
+                        if value(sum_flow) == 0:
+                            x = 1
+                        else:
+                            x = value(
+                                blk[k].flow_mol_phase_comp_apparent[p, j] /
+                                sum_flow)
                         lb = blk[k].mole_frac_phase_comp_apparent[p, j].lb
                         if lb is not None and x <= lb:
                             blk[k].mole_frac_phase_comp_apparent[
@@ -1287,10 +1294,17 @@ class _GenericStateBlock(StateBlock):
                             blk[k].appr_to_true_species[p, j])
                     # Need to calculate all flows before doing mole fractions
                     for p, j in blk[k].params.true_phase_component_set:
-                        x = value(
-                            blk[k].flow_mol_phase_comp_true[p, j] /
-                            sum(blk[k].flow_mol_phase_comp_true[p, jj]
-                                for jj in blk[k].params.true_species_set))
+                        sum_flow = sum(
+                            blk[k].flow_mol_phase_comp_true[p, jj]
+                            for jj in blk[k].params.true_species_set
+                            if (p, jj) in
+                            blk[k].params.true_phase_component_set)
+                        if value(sum_flow) == 0:
+                            x = 1
+                        else:
+                            x = value(
+                                blk[k].flow_mol_phase_comp_true[p, j] /
+                                sum_flow)
                         lb = blk[k].mole_frac_phase_comp_true[p, j].lb
                         if lb is not None and x <= lb:
                             blk[k].mole_frac_phase_comp_true[p, j].set_value(
