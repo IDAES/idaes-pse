@@ -14,7 +14,7 @@ import pyomo.environ as pyo
 import pytest
 import idaes.core.plugins
 from idaes.core.solvers.features import (
-    lp, milp, nlp, minlp, nle, dae, dae_with_non_time_indexed_constraint
+    lp, milp, nlp, minlp, nle, dae_with_non_time_indexed_constraint
 )
 from idaes.core.solvers import ipopt_has_linear_solver
 from idaes.core.solvers import petsc
@@ -113,29 +113,6 @@ def test_petsc_dae_idaes_solve():
             "--ts_type":"cn", # Crank–Nicolson
             "--ts_adapt_type":"basic",
             "--ts_dt":0.1,
-        },
-    )
-    assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
-    assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
-    assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
-    assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
-    assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
-    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y6[m.t.last()])
-
-@pytest.mark.unit
-@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
-def test_petsc_dae_idaes_solve2():
-    """
-    Check the that the PETSc DAE solver works.
-    """
-    m, y1, y2, y3, y4, y5, y6 = dae()
-    petsc.petsc_dae_by_time_element(
-        m,
-        time=m.t,
-        ts_options={
-            "--ts_type":"cn", # Crank–Nicolson
-            "--ts_adapt_type":"basic",
-            "--ts_dt":0.01,
         },
     )
     assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])

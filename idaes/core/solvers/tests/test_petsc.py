@@ -13,6 +13,9 @@
 
 """Basic unit tests for PETSc solver utilities"""
 import pytest
+import numpy as np
+import json
+import os
 import pyomo.environ as pyo
 from pyomo.dae.flatten import flatten_dae_components
 from pyomo.util.subsystems import (
@@ -20,7 +23,7 @@ from pyomo.util.subsystems import (
     create_subsystem_block,
 )
 from idaes.core.solvers import petsc
-from idaes.core.solvers.features import dae_with_non_time_indexed_constraint
+from idaes.core.solvers.features import dae_with_non_time_indexed_constraint, dae
 
 @pytest.mark.unit
 def test_copy_time():
@@ -90,3 +93,46 @@ def test_set_dae_suffix():
     assert t_block.dae_suffix[m.y[180, 3]] == 1
     assert t_block.dae_suffix[m.y[180, 4]] == 1
     assert t_block.dae_suffix[m.y[180, 5]] == 1
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_petsc_read_trajectory():
+    """
+    Check the that the PETSc DAE solver works.
+    """
+    m, y1, y2, y3, y4, y5, y6 = dae()
+    petsc.petsc_dae_by_time_element(
+        m,
+        time=m.t,
+        ts_options={
+            "--ts_type":"cn", # Crank–Nicolson
+            "--ts_adapt_type":"basic",
+            "--ts_dt":0.01,
+            "--ts_save_trajectory":1,
+            "--ts_trajectory_type":"visualization",
+        },
+        vars_stub="tj_random_junk_123"
+    )
+    assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
+    assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
+    assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
+    assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
+    assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
+    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y6[m.t.last()])
+
+    tj = petsc.PetscTrajectory(stub="tj_random_junk_123", delete_on_read=True)
+    assert tj.get_dt()[0] == pytest.approx(0.01) # if small enough shouldn't be cut
+    assert tj.get_vec(m.y[180, 1])[-1] == pytest.approx(y1, rel=1e-3)
+    assert tj.get_vec("_time")[-1] == pytest.approx(180)
+
+    times = np.linspace(0, 180, 181)
+    vecs = tj.interpolate_vecs(times)
+    assert vecs[str(m.y[180, 1])][180] == pytest.approx(y1, rel=1e-3)
+    assert vecs["_time"][180] == pytest.approx(180)
+
+    tj.to_json("some_testy_json.json")
+    with open("some_testy_json.json", "r") as fp:
+        vecs = json.load(fp)
+    assert vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
+    assert vecs["_time"][-1] == pytest.approx(180)
+    os.remove("some_testy_json.json")

@@ -16,6 +16,7 @@ import sys
 import shutil
 import enum
 import copy
+import json
 import idaes
 import pyomo.environ as pyo
 from pyomo.common.collections import ComponentSet
@@ -427,8 +428,18 @@ def petsc_dae_by_time_element(
 
 
 class PetscTrajectory(object):
-    def __init__(self, stub, pth=None, vis_dir="Visualization-data"):
-        _import_petsc_binary_io()
+    def __init__(self, stub, pth=None, vis_dir="Visualization-data", delete_on_read=False):
+        """Class to read PETSc TS solver trajectory data.
+
+        Args:
+            stub (str): file name stub for variable info
+            pth (str): path where variable info and trajectory data are stored
+                if None, use current working directory
+            vis_dir (str): subdirectory where visualization data is stored
+            delete_on_read (bool): if true delete trajectory data after reading
+        """
+        if PetscBinaryIOTrajectory is None:
+            raise RuntimeError("PetscBinaryIOTrajectory could not be imported")
         if pth is not None:
             stub = os.path.join(pth, stub)
             vis_dir = os.path.join(pth, vis_dir)
@@ -436,6 +447,8 @@ class PetscTrajectory(object):
         self.vis_dir = vis_dir
         self.path = pth
         self._read()
+        if delete_on_read:
+            self.delete_files()
 
     def _read(self):
         with open(f'{self.stub}.col') as f:
@@ -449,7 +462,7 @@ class PetscTrajectory(object):
         self.vecs = dict.fromkeys(self.vars, None)
         for k in self.vecs.keys():
             self.vecs[k] = [0]*len(self.time)
-        self.vecs["time"] = list(self.time)
+        self.vecs["_time"] = list(self.time)
         for i, v in enumerate(self.vars):
             for j, vt in enumerate(self.vecs_by_time):
                 self.vecs[v][j] = vt[i]
@@ -467,16 +480,96 @@ class PetscTrajectory(object):
         return vars
 
     def get_vec(self, var):
+        """Return the time vector for var.
+
+        Args:
+            var (str or Var): Variable to get vector for.
+
+        Retruns:
+            (list): time vector
+
+        """
         var = str(var)
         return self.vecs[var]
 
     def get_dt(self):
+        """Get a list of time steps
+
+        Args:
+            None
+
+        Returns:
+            (list)
+        """
         dt = [None]*(len(self.time) - 1)
         for i in range(len(self.time)-1):
             dt[i] = self.time[i + 1] - self.time[i]
         return dt
 
+    def interpolate_vecs(self, times):
+        """Create a new vector dictionary interpolated at times.
+
+        Args:
+            vars (list): list of variables or variable names to plot.  The
+                varibles include the time index of the final time.
+
+        Returns:
+            (dict)
+        """
+        vecs = dict.fromkeys(self.vars, None)
+        vecs["_time"] = copy.copy(times)
+        for k in vecs.keys():
+            vecs[k] = [0]*len(times)
+        j = 0
+        for i, t in enumerate(times):
+            while t > self.time[j] and j < len(self.time) - 1:
+                j += 1
+            if j == 0:
+                j = 1
+            dt = self.time[j] - self.time[j - 1]
+            w1 = 1 - (t - self.time[j - 1])/dt
+            w2 = (t - self.time[j - 1])/dt
+            for k, v in self.vecs.items():
+                vecs[k][i] = w1*v[j - 1] + w2*v[j]
+        return vecs
+
     def plot_trajectory_original(self, vars):
+        """Plot function privided by PETSc.
+
+        Args:
+            vars (list): list of variables or variable names to plot.  The
+                varibles include the time index of the final time.
+
+        Returns:
+            None
+        """
+        vars = self._var_name_list(vars)
         PetscBinaryIOTrajectory.PlotTrajectories(
             self.time, self.vecs_by_time, self.vars, self._var_name_list(vars)
         )
+
+    def delete_files(self):
+        """Delete the trajectory data and varible information files.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        shutil.rmtree(self.vis_dir)
+        os.remove(f'{self.stub}.col')
+        os.remove(f'{self.stub}.typ')
+
+    def to_json(self, pth):
+        """Dump the trajectory data to a json file in the form of a dictionary
+        with varaible name keys and '_time' with time vectors values.
+
+        Args:
+            pth (str): json file to write
+
+        Returns:
+            None
+        """
+        with open(pth, "w") as fp:
+            json.dump(self.vecs, fp)

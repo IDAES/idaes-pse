@@ -175,47 +175,10 @@ be saved.  Supplying the ``vars_stub`` argument to the ``petsc_dae_by_time_eleme
 function will copy the `*.col` and `*.typ` files needed to interpret the trajectory
 data to the current working directory.
 
-The following example shows how to read and plot some data. A more streamlined
-method of providing the PETSc Python functions is forthcoming.
+The ``PetscTrajectory`` class has methods to read in trajectory data and
+interpolate time points as needed.
 
-.. code-block:: python
-
-  """
-  Visualize trajectory, assuming problem was run with these options:
-
-      --ts_save_trajectory=1
-      --ts_trajectory_type=visualization
-
-  That should put results from each time step in the directory Visualization-data
-
-  To run this you need either:
-
-  Option 1) $PETSC_DIR/lib/petsc/bin/ in PYTHONPATH
-
-  Option 2) Get these files and put them in PYTHONPATH (or current working directory)
-    * https://github.com/petsc/petsc/blob/main/lib/petsc/bin/petsc_conf.py
-    * https://github.com/petsc/petsc/blob/main/lib/petsc/bin/PetscBinaryIO.py
-    * https://github.com/petsc/petsc/blob/main/lib/petsc/bin/PetscBinaryIOTrajectory.py
-  """
-  import sys
-  import PetscBinaryIOTrajectory as pbt
-
-  def main():
-      try:
-          stub = sys.argv[1]
-      except:
-          print("Specify a file stub")
-          return
-      (t,v,names) = pbt.ReadTrajectory("Visualization-data")
-      with open(f'{stub}.col') as f:
-          names = list(map(str.strip, f.readlines()))
-      with open(f'{stub}.typ') as f:
-          typ = list(map(int,f.readlines()))
-      names = [name for i, name in enumerate(names) if typ[i] in [0,1]]
-      pbt.PlotTrajectories(t,v,names,["my_variable_name"])
-
-  if __name__ == '__main__':
-      main()
+..autoclass:: idaes.core.solvers.petsc.PetscTrajectory
 
 Using TS Solvers without Pyomo.DAE
 """"""""""""""""""""""""""""""""""
