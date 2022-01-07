@@ -566,7 +566,7 @@ class PetscTrajectory(object):
         with varaible name keys and '_time' with time vectors values.
 
         Args:
-            pth (str): json file to write
+            pth (str): path for json file to write
 
         Returns:
             None
