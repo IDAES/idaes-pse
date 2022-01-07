@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 
-from idaes.surrogate.pysmo import new_sampling as ns
+from idaes.surrogate.pysmo import sampling as ns
 
 
 # np_test = np.random.randn(20, 5)
