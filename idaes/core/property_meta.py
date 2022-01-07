@@ -153,6 +153,8 @@ class PropertyClassMetadata(object):
         # which has not defined units.
         if self._derived_units is None:
             self._create_derived_units()
+            # Update derived_units dict with default_units dict
+            self._derived_units.update(self.default_units)
         return self._derived_units
 
     @property
