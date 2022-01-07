@@ -400,6 +400,7 @@ class SamplingMethods:
                 self.data = np.concatenate((self.x_data, y_data), axis=1)
             else:
                 # Only provided columns are considered
+                ## MAYBE ADD A WARNING HERE TELLING THE USERS IF ANY COLUMNS ARE DROPPED? ##
                 self.x_data = data_input[:, xlabels]
                 self.data_headers = set_of_labels
                 self.data_headers_xvars = xlabels
