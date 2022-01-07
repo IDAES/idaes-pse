@@ -78,6 +78,14 @@ available in the `idaes-ext repo <https://github.com/IDAES/idaes-ext/tree/main/p
 If you can compile PETSc for Windows, compiling the interface is trivial (see
 `PETSc's windows installation documentation <https://petsc.org/main/install/windows/>`_).
 
+The IDAES PETSc package also includes Python modules for reading binary data
+written by the PETSc solver.  On Windows, some manual installation of the Python
+modules is required.  If you are using the WSL method to run PETSc, copy the
+``petscpy`` directory from the Linux package you are using to the IDAES binary
+directory.  You can find the IDAES binary directory with the command
+``idaes bin-directory``.  The primary use for these Python modules is to read
+trajectory files saved by the TS solver.
+
 Registered Solvers
 ~~~~~~~~~~~~~~~~~~
 
