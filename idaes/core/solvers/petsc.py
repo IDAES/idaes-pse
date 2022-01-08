@@ -19,10 +19,9 @@ import copy
 import json
 import idaes
 import pyomo.environ as pyo
-from pyomo.common.collections import ComponentSet
+from pyomo.common.collections import ComponentSet, ComponentMap
 import pyomo.dae as pyodae
 from pyomo.common import Executable
-from pyomo.common.collections import ComponentSet
 from pyomo.dae.flatten import flatten_dae_components
 from pyomo.util.subsystems import (
     TemporarySubsystemManager,
@@ -118,7 +117,8 @@ class PetscSNES(Petsc):
 @pyo.SolverFactory.register("petsc_ts", doc="ASL PETSc TS interface")
 class PetscTS(Petsc):
     """PETSc solver plugin that sets options for SNES solver.  This turns on
-    TS monitoring, sets the DAE flag, and checks the config for default options."""
+    TS monitoring, sets the DAE flag, and checks the config for default options.
+    """
 
     def __init__(self, **kwds):
         self._ts_vars_stub = kwds.pop("vars_stub", None)
@@ -160,7 +160,7 @@ class PetscTS(Petsc):
 
 @pyo.SolverFactory.register("petsc_tao", doc="ASL PETSc TAO interface")
 class PetscTAO(Petsc):
-    """This is a place holder for optimation solvers"""
+    """This is a place holder for optimization solvers"""
 
     def __init__(self, **kwds):
         raise NotImplementedError(
@@ -200,7 +200,8 @@ def _copy_time(time_vars, t_from, t_to):
         time_vars (list): list of variables or refernces to variables indexed
             only by time
         t_from (float): time point to copy from
-        t_to (float): time point to copy to, only unfixed vars will be overwritten
+        t_to (float): time point to copy to, only unfixed vars will be
+            overwritten
 
     Returns:
         None
@@ -212,7 +213,7 @@ def _copy_time(time_vars, t_from, t_to):
 
 def _generate_time_discretization(m, time):
     """This is a generator for time discretization equations. Since we aren't
-    solving the whole time period simulataneously, we'll want to deactivate
+    solving the whole time period simultaneously, we'll want to deactivate
     these constraints.
 
     Args:
@@ -231,45 +232,63 @@ def _generate_time_discretization(m, time):
                 yield disc_eq
 
 
-def _set_dae_suffixes_from_variables(m, variables):
+def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
     """Write suffixes used by the solver to identify different variable types
-    and assocciate derivative and differential variables.
-
-    Note:  This is a method that allows us to build a "local" suffix, which only
-    contains variables at a single point. This method is unfortunately very
-    slow and somewhat fragile. There is a better way to get corresponding
-    differential and derivative variables, partitioned by time, but it relies on
-    the flatten_component_along_sets function added in Pyomo PR #2141
+    and associated derivative and differential variables.
 
     Args:
-        m: model search for varaibles and write suffixes to
-        variables (list): List of time indexed variables at a sepcific time point
+        m: model to search for variables and write suffixes to
+        variables (list): List of time indexed variables at a specific time
+            point
+        deriv_diff_map (ComponentMap): Maps DerivativeVar data objects to
+            differential variable data objects
 
     Returns:
         None
     """
-    m.dae_suffix = pyo.Suffix(direction=pyo.Suffix.EXPORT, datatype=pyo.Suffix.INT)
-    m.dae_link = pyo.Suffix(direction=pyo.Suffix.EXPORT, datatype=pyo.Suffix.INT)
+    m.dae_suffix = pyo.Suffix(
+        direction=pyo.Suffix.EXPORT,
+        datatype=pyo.Suffix.INT,
+    )
+    m.dae_link = pyo.Suffix(
+        direction=pyo.Suffix.EXPORT,
+        datatype=pyo.Suffix.INT,
+    )
     dae_var_link_index = 1
     differential_vars = []
-    n = 0
     for var in variables:
-        # Getting an index from a vardata is unfortunately very slow
-        t = var.index()
-        # this recovers the original component from the reference
-        parent = var.parent_component()
-        if isinstance(parent, pyodae.DerivativeVar):
-            n += 1
-            # This works because the original component is also indexed
-            # only by time.
-            difvar = parent.get_state_var()[t]
-            differential_vars.append(difvar)
-            m.dae_suffix[difvar] = int(DaeVarTypes.DIFFERENTIAL)
-            m.dae_suffix[var] = int(DaeVarTypes.DERIVATIVE)
-            m.dae_link[difvar] = dae_var_link_index
-            m.dae_link[var] = dae_var_link_index
+        if var in deriv_diff_map:
+            deriv = var
+            diffvar = deriv_diff_map[deriv]
+            m.dae_suffix[diffvar] = int(DaeVarTypes.DIFFERENTIAL)
+            m.dae_suffix[deriv] = int(DaeVarTypes.DERIVATIVE)
+            m.dae_link[diffvar] = dae_var_link_index
+            m.dae_link[deriv] = dae_var_link_index
             dae_var_link_index += 1
     return differential_vars
+
+
+def _get_derivative_differential_data_map(m, time):
+    """Get a map from data objects of derivative variables to the
+    corresponding data objects of differential variables.
+    
+    Args:
+        m: Model to search for DerivativeVars
+        time: Set with respect to which DerivativeVars must be derived
+
+    Returns:
+        (ComponentMap): Map from derivative data objects to differential
+            data objects
+    """
+    deriv_diff_list = []
+    for var in m.component_objects(pyo.Var):
+        if (isinstance(var, pyodae.DerivativeVar) and
+                time in ComponentSet(var.get_continuousset_list())):
+            deriv = var # For clarity
+            diffvar = deriv.get_state_var()
+            for idx in var:
+                deriv_diff_list.append((deriv[idx], diffvar[idx]))
+    return ComponentMap(deriv_diff_list)
 
 
 def _sub_problem_scaling_suffix(m, t_block):
@@ -318,7 +337,8 @@ def petsc_dae_by_time_element(
             used to write constraints that are an explicit function of time.
         initial_constraints (list): Constraints to solve in the initial
             condition solve step.  Since the time-indexed constraints are picked
-            up automatically, this generally includes non-time-indexed constraints.
+            up automatically, this generally includes non-time-indexed
+            constraints.
         initial_variables (list): This is a list of variables to fix after the
             initial condition solve step.  If these variables were originally
             unfixed, they will be unfixed at the end of the solve. This usually
@@ -326,21 +346,21 @@ def petsc_dae_by_time_element(
             the initial conditions.
         detect_initial (bool): If True, add non-time-indexed variables and
             constraints to initial_variables and initial_constraints.
-        skip_initial (bool): Don't do the initial condition calculation step, and
-            assume that the initial condition values have already been calculated.
-            This can be useful, for example, if you read initial conditions from a
-            separately solved steady state problem, or otherwise know the initial
-            conditions.
+        skip_initial (bool): Don't do the initial condition calculation step,
+            and assume that the initial condition values have already been
+            calculated. This can be useful, for example, if you read initial
+            conditions from a separately solved steady state problem, or
+            otherwise know the initial conditions.
         snes_options (dict): PETSc nonlinear equation solver options
         ts_options (dict): PETSc time-stepping solver options
         wsl (bool): if True use WSL to run PETSc, if False don't use WSL to run
             PETSc, if None automatic. The WSL is only for Windows.
         keepfiles (bool): pass to keepfiles arg for solvers
-        symbolic_solver_labels (bool): pass to symoblic_solver_labels argument for
-            solvers. If you want to read trajectory data from the time-stepping
-            solver, this should be True.
-        vars_stub (str or None): Copy the `*.col` and `*.typ` files to the working
-            directory using this stub if not None.  These are needed to
+        symbolic_solver_labels (bool): pass to symoblic_solver_labels argument
+            for solvers. If you want to read trajectory data from the
+            time-stepping solver, this should be True.
+        vars_stub (str or None): Copy the `*.col` and `*.typ` files to the
+            working directory using this stub if not None.  These are needed to
             interpret the trajectory data.
 
     Returns:
@@ -375,13 +395,13 @@ def petsc_dae_by_time_element(
 
     # First calculate the inital conditions and non-time-tindexed constraints
     res_list = []
-    t = time.first()
+    t0 = time.first()
     if not skip_initial:
         with TemporarySubsystemManager(to_deactivate=tdisc):
             constraints = [
-                con[t] for con in time_cons if t in con
+                con[t0] for con in time_cons if t0 in con
             ] + initial_constraints
-            variables = [var[t] for var in time_vars] + initial_variables
+            variables = [var[t0] for var in time_vars] + initial_variables
             if len(constraints) > 0:
                 # if the initial condition is specified and there are no
                 # initial constraints, don't try to solve.
@@ -394,19 +414,30 @@ def petsc_dae_by_time_element(
                 with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
                     res = solver_snes.solve(t_block, tee=slc.tee)
     res_list.append(res)
-    tprev = t
-    with TemporarySubsystemManager(to_deactivate=tdisc, to_fix=initial_variables):
+
+    deriv_diff_map = _get_derivative_differential_data_map(m, time)
+
+    tprev = t0
+    with TemporarySubsystemManager(
+            to_deactivate=tdisc,
+            to_fix=initial_variables,
+            ):
         # Solver time steps
         for t in time:
             if t == time.first():
+                # t == time.first() was handled above
                 continue
             constraints = [con[t] for con in time_cons if t in con]
             variables = [var[t] for var in time_vars]
             # Create a temporary block with references to original constraints
-            # and variables so we can integrate this "subsystem" without altering
-            # the rest of the model.
+            # and variables so we can integrate this "subsystem" without
+            # altering the rest of the model.
             t_block = create_subsystem_block(constraints, variables)
-            differential_vars = _set_dae_suffixes_from_variables(t_block, variables)
+            differential_vars = _set_dae_suffixes_from_variables(
+                t_block,
+                variables,
+                deriv_diff_map,
+            )
             if timevar is not None:
                 t_block.dae_suffix[timevar[t]] = int(DaeVarTypes.TIME)
             # Set up the scaling factor suffix
@@ -428,7 +459,13 @@ def petsc_dae_by_time_element(
 
 
 class PetscTrajectory(object):
-    def __init__(self, stub, pth=None, vis_dir="Visualization-data", delete_on_read=False):
+    def __init__(
+            self,
+            stub,
+            pth=None,
+            vis_dir="Visualization-data",
+            delete_on_read=False,
+            ):
         """Class to read PETSc TS solver trajectory data.
 
         Args:
@@ -456,7 +493,9 @@ class PetscTrajectory(object):
         with open(f'{self.stub}.typ') as f:
             typ = list(map(int,f.readlines()))
         self.vars = [name for i, name in enumerate(names) if typ[i] in [0,1]]
-        (t, v, names) = PetscBinaryIOTrajectory.ReadTrajectory("Visualization-data")
+        (t, v, names) = PetscBinaryIOTrajectory.ReadTrajectory(
+            "Visualization-data"
+        )
         self.time = t
         self.vecs_by_time = v
         self.vecs = dict.fromkeys(self.vars, None)
