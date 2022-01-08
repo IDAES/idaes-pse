@@ -246,10 +246,14 @@ def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
     Returns:
         None
     """
+    # The dae_suffix provides the solver information about variables types
+    # algebraic, differntial, derivative, or time, see DaeVarTypes
     m.dae_suffix = pyo.Suffix(
         direction=pyo.Suffix.EXPORT,
         datatype=pyo.Suffix.INT,
     )
+    # The dae_link suffix provides the solver a link between the differential
+    # and derivitive variable, by assiging the pair a unique integer index. 
     m.dae_link = pyo.Suffix(
         direction=pyo.Suffix.EXPORT,
         datatype=pyo.Suffix.INT,
@@ -271,7 +275,7 @@ def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
 def _get_derivative_differential_data_map(m, time):
     """Get a map from data objects of derivative variables to the
     corresponding data objects of differential variables.
-    
+
     Args:
         m: Model to search for DerivativeVars
         time: Set with respect to which DerivativeVars must be derived
