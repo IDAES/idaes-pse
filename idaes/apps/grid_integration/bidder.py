@@ -383,7 +383,7 @@ class Bidder:
                 pre_power = power
                 pre_cost += marginal_cost * delta_p
 
-        # check if bids are convex
+        #check if bids are convex
         for t in bids:
             for gen in bids[t]:
                 if not self._is_convex_bid(bids[t][gen]):
@@ -393,6 +393,7 @@ class Bidder:
 
         return bids
 
+    #note: need to check form of input. it will return true with bad inputs
     @staticmethod
     def _is_convex_bid(bids):
 
@@ -425,9 +426,10 @@ class Bidder:
             idx += 1
 
         # check whether the marginal costs are sorted <=> convex
+        # Jordan note: this needs to use a tolerance.
         idx = 0
         while idx < len(marginal_cost) - 1:
-            if marginal_cost[idx] > marginal_cost[idx + 1]:
+            if round(marginal_cost[idx],8) > round(marginal_cost[idx + 1],8):
                 return False
             idx += 1
 

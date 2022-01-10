@@ -5,11 +5,12 @@ from random import random
 from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
 from idaes.apps.rankine.simple_rankine_cycle import create_model, set_inputs, initialize_model, close_flowsheet_loop, add_operating_cost
 from idaes.core.util import from_json
+from pyomo.common.fileutils import this_file_dir
 
-#Create a steady-state ranking cycle model, not yet setup for multi-period
-def create_ss_rankine_model():
-    p_lower_bound = 30 #175
-    p_upper_bound = 76 #450
+#Create a steady-state rankine cycle model
+def create_ss_rankine_model(pmin,pmax):
+    p_lower_bound = pmin #30 # 175
+    p_upper_bound = pmax #76 # 450
 
     m = pyo.ConcreteModel()
     m.rankine = create_model(heat_recovery=True)
@@ -17,7 +18,7 @@ def create_ss_rankine_model():
     
     #We are initializing from a json file
     #m.rankine = initialize_model(m.rankine)
-    from_json(m.rankine, fname="initialized_rankine_state.json.gz", gz=True)
+    from_json(m.rankine, fname=this_file_dir()+"/initialized_rankine_state.json.gz", gz=True)
     m.rankine = close_flowsheet_loop(m.rankine)
     m.rankine = add_operating_cost(m.rankine)
 
@@ -33,10 +34,13 @@ def create_ss_rankine_model():
 
     return m
 
-#Create a multiperiod capable steady-state rankine cycle model. This is a
-#user-provided function to a MultiPeriod class
-def create_mp_rankine_block():
-    m = create_ss_rankine_model()
+
+def create_mp_rankine_block(pmin,pmax):
+    """
+    Create a multiperiod capable steady-state rankine cycle model. This is a
+    user-provided function to a MultiPeriod class
+    """
+    m = create_ss_rankine_model(pmin,pmax)
     turbine_ramp_rate = 120
     battery_ramp_rate = 50
     b1 = m.rankine
@@ -50,8 +54,8 @@ def create_mp_rankine_block():
     b1.ramp2 = pyo.Constraint(expr=b1.previous_power_output - b1.power_output <= turbine_ramp_rate)
 
     #Add battery integration to rankine cycle
-    b1.P_to_battery = pyo.Var(within=pyo.NonNegativeReals,initialize = 0.0)
-    b1.P_to_grid = pyo.Var(within=pyo.NonNegativeReals,initialize = 0.0)
+    b1.P_to_battery = pyo.Var(within=pyo.NonNegativeReals, initialize=0.0)
+    b1.P_to_grid = pyo.Var(within=pyo.NonNegativeReals, initialize=0.0)
     b1.P_total = pyo.Constraint(expr = b1.power_output == b1.P_to_battery + b1.P_to_grid)
 
     #Simple battery model (soc = state of charge). We create a coupling variable called next_soc
@@ -89,7 +93,7 @@ def get_rankine_periodic_variable_pairs(t1,t2):
     return [(t1.battery.soc,t2.battery.previous_soc)]
 
 
-def create_multiperiod_rankine_model(n_time_points=4):
+def create_multiperiod_rankine_model(n_time_points=4, pmin=30, pmax=76):
     """
         Create a multi-period rankine cycle object. This object contains a pyomo model
         with a block for each time instance.
@@ -97,7 +101,7 @@ def create_multiperiod_rankine_model(n_time_points=4):
         n_time_points: Number of time blocks to create
     """
     n_time_points = n_time_points
-    mp_rankine = MultiPeriodModel(n_time_points, create_mp_rankine_block, get_rankine_link_variable_pairs)
+    mp_rankine = MultiPeriodModel(n_time_points, lambda : create_mp_rankine_block(pmin,pmax), get_rankine_link_variable_pairs)
 
     #create the multiperiod object
     mp_rankine.build_multi_period_model()

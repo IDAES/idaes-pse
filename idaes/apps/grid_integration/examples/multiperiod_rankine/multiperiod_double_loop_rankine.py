@@ -1,12 +1,15 @@
 import pyomo.environ as pyo
 from collections import deque
 import pandas as pd
+import numpy as np
 import sys
 
 from idaes.apps.grid_integration.examples.multiperiod_rankine.multiperiod_rankine_cycle import create_multiperiod_rankine_model
 
 class MultiPeriodRankine:
-    def __init__(self, horizon=4, generator_data={}):
+
+    def __init__(self, horizon=4, pmin=20, pmax=100,
+        generator_data={}):
         '''
         Arguments:
             horizon::Int64 - number of time points to use for associated multi-period model
@@ -15,13 +18,19 @@ class MultiPeriodRankine:
         Returns:
             Float64: Value of power output in last time step
         '''
+        if generator_data == {}:
+            generator_data = {'generator_name':'test','PMin MW':pmin,
+            'Original Marginal Cost Curve':{p: 30.0 for p in np.linspace(pmin,pmax,5)}}
+
         self.horizon = horizon
         self.generator_data = generator_data
         self.generator = self.generator_data['generator_name']
         self.mp_rankine = None
         self.result_list = []
+        self.p_lower = pmin
+        self.p_upper = pmax
 
-    def populate_model(self, blk):
+    def populate_model(self, b):
         '''
         Create a rankine-cycle-battery model using the `MultiPeriod` package.
 
@@ -31,17 +40,17 @@ class MultiPeriodRankine:
          Returns:
              None
         '''
+        blk = b
         if not blk.is_constructed():
             blk.construct()
 
-        mp_rankine = create_multiperiod_rankine_model(n_time_points=self.horizon)
+        mp_rankine = create_multiperiod_rankine_model(n_time_points=self.horizon, pmin=self.p_lower, pmax=self.p_upper)
         blk.rankine = mp_rankine
         blk.rankine_model = mp_rankine.pyomo_model
 
         active_blks = mp_rankine.get_active_process_blocks()
         active_blks[0].battery.previous_soc.fix(0)
         active_blks[0].rankine.previous_power_output.fix(50.0)
-        #active_blks[0].battery.soc.fix(0) #initial charge is zero
         
         #create expression that references underlying power variables in multi-period rankine
         blk.HOUR = pyo.Set(initialize = range(self.horizon))
@@ -54,8 +63,6 @@ class MultiPeriodRankine:
         self.mp_rankine = mp_rankine
         return
 
-    #def update_model(self, b, implemented_shut_down,implemented_start_up, implemented_power_output):
-    #NOTE: the profiles passed in here come from `get_implemented_profile`
     def update_model(self, b, implemented_power_output, realized_soc):
 
         '''
@@ -149,14 +156,7 @@ class MultiPeriodRankine:
 
             # model vars
             result_dict['Thermal Power Generated [MW]'] = float(round(pyo.value(blk.P_T[t]),2))
-            #result_dict['Production Cost [$]'] = float(round(pyo.value(blk.prod_cost_approx[t]),2))
             result_dict['Total Cost [$]'] = float(round(pyo.value(blk.tot_cost[t]),2))
-
-            # calculate mileage
-            # if t == 0:
-            #     result_dict['Mileage [MW]'] = float(round(abs(pyo.value(blk.P_T[t] - blk.pre_P_T)),2))
-            # else:
-            #     result_dict['Mileage [MW]'] = float(round(abs(pyo.value(blk.P_T[t] - blk.P_T[t-1])),2))
 
             for key in kwargs:
                 result_dict[key] = kwargs[key]
