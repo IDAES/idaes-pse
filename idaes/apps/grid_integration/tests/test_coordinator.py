@@ -59,12 +59,15 @@ def coordinator_object():
 def test_assemble_project_tracking_signal(coordinator_object):
 
     gen_name = coordinator_object.bidder.generator
-    current_ruc_dispatch = {(gen_name, t): (t + 1) * 10 for t in range(24)}
+
+    # assuming the ruc signals are (hour (0-based) + 1) * constant_factor
+    constant_factor = 10
+    current_ruc_dispatch = {(gen_name, t): (t + 1) * constant_factor for t in range(24)}
     sced_horizon = tracking_horizon
 
     # test if it assembles correct signals within a day
     hour = 10
-    expected_signal = [(hour + 1 + i) * 10 for i in range(sced_horizon)]
+    expected_signal = [(hour + 1 + i) * constant_factor for i in range(sced_horizon)]
     signal = coordinator_object._assemble_project_tracking_signal(
         gen_name=gen_name,
         current_ruc_dispatch=current_ruc_dispatch,
@@ -75,7 +78,7 @@ def test_assemble_project_tracking_signal(coordinator_object):
 
     # test if it assembles correct signals between 2 days
     hour = 23
-    expected_signal = [(hour + 1) * 10 for i in range(sced_horizon)]
+    expected_signal = [(hour + 1) * constant_factor for i in range(sced_horizon)]
     signal = coordinator_object._assemble_project_tracking_signal(
         gen_name=gen_name,
         current_ruc_dispatch=current_ruc_dispatch,
@@ -89,13 +92,18 @@ def test_assemble_project_tracking_signal(coordinator_object):
 def test_assemble_sced_tracking_market_signals(coordinator_object):
 
     gen_name = coordinator_object.bidder.generator
-    sced_dispatch = [20] * tracking_horizon
+    # assumes constant sced dispatch signal in the horizon
+    constant_dispatch = 20
+    sced_dispatch = [constant_dispatch] * tracking_horizon
     sced_horizon = tracking_horizon
     current_ruc_dispatch = {(gen_name, t): (t + 1) * 10 for t in range(24)}
 
     # test case 1: no ruc signals from next day
     hour = 10
     next_ruc_dispatch = None
+
+    # expected sced signals are: the sced signal from the coming hour and
+    # corresponding ruc signals (current day) for the remaining horizon
     expected_signal = [sced_dispatch[0]] + [
         current_ruc_dispatch[(gen_name, t)]
         for t in range(hour + 1, hour + sced_horizon)
@@ -113,6 +121,9 @@ def test_assemble_sced_tracking_market_signals(coordinator_object):
     # test case 2: no ruc signals, but between 2 days
     hour = 23
     next_ruc_dispatch = None
+
+    # expected sced signals are: because there is no ruc signals, the expected
+    # signal will be the same as the sced dispatch
     expected_signal = sced_dispatch
     signal = coordinator_object._assemble_sced_tracking_market_signals(
         gen_name=gen_name,
@@ -127,6 +138,10 @@ def test_assemble_sced_tracking_market_signals(coordinator_object):
     # test case 3: with ruc signals, between 2 days
     hour = 23
     next_ruc_dispatch = {(gen_name, t): (t + 1) * 10 for t in range(24)}
+
+    # expected sced signals are: because there is ruc signals, the expected
+    # signal will be the sced signal from the coming hour and
+    # corresponding ruc signals (next day) for the remaining horizon
     expected_signal = [sced_dispatch[0]] + [
         next_ruc_dispatch[(gen_name, t)] for t in range(0, sced_horizon - 1)
     ]

@@ -25,6 +25,11 @@ class TestMissingModel:
 
     def __init__(self, missing_method=None, missing_attr=None):
 
+        """
+        Constructs a model class without the specified missing methods and/or
+        missing attributes.
+        """
+
         for m in self.method_dict:
             if m != missing_method:
                 setattr(self, m, self.method_dict[m])
@@ -40,6 +45,7 @@ def test_model_object_missing_methods():
     n_tracking_hour = 1
     solver = pyo.SolverFactory("cbc")
 
+    # By definition, the model object should contain these methods
     method_list = [
         "populate_model",
         "get_implemented_profile",
@@ -65,6 +71,7 @@ def test_model_object_missing_attr():
 
     n_tracking_hour = 1
     solver = pyo.SolverFactory("cbc")
+    # By definition, the model object should contain these attributes
     attr_list = ["power_output", "total_cost"]
 
     # test if the correct error message is raised if a model misses necessary attributes

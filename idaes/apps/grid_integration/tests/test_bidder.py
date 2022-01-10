@@ -5,6 +5,9 @@ from test_tracker import TestingModel
 
 
 class TestingForecaster:
+    """
+    A fake forecaster class for testing.
+    """
     def __init__(self, horizon, n_sample):
         self.horizon = horizon
         self.n_sample = n_sample
@@ -30,6 +33,11 @@ class TestMissingModel:
 
     def __init__(self, missing_method=None, missing_attr=None):
 
+        """
+        Constructs a model class without the specified missing methods and/or
+        missing attributes.
+        """
+
         for m in self.method_dict:
             if m != missing_method:
                 setattr(self, m, self.method_dict[m])
@@ -49,6 +57,7 @@ def test_model_object_missing_methods():
     solver = pyo.SolverFactory("cbc")
     forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
 
+    # By definition, the model object should contain these methods
     method_list = ["populate_model", "update_model"]
 
     # test if the correct error message is raised if a model misses necessary methods
@@ -69,6 +78,7 @@ def test_model_object_missing_attr():
     solver = pyo.SolverFactory("cbc")
     forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
 
+    # By definition, the model object should contain these attributes
     attr_list = ["power_output", "total_cost", "generator", "pmin", "default_bids"]
 
     # test if the correct error message is raised if a model misses necessary attributes
@@ -112,7 +122,6 @@ def test_n_scenario_checker():
 @pytest.mark.unit
 def test_solver_checker():
 
-    solver = pyo.SolverFactory("cbc")
     forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
     bidding_model_object = TestingModel(horizon=horizon)
 
@@ -183,6 +192,9 @@ def test_compute_bids(bidder_object):
         pre_cost = 0
 
         for p in default_bids:
+            # because the price forecast is higher than the marginal costs
+            # to have highest profit, power output will be pmax
+            # and the bidding costs will be computed with the price forecasts
             if p == pmax:
                 expected_bids[t][gen][p] = (p - pre_p) * (
                     marginal_cost + shift
