@@ -20,8 +20,8 @@ wholesale electricity markets. This multiscale framework aims to:
 (1) elucidate complex relationships between resource dynamics and market dispatch
 (with uncertainty, beyond price-taker assumption);
 (2) predict the economic opportunities and market impacts of emerging
-technologies (e.g., H2 production, integrated energy systems);
-(3) guide conceptual design & retrofit to meet current and future power grid
+technologies (e.g., hydrogen co-production, integrated energy systems);
+(3) guide conceptual design and retrofit to meet current and future power grid
 needs.
 
 The framework integrates optimal operations, and control of an energy system with
@@ -31,7 +31,7 @@ Specifically, in the day-ahead market loop, the following steps are modeled:
 (a) Forecast: energy systems perform market uncertainty forecasts, e.g., locational
 marginal prices (LMP).
 (b) Bid: energy systems utilize the uncertainty forecasts and solve optimization
-problems to derive optimal bidding strategies into the markets.
+problems to compute optimal bidding strategies into the markets.
 (c) Clearing: after collecting day-ahead bids from market participants, the market
 operator (modeled by Prescient) solves unit commitment problems to clear the
 day-ahead market.
@@ -51,18 +51,18 @@ calculates and pays the energy and ancillary service settlements to the particip
 
 |doubleloop_implementation|
 
-The design of framework's implementation is shown in the figure above. Specifically,
-we added the objects in red ``Forecaster``, ``Bidder``, ``Tracker``, and ``Coordinator``.
-The ``Bidder`` and ``Tracker`` take an IDAES model, and augment the model with
-necessary variables and constraints for energy system optimal bidding and tracking.
-The ``Coordinator`` acts as the bridge between process modeling and grid modeling.
-On the one hand, the ``Coordinator`` passes time to the ``Forecaster`` which then
-forecasts market uncertainty for the ``Bidder``. The ``Bidder`` then calculates
-optimal bids and passes back to the ``Coordinator`` and the bids finally enter
-Prescient. On the other hand, the ``Coordinator`` passes time and market dispatches
-to the ``Tracker``. The ``Tracker`` solves optimal tracking problems and passes
-actual energy production schedules back to the ``Coordinator``, and these schedules
-will enter Prescient for settlement calculation.
+The above figure shows the implementation. The objects ``Forecaster``, ``Bidder``,
+``Tracker``, and ``Coordinator`` help manage information exchange within the
+multiscale integrated simulation framework. The ``Bidder`` and ``Tracker`` take
+an IDAES model, and augment the model with necessary variables and constraints
+for energy system optimal bidding and tracking. The ``Coordinator`` acts as the
+bridge between process modeling and grid modeling. On the one hand, the ``Coordinator``
+passes time to the ``Forecaster`` which then forecasts market uncertainty for
+the ``Bidder``. The ``Bidder`` then calculates optimal bids and passes back to
+the ``Coordinator`` and the bids finally enter Prescient. On the other hand,
+the ``Coordinator`` passes time and market dispatches to the ``Tracker``.
+The ``Tracker`` solves optimal tracking problems and passes actual energy production
+schedules back to the ``Coordinator``, and these schedules will enter Prescient for settlement calculation.
 
 
 The readers can find an example with an IDAES Rankine cycle of the framework.
