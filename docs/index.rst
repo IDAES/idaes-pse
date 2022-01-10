@@ -16,8 +16,8 @@ other new technologies such as supercritical |CO2|.
 
 For a more detailed overview of the :term:`IDAES integrated platform <IDAES-IP>`, see :doc:`this page <user_guide/concepts>`.
 
-Contents Display
-----------------
+Contents
+--------
 .. list-table::
    :class: index-table
 
@@ -46,42 +46,6 @@ Contents Display
          * :doc:`Configuring IDAES <user_guide/configuration>`
          * :doc:`Logging Processing & Outputs <user_guide/logging>`
          * :doc:`Developing for IDAES <advanced_user_guide/developer/index>`
-
-
-Contents
----------
-Getting Started (Tutorials)
-"""""""""""""""""""""""""""
-* :doc:`Installing IDAES for users <getting_started/index>`
-* :doc:`Installing IDAES for developers <advanced_user_guide/advanced_install/index>`
-* :doc:`IDAES Examples & Tutorials <tutorials_examples>`
-
-How-To Guides
-"""""""""""""
-* :doc:`Setting up IDAES Models <user_guide/workflow/index>`
-* :doc:`Developing Custom Models <advanced_user_guide/custom_models/general_model_development>`
-* :doc:`Using IDAES Flowsheet Visualizer <user_guide/vis/index>`
-
-Reference Guides
-""""""""""""""""
-* :doc:`IDAES Model Libraries <technical_specs/model_libraries/index>`
-* :doc:`IDAES Core <technical_specs/core/index>`
-* :doc:`Command-line interface tools <user_guide/commands/index>`
-* :doc:`Configuring IDAES <user_guide/configuration>`
-* :doc:`Logging Processing & Outputs <user_guide/logging>`
-* :doc:`Developing for IDAES <advanced_user_guide/developer/index>`
-
-Explanations
-""""""""""""
-* :doc:`Why IDAES <user_guide/why_idaes>`
-* :doc:`Concepts <user_guide/concepts>`
-* :doc:`Components of IDAES <user_guide/components/index>`
-* :doc:`Conventions <user_guide/conventions>`
-* :doc:`Modeling Extensions <user_guide/modeling_extensions/index>`
-* :doc:`Related Packages <related_packages/index>`
-* :doc:`FAQ <faq>`
-* :doc:`License <license>`
-* :doc:`Copyright <copyright>`
 
 .. toctree::
     :hidden:
