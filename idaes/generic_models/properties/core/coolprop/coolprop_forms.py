@@ -22,6 +22,18 @@ from idaes.core.util.exceptions import ConfigurationError
 # TODO : Add other derivative forms as/if required
 
 def parameters_nt_sum(cobj, prop, nlist, tlist):
+    """
+    Method for creating parameters for expression forms using n-t parameters
+
+    Args:
+        cobj - component object that will contian the parameters
+        prop - name of property parameters are associated with
+        nlist - list of values for n-parameter
+        tlist - list of values for t-parameter
+
+    Returns:
+        None
+    """
     if len(nlist) != len(tlist):
         raise ConfigurationError(
             f"{cobj.name} mismatched length between n and t parameters "
@@ -46,6 +58,17 @@ def parameters_nt_sum(cobj, prop, nlist, tlist):
 
 
 def _nt_sum(cobj, prop, theta):
+    """
+    Method for creating sum expressions in n-t forms (sum(n[i]*theta**t[i]))
+
+    Args:
+        cobj - component object that will contian the parameters
+        prop - name of property parameters are associated with
+        theta - expression or variable to use for theta in expression
+
+    Returns:
+        Pyomo expression of sum term
+    """
     # Build sum term
     i = 1
     s = 0
@@ -61,6 +84,19 @@ def _nt_sum(cobj, prop, theta):
 
 
 def _nt_sum_dT(cobj, prop, T, Tc):
+    """
+    Method for creating expression of temperature derivative of sum term in n-t
+    forms (d/dT(sum(n[i]*theta**t[i])))
+
+    Args:
+        cobj - component object that will contian the parameters
+        prop - name of property parameters are associated with
+        T - temeprature used in expression
+        Tc - critical temeprature of component
+
+    Returns:
+        Pyomo expression of derivative of sum term
+    """
     Tr = T/Tc
 
     # Build sum term
@@ -78,6 +114,18 @@ def _nt_sum_dT(cobj, prop, T, Tc):
 
 
 def expression_exponential(cobj, prop, T, yc):
+    """
+    Method for creating expressions for CoolProp exponential sum forms
+
+    Args:
+        cobj - component object that will contian the parameters
+        prop - name of property parameters are associated with
+        T - temperature to use in expression
+        yc - value of property at critical point
+
+    Returns:
+        Pyomo expression matching CoolProp exponential sum form
+    """
     # y = yc * exp(Tc/T * sum(ni*theta^ti))
     Tc = cobj.temperature_crit
     theta = 1 - T/Tc
@@ -88,6 +136,18 @@ def expression_exponential(cobj, prop, T, yc):
 
 
 def expression_exponential_tau(cobj, prop, T, yc):
+    """
+    Method for creating expressions for CoolProp exponential sum forms with tau
+
+    Args:
+        cobj - component object that will contian the parameters
+        prop - name of property parameters are associated with
+        T - temperature to use in expression
+        yc - value of property at critical point
+
+    Returns:
+        Pyomo expression matching CoolProp exponential sum form with tau
+    """
     # y = yc * exp(Tc/T * sum(ni*theta^ti))
     Tc = cobj.temperature_crit
     theta = 1 - T/Tc
@@ -98,6 +158,20 @@ def expression_exponential_tau(cobj, prop, T, yc):
 
 
 def dT_expression_exponential_tau(cobj, prop, T, yc):
+    """
+    Method for creating expressions for temeprature derivative of CoolProp
+    exponential sum forms with tau
+
+    Args:
+        cobj - component object that will contian the parameters
+        prop - name of property parameters are associated with
+        T - temperature to use in expression
+        yc - value of property at critical point
+
+    Returns:
+        Pyomo expression for temeprature derivative of CoolProp exponential sum
+        form with tau
+    """
     # y = yc * exp(Tc/T * sum(ni*theta^ti))
     # Need d(y)/dT
 
@@ -111,6 +185,18 @@ def dT_expression_exponential_tau(cobj, prop, T, yc):
 
 
 def expression_nonexponential(cobj, prop, T, yc):
+    """
+    Method for creating expressions for CoolProp non-exponential sum forms
+
+    Args:
+        cobj - component object that will contian the parameters
+        prop - name of property parameters are associated with
+        T - temperature to use in expression
+        yc - value of property at critical point
+
+    Returns:
+        Pyomo expression mathcing CoolProp non-exponential sum form
+    """
     # y = yc * (1 + sum(ni*theta^ti))
     Tc = cobj.temperature_crit
     theta = 1 - T/Tc
@@ -121,6 +207,20 @@ def expression_nonexponential(cobj, prop, T, yc):
 
 
 def parameters_polynomial(cobj, prop, prop_units, alist, blist):
+    """
+    Method for creating parameters for expression forms using A-B parameters
+    (rational polynomial forms)
+
+    Args:
+        cobj - component object that will contian the parameters
+        prop - name of property parameters are associated with
+        prop_units - units of measurment for property
+        Alist - list of values for A-parameter
+        Blist - list of values for B-parameter
+
+    Returns:
+        None
+    """
     for i in range(0, len(alist)):
         aval = alist[i]
         if i == 0:
@@ -147,6 +247,17 @@ def parameters_polynomial(cobj, prop, prop_units, alist, blist):
 
 
 def expression_polynomial(cobj, prop, T):
+    """
+    Method for creating expressions for CoolProp rational polynomial forms
+
+    Args:
+        cobj - component object that will contian the parameters
+        prop - name of property parameters are associated with
+        T - temperature to use in expression
+
+    Returns:
+        Pyomo expression mathcing CoolProp rational polynomial form
+    """
     i = 0
     asum = 0
     while True:

@@ -22,7 +22,6 @@ from numpy import arange
 from pyomo.environ import (
     Block,
     ConcreteModel,
-    log,
     Param,
     SolverStatus,
     TerminationCondition,
@@ -40,7 +39,6 @@ from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
 from idaes.core.util import get_solver
 from idaes.generic_models.properties.core.pure.ConstantProperties import \
     Constant
-from idaes.core.util.constants import Constants
 
 
 from idaes.generic_models.properties.core.coolprop.coolprop_wrapper import (
@@ -57,14 +55,14 @@ class TestWrapper:
     @pytest.mark.unit
     def test_load_component(self):
         # Clear cached components to be sure
-        CoolPropWrapper.cached_components = {}
+        CoolPropWrapper._cached_components = {}
 
         # Load parameters for oxygen
         prop_dict = CoolPropWrapper._load_component_data("Oxygen")
 
         assert prop_dict is not None
-        assert "Oxygen" in CoolPropWrapper.cached_components
-        assert CoolPropWrapper.cached_components["Oxygen"] is prop_dict
+        assert "Oxygen" in CoolPropWrapper._cached_components
+        assert CoolPropWrapper._cached_components["Oxygen"] is prop_dict
         assert isinstance(prop_dict, dict)
         for k in ["STATES", "ANCILLARIES"]:
             assert k in prop_dict
@@ -80,29 +78,29 @@ class TestWrapper:
     def test_get_component(self):
         prop_dict = CoolPropWrapper._get_component_data("Oxygen")
 
-        assert CoolPropWrapper.cached_components["Oxygen"] is prop_dict
+        assert CoolPropWrapper._cached_components["Oxygen"] is prop_dict
 
     @pytest.mark.unit
     def test_get_component_alias(self):
         # Load oxygen properties using aliases
         prop_dict = CoolPropWrapper._get_component_data("R732")
 
-        assert CoolPropWrapper.cached_components["Oxygen"] is prop_dict
-        assert "R732" not in CoolPropWrapper.cached_components
+        assert CoolPropWrapper._cached_components["Oxygen"] is prop_dict
+        assert "R732" not in CoolPropWrapper._cached_components
 
     @pytest.mark.unit
     def test_load_component_by_alias(self):
         # Load CO2 data using one of its aliases
         prop_dict = CoolPropWrapper._load_component_data("R744")
 
-        assert CoolPropWrapper.cached_components["R744"] is prop_dict
-        assert "R744" in CoolPropWrapper.cached_components
+        assert CoolPropWrapper._cached_components["R744"] is prop_dict
+        assert "R744" in CoolPropWrapper._cached_components
 
         # Retrieve CO2 data using its normal name
         prop_dict2 = CoolPropWrapper._get_component_data("CO2")
 
         assert prop_dict2 is prop_dict
-        assert "CO2" not in CoolPropWrapper.cached_components
+        assert "CO2" not in CoolPropWrapper._cached_components
 
     @pytest.mark.unit
     def test_get_component_invalid(self):
@@ -115,7 +113,7 @@ class TestWrapper:
     def test_flush_cached_components(self):
         CoolPropWrapper.flush_cached_components()
 
-        assert CoolPropWrapper.cached_components == {}
+        assert CoolPropWrapper._cached_components == {}
 
     @pytest.mark.unit
     def test_get_critical_properties(self):
@@ -202,7 +200,7 @@ class TestWrapper:
         m = ConcreteModel()
         # First, add a dummy component to the cached components which uses
         # unsupoorted form
-        CoolPropWrapper.cached_components["TestComp"] = {
+        CoolPropWrapper._cached_components["TestComp"] = {
             "ANCILLARIES": {
                 "pS": {"type": "foo",
                        "using_tau_r": True}},
@@ -219,9 +217,9 @@ class TestWrapper:
 
         # Pressure_sat uses has two parts to form. Set type to supported form
         # and using_tau_r to False (unsupported)
-        CoolPropWrapper.cached_components[
+        CoolPropWrapper._cached_components[
             "TestComp"]["ANCILLARIES"]["pS"]["type"] = "pL"
-        CoolPropWrapper.cached_components[
+        CoolPropWrapper._cached_components[
             "TestComp"]["ANCILLARIES"]["pS"]["using_tau_r"] = False
         with pytest.raises(CoolPropExpressionError,
                            match="Found unsupported expression form for "
