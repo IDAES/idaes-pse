@@ -14,6 +14,7 @@
 Tests for KerasSurrogate
 """
 import pytest
+
 import os.path
 import pandas as pd
 from pyomo.common.fileutils import this_file_dir
@@ -21,10 +22,12 @@ from pyomo.common.tempfiles import TempfileManager
 from pyomo.environ import (ConcreteModel, Var, SolverFactory,
                            assert_optimal_termination, value,
                            Objective)
-from idaes.surrogate.keras_surrogate import KerasSurrogate, load_keras_json_hd5
+from idaes.surrogate.keras_surrogate import KerasSurrogate, load_keras_json_hd5, keras_available
 from idaes.surrogate.surrogate_block import SurrogateBlock
 from idaes.surrogate.sampling.scaling import OffsetScaler
-import tensorflow.keras as keras
+
+if not keras_available:
+    pytestmark = pytest.mark.skip("tensorflow.keras not available")
 
 rtol = 1e-4
 atol = 1e-4
