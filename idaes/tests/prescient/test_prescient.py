@@ -91,4 +91,4 @@ class Test5Bus:
     @pytest.mark.component
     # TODO use a more specific test to validate simulation output
     def test_simulation_results(self, simulation_output_files: List[Path], expected_number=2):
-        assert len(generated_output_files) >= expected_number
+        assert len(simulation_output_files) >= expected_number
