@@ -29,7 +29,7 @@ class MultiReporter(BaseReporter):
 
     @property
     def elapsed(self):
-        f = time.perf_counter()
+        f = time.perf_counter
         if self._start is None:
             self._start = f()
             return 0.
