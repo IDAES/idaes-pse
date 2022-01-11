@@ -45,9 +45,9 @@ hr {
   margin-left: 3em;
 }
 
-#idaes-canvas {
+/* #idaes-canvas {
   position: relative;
-}
+} */
 
 #idaes-toolbar-flowsheet {
   justify-content: flex-end;
@@ -76,7 +76,7 @@ hr {
 
 .idaes-container {
   min-width: 800px;
-  min-height: 800px;
+  /* min-height: 800px; */
   width: 90%;
   height: 50%;
   flex-grow: 1;
@@ -86,6 +86,8 @@ hr {
   border-radius: 5px;
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.23);
   border: solid 1px #e0e0e0;
+  resize: vertical;
+  overflow: auto;
 }
 
 #idaes-page-contents {
