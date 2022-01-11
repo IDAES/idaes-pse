@@ -5,6 +5,7 @@ from idaes.apps.grid_integration.tracker import Tracker
 from idaes.apps.grid_integration.coordinator import DoubleLoopCoordinator
 from test_tracker import TestingModel
 from test_bidder import TestingForecaster
+from pyomo.common import unittest as pyo_unittest
 
 tracking_horizon = 4
 bidding_horizon = 48
@@ -74,7 +75,7 @@ def test_assemble_project_tracking_signal(coordinator_object):
         hour=hour,
         sced_horizon=sced_horizon,
     )
-    assert signal == expected_signal
+    pyo_unittest.assertStructuredAlmostEqual(first=signal, second=expected_signal)
 
     # test if it assembles correct signals between 2 days
     hour = 23
@@ -85,7 +86,7 @@ def test_assemble_project_tracking_signal(coordinator_object):
         hour=hour,
         sced_horizon=sced_horizon,
     )
-    assert signal == expected_signal
+    pyo_unittest.assertStructuredAlmostEqual(first=signal, second=expected_signal)
 
 
 @pytest.mark.unit
@@ -116,7 +117,7 @@ def test_assemble_sced_tracking_market_signals(coordinator_object):
         current_ruc_dispatch=current_ruc_dispatch,
         next_ruc_dispatch=next_ruc_dispatch,
     )
-    assert signal == expected_signal
+    pyo_unittest.assertStructuredAlmostEqual(first=signal, second=expected_signal)
 
     # test case 2: no ruc signals, but between 2 days
     hour = 23
@@ -133,7 +134,7 @@ def test_assemble_sced_tracking_market_signals(coordinator_object):
         current_ruc_dispatch=current_ruc_dispatch,
         next_ruc_dispatch=next_ruc_dispatch,
     )
-    assert signal == expected_signal
+    pyo_unittest.assertStructuredAlmostEqual(first=signal, second=expected_signal)
 
     # test case 3: with ruc signals, between 2 days
     hour = 23
@@ -153,4 +154,4 @@ def test_assemble_sced_tracking_market_signals(coordinator_object):
         current_ruc_dispatch=current_ruc_dispatch,
         next_ruc_dispatch=next_ruc_dispatch,
     )
-    assert signal == expected_signal
+    pyo_unittest.assertStructuredAlmostEqual(first=signal, second=expected_signal)

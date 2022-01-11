@@ -2,6 +2,7 @@ import pytest
 import pyomo.environ as pyo
 from idaes.apps.grid_integration.bidder import Bidder
 from test_tracker import TestingModel
+from pyomo.common import unittest as pyo_unittest
 
 
 class TestingForecaster:
@@ -175,7 +176,7 @@ def test_compute_bids(bidder_object):
         for t in range(horizon)
     }
 
-    assert expected_bids == bids
+    pyo_unittest.assertStructuredAlmostEqual(first=expected_bids, second=bids)
 
     # test bidding when price forecast higher than marginal cost
     shift = 1
@@ -204,7 +205,7 @@ def test_compute_bids(bidder_object):
             pre_p = p
             pre_cost = expected_bids[t][gen][p]
 
-    assert expected_bids == bids
+    pyo_unittest.assertStructuredAlmostEqual(first=expected_bids, second=bids)
 
 
 @pytest.mark.component
