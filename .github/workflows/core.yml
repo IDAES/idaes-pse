@@ -55,7 +55,8 @@ jobs:
           - python-version: '3.8'
             # only generate coverage report for a single python version in the matrix
             # to avoid overloading Codecov
-            cov-report: true
+            # FIXME: reinstate coverage report before merging PR
+            cov-report: false
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
@@ -74,7 +75,8 @@ jobs:
           echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
       - name: Run pytest (not integration)
         run: |
-          pytest -m "not integration"
+          # FIXME only run Prescient tests while PR is WIP
+          pytest -k test_prescient
       - name: Upload coverage report to Codecov
         if: matrix.cov-report
         uses: codecov/codecov-action@v2
