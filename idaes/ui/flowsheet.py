@@ -658,18 +658,6 @@ class FlowsheetSerializer:
             if dest_unit_icon.routing_config and dest_port in dest_unit_icon.routing_config:
                 # The port group has to be specified in the routing config
                 self._out_json["routing_config"][link_name]["cell_config"]["gap"]["destination"] = dest_unit_icon.routing_config[dest_port]["gap"]
-
-        # Make sure that all registered Unit Models are created
-        for _, unit_attrs in self.unit_models.items():
-            unit_name = unit_attrs['name']
-            unit_type = unit_attrs['type']
-            unit_icon = UnitModelIcon(unit_type)
-            if unit_name in track_jointjs_elements:
-                # skip if unit is already added to the list of created cells
-                continue
-            cell_index = create_jointjs_image(unit_icon, unit_name, unit_type, x_pos, y_pos)
-            x_pos, y_pos, y_starting_pos = adjust_image_position(x_pos, y_pos, y_starting_pos)
-            track_jointjs_elements[unit_name] = cell_index
         
     def _create_image_jointjs_json(self, x_pos, y_pos, name, image, title, port_groups):
         # Create the jointjs for a given image

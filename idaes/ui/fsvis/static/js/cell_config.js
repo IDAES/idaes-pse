@@ -30,11 +30,25 @@ export class JointJsCellConfig {
 	}
 
     /**
+     * Finding the correct cell index based on the given cell name 'cellName'
+    */
+    findCellIndex(cellName, cellType) {
+        for (let i = 0; i < this.model['cells'].length; i++) {
+            const cell = this.model['cells'][i];
+            if (cell.id == cellName && cell.type == cellType) {
+                return i;
+            }
+        }
+        // If an index is not returned, that means the link was not found
+        throw new Error(`Link with linkName: ${cellName} was not found`);
+    }
+
+    /**
      * Generate a custom function that handles the router 'gap' option.
      * The 'gap' option is specified by the users to choose the two vertices
      * that the link will take to connect the unit models (elements).
     */
-     routerGapFnFactory(gap) {
+    routerGapFnFactory(gap) {
         var router_fn = (vertices, opt, linkView) => {
             const a = linkView.getEndAnchor('source');
             const b = linkView.getEndAnchor('target');
@@ -60,12 +74,13 @@ export class JointJsCellConfig {
         const dest = "destination";
 
         var routing_config = this._model['routing_config'];
-        for (var link in routing_config) {
+        for (var linkName in routing_config) {
             var routing_fn = this.routerGapFnFactory(
-                routing_config[link].cell_config.gap
+                routing_config[linkName].cell_config.gap
             );
 
-            this._model['cells'][routing_config[link].cell_index].router = routing_fn;
+            const cell_index = this.findCellIndex(linkName, "standard.Link");
+            this._model['cells'][cell_index].router = routing_fn;
         }
         return this._model;
 	}
