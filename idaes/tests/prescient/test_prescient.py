@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Dict, Union, List
 
 import pytest
+import pandas as pd
 
 
 prescient_simulator = pytest.importorskip("prescient.simulator", reason="prescient (optional dependency) not available")
@@ -83,12 +84,17 @@ class Test5Bus:
         sim.simulate(**prescient_options)
 
     @pytest.fixture
-    def simulation_output_files(self, run_simulator, output_dir: Path) -> List[Path]:
-        return list(sorted(output_dir.rglob("*")))
+    def simulation_results_table(
+            self,
+            run_simulator,
+            output_dir: Path,
+            name: str = "overall_simulation_output.csv"
+        ) -> pd.DataFrame:
 
-    # FIXME this should be changed to pytest.mark.integration, unless we manage to
-    # set the options so that in runs in < 20 s
+        path = output_dir / name
+        return pd.read_csv(path)
+
     @pytest.mark.component
     # TODO use a more specific test to validate simulation output
-    def test_simulation_results(self, simulation_output_files: List[Path], expected_number=2):
-        assert len(simulation_output_files) >= expected_number
+    def test_simulation_results(self, simulation_results_table: pd.DataFrame):
+        assert not simulation_results_table.empty
