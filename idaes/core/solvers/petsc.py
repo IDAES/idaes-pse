@@ -20,6 +20,7 @@ import json
 import idaes
 import pyomo.environ as pyo
 from pyomo.common.collections import ComponentSet, ComponentMap
+from pyomo.core.expr.visitor import identify_variables
 import pyomo.dae as pyodae
 from pyomo.common import Executable
 from pyomo.dae.flatten import flatten_dae_components
@@ -253,13 +254,14 @@ def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
         datatype=pyo.Suffix.INT,
     )
     # The dae_link suffix provides the solver a link between the differential
-    # and derivitive variable, by assiging the pair a unique integer index. 
+    # and derivitive variable, by assiging the pair a unique integer index.
     m.dae_link = pyo.Suffix(
         direction=pyo.Suffix.EXPORT,
         datatype=pyo.Suffix.INT,
     )
     dae_var_link_index = 1
     differential_vars = []
+    i = 0
     for var in variables:
         if var in deriv_diff_map:
             deriv = var
@@ -268,7 +270,10 @@ def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
             m.dae_suffix[deriv] = int(DaeVarTypes.DERIVATIVE)
             m.dae_link[diffvar] = dae_var_link_index
             m.dae_link[deriv] = dae_var_link_index
+            i += 1
             dae_var_link_index += 1
+            if not diffvar.fixed:
+                differential_vars.append(diffvar) 
     return differential_vars
 
 
@@ -284,14 +289,18 @@ def _get_derivative_differential_data_map(m, time):
         (ComponentMap): Map from derivative data objects to differential
             data objects
     """
-    deriv_diff_list = []
-    for var in m.component_objects(pyo.Var):
-        if (isinstance(var, pyodae.DerivativeVar) and
-                time in ComponentSet(var.get_continuousset_list())):
-            deriv = var # For clarity
-            diffvar = deriv.get_state_var()
-            for idx in var:
-                deriv_diff_list.append((deriv[idx], diffvar[idx]))
+    derivs = ComponentSet()
+    for con in m.component_data_objects(pyo.Constraint, active=True):
+        for var in identify_variables(con.body):
+            pvar = var.parent_component()
+            if (isinstance(pvar, pyodae.DerivativeVar) and not var.fixed and
+                    time in ComponentSet(pvar.get_continuousset_list())):
+                derivs.add(var)
+    deriv_diff_list = [None]*len(derivs)
+    for i, deriv in enumerate(derivs):
+        diffvar = deriv.parent_component().get_state_var()
+        idx = deriv.index()
+        deriv_diff_list[i] = (deriv, diffvar[idx])
     return ComponentMap(deriv_diff_list)
 
 
@@ -419,14 +428,13 @@ def petsc_dae_by_time_element(
                     res = solver_snes.solve(t_block, tee=slc.tee)
     res_list.append(res)
 
-    deriv_diff_map = _get_derivative_differential_data_map(m, time)
-
     tprev = t0
     with TemporarySubsystemManager(
             to_deactivate=tdisc,
             to_fix=initial_variables,
             ):
         # Solver time steps
+        deriv_diff_map = _get_derivative_differential_data_map(m, time)
         for t in time:
             if t == time.first():
                 # t == time.first() was handled above
