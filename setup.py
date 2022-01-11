@@ -90,8 +90,10 @@ kwargs = dict(
     extras_require={
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
-            "tensorflow"  # idaes.surrogate.keras_surrogate
-        ]
+            "tensorflow",  # idaes.surrogate.keras_surrogate
+            # FIXME update requirement once PR is merged in
+            "gridx-prescient @ https://github.com/grid-parity-exchange/Prescient/archive/refs/pull/128/head.zip"  # idaes.tests.prescient
+        ],
     },
     package_data={
         # If any package contains these files, include them:
