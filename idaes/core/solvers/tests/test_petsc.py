@@ -102,6 +102,9 @@ def test_petsc_read_trajectory():
     Check the that the PETSc DAE solver works.
     """
     m, y1, y2, y3, y4, y5, y6 = dae()
+    m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+    m.scaling_factor[m.y[180, 1]] = 10 # make sure unscale works
+
     petsc.petsc_dae_by_time_element(
         m,
         time=m.t,
@@ -112,7 +115,8 @@ def test_petsc_read_trajectory():
             "--ts_save_trajectory":1,
             "--ts_trajectory_type":"visualization",
         },
-        vars_stub="tj_random_junk_123"
+        vars_stub="tj_random_junk_123",
+        trajectory_save_prefix="tj_random_junk_123",
     )
     assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
     assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
@@ -121,7 +125,7 @@ def test_petsc_read_trajectory():
     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
     assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y6[m.t.last()])
 
-    tj = petsc.PetscTrajectory(stub="tj_random_junk_123", delete_on_read=True)
+    tj = petsc.PetscTrajectory(json="tj_random_junk_123_1.json.gz")
     assert tj.get_dt()[0] == pytest.approx(0.01) # if small enough shouldn't be cut
     assert tj.get_vec(m.y[180, 1])[-1] == pytest.approx(y1, rel=1e-3)
     assert tj.get_vec("_time")[-1] == pytest.approx(180)
@@ -137,3 +141,13 @@ def test_petsc_read_trajectory():
     assert vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
     assert vecs["_time"][-1] == pytest.approx(180)
     os.remove("some_testy_json.json")
+
+    tj.to_json("some_testy_json.json.gz")
+    tj2 = petsc.PetscTrajectory(json="some_testy_json.json.gz")
+    assert tj2.vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
+    assert tj2.vecs["_time"][-1] == pytest.approx(180)
+    os.remove("some_testy_json.json.gz")
+
+    tj2 = petsc.PetscTrajectory(vecs=vecs)
+    assert tj2.vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
+    assert tj2.vecs["_time"][-1] == pytest.approx(180)

@@ -17,6 +17,8 @@ import shutil
 import enum
 import copy
 import json
+import gzip
+
 import idaes
 import pyomo.environ as pyo
 from pyomo.common.collections import ComponentSet, ComponentMap
@@ -273,7 +275,7 @@ def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
             i += 1
             dae_var_link_index += 1
             if not diffvar.fixed:
-                differential_vars.append(diffvar) 
+                differential_vars.append(diffvar)
     return differential_vars
 
 
@@ -339,6 +341,7 @@ def petsc_dae_by_time_element(
     keepfiles=False,
     symbolic_solver_labels=True,
     vars_stub=None,
+    trajectory_save_prefix=None,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -375,6 +378,8 @@ def petsc_dae_by_time_element(
         vars_stub (str or None): Copy the `*.col` and `*.typ` files to the
             working directory using this stub if not None.  These are needed to
             interpret the trajectory data.
+        trajectory_save_prefix (str or None): If a string is provided the
+            trajectory data will be saved as gzipped json
 
     Returns:
         List of solver results objects from each solve. If there are initial
@@ -429,6 +434,7 @@ def petsc_dae_by_time_element(
     res_list.append(res)
 
     tprev = t0
+    count = 1
     with TemporarySubsystemManager(
             to_deactivate=tdisc,
             to_fix=initial_variables,
@@ -465,7 +471,12 @@ def petsc_dae_by_time_element(
                     export_nonlinear_variables=differential_vars,
                     options={"--ts_init_time": tprev, "--ts_max_time": t},
                 )
+            if trajectory_save_prefix is not None:
+                tj = PetscTrajectory(
+                    stub=vars_stub, delete_on_read=True, unscale=t_block)
+                tj.to_json(f"{trajectory_save_prefix}_{count}.json.gz")
             tprev = t
+            count += 1
             res_list.append(res)
     return res_list
 
@@ -473,12 +484,17 @@ def petsc_dae_by_time_element(
 class PetscTrajectory(object):
     def __init__(
             self,
-            stub,
+            stub=None,
+            vecs=None,
+            json=None,
             pth=None,
             vis_dir="Visualization-data",
             delete_on_read=False,
+            unscale=None,
             ):
-        """Class to read PETSc TS solver trajectory data.
+        """Class to read PETSc TS solver trajectory data.  This can either read
+        PETSc output by providing the ``stub`` argument, a trajectory dict by
+        providing ``vecs`` or a json file by providing ``json``.
 
         Args:
             stub (str): file name stub for variable info
@@ -486,18 +502,32 @@ class PetscTrajectory(object):
                 if None, use current working directory
             vis_dir (str): subdirectory where visualization data is stored
             delete_on_read (bool): if true delete trajectory data after reading
+            unscale (Block): if not None this is a block to read scale factors
+                to unscale the trajectory
         """
         if PetscBinaryIOTrajectory is None:
             raise RuntimeError("PetscBinaryIOTrajectory could not be imported")
         if pth is not None:
             stub = os.path.join(pth, stub)
             vis_dir = os.path.join(pth, vis_dir)
-        self.stub = stub
-        self.vis_dir = vis_dir
-        self.path = pth
-        self._read()
-        if delete_on_read:
-            self.delete_files()
+        if stub is not None:
+            self.stub = stub
+            self.vis_dir = vis_dir
+            self.path = pth
+            self.unscale = unscale
+            self._read()
+            if delete_on_read:
+                self.delete_files()
+            if unscale is not None:
+                self._unscale(unscale)
+        elif vecs is not None:
+            self.vecs = vecs
+            self.time = vecs["_time"]
+            self.vars = list(vecs.keys())
+        elif json is not None:
+            self.from_json(json)
+        else:
+            raise RuntimeError("To read trajectory, either provide stub, vecs, or json")
 
     def _read(self):
         with open(f'{self.stub}.col') as f:
@@ -561,11 +591,11 @@ class PetscTrajectory(object):
         """Create a new vector dictionary interpolated at times.
 
         Args:
-            vars (list): list of variables or variable names to plot.  The
-                varibles include the time index of the final time.
+            times (list): list of times to interpolate. These must be in
+                increasing order.
 
-        Returns:
-            (dict)
+        Returns (dict):
+            Dictionary of time vectors at interpolated points
         """
         vecs = dict.fromkeys(self.vars, None)
         vecs["_time"] = copy.copy(times)
@@ -584,20 +614,29 @@ class PetscTrajectory(object):
                 vecs[k][i] = w1*v[j - 1] + w2*v[j]
         return vecs
 
-    def plot_trajectory_original(self, vars):
-        """Plot function privided by PETSc.
+    def _unscale(self, m):
+        """If variable scale factors are used, the solver will see scaled
+        varaibles, and the scaled trajectory will be written. This function
+        uses varaible scaling facors from the given model to unscale the
+        trajectory.
 
         Args:
-            vars (list): list of variables or variable names to plot.  The
-                varibles include the time index of the final time.
+            m (Block): model or block to read scale factors from.
 
         Returns:
             None
         """
-        vars = self._var_name_list(vars)
-        PetscBinaryIOTrajectory.PlotTrajectories(
-            self.time, self.vecs_by_time, self.vars, self._var_name_list(vars)
-        )
+        for var in m.component_data_objects():
+            vname = str(var)
+            if vname in self.vecs:
+                s = None
+                if hasattr(var.parent_block(), "scaling_factor"):
+                    s = var.parent_block().scaling_factor.get(var, s)
+                if hasattr(m, "scaling_factor"):
+                    s = m.scaling_factor.get(var, s)
+                if s is not None:
+                    for i, x in enumerate(self.vecs[vname]):
+                        self.vecs[vname][i] = x/s
 
     def delete_files(self):
         """Delete the trajectory data and varible information files.
@@ -622,5 +661,28 @@ class PetscTrajectory(object):
         Returns:
             None
         """
-        with open(pth, "w") as fp:
-            json.dump(self.vecs, fp)
+        if pth.endswith(".gz"):
+            with gzip.open(pth, "w") as fp:
+                fp.write(json.dumps(self.vecs).encode("utf-8"))
+        else:
+            with open(pth, "w") as fp:
+                json.dump(self.vecs, fp)
+
+    def from_json(self, pth):
+        """Dump the trajectory data to a json file in the form of a dictionary
+        with varaible name keys and '_time' with time vectors values.
+
+        Args:
+            pth (str): path for json file to write
+
+        Returns:
+            None
+        """
+        if pth.endswith(".gz"):
+            with gzip.open(pth, "r") as fp:
+                self.vecs = json.loads(fp.read())
+        else:
+            with open(pth, "r") as fp:
+                self.vecs = json.load(fp)
+        self.time = self.vecs["_time"]
+        self.vars = list(self.vecs.keys())
