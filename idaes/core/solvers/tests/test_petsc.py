@@ -17,13 +17,124 @@ import numpy as np
 import json
 import os
 import pyomo.environ as pyo
-from pyomo.dae.flatten import flatten_dae_components
+import pyomo.dae as pyodae
 from pyomo.util.subsystems import (
     TemporarySubsystemManager,
     create_subsystem_block,
 )
 from idaes.core.solvers import petsc
-from idaes.core.solvers.features import dae_with_non_time_indexed_constraint, dae
+from idaes.core.solvers.features import dae
+
+
+def dae_with_non_time_indexed_constraint():
+    """This provides a DAE model for solver testing. This model contains a non-
+    time-indexed variable and constraint and a fixed derivitive to test some
+    edge cases.
+
+    The problem and expected result are from A test problem from
+    https://archimede.dm.uniba.it/~testset/report/chemakzo.pdf.
+
+    Args:
+        None
+
+    Returns:
+        (tuple): Pyomo ConcreteModel, correct solved value for y[1] to y[6]
+    """
+    model = pyo.ConcreteModel(name="chemakzo")
+
+    # Set problem parameter values
+    model.k = pyo.Param([1,2,3,4], initialize={
+        1:18.7,
+        2:0.58,
+        3:0.09,
+        4:0.42})
+    model.Ke = pyo.Param(initialize=34.4)
+    model.klA = pyo.Param(initialize=3.3)
+    model.Ks = pyo.Param(initialize=115.83)
+    model.pCO2 = pyo.Param(initialize=0.9)
+    # The following parameter H, is best made a parameter, but will use a
+    # variable and constraint instead to test non-time-indexed constraints
+    #model.H = pyo.Param(initialize=737)
+
+    # Problem variables ydot = dy/dt,
+    #    (dy6/dt is not explicitly in the equations, so only 5 ydots)
+    model.H = pyo.Var(initialize=737)
+    model.t = pyodae.ContinuousSet(bounds=(0,180))
+    model.y = pyo.Var(model.t, [1,2,3,4,5,6], initialize=1.0)  #
+    model.ydot = pyodae.DerivativeVar(model.y, wrt=model.t) # dy/dt
+    model.r = pyo.Var(model.t, [1,2,3,4,5], initialize=1.0)
+    model.Fin = pyo.Var(model.t, initialize=1.0)
+
+    # Non-time indexed constraint (just for testing)
+    model.H_eqn = pyo.Constraint(expr=model.H==737)
+
+    # Equations
+    @model.Constraint(model.t)
+    def eq_ydot1(b, t):
+        return b.ydot[t, 1] == -2.0*b.r[t, 1] + b.r[t, 2] - b.r[t, 3] - b.r[t, 4]
+    @model.Constraint(model.t)
+    def eq_ydot2(b, t):
+        return b.ydot[t, 2] == -0.5*b.r[t, 1] - b.r[t, 4] - 0.5*b.r[t, 5] + b.Fin[t]
+    @model.Constraint(model.t)
+    def eq_ydot3(b, t):
+        return b.ydot[t, 3] == b.r[t, 1] - b.r[t, 2] + b.r[t, 3]
+    @model.Constraint(model.t)
+    def eq_ydot4(b, t):
+        return b.ydot[t, 4] == -b.r[t, 2] + b.r[t, 3] - 2.0*b.r[t, 4]
+    @model.Constraint(model.t)
+    def eq_ydot5(b, t):
+        return b.ydot[t, 5] == b.r[t, 2] - b.r[t, 3] + b.r[t, 5]
+    @model.Constraint(model.t)
+    def eq_y6(b, t):
+        return b.ydot[t, 6] == b.Ks*b.y[t, 1]*b.y[t, 4] - b.y[t, 6]
+
+    model.ydot[:, 6].fix(0)
+
+    @model.Constraint(model.t)
+    def eq_r1(b, t):
+        return b.r[t, 1] == b.k[1]*b.y[t, 1]**4*b.y[t, 2]**0.5
+    @model.Constraint(model.t)
+    def eq_r2(b, t):
+        return b.r[t, 2] == b.k[2]*b.y[t, 3]*b.y[t, 4]
+    @model.Constraint(model.t)
+    def eq_r3(b, t):
+        return b.r[t, 3] == b.k[2]/b.Ke*b.y[t, 1]*b.y[t, 5]
+    @model.Constraint(model.t)
+    def eq_r4(b, t):
+        return b.r[t, 4] == b.k[3]*b.y[t, 1]*b.y[t, 4]**2
+    @model.Constraint(model.t)
+    def eq_r5(b, t):
+        return b.r[t, 5] == b.k[4]*b.y[t, 6]**2*b.y[t, 2]**0.5
+    @model.Constraint(model.t)
+    def eq_Fin(b, t):
+        return b.Fin[t] == b.klA*(b.pCO2/b.H - b.y[t, 2])
+
+    # Set initial condtions and solve initial from the values of differntial
+    # variables (r and y6 well and the derivative vars too).
+    y0 = {1:0.444, 2:0.00123, 3:0.0, 4:0.007, 5:0.0} #initial differntial vars
+    for i in y0:
+        model.y[0, i].fix(y0[i])
+
+    model.eq_ydot1[0].deactivate()
+    model.eq_ydot2[0].deactivate()
+    model.eq_ydot3[0].deactivate()
+    model.eq_ydot4[0].deactivate()
+    model.eq_ydot5[0].deactivate()
+
+    discretizer = pyo.TransformationFactory('dae.finite_difference')
+    discretizer.apply_to(model, nfe=1, scheme='BACKWARD')
+
+    return (
+        model,
+        0.1150794920661702,
+        0.1203831471567715e-2,
+        0.1611562887407974,
+        0.3656156421249283e-3,
+        0.1708010885264404e-1,
+        0.4873531310307455e-2,
+    )
+
+
 
 @pytest.mark.unit
 def test_copy_time():
@@ -63,6 +174,8 @@ def test_gen_time_disc_eqns():
     n = 0
     for cs in petsc._generate_time_discretization(m, m.t):
         for c in cs.values():
+            if c.index()[1] == 6:
+                continue
             assert id(c) in disc_eq
             n += 1
 
@@ -71,8 +184,8 @@ def test_gen_time_disc_eqns():
 @pytest.mark.unit
 def test_set_dae_suffix():
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
-    regular_vars, time_vars = flatten_dae_components(m, m.t, pyo.Var)
-    regular_cons, time_cons = flatten_dae_components(m, m.t, pyo.Constraint)
+    regular_vars, time_vars = pyodae.flatten.flatten_dae_components(m, m.t, pyo.Var)
+    regular_cons, time_cons = pyodae.flatten.flatten_dae_components(m, m.t, pyo.Constraint)
     t = 180
     m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
     m.scaling_factor[m.ydot[180, 2]] = 10
@@ -95,13 +208,34 @@ def test_set_dae_suffix():
     assert t_block.dae_suffix[m.y[180, 4]] == 1
     assert t_block.dae_suffix[m.y[180, 5]] == 1
 
+    # Make sure deactivating a differntial equation makes the varaible that
+    # would have been differntial go algebraic
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
+    # discretization equations would be deactivated in normal PETSc solve
+    for con in petsc._generate_time_discretization(m, m.t):
+        con.deactivate()
+    # deactivate a differential equation making y4 be algebraic
+    m.eq_ydot4[180].deactivate()
+    regular_vars, time_vars = pyodae.flatten.flatten_dae_components(m, m.t, pyo.Var)
+    regular_cons, time_cons = pyodae.flatten.flatten_dae_components(m, m.t, pyo.Constraint)
+    t = 180
+    constraints = [con[t] for con in time_cons if t in con]
+    variables = [var[t] for var in time_vars]
+    t_block = create_subsystem_block(constraints, variables)
+    deriv_diff_map = petsc._get_derivative_differential_data_map(m, m.t)
+    petsc._set_dae_suffixes_from_variables(t_block, variables, deriv_diff_map)
+    petsc._sub_problem_scaling_suffix(m, t_block)
+
+    assert m.y[t, 4] not in t_block.dae_suffix
+    assert m.ydot[t, 4] not in t_block.dae_suffix
+
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_petsc_read_trajectory():
     """
     Check the that the PETSc DAE solver works.
     """
-    m, y1, y2, y3, y4, y5, y6 = dae()
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
     m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
     m.scaling_factor[m.y[180, 1]] = 10 # make sure unscale works
 
@@ -123,7 +257,7 @@ def test_petsc_read_trajectory():
     assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
     assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
-    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y6[m.t.last()])
+    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
 
     tj = petsc.PetscTrajectory(json="tj_random_junk_123_1.json.gz")
     assert tj.get_dt()[0] == pytest.approx(0.01) # if small enough shouldn't be cut

@@ -247,5 +247,3 @@ the correct solved values for select variables.
 .. autofunction:: idaes.core.solvers.features.nle
 
 .. autofunction:: idaes.core.solvers.features.dae
-
-.. autofunction:: idaes.core.solvers.features.dae_with_non_time_indexed_constraint
