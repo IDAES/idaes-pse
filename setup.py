@@ -89,7 +89,8 @@ kwargs = dict(
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
             "tensorflow",  # idaes.surrogate.keras_surrogate
-            "coolprop"  # idaes.generic_models.properties.general.coolprop
+            # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
+            "coolprop; python_version < '3.9'"  # idaes.generic_models.properties.general.coolprop
         ]
     },
     package_data={
