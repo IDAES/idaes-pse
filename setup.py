@@ -92,7 +92,7 @@ kwargs = dict(
         "optional": [
             "tensorflow",  # idaes.surrogate.keras_surrogate
             # FIXME update requirement once PR is merged in
-            "gridx-prescient @ https://github.com/grid-parity-exchange/Prescient/archive/refs/pull/128/head.zip"  # idaes.tests.prescient
+            "gridx-prescient @ https://github.com/grid-parity-exchange/Prescient/archive/refs/pull/128/head.zip; python_version>='3.7'"  # idaes.tests.prescient
         ],
     },
     package_data={
