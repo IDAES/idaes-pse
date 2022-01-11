@@ -26,6 +26,59 @@ from idaes.core.solvers import petsc
 from idaes.core.solvers.features import dae
 
 
+def car_example():
+    """This is to test problems where a differential variable doen't appear in
+    a constraint this is based on a Pyomo example here:
+    https://github.com/Pyomo/pyomo/blob/main/examples/dae/car_example.py"""
+    m = pyo.ConcreteModel()
+
+    m.R = pyo.Param(initialize=0.001) #  Friction factor
+    m.L = pyo.Param(initialize=100.0) #  Final position
+
+    m.tau = pyodae.ContinuousSet(bounds=(0,1)) # Unscaled time
+    m.time = pyo.Var(m.tau) # Scaled time
+    m.tf = pyo.Var()
+    m.x = pyo.Var(m.tau,bounds=(0,m.L+50))
+    m.v = pyo.Var(m.tau,bounds=(0,None))
+    m.a = pyo.Var(m.tau, bounds=(-3.0,1.0),initialize=0)
+
+    m.dtime = pyodae.DerivativeVar(m.time)
+    m.dx = pyodae.DerivativeVar(m.x)
+    m.dv = pyodae.DerivativeVar(m.v)
+
+    m.obj = pyo.Objective(expr=m.tf)
+
+    def _ode1(m,i):
+        if i == 0 :
+            return pyo.Constraint.Skip
+        return m.dx[i] == m.tf * m.v[i]
+    m.ode1 = pyo.Constraint(m.tau, rule=_ode1)
+
+    def _ode2(m,i):
+        if i == 0 :
+            return pyo.Constraint.Skip
+        return m.dv[i] == m.tf*(m.a[i] - m.R*m.v[i]**2)
+    m.ode2 = pyo.Constraint(m.tau, rule=_ode2)
+
+    def _ode3(m,i):
+        if i == 0:
+            return pyo.Constraint.Skip
+        return m.dtime[i] == m.tf
+    m.ode3 = pyo.Constraint(m.tau, rule=_ode3)
+
+    def _init(m):
+        yield m.x[0] == 0
+        #yield m.x[1] == m.L
+        yield m.v[0] == 0
+        yield m.v[1] == 0
+        yield m.time[0] == 0
+    m.initcon = pyo.ConstraintList(rule=_init)
+
+    discretizer = pyo.TransformationFactory('dae.finite_difference')
+    discretizer.apply_to(m,nfe=1,scheme='BACKWARD')
+    return m
+
+
 def dae_with_non_time_indexed_constraint():
     """This provides a DAE model for solver testing. This model contains a non-
     time-indexed variable and constraint and a fixed derivitive to test some
@@ -134,6 +187,26 @@ def dae_with_non_time_indexed_constraint():
         0.4873531310307455e-2,
     )
 
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_car():
+    m = car_example()
+    m.a.fix(1.0)
+    m.tf.fix(16.56)
+
+    # solve
+    petsc.petsc_dae_by_time_element(
+        m,
+        time=m.tau,
+        ts_options={
+            "--ts_type":"cn", # Crank–Nicolson
+            "--ts_adapt_type":"basic",
+            "--ts_dt":0.01,
+        },
+    )
+
+    assert pyo.value(m.x[1]) == pytest.approx(131.273, rel=1e-2)
 
 
 @pytest.mark.unit
