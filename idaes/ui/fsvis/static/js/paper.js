@@ -92,9 +92,10 @@ export class Paper {
             }
         });
 
-        // Adds link tools (adding vertices, moving segments) to links when your 
-        // mouse over
-        self._paper.on("link:mouseover", function(cellView, evt) {
+        // Setup event when a link in the paper is hovered upon
+        self._paper.on("link:mouseenter", function(linkView) {
+            // Adds link tools (adding vertices, moving segments) to links when your
+            // mouse over
             var verticesTool = new joint.linkTools.Vertices({
                 focusOpacity: 0.5,
                 redundancyRemoval: true,
@@ -108,13 +109,39 @@ export class Paper {
                     verticesTool, segmentsTool
                 ]
             });
-            cellView.addTools(toolsView)
-            cellView.showTools()
+            linkView.addTools(toolsView);
+            linkView.showTools();
+
+            linkView.model.attr('line/stroke', '#2df0fc');
+
+            // Highlight the corresponding column in the Stream Table
+            let streamGridCells = document.querySelectorAll(`[col-id=${linkView.model.id}]`);
+            streamGridCells.forEach((gridCell, index) => {
+                if (gridCell.getAttribute('role') == 'columnheader') {
+                    gridCell.classList.add('link-streamtable-hover-columnheader');
+                }
+                else if (index == streamGridCells.length - 1) {
+                    gridCell.classList.add('link-streamtable-hover-lastrow');
+                }
+                else {
+                    gridCell.classList.add('link-streamtable-hover');
+                }
+            });
         });
 
-        // Removes the link tools when you leave the link
-        self._paper.on("link:mouseout", function(cellView, evt) {
-            cellView.hideTools()
+        // Setup event when the hovering ends
+        self._paper.on("link:mouseleave", function(linkView) {
+            // Removes the link tools when you leave the link
+            linkView.hideTools();
+
+            linkView.model.attr('line/stroke', '#979797');
+
+            // Remove the highlight of the column in the Stream Table when the hovering ends
+            document.querySelectorAll(`[col-id=${linkView.model.id}]`).forEach((gridCell) => {
+                gridCell.classList.remove('link-streamtable-hover-columnheader');
+                gridCell.classList.remove('link-streamtable-hover-lastrow');
+                gridCell.classList.remove('link-streamtable-hover');
+            });
         });
 
         // Send a post request to the server with the new this._graph 
