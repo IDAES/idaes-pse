@@ -108,6 +108,9 @@ kwargs = dict(
     # Only installed if [<key>] is added to package name
     extras_require={
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
+        "optional": [
+            "tensorflow"  # idaes.surrogate.keras_surrogate
+        ]
     },
     package_data={
         # If any package contains these files, include them:
@@ -126,8 +129,8 @@ kwargs = dict(
             "*.html",
             "*.json.gz",
             "*.dat",
-            "*.xls",
-            "*.xlsx",
+            "*.h5",
+            "*.trc",
         ]
     },
     include_package_data=True,
@@ -152,7 +155,6 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
