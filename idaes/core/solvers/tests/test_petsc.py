@@ -233,7 +233,7 @@ def test_copy_time():
 def test_gen_time_disc_eqns():
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
 
-    # The model has one time element and drivatives for y[1] to y[5]
+    # The model has one time element and derivatives for y[1] to y[5]
     # the final time is 180, so create a list of what the time discretization
     # constraints should be.
     disc_eq = [

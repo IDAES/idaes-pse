@@ -236,13 +236,13 @@ def test_petsc_with_pid_model():
         vars_stub="tj_vars"
     )
 
-    # read the trajectory data, and make it easy by interplating a time point
+    # read the trajectory data, and make it easy by interpolating a time point
     # every second
     tj = petsc.PetscTrajectory(stub="tj_vars", delete_on_read=True)
     vecs = tj.interpolate_vecs(np.linspace(0, 24, 25))
 
     # For more details about the problem behavior see the PETSc examples in the
-    # examples repo. 
+    # examples repo.
 
     # make sure the inlet pressure is initially 5e5 Pa
     assert (

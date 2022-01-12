@@ -141,14 +141,14 @@ class PetscTS(Petsc):
 
     def _postsolve(self):
         stub = os.path.splitext(self._soln_file)[0]
-        # There is a type file created by the solver to give the varaible types
-        # this is needed to read the trajectory data, and we want to delete it
+        # There is a type file created by the solver to give the variable types
+        # this is needed to read the trajectory data, and we want to include it
         # with other tmp files
         typ_file = stub + ".typ"
         TempfileManager.add_tempfile(typ_file)
         # If the vars_stub option was specified, copy the col and typ files to
-        # the working directory. These files are need to get the names and
-        # types of variables, and are need to make sense of trajectory data.
+        # the working directory. These files are needed to get the names and
+        # types of variables and to make sense of trajectory data.
         if self._ts_vars_stub is not None:
             try:
                 shutil.copyfile(f"{stub}.col", f"{self._ts_vars_stub}.col")
@@ -167,7 +167,7 @@ class PetscTAO(Petsc):
 
     def __init__(self, **kwds):
         raise NotImplementedError(
-            "The PETSc TAO interface has not yet been implimented"
+            "The PETSc TAO interface has not yet been implemented"
         )
 
 
@@ -285,7 +285,7 @@ def _get_derivative_differential_data_map(m, time):
 
     Args:
         m: Model to search for DerivativeVars
-        time: Set with respect to which DerivativeVars must be derived
+        time: Set with respect to which DerivativeVars must be differentiated
 
     Returns:
         (ComponentMap): Map from derivative data objects to differential
@@ -309,7 +309,7 @@ def _get_derivative_differential_data_map(m, time):
 def _sub_problem_scaling_suffix(m, t_block):
     """Copy scaling factors from the full model to the submodel.  This assumes
     the scaling suffixes could be in two places.  First check the parent block
-    of the compoent (typical place for idaes models) then check the top-level
+    of the component (typical place for idaes models) then check the top-level
     model.  The top level model will take precedence.
     """
     if not hasattr(t_block, "scaling_factor"):
@@ -372,7 +372,7 @@ def petsc_dae_by_time_element(
         wsl (bool): if True use WSL to run PETSc, if False don't use WSL to run
             PETSc, if None automatic. The WSL is only for Windows.
         keepfiles (bool): pass to keepfiles arg for solvers
-        symbolic_solver_labels (bool): pass to symoblic_solver_labels argument
+        symbolic_solver_labels (bool): pass to symbolic_solver_labels argument
             for solvers. If you want to read trajectory data from the
             time-stepping solver, this should be True.
         vars_stub (str or None): Copy the `*.col` and `*.typ` files to the
@@ -383,9 +383,9 @@ def petsc_dae_by_time_element(
 
     Returns:
         List of solver results objects from each solve. If there are initial
-        condition constraints and they are not skipped, the fist object will
+        condition constraints and they are not skipped, the first object will
         be from the initial condition solve.  Then there should be one for each
-        time elemenet for each TS solve.
+        time element for each TS solve.
     """
     solve_log = idaeslog.getSolveLogger("petsc-dae")
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
@@ -411,7 +411,7 @@ def petsc_dae_by_time_element(
         initial_variables = list(ivset | rvset)
         initial_constraints = list(icset | rcset)
 
-    # First calculate the inital conditions and non-time-tindexed constraints
+    # First calculate the inital conditions and non-time-indexed constraints
     res_list = []
     t0 = time.first()
     if not skip_initial:
@@ -561,13 +561,13 @@ class PetscTrajectory(object):
         return vars
 
     def get_vec(self, var):
-        """Return the time vector for var.
+        """Return the vector of variable values at each time point for var.
 
         Args:
             var (str or Var): Variable to get vector for.
 
-        Retruns:
-            (list): time vector
+        Retruns (list):
+            vector of variable values at each time point
 
         """
         var = str(var)
@@ -588,14 +588,16 @@ class PetscTrajectory(object):
         return dt
 
     def interpolate_vecs(self, times):
-        """Create a new vector dictionary interpolated at times.
+        """Create a new vector dictionary interpolated at times. This method
+        will also extraplote values outside the original time range, so care
+        should be taken not to specify times too far outside the range.
 
         Args:
             times (list): list of times to interpolate. These must be in
                 increasing order.
 
         Returns (dict):
-            Dictionary of time vectors at interpolated points
+            Dictionary of vectors for values at interpolated points
         """
         vecs = dict.fromkeys(self.vars, None)
         vecs["_time"] = copy.copy(times)
@@ -616,8 +618,8 @@ class PetscTrajectory(object):
 
     def _unscale(self, m):
         """If variable scale factors are used, the solver will see scaled
-        varaibles, and the scaled trajectory will be written. This function
-        uses varaible scaling facors from the given model to unscale the
+        variables, and the scaled trajectory will be written. This function
+        uses variable scaling facors from the given model to unscale the
         trajectory.
 
         Args:
@@ -639,7 +641,7 @@ class PetscTrajectory(object):
                         self.vecs[vname][i] = x/s
 
     def delete_files(self):
-        """Delete the trajectory data and varible information files.
+        """Delete the trajectory data and variable information files.
 
         Args:
             None
@@ -653,7 +655,7 @@ class PetscTrajectory(object):
 
     def to_json(self, pth):
         """Dump the trajectory data to a json file in the form of a dictionary
-        with varaible name keys and '_time' with time vectors values.
+        with variable name keys and '_time' with vectors of values at each time.
 
         Args:
             pth (str): path for json file to write
@@ -669,8 +671,7 @@ class PetscTrajectory(object):
                 json.dump(self.vecs, fp)
 
     def from_json(self, pth):
-        """Dump the trajectory data to a json file in the form of a dictionary
-        with varaible name keys and '_time' with time vectors values.
+        """Read the trajectory data from a json file in the form of a dictionary.
 
         Args:
             pth (str): path for json file to write

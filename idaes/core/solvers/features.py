@@ -130,7 +130,8 @@ def dae():
     model.H = pyo.Param(initialize=737)
 
     # Problem variables ydot = dy/dt,
-    #    (dy6/dt is not explicitly in the equations, so only 5 ydots)
+    #    (dy6/dt is not explicitly in the equations, so only 5 ydots i.e.
+    #    y6 is an agebraic varaible and y1 to y5 are differential variables)
     model.t = pyodae.ContinuousSet(bounds=(0,180))
     model.y = pyo.Var(model.t, [1,2,3,4,5], initialize=1.0)  #
     model.y6 = pyo.Var(model.t, initialize=1.0)  #
@@ -177,9 +178,9 @@ def dae():
     def eq_Fin(b, t):
         return b.Fin[t] == b.klA*(b.pCO2/b.H - b.y[t, 2])
 
-    # Set initial condtions and solve initial from the values of differntial
-    # variables (r and y6 well and the derivative vars too).
-    y0 = {1:0.444, 2:0.00123, 3:0.0, 4:0.007, 5:0.0} #initial differntial vars
+    # Set initial condtions and solve initial from the values of differential
+    # variables.
+    y0 = {1:0.444, 2:0.00123, 3:0.0, 4:0.007, 5:0.0} #initial differential vars
     for i in y0:
         model.y[0, i].fix(y0[i])
 
