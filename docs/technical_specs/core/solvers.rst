@@ -11,7 +11,7 @@ Default Solver Config
 ---------------------
 
 The global solver settings can be set via the
-:ref:`IDAES IDAES configuration system<user_guide/configuration:Configuration>`.
+:ref:`IDAES configuration system<user_guide/configuration:Configuration>`.
 This feature is handy in IDAES where multiple solver objects are used for
 initialization before finally solving a problem. Since IDAES default solver
 settings differ from Pyomo, users must explicitly enable the IDAES solver
@@ -92,7 +92,7 @@ Windows installation. The easiest option is to run the available precompiled
 Linux version via the WSL
 (see :ref:`binary installation <getting_started/binaries:Using the WSL>`
 for details). Expert users may wish to compile their own solver. Source code is
-available in the `idaes-ext repo <https://github.com/IDAES/idaes-ext/tree/main/petsc>`_
+available in the `idaes-ext repo <https://github.com/IDAES/idaes-ext/tree/main/petsc>`_.
 If you can compile PETSc for Windows, compiling the interface is trivial (see
 `PETSc's windows installation documentation <https://petsc.org/main/install/windows/>`_).
 
@@ -229,7 +229,7 @@ they can be supplied to the ``export_nonlinear_variables`` argument of solve.
 For the trajectory data, you will also want to use ``symbolic_solver_labels``.
 
 To solve the problem, start with the initial conditions in the Pyomo model.
-After the solve the finial conditions will be in the Pyomo model.  To get
+After the solve the final conditions will be in the Pyomo model.  To get
 intermediate results, you will need to store the solver trajectory as described
 previously.
 

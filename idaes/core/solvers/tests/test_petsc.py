@@ -27,7 +27,7 @@ from idaes.core.solvers.features import dae
 
 
 def car_example():
-    """This is to test problems where a differential variable doen't appear in
+    """This is to test problems where a differential variable doesn't appear in
     a constraint this is based on a Pyomo example here:
     https://github.com/Pyomo/pyomo/blob/main/examples/dae/car_example.py"""
     m = pyo.ConcreteModel()
@@ -81,7 +81,7 @@ def car_example():
 
 def dae_with_non_time_indexed_constraint():
     """This provides a DAE model for solver testing. This model contains a non-
-    time-indexed variable and constraint and a fixed derivitive to test some
+    time-indexed variable and constraint and a fixed derivative to test some
     edge cases.
 
     The problem and expected result are from A test problem from
@@ -162,9 +162,9 @@ def dae_with_non_time_indexed_constraint():
     def eq_Fin(b, t):
         return b.Fin[t] == b.klA*(b.pCO2/b.H - b.y[t, 2])
 
-    # Set initial condtions and solve initial from the values of differntial
+    # Set initial conditions and solve initial from the values of differential
     # variables (r and y6 well and the derivative vars too).
-    y0 = {1:0.444, 2:0.00123, 3:0.0, 4:0.007, 5:0.0} #initial differntial vars
+    y0 = {1:0.444, 2:0.00123, 3:0.0, 4:0.007, 5:0.0} #initial differential vars
     for i in y0:
         model.y[0, i].fix(y0[i])
 
@@ -245,7 +245,7 @@ def test_gen_time_disc_eqns():
     ]
 
     n = 0
-    for cs in petsc._generate_time_discretization(m, m.t):
+    for cs in petsc.find_discretization_equations(m, m.t):
         for c in cs.values():
             if c.index()[1] == 6:
                 continue
@@ -281,11 +281,11 @@ def test_set_dae_suffix():
     assert t_block.dae_suffix[m.y[180, 4]] == 1
     assert t_block.dae_suffix[m.y[180, 5]] == 1
 
-    # Make sure deactivating a differntial equation makes the varaible that
-    # would have been differntial go algebraic
+    # Make sure deactivating a differential equation makes the variable that
+    # would have been differential go algebraic
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
     # discretization equations would be deactivated in normal PETSc solve
-    for con in petsc._generate_time_discretization(m, m.t):
+    for con in petsc.find_discretization_equations(m, m.t):
         con.deactivate()
     # deactivate a differential equation making y4 be algebraic
     m.eq_ydot4[180].deactivate()
@@ -306,7 +306,7 @@ def test_set_dae_suffix():
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_petsc_read_trajectory():
     """
-    Check the that the PETSc DAE solver works.
+    Check that the PETSc DAE solver works.
     """
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
     m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)

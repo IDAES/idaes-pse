@@ -66,7 +66,7 @@ def nle():
     """
     m = pyo.ConcreteModel()
     m.x = pyo.Var(initialize=-0.1)
-    m.eq1 = pyo.Constraint(expr=m.x**2 == 1)
+    m.eq1 = pyo.Constraint(expr=m.x**3 == 1)
     return m, 1
 
 def nlp():
@@ -178,7 +178,7 @@ def dae():
     def eq_Fin(b, t):
         return b.Fin[t] == b.klA*(b.pCO2/b.H - b.y[t, 2])
 
-    # Set initial condtions and solve initial from the values of differential
+    # Set initial conditions and solve initial from the values of differential
     # variables.
     y0 = {1:0.444, 2:0.00123, 3:0.0, 4:0.007, 5:0.0} #initial differential vars
     for i in y0:

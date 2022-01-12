@@ -101,7 +101,7 @@ def test_petsc_idaes_solve():
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_petsc_dae_idaes_solve():
     """
-    Check the that the PETSc DAE solver works.
+    Check that the PETSc DAE solver works.
     """
     m, y1, y2, y3, y4, y5, y6 = dae()
     petsc.petsc_dae_by_time_element(

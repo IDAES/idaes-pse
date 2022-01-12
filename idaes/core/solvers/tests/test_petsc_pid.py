@@ -69,7 +69,7 @@ def create_model(
     """Create a test model and solver
 
     Args:
-        time_set (list): The begining and end point of the time domain
+        time_set (list): The beginning and end point of the time domain
         time_units (Pyomo Unit object): Units of time domain
         nfe (int): Number of finite elements argument for the DAE
             transformation.
@@ -209,7 +209,7 @@ def test_petsc_with_pid_model():
     m.fs.valve_1.control_volume.properties_in[0].pressure.unfix()
     m.fs.valve_1.control_volume.properties_in[24].pressure.unfix()
 
-    # The solver will directly set the time varaible for the DAE solve, but
+    # The solver will directly set the time variable for the DAE solve, but
     # solving the initial conditions is just a system of nonlinear equations,
     # so we need to fix the initial time.
     m.fs.time_var[0].fix(m.fs.time.first())

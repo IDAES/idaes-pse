@@ -119,7 +119,7 @@ class PetscSNES(Petsc):
 
 @pyo.SolverFactory.register("petsc_ts", doc="ASL PETSc TS interface")
 class PetscTS(Petsc):
-    """PETSc solver plugin that sets options for SNES solver.  This turns on
+    """PETSc solver plugin that sets options for TS solver.  This turns on
     TS monitoring, sets the DAE flag, and checks the config for default options.
     """
 
@@ -178,8 +178,8 @@ def petsc_available(wsl=None):
         wsl (bool): If True force WSL version, if False force not WSL version,
             if None, try non-WSL version then try WSL version
 
-    Returns:
-        (bool): True is PETSc is available
+    Returns (bool):
+        True if PETSc is available
     """
     solver = pyo.SolverFactory("petsc", wsl=wsl)
     if solver is not None:
@@ -200,7 +200,7 @@ def _copy_time(time_vars, t_from, t_to):
     previous time in as the initial condition for the next step.
 
     Args:
-        time_vars (list): list of variables or refernces to variables indexed
+        time_vars (list): list of variables or references to variables indexed
             only by time
         t_from (float): time point to copy from
         t_to (float): time point to copy to, only unfixed vars will be
@@ -214,7 +214,7 @@ def _copy_time(time_vars, t_from, t_to):
             v[t_to].value = v[t_from].value
 
 
-def _generate_time_discretization(m, time):
+def find_discretization_equations(m, time):
     """This is a generator for time discretization equations. Since we aren't
     solving the whole time period simultaneously, we'll want to deactivate
     these constraints.
@@ -226,13 +226,15 @@ def _generate_time_discretization(m, time):
     Yields:
         time discretization constraints
     """
+    disc_eqns = []
     for var in m.component_objects(pyo.Var):
         if isinstance(var, pyodae.DerivativeVar):
             if time in ComponentSet(var.get_continuousset_list()):
                 parent = var.parent_block()
                 name = var.local_name + "_disc_eq"
                 disc_eq = getattr(parent, name)
-                yield disc_eq
+                disc_eqns.append(disc_eq)
+    return disc_eq
 
 
 def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
@@ -250,13 +252,13 @@ def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
         None
     """
     # The dae_suffix provides the solver information about variables types
-    # algebraic, differntial, derivative, or time, see DaeVarTypes
+    # algebraic, differential, derivative, or time, see DaeVarTypes
     m.dae_suffix = pyo.Suffix(
         direction=pyo.Suffix.EXPORT,
         datatype=pyo.Suffix.INT,
     )
     # The dae_link suffix provides the solver a link between the differential
-    # and derivitive variable, by assiging the pair a unique integer index.
+    # and derivative variable, by assigning the pair a unique integer index.
     m.dae_link = pyo.Suffix(
         direction=pyo.Suffix.EXPORT,
         datatype=pyo.Suffix.INT,
@@ -390,9 +392,8 @@ def petsc_dae_by_time_element(
     solve_log = idaeslog.getSolveLogger("petsc-dae")
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
     regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
-    tdisc = list(_generate_time_discretization(m, time))
+    tdisc = find_discretization_equations(m, time)
 
-    # _set_dae_suffixes(m, time)
     solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options, wsl=wsl)
     solver_dae = pyo.SolverFactory(
         "petsc_ts", options=ts_options, wsl=wsl, vars_stub=vars_stub
@@ -619,7 +620,7 @@ class PetscTrajectory(object):
     def _unscale(self, m):
         """If variable scale factors are used, the solver will see scaled
         variables, and the scaled trajectory will be written. This function
-        uses variable scaling facors from the given model to unscale the
+        uses variable scaling factors from the given model to unscale the
         trajectory.
 
         Args:
