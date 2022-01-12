@@ -72,6 +72,8 @@ kwargs = dict(
         "sympy",
         "tinydb",
         "rbfopt",
+        # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
+        "ipython<8.0.0",
     ],
     entry_points={
         "console_scripts": [
