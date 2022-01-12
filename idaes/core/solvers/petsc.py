@@ -18,6 +18,7 @@ import enum
 import copy
 import json
 import gzip
+import numpy as np
 
 import idaes
 import pyomo.environ as pyo
@@ -602,19 +603,8 @@ class PetscTrajectory(object):
         """
         vecs = dict.fromkeys(self.vars, None)
         vecs["_time"] = copy.copy(times)
-        for k in vecs.keys():
-            vecs[k] = [0]*len(times)
-        j = 0
-        for i, t in enumerate(times):
-            while t > self.time[j] and j < len(self.time) - 1:
-                j += 1
-            if j == 0:
-                j = 1
-            dt = self.time[j] - self.time[j - 1]
-            w1 = 1 - (t - self.time[j - 1])/dt
-            w2 = (t - self.time[j - 1])/dt
-            for k, v in self.vecs.items():
-                vecs[k][i] = w1*v[j - 1] + w2*v[j]
+        for var in vecs:
+            vecs[var] = np.interp(vecs["_time"], self.vecs["_time"], self.vecs[var])
         return vecs
 
     def _unscale(self, m):
