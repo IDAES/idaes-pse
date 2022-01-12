@@ -131,7 +131,7 @@ def dae():
 
     # Problem variables ydot = dy/dt,
     #    (dy6/dt is not explicitly in the equations, so only 5 ydots i.e.
-    #    y6 is an agebraic varaible and y1 to y5 are differential variables)
+    #    y6 is an algebraic variable and y1 to y5 are differential variables)
     model.t = pyodae.ContinuousSet(bounds=(0,180))
     model.y = pyo.Var(model.t, [1,2,3,4,5], initialize=1.0)  #
     model.y6 = pyo.Var(model.t, initialize=1.0)  #

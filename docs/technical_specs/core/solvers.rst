@@ -68,10 +68,10 @@ DAE Terminology
 For the following discussion regarding the PETSc solver interface, the following
 terminology is used.
 
-* Derivative: a time derivative
+* Derivative variable: a time derivative
 * Differential variable: a variable that is differentiated with respect to time
-* Algebraic: a variable with no explicit time derivative appearing in the problem
-* State Variables: the set of algebraic and differential variables
+* Algebraic variable: a variable with no explicit time derivative appearing in the problem
+* State variables: the set of algebraic and differential variables
 * Time variable: a variable representing time
 
 DAE problems do not need to include a time variable, but, if they do, there can
@@ -102,7 +102,8 @@ modules is required.  If you are using the WSL method to run PETSc, copy the
 ``petscpy`` directory from the Linux package you are using to the IDAES binary
 directory.  You can find the IDAES binary directory by running the command
 ``idaes bin-directory`` in the OS command shell (e.g. Bash, Windows CMD,
-PowerShell).  The primary use for these Python modules is to read trajectory
+PowerShell).  If IDAES is installed in a Python environment, the environment
+must be active. The primary use for these Python modules is to read trajectory
 files saved by the TS solver.
 
 Registered Solvers
