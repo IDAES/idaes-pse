@@ -629,7 +629,7 @@ class Resource:
         # normalize input path to a Path object
         if not hasattr(path, "absolute"):
             path = Path(path)
-        # get the absolute path, since we don't record working dir
+        # get the absolute path
         abspath = str(path.absolute())
         # hash the file (to detect changes)
         file_hash = hash_file(path)
@@ -687,7 +687,8 @@ class Resource:
             data = self.v.get(self.DATA_FIELD)
             if self.TABLE_INFO_FIELD not in data:
                 data[self.TABLE_INFO_FIELD] = {}
-            key = str(path)
+            #key = str(path)
+            key = Path(path).name
             if path in data[self.TABLE_INFO_FIELD]:
                 if data[self.TABLE_INFO_FIELD][key] == table_meta:
                     _log.warning(f"Ignoring duplicate table for '{key}'")
@@ -712,17 +713,25 @@ class Resource:
                   mode is not None (otherwise, no attempt is made to open the paths).
         Returns:
             generator: Generates Path or file objects, depending on mode
+
+        Raises:
+            ValueError: Problem with resolving the path to a file
         """
-        df_dir = self.v["datafiles_dir"]
+        datafiles_dir = self.v["datafiles_dir"]
         for datafile in self.v["datafiles"]:
-            if not df_dir:
-                path = Path(datafile["path"])
+            if "full_path" in datafile:
+                path = datafile["full_path"]
             else:
-                df = Path(datafile["path"])
-                if df.is_absolute():
-                    path = df
-                else:
-                    path = Path(df_dir) / df
+                path = Path(datafile["path"])
+                if not path.is_absolute():
+                    if datafiles_dir:
+                        path = Path(datafiles_dir) / path
+                    else:
+                        # This is a problem!
+                        deets = ";".join(["{k}={v}" for k, v in datafile.items()])
+                        msg = f"Cannot resolve relative path for datafile: No " \
+                              f"'datafiles_dir' in resource. File details: {deets}"
+                        raise ValueError(msg)
             if mode is None:
                 yield path
             else:

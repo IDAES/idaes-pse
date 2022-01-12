@@ -147,9 +147,11 @@ class DMFConfig(object):
                     self.c[k] = v
 
 
-def create_configuration(config_path: Union[pathlib.Path, str] = None,
-                         workspace_path: Union[pathlib.Path, str] = None,
-                         overwrite: bool = True) -> pathlib.Path:
+def create_configuration(
+    config_path: Union[pathlib.Path, str] = None,
+    workspace_path: Union[pathlib.Path, str] = None,
+    overwrite: bool = True,
+) -> pathlib.Path:
     """Create the configuration file that tells the DMF where to find its workspace.
 
     By default, this will write the built-in workspace location into the default
@@ -188,8 +190,9 @@ def create_configuration(config_path: Union[pathlib.Path, str] = None,
             raise ValueError(f"Cannot create configuration: {err}")
         _zz.end_debug("create", path=config_path)
     elif exists and not overwrite:
-        raise KeyError(f"Configuration path '{config_path}' exists and overwrite "
-                       f"not allowed")
+        raise KeyError(
+            f"Configuration path '{config_path}' exists and overwrite " f"not allowed"
+        )
     # get workspace path
     try:
         workspace_path = as_path(workspace_path, must_be_dir=True)
@@ -555,6 +558,7 @@ class DMF(workspace.Workspace, HasTraits):
                 # If there is a datafiles_dir, use it
                 ddir = rsrc.v["datafiles_dir"]
                 _log.debug(f"_copy_files: use existing datafiles dir '{ddir}'")
+                system_datafiles_dir = False  # used at end of func
             else:
                 # If no datafiles_dir, create a random subdir of the DMF
                 # configured `_datafile_path`. The subdir prevents name
@@ -562,6 +566,7 @@ class DMF(workspace.Workspace, HasTraits):
                 random_subdir = uuid.uuid4().hex
                 ddir = os.path.join(self._datafile_path, random_subdir)
                 _log.debug(f"_copy_files: create new datafiles dir '{ddir}'")
+                system_datafiles_dir = True
             try:
                 mkdir_p(ddir)
             except os.error as err:
@@ -571,6 +576,9 @@ class DMF(workspace.Workspace, HasTraits):
             ddir = ""
 
         for datafile in rsrc.v["datafiles"]:
+            # remove 'full_path' if added by previous pre-processing
+            if "full_path" in datafile:
+                del datafile["full_path"]
             if "do_copy" in datafile:
                 do_copy = datafile["do_copy"]
             else:
@@ -623,7 +631,10 @@ class DMF(workspace.Workspace, HasTraits):
         # For idempotence, turn off these flags post-copy
         rsrc.do_copy = rsrc.is_tmp = False
         # Make sure datafiles dir is in sync
-        rsrc.v["datafiles_dir"] = ddir
+        if any_copy and system_datafiles_dir:
+            rsrc.v["datafiles_dir"] = random_subdir
+        else:
+            rsrc.v["datafiles_dir"] = ddir
 
     def count(self):
         return len(self._db)
@@ -761,7 +772,6 @@ class DMF(workspace.Workspace, HasTraits):
         for result in self.find_by_id(identifier, **kwargs):
             return result
 
-
     def find_related(
         self, rsrc, filter_dict=None, maxdepth=0, meta=None, outgoing=True
     ):
@@ -798,13 +808,14 @@ class DMF(workspace.Workspace, HasTraits):
             if Resource.ID_FIELD not in meta:
                 meta.insert(0, Resource.ID_FIELD)
         try:
-            return self._db.find_related(
+            resources = self._db.find_related(
                 rsrc.id,
                 outgoing=outgoing,
                 maxdepth=maxdepth,
                 meta=meta,
                 filter_dict=filter_dict,
             )
+            return resources
         except KeyError:
             raise errors.NoSuchResourceError(id_=rsrc.id)
 
@@ -830,7 +841,7 @@ class DMF(workspace.Workspace, HasTraits):
                 continue
             id_ = meta[Resource.ID_FIELD]
             for r in self.find_by_id(id_):
-                yield r
+                yield self._postproc_resource(r)
 
     def remove(self, identifier=None, filter_dict=None, update_relations=True):
         """Remove one or more resources, from its identifier or a filter.
@@ -898,7 +909,7 @@ class DMF(workspace.Workspace, HasTraits):
         rsrc: Resource = None,
         sync_relations: bool = False,
         upsert: bool = False,
-        warn_missing = False,
+        warn_missing=False,
     ):
         """Update/insert stored resource.
 
@@ -964,7 +975,47 @@ class DMF(workspace.Workspace, HasTraits):
         """Perform any additional changes to resources retrieved
         before passing them up to the application.
         """
+        self._set_datafiles_full_path(r)
         return r
+
+    def _set_datafiles_full_path(self, r):
+        """Add a 'full_path' key/value pair for each datafile.
+
+        This method modifies r.v['datafiles'] in-place.
+
+        If the file is a copy ('is_copy' is True) then the full_path
+        will prepend to the 'path' either (a) the user-provided datafiles_dir, or
+        (b) the system-generated data files subdirectory.
+        If the file is not a copy, the full_path will be the same as the path.
+        """
+        datafiles = r.v["datafiles"]
+        datafiles_dir = r.v["datafiles_dir"]
+        datafiles_dir_is_absolute = (
+            datafiles_dir and pathlib.Path(datafiles_dir).is_absolute()
+        )
+        # calculate and add full path for each datafile
+        for df_item in datafiles:
+            is_copy = df_item["is_copy"]
+            filename = df_item["path"]
+            full_path = None
+            if is_copy:
+                if datafiles_dir_is_absolute:
+                    # use the user-provided datafiles directory
+                    full_path = datafiles_dir / filename
+                else:
+                    # use the auto-generated datafiles directory
+                    full_path = (
+                        pathlib.Path(self.datafiles_path) / datafiles_dir / filename
+                    )
+            else:
+                filename_is_absolute = filename and (pathlib.Path(filename).is_absolute())
+                if filename_is_absolute:
+                    full_path = pathlib.Path(filename)
+                else:
+                    full_path = pathlib.Path(datafiles_dir) / filename
+            assert full_path is not None   # we should have assigned this above
+            _log.debug(f"post-process resource ({r.id}: set full_path={full_path}")
+            df_item["full_path"] = full_path
 
     def __str__(self):
         return 'DMF config="{}"'.format(self._conf)
