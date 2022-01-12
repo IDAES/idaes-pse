@@ -306,7 +306,7 @@ def _canonicalize(d):
     for cell in d["cells"]:
         if "ports" in cell:
             items = cell["ports"]["items"]
-            cell["ports"]["items"] = sorted(items, key=lambda x: x["group"])
+            cell["ports"]["items"] = sorted(items, key=lambda x: x["id"])
 
 
 @pytest.mark.component
