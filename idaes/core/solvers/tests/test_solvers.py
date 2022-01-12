@@ -13,9 +13,7 @@
 import pyomo.environ as pyo
 import pytest
 import idaes.core.plugins
-from idaes.core.solvers.features import (
-    lp, milp, nlp, minlp, nle, dae_with_non_time_indexed_constraint
-)
+from idaes.core.solvers.features import lp, milp, nlp, minlp, nle, dae
 from idaes.core.solvers import ipopt_has_linear_solver
 from idaes.core.solvers import petsc
 
@@ -105,7 +103,7 @@ def test_petsc_dae_idaes_solve():
     """
     Check the that the PETSc DAE solver works.
     """
-    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
+    m, y1, y2, y3, y4, y5, y6 = dae()
     petsc.petsc_dae_by_time_element(
         m,
         time=m.t,
