@@ -1,4 +1,4 @@
-#################################################################################
+###############################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
@@ -9,7 +9,7 @@
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-#################################################################################
+###############################################################################
 """
 Data Management Framework
 """
@@ -26,6 +26,7 @@ import uuid
 from typing import Generator, Union
 
 # third-party
+import pkg_resources
 from traitlets import HasTraits, default, observe
 from traitlets import Unicode
 import yaml
@@ -35,12 +36,16 @@ from . import errors
 from .resource import Resource
 from . import resourcedb
 from . import workspace
-from .util import mkdir_p, yaml_load
+from .util import mkdir_p, yaml_load, as_path, ZigZagLogger
 
 
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
+_zz = ZigZagLogger(_log)
+
+# Used to discover the package 'data' directory
+IDAES_DIST_NAME = "idaes-pse"
 
 
 class DMFConfig(object):
@@ -142,6 +147,82 @@ class DMFConfig(object):
                     self.c[k] = v
 
 
+def create_configuration(config_path: Union[pathlib.Path, str] = None,
+                         workspace_path: Union[pathlib.Path, str] = None,
+                         overwrite: bool = True) -> pathlib.Path:
+    """Create the configuration file that tells the DMF where to find its workspace.
+
+    By default, this will write the built-in workspace location into the default
+    DMF configuration file.
+
+    Args:
+        config_path: If given, a file path for the new configuration. If not given,
+              use the default value in :class:`DMFConfig`
+        workspace_path: If given, set the workspace path in the configuration
+              file to this value. Otherwise, use the default data workspace of the
+              installed idaes-pse package (i.e. where the 'datasets' are stored).
+        overwrite: If True, overwrite an existing configuration. If False, do not
+              overwrite an existing one.
+
+    Return:
+        Configuration path
+
+    Raises:
+        ValueError: if a given (or inferred) path is invalid
+        KeyError: if overwrite was False and the config_path already existed
+    """
+    _zz.begin_info()
+    # get configuration path
+    try:
+        config_path = as_path(config_path, must_be_file=True)
+    except ValueError as err:
+        raise ValueError(f"Invalid configuration path: {err}")
+    if config_path is None:
+        config_path = as_path(DMFConfig.configuration_path())
+    exists = config_path.exists()
+    if (exists and overwrite) or (not exists):
+        _zz.begin_debug("create", path=config_path)
+        try:
+            config_path.open("w", encoding="utf-8")
+        except FileNotFoundError:
+            raise ValueError(f"Cannot create configuration: {err}")
+        _zz.end_debug("create", path=config_path)
+    elif exists and not overwrite:
+        raise KeyError(f"Configuration path '{config_path}' exists and overwrite "
+                       f"not allowed")
+    # get workspace path
+    try:
+        workspace_path = as_path(workspace_path, must_be_dir=True)
+    except ValueError as err:
+        raise ValueError(f"Invalid workspace path: {err}")
+    if workspace_path is None:
+        _zz.begin_debug("get_workspace_from_package")
+        try:
+            workspace_path = _get_workspace_from_package()
+        except (KeyError, NotADirectoryError) as err:
+            raise ValueError(f"Error getting workspace from package: {err}")
+        _zz.end_debug("get_workspace_from_package", path=workspace_path)
+    # write configuration file
+    _zz.begin_debug("write", path=config_path, workspace=workspace_path)
+    with config_path.open("w", encoding="utf-8") as f:
+        f.write(f"workspace: {workspace_path}\n")
+    _zz.end_debug("write")
+    _zz.end_info(path=config_path)  # function
+    return config_path
+
+
+def _get_workspace_from_package():
+    dist = pkg_resources.get_distribution(IDAES_DIST_NAME)
+    rsrc = "data"
+    if not dist.has_resource(rsrc):
+        raise KeyError(f"No '{rsrc}' resource found in package")
+    if not dist.resource_isdir(rsrc):
+        raise NotADirectoryError(f"The '{rsrc}' resource is not a directory")
+    mgr = pkg_resources.ResourceManager()
+    path = pathlib.Path(dist.get_resource_filename(mgr, rsrc))
+    return path
+
+
 class DMF(workspace.Workspace, HasTraits):
     """Data Management Framework (DMF).
 
@@ -172,8 +253,14 @@ class DMF(workspace.Workspace, HasTraits):
     }
 
     def __init__(
-        self, path: Union[pathlib.Path, str] = "", name=None, desc=None, create=False,
-            existing_ok=True, save_path=False, **ws_kwargs
+        self,
+        path: Union[pathlib.Path, str] = "",
+        name=None,
+        desc=None,
+        create=False,
+        existing_ok=True,
+        save_path=False,
+        **ws_kwargs,
     ):
         """Create or load DMF workspace.
 
@@ -298,8 +385,7 @@ class DMF(workspace.Workspace, HasTraits):
 
     @staticmethod
     def _get_logger(name=None):
-        """Get a logger by absolute or short-hand name.
-        """
+        """Get a logger by absolute or short-hand name."""
         if name is None:
             fullname = "idaes"
         # idaes.<whatever> just use name as-is
@@ -324,7 +410,7 @@ class DMF(workspace.Workspace, HasTraits):
             #     'this path, set "{}" in the DMF configuration file.'.format(
             #         self.CONF_HELP_PATH
             #     )
-            #)
+            # )
             pass
 
     @default(CONF_DB_FILE)
@@ -348,8 +434,7 @@ class DMF(workspace.Workspace, HasTraits):
 
     @property
     def workspace_path(self) -> pathlib.Path:
-        """Path to workspace directory.
-        """
+        """Path to workspace directory."""
         return pathlib.Path(self.root)
 
     def new(
@@ -455,21 +540,36 @@ class DMF(workspace.Workspace, HasTraits):
         return resource
 
     def _copy_files(self, rsrc):
-        if rsrc.v.get("datafiles_dir", None):
-            # If there is a datafiles_dir, use it
-            ddir = rsrc.v["datafiles_dir"]
-            _log.debug(f"_copy_files: use existing datafiles dir '{ddir}'")
+        # determine whether *any* of the files are being copied
+        # since, if not, we don't need the 'datafiles_dir'
+        any_copy = rsrc.do_copy
+        for datafile in rsrc.v["datafiles"]:
+            if any_copy:
+                break
+            if "do_copy" in datafile:
+                any_copy = datafile["do_copy"]
+
+        if any_copy:
+            _log.debug("Making a directory for datafiles")
+            if rsrc.v.get("datafiles_dir", None):
+                # If there is a datafiles_dir, use it
+                ddir = rsrc.v["datafiles_dir"]
+                _log.debug(f"_copy_files: use existing datafiles dir '{ddir}'")
+            else:
+                # If no datafiles_dir, create a random subdir of the DMF
+                # configured `_datafile_path`. The subdir prevents name
+                # collisions across resources.
+                random_subdir = uuid.uuid4().hex
+                ddir = os.path.join(self._datafile_path, random_subdir)
+                _log.debug(f"_copy_files: create new datafiles dir '{ddir}'")
+            try:
+                mkdir_p(ddir)
+            except os.error as err:
+                raise errors.DMFError(f"Cannot make dir for datafiles '{ddir}': {err}")
         else:
-            # If no datafiles_dir, create a random subdir of the DMF
-            # configured `_datafile_path`. The subdir prevents name
-            # collisions across resources.
-            random_subdir = uuid.uuid4().hex
-            ddir = os.path.join(self._datafile_path, random_subdir)
-            _log.debug(f"_copy_files: create new datafiles dir '{ddir}'")
-        try:
-            mkdir_p(ddir)
-        except os.error as err:
-            raise errors.DMFError('Cannot make dir "{}": {}'.format(ddir, err))
+            _log.debug("Not making a directory for datafiles")
+            ddir = ""
+
         for datafile in rsrc.v["datafiles"]:
             if "do_copy" in datafile:
                 do_copy = datafile["do_copy"]
@@ -630,27 +730,24 @@ class DMF(workspace.Workspace, HasTraits):
             Resource, or None or an empty list.
         """
         attach_to_dmf = True
-        if 'attach' in kwargs:
-            attach_to_dmf = kwargs['attach']
-            del kwargs['attach']
+        if "attach" in kwargs:
+            attach_to_dmf = kwargs["attach"]
+            del kwargs["attach"]
         results = self.find(*args, **kwargs)
         if results is None:
             return None
         result_list = list(results)
         if len(result_list) == 0:
-            return []
+            return None
         result = result_list[0]
         if attach_to_dmf:
             self.attach(result)
         return result
 
     def find_by_id(self, identifier: str, id_only=False) -> Generator:
-        """Find resources by their identifier or identifier prefix.
-        """
+        """Find resources by their identifier or identifier prefix."""
         if len(identifier) == Resource.ID_LENGTH:
-            for rsrc in self._db.find(
-                {Resource.ID_FIELD: identifier}, id_only=id_only
-            ):
+            for rsrc in self._db.find({Resource.ID_FIELD: identifier}, id_only=id_only):
                 yield rsrc
         else:
             regex, flags = f"{identifier}[a-z]*", re.IGNORECASE
@@ -658,6 +755,12 @@ class DMF(workspace.Workspace, HasTraits):
                 {Resource.ID_FIELD: "~" + regex}, flags=flags, id_only=id_only
             ):
                 yield rsrc
+
+    def find_one_by_id(self, identifier: str, **kwargs):
+        """Convenience method for getting a single resource by its identifier."""
+        for result in self.find_by_id(identifier, **kwargs):
+            return result
+
 
     def find_related(
         self, rsrc, filter_dict=None, maxdepth=0, meta=None, outgoing=True
@@ -680,6 +783,7 @@ class DMF(workspace.Workspace, HasTraits):
             `meta` is a dict of metadata for the endpoint of the relation
             (the object if outgoing=True, the subject if outgoing=False)
             for the fields provided in the `meta` parameter.
+
         Raises:
             NoSuchResourceError: if the starting resource is not found
         """
@@ -703,6 +807,30 @@ class DMF(workspace.Workspace, HasTraits):
             )
         except KeyError:
             raise errors.NoSuchResourceError(id_=rsrc.id)
+
+    def find_related_resources(
+        self, rsrc: Resource, predicate: str = None, **kwargs
+    ) -> Generator[Resource, None, None]:
+        """Wrapper for :meth:`find_related` that retrieves the full DMF resource
+        for each found item.
+
+        Args:
+            rsrc: Resource starting point
+            predicate: If given, restrict to relations with this predicate
+            kwargs: Passed to :meth:`find_related`
+
+        Returns:
+            Generator for Resource objects
+
+        Raises:
+            NoSuchResourceError: if the starting resource is not found
+        """
+        for depth, triple, meta in self.find_related(rsrc, **kwargs):
+            if predicate is not None and triple.predicate != predicate:
+                continue
+            id_ = meta[Resource.ID_FIELD]
+            for r in self.find_by_id(id_):
+                yield r
 
     def remove(self, identifier=None, filter_dict=None, update_relations=True):
         """Remove one or more resources, from its identifier or a filter.
@@ -770,6 +898,7 @@ class DMF(workspace.Workspace, HasTraits):
         rsrc: Resource = None,
         sync_relations: bool = False,
         upsert: bool = False,
+        warn_missing = False,
     ):
         """Update/insert stored resource.
 
@@ -779,6 +908,7 @@ class DMF(workspace.Workspace, HasTraits):
                 the provided resource will be changed to the stored value.
             upsert (optional): If true, and the resource is not in the DMF, then insert it. If false, and the
                 resource is not in the DMF, then do nothing.
+            warn_missing: If True, log a warning for missing resources.
         Returns:
             bool, int: For a single resource: True if the resource was updated or added, False if nothing was done.
                 If no specific resource was given, returns the number of resources updated. You can compare this
@@ -789,7 +919,7 @@ class DMF(workspace.Workspace, HasTraits):
         did_update = False
         # with no specific resource, update all resources added to this instance
         if rsrc is None:
-            return self._update_resources(sync_relations)
+            return self._update_resources(sync_relations, warn_missing)
         # sanity-check input
         if not isinstance(rsrc, Resource):
             raise TypeError("Resource type expected, got: {}".format(type(rsrc)))
@@ -813,13 +943,14 @@ class DMF(workspace.Workspace, HasTraits):
             raise errors.DMFError("Bad value for new resource: {}".format(err))
         return did_update
 
-    def _update_resources(self, sync_relations) -> int:
+    def _update_resources(self, sync_relations, warn_missing) -> int:
         valid_resources = {}
         for key, rsrc in self._resources.items():
             try:
                 self.update(rsrc=rsrc, sync_relations=sync_relations, upsert=False)
             except errors.NoSuchResourceError as err:
-                _log.warning(f"During update, resource not found: {err}")
+                if warn_missing:
+                    _log.warning(f"During update, resource not found: {err}")
             except Exception as err:
                 _log.warning(f"During update, unknown error: {err}")
             else:
@@ -840,8 +971,7 @@ class DMF(workspace.Workspace, HasTraits):
 
     @property
     def resource_count(self) -> int:
-        """How many resources have been added to this instance of the DMF.
-        """
+        """How many resources have been added to this instance of the DMF."""
         return len(self._resources)
 
 

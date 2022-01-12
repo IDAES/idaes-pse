@@ -25,6 +25,9 @@ from urllib.parse import urlparse
 # third-party
 from lxml import html
 
+# package
+from idaes.dmf.dmfbase import DMFConfig
+
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
 
 _log = logging.getLogger(__name__)
@@ -51,7 +54,13 @@ def find_html_docs(dmf, obj=None, obj_name=None, **kw):
 def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
     paths = dmf.get_doc_paths()
     if not paths:
-        raise ValueError("No documentation locations configured")
+        if DMFConfig.configuration_exists():
+            conf_path = DMFConfig.configuration_path()
+            raise ValueError(f"No documentation locations configured. "
+                             f"To set this path, set '{dmf.CONF_HELP_PATH}' in the "
+                             f"DMF configuration file {conf_path}.")
+        else:
+            raise ValueError(f"No DMF configuration file found.")
 
     _log.info(
         "find HTML docs for module={} class={} on paths={}".format(module_, name, paths)

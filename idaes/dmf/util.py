@@ -16,14 +16,17 @@ Utility functions.
 # stdlib
 from datetime import datetime, timedelta, timezone
 import importlib
+import inspect
 import json
 from json import JSONDecodeError
 import logging
 from math import floor, log
 import os
+from pathlib import Path
 import re
 import shutil
 import time
+from typing import Union
 import yaml
 
 # third-party
@@ -52,6 +55,34 @@ def get_file(file_or_path, mode="r"):
     if hasattr(file_or_path, "read"):
         return file_or_path
     return open(file_or_path, mode)
+
+
+def as_path(f: Union[Path, str, None],
+            must_exist: bool = False,
+            must_be_dir: bool = False,
+            must_be_file: bool = False) -> Path:
+    """Simply coerce input to a `Path`.
+
+    Args:
+        f: Path, string path, or None
+        must_exist: Path must exist
+
+    Returns:
+        Input if it's a Path or None, else the Path(input).
+
+    Raises:
+        ValueError: if one of the 'must' conditions fails
+    """
+    if f is not None:
+        f = Path(f)
+        must_exist = must_exist or (must_be_dir or must_be_file)
+        if must_exist and not f.exists():
+            raise ValueError(f"Path '{f}' must exist")
+        if must_be_file and not f.is_file():
+            raise ValueError(f"Path '{f}' must be a file")
+        if must_be_dir and not f.is_dir():
+            raise ValueError(f"Path '{f}' must be a directory")
+    return f
 
 
 def import_module(name):
@@ -530,3 +561,174 @@ def size_prefix(number, base2=False):
     else:
         num_str = f"{negative}{npow:.1f}{abbr}{extra}"
     return num_str
+
+# region Logging functions
+
+
+class ZigZagLogger:
+    """You gotta zig before you zag.
+    """
+    def __init__(self, logger):
+        self._logger = logger
+        self._events = {}
+
+    def begin_info(self, event_name: str = None, func_name: str = None, **kwargs):
+        """Log beginning of an event at the INFO logging level.
+
+        The `kwargs` will be appended to the log message as a string
+        like "<key1>=<value1>;<key2>=<value2>;..etc.."
+
+        Args:
+            event_name: Name of the event
+            func_name: Name of enclosing function; if not given, will be looked up
+                       in the stack frame (which is relatively slow)
+            kwargs: Name/value pairs
+        """
+        self._begin(event_name, func_name, logging.INFO, 1, kwargs)
+
+    def begin_debug(self, event_name: str = None, func_name: str = None, **kwargs):
+        """Log beginning of an event at the DEBUG logging level.
+
+        The `kwargs` will be appended to the log message as a string
+        like "<key1>=<value1>;<key2>=<value2>;..etc.."
+
+        Args:
+            event_name: Name of the event
+            func_name: Name of enclosing function; if not given, will be looked up
+                       in the stack frame (which is relatively slow)
+            kwargs: Name/value pairs
+        """
+        self._begin(event_name, func_name, logging.DEBUG, 1, kwargs)
+
+    def end_info(self, event_name: str = None, func_name: str = None, **kwargs):
+        """Log end of an event at the INFO logging level.
+
+        The `kwargs` will be appended to the log message as a string
+        like "<key1>=<value1>;<key2>=<value2>;..etc.."
+
+        A final key/value of "dur=<float>" will be added, if there was a
+        `begin_info` or `begin_debug` call with the same `event_name`, with the
+        duration (in seconds) since that call.
+
+        Args:
+            event_name: Name of the event
+            func_name: Name of enclosing function; if not given, will be looked up
+                       in the stack frame (which is relatively slow)
+            kwargs: Name/value pairs
+        """
+        self._end(event_name, func_name, logging.INFO, 1, kwargs)
+
+    def end_debug(self, event_name: str = None, func_name: str = None, **kwargs):
+        """Log end of an event at the DEBUG logging level.
+
+        The `kwargs` will be appended to the log message as a string
+        like "<key1>=<value1>;<key2>=<value2>;..etc.."
+
+        A final key/value of "dur=<float>" will be added, if there was a
+        `begin_info` or `begin_debug` call with the same `event_name`, with the
+        duration (in seconds) since that call.
+
+        Args:
+            event_name: Name of the event
+            func_name: Name of enclosing function; if not given, will be looked up
+                       in the stack frame (which is relatively slow)
+            kwargs: Name/value pairs
+        """
+        self._end(event_name, func_name, logging.DEBUG, 1, kwargs)
+
+    def _begin(self, event_name, func_name, level, depth, kwargs):
+        ts = time.time()
+        name = self._event_name("begin", event_name, func_name, depth + 1)
+        self._event(name, level, kwargs)
+        self._events[name] = ts
+
+    def _end(self, event_name, func_name, level, depth, kwargs):
+        if "dur" in kwargs:
+            name = self._event_name("end", event_name, func_name, depth + 1)
+        else:
+            ts = time.time()
+            name = self._event_name("begin", event_name, func_name, depth + 1)
+            ts0 = self._events.get(name, -1)
+            if ts0 > 0:
+                dur = ts - ts0
+                kwargs["dur"] = f"{dur:.6f}"
+                del self._events[name]
+            name = name[:-5] + "end"
+        self._event(name, level, kwargs)
+
+    @staticmethod
+    def _event_name(location, event_name, func_name, depth):
+        if func_name is not None:
+            ctx = func_name
+        else:
+            ctx = "fn"
+            current_frame = inspect.currentframe()
+            if current_frame is not None:
+                try:
+                    stack = inspect.getouterframes(current_frame)
+                    frame = stack[depth + 1]
+                    ctx = f"{frame.function}"
+                finally:
+                    del frame
+                    del current_frame
+        if event_name:
+            return f"{ctx}.{event_name}.{location}"
+        else:
+            return f"{ctx}.{location}"
+
+    def _event(self, name, level, kwargs):
+        keyword_values = ";".join((f"{k}={v}" for k, v in kwargs.items()))
+        event = f"{name} {keyword_values}"
+        self._logger.log(level, event)
+
+
+class Timings:
+    """Info and functions for putting timings in the logs.
+    """
+
+    # Level-of-detail, 0=none, 1=some, 2+=all
+    lod = 0
+    # Logger
+    _zz = None
+    # Function name
+    func_name = "fn"
+    # Saved: name: (lod, start, end)
+    _saved = {}
+
+    @classmethod
+    def set_logger(cls, log):
+        cls._zz = ZigZagLogger(log)
+
+    @classmethod
+    def begin(cls, lod, name):
+        if lod > cls.lod:
+            return
+        if lod == 1:
+            cls._zz.begin_info(event_name=name, func_name=cls.func_name)
+        else:
+            cls._zz.begin_debug(event_name=name, func_name=cls.func_name)
+
+    @classmethod
+    def end(cls, lod, name, rcode, **kwargs):
+        if lod > cls.lod:
+            return
+        if lod == 1:
+            cls._zz.end_info(event_name=name, func_name=cls.func_name, rc=rcode,
+                             **kwargs)
+        else:
+            cls._zz.end_debug(event_name=name, func_name=cls.func_name, rc=rcode,
+                              **kwargs)
+
+    @classmethod
+    def save(cls, name, lod: int = 1, begin_time: float = None, end_time: float = None):
+        cls._saved[name] = (lod, begin_time, end_time)
+
+    @classmethod
+    def log_saved(cls):
+        for name, info in cls._saved.items():
+            lod, dur = info[0], info[2] - info[1]
+            cls.begin(lod, name)
+            cls.end(lod, name, 0, dur=f"{dur:.6f}")
+        cls._saved = {}
+
+# endregion

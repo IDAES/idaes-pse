@@ -16,6 +16,9 @@ Command Line Interface for IDAES DMF.
 Uses "Click" to handle command-line parsing and dispatch.
 """
 # stdlib
+import time
+
+import_t0 = time.time()
 from collections import namedtuple
 from datetime import datetime
 from enum import Enum
@@ -33,22 +36,31 @@ import yaml
 import click
 
 # package
-from idaes.dmf import DMF, DMFConfig, resource, workspace
+from idaes.dmf import DMF, DMFConfig, resource, workspace, create_configuration
 from idaes.dmf.resource import Predicates
 from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
 from idaes.dmf import util
-from idaes.dmf.util import ColorTerm, yaml_load, parse_datetime, size_prefix
+from idaes.dmf.util import (
+    ColorTerm,
+    yaml_load,
+    parse_datetime,
+    size_prefix,
+    Timings,
+)
+
+import_t1 = time.time()
+Timings.save("import", begin_time=import_t0, end_time=import_t1)
 
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
 _dmf_log = logging.getLogger("idaes.dmf")
+_timing_log = logging.getLogger("idaes.dmf.tm")
 
 
 class Code(Enum):
-    """Return codes from the CLI.
-    """
+    """Return codes from the CLI."""
 
     OK = 0
     WORKSPACE_NOT_FOUND = 1
@@ -101,6 +113,7 @@ class AliasedGroup(click.Group):
         self._aliases = aliases
 
     def get_command(self, ctx, cmd_name):
+        t0 = time.time()
         command = click.Group.get_command(self, ctx, cmd_name)
         if command is None:
             commands = self.list_commands(ctx)
@@ -131,13 +144,14 @@ class AliasedGroup(click.Group):
                     f"Command '{cmd_name}' could be a prefix for multiple commands: "
                     f"{' '.join(sorted(matches))}"
                 )
+        Timings.save("AliasedGroup.get_command", begin_time=t0, end_time=time.time(),
+                     lod=2)
         # Return found command
         return command  # matched, or None
 
 
 class URLType(click.ParamType):
-    """Click type for URLs.
-    """
+    """Click type for URLs."""
 
     name = "URL"
     envvar_list_splitter = ","
@@ -160,6 +174,7 @@ class URLType(click.ParamType):
         "list": "ls",
         "delete": "rm",
         "graph": "related",
+        "workspace": "init",
     },
     help="Data management framework command wrapper",
 )
@@ -178,18 +193,57 @@ class URLType(click.ParamType):
     "only show critical messages. If "
     "given twice, show no messages.",
 )
-def base_command(verbose, quiet):
+@click.option(
+    "--timings",
+    "-t",
+    count=True,
+    help="Include timings in logs. Repeat for more timing detail.",
+)
+def base_command(verbose, quiet, timings):
     """Data management framework command wrapper.
 
     This command does nothing by itself except provide global
     options and list subcommands.
     """
+    import_t2 = time.time()
+    Timings.save("import_to_base", begin_time=import_t1, end_time=import_t2)
     if quiet > 0 and verbose > 0:
         raise click.BadArgumentUsage("Options for verbosity and quietness conflict")
     if verbose > 0:
         _dmf_log.setLevel(level_from_verbosity(verbose))
     else:
         _dmf_log.setLevel(level_from_verbosity(-quiet))
+    # Set up timings logging
+    Timings.lod = int(timings)
+    if Timings.lod > 1:
+        _timing_log.setLevel(logging.DEBUG)
+    elif Timings.lod > 0:
+        _timing_log.setLevel(logging.INFO)
+    Timings.func_name = "dmf.cli"
+    Timings.set_logger(_timing_log)
+    Timings.save("base", begin_time=import_t2, end_time=time.time())
+    Timings.log_saved()
+
+
+@click.command(help="Set up the DMF configuration file.")
+@click.option(
+    "--dir",
+    "-d",
+    "config_path",
+    type=click.Path(),
+    default=None,
+    help="Specify non-default directory for configuration",
+)
+def setup(config_path):
+    Timings.begin(1, "setup")
+    try:
+        path = create_configuration(config_path=config_path)
+    except ValueError as err:
+        click.echo(f"Error creating DMF configuration: {err}")
+        Timings.end(1, "setup", Code.DMF_OPER.value)
+        sys.exit(Code.DMF_OPER.value)
+    click.echo(f"Created configuration in '{path}'")
+    Timings.end(1, "setup", 0)
 
 
 @click.command(
@@ -214,17 +268,24 @@ def init(path, create, name, desc, html):
     """Initialize the current workspace used for the data management framework commands.
     Optionally, create a new workspace.
     """
+    Timings.begin(1, "init")
     _log.info(f"Initialize with workspace path={path} cwd={os.path.abspath(os.curdir)}")
     if create:
         _log.info("Create new workspace")
         # pre-check that there is no file/dir by this name
         try:
             wspath = pathlib.Path(path)
-            if wspath.exists() and (wspath / workspace.Workspace.WORKSPACE_CONFIG).exists():
-                click.echo(f"Cannot create workspace: '{path}/{workspace.Workspace.WORKSPACE_CONFIG}' already exists")
+            if (
+                wspath.exists()
+                and (wspath / workspace.Workspace.WORKSPACE_CONFIG).exists()
+            ):
+                click.echo(
+                    f"Cannot create workspace: '{path}/{workspace.Workspace.WORKSPACE_CONFIG}' already exists"
+                )
                 sys.exit(Code.DMF_OPER.value)
         except PermissionError:
             click.echo(f"Cannot create workspace: path '{path}' not accessible")
+            Timings.end(1, "init", Code.DMF_OPER.value)
             sys.exit(Code.DMF_OPER.value)
         if not name:
             name = click.prompt("New workspace name")
@@ -234,10 +295,17 @@ def init(path, create, name, desc, html):
         # in the JSON schema at `idaes.dmf.workspace.CONFIG_SCHEMA`
         hpath = [html] if html else None
         try:
-            d = DMF(path=path, create=True, name=name, desc=desc, html_paths=hpath,
-                    add_defaults=True)
+            d = DMF(
+                path=path,
+                create=True,
+                name=name,
+                desc=desc,
+                html_paths=hpath,
+                add_defaults=True,
+            )
         except errors.WorkspaceError as err:
             click.echo(f"Cannot create workspace: {err}")
+            Timings.end(1, "init", Code.DMF_OPER.value)
             sys.exit(Code.DMF_OPER.value)
         click.echo(f"Configuration in '{d.configuration_file}")
     else:
@@ -247,11 +315,14 @@ def init(path, create, name, desc, html):
         _ = DMF(path=path, create=False, save_path=True)  # noqa: F841
     except errors.WorkspaceConfNotFoundError:
         click.echo(f"Workspace configuration not found at path='{path}'")
+        Timings.end(1, "init", Code.WORKSPACE_NOT_FOUND.value)
         sys.exit(Code.WORKSPACE_NOT_FOUND.value)
     except errors.WorkspaceNotFoundError:
         click.echo(f"Existing workspace not found at path='{path}'")
         click.echo("Add --create flag to create a workspace.")
+        Timings.end(1, "init", Code.WORKSPACE_NOT_FOUND.value)
         sys.exit(Code.WORKSPACE_NOT_FOUND.value)
+    Timings.end(1, "init", 0)
 
 
 @click.command(help="Get status of workspace")
@@ -323,9 +394,7 @@ def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
             total_size = sum(
                 (sum((fp.stat().st_size for fp in fd.glob("*"))) for fd in fdirs)
             )
-            print(
-                item_fn("total_size", size_prefix(total_size), before=indent)
-            )
+            print(item_fn("total_size", size_prefix(total_size), before=indent))
         if thing == "htmldocs" or thing == "all":
             indent = indent_spc
             doc_paths = d.get_doc_paths()
@@ -543,6 +612,7 @@ def register(
 )
 @click.option("--reverse", "-r", "reverse", flag_value="yes", help="Reverse sort order")
 def ls(color, show, sort_by, reverse, prefix):
+    Timings.begin(1, "ls")
     try:
         d = DMF()
     except errors.WorkspaceError as e:
@@ -561,6 +631,7 @@ def ls(color, show, sort_by, reverse, prefix):
         sort_by = ["id"]
     resources = list(d.find())
     _print_resource_table(resources, show, sort_by, reverse, prefix, color)
+    Timings.end(1, "ls", 0)
 
 
 def _split_and_validate_fields(fields: List[str]) -> List[str]:
@@ -583,6 +654,7 @@ def _split_and_validate_fields(fields: List[str]) -> List[str]:
                 continue
             if "." in f:
                 keys, v = f.split("."), dummy
+                k = None
                 try:
                     for k in keys:
                         try:
@@ -600,8 +672,7 @@ def _split_and_validate_fields(fields: List[str]) -> List[str]:
 
 
 def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, color):
-    """Text-mode `ls`.
-    """
+    """Text-mode `ls`."""
     t = ColorTerm(enabled=color)
     if len(resources) == 0:
         print("no resources to display")
@@ -650,8 +721,10 @@ def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, colo
         sort_key_idx = tuple(range(nfields, nfields + nsort))
         rows.sort(key=itemgetter(*sort_key_idx), reverse=reverse)
     # print table header
-    hdr_columns = [t.bold + "{{f:{w}s}}".format(w=w).format(f=f)
-                   for f, w in zip(hdr_fields, widths)]
+    hdr_columns = [
+        t.bold + "{{f:{w}s}}".format(w=w).format(f=f)
+        for f, w in zip(hdr_fields, widths)
+    ]
     print(" ".join(hdr_columns) + t.normal)
     # print table body
     for row in rows:
@@ -794,23 +867,28 @@ def _date_query(datestr):
         except AttributeError:
             return datetime(*x.timetuple()[:6]).timestamp()
 
+    # Parse "<Date1>..<Date2>" or just "<Date>"
     dates = datestr.split("..", 1)
     _log.debug(f"date '{datestr}', split: {dates}")
     parsed_dates = [parse_datetime(d) if d else None for d in dates]
+    # Range <Date1>..<Date2>
     if len(parsed_dates) == 2:
         begin_date, end_date = parsed_dates
         query = {}
         if begin_date:
-            query['$ge'] = _ts(begin_date)
+            query["$ge"] = _ts(begin_date)
         if end_date:
-            query['$le'] = _ts(end_date)
+            query["$le"] = _ts(end_date)
+    # Single date(time)
     else:
         pd = parsed_dates[0]
+        if pd is None:
+            raise ValueError(f"Empty date: {dates[0]}")
         if isinstance(pd, datetime):
             _log.warning("datetime given, must match to the second")
             query = _ts(pd)
         else:
-            query = {'$ge': _ts(pd), '$le': _ts(pd) + 60 * 60 * 24}  # 1 day
+            query = {"$ge": _ts(pd), "$le": _ts(pd) + 60 * 60 * 24}  # 1 day
     return query
 
 
@@ -908,7 +986,7 @@ def related(identifier, direction, color, unicode):
     _log.info(f"got {len(rr)} related resources")
     # debugging
     if _log.isEnabledFor(logging.DEBUG):
-        dbgtree = '\n'.join(['  ' + str(x) for x in rr])
+        dbgtree = "\n".join(["  " + str(x) for x in rr])
         _log.debug(f"related resources:\n{dbgtree}")
     # extract uuids & determine common UUID prefix length
     uuids = [item[2][resource.Resource.ID_FIELD] for item in rr]
@@ -921,22 +999,22 @@ def related(identifier, direction, color, unicode):
     if unicode:
         # connector chars
         vrt, vrd, relbow, relbow2, rarr = (
-            '\u2502',
-            '\u2506',
-            '\u2514',
-            '\u251C',
-            '\u2500\u2500',
+            "\u2502",
+            "\u2506",
+            "\u2514",
+            "\u251C",
+            "\u2500\u2500",
         )
         # relation prefix and arrow
         relpre, relarr = (
-            ['\u2500\u25C0\u2500\u2524', '\u2524'][outgoing],
-            ['\u2502', '\u251C\u2500\u25B6'][outgoing],
+            ["\u2500\u25C0\u2500\u2524", "\u2524"][outgoing],
+            ["\u2502", "\u251C\u2500\u25B6"][outgoing],
         )
     else:
         # connector chars
-        vrt, vrd, relbow, relbow2, rarr = '|', '.', '+', '+', '--'
+        vrt, vrd, relbow, relbow2, rarr = "|", ".", "+", "+", "--"
         # relation prefix and arrow
-        relpre, relarr = ['<-[', '-['][outgoing], [']-', ']->'][outgoing]
+        relpre, relarr = ["<-[", "-["][outgoing], ["]-", "]->"][outgoing]
     # create map of #items at each level, so we can easily
     # know when there are more at a given level, for drawing
     n_at_level = {0: 0}
@@ -950,15 +1028,14 @@ def related(identifier, direction, color, unicode):
     while q:
         depth, rel, meta = q.pop()
         n_at_level[depth] -= 1
-        indent = ''.join(
+        indent = "".join(
             [
                 f" {t.blue}{vrd if n_at_level[i - 1] else ' '}{t.resetc} "
                 for i in range(1, depth + 1)
             ]
         )
         print(f"{indent} {t.blue}{vrt}")
-        rstr = f"{t.blue}{relpre}{t.yellow}{rel.predicate}"\
-            f"{t.blue}{relarr}{t.reset}"
+        rstr = f"{t.blue}{relpre}{t.yellow}{rel.predicate}" f"{t.blue}{relarr}{t.reset}"
         if meta["aliases"]:
             item_name = meta["aliases"][0]
         else:
@@ -987,7 +1064,7 @@ def _related_item(id_, name, type_, pfx, t, unicode):
 
 
 @click.command(help="Remove a resource")  # aliases: delete
-@click.argument("identifier")
+@click.argument("identifier", nargs=-1)
 @click.option(
     "-y",
     "--yes",
@@ -997,42 +1074,102 @@ def _related_item(id_, name, type_, pfx, t, unicode):
 @click.option("--list/--no-list", "list_resources", default=True)
 @click.option("--multiple/--no-multiple", default=False)
 def rm(identifier, yes, multiple, list_resources):
-    _log.info(f"remove resource '{identifier}'")
-    try:
-        resource.identifier_str(identifier, allow_prefix=True)
-    except ValueError as errmsg:
-        click.echo(f"Invalid identifier. Details: {errmsg}")
-        sys.exit(Code.INPUT_VALUE.value)
-    rsrc_list = list(find_by_id(identifier))
-    found_multiple = len(rsrc_list) > 1
-    if found_multiple and not multiple:
-        click.echo(
-            f"Too many ({len(rsrc_list)}) resources match prefix '{identifier}'. "
-            "Add option --multiple to allow multiple matches."
-        )
-        sys.exit(Code.DMF_OPER.value)
-    fields = ["type", "desc", "modified"]  # "id" is prepended by _ls_basic()
-    if list_resources:
-        _print_resource_table(rsrc_list, fields, ["id"], False, False, True)
-    if yes != "yes":
+    for ident in identifier:
+        _log.info(f"remove resource '{ident}'")
+        try:
+            resource.identifier_str(ident, allow_prefix=True)
+        except ValueError as errmsg:
+            click.echo(f"Invalid identifier. Details: {errmsg}")
+            sys.exit(Code.INPUT_VALUE.value)
+        rsrc_list = list(find_by_id(ident))
+        found_multiple = len(rsrc_list) > 1
+        if found_multiple and not multiple:
+            click.echo(
+                f"Too many ({len(rsrc_list)}) resources match prefix '{ident}'. "
+                "Add option --multiple to allow multiple matches."
+            )
+            sys.exit(Code.DMF_OPER.value)
+        fields = ["type", "desc", "modified"]  # "id" is prepended by _ls_basic()
+        if list_resources:
+            _print_resource_table(rsrc_list, fields, ["id"], False, False, True)
+        if yes != "yes":
+            if found_multiple:
+                s = f"these {len(rsrc_list)} resources"
+            else:
+                s = "this resource"
+            do_remove = click.confirm(f"Remove {s}", prompt_suffix="? ", default=False)
+            if not do_remove:
+                click.echo("aborted")
+                sys.exit(Code.CANCELED.value)
+        d = DMF()
+        for r in rsrc_list:
+            _log.debug(f"begin remove-resource id={r.id}")
+            d.remove(identifier=r.id)
+            _log.debug(f"end remove-resource id={r.id}")
         if found_multiple:
-            s = f"these {len(rsrc_list)} resources"
+            s = f"{len(rsrc_list)} resources removed"
         else:
-            s = "this resource"
-        do_remove = click.confirm(f"Remove {s}", prompt_suffix="? ", default=False)
-        if not do_remove:
-            click.echo("aborted")
-            sys.exit(Code.CANCELED.value)
-    d = DMF()
-    for r in rsrc_list:
-        _log.debug(f"begin remove-resource id={r.id}")
-        d.remove(identifier=r.id)
-        _log.debug(f"end remove-resource id={r.id}")
-    if found_multiple:
-        s = f"{len(rsrc_list)} resources removed"
+            s = "resource removed"
+        click.echo(s)
+
+
+@click.command(help="Load a directory of data and associated reference")
+@click.option(
+    "-d",
+    "--datadir",
+    default=None,
+    help="Data & configuration directory (default is current working directory)",
+)
+@click.option(
+    "--global/--no-global",
+    "global_",
+    default=False,
+    help="Load into global IDAES data workspace (by default, use current workspace)",
+)
+def load_data(datadir, global_):
+    from idaes.dmf import datasets
+
+    def echolog(msg, error=False):
+        if error:
+            _log.error(f"Error: {msg}")
+        else:
+            _log.info(msg)
+        click.echo(msg)
+
+    # Set DMF workspace
+    if global_:
+        # Setting workspace to None forces the default, global, one
+        data_workspace = None
+        # logging
+        echolog(f"Load data into data workspace '{datasets.get_dataset_workspace()}'")
     else:
-        s = "resource removed"
-    click.echo(s)
+        # Query DMF to get current workspace
+        try:
+            data_workspace = DMFConfig().workspace
+        except (IOError, ValueError) as err:
+            echolog(f"Cannot retrieve current workspace: {err}", error=True)
+            sys.exit(-1)
+        echolog(f"Load data into current DMF workspace at '{data_workspace}'")
+
+    # Set input data directory
+    if datadir is None:
+        data_directory = pathlib.Path(".").absolute()
+    else:
+        data_directory = pathlib.Path(datadir).absolute()
+    echolog(f"Load data from {data_directory}")
+
+    # Load the dataset
+    pd = datasets.PublicationDataset(workspace=data_workspace)
+    try:
+        pd.load(data_directory)
+    except datasets.ConfigurationError as err:
+        echolog(f"Bad configuration. Details: {err}", error=True)
+        sys.exit(1)
+    except datasets.FileMissingError as err:
+        echolog(f"Bad input. Details: {err}", error=True)
+        sys.exit(2)
+
+    echolog(f"Loaded data in '{data_directory}' into the DMF")
 
 
 ######################################################################################
@@ -1045,8 +1182,7 @@ def find_by_id(identifier, dmf=None):
 
 
 class _ShowInfo:
-    """Container for methods, etc. to show info about a resource.
-    """
+    """Container for methods, etc. to show info about a resource."""
 
     contents_indent, json_indent = 4, 2  # for `term` output
 
@@ -1055,13 +1191,13 @@ class _ShowInfo:
         self._pfxlen = pfxlen
         self._fmt = output_format
         self._resource = None
-        C = namedtuple('Corners', ['nw', 'ne', 'se', 'sw'])
+        C = namedtuple("Corners", ["nw", "ne", "se", "sw"])
         if unicode:
-            self._corners = C._make('\u250C\u2510\u2518\u2514')
-            self._hz, self._vt = '\u2500', '\u2502'
+            self._corners = C._make("\u250C\u2510\u2518\u2514")
+            self._hz, self._vt = "\u2500", "\u2502"
         else:
-            self._corners = C._make('++++')
-            self._hz, self._vt = '-', '|'
+            self._corners = C._make("++++")
+            self._hz, self._vt = "-", "|"
 
     def show(self, rsrc):
         self._resource = rsrc
@@ -1090,7 +1226,7 @@ class _ShowInfo:
                     default_flow_style=False,
                     explicit_end=False,
                 )
-                if contents_str.endswith('...\n'):
+                if contents_str.endswith("...\n"):
                     contents_str = contents_str[:-4]
                 print(
                     f"{t.cyan}{self._vt}{t.resetc} {t.bold}{t.cyan}{tk}{t.reset}"
@@ -1106,7 +1242,7 @@ class _ShowInfo:
         longest = 0
         for v in formatted_resource.values():
             v_longest = max(
-                (len(s) for s in json.dumps(v, indent=self.json_indent).split('\n'))
+                (len(s) for s in json.dumps(v, indent=self.json_indent).split("\n"))
             )
             longest = max((longest, v_longest))
         return longest
@@ -1130,7 +1266,7 @@ class _ShowInfo:
         t, n = self._terminal, self.contents_indent
         contents_width = width - 2 - n
         indent = " " * n
-        for line in s.split('\n'):
+        for line in s.split("\n"):
             p = 0
             while p < len(line):
                 print_line = line[p : p + contents_width]
@@ -1264,6 +1400,7 @@ class _NameField(_LsField):
             return ""
         return self.value[0]
 
+
 # Mapping from the field name to an instance of a subclass
 # of _Field that can extract sortable and formatted values.
 
@@ -1278,13 +1415,14 @@ _show_fields = {
     "files": _FilesField("datafiles"),
     "codes": _CodesField("codes"),
     "version": _VersionField(("version_info", "version")),
-    "name": _NameField()
+    "name": _NameField(),
 }
 
 
 ######################################################################################
 
 # Register base commands
+base_command.add_command(setup)
 base_command.add_command(init)
 base_command.add_command(register)
 base_command.add_command(status)
@@ -1293,6 +1431,7 @@ base_command.add_command(find)
 base_command.add_command(info)
 base_command.add_command(related)
 base_command.add_command(rm)
+base_command.add_command(load_data)
 
 # if __name__ == '__main__':
 #     base_command()
