@@ -126,8 +126,8 @@ kwargs = dict(
             "*.html",
             "*.json.gz",
             "*.dat",
-            "*.xls",
-            "*.xlsx",
+            "*.h5",
+            "*.trc",
         ]
     },
     include_package_data=True,
