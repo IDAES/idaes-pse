@@ -720,7 +720,7 @@ class Resource:
         datafiles_dir = self.v["datafiles_dir"]
         for datafile in self.v["datafiles"]:
             if "full_path" in datafile:
-                path = datafile["full_path"]
+                path = Path(datafile["full_path"])
             else:
                 path = Path(datafile["path"])
                 if not path.is_absolute():

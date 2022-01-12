@@ -975,7 +975,9 @@ class DMF(workspace.Workspace, HasTraits):
         """Perform any additional changes to resources retrieved
         before passing them up to the application.
         """
-        self._set_datafiles_full_path(r)
+        # if this is a resource, set the path
+        if isinstance(r, Resource):
+            self._set_datafiles_full_path(r)
         return r
 
     def _set_datafiles_full_path(self, r):
@@ -1015,7 +1017,7 @@ class DMF(workspace.Workspace, HasTraits):
                     full_path = pathlib.Path(datafiles_dir) / filename
             assert full_path is not None   # we should have assigned this above
             _log.debug(f"post-process resource ({r.id}: set full_path={full_path}")
-            df_item["full_path"] = full_path
+            df_item["full_path"] = str(full_path)  # make sure it's JSON serializable
 
     def __str__(self):
         return 'DMF config="{}"'.format(self._conf)
