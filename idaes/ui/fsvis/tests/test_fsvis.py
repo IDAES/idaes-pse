@@ -178,13 +178,7 @@ class MockWB:
         return self.ok
 
 
-@pytest.mark.unit
-def test_iframe_args(flash_model):
-    fsvis.webbrowser = MockWB(True)
-    fsvis.visualize(flash_model.fs, save=False, in_jupyter=True)
-
-
-## Test saving of the status file
+# Test saving of the status file
 
 
 @pytest.fixture
