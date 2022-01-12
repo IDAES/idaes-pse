@@ -141,28 +141,18 @@ def dae():
     # Equations
     @model.Constraint(model.t)
     def eq_ydot1(b, t):
-        if t==0:
-            pyo.Constraint.Skip
         return b.ydot[t, 1] == -2.0*b.r[t, 1] + b.r[t, 2] - b.r[t, 3] - b.r[t, 4]
     @model.Constraint(model.t)
     def eq_ydot2(b, t):
-        if t==0:
-            pyo.Constraint.Skip
         return b.ydot[t, 2] == -0.5*b.r[t, 1] - b.r[t, 4] - 0.5*b.r[t, 5] + b.Fin[t]
     @model.Constraint(model.t)
     def eq_ydot3(b, t):
-        if t==0:
-            pyo.Constraint.Skip
         return b.ydot[t, 3] == b.r[t, 1] - b.r[t, 2] + b.r[t, 3]
     @model.Constraint(model.t)
     def eq_ydot4(b, t):
-        if t==0:
-            pyo.Constraint.Skip
         return b.ydot[t, 4] == -b.r[t, 2] + b.r[t, 3] - 2.0*b.r[t, 4]
     @model.Constraint(model.t)
     def eq_ydot5(b, t):
-        if t==0:
-            pyo.Constraint.Skip
         return b.ydot[t, 5] == b.r[t, 2] - b.r[t, 3] + b.r[t, 5]
     @model.Constraint(model.t)
     def eq_y6(b, t):

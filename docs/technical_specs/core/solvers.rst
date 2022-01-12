@@ -62,6 +62,24 @@ PETSc includes optimization solvers, but they are not currently supported by the
 IDAES AMPL solver wrapper. Optimization support will likely be added in the
 future.
 
+DAE Terminology
+~~~~~~~~~~~~~~~
+
+For the following discussion regarding the PETSc solver interface, the following
+terminology is used.
+
+* Derivative: a time derivative
+* Differential variable: a variable that is differentiated with respect to time
+* Algebraic: a variable with no explicit time derivative appearing in the problem
+* State Variables: the set of algebraic and differential variables
+* Time variable: a variable representing time
+
+DAE problems do not need to include a time variable, but, if they do, there can
+only be one. Differential variables do not need to explicitly appear in
+constraints, but their time derivatives do.  DAE problems must have zero degrees
+of freedom, which means the number of constraints must equal the number of state
+variables.
+
 Installing PETSc
 ~~~~~~~~~~~~~~~~
 
@@ -82,9 +100,10 @@ The IDAES PETSc package also includes Python modules for reading binary data
 written by the PETSc solver.  On Windows, some manual installation of the Python
 modules is required.  If you are using the WSL method to run PETSc, copy the
 ``petscpy`` directory from the Linux package you are using to the IDAES binary
-directory.  You can find the IDAES binary directory with the command
-``idaes bin-directory``.  The primary use for these Python modules is to read
-trajectory files saved by the TS solver.
+directory.  You can find the IDAES binary directory by running the command
+``idaes bin-directory`` in the OS command shell (e.g. Bash, Windows CMD,
+PowerShell).  The primary use for these Python modules is to read trajectory
+files saved by the TS solver.
 
 Registered Solvers
 ~~~~~~~~~~~~~~~~~~
@@ -160,7 +179,7 @@ calculations may enable optimization.
 Non-time-indexed variables and constraints should usually be solved with the
 initial conditions in the first step. Non-time-indexed variables can optionally
 be detected and added to the equations solved for the initial conditions, or
-explicitly specified by the user.  Users will have to take car not to include
+explicitly specified by the user.  Users will have to take care not to include
 non-time indexed constraints that contain time-indexed variables at times other
 than the initial time.  If such constraints exist for the fully discretized
 model users should deactivate them as appropriate.
