@@ -95,7 +95,7 @@ def test_petsc_idaes_solve():
     m, x = nle()
     solver = pyo.SolverFactory("petsc_snes")
     solver.solve(m, tee=True)
-    assert pytest.approx(x) == pyo.value(m.x) or pytest.approx(x) == pyo.value(-m.x)
+    assert pytest.approx(x) == pyo.value(m.x)
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")

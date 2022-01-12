@@ -234,7 +234,7 @@ def find_discretization_equations(m, time):
                 name = var.local_name + "_disc_eq"
                 disc_eq = getattr(parent, name)
                 disc_eqns.append(disc_eq)
-    return disc_eq
+    return disc_eqns
 
 
 def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
@@ -620,7 +620,7 @@ class PetscTrajectory(object):
     def _unscale(self, m):
         """If variable scale factors are used, the solver will see scaled
         variables, and the scaled trajectory will be written. This function
-        uses variable scaling factors from the given model to unscale the
+        uses variable scaling facors from the given model to unscale the
         trajectory.
 
         Args:
