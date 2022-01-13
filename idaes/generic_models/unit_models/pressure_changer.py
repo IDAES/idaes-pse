@@ -787,16 +787,11 @@ see property package for documentation.}""",
         )
         init_log.info_high("Initialization Step 1 Complete.")
 
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
-        init_log.info_high("Initialization Step 2 {}."
-                           .format(idaeslog.condition(res)))
-
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.info_high("Initialization Step 3 {}."
+        init_log.info_high("Initialization Step 2 {}."
                            .format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
