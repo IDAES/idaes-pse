@@ -49,15 +49,14 @@ def test_icon_mapping(test_input, expected):
         "'attrs': {'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': "
         "'<g><rect/></g>'}, 'out': {'position': {'name': 'left', 'args': {'x': 48, 'y': 50, 'dx': 1, 'dy': 1}}, "
         "'attrs': {'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': "
-        "'<g><rect/></g>'}}, 'items':[{'group': 'in', 'id': 'in'}, {'group': 'out', 'id': 'out'}]}"
+        "'<g><rect/></g>'}}, 'items':[]}"
     ),
     (
         "cstr",
         "{'groups': {'in': {'position': {'name': 'left', 'args': {'x': 15, 'y': 0, 'dx': 1, 'dy': 1}}, 'attrs': "
         "{'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': '<g><rect/></g>'}, "
         "'out': {'position': {'name': 'left', 'args': {'x': 48, 'y': 45, 'dx': 1, 'dy': 1}}, 'attrs': {'rect': "
-        "{'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': '<g><rect/></g>'}}, 'items': "
-        "[{'group': 'in', 'id': 'in'}, {'group': 'out', 'id': 'out'}]}"
+        "{'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': '<g><rect/></g>'}}, 'items': []}"
     )]
 )
 @pytest.mark.unit

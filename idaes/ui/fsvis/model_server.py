@@ -250,7 +250,7 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         """Read index file, process to insert flowsheet identifier, and return it.
         """
         p = Path(_template_dir / "index.html")
-        with open(p, "r") as fp:
+        with open(p, "r", encoding="utf-8") as fp:
             s = fp.read()
             page = s.format(flowsheet_id=id_)
         self._write_html(200, page)

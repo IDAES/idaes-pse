@@ -64,6 +64,7 @@ kwargs = dict(
         "nbformat",
         "numpy",
         "networkx",
+        "omlt==0.3", # fix the version for now as package evolves
         "pandas",
         "pint",
         "psutil",
@@ -76,6 +77,8 @@ kwargs = dict(
         "sympy",
         "tinydb",
         "rbfopt",
+        # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
+        "ipython<8.0.0",
     ],
     entry_points={
         "console_scripts": [
@@ -86,6 +89,9 @@ kwargs = dict(
     # Only installed if [<key>] is added to package name
     extras_require={
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
+        "optional": [
+            "tensorflow"  # idaes.surrogate.keras_surrogate
+        ]
     },
     package_data={
         # If any package contains these files, include them:
@@ -103,7 +109,9 @@ kwargs = dict(
             "*.css",
             "*.html",
             "*.json.gz",
-            "*.dat"
+            "*.dat",
+            "*.h5",
+            "*.trc",
         ]
     },
     include_package_data=True,
@@ -128,7 +136,6 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

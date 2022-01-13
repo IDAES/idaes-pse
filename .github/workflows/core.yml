@@ -27,7 +27,7 @@ on:
 
 env:
   # default Python version to use for checks that do not require multiple versions
-  DEFAULT_PYTHON_VERSION: '3.7'
+  DEFAULT_PYTHON_VERSION: '3.8'
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
   PYTEST_ADDOPTS: "--color=yes"
 
@@ -45,7 +45,6 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.6'
           - '3.7'
           - '3.8'
           - '3.9'

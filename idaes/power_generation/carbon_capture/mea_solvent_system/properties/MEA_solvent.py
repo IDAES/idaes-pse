@@ -327,11 +327,11 @@ class DiffusCO2():
         set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="3")
         cobj.diffus_phase_comp_coeff_4 = Var(
                 doc="Parameter 4 for liquid phase diffusivity model",
-                units=pyunits.dimensionless)
+                units=pyunits.K)
         set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="4")
         cobj.diffus_phase_comp_coeff_5 = Var(
                 doc="Parameter 5 for liquid phase diffusivity model",
-                units=pyunits.K)
+                units=(pyunits.m**3)*pyunits.K/pyunits.kmol)
         set_param_from_config(cobj, param="diffus_phase_comp_coeff", index="5")
 
     @staticmethod
@@ -342,7 +342,7 @@ class DiffusCO2():
                  cobj.diffus_phase_comp_coeff_2*C_MEA +
                  cobj.diffus_phase_comp_coeff_3*C_MEA**2) *
                 exp((cobj.diffus_phase_comp_coeff_4 +
-                     cobj.diffus_phase_comp_coeff_5) / T))
+                     (cobj.diffus_phase_comp_coeff_5*C_MEA)) / T))
 
 
 class DiffusMEA():

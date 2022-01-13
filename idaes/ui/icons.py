@@ -17,8 +17,6 @@ class UnitModelIcon:
     """Represents icon display information for a given unit model.
     """
 
-    _link_positions_map = {}  # cache 'built' link positions
-
     #: Name of default unit_model to use
     DEFAULT = "default"
 
@@ -36,18 +34,19 @@ class UnitModelIcon:
             unit_model = self.DEFAULT
         self._model = unit_model
         try:
-            self._info = self._mapping[unit_model]
+            self._model_details = self._mapping[unit_model]
         except KeyError:
             if not default:
                 raise
-            self._info = self._mapping[self.DEFAULT]
+            self._model_details = self._mapping[self.DEFAULT]
         self._pos = self._build_link_positions()
 
     @property
     def icon(self) -> str:
         """Get the name of the icon.
         """
-        return self._info[0]
+        # return self._info[0]
+        return self._model_details['image']
 
     @property
     def link_positions(self) -> Dict:
@@ -56,7 +55,7 @@ class UnitModelIcon:
         Example result::
 
             {
-                "groups": {
+                "port_groups": {
                     "in": {
                         "position": {
                             "name": "left",
@@ -88,33 +87,46 @@ class UnitModelIcon:
                         "markup": "<g><rect/></g>",
                     },
                 },
-                "items": [{"group": "in", "id": "in"}, {"group": "out", "id": "out"}],
+                "items": []
             }
 
         Returns:
             The link position (see example result)
         """
         return self._pos
+    
+    @property
+    def routing_config(self) -> Dict:
+        """Get the Unit model routing config to be used to add jointjs vertices
+        for layout control within the created graph.
+
+        Example result::
+
+            {
+                "in": {
+                    "gap": {
+                        "direction": "left",
+                        "distance": 20
+                    }
+                }
+            }
+
+        Returns:
+            The routing configuration (see example result)
+        """
+        if "routing_config" in self._model_details:
+            return self._model_details["routing_config"]
+        else:
+            return {}
 
     def _build_link_positions(self) -> Dict:
         """Fill in boilerplate based on raw info and place built value in class cache.
-        Side-effects: set self._pos and add entry to class' _link_positions_map
         """
-        # look in cache, return if found
-        if self._model in self._link_positions_map:
-            return self._link_positions_map[self._model]
-
         # build link positions from info
         groups, items = {}, []
-        for position in self._info[1:]:
-            group, name, (x, y, dx, dy) = position
-            if group not in groups:
-                groups[group] = {}
-            groups[group] = {
-                "position": {
-                    "name": name,
-                    "args": {"x": x, "y": y, "dx": dx, "dy": dy},
-                },
+        for group_name, group_config in self._model_details["port_groups"].items():
+            groups[group_name] = group_config
+            groups[group_name].update({
                 "attrs": {
                     "rect": {
                         "stroke": "#000000",
@@ -124,12 +136,10 @@ class UnitModelIcon:
                     }
                 },
                 "markup": "<g><rect/></g>",
-            }
-            items.append({"group": group, "id": group})
+            })
 
         # set new link positions attr and place in cache
-        positions = {"groups": groups, "items": items}
-        self._link_positions_map[self._model] = positions
+        positions = {"groups": groups, "items": []}
         return positions
 
     # === Data ===
@@ -139,98 +149,551 @@ class UnitModelIcon:
     # Notes for updating:
     #  - Use 'cstr' as your template for new entries
     #  - Do not remove in/out entries in existing entries, or arcs won't connect
+    # TODO: Move this mapping to its own directory/files.
     _mapping = {
-        "cstr": (
-            "reactor_c.svg",
-            ("in", "left", (15, 0, 1, 1)),
-            ("out", "left", (48, 45, 1, 1)),
-        ),
-        "flash": (
-            "flash.svg",
-            ("bottom", "bottom", (25, 50, 1, 1)),
-            ("in", "left", (8, 25, 1, 1)),
-            ("top", "top", (25, 0, 1, 1)),
-        ),
-        "gibbs_reactor": (
-            "reactor_g.svg",
-            ("in", "left", (5, 10, 1, 1)),
-            ("out", "left", (45, 45, 1, 1)),
-        ),
-        "heat_exchanger": (
-            "heat_exchanger_1.svg",
-            ("in", "left", (2, 25, 1, 1)),
-            ("out", "left", (48, 25, 1, 1)),
-        ),
-        "heater": (
-            "heater_2.svg",
-            ("in", "left", (6, 25, 1, 1)),
-            ("out", "left", (43, 25, 1, 1)),
-        ),
-        "heat_exchanger_1D": (
-            "heat_exchanger_1.svg",
-            ("in", "left", (15, 0, 1, 1)),
-            ("out", "left", (48, 45, 1, 1)),
-        ),
-        "mixer": (
-            "mixer.svg",
-            ("in", "left", (2, 25, 1, 1)),
-            ("out", "left", (48, 25, 1, 1)),
-        ),
-        "plug_flow_reactor": (
-            "reactor_pfr.svg",
-            ("in", "left", (15, 0, 1, 1)),
-            ("out", "left", (48, 45, 1, 1)),
-        ),
-        "pressure_changer": (
-            "compressor.svg",
-            ("in", "left", (2, 25, 1, 1)),
-            ("out", "left", (48, 25, 1, 1)),
-        ),
-        "separator": (
-            "splitter.svg",
-            ("in", "left", (2, 25, 1, 1)),
-            ("out", "right", (48, 25, 1, 1)),
-        ),
-        "stoichiometric_reactor": (
-            "reactor_s.svg",
-            ("in", "left", (5, 10, 1, 1)),
-            ("out", "left", (45, 45, 1, 1)),
-        ),
-        "equilibrium_reactor": (
-            "reactor_e.svg",
-            ("in", "left", (5, 10, 1, 1)),
-            ("out", "left", (45, 45, 1, 1)),
-        ),
-        "feed": ("feed.svg", ("out", "left", (48, 25, 1, 1))),
-        "product": ("product.svg", ("in", "left", (2, 25, 1, 1))),
-        "feed_flash": (
-            "feed.svg",
-            ("in", "left", (25, 0, 1, 1)),
-            ("out", "left", (25, 50, 1, 1)),
-        ),
-        "statejunction": (
-            "NONE",
-            ("in", "left", (15, 0, 1, 1)),
-            ("out", "left", (48, 45, 1, 1)),
-        ),
-        "translator": (
-            "NONE",
-            ("in", "left", (15, 0, 1, 1)),
-            ("out", "left", (48, 45, 1, 1)),
-        ),
-        "packed_column": (
-            "packed_column_1.svg",
-            ("in", "left", (48, 10, 1, 1)),
-            ("out", "left", (48, 40, 1, 1)),
-        ),
-        "tray_column": (
-            "tray_column_1.svg",
-            ("in", "left", (48, 10, 1, 1)),
-            ("out", "left", (48, 40, 1, 1)),
-        ),
-        "default": (
-            "default.svg",
-            ("in", "left", (2, 0, 1, 1)),
-            ("out", "left", (48, 50, 1, 1)),
-        ),
+        "cstr": {
+            "image": "reactor_c.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 15,
+                            "y": 0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "flash": {
+            "image": "flash.svg",
+            "port_groups": {
+                "bottom": {
+                    "position": {
+                        "name": "bottom",
+                        "args": {
+                            "x": 25,
+                            "y": 50,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  8,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "top": {
+                    "position": {
+                        "name": "top",
+                        "args": {
+                            "x": 25,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                # added by AR
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 45,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                #end
+            }
+        },
+        "gibbs_reactor": {
+            "image": "reactor_g.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  5,
+                            "y": 10,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 45,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "heat_exchanger": {
+            "image": "heat_exchanger_1.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  2,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "heater": {
+            "image": "heater_2.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  6,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 43,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "heat_exchanger_1D": {
+            "image": "heat_exchanger_1.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 15,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "mixer": {
+            "image": "mixer.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {}
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            },
+            "routing_config": {
+                "in": {
+                    "gap": {
+                        "direction": "left",
+                        "distance": 30
+                    }
+                }
+            }
+        },
+        "plug_flow_reactor": {
+            "image": "reactor_pfr.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 15,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "pressure_changer": {
+            "image": "compressor.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  2,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "separator": {
+            "image": "splitter.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  2,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "right",
+                        "args": {
+                            "x": 48,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "stoichiometric_reactor": {
+            "image": "reactor_s.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  5,
+                            "y": 10,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 45,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "equilibrium_reactor": {
+            "image": "reactor_e.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  5,
+                            "y": 10,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 45,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "feed": {
+            "image": "feed.svg",
+            "port_groups": {
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "product": {
+            "image": "product.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  2,
+                            "y": 25,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "feed_flash": {
+            "image": "feed.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 25,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 25,
+                            "y": 50,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "statejunction": {
+            "image": "NONE",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 15,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "translator": {
+            "image": "NONE",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 15,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 45,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "packed_column": {
+            "image": "packed_column_1.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 10,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 40,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "tray_column": {
+            "image": "tray_column_1.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 10,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 40,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
+        "default": {
+            "image": "default.svg",
+            "port_groups": {
+                "in": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x":  2,
+                            "y":  0,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                },
+                "out": {
+                    "position": {
+                        "name": "left",
+                        "args": {
+                            "x": 48,
+                            "y": 50,
+                            "dx": 1,
+                            "dy": 1
+                        }
+                    }
+                }
+            }
+        },
     }
