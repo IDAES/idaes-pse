@@ -91,11 +91,9 @@ kwargs = dict(
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
             "tensorflow",  # idaes.surrogate.keras_surrogate
-        ],
-        # environment marker must go in extras_require key rather than values: see https://github.com/pypa/setuptools#1087
-        "optional:python_version >= '3.7'": [
-            # FIXME update requirement once PR is merged in
-            "gridx-prescient @ https://github.com/grid-parity-exchange/Prescient/archive/refs/pull/128/head.zip"  # idaes.tests.prescient
+            # FIXME update requirement once PyPI distribution is updated
+            # (8fef0fa2ca is the commit on main where #128 was merged in)
+            "gridx-prescient @ https://github.com/grid-parity-exchange/Prescient/archive/8fef0fa2ca.zip"  # idaes.tests.prescient
         ],
     },
     package_data={
