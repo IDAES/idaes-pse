@@ -303,7 +303,7 @@ def _get_derivative_differential_data_map(m, time):
             data objects
     """
     # Get corresponding derivative and differential data objects,
-    # with no attention payed to fixed or active status.
+    # with no attention paid to fixed or active status.
     deriv_diff_list = []
     for var in m.component_objects(pyo.Var):
         if (isinstance(var, pyodae.DerivativeVar) and
