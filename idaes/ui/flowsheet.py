@@ -651,13 +651,14 @@ class FlowsheetSerializer:
                         }
                     }
                 }
+            cell_config_gap = self._out_json["routing_config"][link_name]["cell_config"]["gap"]
             if src_unit_icon.routing_config and src_port in src_unit_icon.routing_config:
                 # The port group has to be specified in the routing config
-                self._out_json["routing_config"][link_name]["cell_config"]["gap"]["source"] = src_unit_icon.routing_config[src_port]["gap"]
+                cell_config_gap["source"] = src_unit_icon.routing_config[src_port]["gap"]
 
             if dest_unit_icon.routing_config and dest_port in dest_unit_icon.routing_config:
                 # The port group has to be specified in the routing config
-                self._out_json["routing_config"][link_name]["cell_config"]["gap"]["destination"] = dest_unit_icon.routing_config[dest_port]["gap"]
+                cell_config_gap["destination"] = dest_unit_icon.routing_config[dest_port]["gap"]
         
     def _create_image_jointjs_json(self, x_pos, y_pos, name, image, title, port_groups):
         # Create the jointjs for a given image
