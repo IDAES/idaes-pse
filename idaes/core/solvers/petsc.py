@@ -477,6 +477,13 @@ def petsc_dae_by_time_element(
                 variables,
                 deriv_diff_map,
             )
+            # We need to check if there are derivatives in the problem before
+            # sending this to the solver.  We'll assume that if you are using
+            # this and don't have any differential equations, you are making a
+            # mistake.
+            if len(differential_vars) < 1:
+                raise RuntimeError(
+                    "No differential equations found, you do not need a DAE solver.")
             if timevar is not None:
                 t_block.dae_suffix[timevar[t]] = int(DaeVarTypes.TIME)
             # Set up the scaling factor suffix
