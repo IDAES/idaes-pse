@@ -451,7 +451,7 @@ def petsc_dae_by_time_element(
                 _sub_problem_scaling_suffix(m, t_block)
                 with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
                     res = solver_snes.solve(t_block, tee=slc.tee)
-        res_list.append(res)
+                res_list.append(res)
 
     tprev = t0
     count = 1
