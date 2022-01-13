@@ -657,10 +657,9 @@ Must be True if dynamic = True,
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
 
-        if (results is not None and (
-                results.solver.termination_condition !=
+        if (results.solver.termination_condition !=
                 TerminationCondition.optimal or
-                results.solver.status != SolverStatus.ok)):
+                results.solver.status != SolverStatus.ok):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

@@ -38,7 +38,7 @@ from idaes.core import (declare_process_block_class,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, \
-    PropertyPackageError, PropertyNotSupportedError
+    PropertyPackageError, PropertyNotSupportedError, InitializationError
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
