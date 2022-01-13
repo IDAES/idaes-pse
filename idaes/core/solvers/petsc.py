@@ -294,19 +294,30 @@ def _get_derivative_differential_data_map(m, time):
         (ComponentMap): Map from derivative data objects to differential
             data objects
     """
-    derivs = ComponentSet()
+    # Get corresponding derivative and differential data objects,
+    # with no attention payed to fixed or active status.
+    deriv_diff_list = []
+    for var in m.component_objects(pyo.Var):
+        if (isinstance(var, pyodae.DerivativeVar) and
+                time in ComponentSet(var.get_continuousset_list())):
+            deriv = var
+            diffvar = deriv.get_state_var()
+            for idx in var:
+                deriv_diff_list.append((deriv[idx], diffvar[idx]))
+
+    # Get unfixed variables in active constraints
+    active_con_vars = ComponentSet()
     for con in m.component_data_objects(pyo.Constraint, active=True):
-        for var in identify_variables(con.body):
-            pvar = var.parent_component()
-            if (isinstance(pvar, pyodae.DerivativeVar) and not var.fixed and
-                    time in ComponentSet(pvar.get_continuousset_list())):
-                derivs.add(var)
-    deriv_diff_list = [None]*len(derivs)
-    for i, deriv in enumerate(derivs):
-        diffvar = deriv.parent_component().get_state_var()
-        idx = deriv.index()
-        deriv_diff_list[i] = (deriv, diffvar[idx])
-    return ComponentMap(deriv_diff_list)
+        for var in identify_variables(con.expr, include_fixed=False):
+            if var not in active_con_vars:
+                active_con_vars.add(var)
+
+    # Filter out derivatives that are fixed or not in an active constraint
+    filtered_deriv_diff_list = []
+    for deriv, diff in deriv_diff_list:
+        if deriv in active_con_vars:
+            filtered_deriv_diff_list.append((deriv, diff))
+    return ComponentMap(filtered_deriv_diff_list)
 
 
 def _sub_problem_scaling_suffix(m, t_block):
