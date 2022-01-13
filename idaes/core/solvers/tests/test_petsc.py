@@ -25,6 +25,32 @@ from pyomo.util.subsystems import (
 from idaes.core.solvers import petsc
 from idaes.core.solvers.features import dae
 
+from pyomo.environ import *
+from pyomo.dae import *
+from idaes.core.solvers import petsc
+
+def rp_example():
+    m = pyo.ConcreteModel()
+
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+    def diff_eq_rule(m, t):
+        return m.dxdt[t] == m.x[t]**2 - m.u[t]
+    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+
+    discretizer = pyo.TransformationFactory('dae.finite_difference')
+    discretizer.apply_to(m,nfe=1,scheme='BACKWARD')
+
+    for t in m.time:
+        m.x[t].fix(2.0*t)
+
+    m.u[0].fix(1.0)
+
+    return m
+
 
 def car_example():
     """This is to test problems where a differential variable doesn't appear in
@@ -358,3 +384,15 @@ def test_petsc_read_trajectory():
     tj2 = petsc.PetscTrajectory(vecs=vecs)
     assert tj2.vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
     assert tj2.vecs["_time"][-1] == pytest.approx(180)
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_rp_example():
+
+    m = rp_example()
+    with pytest.raises(RuntimeError):
+        petsc.petsc_dae_by_time_element(
+            m,
+            time=m.time,
+        )

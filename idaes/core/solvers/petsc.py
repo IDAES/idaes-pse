@@ -279,6 +279,14 @@ def _set_dae_suffixes_from_variables(m, variables, deriv_diff_map):
             dae_var_link_index += 1
             if not diffvar.fixed:
                 differential_vars.append(diffvar)
+            else:
+                raise RuntimeError(
+                    f"Problem cannot contain a fixed differential variable and "
+                    f"unfixed derivative. Consider either fixing the "
+                    f"corresponding derivative or adding a constraint for the "
+                    f"differential variable {diffvar} possibly using an "
+                    f"explicit time variable."
+                )
     return differential_vars
 
 
@@ -309,8 +317,7 @@ def _get_derivative_differential_data_map(m, time):
     active_con_vars = ComponentSet()
     for con in m.component_data_objects(pyo.Constraint, active=True):
         for var in identify_variables(con.expr, include_fixed=False):
-            if var not in active_con_vars:
-                active_con_vars.add(var)
+            active_con_vars.add(var)
 
     # Filter out derivatives that are fixed or not in an active constraint
     filtered_deriv_diff_list = []
@@ -444,13 +451,14 @@ def petsc_dae_by_time_element(
                 _sub_problem_scaling_suffix(m, t_block)
                 with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
                     res = solver_snes.solve(t_block, tee=slc.tee)
-    res_list.append(res)
+        res_list.append(res)
 
     tprev = t0
     count = 1
+    fix_derivs = []
     with TemporarySubsystemManager(
             to_deactivate=tdisc,
-            to_fix=initial_variables,
+            to_fix=initial_variables + fix_derivs,
             ):
         # Solver time steps
         deriv_diff_map = _get_derivative_differential_data_map(m, time)
