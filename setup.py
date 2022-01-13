@@ -98,6 +98,8 @@ kwargs = dict(
         "rbfopt",
         "xlrd",  # for DMF read of old .xls Excel files
         "openpyxl",  # for DMF read of new .xls Excel files
+        # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
+        "ipython<8.0.0",
     ],
     entry_points={
         "console_scripts": [
