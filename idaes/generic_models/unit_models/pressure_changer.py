@@ -78,8 +78,8 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
     CONFIG.declare("build_head_expressions", ConfigValue(
         default=True,
         domain=bool,
-        doc="If true add expressions for 'head' and 'head_isentropic'."
-            " These expressions can be used in performance curve constraints."))
+        doc="If true add expressions for 'head' and 'head_isentropic'. "
+            "These expressions can be used in performance curve constraints."))
 
     def has_constraints(self):
         for o in self.component_data_objects(Constraint):
@@ -91,31 +91,31 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
         if self.config.build_head_expressions:
             try:
                 @self.Expression(self.flowsheet().time)
-                def head_isentropic(b, t): # units are energy/mass
+                def head_isentropic(b, t):  # units are energy/mass
                     b = b.parent_block()
                     if hasattr(b.control_volume.properties_in[t], "flow_mass"):
                         return (b.work_isentropic[t] /
-                            b.control_volume.properties_in[t].flow_mass)
+                                b.control_volume.properties_in[t].flow_mass)
                     else:
                         return (b.work_isentropic[t] /
-                            b.control_volume.properties_in[t].flow_mol /
-                            b.control_volume.properties_in[t].mw)
+                                b.control_volume.properties_in[t].flow_mol /
+                                b.control_volume.properties_in[t].mw)
 
                 @self.Expression(self.flowsheet().time)
-                def head(b, t): # units are energy/mass
+                def head(b, t):  # units are energy/mass
                     b = b.parent_block()
                     if hasattr(b.control_volume.properties_in[t], "flow_mass"):
                         return (b.work_mechanical[t] /
-                            b.control_volume.properties_in[t].flow_mass)
+                                b.control_volume.properties_in[t].flow_mass)
                     else:
                         return (b.work_mechanical[t] /
-                            b.control_volume.properties_in[t].flow_mol /
-                            b.control_volume.properties_in[t].mw)
+                                b.control_volume.properties_in[t].flow_mol /
+                                b.control_volume.properties_in[t].mw)
 
             except PropertyNotSupportedError:
                 _log.exception(
-                    "flow_mass or flow_mol and mw are not supported by the"
-                    " property package but are required for isentropic pressure"
+                    "flow_mass or flow_mol and mw are not supported by the "
+                    "property package but are required for isentropic pressure"
                     " changer head calculation")
                 raise
 
@@ -851,21 +851,21 @@ see property package for documentation.}""",
             unfix_eff = {}
             unfix_ratioP = {}
             for t in blk.flowsheet().time:
-                if not (blk.ratioP[t].fixed or  blk.deltaP[t].fixed or
-                    cv.properties_out[t].pressure.fixed):
+                if not (blk.ratioP[t].fixed or blk.deltaP[t].fixed or
+                        cv.properties_out[t].pressure.fixed):
                     if blk.config.compressor:
                         if not (value(blk.ratioP[t]) >= 1.01 and
-                            value(blk.ratioP[t]) <= 50):
+                                value(blk.ratioP[t]) <= 50):
                             blk.ratioP[t] = 1.8
                     else:
                         if not (value(blk.ratioP[t]) >= 0.01 and
-                            value(blk.ratioP[t]) <= 0.999):
+                                value(blk.ratioP[t]) <= 0.999):
                             blk.ratioP[t] = 0.7
                     blk.ratioP[t].fix()
                     unfix_ratioP[t] = True
                 if not blk.efficiency_isentropic[t].fixed:
                     if not (value(blk.efficiency_isentropic[t]) >= 0.05 and
-                        value(blk.efficiency_isentropic[t]) <= 1.0):
+                            value(blk.efficiency_isentropic[t]) <= 1.0):
                         blk.efficiency_isentropic[t] = 0.8
                     blk.efficiency_isentropic[t].fix()
                     unfix_eff[t] = True
@@ -1002,7 +1002,8 @@ see property package for documentation.}""",
                     blk.ratioP[t].unfix()
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
-            init_log.info_high(f"Initialization Step 5 {idaeslog.condition(res)}.")
+            init_log.info_high(
+                f"Initialization Step 5 {idaeslog.condition(res)}.")
 
         # ---------------------------------------------------------------------
         # Release Inlet state
