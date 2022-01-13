@@ -25,10 +25,6 @@ from pyomo.util.subsystems import (
 from idaes.core.solvers import petsc
 from idaes.core.solvers.features import dae
 
-from pyomo.environ import *
-from pyomo.dae import *
-from idaes.core.solvers import petsc
-
 def rp_example():
     m = pyo.ConcreteModel()
 
