@@ -117,6 +117,26 @@ def rp_example4():
 
     return m
 
+def rp_example5():
+    m = pyo.ConcreteModel()
+
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
+    m.x = pyo.Var(m.time, initialize=1)
+    m.u = pyo.Var(m.time, initialize=1)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+    def diff_eq1_rule(m, t):
+        return m.dxdt[t] == m.x[t]**2 - m.u[t]
+    m.diff_eq1 = pyo.Constraint(m.time, rule=diff_eq1_rule)
+
+    discretizer = pyo.TransformationFactory('dae.finite_difference')
+    discretizer.apply_to(m,nfe=1,scheme='BACKWARD')
+
+    m.u[0].fix(1.0)
+    m.dxdt[:].fix(2)
+
+    return m
+
 def car_example():
     """This is to test problems where a differential variable doesn't appear in
     a constraint this is based on a Pyomo example here:
@@ -472,8 +492,14 @@ def test_rp_example2():
         m,
         time=m.time,
         timevar=m.t,
+        ts_options={
+            "--ts_dt":1,
+            "--ts_adapt_type":"none",
+        }
     )
     assert pyo.value(m.u[10]) == pytest.approx(398)
+    assert pyo.value(m.x[10]) == pytest.approx(20)
+
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
@@ -494,6 +520,22 @@ def test_rp_example4():
     petsc.petsc_dae_by_time_element(
         m,
         time=m.time,
+        ts_options={
+            "--ts_dt":1,
+            "--ts_adapt_type":"none",
+        }
     )
     assert pyo.value(m.u[10]) == pytest.approx(398)
     assert pyo.value(m.x[10]) == pytest.approx(20)
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_rp_example5():
+
+    m = rp_example5()
+    with pytest.raises(RuntimeError):
+        petsc.petsc_dae_by_time_element(
+            m,
+            time=m.time,
+        )

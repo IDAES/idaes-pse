@@ -311,6 +311,14 @@ def _get_derivative_differential_data_map(m, time):
             deriv = var
             diffvar = deriv.get_state_var()
             for idx in var:
+                if deriv[idx].fixed and pyo.value(abs(deriv[idx])) > 1e-10:
+                    raise RuntimeError(
+                        f"{deriv[idx]} is fixed to a nonzero value "
+                        f"{pyo.value(deriv[idx])}. This is "
+                        f"most likely a modeling error. Instead of fixing the "
+                        f"derivative consider adding a constraint like "
+                        f"dxdt = constant"
+                    )
                 deriv_diff_list.append((deriv[idx], diffvar[idx]))
 
     # Get unfixed variables in active constraints
