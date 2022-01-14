@@ -798,10 +798,8 @@ see property package for documentation.}""",
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
 
-        if (res is not None and (
-                res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok)):
+        if (res.solver.termination_condition != TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")
@@ -1009,10 +1007,8 @@ see property package for documentation.}""",
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
 
-        if (res is not None and (
-                res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok)):
+        if (res.solver.termination_condition != TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")
