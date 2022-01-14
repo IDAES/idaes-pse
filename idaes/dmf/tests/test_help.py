@@ -24,17 +24,14 @@ from idaes.dmf.help import get_html_docs
 def test_get_html_docs_noconfig(tmp_dmf):
     # rename config file to create failure
     assert DMFConfig.configuration_exists()
-    path = DMFConfig.configuration_path()
-    orig_path, new_path = (
-        str(path),
-        tmp_dmf.workspace_path / "test_get_html_docs_noconfig",
-    )
-    path = path.rename(new_path)
+    p = DMFConfig.configuration_path()
+    new_p = Path(str(p) + "-moved")
+    p.rename(new_p)
     assert not DMFConfig.configuration_exists()
     with pytest.raises(ValueError):
         get_html_docs(tmp_dmf, "module", "name")  # parameters don't really matter
     # return file to original name
-    path = path.rename(orig_path)
+    new_p.rename(p)
 
 
 @pytest.mark.unit
