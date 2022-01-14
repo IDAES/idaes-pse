@@ -35,6 +35,8 @@ import idaes
 from idaes.core.util import get_solver
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
 import idaes.core.util.scaling as iscale
+from idaes.generic_models.properties.tests.test_harness import \
+    PropertyTestHarness
 
 import idaes.logger as idaeslog
 SOUT = idaeslog.INFO
@@ -49,6 +51,15 @@ prop_available = cubic_roots_available()
 solver = get_solver()
 # Limit iterations to make sure sweeps aren;t getting out of hand
 solver.options["max_iter"] = 50
+
+
+@pytest.mark.unit
+class TestBTPR(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = GenericParameterBlock
+        self.param_args = configuration
+        self.prop_args = {}
+        self.has_density_terms = False
 
 
 # -----------------------------------------------------------------------------
@@ -78,7 +89,6 @@ class TestBTExample(object):
         m.fs.state[1].temperature.setub(600)
 
         for logP in range(8, 13, 1):
-            print(logP)
             m.fs.obj.deactivate()
 
             m.fs.state[1].flow_mol.fix(100)
@@ -86,20 +96,13 @@ class TestBTExample(object):
             m.fs.state[1].mole_frac_comp["toluene"].fix(0.5)
             m.fs.state[1].temperature.fix(300)
             m.fs.state[1].pressure.fix(10**(0.5*logP))
-            
+
             m.fs.state.initialize()
 
             m.fs.state[1].temperature.unfix()
             m.fs.obj.activate()
-            
-            iscale.calculate_scaling_factors(m.fs.state[1])
-            iscale.constraint_autoscale_large_jac(m)
-            
-            if logP == 10:
-                #import pdb; pdb.set_trace()
-                results = solver.solve(m, tee=True)
-            else:
-                results = solver.solve(m, tee=True)
+
+            results = solver.solve(m)
 
             assert results.solver.termination_condition == \
                 TerminationCondition.optimal
@@ -553,7 +556,3 @@ class TestBTExample(object):
             m.fs.state[1].temperature_bubble["Vap", "Liq"]] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].temperature_dew["Vap", "Liq"]] == 1e-2
-
-if __name__ == "__main__":
-    m =  TestBTExample.m(None)
-    TestBTExample.test_T_sweep(None, m)

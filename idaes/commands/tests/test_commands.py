@@ -20,6 +20,7 @@ import os
 from pathlib import Path
 from shutil import rmtree
 import subprocess
+import sys
 from typing import Union
 import uuid
 
@@ -125,6 +126,7 @@ def test_examples_cli_explicit_version(runner, tempdir):
     assert result.exit_code == 0
 
 
+@pytest.mark.skip("Erroneously fails when latest ideas version is a pre-release")
 @pytest.mark.integration()
 def test_examples_cli_default_version(runner, tempdir):
     dirname = str(tempdir / "examples")
@@ -662,8 +664,11 @@ def test_conf_set(runner):
         if os.path.exists(fname):
             os.remove(fname)
 
-    _tst(["--global", "--file", fname, "--file_as_global"])
-    _tst(["--local", "--file", fname, "--file_as_local"])
+    # lbianchi-lbl: these sets of args seem to fail if tensorflow has been imported (#633)
+    # TODO these could be refactored as a parametrized pytest.fixture
+    if "tensorflow" not in sys.modules:
+        _tst(["--global", "--file", fname, "--file_as_global"])
+        _tst(["--local", "--file", fname, "--file_as_local"])
     _tst(["--file", fname])
 
 

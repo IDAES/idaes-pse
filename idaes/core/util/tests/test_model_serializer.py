@@ -91,6 +91,20 @@ class TestModelSerialize(unittest.TestCase):
         model.ipopt_zU_out = Suffix(direction=Suffix.IMPORT)
         return model
 
+    def setup_model03(self):
+        m = ConcreteModel()
+        m.I = Set(initialize=[1,2])
+        m.J = Set(initialize=[(3,3),(4,4)])
+        m.J.display()
+        @m.Block(m.I)
+        def b(b,i):
+            b.x = Var(b.model().J, bounds=(i,None))
+        m.b[1].x.display()
+        m.b[2].x.display()
+        m.r = Reference(m.b[:].x[3,:])
+        m.r.display()
+        return m
+
     @pytest.mark.unit
     def test01_name(self):
         """
@@ -126,12 +140,12 @@ class TestModelSerialize(unittest.TestCase):
         # reload values
         from_json(model, fname=self.fname)
         #make sure they are right
-        assert(a.fixed)
-        assert(model.b[1].active)
-        assert(abs(value(b) - 20) < 1e-4)
-        assert(abs(value(a) - 2) < 1e-4)
-        assert(abs(b.lb - -100) < 1e-4)
-        assert(abs(b.ub - 100) < 1e-4)
+        assert a.fixed
+        assert model.b[1].active
+        assert value(b) == 20
+        assert value(a) == 2
+        assert b.lb == -100
+        assert b.ub == 100
 
     @pytest.mark.unit
     def test01b(self):
@@ -152,12 +166,12 @@ class TestModelSerialize(unittest.TestCase):
         # reload values
         from_json(model, fname=self.fname)
         #make sure they are right
-        assert(a.fixed)
-        assert(model.b["1"].active)
-        assert(abs(value(b) - 20) < 1e-4)
-        assert(abs(value(a) - 2) < 1e-4)
-        assert(abs(b.lb - -100) < 1e-4)
-        assert(abs(b.ub - 100) < 1e-4)
+        assert a.fixed
+        assert model.b["1"].active
+        assert value(b) == 20
+        assert value(a) == 2
+        assert b.lb == -100
+        assert b.ub == 100
 
     @pytest.mark.unit
     def test02(self):
@@ -178,13 +192,13 @@ class TestModelSerialize(unittest.TestCase):
         model.ipopt_zU_out[x[1]] = 10
         model.ipopt_zU_out[x[2]] = 10
         from_json(model, fname=self.fname)
-        assert(abs(value(x[1]) - 1.5) < 1e-5)
-        assert(abs(value(x[2]) - 2.5) < 1e-5)
-        assert(abs(model.dual[model.g] - 1) < 1e-5)
-        assert(abs(model.ipopt_zL_out[x[1]]) < 1e-5)
-        assert(abs(model.ipopt_zL_out[x[2]]) < 1e-5)
-        assert(abs(model.ipopt_zU_out[x[1]]) < 1e-5)
-        assert(abs(model.ipopt_zU_out[x[2]]) < 1e-5)
+        assert value(x[1]) == pytest.approx(1.5)
+        assert value(x[2]) == pytest.approx(2.5)
+        assert model.dual[model.g] == pytest.approx(1)
+        assert model.ipopt_zL_out[x[1]] == pytest.approx(0)
+        assert model.ipopt_zL_out[x[2]] == pytest.approx(0)
+        assert model.ipopt_zU_out[x[1]] == pytest.approx(0)
+        assert model.ipopt_zU_out[x[2]] == pytest.approx(0)
 
     @pytest.mark.unit
     def test02b(self):
@@ -237,9 +251,9 @@ class TestModelSerialize(unittest.TestCase):
         x[1].value = 2
         x[2].value = 10
         from_json(model, fname=self.fname, wts=wts)
-        assert(x[1].fixed)
-        assert(abs(value(x[1]) - 1) < 1e-5)
-        assert(abs(value(x[2]) - 10) < 1e-5)
+        assert x[1].fixed
+        assert value(x[1]) == 1
+        assert value(x[2]) == 10
 
     @pytest.mark.unit
     def test04(self):
@@ -257,10 +271,10 @@ class TestModelSerialize(unittest.TestCase):
         x[2].value = 10
         model.g.deactivate()
         from_json(model, fname=self.fname, wts=wts)
-        assert(x[1].fixed)
-        assert(abs(value(x[1]) - 1) < 1e-5)
-        assert(abs(value(x[2]) - 10) < 1e-5)
-        assert(model.g.active)
+        assert x[1].fixed
+        assert value(x[1]) == 1
+        assert value(x[2]) == 10
+        assert model.g.active
 
     @pytest.mark.unit
     def test05(self):
@@ -274,10 +288,27 @@ class TestModelSerialize(unittest.TestCase):
         model.x[1].value = 3
         model.x[2].value = 6
         from_json(model, fname=self.fname, wts=wts)
-        assert(abs(value(model.x[1]) - 1) < 1e-5)
-        assert(abs(model.x[1].lb + 4) < 1e-5)
-        assert(abs(value(model.x[2]) - 2.5) < 1e-5)
-        assert(not model.g.active)
+        assert value(model.x[1]) == 1
+        assert model.x[1].lb == -4
+        assert value(model.x[2]) == pytest.approx(2.5)
+        assert not model.g.active
+
+    @pytest.mark.unit
+    def test05b(self):
+        """Try just saving values with fixed filter"""
+        model = self.setup_model02()
+        model.x[1].fix(1)
+        wts = StoreSpec.value(only_not_fixed=True)
+        to_json(model, fname=self.fname, human_read=True, wts=wts)
+        model.g.deactivate()
+        model.x[1].setlb(-4)
+        model.x[1].value = 3
+        model.x[2].value = 6
+        from_json(model, fname=self.fname, wts=wts)
+        assert value(model.x[1]) == 3 # should not load since is fixed
+        assert  model.x[1].lb ==  -4
+        assert value(model.x[2]) == pytest.approx(2.5)
+        assert not model.g.active
 
     @pytest.mark.unit
     def test06(self):
@@ -291,10 +322,10 @@ class TestModelSerialize(unittest.TestCase):
         model.x[1].value = 3
         model.x[2].value = 6
         from_json(model, fname=self.fname, wts=wts)
-        assert(abs(value(model.x[1]) - 3) < 1e-5)
-        assert(abs(model.x[1].lb + 10) < 1e-5)
-        assert(abs(value(model.x[2]) - 6) < 1e-5)
-        assert(not model.g.active)
+        assert value(model.x[1]) == 3
+        assert model.x[1].lb == -10
+        assert value(model.x[2]) == 6
+        assert not model.g.active
 
     @pytest.mark.unit
     def test07(self):
@@ -308,12 +339,12 @@ class TestModelSerialize(unittest.TestCase):
         model.x[1].unfix()
         model.x[2].fix(6)
         from_json(model, fname=self.fname, wts=wts)
-        assert(abs(value(model.x[1]) - 1) < 1e-5)
-        assert(abs(model.x[1].lb + 4) < 1e-5)
-        assert(abs(value(model.x[2]) - 6) < 1e-5)
-        assert(model.x[1].fixed)
-        assert(not model.x[2].fixed)
-        assert(not model.g.active)
+        assert value(model.x[1]) == 1
+        assert model.x[1].lb == -4
+        assert value(model.x[2]) == 6
+        assert model.x[1].fixed
+        assert not model.x[2].fixed
+        assert not model.g.active
 
     @pytest.mark.unit
     def test08(self):
@@ -340,17 +371,17 @@ class TestModelSerialize(unittest.TestCase):
         model.x[2].fix(6)
 
         from_json(model, fname=self.fname, wts=StoreSpec.suffix())
-        assert(abs(value(model.x[1]) - 1) < 1e-5)
-        assert(abs(value(model.x[2]) - 6) < 1e-5)
-        assert(not model.x[1].fixed)
-        assert(model.x[2].fixed)
-        assert(not model.g.active)
-        assert(abs(model.dual[model.g] - 1) < 1e-5)
-        assert(abs(model.ipopt_zL_out[model.x[1]] - 1) < 1e-5)
-        assert(abs(model.ipopt_zL_out[model.x[2]] - 1) < 1e-5)
-        assert(abs(model.ipopt_zU_out[model.x[1]] - 1) < 1e-5)
-        assert(abs(model.ipopt_zU_out[model.x[2]] - 1) < 1e-5)
-        assert(abs(model.x[1].lb + 4) < 1e-5)
+        assert value(model.x[1]) == 1
+        assert value(model.x[2]) == 6
+        assert not model.x[1].fixed
+        assert model.x[2].fixed
+        assert not model.g.active
+        assert model.dual[model.g] == 1
+        assert model.ipopt_zL_out[model.x[1]] == 1
+        assert model.ipopt_zL_out[model.x[2]] == 1
+        assert model.ipopt_zU_out[model.x[1]] == 1
+        assert model.ipopt_zU_out[model.x[2]] == 1
+        assert model.x[1].lb == -4
 
     @pytest.mark.unit
     def test09(self):
@@ -373,11 +404,11 @@ class TestModelSerialize(unittest.TestCase):
         model.ipopt_zU_out[model.x[2]] = 10
 
         from_json(model, fname=self.fname, wts=wts)
-        assert(abs(model.dual[model.g] - 1) < 1e-5)
-        assert(abs(model.ipopt_zL_out[model.x[1]] - 10) < 1e-5)
-        assert(abs(model.ipopt_zL_out[model.x[2]] - 10) < 1e-5)
-        assert(abs(model.ipopt_zU_out[model.x[1]] - 10) < 1e-5)
-        assert(abs(model.ipopt_zU_out[model.x[2]] - 10) < 1e-5)
+        assert model.dual[model.g] == 1
+        assert model.ipopt_zL_out[model.x[1]] == 10
+        assert model.ipopt_zL_out[model.x[2]] == 10
+        assert model.ipopt_zU_out[model.x[1]] == 10
+        assert model.ipopt_zU_out[model.x[2]] == 10
 
     @pytest.mark.unit
     def test10(self):
@@ -400,11 +431,11 @@ class TestModelSerialize(unittest.TestCase):
         model.ipopt_zU_out[model.x[2]] = 10
 
         from_json(model, fname=self.fname, wts=StoreSpec.suffix())
-        assert(abs(model.dual[model.g] - 1) < 1e-5)
-        assert(abs(model.ipopt_zL_out[model.x[1]] - 10) < 1e-5)
-        assert(abs(model.ipopt_zL_out[model.x[2]] - 10) < 1e-5)
-        assert(abs(model.ipopt_zU_out[model.x[1]] - 10) < 1e-5)
-        assert(abs(model.ipopt_zU_out[model.x[2]] - 10) < 1e-5)
+        assert model.dual[model.g] == 1
+        assert model.ipopt_zL_out[model.x[1]] == 10
+        assert model.ipopt_zL_out[model.x[2]] == 10
+        assert model.ipopt_zU_out[model.x[1]] == 10
+        assert model.ipopt_zU_out[model.x[2]] == 10
 
     @pytest.mark.unit
     def test11(self):
@@ -428,11 +459,27 @@ class TestModelSerialize(unittest.TestCase):
 
         wts = StoreSpec.suffix(suffix_filter=("dual",))
         from_json(model, fname=self.fname, wts=wts)
-        assert(abs(model.dual[model.g] - 1) < 1e-5)
-        assert(abs(model.ipopt_zL_out[model.x[1]] - 10) < 1e-5)
-        assert(abs(model.ipopt_zL_out[model.x[2]] - 10) < 1e-5)
-        assert(abs(model.ipopt_zU_out[model.x[1]] - 10) < 1e-5)
-        assert(abs(model.ipopt_zU_out[model.x[2]] - 10) < 1e-5)
+        assert model.dual[model.g] == 1
+        assert model.ipopt_zL_out[model.x[1]] == 10
+        assert model.ipopt_zL_out[model.x[2]] == 10
+        assert model.ipopt_zU_out[model.x[1]] == 10
+        assert model.ipopt_zU_out[model.x[2]] == 10
+
+    @pytest.mark.unit
+    def test12(self):
+        """Test some odd set compoenents"""
+        model = self.setup_model03()
+        self.assertIs(model.r.ctype, Var)
+        model.r[1, 3] = 1
+        model.r[2, 3] = 3
+        d = to_json(model, return_dict=True, human_read=True)
+        model.r[1, 3] = 6
+        model.r[2, 3] = 8
+        assert value(model.b[1].x[3,3]) == 6
+        assert value(model.b[2].x[3,3]) == 8
+        from_json(model, sd=d)
+        assert value(model.b[1].x[3,3]) == 1
+        assert value(model.b[2].x[3,3]) == 3
 
 if __name__ == '__main__':
     unittest.main()

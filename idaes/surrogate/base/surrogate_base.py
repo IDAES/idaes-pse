@@ -100,6 +100,12 @@ class SurrogateTrainer(object):
 
         if input_bounds is not None:
             self._input_bounds = dict(input_bounds)
+            # check that the labels match the input labels
+            if sorted(input_bounds.keys()) != sorted(self._input_labels):
+                raise ValueError('The input_labels did not match the keys in input_bounds.\n' \
+                                 'input_bounds.keys(): {}\n' \
+                                 'input_labels: {}'.format(sorted(input_bounds.keys()),
+                                                             sorted(input_labels)))
         else:
             # get the bounds from the data
             mx = self._training_dataframe.max().to_dict()
@@ -200,6 +206,15 @@ class SurrogateBase():
             raise ValueError(
                 'Duplicate label found in input_labels and/or output_labels.')
 
+        if input_bounds is not None:
+            self._input_bounds = dict(input_bounds)
+            # check that the labels match the input labels
+            if sorted(input_bounds.keys()) != sorted(self._input_labels):
+                raise ValueError('The input_labels did not match the keys in input_bounds.\n' \
+                                 'input_bounds.keys(): {}\n' \
+                                 'input_labels: {}'.format(sorted(input_bounds.keys()),
+                                                             sorted(input_labels)))
+
     def n_inputs(self):
         """
         The number of inputs for the surrogate
@@ -243,7 +258,7 @@ class SurrogateBase():
             return dict(self._input_bounds)
         return None
     
-    def populate_block(self, block, **kwargs):
+    def populate_block(self, block, additional_options=None):
         """
         Method to populate a Pyomo Block with surrogate model
         constraints and variables.
@@ -251,13 +266,10 @@ class SurrogateBase():
         Derived classes must overload this method.
 
         Args:
-            block: Pyomo Block component to be populated with constraints.
-            variables: dict mapping surrogate variable labels to existing
-                Pyomo Vars (default=None). If no mapping provided,
-                construct_variables will be called to create a set of new Vars.
-            index_set: (optional) if provided, this will be used to index the
-                Constraints created. This must match the indexing Set of the
-                Vars provided in the variables argument.
+            block: Pyomo Block
+               Component to be populated with constraints.
+            additional_options: dict
+               Additional options passed through from SurrogateBlock.build_model
 
         Returns:
             None

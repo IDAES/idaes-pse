@@ -18,15 +18,24 @@ This module contains custom IDAES exceptions.
 __author__ = "Andrew Lee"
 
 
-class BalanceTypeNotSupportedError(NotImplementedError):
+class IdaesError(Exception):
     """
-    IDAES exception to be used when a control volumedoes not support a given
+    General exception for all IDAES errors. Intended to be used for multiple
+    inheritance in derived exceptions to allow catching of all IDAES-related
+    exceptions.
+    """
+    pass  # Problem with toaster
+
+
+class BalanceTypeNotSupportedError(NotImplementedError, IdaesError):
+    """
+    IDAES exception to be used when a control volume does not support a given
     type of balance equation.
     """
     pass  # Tried to put bagel in normal toaster
 
 
-class ConfigurationError(ValueError):
+class ConfigurationError(ValueError, IdaesError):
     """
     IDAES exception to be used when configuration arguments are incorrect
     or inconsistent.
@@ -34,7 +43,7 @@ class ConfigurationError(ValueError):
     pass  # Too many buttons, burnt toast
 
 
-class DynamicError(ValueError):
+class DynamicError(ValueError, IdaesError):
     """
     IDAES exception for cases where settings associated with dynamic models
     are incorrect.
@@ -42,14 +51,14 @@ class DynamicError(ValueError):
     pass  # Incorrect browness setting
 
 
-class BurntToast(Exception):
+class BurntToast(IdaesError):
     """
     General exception for when something breaks badly in the core.
     """
     pass  # Toaster on fire
 
 
-class PropertyNotSupportedError(AttributeError):
+class PropertyNotSupportedError(AttributeError, IdaesError):
     """
     IDAES exception for cases when a models calls for a property which is
     not supported by the chosen property package.
@@ -59,15 +68,25 @@ class PropertyNotSupportedError(AttributeError):
     pass  # Could not find bread
 
 
-class PropertyPackageError(AttributeError):
+class PropertyPackageError(AttributeError, IdaesError):
     """
     IDAES exception for generic errors arising from property packages.
 
     Needs to inherit from AttributeError for Pyomo interactions.
     """
     pass  # Bread stuck
-    
-class UserModelError(ValueError):
+
+
+class InitializationError(ArithmeticError, IdaesError):
+    """
+    IDAES exception to be used when initialization routines fail. All
+    initialization routines should raise this Exception if the final step
+    fails to converge, and can raise this exception earlier if the routine
+    enters a state from which recovery is impossible.
+    """
+    pass
+
+class UserModelError(ValueError, IdaesError):
     """
     IDAES exception for when a user model returns unphysical values that
     prevent further execution of code.
