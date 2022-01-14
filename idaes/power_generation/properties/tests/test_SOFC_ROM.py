@@ -38,10 +38,9 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables)
 from idaes.core.util import get_solver
 
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Block,
-                           SolverStatus,
-                           TerminationCondition,
                            value)
 from pyomo.util.check_units import assert_units_consistent
 
@@ -115,9 +114,7 @@ class TestSOFCROM(object):
 
         results = solver.solve(m)
 
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         assert (pytest.approx(705.5, abs=1e-1) ==
                 value(m.SOFC.anode_outlet_temperature))

@@ -382,8 +382,7 @@ def run_sensitivity():
                                   properties_out[0].vapor_frac))
         flow.append(pyo.value(m.fs.drum.feedwater_inlet.flow_mol[0]))
 
-        if results.solver.termination_condition == \
-            pyo.TerminationCondition.optimal:
+        if pyo.check_optimal_termination(results):
             print('iter '+str(count)+ ' = EXIT- Optimal Solution Found.')
         else:
             print('iter '+str(count) + ' = infeasible')

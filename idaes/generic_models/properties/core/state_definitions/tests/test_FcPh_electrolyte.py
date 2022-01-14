@@ -17,11 +17,10 @@ Tests for constructing and using component lists in electrolyte systems
 import pytest
 
 # Import Pyomo units
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Constraint,
-                           TerminationCondition,
                            Set,
-                           SolverStatus,
                            value,
                            Var,
                            units as pyunits)
@@ -215,9 +214,7 @@ class TestApparentSpeciesBasisNoInherent():
         res = solver.solve(m.fs, tee=True)
 
         # Check for optimal solution
-        assert res.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert res.solver.status == SolverStatus.ok
+        assert check_optimal_termination(res)
 
         # Check true species flowrates
         assert (value(m.fs.state[1].flow_mol_phase_comp_true["Vap", "H2O"]) ==
@@ -463,9 +460,7 @@ class TestApparentSpeciesBasisInherent():
         res = solver.solve(m.fs)
 
         # Check for optimal solution
-        assert res.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert res.solver.status == SolverStatus.ok
+        assert check_optimal_termination(res)
 
         # Check apparent species flowrates
         for j in m.fs.state[1].mole_frac_comp:
@@ -897,9 +892,7 @@ class TestTrueSpeciesBasisInherent():
         res = solver.solve(m.fs)
 
         # Check for optimal solution
-        assert res.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert res.solver.status == SolverStatus.ok
+        assert check_optimal_termination(res)
 
         assert m.fs.state[1].temperature.value == 350
 

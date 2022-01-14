@@ -30,7 +30,7 @@ import idaes.logger as idaeslog
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
 from pyomo.environ import (
-    Reference, Expression, Var, Set, value, SolverStatus, TerminationCondition)
+    Reference, Expression, Var, Set, value, check_optimal_termination)
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -905,9 +905,7 @@ see property package for documentation.}"""))
                             "for tray block is not zero during "
                             "initialization.")
 
-        if (res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok):
+        if not check_optimal_termination(res):
             raise InitializationError(
                 f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

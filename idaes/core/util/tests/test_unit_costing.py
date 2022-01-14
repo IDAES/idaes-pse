@@ -98,9 +98,7 @@ def test_costing_FH_solve():
                           abs=1e-2) == 962795.521)
     results = solver.solve(m, tee=False)
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
     assert (pytest.approx(pyo.value(m.fs.unit.costing.purchase_cost),
                           abs=1e-2) == 962795.521)  # Example 22.1 Ref Book
 
@@ -158,9 +156,7 @@ def test_costing_distillation_solve():
 
     results = solver.solve(m, tee=False)
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
     assert (pytest.approx(pyo.value(m.fs.unit.costing.base_cost),
                           abs=1e-2) == 636959.6929)  # Example 22.13 Ref Book
     assert (pytest.approx(pyo.value(m.fs.unit.costing.base_cost_platf_ladders),
@@ -216,9 +212,7 @@ def test_blower_build_and_solve():
     assert isinstance(m.fs.unit.costing.purchase_cost, pyo.Var)
     assert isinstance(m.fs.unit.costing.base_cost_per_unit, pyo.Var)
     results = solver.solve(m, tee=True)
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
     assert (pytest.approx(pyo.value(m.fs.unit.costing.base_cost),
                           abs=1e-2) == 56026.447)
     assert (pytest.approx(pyo.value(m.fs.unit.costing.purchase_cost),
@@ -272,9 +266,7 @@ def test_compressor_fan():
     assert isinstance(m.fs.unit.costing.purchase_cost, pyo.Var)
     assert isinstance(m.fs.unit.costing.base_cost_per_unit, pyo.Var)
     results = solver.solve(m, tee=True)
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
     assert (pytest.approx(pyo.value(m.fs.unit.costing.base_cost),
                           abs=1e-2) == 4543.6428)
     assert (pytest.approx(pyo.value(m.fs.unit.costing.purchase_cost),

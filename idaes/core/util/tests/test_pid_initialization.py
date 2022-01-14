@@ -17,27 +17,15 @@ and differential variables.
 """
 
 import pytest
-from pyomo.environ import (Block, ConcreteModel, Constraint, Expression,
-                           Set, SolverFactory, Var, value, Param, Reals,
-                           TransformationFactory, TerminationCondition,
-                           exp, units as pyunits)
-from pyomo.network import Arc, Port
-from pyomo.dae import DerivativeVar
+from pyomo.environ import (Block, ConcreteModel, Constraint, Var,
+                           TransformationFactory, units as pyunits)
+from pyomo.network import Arc
 from pyomo.common.collections import ComponentMap
 
-from idaes.core import (FlowsheetBlock, 
-                        MaterialBalanceType, 
+from idaes.core import (FlowsheetBlock,
+                        MaterialBalanceType,
                         EnergyBalanceType,
-                        MomentumBalanceType, 
-                        declare_process_block_class,
-                        PhysicalParameterBlock,
-                        StateBlock,
-                        StateBlockData,
-                        ReactionParameterBlock,
-                        ReactionBlockBase,
-                        ReactionBlockDataBase,
-                        MaterialFlowBasis)
-from idaes.core.util.testing import PhysicalParameterTestBlock
+                        MomentumBalanceType)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.generic_models.control import PIDBlock, PIDForm

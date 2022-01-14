@@ -14,7 +14,7 @@
 Base class for unit models
 """
 
-from pyomo.environ import Reference, SolverStatus, TerminationCondition
+from pyomo.environ import check_optimal_termination, Reference
 from pyomo.network import Port
 from pyomo.common.config import ConfigValue
 
@@ -657,9 +657,7 @@ Must be True if dynamic = True,
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
 
-        if (results.solver.termination_condition !=
-                TerminationCondition.optimal or
-                results.solver.status != SolverStatus.ok):
+        if not check_optimal_termination(results):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

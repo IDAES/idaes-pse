@@ -17,10 +17,7 @@ Author: Chinedu Okoli
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           Var)
+from pyomo.environ import check_optimal_termination, ConcreteModel, Var
 
 from idaes.core import FlowsheetBlock
 
@@ -80,6 +77,7 @@ def test_initialize(solid_prop):
     initialization_tester(
             solid_prop)
 
+
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
@@ -92,9 +90,7 @@ def test_solve(solid_prop):
     results = solver.solve(solid_prop)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
 
 @pytest.mark.solver

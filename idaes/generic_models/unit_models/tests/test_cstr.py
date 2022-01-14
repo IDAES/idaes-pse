@@ -16,9 +16,8 @@ Authors: Andrew Lee, Vibhav Dabadghao
 """
 
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            units,
                            value,
                            Var)
@@ -164,9 +163,7 @@ class TestSaponification(object):
         results = solver.solve(sapon)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -222,9 +219,7 @@ class TestSaponification(object):
         sapon.fs.unit.diameter.fix(2)
         results = solver.solve(sapon)
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
         assert (pytest.approx(29790.11975, abs=1e3) ==
                 value(sapon.fs.unit.costing.base_cost))
         assert (pytest.approx(40012.2523, abs=1e3) ==

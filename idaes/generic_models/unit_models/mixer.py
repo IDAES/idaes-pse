@@ -16,13 +16,11 @@ General purpose mixer block for IDAES models
 from enum import Enum
 
 from pyomo.environ import (
-    Constraint,
+    check_optimal_termination,
     Param,
     PositiveReals,
     Reals,
     RangeSet,
-    SolverStatus,
-    TerminationCondition,
     Var,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
@@ -946,10 +944,7 @@ objects linked to all inlet states and the mixed state,
         else:
             init_log.info("Initialization Complete.")
 
-        if (res is not None and (
-                res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok)):
+        if res is not None and not check_optimal_termination(res):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

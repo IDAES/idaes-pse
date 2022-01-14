@@ -22,7 +22,7 @@ import idaes.logger as idaeslog
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Arc, Port
 from pyomo.environ import value, Integers, RangeSet, TransformationFactory, \
-    Block, Reference, SolverStatus, TerminationCondition
+    Block, Reference, check_optimal_termination
 
 # Import IDAES cores
 from idaes.generic_models.unit_models.column_models import Tray, Condenser, \
@@ -555,9 +555,7 @@ see property package for documentation.}"""))
             release_state(flags=feed_flags, outlvl=outlvl)
 
         # TODO : This fails in the current model
-        # if (res.solver.termination_condition !=
-        #         TerminationCondition.optimal or
-        #         res.solver.status != SolverStatus.ok):
+        # if not check_optimal_termination(res):
         #     raise InitializationError(
         #         f"{self.name} failed to initialize successfully. Please check "
         #         f"the output logs for more information.")
