@@ -67,4 +67,4 @@ def test_boiler(boiler):
 def test_power_plant():
     # SCPC.main imports and solves the SCPC Power Plant Flowsheet
     m, results = SCPC.main()
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
