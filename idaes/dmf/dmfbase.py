@@ -552,28 +552,30 @@ class DMF(workspace.Workspace, HasTraits):
             if "do_copy" in datafile:
                 any_copy = datafile["do_copy"]
 
+        system_datafiles_dir, random_subdir = True, None
+
         if any_copy:
             _log.debug("Making a directory for datafiles")
             if rsrc.v.get("datafiles_dir", None):
                 # If there is a datafiles_dir, use it
-                ddir = rsrc.v["datafiles_dir"]
+                ddir = pathlib.Path(rsrc.v["datafiles_dir"])
                 _log.debug(f"_copy_files: use existing datafiles dir '{ddir}'")
-                system_datafiles_dir = False  # used at end of func
+                system_datafiles_dir = False
             else:
                 # If no datafiles_dir, create a random subdir of the DMF
                 # configured `_datafile_path`. The subdir prevents name
                 # collisions across resources.
                 random_subdir = uuid.uuid4().hex
-                ddir = os.path.join(self._datafile_path, random_subdir)
+                ddir = pathlib.Path(self._datafile_path) / random_subdir
                 _log.debug(f"_copy_files: create new datafiles dir '{ddir}'")
                 system_datafiles_dir = True
             try:
-                mkdir_p(ddir)
-            except os.error as err:
+                ddir.mkdir(exist_ok=False)
+            except Exception as err:
                 raise errors.DMFError(f"Cannot make dir for datafiles '{ddir}': {err}")
         else:
             _log.debug("Not making a directory for datafiles")
-            ddir = ""
+            ddir = None
 
         for datafile in rsrc.v["datafiles"]:
             # remove 'full_path' if added by previous pre-processing
@@ -634,7 +636,7 @@ class DMF(workspace.Workspace, HasTraits):
         if any_copy and system_datafiles_dir:
             rsrc.v["datafiles_dir"] = random_subdir
         else:
-            rsrc.v["datafiles_dir"] = ddir
+            rsrc.v["datafiles_dir"] = str(ddir) if ddir else ""
 
     def count(self):
         return len(self._db)
