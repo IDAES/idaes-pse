@@ -445,7 +445,7 @@ see property package for documentation.}"""))
 
         # Check DOF
         if degrees_of_freedom(blk) != 0:
-            raise ConfigurationError(
+            raise InitializationError(
                 f"{blk.name} degrees of freedom were not 0 at the beginning "
                 f"of initialization. DoF = {degrees_of_freedom(blk)}")
 

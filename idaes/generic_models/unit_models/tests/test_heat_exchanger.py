@@ -59,7 +59,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
 from idaes.core.util import get_solver
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from idaes.core.util.exceptions import InitializationError
 
 
 # Imports to assemble BT-PR with different units
@@ -1187,3 +1187,10 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.unit
     def test_report(self, btx):
         btx.fs.unit.report()
+
+    @pytest.mark.component
+    def test_initialization_error(self, btx):
+        btx.fs.unit.outlet_1.flow_mol[0].fix(20)
+
+        with pytest.raises(InitializationError):
+            btx.fs.unit.initialize()

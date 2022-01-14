@@ -42,6 +42,7 @@ from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_sol
     import configuration as aqueous_mea
 from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_vapor \
     import wet_co2
+from idaes.core.util.exceptions import InitializationError
 
 
 # -----------------------------------------------------------------------------
@@ -406,3 +407,10 @@ class TestStripperHeatDuty(object):
 
         assert iscale.get_constraint_transform_applied_scaling_factor(
             model.fs.unit.unit_pressure_balance[0]) == 1e-5
+
+    @pytest.mark.component
+    def test_initialization_error_dof(self, model):
+        model.fs.unit.reflux.flow_mol[0].fix(100)
+
+        with pytest.raises(InitializationError):
+            model.fs.unit.initialize()
