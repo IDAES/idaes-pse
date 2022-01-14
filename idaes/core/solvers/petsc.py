@@ -491,7 +491,9 @@ def petsc_dae_by_time_element(
             # mistake.
             if len(differential_vars) < 1:
                 raise RuntimeError(
-                    "No differential equations found, you do not need a DAE solver.")
+                    "No differential equations found at t = %s, "
+                    "you do not need a DAE solver." % t
+                )
             if timevar is not None:
                 t_block.dae_suffix[timevar[t]] = int(DaeVarTypes.TIME)
             # Set up the scaling factor suffix
