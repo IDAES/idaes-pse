@@ -23,3 +23,25 @@ def test_pitzer():
     assert p
     assert p.list_tables()
     assert p.get_table(p.list_tables()[0])
+
+
+@pytest.mark.unit
+def test_available():
+    av = datasets.available()
+    assert len(av) >= 1
+
+
+@pytest.mark.unit
+def test_publication_unknown():
+    # random, unknown publication
+    with pytest.raises(KeyError):
+        pub = datasets.Publication("test")
+
+
+@pytest.mark.unit
+def test_publication_known():
+    # known publication
+    pub = datasets.Publication("Pitzer:1984")
+    assert pub
+    assert pub.list_tables()
+    assert pub.get_table(pub.list_tables()[0])

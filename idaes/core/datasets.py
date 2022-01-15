@@ -37,6 +37,10 @@ class Pitzer(Publication):
         super().__init__("Pitzer:1984", workspace=workspace)
 
 
+def __f():
+    pass
+
+
 def available() -> Dict[str, AvailableResult]:
     """Find and return all available datasets.
 
@@ -54,7 +58,11 @@ def available() -> Dict[str, AvailableResult]:
         return " ".join([x.strip() for x in docstr[:pos].strip().split("\n")])
 
     result = {}
-    for obj in globals().copy():
-        if isinstance(obj, type) and issubclass(obj, Publication):
-            result[obj.__name__] = AvailableResult(obj, doc_desc(obj))
+    for key, obj in __f.__globals__.items():
+        if (
+            isinstance(obj, type)
+            and issubclass(obj, Publication)
+            and not obj.__name__ == "Publication"
+        ):
+            result[key] = AvailableResult(obj, doc_desc(obj))
     return result

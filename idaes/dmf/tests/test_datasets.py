@@ -14,71 +14,89 @@
 Tests for idaes.dmf.datasets module
 """
 import json
+from pathlib import Path
 import pytest
-
+import uuid
 from idaes.dmf import datasets
 
 
 # Constants
 # ---------
 
-TEST_CONF = {
-    "name": "Test",
-    "text": {
-        "file": "Test.txt",
-        "title": "Test",
-        "date": "1970",
-        "authors": "Dan Gunter",
-        "venue": "Nowhere",
-        "doi": "https://doi.org/10.1234/5.6789012"
-    },
-    "tables": [
-      {
-        "name": "trash",
-        "description": "Garbage",
-        "datafile": "trash.csv"
-      }
-    ]
-}
-TEST_TXT = "This is not a publication."
-TRASH_CSV = "Column 1 [T],Column 2 [],Column3\n1,2,3\n"
-TEST_DMF_CONF = {
-    "_id": "5648dd0b011f42d2801381ea698df9d9",
-    "created": '2000-01-01T00:00:00.123456',
-    "description": "Test",
-    "htmldocs": [
-        "https://idaes-pse.readthedocs.io/en/stable",
-        "{dmf_root}/docs/build/html"
-    ],
-    "modified": '2000-01-01T00:00:01.000000',
-    "name": "test_data"
-}
+DMF_CONF = {
+        "_id": "5648dd0b011f42d2801381ea698df9d9",
+        "created": "2000-01-01T00:00:00.123456",
+        "description": "Test",
+        "htmldocs": [
+            "https://idaes-pse.readthedocs.io/en/stable",
+            "{dmf_root}/docs/build/html",
+        ],
+        "modified": "2000-01-01T00:00:01.000000",
+        "name": "test_data",
+    }
+
+DS_CONF = {
+        "name": "Test",
+        "text": {
+            "file": "Test.txt",
+            "title": "Test",
+            "date": "1970",
+            "authors": "Dan Gunter",
+            "venue": "Nowhere",
+            "doi": "https://doi.org/10.1234/5.6789012",
+        },
+        "tables": [
+            {"name": "example", "description": "An example", "datafile": "example.csv"}
+        ],
+    }
+DS_TXT = "This is not a publication."
+DS_CSV = "Column 1 [T],Column 2 [],Column3\n1,2,3\n"
 
 # Fixtures
 # --------
 
 
 @pytest.fixture(scope="session")
-def pub_conf_path(tmp_path_factory):
+def dmf_publication_dataset(tmp_path_factory):
+    """Create and opulate a temporary directory with an example publication and
+       an associated table (CSV).
+
+    Returns:
+        (Path) The path to the created directory.
+    """
     p = tmp_path_factory.mktemp("ds_conf")
 
     # Write configuration file
     with (p / datasets.Dataset.CONF_NAME).open("w") as f:
-        json.dump(TEST_CONF, f)
+        json.dump(DS_CONF, f)
 
     # Write publication and data file
-    (p / "Test.txt").open("w").write(TEST_TXT)
-    (p / "trash.csv").open("w").write(TRASH_CSV)
+    (p / "Test.txt").open("w").write(DS_TXT)
+    (p / "example.csv").open("w").write(DS_CSV)
 
     return p
 
 
 @pytest.fixture(scope="session")
-def workspace_path(tmp_path_factory):
+def dmf_workspace_path(tmp_path_factory):
+    """Create a temporary DMF workspace directory and populate it with a
+    configuration file.
+    """
     p = tmp_path_factory.mktemp("ds_workspace")
 
     with (p / "config.yaml").open("w") as f:
-        json.dump(TEST_DMF_CONF, f)
+        json.dump(DMF_CONF, f)
+
+    return p
+
+
+@pytest.fixture(scope="session")
+def pub_dataset(dmf_workspace_path, dmf_publication_dataset):
+    from idaes.dmf import datasets
+    ds = datasets.PublicationDataset(dmf_workspace_path)
+    ds.load(dmf_publication_dataset)
+    yield ds
+
 
 # Tests
 # -----
@@ -92,19 +110,20 @@ def test_get_dataset_workspace():
 
 
 @pytest.mark.unit
-def test_dataset_init(workspace_path):
-    ds = datasets.Dataset(workspace_path)
+def test_dataset_init(dmf_workspace_path):
+    ds = datasets.Dataset(dmf_workspace_path)
 
 
 @pytest.mark.unit
-def test_publication_dataset_init(workspace_path):
-    ds = datasets.PublicationDataset(workspace_path)
+def test_publication_dataset_init(dmf_workspace_path):
+    ds = datasets.PublicationDataset(dmf_workspace_path)
 
 
 @pytest.mark.unit
-def test_publication_dataset_load_and_retrieve(workspace_path, pub_conf_path):
-    ds = datasets.PublicationDataset(workspace_path)
-    ds.load(pub_conf_path)
+def test_publication_dataset_load_and_retrieve(dmf_workspace_path,
+                                               dmf_publication_dataset):
+    ds = datasets.PublicationDataset(dmf_workspace_path)
+    ds.load(dmf_publication_dataset)
     pub, tables = ds.retrieve("Test")
 
     assert pub
@@ -112,7 +131,7 @@ def test_publication_dataset_load_and_retrieve(workspace_path, pub_conf_path):
     assert pub.name == "Test"
 
     assert len(tables) == 1
-    x = TEST_CONF["tables"][0]
+    x = DS_CONF["tables"][0]
     t = tables[x["name"]]
     df = t.data
 
@@ -121,7 +140,7 @@ def test_publication_dataset_load_and_retrieve(workspace_path, pub_conf_path):
 
     # check header
     # i. header names
-    dx_col = TRASH_CSV.split("\n")[0].split(",")
+    dx_col = DS_CSV.split("\n")[0].split(",")
     for i, col in enumerate(dx_col):
         unit_start = col.find("[")
         col_name = col if unit_start == -1 else col[:unit_start].strip()
@@ -132,29 +151,34 @@ def test_publication_dataset_load_and_retrieve(workspace_path, pub_conf_path):
         if unit_start >= 0:
             unit_end = col.find("]", unit_start)
             assert unit_end >= 0
-            unit_str = col[unit_start + 1:unit_end]
+            unit_str = col[unit_start + 1 : unit_end]
         else:
             unit_str = ""
         assert t.units_list[i] == unit_str
 
     # check data
-    dx_val = [int(z) for z in TRASH_CSV.split("\n")[1].split(",")]
+    dx_val = [int(z) for z in DS_CSV.split("\n")[1].split(",")]
     df_val = df.iloc[0].values
     for i, v in enumerate(dx_val):
         assert df_val[i] == v
 
 
 @pytest.mark.unit
-def test_publication_unknown():
-    # random, unknown publication
-    with pytest.raises(KeyError):
-        pub = datasets.Publication("test")
+def test_dataset_init_no_workspace():
+    ds = datasets.Dataset()
 
 
 @pytest.mark.unit
-def test_publication_known():
-    # known publication
-    pub = datasets.Publication("Pitzer:1984")
-    assert pub
-    assert pub.list_tables()
-    assert pub.get_table(pub.list_tables()[0])
+def test_base_load_conf(dmf_workspace_path, tmp_path):
+    ds = datasets.Dataset(dmf_workspace_path)
+    # impossible directory
+    with pytest.raises(datasets.FileMissingError):
+        ds._load_conf(f"/{uuid.uuid4()}")
+    # missing conf in path
+    with pytest.raises(datasets.FileMissingError):
+        ds._load_conf(tmp_path)
+    # unparseable conf
+    conf = tmp_path / datasets.Dataset.CONF_NAME
+    conf.open("w").write("Not valid JSON\n")
+    with pytest.raises(datasets.FileMissingError):
+        ds._load_conf(tmp_path)
