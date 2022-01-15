@@ -117,7 +117,7 @@ class PublicationDataset(Dataset):
         for key in self.PUBLICATION_KEY, self.NAME_KEY:
             if key not in self._conf:
                 raise ConfigurationError(
-                    f"Required key {key} missing "
+                    f"Required key '{key}' missing "
                     f"from configuration file '{self._conf_path}'"
                 )
 
@@ -131,9 +131,8 @@ class PublicationDataset(Dataset):
             file_ = pub["file"]
         except KeyError:
             raise ConfigurationError(
-                f"Required key '{self.PUBLICATION_KEY}' -> 'file' "
-                f"missing from configuration file "
-                f"'{self._conf_path}'"
+                f"Required key 'file' in section '{self.PUBLICATION_KEY}' "
+                f"missing from configuration file '{self._conf_path}'"
             )
         meta = {
             "date": pub.get("date", ""),
