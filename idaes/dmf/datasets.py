@@ -158,51 +158,51 @@ class PublicationDataset(Dataset):
 
         # Create and add a resource for each table
         tables = self._conf.get(self.TABLES_KEY, None)
-        seen_datafiles = {}
         if tables:
             num = 0
             for table in tables:
                 _log.debug("publication_table_resource.create.begin")
-                if "name" not in table:
-                    default_name = "unknown"
-                    _log.warning(f"Table name is missing, setting to '{default_name}'")
-                    table_name = default_name
-                else:
-                    table_name = table["name"]
-                if "datafile" not in table:
-                    _log.warning(f"Skipping table '{table_name}': no datafile")
-                    continue
-                # set up datafile
-                table_datafile = table["datafile"]
-                table_path = directory / table_datafile
-                if not table_path.exists:
-                    raise ConfigurationError(
-                        f"Cannot find data file for table "
-                        f"'{table_name}': {table_path}"
-                    )
-                # create new resource
-                tbl_r = resource.Resource(type_=resource.ResourceTypes.tabular)
-                # populate resource
-                table_desc = table.get("description", None)
-                if table_desc is None:
-                    _log.warning(
-                        f"No description given for table data " f"{table_datafile}"
-                    )
-                _log.debug(f"Adding table: path={table_path} desc={table_desc}")
-                tbl_r.add_table(table_path, desc=table_desc, do_copy=self.copy_flag)
-                tbl_r.desc = table_desc
-                tbl_r.name = table_name  # set name for this table
-                tbl_r.add_tag(name)  # add tag shared with publication
-                self._dmf.add(tbl_r)
-                resource.create_relation(pub_r, resource.Predicates.derived, tbl_r)
+                tbl_r = self._create_table_resource(table, directory, name, pub_r)
                 num += 1
+                table_id = str(tbl_r.id) if tbl_r else "<no table>"
                 _log.debug(
-                    f"publication_table_resource.create.end id={tbl_r.id} " f"num={num}"
+                    f"publication_table_resource.create.end " f"id={table_id} num={num}"
                 )
-            # update all the derivation relationships
-            _log.debug("dmf_update.begin")
-            self._dmf.update()
-            _log.debug("dmf_update.end")
+
+        # Update all the derivation relationships
+        _log.debug("dmf_update.begin")
+        self._dmf.update()
+        _log.debug("dmf_update.end")
+
+    _default_table_name = "unknown"  # Default name for a table
+
+    def _create_table_resource(self, table, directory, pub_name, pub_resource):
+        # get table name
+        table_name = table.get("name", self._default_table_name)
+        # set up datafile
+        if "datafile" not in table:
+            _log.warning(f"Skipping table '{table_name}': no datafile")
+            return None
+        table_datafile = table["datafile"]
+        table_path = directory / table_datafile
+        if not table_path.exists:
+            raise ConfigurationError(
+                f"Cannot find data file for table '{table_name}': {table_path}"
+            )
+        # create new resource
+        tbl_r = resource.Resource(type_=resource.ResourceTypes.tabular)
+        # populate resource
+        table_desc = table.get("description", None)
+        if table_desc is None:
+            _log.warning(f"No description given for table data " f"{table_datafile}")
+        _log.debug(f"Adding table: path={table_path} desc={table_desc}")
+        tbl_r.add_table(table_path, desc=table_desc, do_copy=self.copy_flag)
+        tbl_r.desc = table_desc
+        tbl_r.name = table_name  # set name for this table
+        tbl_r.add_tag(pub_name)  # add tag shared with publication
+        self._dmf.add(tbl_r)
+        resource.create_relation(pub_resource, resource.Predicates.derived, tbl_r)
+        return tbl_r
 
 
 AvailableResult = namedtuple("AvailableResult", "Class description")
