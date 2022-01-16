@@ -31,9 +31,9 @@ def rp_example():
     formulations.
 
     The PETSc utilities raise an exception when a differential variable is fixed.
-    While this is okay for the fully time-discretized problem, for the integrator
-    it implies the derivative is 0.  While this problem can be solved with the
-    integrator the result is probably not what the user expects.
+    While this is okay for the fully time-discretized problem, the integrator
+    will not correctly link a fixed differential variable (at non-initial time
+    points) with a time derivative.
     """
     m = pyo.ConcreteModel()
 
@@ -97,7 +97,7 @@ def rp_example3():
     formulations.
 
     Another way to formulate this problem is to fix the derivative. This doesn't
-    work for the integrator because it lose the association between the
+    work for the integrator because it loses the association between the
     differential variable and its derivative.  Since for users, the result of
     this formulation may be unexpected, the PETSc utilities will raise an
     exception if derivatives are fixed to anything other than 0.
