@@ -36,13 +36,12 @@ from . import errors
 from .resource import Resource
 from . import resourcedb
 from . import workspace
-from .util import mkdir_p, yaml_load, as_path, ZigZagLogger
+from .util import yaml_load, as_path
 
 
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
-_zz = ZigZagLogger(_log)
 
 # Used to discover the package 'data' directory
 IDAES_DIST_NAME = "idaes-pse"
@@ -173,7 +172,6 @@ def create_configuration(
         ValueError: if a given (or inferred) path is invalid
         KeyError: if overwrite was False and the config_path already existed
     """
-    _zz.begin_info()
     # get configuration path
     try:
         config_path = as_path(config_path, must_be_file=True)
@@ -183,12 +181,10 @@ def create_configuration(
         config_path = as_path(DMFConfig.configuration_path())
     exists = config_path.exists()
     if (exists and overwrite) or (not exists):
-        _zz.begin_debug("create", path=config_path)
         try:
             config_path.open("w", encoding="utf-8")
         except FileNotFoundError:
             raise ValueError(f"Cannot create configuration: {err}")
-        _zz.end_debug("create", path=config_path)
     elif exists and not overwrite:
         raise KeyError(
             f"Configuration path '{config_path}' exists and overwrite " f"not allowed"
@@ -199,18 +195,13 @@ def create_configuration(
     except ValueError as err:
         raise ValueError(f"Invalid workspace path: {err}")
     if workspace_path is None:
-        _zz.begin_debug("get_workspace_from_package")
         try:
             workspace_path = _get_workspace_from_package()
         except (KeyError, NotADirectoryError) as err:
             raise ValueError(f"Error getting workspace from package: {err}")
-        _zz.end_debug("get_workspace_from_package", path=workspace_path)
     # write configuration file
-    _zz.begin_debug("write", path=config_path, workspace=workspace_path)
     with config_path.open("w", encoding="utf-8") as f:
         f.write(f"workspace: {workspace_path}\n")
-    _zz.end_debug("write")
-    _zz.end_info(path=config_path)  # function
     return config_path
 
 
