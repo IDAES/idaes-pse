@@ -7,6 +7,9 @@ export class Paper {
         var height = 800;
         var gridSize = 1;
 
+        this._originalLinkColor = "#979797";
+        this._highlightLinkColor = "#2df0fc";
+
         this._graph = new joint.dia.Graph([], { cellNamespace: { standard } });
         this._paper = new joint.dia.Paper({
             model: this._graph,
@@ -39,8 +42,7 @@ export class Paper {
         $('#idaes-canvas').css({ height: stream_table.offsetHeight });
         $("#idaes-canvas")[0].append(self._paperScroller.render().el);
 
-        self.setupEvents();
-
+        self.preSetupRegisterEvents();
     }
 
     get graph() {
@@ -65,7 +67,10 @@ export class Paper {
        return angle_translation[angle];
     }
 
-    setupEvents() {
+    /**
+     * Register Events before the graph model is loaded
+     */
+    preSetupRegisterEvents() {
         let model_id = $("#idaes-fs-name").data("flowsheetId");
         let url = "/fs?id=".concat(model_id);
 
@@ -114,8 +119,6 @@ export class Paper {
             linkView.addTools(toolsView);
             linkView.showTools();
 
-            linkView.model.attr('line/stroke', '#2df0fc');
-
             // Highlight the corresponding column in the Stream Table
             let streamGridCells = document.querySelectorAll(`[col-id=${linkView.model.id}]`);
             streamGridCells.forEach((gridCell, index) => {
@@ -131,12 +134,10 @@ export class Paper {
             });
         });
 
-        // Setup event when the hovering ends
+        // Setup event when the hovering over link ends
         self._paper.on("link:mouseleave", function(linkView) {
             // Removes the link tools when you leave the link
             linkView.hideTools();
-
-            linkView.model.attr('line/stroke', '#979797');
 
             // Remove the highlight of the column in the Stream Table when the hovering ends
             document.querySelectorAll(`[col-id=${linkView.model.id}]`).forEach((gridCell) => {
@@ -188,6 +189,31 @@ export class Paper {
                 });
             }
         });
+    }
+
+    /**
+     * Register Events after the graph model is loaded
+     */
+    postSetupRegisterEvents() {
+        // Setup event listeners for the links in Paper/Graph
+        this._graph.getLinks().forEach((link) => {
+            let linkView = link.findView(this._paper);
+            linkView.el.addEventListener('StreamTableMouseHover', () => {
+                linkView.model.attr('line/stroke', this._highlightLinkColor);
+            });
+
+            linkView.el.addEventListener('StreamTableMouseOut', () => {
+                linkView.model.attr('line/stroke', this._originalLinkColor);
+            });
+        });
+    }
+
+    /**
+     * Setup the graph model
+     */
+    setup(model) {
+        this._graph.fromJSON(model);
+        this.postSetupRegisterEvents();
     }
     
 };

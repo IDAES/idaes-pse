@@ -33,7 +33,7 @@ export class StreamTable {
             // There is an empty column because of the way that the pandas dataframe was oriented so 
             // only add the columns that don't have an empty column header
             // Also ignore the "Units" column header
-            let column_header = columns[col]
+            let column_header = columns[col];
             if (column_header !== "" && column_header !== "Units") {
                 // If the column_header is Variable then we don't want the column to be right-aligned and we want the column to be pinned to the left so when the user scrolls the column scrolls with them
                 if (column_header === "Variable") {
@@ -51,7 +51,14 @@ export class StreamTable {
                 }
                 // If the column header isn't "Variable" then we assume that the contents of the column are numbers so they should be right aligned
                 else {
-                    column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true, resizable: true, cellStyle: {"text-align": "right"}});
+                    column_defs.push({
+                        headerName: column_header,
+                        field: column_header,
+                        filter: 'agTextColumnFilter',
+                        sortable: true,
+                        resizable: true,
+                        cellStyle: {"text-align": "right"}
+                    });
                 }
                 let list_item = document.createElement("li");
                 let checkbox_item = document.createElement("div");
@@ -73,7 +80,6 @@ export class StreamTable {
             let data = data_arrays[var_index];
             for (let col_index in columns) {
                 if (columns[col_index] === "Units") {
-                    console.log("data[col_index]:", data[col_index]);
                     if (data[col_index] && data[col_index] !== 'None') {
                         row_object[variable_col] = row_object[variable_col] + '<span class="streamtable-units">' + data[col_index].html + '</span>';
                     }
@@ -126,6 +132,35 @@ export class StreamTable {
                 else {
                     app._gridOptions.columnApi.setColumnVisible(this.id, false)
                 };
+            });
+        });
+
+        // Setup events for grid cells
+        const colorLinkEvent = new Event('StreamTableMouseHover');
+        const unColorLinkEvent = new Event('StreamTableMouseOut');
+
+        let streamGridCells = document.querySelectorAll('[col-id]');
+        streamGridCells.forEach((gridCell) => {
+            // When the mouse hovers over a grid cell, the link that represents
+            // the cell's grid column (stream) will highlight its color.
+            gridCell.addEventListener('mouseenter', function(event) {
+                const relatedLinkElement = document.querySelector(
+                    `[model-id=${event.target.attributes['col-id'].value}]`
+                );
+                if (relatedLinkElement) {
+                    relatedLinkElement.dispatchEvent(colorLinkEvent);
+                }
+            });
+
+            // When the mouse leaves a grid cell, the link that represents the
+            // cell's grid column (stream) will revert to its original color.
+            gridCell.addEventListener('mouseleave', function(event) {
+                const relatedLinkElement = document.querySelector(
+                    `[model-id=${event.target.attributes['col-id'].value}]`
+                );
+                if (relatedLinkElement) {
+                    relatedLinkElement.dispatchEvent(unColorLinkEvent);
+                }
             });
         });
     };
