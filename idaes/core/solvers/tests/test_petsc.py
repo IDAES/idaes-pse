@@ -26,6 +26,15 @@ from idaes.core.solvers import petsc
 from idaes.core.solvers.features import dae
 
 def rp_example():
+    """This example is done multiple ways to test a few common errors where the
+    integrator and fully time-discretized problem differ and alternative working
+    formulations.
+
+    The PETSc utilities raise an exception when a differential variable is fixed.
+    While this is okay for the fully time-discretized problem, the integrator
+    will not correctly link a fixed differential variable (at non-initial time
+    points) with a time derivative.
+    """
     m = pyo.ConcreteModel()
 
     m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
@@ -48,6 +57,15 @@ def rp_example():
     return m
 
 def rp_example2():
+    """ This example is done multiple ways to test a few common errors where the
+    integrator and fully time-discretized problem differ, and alternative working
+    formulations.
+
+    Rather than fixing a differential variable, we can add an explicit time
+    variable for the integrator and fix the time variable to the time index
+    for the fully discretized problem. This works as an alternative to the
+    fixed differential variable.
+    """
     m = pyo.ConcreteModel()
 
     m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
@@ -68,11 +86,22 @@ def rp_example2():
     discretizer.apply_to(m,nfe=1,scheme='BACKWARD')
 
     m.u[0].fix(1.0)
+    # For fully discretized fix all times at time index
     m.t[0].fix(m.time.first())
 
     return m
 
 def rp_example3():
+    """ This example is done multiple ways to test a few common errors where the
+    integrator and fully time-discretized problem differ, and alternative working
+    formulations.
+
+    Another way to formulate this problem is to fix the derivative. This doesn't
+    work for the integrator because it loses the association between the
+    differential variable and its derivative.  Since for users, the result of
+    this formulation may be unexpected, the PETSc utilities will raise an
+    exception if derivatives are fixed to anything other than 0.
+    """
     m = pyo.ConcreteModel()
 
     m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
@@ -93,6 +122,14 @@ def rp_example3():
     return m
 
 def rp_example4():
+    """ This example is done multiple ways to test a few common errors where the
+    integrator and fully time-discretized problem differ, and alternative working
+    formulations.
+
+    Rather than fixing the derivative, we can add a constraint to set the
+    derivative.  This should work as intended for both the fully
+    time-discretized problem and integrator.
+    """
     m = pyo.ConcreteModel()
 
     m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
@@ -114,26 +151,6 @@ def rp_example4():
     m.u[0].fix(1.0)
     m.x[0].fix(0.0)
     m.diff_eq2[0].deactivate()
-
-    return m
-
-def rp_example5():
-    m = pyo.ConcreteModel()
-
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
-    m.x = pyo.Var(m.time, initialize=1)
-    m.u = pyo.Var(m.time, initialize=1)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
-
-    def diff_eq1_rule(m, t):
-        return m.dxdt[t] == m.x[t]**2 - m.u[t]
-    m.diff_eq1 = pyo.Constraint(m.time, rule=diff_eq1_rule)
-
-    discretizer = pyo.TransformationFactory('dae.finite_difference')
-    discretizer.apply_to(m,nfe=1,scheme='BACKWARD')
-
-    m.u[0].fix(1.0)
-    m.dxdt[:].fix(2)
 
     return m
 
@@ -527,15 +544,3 @@ def test_rp_example4():
     )
     assert pyo.value(m.u[10]) == pytest.approx(398)
     assert pyo.value(m.x[10]) == pytest.approx(20)
-
-
-@pytest.mark.unit
-@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
-def test_rp_example5():
-
-    m = rp_example5()
-    with pytest.raises(RuntimeError):
-        petsc.petsc_dae_by_time_element(
-            m,
-            time=m.time,
-        )
