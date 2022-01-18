@@ -77,6 +77,8 @@ kwargs = dict(
         "sympy",
         "tinydb",
         "rbfopt",
+        # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
+        "ipython<8.0.0",
     ],
     entry_points={
         "console_scripts": [
@@ -134,7 +136,6 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
