@@ -33,17 +33,17 @@ Main Package
 - `pynumero <https://pyomo.readthedocs.io/en/stable/contributed_packages/pynumero/index.html>`_
 - `clp <https://projects.coin-or.org/Clp>`_
 - `cbc <https://projects.coin-or.org/Cbc>`_
-- `bonmin, <https://petsc.org/release/>`_ (uses Ipopt with HSL)
+- `bonmin, <https://projects.coin-or.org/Bonmin>`_ (uses Ipopt with HSL)
 - `couenne <https://projects.coin-or.org/Couenne/>`_ (uses Ipopt with HSL)
-- iapws95_external, function for the IAPWS95 EoS water
-- swco2_external, functions for the Span-Wagner EoS for CO2
-- cubic_roots, function for finding root of a cubic equation
-- functions, miscellaneous simple math functions, examples, and test code
+- `iapws95_external <https://github.com/IDAES/idaes-ext/tree/main/src/helmholtz>`_, function for the IAPWS95 EoS water
+- `swco2_external <https://github.com/IDAES/idaes-ext/tree/main/src/helmholtz>`_, functions for the Span-Wagner EoS for CO2
+- `cubic_roots <https://github.com/IDAES/idaes-ext/tree/main/src/cubic>`_, function for finding root of a cubic equation
+- `functions <https://github.com/IDAES/idaes-ext/tree/main/src/functions>`_, miscellaneous simple math functions, examples, and test code
 
 Extras
 ~~~~~~
 
-- petsc, `AMPL solver library <https://ampl.com/REFS/hooking2.pdf>`_ interface wrapper for `PETSc's <https://petsc.org/release/>`_ SNES and TS solvers
+- petsc, `AMPL solver library <https://ampl.com/REFS/hooking2.pdf>`_ `interface wrapper <https://github.com/IDAES/idaes-ext/tree/main/petsc>`_ for `PETSc's <https://petsc.org/release/>`_ SNES and TS solvers.
 
 Install Location
 ----------------
