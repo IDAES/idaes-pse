@@ -53,6 +53,7 @@ from idaes.generic_models.unit_models.mixer import (Mixer,
                                                     MomentumMixingType)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
+                                        InitializationError,
                                         PropertyNotSupportedError)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
@@ -1204,3 +1205,19 @@ def test_construction_component_not_in_phase():
         "inlet_list":["in1", "in2"],
         "momentum_mixing_type":MomentumMixingType.none})
     iscale.calculate_scaling_factors(m)
+
+
+@pytest.mark.unit
+def test_initialization_error():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.mix = Mixer(default={"property_package": m.fs.pp})
+
+    m.fs.mix.inlet_1_state[0].material_flow_mol.fix(10)
+    m.fs.mix.inlet_2_state[0].material_flow_mol.fix(10)
+    m.fs.mix.mixed_state[0].material_flow_mol.fix(100)
+
+    with pytest.raises(InitializationError):
+        m.fs.mix.initialize()

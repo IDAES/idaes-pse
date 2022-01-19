@@ -42,6 +42,7 @@ from idaes.core.util.testing import (PhysicalParameterTestBlock,
 from idaes.core.util import get_solver
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
+from idaes.core.util.exceptions import InitializationError
 
 
 # -----------------------------------------------------------------------------
@@ -208,3 +209,10 @@ class TestSaponification(object):
     @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
+
+    @pytest.mark.component
+    def test_initialization_error(self, sapon):
+        sapon.fs.unit.outlet.pressure[0].fix(1)
+
+        with pytest.raises(InitializationError):
+            sapon.fs.unit.initialize()
