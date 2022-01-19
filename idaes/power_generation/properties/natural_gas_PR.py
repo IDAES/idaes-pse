@@ -57,6 +57,7 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
     GenericReactionParameterBlock,
     ConcentrationForm)
 import idaes.generic_models.properties.core.reactions as rxn
+from idaes.core.util.exceptions import ConfigurationError
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -94,11 +95,6 @@ _phase_dicts_ideal = {
     "Vap": {
         "type": VaporPhase,
         "equation_of_state": Ideal,
-    },
-    "Liq": {
-        "type": LiquidPhase,
-        "equation_of_state": Cubic,
-        "equation_of_state_options": {"type": CubicType.PR}
     },
 }
 
@@ -454,8 +450,10 @@ def get_prop(components=None, phases="Vap", eos=EosType.PR):
         if eos==EosType.PR:
             configuration["phases"][k] = copy.deepcopy(_phase_dicts_pr[k])
         elif eos==EosType.IDEAL:
+            if k == "Liq":
+                raise ConfigurationError(
+                    "This paraemeter set does not support Ideal EOS with liquid")
             configuration["phases"][k] = copy.deepcopy(_phase_dicts_ideal[k])
-            configuration["bubble_dew_method"] = IdealBubbleDew
         else:
             raise ValueError("Invalid EoS.")
     if len(phases) > 1:

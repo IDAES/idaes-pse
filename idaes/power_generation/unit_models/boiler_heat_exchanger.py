@@ -58,6 +58,9 @@ from idaes.core.util.constants import Constants as c
 from idaes.core.util import get_solver
 from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
+from idaes.generic_models.unit_models.heat_exchanger import(
+    delta_temperature_lmtd_callback
+)
 
 import idaes.logger as idaeslog
 
@@ -78,7 +81,6 @@ class DeltaTMethod(Enum):
     counterCurrent = 0
     coCurrent = 1
 
-
 def delta_temperature_lmtd_callback(b):
     """
     This is a callback for a temperature difference expression to calculate
@@ -92,7 +94,6 @@ def delta_temperature_lmtd_callback(b):
     @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
         return (dT1[t] - dT2[t]) / log(dT1[t] / dT2[t])
-
 
 def delta_temperature_amtd_callback(b):
     """
@@ -446,7 +447,7 @@ constructed,
         self.delta_elevation = Var(
             initialize=0,
             within=NonNegativeReals,
-            doc="Elevation increase used for static pressure calculation - m",
+            doc="Elevation increase used for static pressure calculation",
             units=pyunits.m,
         )
 
@@ -469,14 +470,14 @@ constructed,
 
         # Length of a tube in z direction for each path
         self.tube_length = Var(
-            initialize=5.0, within=PositiveReals, doc="Tube length - m", units=pyunits.m
+            initialize=5.0, within=PositiveReals, doc="Tube length", units=pyunits.m
         )
 
         # Inner diameter of tubes
         self.tube_di = Var(
             initialize=0.05,
             within=PositiveReals,
-            doc="Inner diameter of tube - m",
+            doc="Inner diameter of tube",
             units=pyunits.m,
         )
 
@@ -484,7 +485,7 @@ constructed,
         self.tube_thickness = Var(
             initialize=0.005,
             within=PositiveReals,
-            doc="Tube thickness - m",
+            doc="Tube thickness",
             units=pyunits.m,
         )
 
@@ -493,7 +494,7 @@ constructed,
         self.pitch_y = Var(
             initialize=0.1,
             within=PositiveReals,
-            doc="Pitch between two neighboring columns - m",
+            doc="Pitch between two neighboring columns",
             units=pyunits.m,
         )
 
@@ -502,30 +503,30 @@ constructed,
         self.pitch_x = Var(
             initialize=0.1,
             within=PositiveReals,
-            doc="Pitch between two neighboring rows - m",
+            doc="Pitch between two neighboring rows",
             units=pyunits.m,
         )
 
         # Tube outside diameter
-        @self.Expression(doc="Outside diameter of tube - m")
+        @self.Expression(doc="Outside diameter of tube")
         def do_tube(b):
             return b.tube_di + b.tube_thickness * 2.0
 
         if self.config.has_radiation is True:
             # Mean beam length for radiation
-            @self.Expression(doc="Mean beam length - m")
+            @self.Expression(doc="Mean beam length")
             def mbl(b):
                 return 3.6 * (
                     b.pitch_x * b.pitch_y / c.pi / b.do_tube - b.do_tube / 4.0
                 )
 
             # Mean beam length for radiation divided by sqrt(2)
-            @self.Expression(doc="Mean beam length - m")
+            @self.Expression(doc="Mean beam length")
             def mbl_div2(b):
                 return b.mbl / sqrt(2.0)
 
             # Mean beam length for radiation multiplied by sqrt(2)
-            @self.Expression(doc="Mean beam length - m")
+            @self.Expression(doc="Mean beam length")
             def mbl_mul2(b):
                 return b.mbl * sqrt(2.0)
 
@@ -535,18 +536,18 @@ constructed,
             return b.tube_nrow / b.nrow_inlet
 
         # Total flow area on tube side
-        @self.Expression(doc="Total flow area on tube side - m2")
+        @self.Expression(doc="Total flow area on tube side")
         def area_flow_tube(b):
             return 0.25 * c.pi * b.tube_di ** 2.0 * b.tube_ncol * b.nrow_inlet
 
         # Total flow area on shell side
-        @self.Expression(doc="Total flow area on shell side - m2")
+        @self.Expression(doc="Total flow area on shell side")
         def area_flow_shell(b):
             return b.tube_length * (b.pitch_y - b.do_tube) * b.tube_ncol
 
         # Total heat transfer area based on outside diameter
         @self.Expression(
-            doc="Total heat transfer " "area based on tube outside diamer - m2"
+            doc="Total heat transfer " "area based on tube outside diamer"
         )
         def area_heat_transfer(b):
             return c.pi * b.do_tube * b.tube_length * b.tube_ncol * b.tube_nrow
@@ -613,7 +614,7 @@ constructed,
         self.therm_cond_wall = Param(
             initialize=43.0,
             within=PositiveReals,
-            doc="Thermal conductivity of the wall - W/(m K)",
+            doc="Thermal conductivity of the wall",
             units=pyunits.W / pyunits.m / pyunits.K,
         )
 
@@ -632,7 +633,7 @@ constructed,
             initialize=0.00017,
             within=NonNegativeReals,
             mutable=True,
-            doc="Fouling resistance on tube side - K m2 / W",
+            doc="Fouling resistance on tube side",
             units=pyunits.K * pyunits.m ** 2 * pyunits.W ** -1,
         )
 
@@ -641,7 +642,7 @@ constructed,
             initialize=0.0008,
             within=NonNegativeReals,
             mutable=True,
-            doc="Fouling resistance on tube side - K m2 / W",
+            doc="Fouling resistance on tube side",
             units=pyunits.K * pyunits.m ** 2 * pyunits.W ** -1,
         )
 
@@ -711,7 +712,7 @@ constructed,
         self.deltaT_1 = Var(
             self.flowsheet().time,
             initialize=1.0,
-            doc="Temperature difference at side 1 inlet - K",
+            doc="Temperature difference at side 1 inlet",
             units=pyunits.K,
         )
 
@@ -719,7 +720,7 @@ constructed,
         self.deltaT_2 = Var(
             self.flowsheet().time,
             initialize=1.0,
-            doc="Temperature difference at side 1 outlet - K",
+            doc="Temperature difference at side 1 outlet",
             units=pyunits.K,
         )
 
@@ -734,7 +735,7 @@ constructed,
         self.hconv_tube = Var(
             self.flowsheet().time,
             initialize=100.0,
-            doc="Tube side convective heat transfer coefficient - W / (m2 K)",
+            doc="Tube side convective heat transfer coefficient",
             units=pyunits.W / pyunits.m ** 2 / pyunits.K,
         )
 
@@ -758,7 +759,7 @@ constructed,
         # Heat conduction resistance of tube wall
         self.rcond_wall = Var(
             initialize=1.0,
-            doc="Heat conduction resistance of wall - K m2 / W",
+            doc="Heat conduction resistance of wall",
             units=pyunits.m ** 2 * pyunits.K / pyunits.W,
         )
 
@@ -1007,7 +1008,7 @@ constructed,
         self.v_tube = Var(
             self.flowsheet().time,
             initialize=1.0,
-            doc="Velocity on tube side - m/s",
+            doc="Velocity on tube side",
             units=pyunits.m / pyunits.s,
         )
 
@@ -1029,7 +1030,7 @@ constructed,
             self.deltaP_tube_friction = Var(
                 self.flowsheet().time,
                 initialize=-10.0,
-                doc="Pressure drop due to friction on tube side - Pa",
+                doc="Pressure drop due to friction on tube side",
                 units=pyunits.Pa,
             )
 
@@ -1037,7 +1038,7 @@ constructed,
             self.deltaP_tube_uturn = Var(
                 self.flowsheet().time,
                 initialize=-10.0,
-                doc="Pressure drop due to u-turn on tube side - Pa",
+                doc="Pressure drop due to u-turn on tube side",
                 units=pyunits.Pa,
             )
 
@@ -1052,7 +1053,7 @@ constructed,
         )
 
         # Velocity equation
-        @self.Constraint(self.flowsheet().time, doc="Tube side velocity equation - m/s")
+        @self.Constraint(self.flowsheet().time, doc="Tube side velocity equation")
         def v_tube_eqn(b, t):
             return (
                 b.v_tube[t]
@@ -1189,7 +1190,7 @@ constructed,
         self.v_shell = Var(
             self.flowsheet().time,
             initialize=1.0,
-            doc="Velocity on shell side - m/s",
+            doc="Velocity on shell side",
             units=pyunits.m / pyunits.s,
         )
 
