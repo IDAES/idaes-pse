@@ -58,10 +58,6 @@ from idaes.core.util.constants import Constants as c
 from idaes.core.util import get_solver
 from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.unit_models.heat_exchanger import(
-    delta_temperature_lmtd_callback
-)
-
 import idaes.logger as idaeslog
 
 
