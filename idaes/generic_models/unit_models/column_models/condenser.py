@@ -26,8 +26,15 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
-from pyomo.environ import \
-    Reference, Expression, Var, Constraint, value, Set, SolverFactory
+from pyomo.environ import (
+    Reference,
+    Expression,
+    Var,
+    Constraint,
+    value,
+    Set,
+    SolverStatus,
+    TerminationCondition)
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -41,7 +48,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import PropertyPackageError, \
-    ConfigurationError, PropertyNotSupportedError
+    ConfigurationError, PropertyNotSupportedError, InitializationError
 from idaes.core.util import get_solver
 
 _log = idaeslog.getLogger(__name__)
@@ -747,6 +754,12 @@ see property package for documentation.}"""))
         init_log.info(
             "Initialization Complete, {}.".format(idaeslog.condition(res))
         )
+        if (res.solver.termination_condition !=
+                TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
         self.control_volume.release_state(flags=flags)
 

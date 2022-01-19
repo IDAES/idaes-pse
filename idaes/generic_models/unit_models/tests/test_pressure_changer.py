@@ -54,7 +54,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables)
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
-from idaes.core.util.exceptions import BalanceTypeNotSupportedError
+from idaes.core.util.exceptions import (
+    BalanceTypeNotSupportedError, InitializationError)
 from idaes.core.util import get_solver, scaling as iscale
 
 
@@ -527,6 +528,13 @@ class TestIAPWS(object):
     @pytest.mark.unit
     def test_report(self, iapws):
         iapws.fs.unit.report()
+
+    @pytest.mark.component
+    def test_initialization_error(self, iapws):
+        iapws.fs.unit.outlet.flow_mol[0].fix(500)
+
+        with pytest.raises(InitializationError):
+            iapws.fs.unit.initialize()
 
 
 # -----------------------------------------------------------------------------

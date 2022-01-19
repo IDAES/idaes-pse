@@ -22,6 +22,8 @@ from enum import Enum
 from pyomo.environ import (
     Var,
     Constraint,
+    SolverStatus,
+    TerminationCondition,
     value,
     units as pyunits
 )
@@ -42,7 +44,7 @@ from idaes.generic_models.unit_models.heat_exchanger \
     import HeatExchangerFlowPattern
 from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants as c
 from idaes.core.util import get_solver, scaling as iscale
@@ -673,7 +675,7 @@ thickness of the tube""",
         # Solve unit
         # Wall 0D
         if self.config.has_wall_conduction == \
-            WallConductionType.zero_dimensional:
+                WallConductionType.zero_dimensional:
             shell_units = self.config.shell_side.property_package.\
                 get_metadata().get_derived_units
             for t in self.flowsheet().time:
@@ -717,9 +719,19 @@ thickness of the tube""",
             init_log.info_high(
                 "Initialization Step 4 {}.".format(idaeslog.condition(res))
             )
+        else:
+            res = None
 
         self.shell.release_state(flags_shell)
         self.tube.release_state(flags_tube)
+
+        if (res is not None and (
+                res.solver.termination_condition !=
+                TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
         init_log.info("Initialization Complete.")
 

@@ -126,7 +126,6 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.6'
           - '3.7'
           - '3.8'
           - '3.9'
@@ -163,12 +162,9 @@ jobs:
       matrix:
         python-version:
           # TODO restore all Python versions once tests pass
-          - '3.6'
           - '3.7'
           - '3.8'
-          # WHY anedoctally, we're aware of Python 3.9 having issues with the jupyter stack on Windows
-          # for this reason, we're leaving Python 3.9 commented out for the examples tests until we test properly
-          # - '3.9'
+          - '3.9'
         os:
           - ubuntu-18.04
           - windows-latest

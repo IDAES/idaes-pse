@@ -40,5 +40,5 @@ runs:
       shell: bash -l {0}
       run: |
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --verbose
+        idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'
