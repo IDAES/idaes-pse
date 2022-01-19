@@ -20,10 +20,10 @@ from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
-from workspace.pipelines.properties.natural_gas import (
+from idaes.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )
-from workspace.pipelines.unit_models.compressor import IsothermalCompressor
+from idaes.gas_distribution.unit_models.compressor import IsothermalCompressor
 
 """
 Test for the simple compressor.

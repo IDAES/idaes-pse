@@ -7,7 +7,7 @@ from pyomo.util.check_units import (
 )
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
-from workspace.pipelines.properties.natural_gas import (
+from idaes.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )
 

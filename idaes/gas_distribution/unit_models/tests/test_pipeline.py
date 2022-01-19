@@ -29,10 +29,10 @@ from idaes.core.util.model_statistics import (
     large_residuals_set,
 )
 from idaes.core.util.constants import Constants
-from workspace.pipelines.properties.natural_gas import (
+from idaes.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )
-from workspace.pipelines.unit_models.pipeline import GasPipeline
+from idaes.gas_distribution.unit_models.pipeline import GasPipeline
 
 from idaes.apps.nmpc import (
     get_tracking_cost_from_constant_setpoint as get_tracking_cost_expression,
