@@ -29,7 +29,7 @@ from idaes.generic_models.properties.activity_coeff_models.\
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import \
     PhysicalParameterTestBlock, initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
 
 from idaes.generic_models.properties.core.generic.generic_property \
     import GenericParameterBlock
@@ -289,6 +289,8 @@ class TestBTXIdealGeneric():
         m.fs.unit.condenser.condenser_pressure.fix(101325)
 
         m.fs.unit.reboiler.boilup_ratio.fix(1.3)
+
+        iscale.calculate_scaling_factors(m.fs.unit)
 
         return m
 
