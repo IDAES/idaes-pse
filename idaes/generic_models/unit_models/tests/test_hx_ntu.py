@@ -39,6 +39,7 @@ from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_sol
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
 from idaes.core.util.testing import initialization_tester
+from idaes.core.util.exceptions import InitializationError
 
 
 # -----------------------------------------------------------------------------
@@ -260,3 +261,10 @@ class TestHXNTU(object):
     @pytest.mark.unit
     def test_report(self, model):
         model.fs.unit.report()
+
+    @pytest.mark.component
+    def test_initialization_error(self, model):
+        model.fs.unit.hot_outlet.pressure[0].fix(1)
+
+        with pytest.raises(InitializationError):
+            model.fs.unit.initialize()

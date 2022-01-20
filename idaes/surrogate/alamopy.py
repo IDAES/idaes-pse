@@ -667,13 +667,6 @@ class AlamoTrainer(SurrogateTrainer):
         if trace_fname is not None:
             stream.write(f"TRACEFNAME {trace_fname}\n")
 
-        def _trim_extra_whitespace(text, sep=' '):
-            trimmed_lines = []
-            for line in text.splitlines():
-                parts = [part.strip() for part in line.split()]
-                trimmed_lines.append(str.join(sep, parts))
-            return str.join('\n', trimmed_lines)
-
         def _df_to_data_fragment(df, **kwargs):
             text = df.to_string(
                 header=False,
@@ -681,10 +674,7 @@ class AlamoTrainer(SurrogateTrainer):
                 float_format=lambda x: str(x).format(":g"),
                 **kwargs
             )
-            # This is only needed to remove the extra spaces (from `justify`?)
-            # on python 3.6 since on 3.7 and up pandas.to_string() returns
-            # already the proper format without any further processing needed
-            return _trim_extra_whitespace(text, sep=' ')
+            return text
 
         stream.write("\nBEGIN_DATA\n")
         # Columns will be writen in order in input and output lists
