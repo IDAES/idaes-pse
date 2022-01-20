@@ -33,24 +33,42 @@ General assumtpions:
     - Pressure drop tube and shell side (friction factor calc.)
 
 """
+
+__author__ = "Boiler subsystem team (J Ma, M Zamarripa)"
+__version__ = "1.0.0"
+
 # Import Python libraries
 import logging
 from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+
 # Additional import for the unit operation
-from pyomo.environ import value, Var, Param, exp, sqrt,\
-    log, PositiveReals, NonNegativeReals, ExternalFunction, units as pyunits
+from pyomo.environ import (
+    value,
+    Var,
+    Param,
+    exp,
+    sqrt,
+    log,
+    PositiveReals,
+    NonNegativeReals,
+    ExternalFunction,
+    Reference,
+    units as pyunits,
+)
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0DBlock,
-                        declare_process_block_class,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType,
-                        UnitModelBlockData,
-                        useDefault)
+from idaes.core import (
+    ControlVolume0DBlock,
+    declare_process_block_class,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+    UnitModelBlockData,
+    useDefault,
+)
 
 from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.misc import add_object_reference
@@ -60,9 +78,14 @@ from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
+from idaes.generic_models.unit_models.heat_exchanger import (
+    delta_temperature_lmtd_callback,
+    delta_temperature_lmtd2_callback,
+    delta_temperature_lmtd3_callback,
+    delta_temperature_amtd_callback,
+    delta_temperature_underwood_callback,
+)
 
-__author__ = "Boiler subsystem team (J Ma, M Zamarripa)"
-__version__ = "1.0.0"
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -76,58 +99,6 @@ class TubeArrangement(Enum):
 class DeltaTMethod(Enum):
     counterCurrent = 0
     coCurrent = 1
-
-def delta_temperature_lmtd_callback(b):
-    """
-    This is a callback for a temperature difference expression to calculate
-    :math:`\Delta T` in the heat exchanger model using log-mean temperature
-    difference (LMTD).  It can be supplied to "delta_temperature_callback"
-    HeatExchanger configuration option.
-    """
-    dT1 = b.deltaT_1
-    dT2 = b.deltaT_2
-
-    @b.Expression(b.flowsheet().time)
-    def delta_temperature(b, t):
-        return (dT1[t] - dT2[t]) / log(dT1[t] / dT2[t])
-
-def delta_temperature_amtd_callback(b):
-    """
-    This is a callback for a temperature difference expression to calculate
-    :math:`\Delta T` in the heat exchanger model using arithmetic-mean
-    temperature difference (AMTD).  It can be supplied to
-    "delta_temperature_callback" HeatExchanger configuration option.
-    """
-    dT1 = b.deltaT_1
-    dT2 = b.deltaT_2
-
-    @b.Expression(b.flowsheet().time)
-    def delta_temperature(b, t):
-        return (dT1[t] + dT2[t]) * 0.5
-
-
-def delta_temperature_underwood_callback(b):
-    """
-    This is a callback for a temperature difference expression to calculate
-    :math:`\Delta T` in the heat exchanger model using log-mean temperature
-    difference (LMTD) approximation given by Underwood (1970).  It can be
-    supplied to "delta_temperature_callback" HeatExchanger configuration option.
-    This uses a cube root function that works with negative numbers returning
-    the real negative root. This should always evaluate successfully.
-    """
-    dT1 = b.deltaT_1
-    dT2 = b.deltaT_2
-    temp_units = pyunits.get_units(dT1)
-
-    # external function that ruturns the real root, for the cuberoot of negitive
-    # numbers, so it will return without error for positive and negitive dT.
-    b.cbrt = ExternalFunction(
-        library=functions_lib(), function="cbrt", arg_units=[temp_units]
-    )
-
-    @b.Expression(b.flowsheet().time)
-    def delta_temperature(b, t):
-        return ((b.cbrt(dT1[t]) + b.cbrt(dT2[t])) / 2.0) ** 3 * temp_units
 
 
 def delta_temperature_underwood_tune_callback(b):
@@ -163,21 +134,27 @@ class BoilerHeatExchangerData(UnitModelBlockData):
     """
 
     CONFIG = ConfigBlock()
-    CONFIG.declare("dynamic", ConfigValue(
-        domain=DefaultBool,
-        default=useDefault,
-        description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic or not,
+    CONFIG.declare(
+        "dynamic",
+        ConfigValue(
+            domain=DefaultBool,
+            default=useDefault,
+            description="Dynamic model flag",
+            doc="""Indicates whether this model will be dynamic or not,
 **default** = useDefault.
 **Valid values:** {
 **useDefault** - get flag from parent (default = False),
 **True** - set as a dynamic model,
-**False** - set as a steady-state model.}"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=useDefault,
-        domain=DefaultBool,
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
+**False** - set as a steady-state model.}""",
+        ),
+    )
+    CONFIG.declare(
+        "has_holdup",
+        ConfigValue(
+            default=useDefault,
+            domain=DefaultBool,
+            description="Holdup construction flag",
+            doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
 **default** - False.
 **Valid values:** {
@@ -280,12 +257,16 @@ see property package for documentation.}""",
 **MomentumBalanceType.pressureTotal** - single pressure balance for material,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
-**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=Bool,
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
+**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}""",
+        ),
+    )
+    CONFIG.declare(
+        "has_pressure_change",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Pressure change term construction flag",
+            doc="""Indicates whether terms for pressure change should be
 constructed,
 **default** - False.
 **Valid values:** {
@@ -542,9 +523,7 @@ constructed,
             return b.tube_length * (b.pitch_y - b.do_tube) * b.tube_ncol
 
         # Total heat transfer area based on outside diameter
-        @self.Expression(
-            doc="Total heat transfer " "area based on tube outside diamer"
-        )
+        @self.Expression(doc="Total heat transfer " "area based on tube outside diamer")
         def area_heat_transfer(b):
             return c.pi * b.do_tube * b.tube_length * b.tube_ncol * b.tube_nrow
 
@@ -719,6 +698,9 @@ constructed,
             doc="Temperature difference at side 1 outlet",
             units=pyunits.K,
         )
+
+        self.delta_temperature_in = Reference(self.deltaT_1)
+        self.delta_temperature_out = Reference(self.deltaT_2)
 
         # Overall heat transfer coefficient
         self.overall_heat_transfer_coefficient = Var(
@@ -996,7 +978,7 @@ constructed,
             u = b.overall_heat_transfer_coefficient[t]
             a = b.area_heat_transfer
             deltaT = b.delta_temperature[t]
-            return b.heat_duty[t] == deltaT * u  * a
+            return b.heat_duty[t] == deltaT * u * a
 
         # Tube side heat transfer coefficient and pressure drop
         # -----------------------------------------------------
@@ -1153,7 +1135,8 @@ constructed,
         )
         def N_Nu_tube_eqn(b, t):
             return (
-                b.N_Nu_tube[t] == 0.023 * b.N_Re_tube[t] ** 0.8 * abs(b.N_Pr_tube[t]) ** 0.4
+                b.N_Nu_tube[t]
+                == 0.023 * b.N_Re_tube[t] ** 0.8 * abs(b.N_Pr_tube[t]) ** 0.4
             )
 
         # Heat transfer coefficient
@@ -1628,19 +1611,16 @@ constructed,
         for t, c in self.temperature_difference_2.items():
             iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
 
-
         for t, c in self.v_shell_eqn.items():
             s = iscale.min_scaling_factor(
                 self.side_2.properties_in[t].flow_mol_comp,
                 default=0,
                 warning=False,
-                hint=None
+                hint=None,
             )
             if s == 0:
                 s = iscale.get_scaling_factor(
-                    self.side_2.properties_in[t].flow_mol,
-                    default=1,
-                    warning=True
+                    self.side_2.properties_in[t].flow_mol, default=1, warning=True
                 )
             iscale.constraint_scaling_transform(c, s, overwrite=False)
 
@@ -1649,64 +1629,45 @@ constructed,
                 self.side_1.properties_in[t].flow_mol_comp,
                 default=0,
                 warning=False,
-                hint=None
+                hint=None,
             )
             if s == 0:
                 s = iscale.get_scaling_factor(
-                    self.side_1.properties_in[t].flow_mol,
-                    default=1,
-                    warning=True
+                    self.side_1.properties_in[t].flow_mol, default=1, warning=True
                 )
             iscale.constraint_scaling_transform(c, s, overwrite=False)
 
         for t, c in self.N_Nu_tube_eqn.items():
-            s = iscale.get_scaling_factor(
-                self.N_Nu_tube[t],
-                default=1,
-                warning=True
-            )
+            s = iscale.get_scaling_factor(self.N_Nu_tube[t], default=1, warning=True)
             iscale.constraint_scaling_transform(c, s, overwrite=False)
 
-
         for t, c in self.N_Nu_shell_eqn.items():
-            s = iscale.get_scaling_factor(
-                self.N_Nu_shell[t],
-                default=1,
-                warning=True
-            )
+            s = iscale.get_scaling_factor(self.N_Nu_shell[t], default=1, warning=True)
             iscale.constraint_scaling_transform(c, s, overwrite=False)
 
         for t, c in self.hconv_shell_total_eqn.items():
             s = iscale.get_scaling_factor(
-                self.hconv_shell_total[t],
-                default=1,
-                warning=True
+                self.hconv_shell_total[t], default=1, warning=True
             )
             iscale.constraint_scaling_transform(c, s, overwrite=False)
 
         if hasattr(self, "deltaP_shell_eqn"):
             for t, c in self.deltaP_shell_eqn.items():
                 s = iscale.get_scaling_factor(
-                    self.deltaP_shell[t],
-                    default=1,
-                    warning=True
+                    self.deltaP_shell[t], default=1, warning=True
                 )
                 iscale.constraint_scaling_transform(c, s, overwrite=False)
 
         if hasattr(self, "deltaP_tube_eqn"):
             for t, c in self.deltaP_tube_eqn.items():
                 s = iscale.get_scaling_factor(
-                    self.deltaP_tube[t],
-                    default=1,
-                    warning=True
+                    self.deltaP_tube[t], default=1, warning=True
                 )
                 iscale.constraint_scaling_transform(c, s, overwrite=False)
 
         if hasattr(self, "deltaP_tube_friction_eqn"):
             for t, c in self.deltaP_tube_friction_eqn.items():
                 s = iscale.get_scaling_factor(
-                    self.deltaP_tube_friction[t],
-                    default=1,
-                    warning=True
+                    self.deltaP_tube_friction[t], default=1, warning=True
                 )
                 iscale.constraint_scaling_transform(c, s, overwrite=False)
