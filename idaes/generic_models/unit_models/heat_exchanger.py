@@ -21,17 +21,14 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
-    Param,
-    Expression,
     log,
     Reference,
     PositiveReals,
-    SolverFactory,
     ExternalFunction,
     Block,
     units as pyunits,
-    NonNegativeReals,
-    value,
+    SolverStatus,
+    TerminationCondition
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -52,7 +49,7 @@ from idaes.generic_models.unit_models.heater import (
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver, scaling as iscale
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
 _log = idaeslog.getLogger(__name__)
 
@@ -236,7 +233,7 @@ def delta_temperature_underwood_callback(b):
     """
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
-    temp_units = pyunits.get_units(dT1[dT1.index_set().first()]) #handle Refernce
+    temp_units = pyunits.get_units(dT1[dT1.index_set().first()])
 
     # external function that ruturns the real root, for the cuberoot of negitive
     # numbers, so it will return without error for positive and negitive dT.
@@ -614,6 +611,14 @@ class HeatExchangerData(UnitModelBlockData):
         if hasattr(self, "costing"):
             self.costing.activate()
             costing.initialize(self.costing)
+
+        if (res is not None and (
+                res.solver.termination_condition !=
+                TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {
