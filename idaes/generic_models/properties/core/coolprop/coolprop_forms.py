@@ -26,7 +26,7 @@ def parameters_nt_sum(cobj, prop, nlist, tlist):
     Method for creating parameters for expression forms using n-t parameters
 
     Args:
-        cobj - component object that will contian the parameters
+        cobj - component object that will contain the parameters
         prop - name of property parameters are associated with
         nlist - list of values for n-parameter
         tlist - list of values for t-parameter
@@ -62,7 +62,7 @@ def _nt_sum(cobj, prop, theta):
     Method for creating sum expressions in n-t forms (sum(n[i]*theta**t[i]))
 
     Args:
-        cobj - component object that will contian the parameters
+        cobj - component object that will contain the parameters
         prop - name of property parameters are associated with
         theta - expression or variable to use for theta in expression
 
@@ -89,10 +89,10 @@ def _nt_sum_dT(cobj, prop, T, Tc):
     forms (d/dT(sum(n[i]*theta**t[i])))
 
     Args:
-        cobj - component object that will contian the parameters
+        cobj - component object that will contain the parameters
         prop - name of property parameters are associated with
-        T - temeprature used in expression
-        Tc - critical temeprature of component
+        T - temperature used in expression
+        Tc - critical temperature of component
 
     Returns:
         Pyomo expression of derivative of sum term
@@ -118,7 +118,7 @@ def expression_exponential(cobj, prop, T, yc):
     Method for creating expressions for CoolProp exponential sum forms
 
     Args:
-        cobj - component object that will contian the parameters
+        cobj - component object that will contain the parameters
         prop - name of property parameters are associated with
         T - temperature to use in expression
         yc - value of property at critical point
@@ -140,7 +140,7 @@ def expression_exponential_tau(cobj, prop, T, yc):
     Method for creating expressions for CoolProp exponential sum forms with tau
 
     Args:
-        cobj - component object that will contian the parameters
+        cobj - component object that will contain the parameters
         prop - name of property parameters are associated with
         T - temperature to use in expression
         yc - value of property at critical point
@@ -159,17 +159,17 @@ def expression_exponential_tau(cobj, prop, T, yc):
 
 def dT_expression_exponential_tau(cobj, prop, T, yc):
     """
-    Method for creating expressions for temeprature derivative of CoolProp
+    Method for creating expressions for temperature derivative of CoolProp
     exponential sum forms with tau
 
     Args:
-        cobj - component object that will contian the parameters
+        cobj - component object that will contain the parameters
         prop - name of property parameters are associated with
         T - temperature to use in expression
         yc - value of property at critical point
 
     Returns:
-        Pyomo expression for temeprature derivative of CoolProp exponential sum
+        Pyomo expression for temperature derivative of CoolProp exponential sum
         form with tau
     """
     # y = yc * exp(Tc/T * sum(ni*theta^ti))
@@ -189,7 +189,7 @@ def expression_nonexponential(cobj, prop, T, yc):
     Method for creating expressions for CoolProp non-exponential sum forms
 
     Args:
-        cobj - component object that will contian the parameters
+        cobj - component object that will contain the parameters
         prop - name of property parameters are associated with
         T - temperature to use in expression
         yc - value of property at critical point
@@ -212,9 +212,9 @@ def parameters_polynomial(cobj, prop, prop_units, alist, blist):
     (rational polynomial forms)
 
     Args:
-        cobj - component object that will contian the parameters
+        cobj - component object that will contain the parameters
         prop - name of property parameters are associated with
-        prop_units - units of measurment for property
+        prop_units - units of measurement for property
         Alist - list of values for A-parameter
         Blist - list of values for B-parameter
 
@@ -251,7 +251,7 @@ def expression_polynomial(cobj, prop, T):
     Method for creating expressions for CoolProp rational polynomial forms
 
     Args:
-        cobj - component object that will contian the parameters
+        cobj - component object that will contain the parameters
         prop - name of property parameters are associated with
         T - temperature to use in expression
 
