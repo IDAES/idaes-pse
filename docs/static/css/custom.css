@@ -38,3 +38,18 @@ h2 {
     color: rgb(64, 64, 64);
     font-size: 110%;
 }
+
+/* Set table values to top align & add padding in index-table*/
+
+.index-table.docutils tbody td {
+	vertical-align: top;
+    padding-top: 16px;
+}
+
+/* Set defined list to more generic styling in index-table*/
+.index-table dl:not(.docutils) dt {
+    font-size: 100%;
+    background: none;
+    color: #404040;
+    border-top: none;
+}
