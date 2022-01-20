@@ -158,11 +158,12 @@ class TestBaseForms:
                 150: 4218667.236}
 
         for T, Psat in data.items():
-            expr = cforms.expression_exponential_tau(
+            expr = cforms.expression_exponential(
                 model.params,
                 "pressure_sat",
                 T*pyunits.K,
-                model.params.pressure_crit)
+                model.params.pressure_crit,
+                tau=True)
 
             assert value(expr) == pytest.approx(Psat, rel=1e-8)
             assert_units_equivalent(expr, pyunits.Pa)
@@ -172,27 +173,31 @@ class TestBaseForms:
 
         fdiff = 1e-5
         for T in range(10, 101, 10):
-            dT = value(cforms.dT_expression_exponential_tau(
+            dT = value(cforms.dT_expression_exponential(
                 model.params,
                 "pressure_sat",
                 T*pyunits.K,
-                model.params.pressure_crit))
+                model.params.pressure_crit,
+                tau=True))
 
-            em = cforms.expression_exponential_tau(
+            em = cforms.expression_exponential(
                 model.params,
                 "pressure_sat",
                 (T-fdiff)*pyunits.K,
-                model.params.pressure_crit)
-            e = cforms.expression_exponential_tau(
+                model.params.pressure_crit,
+                tau=True)
+            e = cforms.expression_exponential(
                 model.params,
                 "pressure_sat",
                 T*pyunits.K,
-                model.params.pressure_crit)
-            ep = cforms.expression_exponential_tau(
+                model.params.pressure_crit,
+                tau=True)
+            ep = cforms.expression_exponential(
                 model.params,
                 "pressure_sat",
                 (T+fdiff)*pyunits.K,
-                model.params.pressure_crit)
+                model.params.pressure_crit,
+                tau=True)
 
             dT_fe_m = value((e-em)/fdiff)
             dT_fe_p = value((ep-e)/fdiff)

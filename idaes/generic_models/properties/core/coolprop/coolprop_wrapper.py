@@ -98,9 +98,8 @@ class CoolPropWrapper:
         Returns:
             tuple of parameter (value, units)
         """
-        try:
-            map_tuple = name_map[param]
-        except KeyError:
+        map_tuple = name_map.get(param, None)
+        if map_tuple is None:
             raise BurntToast(
                 "Unrecognized property name in CoolProp wrapper. Please "
                 "contact the IDAES developers with this bug.")
@@ -147,7 +146,11 @@ class CoolPropWrapper:
 
             # 8-Dec-21: CoolProp only uses rhoLnoexp for liquid density
             nlist, tlist = CoolPropWrapper._get_param_dicts(
-                    cname, cdict, "dens_mol_liq_comp", "rhoL", ["rhoLnoexp"])
+                    cname,
+                    cdict,
+                    "dens_mol_liq_comp",
+                    "rhoL",
+                    ["rhoLnoexp"])
 
             cforms.parameters_nt_sum(cobj, "dens_mol_liq_comp", nlist, tlist)
 
@@ -179,11 +182,10 @@ class CoolPropWrapper:
             cforms.parameters_polynomial(
                 cobj, "enth_mol_liq_comp", pyunits.J/pyunits.mol, Alist, Blist)
 
-            cobj.add_component(
-                "enth_mol_liq_comp_anchor",
-                Var(doc="Reference heat of formation",
-                    units=pyunits.J/pyunits.mol))
-            getattr(cobj, "enth_mol_liq_comp_anchor").fix(href)
+            href_var = Var(doc="Reference heat of formation",
+                           units=pyunits.J/pyunits.mol)
+            cobj.add_component("enth_mol_liq_comp_anchor", href_var)
+            href_var.fix(href)
 
         @staticmethod
         def return_expression(b, cobj, T):
@@ -255,11 +257,10 @@ class CoolPropWrapper:
                 Alist,
                 Blist)
 
-            cobj.add_component(
-                "entr_mol_liq_comp_anchor",
-                Var(doc="Reference heat of formation",
-                    units=pyunits.J/pyunits.mol/pyunits.K))
-            getattr(cobj, "entr_mol_liq_comp_anchor").fix(sref)
+            sref_var = Var(doc="Reference heat of formation",
+                           units=pyunits.J/pyunits.mol/pyunits.K)
+            cobj.add_component("entr_mol_liq_comp_anchor", sref_var)
+            sref_var.fix(sref)
 
         @staticmethod
         def return_expression(b, cobj, T):
@@ -337,13 +338,13 @@ class CoolPropWrapper:
                 return CoolPropWrapper.pressure_sat_comp.dT_expression(
                     b, cobj, T)
 
-            return cforms.expression_exponential_tau(
-                cobj, "pressure_sat", T, cobj.pressure_crit)
+            return cforms.expression_exponential(
+                cobj, "pressure_sat", T, cobj.pressure_crit, tau=True)
 
         @staticmethod
         def dT_expression(b, cobj, T):
-            return cforms.dT_expression_exponential_tau(
-                cobj, "pressure_sat", T, cobj.pressure_crit)
+            return cforms.dT_expression_exponential(
+                cobj, "pressure_sat", T, cobj.pressure_crit, tau=True)
 
     # -------------------------------------------------------------------------
     # Internal methods
@@ -369,6 +370,7 @@ class CoolPropWrapper:
             for v in CoolPropWrapper._cached_components.values():
                 if (comp_name in v["INFO"]["ALIASES"] or
                         comp_name in v["INFO"]["NAME"]):
+                    CoolPropWrapper._cached_components[comp_name] = v
                     return v
 
         # If we haven't returned yet, then we need to load the component

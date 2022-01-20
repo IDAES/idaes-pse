@@ -228,11 +228,8 @@ def set_param_from_config(b, param, config=None, index=None):
 
     # Check to see if p_data is callable, and if so, try to call the
     # get_parameter_value method to get 2-tuple
-    if callable(p_data):
-        try:
-            p_data = p_data.get_parameter_value(b.local_name, param)
-        except AttributeError:
-            pass
+    if hasattr(p_data, 'get_parameter_value'):
+        p_data = p_data.get_parameter_value(b.local_name, param)
 
     if isinstance(p_data, tuple):
         # 11 Dec 2020 - There is currently a bug in Pyomo where trying to

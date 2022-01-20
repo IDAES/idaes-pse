@@ -86,7 +86,9 @@ class TestWrapper:
         prop_dict = CoolPropWrapper._get_component_data("R732")
 
         assert CoolPropWrapper._cached_components["Oxygen"] is prop_dict
-        assert "R732" not in CoolPropWrapper._cached_components
+        assert "R732" in CoolPropWrapper._cached_components
+        assert CoolPropWrapper._cached_components["R732"] is \
+            CoolPropWrapper._cached_components["Oxygen"]
 
     @pytest.mark.unit
     def test_load_component_by_alias(self):
@@ -100,7 +102,9 @@ class TestWrapper:
         prop_dict2 = CoolPropWrapper._get_component_data("CO2")
 
         assert prop_dict2 is prop_dict
-        assert "CO2" not in CoolPropWrapper._cached_components
+        assert "CO2" in CoolPropWrapper._cached_components
+        assert CoolPropWrapper._cached_components["CO2"] is \
+            CoolPropWrapper._cached_components["R744"]
 
     @pytest.mark.unit
     def test_get_component_invalid(self):
