@@ -9,8 +9,8 @@ from pyomo.common.fileutils import this_file_dir
 
 #Create a steady-state rankine cycle model
 def create_ss_rankine_model(pmin,pmax):
-    p_lower_bound = pmin #30 # 175
-    p_upper_bound = pmax #76 # 450
+    p_lower_bound = pmin 
+    p_upper_bound = pmax 
 
     m = pyo.ConcreteModel()
     m.rankine = create_model(heat_recovery=True)
@@ -93,7 +93,7 @@ def get_rankine_periodic_variable_pairs(t1,t2):
     return [(t1.battery.soc,t2.battery.previous_soc)]
 
 
-def create_multiperiod_rankine_model(n_time_points=4, pmin=30, pmax=76):
+def create_multiperiod_rankine_model(n_time_points=4, pmin=20, pmax=100):
     """
         Create a multi-period rankine cycle object. This object contains a pyomo model
         with a block for each time instance.

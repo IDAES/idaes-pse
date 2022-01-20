@@ -8,27 +8,24 @@ from idaes.apps.grid_integration.examples.multiperiod_rankine.multiperiod_rankin
 
 class MultiPeriodRankine:
 
-    def __init__(self, horizon=4, pmin=20, pmax=100,
-        generator_data={}):
+    def __init__(self, horizon=4, pmin=20, pmax=100, default_bid_curve=None, generator_name="gen"):
         '''
         Arguments:
             horizon::Int64 - number of time points to use for associated multi-period model
-            generator_data::Dict - dictionary of generator parameters (e.g. pmax,pmin,etc...)
 
         Returns:
             Float64: Value of power output in last time step
         '''
-        if generator_data == {}:
-            generator_data = {'generator_name':'test','PMin MW':pmin,
-            'Original Marginal Cost Curve':{p: 30.0 for p in np.linspace(pmin,pmax,5)}}
-
+        if default_bid_curve==None:
+            self.default_bid_curve = {p: 30 for p in np.linspace(pmin,pmax,5)}
+        else:
+            self.default_bid_curve = default_bid_curve
         self.horizon = horizon
-        self.generator_data = generator_data
-        self.generator = self.generator_data['generator_name']
         self.mp_rankine = None
         self.result_list = []
         self.p_lower = pmin
         self.p_upper = pmax
+        self.generator = generator_name
 
     def populate_model(self, b):
         '''
@@ -37,7 +34,7 @@ class MultiPeriodRankine:
         Arguments:
             blk: this is an empty block passed in from eithe a bidder or tracker
 
-         Returns:
+        Returns:
              None
         '''
         blk = b
@@ -193,8 +190,9 @@ class MultiPeriodRankine:
 
     @property
     def default_bids(self):
-        return self.generator_data['Original Marginal Cost Curve']
+        return self.default_bid_curve
 
     @property
     def pmin(self):
-        return self.generator_data['PMin MW']
+        # return self.generator_data['PMin MW']
+        return self.p_lower
