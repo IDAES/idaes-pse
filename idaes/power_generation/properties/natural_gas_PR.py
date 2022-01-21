@@ -452,7 +452,7 @@ def get_prop(components=None, phases="Vap", eos=EosType.PR):
         elif eos==EosType.IDEAL:
             if k == "Liq":
                 raise ConfigurationError(
-                    "This paraemeter set does not support Ideal EOS with liquid")
+                    "This parameter set does not support Ideal EOS with liquid")
             configuration["phases"][k] = copy.deepcopy(_phase_dicts_ideal[k])
         else:
             raise ValueError("Invalid EoS.")
