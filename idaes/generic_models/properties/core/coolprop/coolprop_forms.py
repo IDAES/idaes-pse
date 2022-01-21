@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-This module contains methods for constructing CoolProp expressions.
+This module contains functions for constructing CoolProp expressions.
 """
 from pyomo.environ import exp, units as pyunits, Var
 from pyomo.core.expr.calculus.derivatives import Modes, differentiate
@@ -24,13 +24,13 @@ from idaes.core.util.exceptions import ConfigurationError
 
 def parameters_nt_sum(cobj, prop, nlist, tlist):
     """
-    Method for creating parameters for expression forms using n-t parameters
+    Create parameters for expression forms using n-t parameters
 
     Args:
-        cobj - component object that will contain the parameters
-        prop - name of property parameters are associated with
-        nlist - list of values for n-parameter
-        tlist - list of values for t-parameter
+        cobj: Component object that will contain the parameters
+        prop: name of property parameters are associated with
+        nlist: list of values for n-parameter
+        tlist: list of values for t-parameter
 
     Returns:
         None
@@ -40,6 +40,9 @@ def parameters_nt_sum(cobj, prop, nlist, tlist):
             f"{cobj.name} mismatched length between n and t parameters "
             f"for CoolProp exponential form for property {prop}. Please "
             f"ensure the number of n and t parameters are equal.")
+
+    # Use multiple Vars, instead of single indexed Var, to have same
+    # structure as cases where each parameter value has different units
 
     for i, nval in enumerate(nlist):
         coeff = Var(doc="Multiplying parameter for CoolProp exponential form",
@@ -56,12 +59,12 @@ def parameters_nt_sum(cobj, prop, nlist, tlist):
 
 def _nt_sum(cobj, prop, theta):
     """
-    Method for creating sum expressions in n-t forms (sum(n[i]*theta**t[i]))
+    Create sum expressions in n-t forms (sum(n[i]*theta**t[i]))
 
     Args:
-        cobj - component object that will contain the parameters
-        prop - name of property parameters are associated with
-        theta - expression or variable to use for theta in expression
+        cobj: Component object that will contain the parameters
+        prop: name of property parameters are associated with
+        theta: expression or variable to use for theta in expression
 
     Returns:
         Pyomo expression of sum term
@@ -71,8 +74,8 @@ def _nt_sum(cobj, prop, theta):
     s = 0
     while True:
         try:
-            ni = getattr(cobj, prop+"_coeff_n"+str(i))
-            ti = getattr(cobj, prop+"_coeff_t"+str(i))
+            ni = getattr(cobj, f"{prop}_coeff_n{i}")
+            ti = getattr(cobj, f"{prop}_coeff_t{i}")
             s += ni*theta**ti
             i += 1
         except AttributeError:
@@ -82,20 +85,22 @@ def _nt_sum(cobj, prop, theta):
 
 def expression_exponential(cobj, prop, T, yc, tau=False):
     """
-    Method for creating expressions for CoolProp exponential sum forms
+    Create expressions for CoolProp exponential sum forms. This function
+    supports both exponential forms used by CoolProp:
+
+    Without tau: y = yc * exp(sum(ni*theta^ti))
+    With tau: y = yc * exp((Tc/T) * sum(ni*theta^ti))
 
     Args:
-        cobj - component object that will contain the parameters
-        prop - name of property parameters are associated with
-        T - temperature to use in expression
-        yc - value of property at critical point
-        tau - whether tau=Tc/T should be included in expression (default=False)
+        cobj: Component object that will contain the parameters
+        prop: name of property parameters are associated with
+        T: temperature to use in expression
+        yc: value of property at critical point
+        tau: whether tau=Tc/T should be included in expression (default=False)
 
     Returns:
         Pyomo expression matching CoolProp exponential sum form
     """
-    # Without tau: y = yc * exp(sum(ni*theta^ti))
-    # With tau: y = yc * exp(Tc/T * sum(ni*theta^ti))
     Tc = cobj.temperature_crit
     theta = 1 - T/Tc
 
@@ -109,15 +114,15 @@ def expression_exponential(cobj, prop, T, yc, tau=False):
 
 def dT_expression_exponential(cobj, prop, T, yc, tau=False):
     """
-    Method for creating expressions for temperature derivative of CoolProp
-    exponential sum forms with tau
+    Create expressions for temperature derivative of CoolProp exponential sum
+    forms with tau
 
     Args:
-        cobj - component object that will contain the parameters
-        prop - name of property parameters are associated with
-        T - temperature to use in expression
-        yc - value of property at critical point
-        tau - whether tau=Tc/T should be included in expression (default=False)
+        cobj: Component object that will contain the parameters
+        prop: name of property parameters are associated with
+        T: temperature to use in expression
+        yc: value of property at critical point
+        tau: whether tau=Tc/T should be included in expression (default=False)
 
     Returns:
         Pyomo expression for temperature derivative of CoolProp exponential sum
@@ -133,13 +138,13 @@ def dT_expression_exponential(cobj, prop, T, yc, tau=False):
 
 def expression_nonexponential(cobj, prop, T, yc):
     """
-    Method for creating expressions for CoolProp non-exponential sum forms
+    Create expressions for CoolProp non-exponential sum forms
 
     Args:
-        cobj - component object that will contain the parameters
-        prop - name of property parameters are associated with
-        T - temperature to use in expression
-        yc - value of property at critical point
+        cobj: Component object that will contain the parameters
+        prop: name of property parameters are associated with
+        T: temperature to use in expression
+        yc: value of property at critical point
 
     Returns:
         Pyomo expression mathcing CoolProp non-exponential sum form
@@ -155,15 +160,15 @@ def expression_nonexponential(cobj, prop, T, yc):
 
 def parameters_polynomial(cobj, prop, prop_units, alist, blist):
     """
-    Method for creating parameters for expression forms using A-B parameters
-    (rational polynomial forms)
+    Create parameters for expression forms using A-B parameters (rational
+    polynomial forms)
 
     Args:
-        cobj - component object that will contain the parameters
-        prop - name of property parameters are associated with
-        prop_units - units of measurement for property
-        Alist - list of values for A-parameter
-        Blist - list of values for B-parameter
+        cobj: Component object that will contain the parameters
+        prop: name of property parameters are associated with
+        prop_units: units of measurement for property
+        Alist: list of values for A-parameter
+        Blist: list of values for B-parameter
 
     Returns:
         None
@@ -193,12 +198,12 @@ def parameters_polynomial(cobj, prop, prop_units, alist, blist):
 
 def expression_polynomial(cobj, prop, T):
     """
-    Method for creating expressions for CoolProp rational polynomial forms
+    Create expressions for CoolProp rational polynomial forms
 
     Args:
-        cobj - component object that will contain the parameters
-        prop - name of property parameters are associated with
-        T - temperature to use in expression
+        cobj: Component object that will contain the parameters
+        prop: name of property parameters are associated with
+        T: temperature to use in expression
 
     Returns:
         Pyomo expression mathcing CoolProp rational polynomial form
@@ -207,7 +212,7 @@ def expression_polynomial(cobj, prop, T):
     asum = 0
     try:
         while True:
-            Ai = getattr(cobj, prop+"_coeff_A"+str(i))
+            Ai = getattr(cobj, f"{prop}_coeff_A{i}")
             asum += Ai*T**i
             i += 1
     except AttributeError:
@@ -217,7 +222,7 @@ def expression_polynomial(cobj, prop, T):
     bsum = 0
     try:
         while True:
-            Bi = getattr(cobj, prop+"_coeff_B"+str(i))
+            Bi = getattr(cobj, f"{prop}_coeff_B{i}")
             bsum += Bi*T**i
             i += 1
     except AttributeError:

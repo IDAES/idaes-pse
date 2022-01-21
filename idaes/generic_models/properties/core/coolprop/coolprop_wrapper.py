@@ -87,13 +87,12 @@ class CoolPropWrapper:
     @staticmethod
     def get_parameter_value(comp_name, param):
         """
-        Method to retrieve tuples of (value, units) for the specified property
-        and component for the critical state section of the CoolProp json
-        format.
+        Retrieve tuples of (value, units) for the specified property and
+        component for the critical state section of the CoolProp json format.
 
         Args:
-            comp_name - name of componet for which to retirve parameters
-            param - name of parameter to return value and units
+            comp_name: name of componet for which to retirve parameters
+            param: name of parameter to return value and units
 
         Returns:
             tuple of parameter (value, units)
@@ -120,8 +119,8 @@ class CoolPropWrapper:
     @staticmethod
     def flush_cached_components():
         """
-        Method to clear cached component parameter data. This sets
-        _cached_components to an empty dict.
+        Clear cached component parameter data. This sets _cached_components to
+        an empty dict.
 
         Args:
             None
@@ -133,10 +132,9 @@ class CoolPropWrapper:
 
     # -------------------------------------------------------------------------
     # Pure component property sub-classes
-    class dens_mol_liq_comp():
+    class dens_mol_liq_comp:
         """
-        Class for calculating liquid molar density using CoolProp forms and
-        parameters.
+        Calculate liquid molar density using CoolProp forms and parameters.
         """
 
         @staticmethod
@@ -159,10 +157,9 @@ class CoolPropWrapper:
             return cforms.expression_nonexponential(
                 cobj, "dens_mol_liq_comp", T, cobj.dens_mol_crit)
 
-    class enth_mol_liq_comp():
+    class enth_mol_liq_comp:
         """
-        Class for calculating liquid molar enthalpy using CoolProp forms and
-        parameters.
+        Calculate liquid molar enthalpy using CoolProp forms and parameters.
         """
 
         @staticmethod
@@ -195,10 +192,9 @@ class CoolPropWrapper:
             units = b.params.get_metadata().derived_units
             return pyunits.convert(h, units["energy_mole"])
 
-    class enth_mol_ig_comp():
+    class enth_mol_ig_comp:
         """
-        Class for calculating ideal gas molar enthalpy using CoolProp forms and
-        parameters.
+        Calculate ideal gas molar enthalpy using CoolProp forms and parameters.
         """
 
         @staticmethod
@@ -230,10 +226,9 @@ class CoolPropWrapper:
             units = b.params.get_metadata().derived_units
             return pyunits.convert(h, units["energy_mole"])
 
-    class entr_mol_liq_comp():
+    class entr_mol_liq_comp:
         """
-        Class for calculating liquid molar entropy using CoolProp forms and
-        parameters.
+        Calculate liquid molar entropy using CoolProp forms and parameters.
         """
 
         @staticmethod
@@ -270,10 +265,9 @@ class CoolPropWrapper:
             units = b.params.get_metadata().derived_units
             return pyunits.convert(s, units["entropy_mole"])
 
-    class entr_mol_ig_comp():
+    class entr_mol_ig_comp:
         """
-        Class for calculating ideal gas molar entropy using CoolProp forms and
-        parameters.
+        Calculate ideal gas molar entropy using CoolProp forms and parameters.
         """
 
         @staticmethod
@@ -309,10 +303,10 @@ class CoolPropWrapper:
             units = b.params.get_metadata().derived_units
             return pyunits.convert(s, units["entropy_mole"])
 
-    class pressure_sat_comp():
+    class pressure_sat_comp:
         """
-        Class for calculating pure component saturation pressure using
-        CoolProp forms and parameters.
+        Calculate pure component saturation pressure using CoolProp forms and
+        parameters.
         """
 
         @staticmethod
@@ -357,7 +351,7 @@ class CoolPropWrapper:
         checks to handle aliases of components.
 
         Args:
-            comp_name - name of component to get data for
+            comp_name: name of component to get data for
 
         Returns:
             dict constructed from json string retrieved from CoolProp database.
@@ -384,7 +378,7 @@ class CoolPropWrapper:
         _cached_components to avoid need for repeated calls to CoolProp.
 
         Args:
-            comp_name - name of component ot retrieve parameters for.
+            comp_name: name of component ot retrieve parameters for.
 
         Returns:
             dict constructed from json string retrieved from CoolProp database.
@@ -449,15 +443,15 @@ class CoolPropWrapper:
         for in IDAES.
 
         Args:
-            comp_name - name of the component for which parameters are required
-            comp_data - dict of parameter values for component (from CoolProp)
-            prop_name - IDAES name of property for which parameters are required
-            coolprop_name - name used by CoolProp for property of interest
-            expected_forms - list of expression forms supported by wrapper for
+            comp_name: name of the component for which parameters are required
+            comp_data: dict of parameter values for component (from CoolProp)
+            prop_name: IDAES name of property for which parameters are required
+            coolprop_name: name used by CoolProp for property of interest
+            expected_forms: list of expression forms supported by wrapper for
                               for property
-            using_tau_r - (optional) flag indicating whether to check for use
-                           of tau_r in the epxression or not (default = False,
-                           do not check).
+            using_tau_r: (optional) flag indicating whether to check for use
+                          of tau_r in the epxression or not (default = False,
+                          do not check).
 
         Returns:
             tuple of lists of parameters required by expression
