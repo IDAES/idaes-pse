@@ -204,7 +204,7 @@ def test_config_uwt():
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_boiler_hx_am():
-    # arethmetic mean is pretty far off
+    # arithmetic mean is pretty far off
     th(delta_temperature_amtd_callback, tout_1=817.7, tout_2=720)
 
 @pytest.mark.skipif(not iapws95.iapws95_available(),

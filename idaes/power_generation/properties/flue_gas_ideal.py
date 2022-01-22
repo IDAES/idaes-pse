@@ -349,7 +349,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
                 }.items()
                 if k in self.component_list
             },
-            doc="collision diameter in Angstrom (10e-10 m)",
+            doc="collision diameter",
             units=pyunits.angstrom,
         )
         self.ep_Kappa = Param(
@@ -366,8 +366,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
                 }.items()
                 if k in self.component_list
             },
-            doc="characteristic energy of interaction between pair of "
-            "molecules, K = Boltzmann constant in Kelvin",
+            doc="Boltzmann constant divided by characteristic Lennard-Jones energy",
             units=pyunits.K,
         )
 
