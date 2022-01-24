@@ -22,6 +22,7 @@ from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
 
+import idaes
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType, useDefault)
 from idaes.generic_models.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
@@ -38,16 +39,14 @@ from idaes.generic_models.properties import iapws95
 from idaes.generic_models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock)
 
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
-from idaes.core.util import get_solver
-from idaes.core.util import scaling as iscale
-
+from idaes.core.util import get_solver, scaling as iscale
 
 # Imports to assemble BT-PR with different units
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -349,6 +348,8 @@ class TestBTX_countercurrent(object):
         m.fs.unit.tube_inlet.pressure[0].fix(101325)  # Pa
         m.fs.unit.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        iscale.calculate_scaling_factors(m.fs.unit)
 
         return m
 
@@ -1449,3 +1450,11 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.component
     def test_report(self, btx):
         btx.fs.unit.report()
+
+    @pytest.mark.component
+    def test_initialization_error(self, btx):
+        btx.fs.unit.shell_outlet.flow_mol[0].fix(20)
+
+        with idaes.temporary_config_ctx():
+            with pytest.raises(InitializationError):
+                btx.fs.unit.initialize(optarg={"max_iter": 1})

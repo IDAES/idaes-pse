@@ -33,17 +33,17 @@ Main Package
 - `pynumero <https://pyomo.readthedocs.io/en/stable/contributed_packages/pynumero/index.html>`_
 - `clp <https://projects.coin-or.org/Clp>`_
 - `cbc <https://projects.coin-or.org/Cbc>`_
-- `bonmin, <https://petsc.org/release/>`_ (uses Ipopt with HSL)
+- `bonmin, <https://projects.coin-or.org/Bonmin>`_ (uses Ipopt with HSL)
 - `couenne <https://projects.coin-or.org/Couenne/>`_ (uses Ipopt with HSL)
-- iapws95_external, function for the IAPWS95 EoS water
-- swco2_external, functions for the Span-Wagner EoS for CO2
-- cubic_roots, function for finding root of a cubic equation
-- functions, miscellaneous simple math functions, examples, and test code
+- `iapws95_external <https://github.com/IDAES/idaes-ext/tree/main/src/helmholtz>`_, function for the IAPWS95 EoS water
+- `swco2_external <https://github.com/IDAES/idaes-ext/tree/main/src/helmholtz>`_, functions for the Span-Wagner EoS for CO2
+- `cubic_roots <https://github.com/IDAES/idaes-ext/tree/main/src/cubic>`_, function for finding root of a cubic equation
+- `functions <https://github.com/IDAES/idaes-ext/tree/main/src/functions>`_, miscellaneous simple math functions, examples, and test code
 
 Extras
 ~~~~~~
 
-- petsc, `AMPL solver library <https://ampl.com/REFS/hooking2.pdf>`_ interface wrapper for `PETSc's <https://petsc.org/release/>`_ SNES and TS solvers
+- petsc, `AMPL solver library <https://ampl.com/REFS/hooking2.pdf>`_ `interface wrapper <https://github.com/IDAES/idaes-ext/tree/main/petsc>`_ for `PETSc's <https://petsc.org/release/>`_ SNES and TS solvers.
 
 Install Location
 ----------------
@@ -94,7 +94,7 @@ installation above. Then install required libraries for your release (see
 installation instructions `here <https://idaes-pse.readthedocs.io/en/stable/getting_started/index.html#linux>`_
 for supported distributions).
 
-In the WSL environment you can check that PETSc is installed correctly. In your 
+In the WSL environment you can check that PETSc is installed correctly. In your
 desired Linux release navigate to the folder containing the compiled PETSc binary
 and run the command ``./petsc --version``. If setup correctly, details of the PETSc
 release will be printed on the screen.
@@ -126,4 +126,15 @@ While for powershell, open a powershell window and run the command
 In all cases, the conda environment where the solver is installed has to be active (i.e. activate it with ``conda activate <env name>``).
 Details of the solver release version will be printed on the screen if the setup has been completed correctly.
 
+If you want to use user-defined AMPL functions with a WSL solver while running IDAES
+in the normal Windows environment, you will need to set the ``AMPLFUNC`` environment
+variable in the WSL environment manually. The ``AMPLFUNC`` variable is a newline-separated
+list of paths to shared libraries containing user-defined AMPL functions.  The easiest way
+to handle user-defined functions in this case is to just set ``AMPLFUNC`` in your
+``.bashrc`` file then run the WSL command in interactive mode, with the batch file
+setup below.
 
+.. code-block ::
+
+  @echo off
+  idaes solver-wsl --distribution Ubuntu-20.04 --user john --executable bash -ic '~/local/bin/petsc %*'

@@ -21,6 +21,8 @@ from pyomo.environ import (
     PositiveReals,
     Reals,
     RangeSet,
+    SolverStatus,
+    TerminationCondition,
     Var,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
@@ -40,6 +42,7 @@ from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
     PropertyNotSupportedError,
+    InitializationError,
 )
 from idaes.core.util.math import smooth_min
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -909,6 +912,7 @@ objects linked to all inlet states and the mixed state,
             hold_state=False,
         )
 
+        res = None
         # Revert fixed status of variables to what they were before
         for t in blk.flowsheet().time:
             s_vars = mblock[t].define_state_vars()
@@ -941,6 +945,14 @@ objects linked to all inlet states and the mixed state,
             )
         else:
             init_log.info("Initialization Complete.")
+
+        if (res is not None and (
+                res.solver.termination_condition !=
+                TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok)):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
         if hold_state is True:
             return flags

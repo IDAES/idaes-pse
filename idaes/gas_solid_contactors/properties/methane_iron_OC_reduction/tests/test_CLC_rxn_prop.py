@@ -21,6 +21,7 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            Var)
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 
@@ -130,3 +131,8 @@ def test_solution(rxn_prop):
             rxn_prop.fs.unit.OC_conv.value)
     assert (pytest.approx(0, abs=1e-2) ==
             rxn_prop.fs.unit.reaction_rate['R1'].value)
+
+
+@pytest.mark.component
+def test_units_consistent(rxn_prop):
+    assert_units_consistent(rxn_prop)
