@@ -13,8 +13,9 @@
 import pyomo.environ as pyo
 import pytest
 import idaes.core.plugins
-from idaes.core.solvers.features import lp, milp, nlp, minlp, nle
+from idaes.core.solvers.features import lp, milp, nlp, minlp, nle, dae
 from idaes.core.solvers import ipopt_has_linear_solver
+from idaes.core.solvers import petsc
 
 @pytest.mark.unit
 def test_couenne_available():
@@ -85,6 +86,41 @@ def test_ipopt_has_ma27():
             " guide.")
 
 @pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_petsc_idaes_solve():
+    """
+    Make sure there is no issue with the solver class or default settings that
+    break the solver object.  Passing a bad solver option will result in failure
+    """
+    m, x = nle()
+    solver = pyo.SolverFactory("petsc_snes")
+    solver.solve(m, tee=True)
+    assert pytest.approx(x) == pyo.value(m.x)
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_petsc_dae_idaes_solve():
+    """
+    Check that the PETSc DAE solver works.
+    """
+    m, y1, y2, y3, y4, y5, y6 = dae()
+    petsc.petsc_dae_by_time_element(
+        m,
+        time=m.t,
+        ts_options={
+            "--ts_type":"cn", # Crank–Nicolson
+            "--ts_adapt_type":"basic",
+            "--ts_dt":0.1,
+        },
+    )
+    assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
+    assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
+    assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
+    assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
+    assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
+    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y6[m.t.last()])
+
+@pytest.mark.unit
 def test_bonmin_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -94,7 +130,7 @@ def test_bonmin_idaes_solve():
     solver = pyo.SolverFactory('bonmin')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
-    assert i == pyo.value(m.i)    
+    assert i == pyo.value(m.i)
 
 @pytest.mark.unit
 def test_couenne_idaes_solve():

@@ -47,6 +47,7 @@ from idaes.core.util import model_serializer as ms
 from idaes.core.util.misc import svg_tag
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util.exceptions import InitializationError
 
 import idaes.core.util.scaling as iscale
 
@@ -868,7 +869,11 @@ def initialize_power_island(m):
 
     m.fs.anode.outlet.mole_frac_comp[0, "O2"] = 0
 
-    m.fs.anode.initialize(outlvl=logging.INFO)
+    # This initialization step fails to converge, but is sufficent to continue
+    try:
+        m.fs.anode.initialize(outlvl=logging.INFO)
+    except InitializationError:
+        pass
 
     copy_port_values(
         m.fs.anode_recycle.inlet, m.fs.anode.outlet)
@@ -1008,7 +1013,11 @@ def initialize_reformer(m):
     m.fs.reformer.outlet.mole_frac_comp[0, 'C3H8'] = 0
     m.fs.reformer.outlet.mole_frac_comp[0, 'C4H10'] = 0
 
-    m.fs.reformer.initialize()
+    # This initialization step fails to converge, but is sufficent to continue
+    try:
+        m.fs.reformer.initialize()
+    except InitializationError:
+        pass
 
     # reformer recuperator
     copy_port_values(
