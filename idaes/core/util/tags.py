@@ -63,7 +63,10 @@ class ModelTag:
         """
         super().__init__()
         self._format = format_string  # format string for printing expression
-        self._expression = expr  # tag expression (can be unnamed)
+        if isinstance(expr, IndexedComponent_slice):
+            self._expression = pyo.Reference(expr)  # tag expression (can be unnamed)
+        else:
+            self._expression = expr
         self._doc = doc  # documentation for a tag
         self._display_units = display_units  # unit to display value in
         self._cache_validation_value = {}  # value when converted value stored
@@ -97,9 +100,7 @@ class ModelTag:
             raise KeyError(
                 f"{k} is not a valid index for tag {self._name}"
             ) from key_err
-        if (
-            self._root is None or self.is_slice
-        ):  # cache the unit conversion in root object
+        if (self._root is None):  # cache the unit conversion in root object
             tag._root = self
         else:
             tag._root = self._root
@@ -308,14 +309,6 @@ class ModelTag:
         """
         try:
             return issubclass(self._expression.ctype, pyo.Var)
-        except AttributeError:
-            return False
-
-    @property
-    def is_slice(self):
-        """Whether the tagged expression is a Pyomo slice."""
-        try:
-            return isinstance(self._expression, IndexedComponent_slice)
         except AttributeError:
             return False
 
