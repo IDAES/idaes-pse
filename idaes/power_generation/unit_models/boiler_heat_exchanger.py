@@ -145,7 +145,7 @@ class BoilerHeatExchangerData(HeatExchangerData):
     CONFIG.declare(
         "side_1_property_package",
         ConfigValue(
-            default=useDefault,
+            default=None,
             domain=is_physical_parameter_block,
             description="DEPRECATED: Property package to use for control volume",
             doc="""DEPRECATED: Property parameter block,
@@ -170,7 +170,7 @@ see property package for documentation.}""",
     CONFIG.declare(
         "side_2_property_package",
         ConfigValue(
-            default=useDefault,
+            default=None,
             domain=is_physical_parameter_block,
             description="DEPRECATED: Property package to use for control volume",
             doc="""DEPRECATED: Property parameter block,
@@ -195,7 +195,7 @@ see property package for documentation.}""",
     CONFIG.declare(
         "material_balance_type",
         ConfigValue(
-            default=MaterialBalanceType.useDefault,
+            default=None,
             domain=In(MaterialBalanceType),
             description="DEPRECATED: Material balance construction flag",
             doc="""DEPRECATED: Indicates type of material balance,
@@ -211,7 +211,7 @@ see property package for documentation.}""",
     CONFIG.declare(
         "energy_balance_type",
         ConfigValue(
-            default=EnergyBalanceType.useDefault,
+            default=None,
             domain=In(EnergyBalanceType),
             description="DEPRECATED: Energy balance construction flag",
             doc="""DEPRECATED: Indicates type of energy balance,
@@ -227,7 +227,7 @@ see property package for documentation.}""",
     CONFIG.declare(
         "momentum_balance_type",
         ConfigValue(
-            default=MomentumBalanceType.pressureTotal,
+            default=None,
             domain=In(MomentumBalanceType),
             description="DEPRECATED: Momentum balance construction flag",
             doc="""DEPRECATED: Indicates type of momentum balance,
@@ -245,8 +245,8 @@ see property package for documentation.}""",
         ConfigValue(
             default=False,
             domain=Bool,
-            description="DEPRECATED: Pressure change term construction flag",
-            doc="""DEPRECATED: Indicates whether pressure change terms should be
+            description="Pressure change term construction flag",
+            doc="""Indicates whether pressure change terms should be
 constructed,
 **default** - False.
 **Valid values:** {
@@ -257,7 +257,7 @@ constructed,
     CONFIG.declare(
         "delta_T_method",
         ConfigValue(
-            default=DeltaTMethod.counterCurrent,
+            default=None,
             domain=In(DeltaTMethod),
             description="DEPRECATED: Flow configuration in unit to compute delta T",
             doc="""DEPRECATED: Flag indicating flow arrangement to use for delta T
@@ -321,12 +321,12 @@ constructed,
             _log.warning("Config item side_2_property_package is deprecated.")
             # For this side 2 is shell/hot side
             config.hot_side_config.property_package = config.side_2_property_package
-        if config.side_1_property_package_args is not None:
+        if len(config.side_1_property_package_args) > 0:
             _log.warning("Config item side_1_property_package_args is deprecated.")
             # For this side 1 is tube/cold side
             config.cold_side_config.property_package_args = config.side_1_property_package_args
 
-        if config.side_2_property_package_args is not None:
+        if len(config.side_2_property_package_args) > 0:
             _log.warning("Config item side_2_property_package_args is deprecated.")
             # For this side 2 is shell/hot side
             config.hot_side_config.property_package_args = config.side_2_property_package_args
