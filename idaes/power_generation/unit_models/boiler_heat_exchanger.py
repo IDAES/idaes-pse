@@ -347,7 +347,6 @@ constructed,
             config.hot_side_config.momentum_balance_type = config.momentum_balance_type
 
         if config.has_pressure_change is not None:
-            _log.warning("Config item has_pressure_change is deprecated.")
             config.cold_side_config.has_pressure_change = config.has_pressure_change
             config.hot_side_config.has_pressure_change = config.has_pressure_change
 
