@@ -18,6 +18,7 @@ Author: Chinedu Okoli
 import pytest
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, Var
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 
@@ -105,3 +106,8 @@ def test_solution(gas_prop):
             gas_prop.fs.unit.cp_mol.value)
     assert (pytest.approx(1, abs=1e-2) ==
             gas_prop.fs.unit.enth_mol.value)
+
+
+@pytest.mark.component
+def test_units_consistent(gas_prop):
+    assert_units_consistent(gas_prop)

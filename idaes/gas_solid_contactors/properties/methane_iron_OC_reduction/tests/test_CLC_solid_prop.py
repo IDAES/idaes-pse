@@ -18,6 +18,7 @@ Author: Chinedu Okoli
 import pytest
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, Var
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 
@@ -103,3 +104,8 @@ def test_solution(solid_prop):
             solid_prop.fs.unit.cp_mass.value)
     assert (pytest.approx(0.0039, abs=1e-2) ==
             solid_prop.fs.unit.enth_mass.value)
+
+
+@pytest.mark.component
+def test_units_consistent(solid_prop):
+    assert_units_consistent(solid_prop)
