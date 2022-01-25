@@ -104,10 +104,6 @@ def th(
 
     #   Set inputs
     h = value(iapws95.htpx(773.15*pyunits.K, 2.5449e7*pyunits.Pa))
-<<<<<<< HEAD
-    m.fs.unit.side_1_inlet.display()
-=======
->>>>>>> 36b4b42d2b67e18e09f3c223ecb3cda5e365a35d
     m.fs.unit.side_1_inlet.flow_mol[0].fix(24678.26)   # mol/s
     m.fs.unit.side_1_inlet.enth_mol[0].fix(h)           # J/mol
     m.fs.unit.side_1_inlet.pressure[0].fix(2.5449e7)    # Pascals
