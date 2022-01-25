@@ -39,7 +39,7 @@ __version__ = "1.0.0"
 
 # Import Python libraries
 import logging
-from enum import Enum
+from enum import Enum, EnumMeta
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
@@ -79,11 +79,13 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from idaes.generic_models.unit_models.heat_exchanger import (
+    HeatExchangerData,
     delta_temperature_lmtd_callback,
     delta_temperature_lmtd2_callback,
     delta_temperature_lmtd3_callback,
     delta_temperature_amtd_callback,
     delta_temperature_underwood_callback,
+    HeatExchangerFlowPattern,
 )
 
 
@@ -96,9 +98,19 @@ class TubeArrangement(Enum):
     staggered = 1
 
 
-class DeltaTMethod(Enum):
-    counterCurrent = 0
-    coCurrent = 1
+class _DeprecateDeltaTMethod(EnumMeta):
+    # This is used to log a deprication warning if someone uses DeltaTMethod
+    def __getattribute__(cls, name):
+        obj = super().__getattribute__(name)
+        if isinstance(obj, Enum):
+            _log.warning("'DeltaTMethod' is deprecated use 'HeatExchangerFlowPattern'")
+        return obj
+
+
+class DeltaTMethod(Enum, metaclass=_DeprecateDeltaTMethod):
+    """ DEPRECATED: use HeatExchangerFlowPattern instead """
+    counterCurrent = HeatExchangerFlowPattern.countercurrent
+    coCurrent = HeatExchangerFlowPattern.cocurrent
 
 
 def delta_temperature_underwood_tune_callback(b):
@@ -128,40 +140,8 @@ def delta_temperature_underwood_tune_callback(b):
 
 
 @declare_process_block_class("BoilerHeatExchanger")
-class BoilerHeatExchangerData(UnitModelBlockData):
-    """
-    Standard Heat Exchanger Unit Model Class
-    """
-
-    CONFIG = ConfigBlock()
-    CONFIG.declare(
-        "dynamic",
-        ConfigValue(
-            domain=DefaultBool,
-            default=useDefault,
-            description="Dynamic model flag",
-            doc="""Indicates whether this model will be dynamic or not,
-**default** = useDefault.
-**Valid values:** {
-**useDefault** - get flag from parent (default = False),
-**True** - set as a dynamic model,
-**False** - set as a steady-state model.}""",
-        ),
-    )
-    CONFIG.declare(
-        "has_holdup",
-        ConfigValue(
-            default=useDefault,
-            domain=DefaultBool,
-            description="Holdup construction flag",
-            doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}""",
-        ),
-    )
+class BoilerHeatExchangerData(HeatExchangerData):
+    CONFIG = HeatExchangerData.CONFIG(implicit=True)
     CONFIG.declare(
         "side_1_property_package",
         ConfigValue(
@@ -320,6 +300,69 @@ constructed,
             description="Callback for for temperature difference calculations",
         ),
     )
+
+    def _process_config(self):
+        """Deal with old style config arguments by converting them to be
+        consitent with the generic heat exchanger.  Log a deprication warning
+        for onld style args.
+        """
+        super()._process_config()
+
+        if self.config.side_1_property_package is not None:
+            _log.warning("Config item side_1_property_package is deprecated.")
+            # For this side 1 is tube/cold side
+            config.tube_config.property_package = self.config.side_1_property_package
+
+        if self.config.side_2_property_package is not None:
+            _log.warning("Config item side_2_property_package is deprecated.")
+            # For this side 2 is shell/hot side
+            config.shell_config.property_package = self.config.side_2_property_package
+        if self.config.side_1_property_package_args is not None:
+            _log.warning("Config item side_1_property_package_args is deprecated.")
+            # For this side 1 is tube/cold side
+            config.tube_config.property_package_args = self.config.side_1_property_package_args
+
+        if self.config.side_2_property_package_args is not None:
+            _log.warning("Config item side_2_property_package_args is deprecated.")
+            # For this side 2 is shell/hot side
+            config.shell_config.property_package_args = self.config.side_2_property_package_args
+
+        if self.config.material_balance_type is not None:
+            _log.warning("Config item material_balance_type is deprecated.")
+            config.tube_config.material_balance_type = self.config.material_balance_type
+            config.shell_config.material_balance_type = self.config.material_balance_type
+
+        if self.config.energy_balance_type is not None:
+            _log.warning("Config item energy_balance_type is deprecated.")
+            config.tube_config.enrgy_balance_type = self.config.energy_balance_type
+            config.shell_config.energy_balance_type = self.config.energy_balance_type
+
+        if self.config.momentum_balance_type is not None:
+            _log.warning("Config item momentum_balance_type is deprecated.")
+            config.tube_config.momentum_balance_type = self.config.momentum_balance_type
+            config.shell_config.momentum_balance_type = self.config.momentum_balance_type
+
+        if self.config.has_pressure_change is not None:
+            _log.warning("Config item has_pressure_change is deprecated.")
+            config.tube_config.has_pressure_change = self.config.has_pressure_change
+            config.shell_config.has_pressure_change = self.config.has_pressure_change
+
+
+    CONFIG.declare(
+        "has_pressure_change",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Pressure change term construction flag",
+            doc="""Indicates whether terms for pressure change should be
+constructed,
+**default** - False.
+**Valid values:** {
+**True** - include pressure change terms,
+**False** - exclude pressure change terms.}""",
+        ),
+    )
+        super()._process_config()
 
     def build(self):
         """
