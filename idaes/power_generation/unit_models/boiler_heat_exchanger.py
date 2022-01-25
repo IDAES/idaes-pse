@@ -902,14 +902,6 @@ constructed,
         def LMTD(b, t):
             return b.delta_temperature[t]
 
-        # Heat transfer correlation
-        @self.Constraint(self.flowsheet().time, doc="Heat transfer correlation")
-        def heat_transfer_correlation(b, t):
-            u = b.overall_heat_transfer_coefficient[t]
-            a = b.area_heat_transfer
-            deltaT = b.delta_temperature[t]
-            return b.heat_duty[t] == deltaT * u * a
-
         # Tube side heat transfer coefficient and pressure drop
         # -----------------------------------------------------
         # Velocity on tube side
@@ -1385,7 +1377,7 @@ constructed,
                 )
                 #                                assuming Delta T min approach
         # Deactivate Constraints
-        blk.heat_transfer_correlation.deactivate()
+        blk.heat_transfer_equation.deactivate()
         blk.unit_heat_balance.deactivate()
         if blk.config.has_pressure_change:
             blk.deltaP_tube_eqn.deactivate()
@@ -1405,7 +1397,7 @@ constructed,
                 blk.side_1.properties_out[t].enth_mol.unfix()
             if not t2_flags[t]:
                 blk.side_2.properties_out[t].temperature.unfix()
-        blk.heat_transfer_correlation.activate()
+        blk.heat_transfer_equation.activate()
         blk.unit_heat_balance.activate()
 
         if blk.config.has_pressure_change:
