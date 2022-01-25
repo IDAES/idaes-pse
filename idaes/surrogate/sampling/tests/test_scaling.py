@@ -56,6 +56,28 @@ class TestScaling:
             'OffsetScaler was passed a factor series with an index that' \
             ' does not match expected_columns. Please make sure these labels match.'
 
+    @pytest.mark.unit
+    def test_OffsetScaler_normalize(self):
+        df = pd.DataFrame({'A': [1.0,2.0,3.0,4.0,5.0], 'B':[2.0,5.0,6.0,10.0,12.0]})
+
+        scaler = OffsetScaler.create_normalizing_scaler(df)
+        pd.testing.assert_series_equal(scaler._offset, pd.Series({'A': 1.0, 'B': 2.0}))
+        pd.testing.assert_series_equal(scaler._factor, pd.Series({'A': 4.0, 'B': 10.0}))
+
+        scaled_df = scaler.scale(df)
+        expected_scaled_df = pd.DataFrame({'A': [0.0, 0.25, 0.5, 0.75, 1.0],
+                                           'B': [0.0, 0.3, 0.4, 0.8, 1.0]})
+        pd.testing.assert_frame_equal(scaled_df, expected_scaled_df)
+
+        df = pd.DataFrame({'A': [0.0,6.0], 'B':[3.0,7.0]})
+        scaled_df = scaler.scale(df)
+        expected_scaled_df = pd.DataFrame({'A': [-0.25, 1.25],
+                                           'B': [0.1, 0.5]})
+        pd.testing.assert_frame_equal(scaled_df, expected_scaled_df)
+        
+        unscaled_df = scaler.unscale(scaled_df)
+        pd.testing.assert_frame_equal(df, unscaled_df)
+
 
     @pytest.mark.unit
     def test_OffsetScaler_serialization(self):

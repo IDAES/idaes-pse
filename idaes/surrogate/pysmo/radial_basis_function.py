@@ -657,7 +657,7 @@ class RadialBasisFunctions:
         """
         model = ConcreteModel()
 
-        pd.set_option('precision', 64)
+        pd.set_option('display.precision', 64)
         x_data = pd.DataFrame(x)
         y_data = pd.DataFrame(y)
 
