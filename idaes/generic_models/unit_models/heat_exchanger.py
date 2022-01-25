@@ -233,7 +233,7 @@ def delta_temperature_underwood_callback(b):
     """
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
-    temp_units = pyunits.get_units(dT1)
+    temp_units = pyunits.get_units(dT1[dT1.index_set().first()])
 
     # external function that ruturns the real root, for the cuberoot of negitive
     # numbers, so it will return without error for positive and negitive dT.
