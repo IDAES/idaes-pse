@@ -108,7 +108,8 @@ class _DeprecateDeltaTMethod(EnumMeta):
 
 
 class DeltaTMethod(Enum, metaclass=_DeprecateDeltaTMethod):
-    """ DEPRECATED: use HeatExchangerFlowPattern instead """
+    """DEPRECATED: use HeatExchangerFlowPattern instead"""
+
     counterCurrent = HeatExchangerFlowPattern.countercurrent
     coCurrent = HeatExchangerFlowPattern.cocurrent
 
@@ -324,12 +325,16 @@ constructed,
         if len(config.side_1_property_package_args) > 0:
             _log.warning("Config item side_1_property_package_args is deprecated.")
             # For this side 1 is tube/cold side
-            config.cold_side_config.property_package_args = config.side_1_property_package_args
+            config.cold_side_config.property_package_args = (
+                config.side_1_property_package_args
+            )
 
         if len(config.side_2_property_package_args) > 0:
             _log.warning("Config item side_2_property_package_args is deprecated.")
             # For this side 2 is shell/hot side
-            config.hot_side_config.property_package_args = config.side_2_property_package_args
+            config.hot_side_config.property_package_args = (
+                config.side_2_property_package_args
+            )
 
         if config.material_balance_type is not None:
             _log.warning("Config item material_balance_type is deprecated.")
@@ -371,7 +376,6 @@ constructed,
         self.side_1_fluid_phase = self.config.side_1_water_phase
         # Construct performance equations
         self._make_performance()
-
 
     def _set_geometry(self):
         """
@@ -488,7 +492,9 @@ constructed,
         # Total heat transfer area based on outside diameter
         @self.Constraint(doc="Total heat transfer " "area based on tube outside diamer")
         def area_eqn(b):
-            return b.area == c.pi * b.do_tube * b.tube_length * b.tube_ncol * b.tube_nrow
+            return (
+                b.area == c.pi * b.do_tube * b.tube_length * b.tube_ncol * b.tube_nrow
+            )
 
         # Ratio of pitch_x/do_tube
         @self.Expression(doc="Ratio of pitch in x " "direction to tube outside diamer")
@@ -1450,9 +1456,7 @@ constructed,
 
         # Since this depends on the process size this is another scaling factor
         # the user should always set.
-        sf_a = iscale.get_scaling_factor(
-            self.area, default=1e-4, warning=True
-        )
+        sf_a = iscale.get_scaling_factor(self.area, default=1e-4, warning=True)
 
         for t, c in self.v_shell_eqn.items():
             s = iscale.min_scaling_factor(
