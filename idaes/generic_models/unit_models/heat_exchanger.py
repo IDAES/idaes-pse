@@ -353,7 +353,7 @@ class HeatExchangerData(UnitModelBlockData):
             if not hasattr(self, "side_1"):
                 add_object_reference(self, "side_1", cold_side)
             if not hasattr(self, "side_2"):
-                add_object_reference(self, "side_2", hot_side)    
+                add_object_reference(self, "side_2", hot_side)
         if not hasattr(self, "hot_side"):
             add_object_reference(self, "hot_side", hot_side)
         if not hasattr(self, "cold_side"):
@@ -425,17 +425,29 @@ class HeatExchangerData(UnitModelBlockData):
             block=cold_side,
             doc="Cold side outlet")
 
+        if not config.side_1_is_hot:
+            i1, i2 = i2, i1
+            o1, o2 = o2, o1
+
         # Using Andrew's function for now.  I want these port names for backward
         # compatablity, but I don't want them to appear if you iterate throught
         # components and add_object_reference hides them from Pyomo.
         if not hasattr(self, "inlet_1"):
             add_object_reference(self, "inlet_1", i1)
+        if not hasattr(self, "side_1_inlet"):
+            add_object_reference(self, "side_1_inlet", i1)
         if not hasattr(self, "inlet_2"):
             add_object_reference(self, "inlet_2", i2)
+        if not hasattr(self, "side_2_inlet"):
+            add_object_reference(self, "side_2_inlet", i2)
         if not hasattr(self, "outlet_1"):
             add_object_reference(self, "outlet_1", o1)
+        if not hasattr(self, "side_1_outlet"):
+            add_object_reference(self, "side_1_outlet", o1)
         if not hasattr(self, "outlet_2"):
             add_object_reference(self, "outlet_2", o2)
+        if not hasattr(self, "side_2_outlet"):
+            add_object_reference(self, "side_2_outlet", o2)
 
         if not hasattr(self, "hot_inlet"):
             add_object_reference(self, "hot_inlet", i1)

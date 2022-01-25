@@ -122,9 +122,9 @@ def delta_temperature_underwood_tune_callback(b):
     This uses a cube root function that works with negative numbers returning
     the real negative root. This should always evaluate successfully.
     """
-    temp_units = pyunits.get_units(b.deltaT_1)
-    dT1 = b.deltaT_1
-    dT2 = b.deltaT_2
+    dT1 = b.delta_temperature_in
+    dT2 = b.delta_temperature_out
+    temp_units = pyunits.get_units(dT1[dT1.index_set().first()])
     b.lmtd_param_c1 = Var(initialize=0.3241)
     b.lmtd_param_c2 = Var(initialize=1.99996)
     b.lmtd_param_c1.fix()
@@ -147,8 +147,8 @@ class BoilerHeatExchangerData(HeatExchangerData):
         ConfigValue(
             default=useDefault,
             domain=is_physical_parameter_block,
-            description="Property package to use for control volume",
-            doc="""Property parameter object used to define property calculations,
+            description="DEPRECATED: Property package to use for control volume",
+            doc="""DEPRECATED: Property parameter block,
 **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
@@ -159,8 +159,8 @@ class BoilerHeatExchangerData(HeatExchangerData):
         "side_1_property_package_args",
         ConfigBlock(
             implicit=True,
-            description="Arguments to use for constructing property packages",
-            doc="""A ConfigBlock with arguments to be passed to a property block(s)
+            description="DEPRECATED: Arguments for constructing property packages",
+            doc="""DEPRECATED: ConfigBlock to be passed to a property block(s)
 and used when constructing these,
 **default** - None.
 **Valid values:** {
@@ -172,8 +172,8 @@ see property package for documentation.}""",
         ConfigValue(
             default=useDefault,
             domain=is_physical_parameter_block,
-            description="Property package to use for control volume",
-            doc="""Property parameter object used to define property calculations,
+            description="DEPRECATED: Property package to use for control volume",
+            doc="""DEPRECATED: Property parameter block,
 **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
@@ -184,8 +184,8 @@ see property package for documentation.}""",
         "side_2_property_package_args",
         ConfigBlock(
             implicit=True,
-            description="Arguments to use for constructing property packages",
-            doc="""A ConfigBlock with arguments to be passed to a property block(s)
+            description="DEPRECATED: Arguments for constructing property packages",
+            doc="""DEPRECATED: ConfigBlock to be passed to a property block(s)
 and used when constructing these,
 **default** - None.
 **Valid values:** {
@@ -197,8 +197,8 @@ see property package for documentation.}""",
         ConfigValue(
             default=MaterialBalanceType.useDefault,
             domain=In(MaterialBalanceType),
-            description="Material balance construction flag",
-            doc="""Indicates what type of material balance should be constructed,
+            description="DEPRECATED: Material balance construction flag",
+            doc="""DEPRECATED: Indicates type of material balance,
 **default** - MaterialBalanceType.componentPhase.
 **Valid values:** {
 **MaterialBalanceType.none** - exclude material balances,
@@ -213,8 +213,8 @@ see property package for documentation.}""",
         ConfigValue(
             default=EnergyBalanceType.useDefault,
             domain=In(EnergyBalanceType),
-            description="Energy balance construction flag",
-            doc="""Indicates what type of energy balance should be constructed,
+            description="DEPRECATED: Energy balance construction flag",
+            doc="""DEPRECATED: Indicates type of energy balance,
 **default** - EnergyBalanceType.enthalpyTotal.
 **Valid values:** {
 **EnergyBalanceType.none** - exclude energy balances,
@@ -229,8 +229,8 @@ see property package for documentation.}""",
         ConfigValue(
             default=MomentumBalanceType.pressureTotal,
             domain=In(MomentumBalanceType),
-            description="Momentum balance construction flag",
-            doc="""Indicates what type of momentum balance should be constructed,
+            description="DEPRECATED: Momentum balance construction flag",
+            doc="""DEPRECATED: Indicates type of momentum balance,
 **default** - MomentumBalanceType.pressureTotal.
 **Valid values:** {
 **MomentumBalanceType.none** - exclude momentum balances,
@@ -245,8 +245,8 @@ see property package for documentation.}""",
         ConfigValue(
             default=False,
             domain=Bool,
-            description="Pressure change term construction flag",
-            doc="""Indicates whether terms for pressure change should be
+            description="DEPRECATED: Pressure change term construction flag",
+            doc="""DEPRECATED: Indicates whether pressure change terms should be
 constructed,
 **default** - False.
 **Valid values:** {
@@ -259,8 +259,8 @@ constructed,
         ConfigValue(
             default=DeltaTMethod.counterCurrent,
             domain=In(DeltaTMethod),
-            description="Flow configuration in unit to compute delta T",
-            doc="""Flag indicating type of flow arrangement to use for delta
+            description="DEPRECATED: Flow configuration in unit to compute delta T",
+            doc="""DEPRECATED: Flag indicating flow arrangement to use for delta T
 **default** - DeltaTMethod.counterCurrent
 **Valid values:** {
 **DeltaTMethod.counterCurrent**}""",
@@ -293,13 +293,6 @@ constructed,
             doc="Define if side 2 gas radiation is to be considered",
         ),
     )
-    CONFIG.declare(
-        "delta_temperature_callback",
-        ConfigValue(
-            default=delta_temperature_underwood_tune_callback,
-            description="Callback for for temperature difference calculations",
-        ),
-    )
 
     def _process_config(self):
         """Deal with old style config arguments by converting them to be
@@ -307,62 +300,58 @@ constructed,
         for onld style args.
         """
         super()._process_config()
+        config = self.config
 
-        if self.config.side_1_property_package is not None:
+        if config.delta_T_method is not None:
+            _log.warning("Config item delta_T_method is deprecated use flow_pattern.")
+            if config.delta_T_method == DeltaTMethod.coCurrent:
+                config.flow_pattern = HeatExchangerFlowPattern.cocurrent
+            else:
+                config.flow_pattern = HeatExchangerFlowPattern.countercurrent
+
+        if config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+            raise ConfigurationError("Boiler heatexchanger does not support crossflow")
+
+        if config.side_1_property_package is not None:
             _log.warning("Config item side_1_property_package is deprecated.")
             # For this side 1 is tube/cold side
-            config.tube_config.property_package = self.config.side_1_property_package
+            config.cold_side_config.property_package = config.side_1_property_package
 
-        if self.config.side_2_property_package is not None:
+        if config.side_2_property_package is not None:
             _log.warning("Config item side_2_property_package is deprecated.")
             # For this side 2 is shell/hot side
-            config.shell_config.property_package = self.config.side_2_property_package
-        if self.config.side_1_property_package_args is not None:
+            config.hot_side_config.property_package = config.side_2_property_package
+        if config.side_1_property_package_args is not None:
             _log.warning("Config item side_1_property_package_args is deprecated.")
             # For this side 1 is tube/cold side
-            config.tube_config.property_package_args = self.config.side_1_property_package_args
+            config.cold_side_config.property_package_args = config.side_1_property_package_args
 
-        if self.config.side_2_property_package_args is not None:
+        if config.side_2_property_package_args is not None:
             _log.warning("Config item side_2_property_package_args is deprecated.")
             # For this side 2 is shell/hot side
-            config.shell_config.property_package_args = self.config.side_2_property_package_args
+            config.hot_side_config.property_package_args = config.side_2_property_package_args
 
-        if self.config.material_balance_type is not None:
+        if config.material_balance_type is not None:
             _log.warning("Config item material_balance_type is deprecated.")
-            config.tube_config.material_balance_type = self.config.material_balance_type
-            config.shell_config.material_balance_type = self.config.material_balance_type
+            config.cold_side_config.material_balance_type = config.material_balance_type
+            config.hot_side_config.material_balance_type = config.material_balance_type
 
-        if self.config.energy_balance_type is not None:
+        if config.energy_balance_type is not None:
             _log.warning("Config item energy_balance_type is deprecated.")
-            config.tube_config.enrgy_balance_type = self.config.energy_balance_type
-            config.shell_config.energy_balance_type = self.config.energy_balance_type
+            config.cold_side_config.enrgy_balance_type = config.energy_balance_type
+            config.hot_side_config.energy_balance_type = config.energy_balance_type
 
-        if self.config.momentum_balance_type is not None:
+        if config.momentum_balance_type is not None:
             _log.warning("Config item momentum_balance_type is deprecated.")
-            config.tube_config.momentum_balance_type = self.config.momentum_balance_type
-            config.shell_config.momentum_balance_type = self.config.momentum_balance_type
+            config.cold_side_config.momentum_balance_type = config.momentum_balance_type
+            config.hot_side_config.momentum_balance_type = config.momentum_balance_type
 
-        if self.config.has_pressure_change is not None:
+        if config.has_pressure_change is not None:
             _log.warning("Config item has_pressure_change is deprecated.")
-            config.tube_config.has_pressure_change = self.config.has_pressure_change
-            config.shell_config.has_pressure_change = self.config.has_pressure_change
+            config.cold_side_config.has_pressure_change = config.has_pressure_change
+            config.hot_side_config.has_pressure_change = config.has_pressure_change
 
-
-    CONFIG.declare(
-        "has_pressure_change",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            description="Pressure change term construction flag",
-            doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}""",
-        ),
-    )
-        super()._process_config()
+        config.side_1_is_hot = False
 
     def build(self):
         """
@@ -375,83 +364,15 @@ constructed,
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(BoilerHeatExchangerData, self).build()
+        super().build()
+        self.deltaT_1 = Reference(self.delta_temperature_in)
+        self.deltaT_2 = Reference(self.delta_temperature_out)
 
-        # Build ControlVolume Block
-        self.side_1 = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.side_1_property_package,
-                "property_package_args": self.config.side_1_property_package_args,
-            }
-        )
-
-        self.side_2 = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.side_2_property_package,
-                "property_package_args": self.config.side_2_property_package_args,
-            }
-        )
-
-        # Add Geometry
-        self.side_1.add_geometry()
-        self.side_2.add_geometry()
-
-        # Add state block
-        self.side_1.add_state_blocks(has_phase_equilibrium=False)
-
-        # Add material balance
-        self.side_1.add_material_balances(
-            balance_type=self.config.material_balance_type
-        )
-        # add energy balance
-        self.side_1.add_energy_balances(
-            balance_type=self.config.energy_balance_type, has_heat_transfer=True
-        )
-        # add momentum balance
-        self.side_1.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change,
-        )
-
-        # Add state block
-        self.side_2.add_state_blocks(has_phase_equilibrium=False)
-
-        # Add material balance
-        self.side_2.add_material_balances(
-            balance_type=self.config.material_balance_type
-        )
-        # add energy balance
-        self.side_2.add_energy_balances(
-            balance_type=self.config.energy_balance_type, has_heat_transfer=True
-        )
-        # add momentum balance
-        self.side_2.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change,
-        )
-
-        # Set Unit Geometry and control volume
         self._set_geometry()
-
         self.side_1_fluid_phase = self.config.side_1_water_phase
-
         # Construct performance equations
         self._make_performance()
 
-        # Construct performance equations
-        if self.config.delta_T_method == DeltaTMethod.counterCurrent:
-            self._make_counter_current()
-        else:
-            self._make_co_current()
-
-        self.add_inlet_port(name="side_1_inlet", block=self.side_1)
-        self.add_inlet_port(name="side_2_inlet", block=self.side_2)
-        self.add_outlet_port(name="side_1_outlet", block=self.side_1)
-        self.add_outlet_port(name="side_2_outlet", block=self.side_2)
 
     def _set_geometry(self):
         """
@@ -726,32 +647,6 @@ constructed,
                 units=pyunits.W / pyunits.m ** 2 / pyunits.K,
             )
 
-        # Temperature difference at side 1 inlet
-        self.deltaT_1 = Var(
-            self.flowsheet().time,
-            initialize=1.0,
-            doc="Temperature difference at side 1 inlet",
-            units=pyunits.K,
-        )
-
-        # Temperature difference at side 1 outlet
-        self.deltaT_2 = Var(
-            self.flowsheet().time,
-            initialize=1.0,
-            doc="Temperature difference at side 1 outlet",
-            units=pyunits.K,
-        )
-
-        self.delta_temperature_in = Reference(self.deltaT_1)
-        self.delta_temperature_out = Reference(self.deltaT_2)
-
-        # Overall heat transfer coefficient
-        self.overall_heat_transfer_coefficient = Var(
-            self.flowsheet().time,
-            initialize=1.0,
-            units=pyunits.W / pyunits.m ** 2 / pyunits.K,
-        )
-
         # Tube side convective heat transfer coefficient
         self.hconv_tube = Var(
             self.flowsheet().time,
@@ -1002,14 +897,6 @@ constructed,
                     ** 2
                     + b.side_1.properties_in[t].temperature ** 2
                 )
-
-        # Energy balance equation
-        @self.Constraint(self.flowsheet().time, doc="Energy balance between two sides")
-        def energy_balance(b, t):
-            return b.side_1.heat[t] == -b.side_2.heat[t]
-
-        # Driving force
-        self.config.delta_temperature_callback(self)
 
         @self.Expression(self.flowsheet().time)
         def LMTD(b, t):
@@ -1396,64 +1283,6 @@ constructed,
                 == b.fcorrection_htc
             )
 
-    def _make_co_current(self):
-        """
-        Add temperature driving force Constraints for co-current flow.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Temperature Differences
-        @self.Constraint(
-            self.flowsheet().time, doc="Side 1 inlet temperature difference"
-        )
-        def temperature_difference_1(b, t):
-            return b.deltaT_1[t] == (
-                b.side_2.properties_in[t].temperature
-                - b.side_1.properties_in[t].temperature
-            )
-
-        @self.Constraint(
-            self.flowsheet().time, doc="Side 1 outlet temperature difference"
-        )
-        def temperature_difference_2(b, t):
-            return b.deltaT_2[t] == (
-                b.side_2.properties_out[t].temperature
-                - b.side_1.properties_out[t].temperature
-            )
-
-    def _make_counter_current(self):
-        """
-        Add temperature driving force Constraints for counter-current flow.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Temperature Differences
-        @self.Constraint(
-            self.flowsheet().time, doc="Side 1 inlet temperature difference"
-        )
-        def temperature_difference_1(b, t):
-            return b.deltaT_1[t] == (
-                b.side_2.properties_out[t].temperature
-                - b.side_1.properties_in[t].temperature
-            )
-
-        @self.Constraint(
-            self.flowsheet().time, doc="Side 1 outlet temperature difference"
-        )
-        def temperature_difference_2(b, t):
-            return b.deltaT_2[t] == (
-                b.side_2.properties_in[t].temperature
-                - b.side_1.properties_out[t].temperature
-            )
-
     def model_check(blk):
         """
         Model checks for unit - calls model checks for both control volume
@@ -1557,7 +1386,7 @@ constructed,
                 #                                assuming Delta T min approach
         # Deactivate Constraints
         blk.heat_transfer_correlation.deactivate()
-        blk.energy_balance.deactivate()
+        blk.unit_heat_balance.deactivate()
         if blk.config.has_pressure_change:
             blk.deltaP_tube_eqn.deactivate()
             blk.deltaP_shell_eqn.deactivate()
@@ -1577,7 +1406,7 @@ constructed,
             if not t2_flags[t]:
                 blk.side_2.properties_out[t].temperature.unfix()
         blk.heat_transfer_correlation.activate()
-        blk.energy_balance.activate()
+        blk.unit_heat_balance.activate()
 
         if blk.config.has_pressure_change:
             blk.deltaP_tube_eqn.activate()
@@ -1603,19 +1432,19 @@ constructed,
         # the default scaling factor is set to 0.1
         sf_dT1 = dict(
             zip(
-                self.deltaT_1.keys(),
+                self.delta_temperature_in.keys(),
                 [
                     iscale.get_scaling_factor(v, default=0.1)
-                    for v in self.deltaT_1.values()
+                    for v in self.delta_temperature_in.values()
                 ],
             )
         )
         sf_dT2 = dict(
             zip(
-                self.deltaT_2.keys(),
+                self.delta_temperature_out.keys(),
                 [
                     iscale.get_scaling_factor(v, default=0.1)
-                    for v in self.deltaT_2.values()
+                    for v in self.delta_temperature_out.values()
                 ],
             )
         )
@@ -1637,22 +1466,6 @@ constructed,
         sf_a = iscale.get_scaling_factor(
             self.area_heat_transfer, default=1e-4, warning=True
         )
-
-        for t, c in self.heat_transfer_correlation.items():
-            iscale.constraint_scaling_transform(
-                c, sf_dT1[t] * sf_u[t] * sf_a, overwrite=False
-            )
-
-        for t, c in self.energy_balance.items():
-            iscale.constraint_scaling_transform(
-                c, sf_dT1[t] * sf_u[t] * sf_a, overwrite=False
-            )
-
-        for t, c in self.temperature_difference_1.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t], overwrite=False)
-
-        for t, c in self.temperature_difference_2.items():
-            iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
 
         for t, c in self.v_shell_eqn.items():
             s = iscale.min_scaling_factor(

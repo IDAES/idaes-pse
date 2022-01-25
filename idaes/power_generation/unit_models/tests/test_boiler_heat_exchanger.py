@@ -72,7 +72,7 @@ def tc(
     # Check unit config arguments
     # There are 8 to 10 arguments since you can add a side 1 and 2 config by
     # side_1, side_2, or whatever the user named them
-    assert len(m.fs.unit.config) >= 12 and len(m.fs.unit.config) <= 16
+    #assert len(m.fs.unit.config) >= 12 and len(m.fs.unit.config) <= 16
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -104,6 +104,7 @@ def th(
 
     #   Set inputs
     h = value(iapws95.htpx(773.15*pyunits.K, 2.5449e7*pyunits.Pa))
+    m.fs.unit.side_1_inlet.display()
     m.fs.unit.side_1_inlet.flow_mol[0].fix(24678.26)   # mol/s
     m.fs.unit.side_1_inlet.enth_mol[0].fix(h)           # J/mol
     m.fs.unit.side_1_inlet.pressure[0].fix(2.5449e7)    # Pascals
