@@ -487,9 +487,9 @@ constructed,
             return b.tube_length * (b.pitch_y - b.do_tube) * b.tube_ncol
 
         # Total heat transfer area based on outside diameter
-        @self.Expression(doc="Total heat transfer " "area based on tube outside diamer")
-        def area_heat_transfer(b):
-            return c.pi * b.do_tube * b.tube_length * b.tube_ncol * b.tube_nrow
+        @self.Constraint(doc="Total heat transfer " "area based on tube outside diamer")
+        def area_eqn(b):
+            return b.area == c.pi * b.do_tube * b.tube_length * b.tube_ncol * b.tube_nrow
 
         # Ratio of pitch_x/do_tube
         @self.Expression(doc="Ratio of pitch in x " "direction to tube outside diamer")
@@ -897,10 +897,6 @@ constructed,
                     ** 2
                     + b.side_1.properties_in[t].temperature ** 2
                 )
-
-        @self.Expression(self.flowsheet().time)
-        def LMTD(b, t):
-            return b.delta_temperature[t]
 
         # Tube side heat transfer coefficient and pressure drop
         # -----------------------------------------------------
@@ -1456,7 +1452,7 @@ constructed,
         # Since this depends on the process size this is another scaling factor
         # the user should always set.
         sf_a = iscale.get_scaling_factor(
-            self.area_heat_transfer, default=1e-4, warning=True
+            self.area, default=1e-4, warning=True
         )
 
         for t, c in self.v_shell_eqn.items():
