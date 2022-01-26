@@ -41,7 +41,6 @@ export class Paper {
         // We want all of the elements to be the same width so set the width equal to the 
         // stream table
         let stream_table = document.getElementById("stream-table");
-        //$('#idaes-canvas').css({ width: stream_table.offsetWidth, height: stream_table.offsetHeight });
         $('#idaes-canvas').css({ height: stream_table.offsetHeight });
         $("#idaes-canvas")[0].append(self._paperScroller.render().el);
 
@@ -86,7 +85,6 @@ export class Paper {
         // Setup paper resize on window resize
         window.onresize = function() {
             let stream_table = document.getElementById("stream-table");
-            // $('#idaes-canvas').css({ width: stream_table.offsetWidth, height: stream_table.offsetHeight });
             $('#idaes-canvas').css({ height: stream_table.offsetHeight });
         }
 
@@ -233,7 +231,6 @@ export class Paper {
         this._graph.getLinks().forEach((link) => {
             let linkView = link.findView(this._paper);
             linkView.el.addEventListener('HighlightStream', () => {
-                //linkView.model.attr('line/stroke', this._highlightLinkColor);
                 linkView.model.attr({
                     line: {
                         stroke: this._highlightLinkStroke,
@@ -243,7 +240,6 @@ export class Paper {
             });
 
             linkView.el.addEventListener('RemoveHighlightStream', () => {
-                //linkView.model.attr('line/stroke', this._originalLinkColor);
                 linkView.model.attr({
                     line: {
                         stroke: this._originalLinkStroke,
