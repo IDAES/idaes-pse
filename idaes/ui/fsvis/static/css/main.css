@@ -45,9 +45,9 @@ hr {
   margin-left: 3em;
 }
 
-/* #idaes-canvas {
+#idaes-canvas {
   position: relative;
-} */
+}
 
 #idaes-toolbar-flowsheet {
   justify-content: flex-end;
@@ -353,20 +353,20 @@ input:checked + .slider:before {
 /* Styling the stream table column header that corresponds to the link mouseover event */
 .link-streamtable-hover-columnheader {
   /* #53a6da */
-  border-top: 5px solid #2df0fc ;
-  border-left: 5px solid #2df0fc;
-  border-right: 5px solid #2df0fc;
+  border-top: 5px solid #0B79BD ;
+  border-left: 5px solid #0B79BD;
+  border-right: 5px solid #0B79BD;
 }
 
 /* Styling the last row in the stream table column that corresponds to the link mouseover event */
 .link-streamtable-hover-lastrow {
-  border-bottom: 5px solid #2df0fc;
-  border-left: 5px solid #2df0fc;
-  border-right: 5px solid #2df0fc;
+  border-bottom: 5px solid #0B79BD;
+  border-left: 5px solid #0B79BD;
+  border-right: 5px solid #0B79BD;
 }
 
 /* Styling the grid cell in the stream table column that corresponds to the link mouseover event */
 .link-streamtable-hover {
-  border-left: 5px solid #2df0fc;
-  border-right: 5px solid #2df0fc;
+  border-left: 5px solid #0B79BD;
+  border-right: 5px solid #0B79BD;
 }

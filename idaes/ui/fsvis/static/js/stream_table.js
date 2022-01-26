@@ -135,32 +135,75 @@ export class StreamTable {
             });
         });
 
-        // Setup events for grid cells
-        const colorLinkEvent = new Event('StreamTableMouseHover');
-        const unColorLinkEvent = new Event('StreamTableMouseOut');
+        // Getting the main elements for the idaes canvas and the stream table
+        // to be able to dispatch highlighting events to the streams existing
+        // on paper and in the stream table
+        let streamTable = document.querySelector('#stream-table-data');
+        let idaesCanvas = document.querySelector('#idaes-canvas');
+
+        // Registering listeners to the stream table to highlight the correct
+        // streams in the stream table
+        streamTable.addEventListener('HighlightStream', (event) => {
+            var streamGridCells = streamTable.querySelectorAll(
+                `[col-id=${event.detail.streamId}]`
+            );
+            streamGridCells.forEach((gridCell, index) => {
+                if (gridCell.getAttribute('role') == 'columnheader') {
+                    gridCell.classList.add('link-streamtable-hover-columnheader');
+                }
+                else if (index == streamGridCells.length - 1) {
+                    gridCell.classList.add('link-streamtable-hover-lastrow');
+                }
+                else {
+                    gridCell.classList.add('link-streamtable-hover');
+                }
+            });
+        });
+
+        // Registering listeners to idaes-canvas to remove the highlight from
+        // the correct streams in the stream table
+        streamTable.addEventListener('RemoveHighlightStream', (event) => {
+            var streamGridCells = streamTable.querySelectorAll(
+                `[col-id=${event.detail.streamId}]`
+            );
+            streamGridCells.forEach((gridCell) => {
+                gridCell.classList.remove('link-streamtable-hover-columnheader');
+                gridCell.classList.remove('link-streamtable-hover-lastrow');
+                gridCell.classList.remove('link-streamtable-hover');
+            });
+        });
 
         let streamGridCells = document.querySelectorAll('[col-id]');
         streamGridCells.forEach((gridCell) => {
-            // When the mouse hovers over a grid cell, the link that represents
-            // the cell's grid column (stream) will highlight its color.
+            // When the mouse hovers over a grid cell, the link as well as the
+            // stream column that represents the correct stream will be highlighted.
             gridCell.addEventListener('mouseenter', function(event) {
-                const relatedLinkElement = document.querySelector(
-                    `[model-id=${event.target.attributes['col-id'].value}]`
+                const highlightStreamEvent = new CustomEvent(
+                    'HighlightStream',
+                    {
+                        detail: {
+                            streamId: event.target.attributes['col-id'].value
+                        }
+                    }
                 );
-                if (relatedLinkElement) {
-                    relatedLinkElement.dispatchEvent(colorLinkEvent);
-                }
+                streamTable.dispatchEvent(highlightStreamEvent);
+                idaesCanvas.dispatchEvent(highlightStreamEvent);
             });
 
-            // When the mouse leaves a grid cell, the link that represents the
-            // cell's grid column (stream) will revert to its original color.
+            // When the mouse leaves a grid cell, the link as well as the
+            // stream column that represents the correct stream will remove
+            // the highlighting feature.
             gridCell.addEventListener('mouseleave', function(event) {
-                const relatedLinkElement = document.querySelector(
-                    `[model-id=${event.target.attributes['col-id'].value}]`
+                const removeHighlightStreamEvent = new CustomEvent(
+                    'RemoveHighlightStream',
+                    {
+                        detail: {
+                            streamId: event.target.attributes['col-id'].value
+                        }
+                    }
                 );
-                if (relatedLinkElement) {
-                    relatedLinkElement.dispatchEvent(unColorLinkEvent);
-                }
+                streamTable.dispatchEvent(removeHighlightStreamEvent);
+                idaesCanvas.dispatchEvent(removeHighlightStreamEvent);
             });
         });
     };

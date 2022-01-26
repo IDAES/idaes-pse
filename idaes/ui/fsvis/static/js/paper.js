@@ -7,8 +7,11 @@ export class Paper {
         var height = 800;
         var gridSize = 1;
 
-        this._originalLinkColor = "#979797";
-        this._highlightLinkColor = "#2df0fc";
+        // Default values for the highlighting events
+        this._originalLinkStroke = "#979797";
+        this._originalLinkStrokeWidth = 2;
+        this._highlightLinkStroke = "#0B79BD";
+        this._highlightLinkStrokeWidth = 4;
 
         this._graph = new joint.dia.Graph([], { cellNamespace: { standard } });
         this._paper = new joint.dia.Paper({
@@ -74,12 +77,39 @@ export class Paper {
         let model_id = $("#idaes-fs-name").data("flowsheetId");
         let url = "/fs?id=".concat(model_id);
 
+        // Getting the main elements for the idaes canvas and the stream table
+        // to be able to dispatch highlighting events to the streams existing
+        // on paper and in the stream table
+        let idaesCanvas = document.querySelector('#idaes-canvas');
+        let streamTable = document.querySelector('#stream-table-data');
+
         // Setup paper resize on window resize
         window.onresize = function() {
             let stream_table = document.getElementById("stream-table");
             // $('#idaes-canvas').css({ width: stream_table.offsetWidth, height: stream_table.offsetHeight });
             $('#idaes-canvas').css({ height: stream_table.offsetHeight });
         }
+
+        // Registering listeners to idaes-canvas to highlight the correct
+        // streams in the paper
+        idaesCanvas.addEventListener('HighlightStream', (event) => {
+            const relatedLinkElement = idaesCanvas.querySelector(
+                `[model-id=${event.detail.streamId}]`
+            );
+            if (relatedLinkElement) {
+                relatedLinkElement.dispatchEvent(new Event('HighlightStream'));
+            }
+        });
+        // Registering listeners to idaes-canvas to remove the highlight from
+        // the correct streams in the paper
+        idaesCanvas.addEventListener('RemoveHighlightStream', (event) => {
+            const relatedLinkElement = idaesCanvas.querySelector(
+                `[model-id=${event.detail.streamId}]`
+            );
+            if (relatedLinkElement) {
+                relatedLinkElement.dispatchEvent(new Event('RemoveHighlightStream'));
+            }
+        });
 
         // /images/icons rotate 90 degrees on right click. Replaces browser 
         // context menu
@@ -119,19 +149,17 @@ export class Paper {
             linkView.addTools(toolsView);
             linkView.showTools();
 
-            // Highlight the corresponding column in the Stream Table
-            let streamGridCells = document.querySelectorAll(`[col-id=${linkView.model.id}]`);
-            streamGridCells.forEach((gridCell, index) => {
-                if (gridCell.getAttribute('role') == 'columnheader') {
-                    gridCell.classList.add('link-streamtable-hover-columnheader');
+            // Highlight the corresponding Link and the column in the Stream Table
+            const highlightStreamEvent = new CustomEvent(
+                'HighlightStream',
+                {
+                    detail: {
+                        streamId: linkView.model.id
+                    }
                 }
-                else if (index == streamGridCells.length - 1) {
-                    gridCell.classList.add('link-streamtable-hover-lastrow');
-                }
-                else {
-                    gridCell.classList.add('link-streamtable-hover');
-                }
-            });
+            );
+            streamTable.dispatchEvent(highlightStreamEvent);
+            idaesCanvas.dispatchEvent(highlightStreamEvent);
         });
 
         // Setup event when the hovering over link ends
@@ -139,12 +167,18 @@ export class Paper {
             // Removes the link tools when you leave the link
             linkView.hideTools();
 
-            // Remove the highlight of the column in the Stream Table when the hovering ends
-            document.querySelectorAll(`[col-id=${linkView.model.id}]`).forEach((gridCell) => {
-                gridCell.classList.remove('link-streamtable-hover-columnheader');
-                gridCell.classList.remove('link-streamtable-hover-lastrow');
-                gridCell.classList.remove('link-streamtable-hover');
-            });
+            // Remove the highlight from the link and the column in the
+            // Stream Table when the hovering ends
+            const removeHighlightStreamEvent = new CustomEvent(
+                'RemoveHighlightStream',
+                {
+                    detail: {
+                        streamId: linkView.model.id
+                    }
+                }
+            );
+            streamTable.dispatchEvent(removeHighlightStreamEvent);
+            idaesCanvas.dispatchEvent(removeHighlightStreamEvent);
         });
 
         // Send a post request to the server with the new this._graph 
@@ -198,12 +232,24 @@ export class Paper {
         // Setup event listeners for the links in Paper/Graph
         this._graph.getLinks().forEach((link) => {
             let linkView = link.findView(this._paper);
-            linkView.el.addEventListener('StreamTableMouseHover', () => {
-                linkView.model.attr('line/stroke', this._highlightLinkColor);
+            linkView.el.addEventListener('HighlightStream', () => {
+                //linkView.model.attr('line/stroke', this._highlightLinkColor);
+                linkView.model.attr({
+                    line: {
+                        stroke: this._highlightLinkStroke,
+                        'stroke-width': this._highlightLinkStrokeWidth
+                    }
+                });
             });
 
-            linkView.el.addEventListener('StreamTableMouseOut', () => {
-                linkView.model.attr('line/stroke', this._originalLinkColor);
+            linkView.el.addEventListener('RemoveHighlightStream', () => {
+                //linkView.model.attr('line/stroke', this._originalLinkColor);
+                linkView.model.attr({
+                    line: {
+                        stroke: this._originalLinkStroke,
+                        'stroke-width': this._originalLinkStrokeWidth
+                    }
+                });
             });
         });
     }
