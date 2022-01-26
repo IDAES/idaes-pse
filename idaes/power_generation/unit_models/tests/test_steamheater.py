@@ -115,9 +115,7 @@ def test_solve_unit(build_unit):
 
     results = solver.solve(m, tee=True)
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
 
     # check material balance
     assert (pytest.approx(pyo.value(m.fs.unit.control_volume.properties_in[0].

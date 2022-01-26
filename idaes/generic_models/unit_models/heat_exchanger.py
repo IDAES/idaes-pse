@@ -27,8 +27,7 @@ from pyomo.environ import (
     ExternalFunction,
     Block,
     units as pyunits,
-    SolverStatus,
-    TerminationCondition
+    check_optimal_termination
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -644,10 +643,7 @@ class HeatExchangerData(UnitModelBlockData):
             self.costing.activate()
             costing.initialize(self.costing)
 
-        if (res is not None and (
-                res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok)):
+        if not check_optimal_termination(res):
             raise InitializationError(
                 f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

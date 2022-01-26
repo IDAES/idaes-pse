@@ -18,6 +18,7 @@ import types
 
 # Import Pyomo libraries
 from pyomo.environ import (Block,
+                           check_optimal_termination,
                            Constraint,
                            exp,
                            Expression,
@@ -27,9 +28,7 @@ from pyomo.environ import (Block,
                            value,
                            Var,
                            units as pyunits,
-                           Reference,
-                           TerminationCondition,
-                           SolverStatus)
+                           Reference)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -1429,10 +1428,7 @@ class _GenericStateBlock(StateBlock):
                         .state_definition.do_not_initialize):
                     c.activate()
 
-        if (res is not None and (
-                res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok)):
+        if res is not None and not check_optimal_termination(res):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

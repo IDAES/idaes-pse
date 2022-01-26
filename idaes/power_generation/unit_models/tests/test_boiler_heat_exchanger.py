@@ -19,7 +19,7 @@ import pytest
 
 from pyomo.environ import (
     ConcreteModel,
-    TerminationCondition,
+    check_optimal_termination,
     SolverStatus,
     value,
     units as pyunits,
@@ -163,14 +163,14 @@ def th(
 
     results = solver.solve(m)
     # Check for optimal solution
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
     assert value(m.fs.unit.side_1.properties_out[0].temperature) == pytest.approx(
         tout_1, abs=0.5
     )
     assert value(m.fs.unit.side_2.properties_out[0].temperature) == pytest.approx(
         tout_2, abs=0.5
     )
+
 
 
 def tu(delta_temperature_callback=delta_temperature_underwood_tune_callback):

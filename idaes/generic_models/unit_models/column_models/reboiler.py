@@ -26,14 +26,13 @@ from pandas import DataFrame
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
 from pyomo.environ import (
+    check_optimal_termination,
     Reference,
     Expression,
     Var,
     Constraint,
     value,
-    Set,
-    SolverStatus,
-    TerminationCondition)
+    Set)
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -642,9 +641,7 @@ see property package for documentation.}"""))
                 "initialization. Please ensure that the boilup_ratio "
                 "or the outlet temperature is fixed.")
 
-        if (res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok):
+        if not check_optimal_termination(res):
             raise InitializationError(
                 f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")
