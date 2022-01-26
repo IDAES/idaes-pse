@@ -77,6 +77,7 @@ from idaes.core.util import get_solver
 from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
 from idaes.generic_models.unit_models.heat_exchanger import (
     HeatExchangerData,
@@ -490,7 +491,7 @@ constructed,
             return b.tube_length * (b.pitch_y - b.do_tube) * b.tube_ncol
 
         # Total heat transfer area based on outside diameter
-        @self.Constraint(doc="Total heat transfer " "area based on tube outside diamer")
+        @self.Constraint(doc="Total heat transfer area based on tube outside diamer")
         def area_eqn(b):
             return (
                 b.area == c.pi * b.do_tube * b.tube_length * b.tube_ncol * b.tube_nrow
