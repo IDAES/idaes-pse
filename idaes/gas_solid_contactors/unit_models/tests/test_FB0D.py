@@ -18,10 +18,9 @@ Author: Brandon Paul
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            TransformationFactory,
-                           TerminationCondition,
-                           SolverStatus,
                            value,
                            units as pyunits,
                            Constraint)
@@ -185,9 +184,7 @@ class TestIronOC(object):
         results = solver.solve(iron_oc)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -401,9 +398,7 @@ class TestIronOC_EnergyBalanceType(object):
         results = solver.solve(iron_oc)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

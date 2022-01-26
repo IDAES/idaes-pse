@@ -17,7 +17,7 @@ Tests for math util methods.
 import pytest
 from pyomo.environ import (Block, ConcreteModel, Constraint, Expression, exp,
                            Set, Var, value, Param, Reals, units as pyunits,
-                           TransformationFactory, TerminationCondition)
+                           TransformationFactory, check_optimal_termination)
 from pyomo.network import Arc, Port
 
 from idaes.core import (FlowsheetBlock,
@@ -1021,4 +1021,4 @@ def test_initialize_by_time_element():
         assert value(con.lower) - value(con.body) < 1e-5
 
     results = solver.solve(m.fs)
-    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert check_optimal_termination(results)

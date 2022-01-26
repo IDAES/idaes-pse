@@ -17,10 +17,7 @@ Author: Chinedu Okoli
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           Var)
+from pyomo.environ import check_optimal_termination, ConcreteModel, Var
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -94,9 +91,7 @@ def test_solve(solid_prop):
     results = solver.solve(solid_prop)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
 
 @pytest.mark.solver

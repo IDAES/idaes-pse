@@ -17,11 +17,8 @@ Author: Miguel Zamarripa
 """
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           value,
-                           units as pyunits)
+from pyomo.environ import (
+    check_optimal_termination, ConcreteModel, value, units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -149,9 +146,7 @@ def th(
 
     results = solver.solve(m)
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
     assert value(m.fs.unit.side_1.properties_out[0].temperature) == \
         pytest.approx(tout_1, abs=0.5)
     assert value(m.fs.unit.side_2.properties_out[0].temperature) == \

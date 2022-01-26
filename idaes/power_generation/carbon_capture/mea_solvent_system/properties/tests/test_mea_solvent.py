@@ -14,10 +14,7 @@
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           SolverStatus,
-                           TerminationCondition,
-                           value)
+from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
@@ -94,9 +91,7 @@ class TestStateBlock(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component

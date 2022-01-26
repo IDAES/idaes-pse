@@ -16,9 +16,9 @@ A module of helper functions for working with flattened DAE models.
 """
 
 from pyomo.environ import (
+        check_optimal_termination,
         Constraint,
         Var,
-        TerminationCondition,
         SolverFactory,
         )
 from pyomo.common.collections import ComponentSet, ComponentMap
@@ -156,7 +156,7 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
         assert degrees_of_freedom(model) == 0
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(model, tee=slc.tee)
-        if results.solver.termination_condition == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             pass
         else:
             raise ValueError(
@@ -245,7 +245,7 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
 
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(model, tee=slc.tee)
-        if results.solver.termination_condition == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             pass
         else:
             raise ValueError(
