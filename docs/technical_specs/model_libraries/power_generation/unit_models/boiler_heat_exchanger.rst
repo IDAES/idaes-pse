@@ -6,19 +6,19 @@ BoilerHeatExchanger
 
 .. currentmodule:: idaes.power_generation.unit_models.boiler_heat_exchanger
 
-The BoilerHeatExchanger model can be used to represent boiler heat exchangers in 
-sub-critical and super critical power plant flowsheets (i.e. econmizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).  
-The model consists of a shell and tube crossflow heat exchanger, in which the shell is used as the gas side and the tube is used as the water or steam side. 
+The BoilerHeatExchanger model can be used to represent boiler heat exchangers in
+sub-critical and super critical power plant flowsheets (i.e. econmizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).
+The model consists of a shell and tube crossflow heat exchanger, in which the shell is used as the gas side and the tube is used as the water or steam side.
 Rigorous heat transfer calculations (convective heat transfer for shell side, and convective heat transfer for tube side) and shell and tube pressure drop calculations have been included.
 
 The BoilerHeatExchanger model can be imported from :code:`idaes.power_generation.unit_models`,
 while additional rules and utility functions can be imported from
-``idaes.power_generation.unit_models.boiler_heat_exchanger``. 
+``idaes.power_generation.unit_models.boiler_heat_exchanger``.
 
 Example
 -------
 
-The example below demonstrates how to initialize the BoilerHeatExchanger model, 
+The example below demonstrates how to initialize the BoilerHeatExchanger model,
 and override the default temperature difference calculation.
 
 .. code:: python
@@ -32,8 +32,11 @@ and override the default temperature difference calculation.
     # import ideal flue gas prop pack
     from idaes.power_generation.properties.IdealProp_FlueGas import FlueGasParameterBlock
     # Import Power Plant HX Unit Model
-    from idaes.power_generation.unit_models.boiler_heat_exchanger import BoilerHeatExchanger, TubeArrangement, \
-        DeltaTMethod
+    from idaes.power_generation.unit_models.boiler_heat_exchanger import (
+        BoilerHeatExchanger,
+        TubeArrangement,
+        HeatExchangerFlowPattern,
+    )
     import pyomo.environ as pe # Pyomo environment
     from idaes.core import FlowsheetBlock, StateBlock
     from idaes.unit_models.heat_exchanger import delta_temperature_amtd_callback
@@ -50,24 +53,27 @@ and override the default temperature difference calculation.
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     # Create unit models
-    m.fs.ECON = BoilerHeatExchanger(default=
-                              {"side_1_property_package": m.fs.prop_water,
-                               "side_2_property_package": m.fs.prop_fluegas,
-                               "has_pressure_change": True,
-                               "has_holdup": False,
-                               "delta_T_method": DeltaTMethod.counterCurrent,
-                               "tube_arrangement": TubeArrangement.inLine,
-                               "side_1_water_phase": "Liq",
-                               "has_radiation": False})
-    
+    m.fs.ECON = BoilerHeatExchanger(
+        default={
+            "tube: {"property_package": m.fs.prop_water},
+            "shell": {"property_package": m.fs.prop_fluegas},
+            "has_pressure_change": True,
+            "has_holdup": False,
+            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
+            "tube_arrangement": TubeArrangement.inLine,
+            "side_1_water_phase": "Liq",
+            "has_radiation": False
+        }
+    )
+
     # Set Inputs
-    # BFW Boiler Feed Water inlet temeperature = 555 F = 563.706 K
+    # BFW Boiler Feed Water inlet temperature = 555 F = 563.706 K
     # inputs based on NETL Baseline Report v3 (SCPC 650 MW net, no carbon capture case)
     h = iapws95.htpx(563.706, 2.5449e7)
     m.fs.ECON.side_1_inlet.flow_mol[0].fix(24678.26) # mol/s
     m.fs.ECON.side_1_inlet.enth_mol[0].fix(h)
     m.fs.ECON.side_1_inlet.pressure[0].fix(2.5449e7) # Pa
-    
+
     # FLUE GAS Inlet from Primary Superheater
     FGrate = 28.3876e3  # mol/s equivalent of ~1930.08 klb/hr
     # Use FG molar composition to set component flow rates (baseline report)
@@ -83,13 +89,13 @@ and override the default temperature difference calculation.
     # economizer design variables and parameters
     ITM = 0.0254  # inch to meter conversion
     # Based on NETL Baseline Report Rev3
-    m.fs.ECON.tube_di.fix((2-2*0.188)*ITM)  # calc inner diameter 
+    m.fs.ECON.tube_di.fix((2-2*0.188)*ITM)  # calc inner diameter
     #                        (2 = outer diameter, thickness = 0.188)
     m.fs.ECON.tube_thickness.fix(0.188*ITM) # tube thickness
     m.fs.ECON.pitch_x.fix(3.5*ITM)
     # pitch_y = (54.5) gas path transverse width /columns
-    m.fs.ECON.pitch_y.fix(5.03*ITM)          
-    m.fs.ECON.tube_length.fix(53.41*12*ITM) # use tube length (53.41 ft)  
+    m.fs.ECON.pitch_y.fix(5.03*ITM)
+    m.fs.ECON.tube_length.fix(53.41*12*ITM) # use tube length (53.41 ft)
     m.fs.ECON.tube_nrow.fix(36*2.5)         # use to match baseline performance
     m.fs.ECON.tube_ncol.fix(130)            # 130 from NETL report
     m.fs.ECON.nrow_inlet.fix(2)
@@ -107,7 +113,7 @@ and override the default temperature difference calculation.
     m.fs.ECON.fcorrection_dp_tube.fix(1.0)
     # correction factor for pressure drop calc shell side
     m.fs.ECON.fcorrection_dp_shell.fix(1.0)
-    
+
     # Initialize the model
     m.fs.ECON.initialize()
 
@@ -123,14 +129,14 @@ frequently fixed are two of:
 * temperature approach.
 
 In order to capture off design conditions and heat transfer coefficients at ramp up/down or load following conditions, the BoilerHeatExanger
-model includes rigorous heat transfer calculations. Therefore, additional degrees of freedom are required to calculate Nusselt, Prandtl, Reynolds numbers, such as: 
+model includes rigorous heat transfer calculations. Therefore, additional degrees of freedom are required to calculate Nusselt, Prandtl, Reynolds numbers, such as:
 
 * tube_di (inner diameter)
-* tube length  
+* tube length
 * tube number of rows (tube_nrow), columns (tube_ncol), and inlet flow (nrow_inlet)
 * pitch in x and y axis (pitch_x and pitch_y, respectively)
 
-If pressure drop calculation is enabled, additional degrees of freedom are required: 
+If pressure drop calculation is enabled, additional degrees of freedom are required:
 
 * elevation with respect to ground level (delta_elevation)
 * tube fouling resistance (tube_r_fouling)
@@ -145,8 +151,8 @@ The sign convention is that duty is positive for heat flowing from the hot side 
 side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
-:ref:`Heater model <technical_specs/model_libraries/generic/unit_models/heater:Heater>`. 
-The ``BoilerHeatExchanger`` model contains additional constraints that calculate the amount 
+:ref:`Heater model <technical_specs/model_libraries/generic/unit_models/heater:Heater>`.
+The ``BoilerHeatExchanger`` model contains additional constraints that calculate the amount
 of heat transferred from the hot side to the cold side.
 
 The ``BoilerHeatExchanger`` has two inlet ports and two outlet ports. By default these are
@@ -171,9 +177,9 @@ than the specified hot side this value will be negative.
 Constraints
 -----------
 
-The default constraints can be overridden by providing :ref:`alternative rules 
+The default constraints can be overridden by providing :ref:`alternative rules
 <technical_specs/model_libraries/generic/unit_models/heat_exchanger:Callbacks>` for
-the heat transfer equation, temperature difference, heat transfer coefficient, shell 
+the heat transfer equation, temperature difference, heat transfer coefficient, shell
 and tube pressure drop. This section describes the default constraints.
 
 Heat transfer from shell to tube:
@@ -191,7 +197,7 @@ The overall heat transfer coefficient is calculated as a function of convective 
 
 Convective heat transfer equations:
 
-.. math:: 
+.. math::
     \frac{1}{U}*fcorrection_{htc} = [\frac{1}{hconv_{tube}} + \frac{1}{hconv_{shell}} + r + tube_{r fouling} + shell_{r fouling}]
 
 .. math::
@@ -232,30 +238,30 @@ where:
 * fcorrection_htc: correction factor for overall heat trasnfer
 * f_arrangement: tube arrangement factor
 
-Note: 
+Note:
 by default fcorrection_htc is set to 1, however, this variable can be used to match unit performance (i.e. as a parameter estimation problem using real plant data).
 
-Tube arrangement factor is a config argument with two different type of arrangements supported at the moment: 
+Tube arrangement factor is a config argument with two different type of arrangements supported at the moment:
 1.- In-line tube arrangement factor (f_arrangement = 0.788), and 2.- Staggered tube arrangement factor (f_arrangement = 1). f_arrangement is a parameter that can be adjusted by the user.
 
 The ``BoilerHeatExchanger`` includes an argument to compute heat tranfer due to radiation of the flue gases. If has_radiation = True the model builds additional heat transfer calculations that will be added to the hconv_shell resistances.
 Radiation effects are calculated based on the gas gray fraction and gas-surface radiation (between gas and shell).
 
-.. math:: 
+.. math::
     Gas_{gray frac} = f (gas_{emissivity})
 .. math::
     frad_{gas gray frac} = f (wall_{emissivity}, gas_{emissivity})
 
-.. math:: 
+.. math::
     hconv_{shell_rad} = f (k_{boltzmann}, frad_{gas gray frac}, T_{gas in}, T_{gas out}, T_{fluid in}, T_{fluid out})
 
-Note: 
+Note:
 Gas emissivity is calculated with surrogate models (see more details in boiler_heat_exchanger.py).
-Radiation = True when flue gas temperatures are higher than 700 K (for example, when the model is used for units like Primary superheater, Reheater, or Finishing Superheater; 
+Radiation = True when flue gas temperatures are higher than 700 K (for example, when the model is used for units like Primary superheater, Reheater, or Finishing Superheater;
 while Radiation = False when the model is used to represent the economizer in a power plant flowsheet).
 
 
-If pressure change is set to True, :math:`deltaP_{uturn} and friction_{factor}` are calculated 
+If pressure change is set to True, :math:`deltaP_{uturn} and friction_{factor}` are calculated
 
 Tube side:
 
@@ -274,7 +280,7 @@ Shell side:
 
 .. math:: \Delta P_{shell} = 1.4 \Delta P_{shell friction} \rho V_{shell}^2
 
-:math:`\Delta P_{shell friction}` is calculated based on the tube arrangement type: 
+:math:`\Delta P_{shell friction}` is calculated based on the tube arrangement type:
 
 In-line: :math:`\Delta P_{shell friction} = \frac{ 0.044 + \frac{0.08 ( \frac{P_x}{tube_{do}} ) } {(\frac{P_y}{tube_{do}}-1)^{0.43+\frac{1.13}{(\frac{P_x}{tube_{do}})}}}}{Re^{0.15}}`
 
@@ -295,7 +301,7 @@ Class Documentation
 
 .. Note::
   The ``hot_side_config`` and ``cold_side_config`` can also be supplied using the name of
-  the hot and cold sides (``shell`` and ``tube`` by default) as in 
+  the hot and cold sides (``shell`` and ``tube`` by default) as in
   :ref:`the example <technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger:Example>`.
 
 .. autoclass:: BoilerHeatExchanger
@@ -303,4 +309,3 @@ Class Documentation
 
 .. autoclass:: BoilerHeatExchangerData
    :members:
-
