@@ -19,10 +19,9 @@ Author: Andrew Lee
 import pytest
 
 # Import Pyomo components
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Set,
-                           SolverStatus,
-                           TerminationCondition,
                            value,
                            units as pyunits)
 
@@ -241,9 +240,7 @@ class TestNoHenryComps(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         assert pytest.approx(365.35, abs=0.01) == value(
             model.props[1].temperature_bubble[("Vap", "Liq")])
@@ -491,9 +488,7 @@ class TestHenryComps0(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         assert pytest.approx(365.35, abs=0.01) == value(
             model.props[1].temperature_bubble[("Vap", "Liq")])
@@ -648,9 +643,7 @@ class TestHenryComps(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         assert pytest.approx(361.50, abs=0.01) == value(
             model.props[1].temperature_bubble[("Vap", "Liq")])

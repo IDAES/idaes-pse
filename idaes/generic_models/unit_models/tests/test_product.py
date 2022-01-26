@@ -16,10 +16,7 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           value)
+from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -187,9 +184,7 @@ class TestBTX(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

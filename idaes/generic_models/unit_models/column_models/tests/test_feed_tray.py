@@ -16,8 +16,7 @@ Tests for feed tray unit model.
 Author: Jaffer Ghouse
 """
 import pytest
-from pyomo.environ import (ConcreteModel, TerminationCondition,
-                           SolverStatus, value)
+from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -269,16 +268,12 @@ class TestBTXIdeal():
         results = solver.solve(btx_ftpz)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         results = solver.solve(btx_fctp)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component

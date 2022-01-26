@@ -27,7 +27,6 @@ import pytest
 # Import Pyomo libraries
 import pyomo.environ as pyo
 from pyomo.network import Arc
-from pyomo.util.check_units import assert_units_consistent
 
 # Import IDAES core
 from idaes.core import FlowsheetBlock
@@ -209,6 +208,4 @@ def test_waterwall(model):
                       properties_out[0].enth_mol))
     assert degrees_of_freedom(model) == 0
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)

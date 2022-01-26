@@ -18,10 +18,9 @@ Author: Chinedu Okoli
 import pytest
 
 from pyomo.environ import (
+        check_optimal_termination,
         ConcreteModel,
         Constraint,
-        TerminationCondition,
-        SolverStatus,
         Var,
         Reference,
         value,
@@ -115,9 +114,7 @@ def test_solve(gas_prop):
     results = solver.solve(gas_prop)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
 
 @pytest.mark.solver
