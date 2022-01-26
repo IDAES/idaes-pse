@@ -72,7 +72,7 @@ def tc(delta_temperature_callback=delta_temperature_underwood_tune_callback):
             "tube": {"property_package": m.fs.prop_steam},
             "shell": {"property_package": m.fs.prop_fluegas},
             "has_pressure_change": True,
-            "has_holdup": False,
+            "has_holdup": True,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             "tube_arrangement": TubeArrangement.inLine,
             "side_1_water_phase": "Liq",
@@ -86,7 +86,7 @@ def tc(delta_temperature_callback=delta_temperature_underwood_tune_callback):
     # assert len(m.fs.unit.config) >= 12 and len(m.fs.unit.config) <= 16
 
     assert not m.fs.unit.config.dynamic
-    assert not m.fs.unit.config.has_holdup
+    assert m.fs.unit.config.has_holdup
     assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.countercurrent
 
 
