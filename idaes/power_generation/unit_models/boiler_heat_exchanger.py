@@ -124,6 +124,11 @@ def delta_temperature_underwood_tune_callback(b):
     This uses a cube root function that works with negative numbers returning
     the real negative root. This should always evaluate successfully.
     """
+    _log.warning(
+        "DEPRECATED: delta_temperature_underwood_tune_callback will be "
+        "removed. Use another standard delta_temperature callback or "
+        "provide a custom callback."
+    )
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
     temp_units = pyunits.get_units(dT1[dT1.index_set().first()])
