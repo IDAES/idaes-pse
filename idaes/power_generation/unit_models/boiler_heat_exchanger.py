@@ -104,7 +104,10 @@ class _DeprecateDeltaTMethod(EnumMeta):
     def __getattribute__(cls, name):
         obj = super().__getattribute__(name)
         if isinstance(obj, Enum):
-            _log.warning("'DeltaTMethod' is deprecated use 'HeatExchangerFlowPattern'")
+            _log.warning(
+                "'DeltaTMethod' is deprecated use 'HeatExchangerFlowPattern' "
+                "This will be removed in IDAES 3.0"
+            )
         return obj
 
 
@@ -127,7 +130,7 @@ def delta_temperature_underwood_tune_callback(b):
     _log.warning(
         "DEPRECATED: delta_temperature_underwood_tune_callback will be "
         "removed. Use another standard delta_temperature callback or "
-        "provide a custom callback."
+        "provide a custom callback.  This will be removed in IDAES 3.0."
     )
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
@@ -155,7 +158,7 @@ class BoilerHeatExchangerData(HeatExchangerData):
             default=None,
             domain=is_physical_parameter_block,
             description="DEPRECATED: Property package to use for control volume",
-            doc="""DEPRECATED: Property parameter block,
+            doc="""DEPRECATED (will be removed in 3.0): Property parameter block,
 **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
@@ -167,8 +170,8 @@ class BoilerHeatExchangerData(HeatExchangerData):
         ConfigBlock(
             implicit=True,
             description="DEPRECATED: Arguments for constructing property packages",
-            doc="""DEPRECATED: ConfigBlock to be passed to a property block(s)
-and used when constructing these,
+            doc="""DEPRECATED (will be removed in 3.0): ConfigBlock to be passed to
+a property block(s) and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}""",
@@ -180,7 +183,7 @@ see property package for documentation.}""",
             default=None,
             domain=is_physical_parameter_block,
             description="DEPRECATED: Property package to use for control volume",
-            doc="""DEPRECATED: Property parameter block,
+            doc="""DEPRECATED (will be removed in 3.0): Property parameter block,
 **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
@@ -192,8 +195,8 @@ see property package for documentation.}""",
         ConfigBlock(
             implicit=True,
             description="DEPRECATED: Arguments for constructing property packages",
-            doc="""DEPRECATED: ConfigBlock to be passed to a property block(s)
-and used when constructing these,
+            doc="""DEPRECATED (will be removed in 3.0): ConfigBlock to be passed
+to a property block(s) and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}""",
@@ -205,7 +208,8 @@ see property package for documentation.}""",
             default=None,
             domain=In(MaterialBalanceType),
             description="DEPRECATED: Material balance construction flag",
-            doc="""DEPRECATED: Indicates type of material balance,
+            doc="""DEPRECATED (will be removed in 3.0): Indicates type of
+material balance,
 **default** - MaterialBalanceType.componentPhase.
 **Valid values:** {
 **MaterialBalanceType.none** - exclude material balances,
@@ -221,7 +225,7 @@ see property package for documentation.}""",
             default=None,
             domain=In(EnergyBalanceType),
             description="DEPRECATED: Energy balance construction flag",
-            doc="""DEPRECATED: Indicates type of energy balance,
+            doc="""DEPRECATED(will be removed in 3.0): Type of energy balance,
 **default** - EnergyBalanceType.enthalpyTotal.
 **Valid values:** {
 **EnergyBalanceType.none** - exclude energy balances,
@@ -237,7 +241,7 @@ see property package for documentation.}""",
             default=None,
             domain=In(MomentumBalanceType),
             description="DEPRECATED: Momentum balance construction flag",
-            doc="""DEPRECATED: Indicates type of momentum balance,
+            doc="""DEPRECATED (will be removed in 3.0): Type of momentum balance,
 **default** - MomentumBalanceType.pressureTotal.
 **Valid values:** {
 **MomentumBalanceType.none** - exclude momentum balances,
@@ -267,7 +271,8 @@ constructed,
             default=None,
             domain=In(DeltaTMethod),
             description="DEPRECATED: Flow configuration in unit to compute delta T",
-            doc="""DEPRECATED: Flag indicating flow arrangement to use for delta T
+            doc="""DEPRECATED (will be removed in 3.0): Flag indicating flow
+arrangement to use for delta T
 **default** - DeltaTMethod.counterCurrent
 **Valid values:** {
 **DeltaTMethod.counterCurrent**}""",
@@ -310,7 +315,9 @@ constructed,
         config = self.config
 
         if config.delta_T_method is not None:
-            _log.warning("Config item delta_T_method is deprecated use flow_pattern.")
+            _log.warning(
+                "Config item delta_T_method is deprecated use flow_pattern. Will be removed in IDAES 3.0."
+            )
             if config.delta_T_method == DeltaTMethod.coCurrent:
                 config.flow_pattern = HeatExchangerFlowPattern.cocurrent
             else:
@@ -320,40 +327,54 @@ constructed,
             raise ConfigurationError("Boiler heat exchanger does not support crossflow")
 
         if config.side_1_property_package is not None:
-            _log.warning("Config item side_1_property_package is deprecated.")
+            _log.warning(
+                "Config item side_1_property_package is deprecated. Will be removed in IDAES 3.0."
+            )
             # For this side 1 is tube/cold side
             config.cold_side_config.property_package = config.side_1_property_package
 
         if config.side_2_property_package is not None:
-            _log.warning("Config item side_2_property_package is deprecated.")
+            _log.warning(
+                "Config item side_2_property_package is deprecated. Will be removed in IDAES 3.0."
+            )
             # For this side 2 is shell/hot side
             config.hot_side_config.property_package = config.side_2_property_package
         if len(config.side_1_property_package_args) > 0:
-            _log.warning("Config item side_1_property_package_args is deprecated.")
+            _log.warning(
+                "Config item side_1_property_package_args is deprecated. Will be removed in IDAES 3.0."
+            )
             # For this side 1 is tube/cold side
             config.cold_side_config.property_package_args = (
                 config.side_1_property_package_args
             )
 
         if len(config.side_2_property_package_args) > 0:
-            _log.warning("Config item side_2_property_package_args is deprecated.")
+            _log.warning(
+                "Config item side_2_property_package_args is deprecated. Will be removed in IDAES 3.0."
+            )
             # For this side 2 is shell/hot side
             config.hot_side_config.property_package_args = (
                 config.side_2_property_package_args
             )
 
         if config.material_balance_type is not None:
-            _log.warning("Config item material_balance_type is deprecated.")
+            _log.warning(
+                "Config item material_balance_type is deprecated. Will be removed in IDAES 3.0."
+            )
             config.cold_side_config.material_balance_type = config.material_balance_type
             config.hot_side_config.material_balance_type = config.material_balance_type
 
         if config.energy_balance_type is not None:
-            _log.warning("Config item energy_balance_type is deprecated.")
+            _log.warning(
+                "Config item energy_balance_type is deprecated. Will be removed in IDAES 3.0."
+            )
             config.cold_side_config.enrgy_balance_type = config.energy_balance_type
             config.hot_side_config.energy_balance_type = config.energy_balance_type
 
         if config.momentum_balance_type is not None:
-            _log.warning("Config item momentum_balance_type is deprecated.")
+            _log.warning(
+                "Config item momentum_balance_type is deprecated. Will be removed in IDAES 3.0."
+            )
             config.cold_side_config.momentum_balance_type = config.momentum_balance_type
             config.hot_side_config.momentum_balance_type = config.momentum_balance_type
 
@@ -503,12 +524,16 @@ constructed,
             )
 
         # Ratio of pitch_x/do_tube
-        @self.Expression(doc="Ratio of pitch in x " "direction to tube outside diameter")
+        @self.Expression(
+            doc="Ratio of pitch in x " "direction to tube outside diameter"
+        )
         def pitch_x_to_do(b):
             return b.pitch_x / b.do_tube
 
         # Ratio of pitch_y/do_tube
-        @self.Expression(doc="Ratio of pitch in y " "direction to tube outside diameter")
+        @self.Expression(
+            doc="Ratio of pitch in y " "direction to tube outside diameter"
+        )
         def pitch_y_to_do(b):
             return b.pitch_y / b.do_tube
 
