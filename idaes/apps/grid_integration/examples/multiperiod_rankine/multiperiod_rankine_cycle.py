@@ -1,7 +1,5 @@
 # This script provides functions to create a multiperiod rankine cycle model
 import pyomo.environ as pyo
-import numpy as np
-from random import random
 from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
 from idaes.apps.rankine.simple_rankine_cycle import (
     create_model,
@@ -27,7 +25,7 @@ def create_ss_rankine_model(pmin, pmax):
     # m.rankine = initialize_model(m.rankine)
     from_json(
         m.rankine,
-        fname=os.path.join(this_file_dir(), "/initialized_rankine_state.json.gz"),
+        fname=os.path.join(this_file_dir(), "initialized_rankine_state.json.gz"),
         gz=True,
     )
     m.rankine = close_flowsheet_loop(m.rankine)
@@ -88,7 +86,7 @@ def create_mp_rankine_block(pmin, pmax):
     b2.soc = pyo.Var(within=pyo.NonNegativeReals, initialize=0.0, bounds=(0, 100))
 
     # Amount discharged to grid this time period (assume discharge is positive)
-    b2.efficiency = np.sqrt(0.88)
+    b2.efficiency = 0.88 ** 0.5
     b2.discharge = pyo.Var(initialize=0.0)
     b2.energy_change = pyo.Constraint(
         expr=b2.soc

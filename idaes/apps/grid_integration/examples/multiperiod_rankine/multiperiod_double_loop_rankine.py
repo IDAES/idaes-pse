@@ -1,11 +1,8 @@
 import pyomo.environ as pyo
 import pandas as pd
 import numpy as np
-import sys
 
-from idaes.apps.grid_integration.examples.multiperiod_rankine.multiperiod_rankine_cycle import (
-    create_multiperiod_rankine_model,
-)
+from multiperiod_rankine_cycle import create_multiperiod_rankine_model
 
 
 class MultiPeriodRankine:

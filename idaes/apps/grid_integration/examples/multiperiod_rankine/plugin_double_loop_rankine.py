@@ -6,10 +6,10 @@ import pyomo.environ as pyo
 from pyomo.common.config import ConfigDict, ConfigValue
 from pyomo.common.fileutils import this_file_dir
 
-from idaes.apps.grid_integration.tracker import Tracker
-from idaes.apps.grid_integration.bidder import Bidder
-from idaes.apps.grid_integration.forecaster import PlaceHolderForecaster
-from idaes.apps.grid_integration.coordinator import DoubleLoopCoordinator
+from idaes.apps.grid_integration import Tracker
+from idaes.apps.grid_integration import Bidder
+from idaes.apps.grid_integration import PlaceHolderForecaster
+from idaes.apps.grid_integration import DoubleLoopCoordinator
 
 from multiperiod_double_loop_rankine import MultiPeriodRankine
 import os.path
