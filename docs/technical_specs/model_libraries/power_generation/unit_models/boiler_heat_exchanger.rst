@@ -7,7 +7,7 @@ BoilerHeatExchanger
 .. currentmodule:: idaes.power_generation.unit_models.boiler_heat_exchanger
 
 The BoilerHeatExchanger model can be used to represent boiler heat exchangers in
-sub-critical and super critical power plant flowsheets (i.e. econmizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).
+sub-critical and super critical power plant flowsheets (i.e. economizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).
 The model consists of a shell and tube crossflow heat exchanger, in which the shell is used as the gas side and the tube is used as the water or steam side.
 Rigorous heat transfer calculations (convective heat transfer for shell side, and convective heat transfer for tube side) and shell and tube pressure drop calculations have been included.
 

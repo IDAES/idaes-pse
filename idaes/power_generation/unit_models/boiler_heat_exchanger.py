@@ -304,7 +304,7 @@ constructed,
     def _process_config(self):
         """Deal with old style config arguments by converting them to be
         consitent with the generic heat exchanger.  Log a deprication warning
-        for onld style args.
+        for old style args.
         """
         super()._process_config()
         config = self.config
@@ -317,7 +317,7 @@ constructed,
                 config.flow_pattern = HeatExchangerFlowPattern.countercurrent
 
         if config.flow_pattern == HeatExchangerFlowPattern.crossflow:
-            raise ConfigurationError("Boiler heatexchanger does not support crossflow")
+            raise ConfigurationError("Boiler heat exchanger does not support crossflow")
 
         if config.side_1_property_package is not None:
             _log.warning("Config item side_1_property_package is deprecated.")
@@ -496,19 +496,19 @@ constructed,
             return b.tube_length * (b.pitch_y - b.do_tube) * b.tube_ncol
 
         # Total heat transfer area based on outside diameter
-        @self.Constraint(doc="Total heat transfer area based on tube outside diamer")
+        @self.Constraint(doc="Total heat transfer area based on tube outside diameter")
         def area_eqn(b):
             return (
                 b.area == c.pi * b.do_tube * b.tube_length * b.tube_ncol * b.tube_nrow
             )
 
         # Ratio of pitch_x/do_tube
-        @self.Expression(doc="Ratio of pitch in x " "direction to tube outside diamer")
+        @self.Expression(doc="Ratio of pitch in x " "direction to tube outside diameter")
         def pitch_x_to_do(b):
             return b.pitch_x / b.do_tube
 
         # Ratio of pitch_y/do_tube
-        @self.Expression(doc="Ratio of pitch in y " "direction to tube outside diamer")
+        @self.Expression(doc="Ratio of pitch in y " "direction to tube outside diameter")
         def pitch_y_to_do(b):
             return b.pitch_y / b.do_tube
 

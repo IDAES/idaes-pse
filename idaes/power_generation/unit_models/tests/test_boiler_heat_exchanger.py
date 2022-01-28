@@ -81,10 +81,6 @@ def tc(delta_temperature_callback=delta_temperature_underwood_tune_callback):
     )
 
     # Check unit config arguments
-    # There are 8 to 10 arguments since you can add a side 1 and 2 config by
-    # side_1, side_2, or whatever the user named them
-    # assert len(m.fs.unit.config) >= 12 and len(m.fs.unit.config) <= 16
-
     assert not m.fs.unit.config.dynamic
     assert m.fs.unit.config.has_holdup
     assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.countercurrent
