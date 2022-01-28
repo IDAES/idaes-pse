@@ -117,6 +117,69 @@ def test_bad_option5():
             default={"side_1_is_hot": False, "hot_side_name": "cold_side"}
         )
 
+
+@pytest.mark.unit
+def test_bad_option6():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(ConfigurationError):
+        m.fs.unit = HeatExchanger(
+            default={"side_1_is_hot": False, "hot_side_name": "side_1"}
+        )
+
+@pytest.mark.unit
+def test_bad_option7():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(ConfigurationError):
+        m.fs.unit = HeatExchanger(
+            default={"side_1_is_hot": False, "cold_side_name": "side_2"}
+        )
+
+@pytest.mark.unit
+def test_bad_option8():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(ConfigurationError):
+        m.fs.unit = HeatExchanger(default={"hot_side_name": "side_2"})
+
+@pytest.mark.unit
+def test_bad_option9():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(ConfigurationError):
+        m.fs.unit = HeatExchanger(default={"cold_side_name": "side_1"})
+
+@pytest.mark.unit
+def test_hot_side_named_hot_side():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = PhysicalParameterTestBlock()
+    m.fs.unit = HeatExchanger(
+        default={
+            "hot_side": {"property_package": m.fs.properties},
+            "tube": {"property_package": m.fs.properties},
+            "hot_side_name": "hot_side",
+        }
+    )
+    assert not hasattr(m.fs.unit, "shell")
+    assert hasattr(m.fs.unit, "hot_side")
+
+@pytest.mark.unit
+def test_cold_side_named_cold_side():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = PhysicalParameterTestBlock()
+    m.fs.unit = HeatExchanger(
+        default={
+            "shell": {"property_package": m.fs.properties},
+            "cold_side": {"property_package": m.fs.properties},
+            "cold_side_name": "cold_side",
+        }
+    )
+    assert not hasattr(m.fs.unit, "tube")
+    assert hasattr(m.fs.unit, "cold_side")
+
 @pytest.mark.unit
 def test_same_name():
     m = ConcreteModel()
@@ -125,6 +188,7 @@ def test_same_name():
     # you need to rename both
     with pytest.raises(NameError):
         m.fs.unit = HeatExchanger(default={"cold_side_name": "shell"})
+
 
 
 @pytest.mark.unit

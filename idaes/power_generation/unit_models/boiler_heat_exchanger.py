@@ -269,7 +269,6 @@ constructed,
         "delta_T_method",
         ConfigValue(
             default=None,
-            domain=In(DeltaTMethod),
             description="DEPRECATED: Flow configuration in unit to compute delta T",
             doc="""DEPRECATED (will be removed in 3.0): Flag indicating flow
 arrangement to use for delta T
@@ -318,10 +317,13 @@ arrangement to use for delta T
             _log.warning(
                 "Config item delta_T_method is deprecated use flow_pattern. Will be removed in IDAES 3.0."
             )
-            if config.delta_T_method == DeltaTMethod.coCurrent:
-                config.flow_pattern = HeatExchangerFlowPattern.cocurrent
+            if isinstance(config.delta_T_method, DeltaTMethod):
+                if config.delta_T_method == DeltaTMethod.coCurrent:
+                    config.flow_pattern = HeatExchangerFlowPattern.cocurrent
+                else:
+                    config.flow_pattern = HeatExchangerFlowPattern.countercurrent
             else:
-                config.flow_pattern = HeatExchangerFlowPattern.countercurrent
+                config.flow_pattern = config.delta_T_method
 
         if config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             raise ConfigurationError("Boiler heat exchanger does not support crossflow")
