@@ -70,6 +70,7 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
 import idaes.generic_models.properties.core.pure.RPP4 as RPP
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -84,11 +85,44 @@ def test_bad_option():
     with pytest.raises(KeyError):
         m.fs.unit = HeatExchanger(default={"I'm a bad option": "hot"})
 
+@pytest.mark.unit
+def test_bad_option2():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(ConfigurationError):
+        m.fs.unit = HeatExchanger(default={"cold_side_name": "hot_side"})
+
+@pytest.mark.unit
+def test_bad_option3():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(ConfigurationError):
+        m.fs.unit = HeatExchanger(default={"hot_side_name": "cold_side"})
+
+@pytest.mark.unit
+def test_bad_option4():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(ConfigurationError):
+        m.fs.unit = HeatExchanger(
+            default={"side_1_is_hot": False, "cold_side_name": "hot_side"}
+        )
+
+@pytest.mark.unit
+def test_bad_option5():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(ConfigurationError):
+        m.fs.unit = HeatExchanger(
+            default={"side_1_is_hot": False, "hot_side_name": "cold_side"}
+        )
 
 @pytest.mark.unit
 def test_same_name():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
+    # by default shell is taken by hot side, so if you want to do this,
+    # you need to rename both
     with pytest.raises(NameError):
         m.fs.unit = HeatExchanger(default={"cold_side_name": "shell"})
 
@@ -170,6 +204,60 @@ def basic_model(cb=delta_temperature_lmtd_callback):
     m.fs.unit.initialize()
     return m
 
+def basic_model2(cb=delta_temperature_lmtd_callback):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+    m.fs.unit = HeatExchanger(default={
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
+                "delta_temperature_callback": cb,
+                "flow_pattern": HeatExchangerFlowPattern.cocurrent})
+    #   Set inputs
+    m.fs.unit.inlet_1.flow_mol[0].fix(100)
+    m.fs.unit.inlet_1.enth_mol[0].fix(4000)
+    m.fs.unit.inlet_1.pressure[0].fix(101325)
+
+    m.fs.unit.inlet_2.flow_mol[0].fix(100)
+    m.fs.unit.inlet_2.enth_mol[0].fix(3500)
+    m.fs.unit.inlet_2.pressure[0].fix(101325)
+
+    m.fs.unit.area.fix(100)
+    m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+    assert degrees_of_freedom(m) == 0
+    m.fs.unit.initialize()
+    return m
+
+def basic_model3(cb=delta_temperature_lmtd_callback):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+    m.fs.unit = HeatExchanger(default={
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
+                "delta_temperature_callback": cb,
+                "flow_pattern": HeatExchangerFlowPattern.crossflow})
+    #   Set inputs
+    m.fs.unit.inlet_1.flow_mol[0].fix(100)
+    m.fs.unit.inlet_1.enth_mol[0].fix(4000)
+    m.fs.unit.inlet_1.pressure[0].fix(101325)
+
+    m.fs.unit.inlet_2.flow_mol[0].fix(100)
+    m.fs.unit.inlet_2.enth_mol[0].fix(3500)
+    m.fs.unit.inlet_2.pressure[0].fix(101325)
+
+    m.fs.unit.area.fix(1000)
+    m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+    m.fs.unit.crossflow_factor.fix(1.0)
+    assert degrees_of_freedom(m) == 0
+    m.fs.unit.initialize()
+    return m
+
 
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
@@ -219,6 +307,35 @@ def test_lmtd2_cb():
         0.465069, rel=1e-3)
     assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
 
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
+def test_lmtd2_co_cb():
+    m = basic_model2(delta_temperature_lmtd2_callback)
+    results = solver.solve(m)
+    # hot in end
+    assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(
+        6.63771, rel=1e-3)
+    # hot out end
+    assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
+        0.46658, rel=1e-3)
+    assert value(m.fs.unit.heat_duty[0]) == pytest.approx(23242.69)
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
+def test_lmtd2_cross_cb():
+    m = basic_model3(delta_temperature_lmtd2_callback)
+    results = solver.solve(m)
+    # hot in end
+    assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(
+        0.464879, rel=1e-3)
+    # hot out end
+    assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
+        0.465069, rel=1e-3)
+    assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
 
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
