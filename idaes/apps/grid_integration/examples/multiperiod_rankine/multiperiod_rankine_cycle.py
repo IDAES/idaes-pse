@@ -6,19 +6,20 @@ from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
 from idaes.apps.rankine.simple_rankine_cycle import create_model, set_inputs, initialize_model, close_flowsheet_loop, add_operating_cost
 from idaes.core.util import from_json
 from pyomo.common.fileutils import this_file_dir
+import os.path
 
 #Create a steady-state rankine cycle model
 def create_ss_rankine_model(pmin,pmax):
-    p_lower_bound = pmin 
-    p_upper_bound = pmax 
+    p_lower_bound = pmin
+    p_upper_bound = pmax
 
     m = pyo.ConcreteModel()
     m.rankine = create_model(heat_recovery=True)
     m.rankine = set_inputs(m.rankine)
-    
+
     #We are initializing from a json file
     #m.rankine = initialize_model(m.rankine)
-    from_json(m.rankine, fname=this_file_dir()+"/initialized_rankine_state.json.gz", gz=True)
+    from_json(m.rankine, fname=os.path.join(this_file_dir(),"/initialized_rankine_state.json.gz"), gz=True)
     m.rankine = close_flowsheet_loop(m.rankine)
     m.rankine = add_operating_cost(m.rankine)
 
@@ -48,7 +49,7 @@ def create_mp_rankine_block(pmin,pmax):
     #Add coupling variable (next_power_output) to represent power output in next time period
     b1.previous_power_output = pyo.Var(within=pyo.NonNegativeReals, initialize=1.5) #MW
     b1.power_output = pyo.Expression(expr = b1.fs.net_cycle_power_output*1e-6)      #MW
-    
+
     #Use coupling variable to add ramping constraint
     b1.ramp1 = pyo.Constraint(expr=b1.power_output - b1.previous_power_output <= turbine_ramp_rate)
     b1.ramp2 = pyo.Constraint(expr=b1.previous_power_output - b1.power_output <= turbine_ramp_rate)
@@ -65,7 +66,7 @@ def create_mp_rankine_block(pmin,pmax):
     #soc = state of charge
     b2.previous_soc = pyo.Var(within=pyo.NonNegativeReals,initialize=0.0, bounds=(0,100))
     b2.soc = pyo.Var(within=pyo.NonNegativeReals,initialize=0.0, bounds=(0,100))
-    
+
     #Amount discharged to grid this time period (assume discharge is positive)
     b2.efficiency = np.sqrt(0.88)
     b2.discharge = pyo.Var(initialize = 0.0)

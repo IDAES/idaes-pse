@@ -1,5 +1,4 @@
 import pyomo.environ as pyo
-from collections import deque
 import pandas as pd
 import numpy as np
 import sys
@@ -16,7 +15,7 @@ class MultiPeriodRankine:
         Returns:
             Float64: Value of power output in last time step
         '''
-        if default_bid_curve==None:
+        if default_bid_curve is None:
             self.default_bid_curve = {p: 30 for p in np.linspace(pmin,pmax,5)}
         else:
             self.default_bid_curve = default_bid_curve
@@ -48,7 +47,7 @@ class MultiPeriodRankine:
         active_blks = mp_rankine.get_active_process_blocks()
         active_blks[0].battery.previous_soc.fix(0)
         active_blks[0].rankine.previous_power_output.fix(50.0)
-        
+
         #create expression that references underlying power variables in multi-period rankine
         blk.HOUR = pyo.Set(initialize = range(self.horizon))
         blk.P_T = pyo.Expression(blk.HOUR)
@@ -63,19 +62,19 @@ class MultiPeriodRankine:
     def update_model(self, b, implemented_power_output, realized_soc):
 
         '''
-        Update `blk` variables using the actual implemented power output. 
+        Update `blk` variables using the actual implemented power output.
 
         Arguments:
             blk: the block that needs to be updated
             implemented_battery_charge: list of power ,length n_tracking_horizon
-            implemented_battery_discharge: 
+            implemented_battery_discharge:
             implemented_power_output:
 
          Returns:
              None
         '''
         blk = b
-        mp_rankine = blk.rankine 
+        mp_rankine = blk.rankine
         active_blks = mp_rankine.get_active_process_blocks()
 
         implemented_power = round(implemented_power_output[-1])

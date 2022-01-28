@@ -12,6 +12,7 @@ from idaes.apps.grid_integration.forecaster import PlaceHolderForecaster
 from idaes.apps.grid_integration.coordinator import DoubleLoopCoordinator
 
 from multiperiod_double_loop_rankine import MultiPeriodRankine
+import os.path
 
 with open('generator_data.pkl', 'rb') as f:
     gen_data = pickle.load(f)
@@ -27,7 +28,7 @@ n_scenario = 10       #for bidding
 n_tracking_hour = 1   #advance n_tracking_hour (i.e. assume we solve every hour)
 
 # create forecaster
-price_forecasts_df = pd.read_csv(this_file_dir()+'../lmp_forecasts_concat.csv')
+price_forecasts_df = pd.read_csv(os.path.join(this_file_dir(), '../lmp_forecasts_concat.csv'))
 forecaster = PlaceHolderForecaster(price_forecasts_df = price_forecasts_df)
 
 # create solver
@@ -36,21 +37,21 @@ solver = pyo.SolverFactory('ipopt')
 #Setup trackers, bidder, and coordinator
 #################################################################################
 #Tracker
-mp_rankine_tracker = MultiPeriodRankine(horizon=tracking_horizon, pmin=pmin, pmax=pmax, 
+mp_rankine_tracker = MultiPeriodRankine(horizon=tracking_horizon, pmin=pmin, pmax=pmax,
     default_bid_curve=default_bid_curve, generator_name=gen_name)
 thermal_tracker = Tracker(tracking_model_object = mp_rankine_tracker,\
                           n_tracking_hour = n_tracking_hour, \
                           solver = solver)
 
 #Projection Tracker
-mp_rankine_projection_tracker = MultiPeriodRankine(horizon=tracking_horizon, pmin=pmin, pmax=pmax, 
+mp_rankine_projection_tracker = MultiPeriodRankine(horizon=tracking_horizon, pmin=pmin, pmax=pmax,
     default_bid_curve=default_bid_curve, generator_name=gen_name)
 thermal_projection_tracker = Tracker(tracking_model_object=mp_rankine_projection_tracker,\
                                      n_tracking_hour=n_tracking_hour, \
                                      solver=solver)
 
 #Bidder
-mp_rankine_bidder= MultiPeriodRankine(horizon=bidding_horizon, pmin=pmin, pmax=pmax, 
+mp_rankine_bidder= MultiPeriodRankine(horizon=bidding_horizon, pmin=pmin, pmax=pmax,
     default_bid_curve=default_bid_curve, generator_name=gen_name)
 thermal_bidder = Bidder(bidding_model_object=mp_rankine_bidder,\
                         n_scenario=n_scenario,\
