@@ -90,11 +90,11 @@ For further enquiries, send an email to: <idaes-support@idaes.org>
 
 ## Funding acknowledgements
 
-This work was conducted as part of the Institute for the Design of Advanced Energy Systems (IDAES)
-with support through the Simulation-Based Engineering, Crosscutting Research Program within the
-U.S. Department of Energy’s Office of Fossil Energy and Carbon Management (FECM). As of 2021,
-additional support was provided by FECM’s Solid Oxide Fuel Cell Program, and Transformative Power
-Generation Program.
+This work was conducted as part of the [Institute for the Design of Advanced Energy Systems (IDAES)](https://idaes.org)
+with support through the [Simulation-Based Engineering, Crosscutting Research Program](https://netl.doe.gov/coal/simulation-based-engineering)
+within the U.S. Department of Energy’s [Office of Fossil Energy and Carbon Management (FECM)](https://www.energy.gov/fecm/office-fossil-energy-and-carbon-management).
+As of 2021, additional support was provided by FECM’s [Solid Oxide Fuel Cell Program](https://www.energy.gov/fecm/science-innovation/clean-coal-research/solid-oxide-fuel-cells),
+and [Transformative Power Generation Program](https://www.energy.gov/fecm/science-innovation/office-clean-coal-and-carbon-management/advanced-energy-systems/transformative).
 
 ## Contributing
 
