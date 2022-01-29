@@ -88,6 +88,14 @@ General, background and overview information is available at the [IDAES main web
 Framework development happens at our [GitHub repo](https://github.com/IDAES/idaes-pse) where you can ask questions by starting a [discussion](https://github.com/IDAES/idaes-pse/discussions), [report issues/bugs](https://github.com/IDAES/idaes-pse/issues) or [make contributions](https://github.com/IDAES/idaes-pse/pulls).
 For further enquiries, send an email to: <idaes-support@idaes.org>
 
+## Funding acknowledgements
+
+This work was conducted as part of the Institute for the Design of Advanced Energy Systems (IDAES)
+with support through the Simulation-Based Engineering, Crosscutting Research Program within the
+U.S. Department of Energy’s Office of Fossil Energy and Carbon Management (FECM). As of 2021,
+additional support was provided by FECM’s Solid Oxide Fuel Cell Program, and Transformative Power
+Generation Program.
+
 ## Contributing
 
 Please see our [Advanced User Guide](https://idaes-pse.readthedocs.io/en/stable/advanced_user_guide/) and [Developer Documentation](https://idaes-pse.readthedocs.io/en/stable/advanced_user_guide/developer/) on how to work with the idaes-pse source code and contirbute changes to the project.
