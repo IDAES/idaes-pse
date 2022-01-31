@@ -18,11 +18,13 @@ Author: Chinedu Okoli
 
 import pytest
 
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
+from pyomo.environ import (ConcreteModel,
+                           TerminationCondition,
+                           SolverStatus,
                            value,
                            Var,
                            Constraint)
+from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigBlock
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core import (FlowsheetBlock,
@@ -228,7 +230,9 @@ class TestIronOC(object):
         results = solver.solve(iron_oc)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -246,6 +250,10 @@ class TestIronOC(object):
         assert value(
                 iron_oc.fs.unit.gas_inlet.pressure[0] -
                 iron_oc.fs.unit.gas_outlet.pressure[0]) >= 0
+
+    @pytest.mark.component
+    def test_units_consistent(self, iron_oc):
+        assert_units_consistent(iron_oc)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -421,7 +429,9 @@ class TestIronOC_EnergyBalanceType(object):
         results = solver.solve(iron_oc)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -439,6 +449,10 @@ class TestIronOC_EnergyBalanceType(object):
         assert value(
                 iron_oc.fs.unit.gas_inlet.pressure[0] -
                 iron_oc.fs.unit.gas_outlet.pressure[0]) >= 0
+
+    @pytest.mark.component
+    def test_units_consistent(self, iron_oc):
+        assert_units_consistent(iron_oc)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
