@@ -49,7 +49,7 @@ kwargs = dict(
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
         "bunch",
-        "click<=7.1.2", # problems with 8.x
+        "click", # problems with 8.x
         "colorama",
         "flask",  # for ui/fsvis
         "flask-cors",
