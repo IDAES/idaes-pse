@@ -118,6 +118,10 @@ class ReactionParameterData(ReactionParameterBlock):
 
         # Standard Heat of Reaction - kJ/mol_rxn
         dh_rxn_dict = {"R1": 136.5843}
+        # Heat of Reaction should be defined in default units
+        # (default energy units)/(default amount units)
+        # per the define_meta.add_default_units method in the
+        # relevant phase - in this case, the solid phase properties
         self.dh_rxn = Param(self.rate_reaction_idx,
                             initialize=dh_rxn_dict,
                             doc="Heat of reaction [kJ/mol]",
@@ -199,7 +203,7 @@ class _ReactionBlock(ReactionBlockBase):
     def initialize(blk, outlvl=idaeslog.NOTSET,
                    optarg=None, solver=None):
         '''
-        Initialisation routine for reaction package.
+        Initialization routine for reaction package.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
@@ -245,7 +249,7 @@ class _ReactionBlock(ReactionBlockBase):
                 blk[k].solid_state_ref.dens_mass_skeletal.fix(
                         blk[k].solid_state_ref.dens_mass_skeletal.value)
 
-        # Initialise values
+        # Initialize values
         for k in blk.keys():
             if hasattr(blk[k], "OC_conv_eqn"):
                 calculate_variable_from_constraint(
@@ -345,6 +349,60 @@ class ReactionBlockData(ReactionBlockDataBase):
         Callable method for Block construction
         """
         super(ReactionBlockDataBase, self).build()
+
+        # Now that the block is built, overwrite derived units with defaults
+        # from define_metadata method at end of parameter block
+        # 'defaults' are units set in this package, 'units_meta' are derived
+        # units built from the base units (base units in IDAES start as time s,
+        # mass kg, amount mol, temperature K, pressure Pa, energy J unless
+        # overwritten)
+
+        self.config.parameters.get_metadata()._create_derived_units()
+        units_meta = self.config.parameters.get_metadata()._derived_units
+        defaults = self.config.parameters.get_metadata().default_units
+
+        # overwrite base units with custom defaults for energy and pressure
+        if 'pressure' in defaults.keys():
+            units_meta['pressure'] = defaults['pressure']
+        if 'energy' in defaults.keys():
+            units_meta['energy'] = defaults['energy']
+
+            # build derived units from the updated energy units
+            units_1 = \
+                {"flow_energy": defaults["energy"] / units_meta["time"],
+                 "flux_energy": defaults["energy"] / units_meta["time"] /
+                 units_meta["area"],
+                 "energy_mass": defaults["energy"] / units_meta["mass"],
+                 "energy_mole": defaults["energy"] / units_meta["amount"],
+                 "entropy": defaults["energy"] / units_meta["temperature"],
+                 "power": defaults["energy"] / units_meta["time"],
+                 "heat_capacity_mass": (defaults["energy"] /
+                                        units_meta["mass"] /
+                                        units_meta["temperature"]),
+                 "heat_capacity_mole": (defaults["energy"] /
+                                        units_meta["amount"] /
+                                        units_meta["temperature"])}
+
+            for derived_units in units_1:
+                units_meta[derived_units] = units_1[derived_units]
+
+            # quantities built from the prior units set
+            units_2 = \
+                {"entropy_mass": units_1["entropy"] * units_meta["mass"],
+                 "entropy_mole": units_1["entropy"] * units_meta["amount"],
+                 "heat_transfer_coefficient": (units_1["flux_energy"] /
+                                               units_meta["temperature"]),
+                 "thermal_conductivity": (units_1["power"] /
+                                          units_meta["length"] /
+                                          units_meta["temperature"]),
+                 "gas_constant": units_1["heat_capacity_mole"]}
+
+            for derived_units in units_2:
+                units_meta[derived_units] = units_2[derived_units]
+
+        # Now that units_meta is updated, update the derived units so they
+        # can be accessed interally when called by unit models
+        self.config.parameters.get_metadata()._derived_units = units_meta
 
         # Object references to the corresponding state blocks and parameters
         add_object_reference(self, "_params", self.config.parameters)
