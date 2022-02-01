@@ -15,3 +15,6 @@ from .interval_data import (
     load_inputs_into_model,
     interval_data_from_time_series,
 )
+from .find_nearest_index import (
+    find_nearest_index,
+)
