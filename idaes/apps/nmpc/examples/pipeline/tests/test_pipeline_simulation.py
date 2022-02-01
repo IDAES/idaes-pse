@@ -11,6 +11,7 @@
 # license information.
 #################################################################################
 import pyomo.common.unittest as unittest
+import pytest
 
 from idaes.apps.nmpc.examples.pipeline.run_pipeline_simulation import (
     run_simulation,
@@ -18,6 +19,7 @@ from idaes.apps.nmpc.examples.pipeline.run_pipeline_simulation import (
 
 class TestPipelineSimulation(unittest.TestCase):
 
+    @pytest.mark.component
     def test_small_simulation(self):
         simulation_data = run_simulation(
             simulation_horizon=6.0,

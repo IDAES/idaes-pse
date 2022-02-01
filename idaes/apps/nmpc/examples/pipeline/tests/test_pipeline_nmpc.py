@@ -11,11 +11,13 @@
 # license information.
 #################################################################################
 import pyomo.common.unittest as unittest
+import pytest
 
 from idaes.apps.nmpc.examples.pipeline.run_pipeline_nmpc import run_nmpc
 
 class TestPipelineNMPC(unittest.TestCase):
 
+    @pytest.mark.unit
     def test_small_nmpc_simulation(self):
         simulation_data, applied_inputs = run_nmpc(
             simulation_horizon=4.0,
