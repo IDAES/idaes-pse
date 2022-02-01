@@ -21,9 +21,8 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
+    check_optimal_termination,
     Constraint,
-    SolverStatus,
-    TerminationCondition,
     value,
     units as pyunits
 )
@@ -725,10 +724,7 @@ thickness of the tube""",
         self.shell.release_state(flags_shell)
         self.tube.release_state(flags_tube)
 
-        if (res is not None and (
-                res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok)):
+        if res is not None and not check_optimal_termination(res):
             raise InitializationError(
                 f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

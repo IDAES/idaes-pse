@@ -27,8 +27,7 @@ from pyomo.environ import (
     ExternalFunction,
     Block,
     units as pyunits,
-    SolverStatus,
-    TerminationCondition
+    check_optimal_termination
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -233,7 +232,7 @@ def delta_temperature_underwood_callback(b):
     """
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
-    temp_units = pyunits.get_units(dT1)
+    temp_units = pyunits.get_units(dT1[dT1.index_set().first()])
 
     # external function that ruturns the real root, for the cuberoot of negitive
     # numbers, so it will return without error for positive and negitive dT.
@@ -612,10 +611,7 @@ class HeatExchangerData(UnitModelBlockData):
             self.costing.activate()
             costing.initialize(self.costing)
 
-        if (res is not None and (
-                res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok)):
+        if not check_optimal_termination(res):
             raise InitializationError(
                 f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

@@ -17,10 +17,9 @@ Author: Andrew Lee, Emmanuel Ogbe
 """
 import pytest
 
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Constraint,
-                           TerminationCondition,
-                           SolverStatus,
                            units,
                            value,
                            Var)
@@ -281,9 +280,7 @@ class TestBTX_isothermal(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -414,9 +411,7 @@ class TestIAPWS(object):
         results = solver.solve(iapws)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -504,9 +499,7 @@ class TestIAPWS(object):
             iapws.fs.unit.initialize(optarg={'tol': 1e-6})
             results = solver.solve(iapws)
             # Check for optimal solution
-            assert results.solver.termination_condition == \
-                TerminationCondition.optimal
-            assert results.solver.status == SolverStatus.ok
+            assert check_optimal_termination(results)
 
             Tout = pytest.approx(cases["Tout"][i], rel=1e-2)
             Pout = pytest.approx(cases["Pout"][i]*1000, rel=1e-2)
@@ -618,9 +611,7 @@ class TestSaponification(object):
         results = solver.solve(sapon)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -823,9 +814,7 @@ class Test_costing(object):
         m.fs.unit.initialize()
         results = solver.solve(m)
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         assert value(m.fs.unit.control_volume.work[0]) == \
             pytest.approx(101410.4, rel=1e-5)

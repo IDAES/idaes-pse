@@ -135,29 +135,24 @@ class ComponentData(ProcessBlockData):
                 self._add_to_electrolyte_component_list()
 
         base_units = self.parent_block().get_metadata().default_units
+        der_units = self.parent_block().get_metadata().derived_units
         p_units = (base_units["mass"] /
                    base_units["length"] /
                    base_units["time"]**2)
 
         # Create Param for molecular weight if provided
-        if "mw" in self.config.parameter_data:
-            if isinstance(self.config.parameter_data["mw"], tuple):
-                mw_init = pyunits.convert_value(
-                    self.config.parameter_data["mw"][0],
-                    from_units=self.config.parameter_data["mw"][1],
-                    to_units=base_units["mass"]/base_units["amount"])
-            else:
-                _log.debug("{} no units provided for parameter mw - assuming "
-                           "default units".format(self.name))
-                mw_init = self.config.parameter_data["mw"]
-            self.mw = Param(initialize=mw_init,
-                            units=base_units["mass"]/base_units["amount"])
+        param_dict = {"mw": base_units["mass"]/base_units["amount"]}
+        for p, u in param_dict.items():
+            if p in self.config.parameter_data:
+                self.add_component(p, Param(mutable=True, units=u))
+                set_param_from_config(self, p)
 
         # Create Vars for common parameters
-        param_dict = {"pressure_crit": p_units,
-                      "temperature_crit": base_units["temperature"],
-                      "omega": None}
-        for p, u in param_dict.items():
+        var_dict = {"dens_mol_crit": der_units["density_mole"],
+                    "omega": pyunits.dimensionless,
+                    "pressure_crit": p_units,
+                    "temperature_crit": base_units["temperature"]}
+        for p, u in var_dict.items():
             if p in self.config.parameter_data:
                 self.add_component(p, Var(units=u))
                 set_param_from_config(self, p)

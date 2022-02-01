@@ -19,8 +19,8 @@ import pytest
 
 # Import Pyomo units
 from pyomo.environ import (
-    ConcreteModel, Constraint, Expression, SolverStatus,
-    TerminationCondition, units as pyunits, value)
+    check_optimal_termination, ConcreteModel, Constraint, Expression, 
+    units as pyunits, value)
 
 # Import IDAES cores
 from idaes.core import (
@@ -178,9 +178,7 @@ class TestInherentReactions(object):
 
         results = solver.solve(frame)
 
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         assert value(
             frame.fs.H101.control_volume.properties_out[0].k_eq["e1"]) == 2
@@ -228,9 +226,7 @@ class TestInherentReactions(object):
 
         results = solver.solve(frame)
 
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         assert value(
             frame.fs.H101.control_volume.properties_out[0].k_eq["e1"]) == 2
@@ -292,9 +288,7 @@ class TestInherentReactions(object):
 
         results = solver.solve(frame)
 
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         assert pytest.approx(2, rel=1e-8) == value(
             frame.fs.cv.properties[0, 1].k_eq["e1"])
@@ -357,9 +351,7 @@ class TestInherentReactions(object):
 
         results = solver.solve(frame)
 
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         assert pytest.approx(2, rel=1e-8) == value(
             frame.fs.cv.properties[0, 1].k_eq["e1"])

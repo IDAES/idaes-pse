@@ -27,11 +27,10 @@ __author__ = "Andrew Lee, Paul Akula"
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    check_optimal_termination,
     Constraint,
     Param,
     Reference,
-    SolverStatus,
-    TerminationCondition,
     units as pyunits,
     value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
@@ -551,9 +550,7 @@ see property package for documentation.}"""))
         # Release Inlet state
         blk.liquid_phase.release_state(flags, outlvl)
 
-        if (results.solver.termination_condition !=
-                TerminationCondition.optimal or
-                results.solver.status != SolverStatus.ok):
+        if not check_optimal_termination(results):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

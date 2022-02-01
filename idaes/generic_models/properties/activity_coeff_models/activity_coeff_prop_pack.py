@@ -42,7 +42,8 @@ References:
 """
 
 # Import Pyomo libraries
-from pyomo.environ import (Constraint,
+from pyomo.environ import (check_optimal_termination,
+                           Constraint,
                            log,
                            NonNegativeReals,
                            value,
@@ -51,9 +52,7 @@ from pyomo.environ import (Constraint,
                            Expression,
                            Param,
                            sqrt,
-                           units as pyunits,
-                           SolverStatus,
-                           TerminationCondition)
+                           units as pyunits)
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -397,8 +396,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Initialization Step 5 {}.".format(idaeslog.condition(res)))
 
-        if (res.solver.termination_condition != TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok):
+        if not check_optimal_termination(res):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

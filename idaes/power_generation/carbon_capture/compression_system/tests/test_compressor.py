@@ -107,9 +107,7 @@ def test_run(build_unit):
     # solve model
     results = solver.solve(m, tee=True)
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
     assert degrees_of_freedom(m) == 0
 
     # energy balance
