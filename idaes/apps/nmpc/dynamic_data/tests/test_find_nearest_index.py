@@ -11,12 +11,14 @@
 # license information.
 #################################################################################
 import pyomo.common.unittest as unittest
+import pytest
 
 from idaes.apps.nmpc.dynamic_data.find_nearest_index import (
     find_nearest_index,
 )
 
 
+@pytest.mark.component
 class TestFindNearestIndex(unittest.TestCase):
 
     def test_two_points(self):
