@@ -25,6 +25,7 @@ from pyomo.network.arc import Arc
 from idaes.core.unit_model import UnitModelBlockData
 from idaes.core.process_block import declare_process_block_class
 from idaes.core.property_base import StateBlock
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.config import (
     is_physical_parameter_block,
 )
