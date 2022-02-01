@@ -1,3 +1,15 @@
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import pyomo.common.unittest as unittest
 import pytest
 
@@ -15,6 +27,8 @@ class TestSimpleNetwork(unittest.TestCase):
     @pytest.mark.component
     def test_simple_network_model(self):
         model = make_simple_model()
+
+        # Fix supply pressure, boost pressure, and demand flow rate
         model.fs.compressor.boost_pressure[:].fix()
         model.fs.nodes[0].state[:].pressure.fix()
         model.fs.nodes[1].demands[0].flow_mol[:].fix()
@@ -30,6 +44,14 @@ class TestSimpleNetwork(unittest.TestCase):
 
     @pytest.mark.component
     def test_dynamic_optimization_result(self):
+        """
+        Test that dynamic optimization solve gives results we expect.
+        These values are taken from the solve of this dynamic optimization
+        problem itself, not a non-IDAES reproduction of the same solve,
+        so this test only asserts that the values produced by the flowsheet
+        script don't change.
+
+        """
         sim_data = run_dynamic_optimization()
 
         time_list, value_map = sim_data
