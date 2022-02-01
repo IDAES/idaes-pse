@@ -256,11 +256,6 @@ class TestSimpleCompressor(unittest.TestCase):
         # (c) a perfect matching between constraints and variables
         assert_units_consistent(m)
 
-        igraph = IncidenceGraphInterface(m)
-        matching = igraph.maximum_matching()
-        var_dmp, con_dmp = igraph.dulmage_mendelsohn()
-        N, M = igraph.incidence_matrix.shape
-
         self.assertEqual(degrees_of_freedom(m), 0)
         igraph = IncidenceGraphInterface(m)
         N, M = igraph.incidence_matrix.shape

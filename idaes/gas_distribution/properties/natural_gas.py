@@ -55,6 +55,13 @@ class NaturalGasParameterBlockData(PhysicalParameterBlock):
         self._state_block_class = NaturalGasStateBlock
         self.Vap = VaporPhase()
 
+        self.dens_nominal = Param(
+            initialize=0.72,
+            units=pyunits.kg/pyunits.m**3,
+            doc="Density of the gas a standard temperature and pressure",
+            # Used to convert mass flow rate between kg/hr and SCM/hr
+        )
+
         nat_gas_data = {"mw": (18.0, pyunits.kg/pyunits.kmol)}
         nat_gas_config = {"parameter_data": nat_gas_data}
         self.natural_gas = Component(default=nat_gas_config)

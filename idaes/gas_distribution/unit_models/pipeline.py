@@ -134,15 +134,6 @@ argument)."""))
         #
         # Add constraints indexed by space before applying transformation
         #
-        # HACK: speed of sound should be a property of the state block.
-        # But the generic property ideal EOS does not have a property
-        # for speed of sound. This should probably be fixed, but we
-        # will have to develop our own property package anyway to
-        # account for the non-ideal behavior of the natural gas.
-        # For now, we just add speed of sound to the unit model so we can
-        # calculate some values.
-        #self.add_speed_of_sound()
-
         self.add_flow_mass_linking_constraint()
         self.add_momentum_balance_equation()
 
@@ -228,41 +219,6 @@ argument)."""))
             rule=diameter_rule,
             doc="Equation linking control volume area and pipeline diameter",
         )
-
-    #def add_speed_of_sound(self):
-    #    # FIXME: Attaching this property to the unit model is temporary.
-    #    # See comment above in the build method.
-    #    time = self.flowsheet().time
-    #    space = self.control_volume.length_domain
-    #    self.compressibility = Param(
-    #        initialize=0.80,
-    #        units=pyunits.dimensionless,
-    #        doc="Gas compressibility",
-    #    )
-    #    def speed_sound_rule(b, t, x):
-    #        state = self.control_volume.properties[t, x]
-    #        # FIXME: Embedded constant: "Vap"
-    #        gamma = state.heat_capacity_ratio_phase["Vap"]
-    #        z = self.compressibility
-    #        return (
-    #            pyunits.convert(sqrt(
-    #                    gamma * z * Constants.gas_constant * state.temperature
-    #                    / state.mw
-    #                ),
-    #                #pyunits.m**2/pyunits.s**2,
-    #                pyunits.m/pyunits.s,
-    #            )
-    #        )
-    #    # TODO: This expression has a very long and incomprehensible string
-    #    # representation due to the Shomate equations used in the heat
-    #    # capacity ratio. Can I make this string representation more
-    #    # comprehensible without adding variables for heat capacities?
-    #    self.speed_of_sound = Expression(
-    #        time,
-    #        space,
-    #        rule=speed_sound_rule,
-    #        doc="Speed of sound in the pipeline gas",
-    #    )
 
     def add_flow_mass_linking_constraint(self):
         # We know flow_mass exists in the property package, but it might be

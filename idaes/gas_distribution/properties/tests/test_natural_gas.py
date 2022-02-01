@@ -131,6 +131,32 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
         )
         self.assertAlmostEqual(pyo.value(dens_mol_comp), 2.5642238411)
 
+        # flow_mol was set to 100 kmol/hr earlier.
+        m.state.mole_frac_comp[j].set_value(1.0)
+        self.assertEqual(
+            pyo.value(m.state.flow_mol_comp[j]),
+            100.0,
+        )
+        assert_units_equivalent(
+            pyo.units.get_units(m.state.flow_mol_comp[j]),
+            pyo.units.kmol/pyo.units.hr,
+        )
+
+    def test_nominal_density(self):
+        m = pyo.ConcreteModel()
+        m.properties = NaturalGasParameterBlock()
+        self.assertEqual(m.properties.dens_nominal.value, 0.72)
+        assert_units_equivalent(
+            m.properties.dens_nominal.get_units(),
+            pyo.units.kg/pyo.units.m**3,
+        )
+
+    def test_compressibility(self):
+        m = pyo.ConcreteModel()
+        m.properties = NaturalGasParameterBlock()
+        m.state = m.properties.build_state_block()
+        self.assertEqual(m.state.compressibility.value, 0.80)
+
 
 if __name__ == "__main__":
     unittest.main()
