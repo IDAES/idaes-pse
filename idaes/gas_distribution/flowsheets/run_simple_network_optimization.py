@@ -85,7 +85,8 @@ def run_dynamic_optimization():
     m.fs.nodes[0].supplies[0].flow_mol[t0].fix(inlet_flow)
     m.fs.nodes[0].state[t0].pressure.fix(50.0*pyo.units.bar)
     m.fs.compressor.boost_pressure[t0].fix(7.0*pyo.units.bar)
-    ipopt.solve(m, tee=True)
+    res = ipopt.solve(m, tee=True)
+    pyo.assert_optimal_termination(res)
     scalar_vars, dae_vars = flatten_dae_components(m, m.fs.time, pyo.Var)
     initial_scalar_data = {
         str(pyo.ComponentUID(var)): var.value
@@ -111,7 +112,8 @@ def run_dynamic_optimization():
     m.target_demand[:].set_value(
         pyo.value(50.0 * 1e4 * 0.72 / mw)*pyo.units.kmol/pyo.units.hr
     )
-    ipopt.solve(m, tee=True)
+    res = ipopt.solve(m, tee=True)
+    pyo.assert_optimal_termination(res)
     target_data = {
         str(pyo.ComponentUID(var.referent)): var[t0].value
         for var in dae_vars
@@ -176,7 +178,8 @@ def run_dynamic_optimization():
     # Sanity check solve - should have zero degrees of freedom and no
     # infeasibility
     #
-    ipopt.solve(m, tee=True)
+    res = ipopt.solve(m, tee=True)
+    pyo.assert_optimal_termination(res)
 
     #
     # Construct target demand sequence and load into model
@@ -210,7 +213,8 @@ def run_dynamic_optimization():
     m.fs.pipeline.control_volume.area.fix()
     m.fs.pipeline.diameter_eqn.deactivate()
 
-    ipopt.solve(m, tee=True)
+    res = ipopt.solve(m, tee=True)
+    pyo.assert_optimal_termination(res)
 
     #
     # Extract values we care about and plot
