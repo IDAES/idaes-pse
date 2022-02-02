@@ -554,7 +554,7 @@ argument)."""))
                         initialize=0.0,
                         doc="Amount of generation in unit by phase "
                             "equilibria per unit length",
-                        units=flow_l_units)
+                        units=flow_l_units)  # use property package flow basis
 
         # Material transfer term
         if has_mass_transfer:
