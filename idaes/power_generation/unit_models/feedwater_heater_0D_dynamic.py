@@ -52,7 +52,6 @@ from idaes.power_generation.unit_models.helm import \
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
 from idaes.power_generation.unit_models.helm import HelmMixer as Mixer
-from idaes.core.util import get_solver, copy_port_values as _set_port
 
 _log = idaeslog.getLogger(__name__)
 
