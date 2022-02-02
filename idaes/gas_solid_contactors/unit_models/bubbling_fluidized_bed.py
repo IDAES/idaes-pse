@@ -665,18 +665,18 @@ see reaction package for documentation.}"""))
                 self.length_domain,
                 domain=Reals,
                 doc='Bubble to Emulsion Gas Heat Transfer Coefficient'
-                    '[kJ/m^3.K.s]')
+                    '[J/m^3.K.s]')
         self.Hgbulk = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
-                doc='Gas Phase Bulk Enthalpy Transfer Rate [kJ/m.s]')
+                doc='Gas Phase Bulk Enthalpy Transfer Rate [J/m.s]')
         self.htc_conv = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Gas to Solid Energy Convective Heat Transfer'
-                    'Coefficient [kJ/m^2.K.s]')
+                    'Coefficient [J/m^2.K.s]')
 
         # Heat transfer terms
         self.ht_conv = Var(
@@ -684,7 +684,7 @@ see reaction package for documentation.}"""))
                 self.length_domain,
                 domain=Reals,
                 doc='Gas to Solid Convective Enthalpy Transfer in'
-                    'Emulsion Region [kJ/m^2.K.s]')
+                    'Emulsion Region [J/m^2.K.s]')
 
         # Reformulation variables
         self._reform_var_1 = Var(
@@ -735,8 +735,8 @@ see reaction package for documentation.}"""))
                       doc='Bulk Gas Permeation Coefficient [m/s]')
         self.Kd.fix()
         self.deltaP_orifice = Var(domain=Reals,
-                                  initialize=3.400,
-                                  doc='Pressure Drop Across Orifice [bar]')
+                                  initialize=3.4E5,
+                                  doc='Pressure Drop Across Orifice [Pa]')
         self.deltaP_orifice.fix()
 
     # =========================================================================
@@ -961,9 +961,7 @@ see reaction package for documentation.}"""))
                              self.length_domain,
                              doc="Gas Emulsion Pressure Drop Calculation")
             def gas_emulsion_pressure_drop(b, t, x):
-                # 1e5 = pressure unit conversion factor from Pa to bar
-                return (1e-2*(b.gas_emulsion.deltaP[t, x] *
-                              1e5) ==
+                return (1e-2*(b.gas_emulsion.deltaP[t, x]) ==
                         1e-2*(- constants.acceleration_gravity *
                               (1 - b.voidage_average[t, x]) *
                         b.solid_emulsion.properties[t, x].dens_mass_particle)

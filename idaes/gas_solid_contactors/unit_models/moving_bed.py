@@ -549,9 +549,9 @@ see reaction package for documentation.}"""))
                                doc='Particle Nusselt number [-]')
         self.gas_solid_htc = Var(self.flowsheet().time,
                                  self.length_domain,
-                                 domain=Reals, initialize=1.0,
+                                 domain=Reals, initialize=1.0E3,
                                  doc='Gas-solid heat transfer coefficient'
-                                 '[kJ/(m2Ks)]')
+                                 '[J/(m2Ks)]')
 
         # Fixed variables (these are parameters that can be estimated)
         self.bed_voidage = Var(domain=Reals,
@@ -620,7 +620,7 @@ see reaction package for documentation.}"""))
                              doc="Gas side pressure drop calculation -"
                                  "simplified pressure drop")
             def gas_phase_config_pressure_drop(b, t, x):
-                return b.gas_phase.deltaP[t, x]*1e5 == -0.2*(
+                return b.gas_phase.deltaP[t, x] == -0.2*(
                         b.velocity_superficial_gas[t, x] *
                         (b.solid_phase.properties[t, x].dens_mass_particle -
                          b.gas_phase.properties[t, x].dens_mass))
@@ -632,7 +632,7 @@ see reaction package for documentation.}"""))
                              doc="Gas side pressure drop calculation -"
                                  "ergun equation")
             def gas_phase_config_pressure_drop(b, t, x):
-                return (1e2*-b.gas_phase.deltaP[t, x]*1e5 ==
+                return (1e2*-b.gas_phase.deltaP[t, x] ==
                         1e2*(
                         150*(1 - b.bed_voidage) ** 2 *
                         b.gas_phase.properties[t, x].visc_d *
@@ -1237,7 +1237,7 @@ see reaction package for documentation.}"""))
         plt.legend(loc=0, ncol=2)
         plt.grid()
         plt.xlabel("Bed height [-]")
-        plt.ylabel("Total Pressure [bar]")
+        plt.ylabel("Total Pressure [Pa]")
         fig_P.savefig('Pressure.png')
 
         # Temperature profile

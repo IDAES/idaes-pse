@@ -199,15 +199,15 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 doc="Shomate equation heat capacity coeff 8",
                 units=pyunits.kJ/pyunits.mol)
 
-        # Std. heat of formation of comp. - units = kJ/(mol comp) - ref: NIST
-        enth_mol_form_comp_dict = {'Fe2O3': -825.5032, 'Fe3O4': -1120.894,
-                                   'Al2O3': -1675.690}
+        # Std. heat of formation of comp. - units = J/(mol comp) - ref: NIST
+        enth_mol_form_comp_dict = {'Fe2O3': -825.5032E3, 'Fe3O4': -1120.894E3,
+                                   'Al2O3': -1675.690E3}
         self.enth_mol_form_comp = Param(
                 self.component_list,
                 mutable=False,
                 initialize=enth_mol_form_comp_dict,
-                doc="Component molar heats of formation [kJ/mol]",
-                units=pyunits.kJ/pyunits.mol)
+                doc="Component molar heats of formation [J/mol]",
+                units=pyunits.J/pyunits.mol)
 
         # Set default scaling for mass fractions
         for comp in self.component_list:
@@ -250,9 +250,9 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # Particle thermal conductivity
         self.therm_cond_sol = Var(
                     domain=Reals,
-                    initialize=12.3e-3,
-                    doc='Thermal conductivity of solid particles [kJ/m.K.s]',
-                    units=pyunits.kJ/pyunits.m/pyunits.K/pyunits.s)
+                    initialize=12.3e-0,
+                    doc='Thermal conductivity of solid particles [J/m.K.s]',
+                    units=pyunits.J/pyunits.m/pyunits.K/pyunits.s)
         self.therm_cond_sol.fix()
 
     @classmethod
@@ -267,19 +267,17 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'dens_mass_particle': {'method': '_dens_mass_particle',
                                        'units': 'kg/m3'},
                 'cp_mol_comp': {'method': '_cp_mol_comp',
-                                'units': 'kJ/mol.K'},
-                'cp_mass': {'method': '_cp_mass', 'units': 'kJ/kg.K'},
-                'enth_mass': {'method': '_enth_mass', 'units': 'kJ/kg'},
+                                'units': 'J/mol.K'},
+                'cp_mass': {'method': '_cp_mass', 'units': 'J/kg.K'},
+                'enth_mass': {'method': '_enth_mass', 'units': 'J/kg'},
                 'enth_mol_comp': {'method': '_enth_mol_comp',
-                                  'units': 'kJ/mol'}})
+                                  'units': 'J/mol'}})
 
         obj.add_default_units({'time': pyunits.s,
                                'length': pyunits.m,
                                'mass': pyunits.kg,
                                'amount': pyunits.mol,
-                               'temperature': pyunits.K,
-                               'pressure': pyunits.Pa,
-                               'energy': pyunits.kJ})
+                               'temperature': pyunits.K})
 
 
 class _SolidPhaseStateBlock(StateBlock):
@@ -434,60 +432,6 @@ class SolidPhaseStateBlockData(StateBlockData):
         """
         super(SolidPhaseStateBlockData, self).build()
 
-        # Now that the block is built, overwrite derived units with defaults
-        # from define_metadata method at end of parameter block
-        # 'defaults' are units set in this package, 'units_meta' are derived
-        # units built from the base units (base units in IDAES start as time s,
-        # mass kg, amount mol, temperature K, pressure Pa, energy J unless
-        # overwritten)
-
-        self._params.get_metadata()._create_derived_units()  # using base units
-        units_meta = self._params.get_metadata()._derived_units
-        defaults = self._params.get_metadata().default_units
-
-        # overwrite base units with custom defaults for energy and pressure
-        if 'pressure' in defaults.keys():
-            units_meta['pressure'] = defaults['pressure']
-        if 'energy' in defaults.keys():
-            units_meta['energy'] = defaults['energy']
-
-            # build derived units from the updated energy units
-            units_1 = \
-                {"flow_energy": defaults["energy"] / units_meta["time"],
-                 "flux_energy": defaults["energy"] / units_meta["time"] /
-                 units_meta["area"],
-                 "energy_mass": defaults["energy"] / units_meta["mass"],
-                 "energy_mole": defaults["energy"] / units_meta["amount"],
-                 "entropy": defaults["energy"] / units_meta["temperature"],
-                 "power": defaults["energy"] / units_meta["time"],
-                 "heat_capacity_mass": (defaults["energy"] /
-                                        units_meta["mass"] /
-                                        units_meta["temperature"]),
-                 "heat_capacity_mole": (defaults["energy"] /
-                                        units_meta["amount"] /
-                                        units_meta["temperature"])}
-
-            for derived_units in units_1:
-                units_meta[derived_units] = units_1[derived_units]
-
-            # quantities built from the prior units set
-            units_2 = \
-                {"entropy_mass": units_1["entropy"] * units_meta["mass"],
-                 "entropy_mole": units_1["entropy"] * units_meta["amount"],
-                 "heat_transfer_coefficient": (units_1["flux_energy"] /
-                                               units_meta["temperature"]),
-                 "thermal_conductivity": (units_1["power"] /
-                                          units_meta["length"] /
-                                          units_meta["temperature"]),
-                 "gas_constant": units_1["heat_capacity_mole"]}
-
-            for derived_units in units_2:
-                units_meta[derived_units] = units_2[derived_units]
-
-        # Now that units_meta is updated, update the derived units so they
-        # can be accessed interally when called by unit models
-        self._params.get_metadata()._derived_units = units_meta
-
         # Object reference for molecular weight if needed by CV1D
         # Molecular weights
         add_object_reference(self, "mw_comp",
@@ -499,7 +443,7 @@ class SolidPhaseStateBlockData(StateBlockData):
         """List the necessary state variable objects."""
 
         # create units object to get default units from the param block
-        units_meta = self._params.get_metadata()._derived_units
+        units_meta = self._params.get_metadata().derived_units
 
         self.flow_mass = Var(initialize=1.0,
                              domain=Reals,
@@ -530,7 +474,7 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def _dens_mass_skeletal(self):
         # Skeletal density of OC solid particles
-        units_meta = self._params.get_metadata()._derived_units
+        units_meta = self._params.get_metadata().derived_units
         self.dens_mass_skeletal = Var(domain=Reals,
                                       initialize=3251.75,
                                       doc='Skeletal density of OC',
@@ -555,7 +499,7 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def _dens_mass_particle(self):
         # Particle density of OC (includes the OC pores)
-        units_meta = self._params.get_metadata()._derived_units
+        units_meta = self._params.get_metadata().derived_units
         self.dens_mass_particle = Var(
                     domain=Reals,
                     initialize=3251.75,
@@ -578,7 +522,7 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def _cp_mol_comp(self):
         # Pure component solid heat capacities
-        units_meta = self._params.get_metadata()._derived_units
+        units_meta = self._params.get_metadata().derived_units
         units_cp_mol = (units_meta['energy'] *
                         units_meta['amount']**-1 *
                         units_meta['temperature']**-1)
@@ -610,7 +554,7 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def _cp_mass(self):
         # Mixture heat capacities
-        units_meta = self._params.get_metadata()._derived_units
+        units_meta = self._params.get_metadata().derived_units
         units_cp_mass = (units_meta['energy'] *
                          units_meta['mass']**-1 *
                          units_meta['temperature']**-1)
@@ -634,7 +578,7 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def _enth_mol_comp(self):
         # Pure component vapour enthalpies
-        units_meta = self._params.get_metadata()._derived_units
+        units_meta = self._params.get_metadata().derived_units
         units_enth_mol = units_meta['energy'] * units_meta['amount']**-1
         self.enth_mol_comp = Var(
                 self._params.component_list,
@@ -669,7 +613,7 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def _enth_mass(self):
         # Mixture mass enthalpy
-        units_meta = self._params.get_metadata()._derived_units
+        units_meta = self._params.get_metadata().derived_units
         units_enth_mass = units_meta['energy'] * units_meta['mass']**-1
         self.enth_mass = Var(domain=Reals,
                              initialize=0.0,
