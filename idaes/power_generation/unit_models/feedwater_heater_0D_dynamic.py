@@ -52,6 +52,8 @@ from idaes.power_generation.unit_models.helm import \
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
 from idaes.power_generation.unit_models.helm import HelmMixer as Mixer
+from idaes.core.util import get_solver
+from idaes.core.util.initialization import propagate_state
 
 _log = idaeslog.getLogger(__name__)
 
@@ -362,15 +364,15 @@ class FWH0DDynamicData(UnitModelBlockData):
         # initialize desuperheat if any
         if config.has_desuperheat:
             if config.has_drain_cooling:
-                _set_port(self.desuperheat.inlet_2, self.cooling.inlet_2)
+                propagate_state(self.desuperheat.inlet_2, self.cooling.inlet_2)
             else:
-                _set_port(self.desuperheat.inlet_2, self.condense.inlet_2)
+                propagate_state(self.desuperheat.inlet_2, self.condense.inlet_2)
             self.desuperheat.initialize(*args, **kwargs)
             self.desuperheat.inlet_1.flow_mol.unfix()
             if config.has_drain_mixer:
-                _set_port(self.drain_mix.steam, self.desuperheat.outlet_1)
+                propagate_state(self.drain_mix.steam, self.desuperheat.outlet_1)
             else:
-                _set_port(self.condense.inlet_1, self.desuperheat.outlet_1)
+                propagate_state(self.condense.inlet_1, self.desuperheat.outlet_1)
             # fix the steam and fwh inlet for init
             self.desuperheat.inlet_1.fix()
             self.desuperheat.inlet_1.flow_mol.unfix()  # unfix for extract calc
@@ -380,14 +382,14 @@ class FWH0DDynamicData(UnitModelBlockData):
             self.drain_mix.drain.fix()
             self.drain_mix.outlet.unfix()
             self.drain_mix.initialize(*args, **kwargs)
-            _set_port(self.condense.inlet_1, self.drain_mix.outlet)
+            propagate_state(self.condense.inlet_1, self.drain_mix.outlet)
             if config.has_desuperheat:
                 self.drain_mix.steam.unfix()
             else:
                 self.drain_mix.steam.flow_mol.unfix()
         # Initialize condense section
         if config.has_drain_cooling:
-            _set_port(self.condense.inlet_2, self.cooling.inlet_2)
+            propagate_state(self.condense.inlet_2, self.cooling.inlet_2)
             self.cooling.inlet_2.fix()
         else:
             self.condense.inlet_2.fix()
@@ -406,7 +408,7 @@ class FWH0DDynamicData(UnitModelBlockData):
         self.condense.initialize()
         # Initialize drain cooling if included
         if config.has_drain_cooling:
-            _set_port(self.cooling.inlet_1, self.condense.outlet_1)
+            propagate_state(self.cooling.inlet_1, self.condense.outlet_1)
             self.cooling.initialize(*args, **kwargs)
 
         # Create solver
