@@ -495,7 +495,11 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             )
 
         self.power = pyo.Var(
-            self.flowsheet().time, initialize=-1e8, doc="power (W)")
+            self.flowsheet().time,
+            initialize=-1e8,
+            doc="total turbine power",
+            units=pyo.units.W
+        )
         @self.Constraint(self.flowsheet().time)
         def power_eqn(b, t):
             return (b.power[t] ==
