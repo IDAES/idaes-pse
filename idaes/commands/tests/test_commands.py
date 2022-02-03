@@ -14,6 +14,7 @@
 Tests for idaes.commands
 """
 # stdlib
+from functools import partial
 import json
 import logging
 import os
@@ -29,7 +30,7 @@ from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.commands import examples, extensions, convergence, config, env_info
+from idaes.commands import examples, extensions, convergence, config, env_info, base
 from idaes.util.system import TemporaryDirectory
 from . import create_module_scratch, rmtree_scratch
 import idaes
@@ -71,6 +72,26 @@ def tempdir(request):
     else:
         sub_path.mkdir()
     return sub_path
+
+
+class TestBaseCommand:
+
+    @pytest.fixture
+    def run_idaes(self, runner):
+        return partial(runner.invoke, base.command_base)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize(
+        "flags",
+        [
+            ["--version"],
+            ["--help"],
+        ],
+        ids=" ".join,
+    )
+    def test_flags(self, run_idaes, flags):
+        result = run_idaes(flags)
+        assert result.exit_code == 0
 
 
 ################
