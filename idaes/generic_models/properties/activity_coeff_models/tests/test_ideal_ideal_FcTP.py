@@ -17,8 +17,7 @@ state vars tested are FcTP.
 Author: Jaffer Ghouse
 """
 import pytest
-from pyomo.environ import ConcreteModel, TerminationCondition, \
-    SolverStatus, value
+from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -136,8 +135,7 @@ def test_solve():
     results = solver.solve(m.fs.state_block_ideal_vl, tee=False)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
     # Check for VLE results
     assert value(m.fs.state_block_ideal_vl.
@@ -152,8 +150,7 @@ def test_solve():
     results = solver.solve(m.fs.state_block_ideal_l, tee=False)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
     # Check for results
     assert value(m.fs.state_block_ideal_l.flow_mol_phase_comp['Liq',
@@ -168,8 +165,7 @@ def test_solve():
     results = solver.solve(m.fs.state_block_ideal_v, tee=False)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
     # Check for results
     assert value(m.fs.state_block_ideal_v.flow_mol_phase_comp['Vap',

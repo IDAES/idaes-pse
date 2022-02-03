@@ -26,8 +26,6 @@ from scipy.sparse import issparse, find
 
 from idaes.core.util.model_statistics import large_residuals_set, variables_near_bounds_set
 
-from pyomo.opt import SolverStatus, TerminationCondition
-
 import matplotlib.pyplot as plt
 
 from operator import itemgetter

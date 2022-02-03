@@ -18,7 +18,7 @@ __author__ = "Miguel Zamarripa"
 
 import pytest
 from pyomo.environ import (
-    SolverFactory, SolverStatus, TerminationCondition, value)
+    check_optimal_termination, SolverFactory, value)
 from pyomo.util.check_units import assert_units_consistent
 
 import idaes.power_generation.flowsheets.\
@@ -58,9 +58,7 @@ def test_boiler(boiler):
     boiler.fs.ATMP1.outlet.enth_mol[0].fix(62710.01)
     boiler.fs.ATMP1.SprayWater.flow_mol[0].unfix()
     result = boiler.solver.solve(boiler, tee=False)
-    assert result.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert result.solver.status == SolverStatus.ok
+    assert check_optimal_termination(result)
     assert value(boiler.fs.ECON.side_1.properties_out[0].temperature) == \
         pytest.approx(521.009, 1)
 
@@ -69,4 +67,4 @@ def test_boiler(boiler):
 def test_power_plant():
     # SCPC.main imports and solves the SCPC Power Plant Flowsheet
     m, results = SCPC.main()
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)

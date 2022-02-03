@@ -15,9 +15,8 @@ Tests for valve model
 """
 import math
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            units,
                            value)
 from idaes.core import FlowsheetBlock
@@ -123,9 +122,7 @@ class GenericValve(object):
         results = solver.solve(valve_model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

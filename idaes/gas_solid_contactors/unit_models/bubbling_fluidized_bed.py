@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
 from pyomo.environ import (Var, Param, Reals,
-                           TerminationCondition, Constraint,
+                           check_optimal_termination, Constraint,
                            TransformationFactory, sqrt, value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -1625,8 +1625,7 @@ see reaction package for documentation.}"""))
         init_log.info('Initialize Geometric Constraints')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 2 {}.".format(
                         idaeslog.condition(results))
@@ -1708,8 +1707,7 @@ see reaction package for documentation.}"""))
         init_log.info('Initialize Hydrodynamics')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 3 {}.".format(
                         idaeslog.condition(results))
@@ -1837,8 +1835,7 @@ see reaction package for documentation.}"""))
         init_log.info_high('initialize mass balances with no reactions')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 4a {}.".format(
                         idaeslog.condition(results))
@@ -1961,8 +1958,7 @@ see reaction package for documentation.}"""))
             init_log.info_high('initialize mass balances with reactions')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 4b {}.".format(
                             idaeslog.condition(results))
@@ -2024,8 +2020,7 @@ see reaction package for documentation.}"""))
             init_log.info('Initialize Energy Balances')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 5 {}.".format(
                             idaeslog.condition(results))
@@ -2049,8 +2044,7 @@ see reaction package for documentation.}"""))
             init_log.info('Initialize Energy Balances')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 5 {}.".format(
                             idaeslog.condition(results))
@@ -2089,8 +2083,7 @@ see reaction package for documentation.}"""))
         init_log.info('Initialize Outlet Conditions')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 6 {}.".format(
                         idaeslog.condition(results))

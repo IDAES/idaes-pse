@@ -20,13 +20,12 @@ Assumptions:
 
 # Import Pyomo libraries
 from pyomo.environ import (Block,
+                           check_optimal_termination,
                            Constraint,
                            Expression,
                            Param,
                            PositiveReals,
                            Reference,
-                           SolverStatus,
-                           TerminationCondition,
                            units as pyunits,
                            Var)
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
@@ -425,10 +424,7 @@ constructed,
             self.costing.activate()
             costing.initialize(self.costing)
 
-        if (res is not None and (
-                res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok)):
+        if not check_optimal_termination(res):
             raise InitializationError(
                 f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

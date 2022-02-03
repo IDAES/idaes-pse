@@ -17,7 +17,8 @@ from idaes.ui.icons import UnitModelIcon
 
 @pytest.mark.parametrize(
     "test_input,expected",
-    [("cstr", "reactor_c.svg"),
+    [("default", "default.svg"),
+    ("cstr", "reactor_c.svg"),
     ("equilibrium_reactor", "reactor_e.svg"),
     ("gibbs_reactor", "reactor_g.svg"),
     ("plug_flow_reactor", "reactor_pfr.svg"),
@@ -40,6 +41,8 @@ from idaes.ui.icons import UnitModelIcon
 @pytest.mark.unit
 def test_icon_mapping(test_input, expected):
     assert UnitModelIcon(test_input).icon == expected
+    with pytest.raises(ValueError):
+        UnitModelIcon("unregistered_model", "not_default")
 
 @pytest.mark.parametrize(
     "model_name,expected",

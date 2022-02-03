@@ -19,13 +19,12 @@ from pandas import DataFrame
 
 from pyomo.environ import (
     Block,
+    check_optimal_termination,
     Constraint,
     Param,
     Reals,
     Reference,
     Set,
-    SolverStatus,
-    TerminationCondition,
     Var,
     value,
 )
@@ -1578,9 +1577,7 @@ objects linked the mixed state and all outlet states,
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
 
-            if (res.solver.termination_condition !=
-                    TerminationCondition.optimal or
-                    res.solver.status != SolverStatus.ok):
+            if not check_optimal_termination(res):
                 raise InitializationError(
                     f"{blk.name} failed to initialize successfully. Please "
                     f"check the output logs for more information.")
