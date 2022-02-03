@@ -42,7 +42,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 
 from pyomo.environ import (
         Objective,
-        TerminationCondition,
+        check_optimal_termination,
         Constraint,
         Block,
         )
@@ -137,7 +137,7 @@ class _ControllerBlockData(_DynamicBlockData):
         #    assert dof == (len(self.INPUT_SET) +
         #            len(self.DIFFERENTIAL_SET))
         results = solver.solve(self, tee=config.tee)
-        if results.solver.termination_condition == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             pass
         else:
             msg = 'Failed to solve for full state setpoint values'

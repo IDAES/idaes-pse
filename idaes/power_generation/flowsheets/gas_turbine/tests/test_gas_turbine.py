@@ -99,4 +99,4 @@ def test_initialize():
             ng_comp=ng_comp,
             initialize=True)
         res = run_full_load(m, solver)
-    assert res.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(res)

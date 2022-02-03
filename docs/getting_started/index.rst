@@ -19,7 +19,7 @@ The OS specific instructions provide information about optionally installing
 Miniconda. If you already have a Python installation you prefer, you can skip
 the Miniconda install section.
 
-.. note:: IDAES supports Python 3.6 and above.
+.. note:: IDAES supports Python 3.7 and above.
 
 +------------------+-----------------------------+
 | System           | Section                     |

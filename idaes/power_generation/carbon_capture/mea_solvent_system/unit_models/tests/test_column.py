@@ -18,7 +18,7 @@ import pytest
 
 # Import Pyomo libraries
 from pyomo.environ import ConcreteModel, value, Param, TransformationFactory,\
-    TerminationCondition, units as pyunits
+    check_optimal_termination, units as pyunits
 
 # Import IDAES Libraries
 from idaes.core import FlowsheetBlock
@@ -388,7 +388,7 @@ class TestColumn:
         res = solver.solve(m)
 
         # Solver status/condition
-        assert res.solver.termination_condition == TerminationCondition.optimal
+        assert check_optimal_termination(res)
 
         # Outlet Stream Condition Testing
         assert m.fs.unit.vapor_phase.properties[0, 1].temperature.value ==\
@@ -416,7 +416,7 @@ class TestColumn:
         res = solver.solve(m)
 
         # Solver status/condition
-        assert res.solver.termination_condition == TerminationCondition.optimal
+        assert check_optimal_termination(res)
 
         # Performance Condition Testing at final time
         assert value(m.fs.unit.liquid_phase.properties[

@@ -122,8 +122,7 @@ def test_PP_costing():
     solver = get_solver()
     results = solver.solve(m, tee=True)
 
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
+    assert pyo.check_optimal_termination(results)
 
     #  all numbers come from the NETL excel file:
     # "201.001.001_BBR4 COE Spreadsheet_Rev0U_20190919_njk.xlsm"
@@ -284,8 +283,7 @@ def test_power_plant_costing():
     solver = get_solver()
     results = solver.solve(m, tee=True)
 
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
+    assert pyo.check_optimal_termination(results)
     #  all numbers come from the NETL excel file
     # "201.001.001_BBR4 COE Spreadsheet_Rev0U_20190919_njk.xlsm"
     assert pytest.approx(pyo.value(
@@ -483,8 +481,7 @@ def test_sCO2_costing():
     solver = get_solver()
     results = solver.solve(m, tee=True)
 
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
+    assert pyo.check_optimal_termination(results)
 
     assert pytest.approx(pyo.value(
         m.fs.boiler.costing.equipment_cost), abs=1e-1) == 216300/1e3
@@ -531,8 +528,7 @@ def test_ASU_costing():
     solver = get_solver()
     results = solver.solve(m, tee=True)
 
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
+    assert pyo.check_optimal_termination(results)
 
     m.fs.ASU.costing.bare_erected_cost.display()
 

@@ -17,10 +17,8 @@ Author: Chinedu Okoli
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           Var)
+from pyomo.environ import check_optimal_termination, ConcreteModel, Var
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 
@@ -115,9 +113,7 @@ def test_solve(rxn_prop):
     results = solver.solve(rxn_prop.fs.unit)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
 
 @pytest.mark.solver
@@ -130,3 +126,8 @@ def test_solution(rxn_prop):
             rxn_prop.fs.unit.OC_conv.value)
     assert (pytest.approx(0, abs=1e-2) ==
             rxn_prop.fs.unit.reaction_rate['R1'].value)
+
+
+@pytest.mark.component
+def test_units_consistent(rxn_prop):
+    assert_units_consistent(rxn_prop)

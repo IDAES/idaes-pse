@@ -20,16 +20,15 @@ import pytest
 from sys import modules
 import os
 
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Constraint,
                            Expression,
                            Param,
                            Constraint,
                            value,
                            Var,
-                           units as pyunits,
-                           TerminationCondition,
-                           SolverStatus)
+                           units as pyunits)
 
 from idaes.core import (declare_process_block_class,
                         LiquidPhase, VaporPhase, SolidPhase)
@@ -93,9 +92,7 @@ def build_model():
     m.props.initialize(state_vars_fixed=True)
     results = get_solver(options={"bound_push": 1e-8}).solve(m)
 
-    assert results.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
     return m
 

@@ -29,7 +29,8 @@ import idaes.logger as idaeslog
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var, Set, value
+from pyomo.environ import (
+    Reference, Expression, Var, Set, value, check_optimal_termination)
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -37,7 +38,7 @@ from idaes.core import (declare_process_block_class,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, \
-    PropertyPackageError, PropertyNotSupportedError
+    PropertyPackageError, PropertyNotSupportedError, InitializationError
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -903,6 +904,11 @@ see property package for documentation.}"""))
             raise Exception("State vars fixed but degrees of freedom "
                             "for tray block is not zero during "
                             "initialization.")
+
+        if not check_optimal_termination(res):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
         init_log.info(
             "Initialization complete, status {}.".
