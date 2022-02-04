@@ -273,13 +273,10 @@ argument)."""))
         )
 
     def add_pressure_dx(self):
-        # We add pressure_dx here rather than in the control volume
-        # because we don't want to add a deltaP variable and
-        # pressure_balance equation.
+        # We add pressure_dx here rather than using the control volume
+        # add_total_pressure_balances method because we don't want to add
+        # a deltaP variable and pressure_balance equation.
         cv = self.control_volume
-        # TODO: Is there any reason I should attach pressure to
-        # the control volume? I think if I don't, it will not get
-        # copied if the model is cloned. TODO: Test this.
         cv.pressure = Reference(cv.properties[:, :].pressure)
         pressure_data = next(iter(cv.pressure.values()))
         space = cv.length_domain
