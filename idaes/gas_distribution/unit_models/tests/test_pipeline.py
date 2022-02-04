@@ -159,7 +159,6 @@ class TestSolvePipelineSquare(unittest.TestCase):
         state[:, x0].mole_frac_comp[j].fix(1.0)
         state[:, x0].temperature.fix(293.15*pyo.units.K)
         state[:, x0].pressure.fix(57.0*pyo.units.bar)
-        #pipeline.flow_mass[:, x0].fix(
         pipeline.control_volume.flow_mass[:, x0].fix(
             3.0e5*pyo.units.kg/pyo.units.hr
             # close to 10 * (1e6 SCM) / day, the nominal value in the model
@@ -326,7 +325,6 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         cv.properties[:, x0].mole_frac_comp[j].fix()
         cv.properties[:, x0].temperature.fix(inlet_temperature)
         cv.pressure[:, x0].fix(inlet_pressure)
-        #model.fs.pipeline.flow_mass[:, x0].fix(inlet_flow_mass)
         cv.flow_mass[:, x0].fix(inlet_flow_mass)
 
     def get_scalar_data_from_model(
@@ -406,7 +404,6 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         # Fix dynamic inputs. Now these are inlet pressure and outlet
         # flow rate, as well as inlet mole fraction and temperature.
         cv.pressure[:, x0].fix()
-        #m.fs.pipeline.flow_mass[:, xf].fix()
         cv.flow_mass[:, xf].fix()
         cv.properties[:, x0].mole_frac_comp[j].fix()
         cv.properties[:, x0].temperature.fix()
@@ -417,7 +414,6 @@ class TestSolveDynamicPipeline(unittest.TestCase):
             if x != x0:
                 cv.pressure[t0, x].fix()
             if x != xf:
-                #m.fs.pipeline.flow_mass[t0, x].fix()
                 cv.flow_mass[t0, x].fix()
 
         # I want to deactivate differential equations at (t0, xf)
@@ -438,7 +434,6 @@ class TestSolveDynamicPipeline(unittest.TestCase):
             var.set_value(val)
 
         cv.material_accumulation[...].set_value(0.0)
-        #m.fs.pipeline.flow_mass_dt[...].set_value(0.0)
         cv.flow_mass_dt[...].set_value(0.0)
 
         for con in large_residuals_set(m):
@@ -644,7 +639,6 @@ class TestSolveDynamicPipeline(unittest.TestCase):
             var.set_value(val)
 
         cv.material_accumulation[...].set_value(0.0)
-        #m.fs.pipeline.flow_mass_dt[...].set_value(0.0)
         cv.flow_mass_dt[...].set_value(0.0)
 
         self.assertEqual(len(large_residuals_set(m)), 0)
@@ -819,7 +813,6 @@ class TestConstructPipeline(unittest.TestCase):
         state[:, x0].mole_frac_comp[j].fix(1.0)
         state[:, x0].temperature.fix(300.0*pyo.units.K)
         state[:, x0].pressure.fix(57.0*pyo.units.bar)
-        #m.fs.pipeline.flow_mass[:, x0].fix(
         cv.flow_mass[:, x0].fix(
             3.0e5*pyo.units.kg/pyo.units.hr
             # close to 10 * (1e6 SCM) / day, the nominal value in the model
@@ -889,7 +882,6 @@ class TestConstructPipeline(unittest.TestCase):
 
         # Fix dynamic inputs. Here, inlet flow and pressure for all time.
         cv.pressure[:, x0].fix()
-        #m.fs.pipeline.flow_mass[:, x0].fix()
         cv.flow_mass[:, x0].fix()
         cv.properties[:, x0].mole_frac_comp[j].fix()
         cv.properties[:, x0].temperature.fix()
@@ -899,7 +891,6 @@ class TestConstructPipeline(unittest.TestCase):
         for x in cv.length_domain:
             if x != x0:
                 cv.pressure[t0, x].fix()
-                #m.fs.pipeline.flow_mass[t0, x].fix()
                 cv.flow_mass[t0, x].fix()
 
         # Material balances skipped at outlet, for some reason.
@@ -958,7 +949,6 @@ class TestConstructPipeline(unittest.TestCase):
         # Fix dynamic inputs. Now these are inlet pressure and outlet
         # flow rate, as well as inlet mole fraction and temperature.
         cv.pressure[:, x0].fix()
-        #m.fs.pipeline.flow_mass[:, xf].fix()
         cv.flow_mass[:, xf].fix()
         cv.properties[:, x0].mole_frac_comp[j].fix()
         cv.properties[:, x0].temperature.fix()
@@ -969,7 +959,6 @@ class TestConstructPipeline(unittest.TestCase):
             if x != x0:
                 cv.pressure[t0, x].fix()
             if x != xf:
-                #m.fs.pipeline.flow_mass[t0, x].fix()
                 cv.flow_mass[t0, x].fix()
 
         # Material balances skipped at outlet, for some reason.
