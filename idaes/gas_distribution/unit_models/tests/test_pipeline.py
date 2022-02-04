@@ -166,66 +166,16 @@ class TestSolvePipelineSquare(unittest.TestCase):
         )
 
         t0 = m.fs.time.first()
-        conv_factor = pyo.value(pyo.units.convert(
-            1.0*state[t0, x0].pressure.get_units(),
-            pyo.units.bar,
-        ))
-        #m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        #for con in pipeline.control_volume.pressure_dx_disc_eq.values():
-        #    m.scaling_factor[con] = conv_factor
-        #for var in state[:, :].pressure:
-        #    m.scaling_factor[var] = conv_factor
-        #for var in pipeline.control_volume.pressure_dx.values():
-        #    m.scaling_factor[var] = conv_factor
 
-        #scale = pyo.TransformationFactory("core.scale_model")
-        #scale.apply_to(m, rename=False)
         ipopt = pyo.SolverFactory("ipopt")
-        #ipopt.options["nlp_scaling_method"] = "user-scaling"
-        #strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
-        #strip_bounds.apply_to(m, reversible=True)
 
-        from pyomo.contrib.incidence_analysis import (
-            solve_strongly_connected_components,
-        )
-        solve_strongly_connected_components(m)
-        print("number of violated_constraints:", len(large_residuals_set(m)))
-        #ipopt.options["bound_push"] = 1e-8
         res = ipopt.solve(m, tee=True)
-
-        #strip_bounds.revert(m)
-
-        self.assertIs(
-            res.solver.termination_condition,
-            pyo.TerminationCondition.optimal,
-        )
+        pyo.assert_optimal_termination(res)
 
         violated_cons = list(large_residuals_set(m))
-        residuals = ComponentMap(
-            (con, max(
-                pyo.value(con.body-con.upper), pyo.value(con.lower-con.body)
-            )) for con in violated_cons
-        )
-
-        pressure = pyo.Reference(state[:,:].pressure)
-        pressure.pprint()
-        for idx, var in pressure.items():
-            val = pyo.value(pyo.units.convert(var, pyo.units.bar))
-            print(idx, val, pyo.units.bar.to_string())
-
-        #t0 = m.fs.time.first()
-        #xf = m.fs.pipeline.control_volume.length_domain.last()
-        #varlist = [pipeline.flow_mass, pipeline.control_volume.pressure]
-        #to_units = [pyo.units.kg/pyo.units.hr, pyo.units.bar]
-        #for var, units in zip(varlist, to_units):
-        #    vardata = var[t0, x0]
-        #    converted = pyo.value(pyo.units.convert(vardata, units))
-        #    print(vardata.name, vardata.value, vardata.get_units(), converted)
-        #    vardata = var[t0, xf]
-        #    converted = pyo.value(pyo.units.convert(vardata, units))
-        #    print(vardata.name, vardata.value, vardata.get_units(), converted)
-        #for con in m.component_data_objects(pyo.Constraint):
-        #    print(con.name)
+        # Just test that we can solve the pipeline model.
+        # We will test values in the next test.
+        self.assertEqual(len(violated_cons), 0)
 
     def test_pipeline_steady_forward_sweep(self):
         """
@@ -246,9 +196,6 @@ class TestSolvePipelineSquare(unittest.TestCase):
         # Iterate over nxfe first, because for each different nxfe, we
         # need to create a new model.
 
-        #nxfe_list = [1]
-        #p_list = [40.0*pyo.units.bar]
-        #f_list = [6.0*1e6*pyo.units.m**3 / pyo.units.day / h_day * kg_scm]
         for nxfe in nxfe_list:
             m = pyo.ConcreteModel()
             default = {
@@ -278,25 +225,7 @@ class TestSolvePipelineSquare(unittest.TestCase):
             state[:, x0].temperature.fix(293.15*pyo.units.K)
             state[:, x0].pressure.fix()
             pipeline.control_volume.flow_mass[:, x0].fix()
-
-            #
-            # Scale model
-            #
             t0 = m.fs.time.first()
-            conv_factor = pyo.value(pyo.units.convert(
-                1.0*state[t0, x0].pressure.get_units(),
-                pyo.units.bar,
-            ))
-            #m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-            #for con in pipeline.control_volume.pressure_dx_disc_eq.values():
-            #    m.scaling_factor[con] = conv_factor
-            #for var in state[:, :].pressure:
-            #    m.scaling_factor[var] = conv_factor
-            #for var in pipeline.control_volume.pressure_dx.values():
-            #    m.scaling_factor[var] = conv_factor
-            #scale = pyo.TransformationFactory("core.scale_model")
-            #scale.apply_to(m, rename=False)
-            ###
 
             input_values = ComponentMap()
             target_values = ComponentMap()
@@ -314,12 +243,7 @@ class TestSolvePipelineSquare(unittest.TestCase):
                 # for clarity.
                 input_values[inlet_flow].append(f)
                 #p_val = pyo.units.convert(p, pres_var.get_units())
-                #
-                # Because these values are sent to the scaled model, these
-                # values need to be scaled. This is independent of any
-                # unit conversion, which will happen automatically in
-                # set_value.
-                input_values[inlet_pressure].append(p*conv_factor)
+                input_values[inlet_pressure].append(p)
                 # Evaluating floating points as keys here may not be safe...
                 target_values[outlet_flow].append(
                     self.target_flow_kghr[pyo.value(f), pyo.value(p), nxfe],
@@ -336,7 +260,6 @@ class TestSolvePipelineSquare(unittest.TestCase):
                 output_values=target_values,
             )
             ipopt = pyo.SolverFactory("ipopt")
-            #ipopt.options["bound_push"] = 1e-8
             with param_sweeper:
                 # Note that doing this in a context manager means that
                 # on error, values are reset. This is inconvenient
@@ -345,21 +268,10 @@ class TestSolvePipelineSquare(unittest.TestCase):
                 # exit the context manager before returning control...
                 self.assertEqual(degrees_of_freedom(m), 0)
                 for i, (inputs, outputs) in enumerate(param_sweeper):
-                    # Without this SCC initialization, only one solve
-                    # fails to converge. It is the first solve
-                    # at 5 nfe.
-                    #calc_var_kwds = {"eps": 1e-7}
-                    #solve_strongly_connected_components(
-                    #    m, calc_var_kwds=calc_var_kwds
-                    #)
-
-                    # TODO: Inspect this large residuals set...
-                    #self.assertEqual(len(large_residuals_set(m)), 0)
                     res = ipopt.solve(m, tee=True)
-                    self.assertIs(
-                        res.solver.termination_condition,
-                        pyo.TerminationCondition.optimal,
-                    )
+                    # Check for optimal termination and zero infeasibility
+                    pyo.assert_optimal_termination(res)
+                    self.assertEqual(len(large_residuals_set(m)), 0)
 
                     # Sanity check that inputs have been properly set.
                     for var, val in inputs.items():
