@@ -172,7 +172,6 @@ argument)."""))
             doc="The outlet from the pipeline",
         )
 
-        # TODO: How should the energy balance in this pipeline be handled?
         self.add_isothermal_constraint()
 
     def add_friction_factor(self, rugosity=None):
