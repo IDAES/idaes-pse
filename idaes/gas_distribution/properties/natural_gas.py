@@ -11,8 +11,13 @@
 # license information.
 #################################################################################
 """
-Natural gas property package using the values found in V. Zavala's 2014
-paper "Stochastic Optimal Control..."
+Natural gas property package with a single (pseudo) component for use
+in isothermal unit models.
+
+Data sources:
+    [1] Stochastic Optimal Control Model for Natural Gas Network
+        Operations. V. Zavala, 2014, Comp. Chem. Eng.
+
 """
 
 from pyomo.core.base.units_container import units as pyunits
@@ -37,14 +42,6 @@ from idaes.core.process_base import MaterialFlowBasis
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------
-# Natural Gas
-
-# Data Sources:
-# [1] Stochastic Optimal Control Model for Natural Gas Network
-#     Operations. V. Zavala, 2014
 
 @declare_process_block_class("NaturalGasParameterBlock")
 class NaturalGasParameterBlockData(PhysicalParameterBlock):
