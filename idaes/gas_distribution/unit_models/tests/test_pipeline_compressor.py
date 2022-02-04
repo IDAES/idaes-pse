@@ -349,8 +349,6 @@ class TestConstructPipelineCompressorFlowsheet(unittest.TestCase):
         # Fix compressor degrees of freedom:
         compressor.boost_pressure[:].fix()
         # Inlet variables:
-        #x0 = m.fs.pipeline.control_volume.length_domain.first()
-        #state = m.fs.pipeline.control_volume.properties
         state = m.fs.compressor.inlet_state
         state[:].mole_frac_comp[j].fix(1.0)
         state[:].temperature.fix(300.0*pyo.units.K)
