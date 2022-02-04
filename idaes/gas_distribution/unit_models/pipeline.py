@@ -119,13 +119,7 @@ argument)."""))
         #
         # Set up control volume:
         #
-        #cv_config = {
-        #    "transformation_method": config.transformation_method,
-        #    "transformation_scheme": config.transformation_scheme,
-        #    "finite_elements": config.finite_elements,
-        #    "collocation_points": config.collocation_points,
-        #    "has_holdup": config.has_holdup,
-        #}
+        # Anything not valid for CV config will have to be removed here.
         cv_config = config()
         self.control_volume = ControlVolume1DBlock(default=cv_config)
         self.control_volume.add_geometry()
@@ -259,7 +253,6 @@ argument)."""))
         pressure = state.pressure
         diameter = self.diameter
         lam = self.friction_factor
-        #nu = self.speed_of_sound[t, x]
         nu = state.speed_of_sound
         friction_term = (
             8 * lam * nu**2 / Constants.pi**2 / diameter**5
