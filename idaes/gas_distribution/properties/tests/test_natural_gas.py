@@ -53,8 +53,6 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
         component_list = m.state.config.parameters.component_list
         j = next(iter(component_list))
         self.assertIs(state.mole_frac_comp[j].get_units(), None)
-        # TODO: How do I go from component_list to the actual component
-        # object?
 
         mw = m.state.mw
         assert_units_equivalent(
