@@ -62,7 +62,10 @@ Test for the simple pipeline model
 class TestSolvePipelineSquare(unittest.TestCase):
     """
     """
-    # These dictionaries map ...
+    # These dictionaries map parameters in a steady state pipeline
+    # solve to the predicted values for outlet flow rate and pressure.
+    # These were obtained by solving a Pyomo DAE implementation of the
+    # same model.
     target_flow_kghr = {
         # flow key is also in units of kg/hr. Should this be in
         # 1e4 SCM/hr, which is what the paper uses?
