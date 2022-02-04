@@ -183,7 +183,7 @@ class NaturalGasStateBlockData(StateBlockData):
 
         if not self.config.defined_state:
             # For a single-phase property package, should we just always
-            # "fix" mole fraction? Probably not, as it will violate assumtions
+            # "fix" mole fraction? Probably not, as it will violate assumptions
             # when we combine multiple units (ports) as long as mole_frac_comp
             # is a state variable, which I would rather not change.
             def sum_component_eq_rule(b):
@@ -320,7 +320,7 @@ class NaturalGasStateBlockData(StateBlockData):
         )
 
     def _dens_mol(self):
-        # Make molar density a variable as it is imporant enough that
+        # Make molar density a variable as it is important enough that
         # somebody might want to fix it.
         self.dens_mol = Var(
             initialize=1.0,
