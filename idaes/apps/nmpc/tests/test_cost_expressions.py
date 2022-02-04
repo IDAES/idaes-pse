@@ -16,6 +16,7 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.common.collections import ComponentSet
 from pyomo.core.expr.visitor import identify_variables
+from pyomo.core.expr.compare import compare_expressions
 from idaes.apps.nmpc.cost_expressions import (
     get_tracking_cost_from_constant_setpoint,
 )
@@ -49,6 +50,10 @@ class TestTrackingCost(unittest.TestCase):
             self.assertIn(m.v2[i], var_sets[i])
             pred_value = (1*i - 3)**2 + (2*i - 4)**2
             self.assertEqual(pred_value, pyo.value(m.tracking_expr[i]))
+            pred_expr = (m.v1[i] - 3)**2 + (m.v2[i] - 4)**2
+            self.assertTrue(compare_expressions(
+                pred_expr, m.tracking_expr[i].expr
+            ))
 
     def test_tracking_cost_with_weights(self):
         m = pyo.ConcreteModel()
@@ -81,6 +86,10 @@ class TestTrackingCost(unittest.TestCase):
             self.assertIn(m.v2[i], var_sets[i])
             pred_value = 0.1*(1*i - 3)**2 + 0.5*(2*i - 4)**2
             self.assertAlmostEqual(pred_value, pyo.value(m.tracking_expr[i]))
+            pred_expr = 0.1*(m.v1[i] - 3)**2 + 0.5*(m.v2[i] - 4)**2
+            self.assertTrue(compare_expressions(
+                pred_expr, m.tracking_expr[i].expr
+            ))
 
     def test_exceptions(self):
         m = pyo.ConcreteModel()

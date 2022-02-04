@@ -33,8 +33,7 @@ from pyomo.environ import (
     Constraint,
     value,
     Set,
-    SolverStatus,
-    TerminationCondition)
+    check_optimal_termination)
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -754,9 +753,7 @@ see property package for documentation.}"""))
         init_log.info(
             "Initialization Complete, {}.".format(idaeslog.condition(res))
         )
-        if (res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok):
+        if not check_optimal_termination(res):
             raise InitializationError(
                 f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")

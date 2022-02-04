@@ -18,8 +18,7 @@ from VLE data to compute the activity coefficients.
 Author: Jaffer Ghouse
 """
 import pytest
-from pyomo.environ import ConcreteModel, TerminationCondition, \
-    SolverStatus, value
+from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -137,8 +136,7 @@ def test_solve():
     results = solver.solve(m.fs.state_block_ideal_vl_FTPz, tee=False)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
     # Check for VLE results
     assert value(m.fs.state_block_ideal_vl_FTPz.mole_frac_phase_comp['Liq',
@@ -153,8 +151,7 @@ def test_solve():
     results = solver.solve(m.fs.state_block_ideal_l, tee=False)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
     # Check for results
     assert value(m.fs.state_block_ideal_l.mole_frac_phase_comp['Liq',
@@ -169,8 +166,7 @@ def test_solve():
     results = solver.solve(m.fs.state_block_ideal_v, tee=False)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
     # Check for results
     assert value(m.fs.state_block_ideal_v.mole_frac_phase_comp['Vap',

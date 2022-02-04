@@ -22,8 +22,11 @@ from idaes.core.util.config import is_physical_parameter_block
 
 """
 A simple unit model to calculate power required to achieve isothermal
-gas compression per equation (2.10) in V. Zavala's 2014 Comp. Chem.
-Eng. paper.
+gas compression. 
+
+Data sources:
+    [1] Stochastic Optimal Control Model for Natural Gas Network
+        Operations. V. Zavala, 2014, Comp. Chem. Eng.
 """
 
 
@@ -68,7 +71,7 @@ class IsothermalCompressorData(UnitModelBlockData):
         # A little annoying that add_port assumes the state block is indexed
         # by exactly time. If we supported unindexed state blocks here,
         # this entire unit model could be agnostic of time.
-        # (This is not strictly true becaucse add_state_material_balances
+        # (This is not strictly true because add_state_material_balances
         # writes time-indexed balance equations, but we could get around this
         # by writing our own balance equations, which is easy enough.)
         self.add_port(
@@ -154,10 +157,11 @@ class IsothermalCompressorData(UnitModelBlockData):
         self.beta_eqn = Constraint(time, rule=beta_rule)
 
     def add_power_equation(self, inlet_state):
+        """
+        This is Equation 2.10 in [1]
+        """
         time = self.flowsheet().time
         def power_rule(b, t):
-            # This is equation 2.10 in "Stochastic optimal control...",
-            # V. Zavala, 2014, Comp. Chem. Eng.
             cp_mass = inlet_state[t].cp_mol / inlet_state[t].mw
             power_expr = (
                 inlet_state[t].temperature

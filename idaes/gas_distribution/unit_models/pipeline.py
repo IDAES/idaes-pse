@@ -35,7 +35,14 @@ from idaes.core.util.constants import Constants
 from idaes.core.control_volume1d import ControlVolume1DBlock
 
 """
-A simple pipeline unit model.
+A simple pipeline unit model. We include a bulk momentum balance and leverage
+the 1D control volume for a phase material balance. For now, we assume the
+pipeline is isothermal.
+
+Data sources:
+    [1] Stochastic Optimal Control Model for Natural Gas Network
+        Operations. V. Zavala, 2014, Comp. Chem. Eng.
+
 """
 
 
@@ -273,13 +280,10 @@ argument)."""))
         )
 
     def add_pressure_dx(self):
-        # We add pressure_dx here rather than in the control volume
-        # because we don't want to add a deltaP variable and
-        # pressure_balance equation.
+        # We add pressure_dx here rather than using the control volume
+        # add_total_pressure_balances method because we don't want to add
+        # a deltaP variable and pressure_balance equation.
         cv = self.control_volume
-        # TODO: Is there any reason I should attach pressure to
-        # the control volume? I think if I don't, it will not get
-        # copied if the model is cloned. TODO: Test this.
         cv.pressure = Reference(cv.properties[:, :].pressure)
         pressure_data = next(iter(cv.pressure.values()))
         space = cv.length_domain
@@ -296,7 +300,9 @@ argument)."""))
         )
 
     def add_momentum_balance_equation(self):
-        # This is Equation 2.5 in the paper
+        """
+        Bulk momentum balance. This is Equation 2.5 in [1]
+        """
         time = self.flowsheet().time
         dynamic = self.flowsheet().config.dynamic
         space = self.control_volume.length_domain

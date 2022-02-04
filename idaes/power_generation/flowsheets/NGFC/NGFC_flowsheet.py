@@ -191,9 +191,9 @@ def build_power_island(m):
     def recycle_translator_x(b, t, j):
         return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
 
-    m.fs.recycle_translator.outlet.mole_frac_comp[0, 'C2H6'].fix(0)
-    m.fs.recycle_translator.outlet.mole_frac_comp[0, 'C3H8'].fix(0)
-    m.fs.recycle_translator.outlet.mole_frac_comp[0, 'C4H10'].fix(0)
+    m.fs.recycle_translator.outlet.mole_frac_comp[0, 'C2H6'].fix(1e-11)
+    m.fs.recycle_translator.outlet.mole_frac_comp[0, 'C3H8'].fix(1e-11)
+    m.fs.recycle_translator.outlet.mole_frac_comp[0, 'C4H10'].fix(1e-11)
 
     # build cathode side units
     m.fs.air_blower = PressureChanger(
@@ -220,10 +220,10 @@ def build_power_island(m):
                  "split_basis": SplittingType.componentFlow,
                  "property_package": m.fs.air_props})
 
-    m.fs.cathode.split_fraction[0, 'ion_outlet', 'H2O'].fix(0)
-    m.fs.cathode.split_fraction[0, 'ion_outlet', 'CO2'].fix(0)
-    m.fs.cathode.split_fraction[0, 'ion_outlet', 'N2'].fix(0)
-    m.fs.cathode.split_fraction[0, 'ion_outlet', 'Ar'].fix(0)
+    m.fs.cathode.split_fraction[0, 'ion_outlet', 'H2O'].fix(1e-11)
+    m.fs.cathode.split_fraction[0, 'ion_outlet', 'CO2'].fix(1e-11)
+    m.fs.cathode.split_fraction[0, 'ion_outlet', 'N2'].fix(1e-11)
+    m.fs.cathode.split_fraction[0, 'ion_outlet', 'Ar'].fix(1e-11)
 
     m.fs.cathode_translator = Translator(
         default={"outlet_state_defined": True,
@@ -243,7 +243,7 @@ def build_power_island(m):
     def cathode_translator_P(b, t):
         return b.inlet.pressure[t] == b.outlet.pressure[t]
 
-    m.fs.cathode_translator.outlet.mole_frac_comp.fix(0)
+    m.fs.cathode_translator.outlet.mole_frac_comp.fix(1e-11)
     m.fs.cathode_translator.outlet.mole_frac_comp[0, 'O2'].fix(1)
 
     m.fs.cathode_heat = Heater(
@@ -300,7 +300,7 @@ def build_power_island(m):
 
     for j in m.fs.syn_props.component_list:
         if j not in m.fs.air_props.component_list:
-            m.fs.cathode_exhaust_translator.outlet.mole_frac_comp[0, j].fix(0)
+            m.fs.cathode_exhaust_translator.outlet.mole_frac_comp[0, j].fix(1e-11)
 
     m.fs.combustor_mix = Mixer(
         default={"inlet_list": ["anode_inlet", "cathode_inlet"],
@@ -455,7 +455,7 @@ def set_power_island_inputs(m):
     m.fs.anode_mix.feed.mole_frac_comp[0, 'H2'].fix(0.2752)
     m.fs.anode_mix.feed.mole_frac_comp[0, 'H2O'].fix(0.1118)
     m.fs.anode_mix.feed.mole_frac_comp[0, 'N2'].fix(0.2879)
-    m.fs.anode_mix.feed.mole_frac_comp[0, 'O2'].fix(0.0000)
+    m.fs.anode_mix.feed.mole_frac_comp[0, 'O2'].fix(0)
     m.fs.anode_mix.feed.mole_frac_comp[0, 'Ar'].fix(0.0034)
 
     # anode heat exchanger
@@ -526,9 +526,9 @@ def set_power_island_inputs(m):
     m.fs.cathode_HRSG.deltaP.fix(-1379)  # Pa, equal to -0.2 psi
 
     m.fs.combustor.deltaP.fix(-6895)  # equal to -1 psi
-    m.fs.combustor.outlet.mole_frac_comp[0, "H2"].fix(0)
-    m.fs.combustor.outlet.mole_frac_comp[0, "CO"].fix(0)
-    m.fs.combustor.outlet.mole_frac_comp[0, "CH4"].fix(0)
+    m.fs.combustor.outlet.mole_frac_comp[0, "H2"].fix(1e-11)
+    m.fs.combustor.outlet.mole_frac_comp[0, "CO"].fix(1e-11)
+    m.fs.combustor.outlet.mole_frac_comp[0, "CH4"].fix(1e-11)
 
     m.fs.combustor_expander.deltaP.fix(-6.9)  # Pa, equal to -0.001 psi
     m.fs.combustor_expander.efficiency_isentropic.fix(0.95)
@@ -661,13 +661,13 @@ def set_reformer_inputs(m):
     m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'C2H6'].fix(0.032)
     m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'C3H8'].fix(0.007)
     m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'C4H10'].fix(0.004)
-    m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'CO'].fix(0)
+    m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'CO'].fix(1e-11)
     m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'CO2'].fix(0.01)
-    m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'H2'].fix(0)
-    m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'H2O'].fix(0)
+    m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'H2'].fix(1e-11)
+    m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'H2O'].fix(1e-11)
     m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'N2'].fix(0.016)
-    m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'O2'].fix(0)
-    m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'Ar'].fix(0)
+    m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'O2'].fix(1e-11)
+    m.fs.reformer_recuperator.tube_inlet.mole_frac_comp[0, 'Ar'].fix(1e-11)
 
     # recuperator conditions
     m.fs.reformer_recuperator.tube_outlet.temperature.fix(1010.93)
@@ -684,7 +684,7 @@ def set_reformer_inputs(m):
     m.fs.air_compressor_s1.inlet.flow_mol[0] == 1332.9  # mol/s
     m.fs.air_compressor_s1.inlet.temperature.fix(288.15)  # K
     m.fs.air_compressor_s1.inlet.pressure.fix(101353)  # Pa, equal to 14.7 psia
-    m.fs.air_compressor_s1.inlet.mole_frac_comp.fix(0)
+    m.fs.air_compressor_s1.inlet.mole_frac_comp.fix(1e-11)
     m.fs.air_compressor_s1.inlet.mole_frac_comp[0, 'CO2'].fix(0.0003)
     m.fs.air_compressor_s1.inlet.mole_frac_comp[0, 'H2O'].fix(0.0104)
     m.fs.air_compressor_s1.inlet.mole_frac_comp[0, 'N2'].fix(0.7722)
@@ -708,7 +708,7 @@ def set_reformer_inputs(m):
     m.fs.reformer_mix.steam_inlet.flow_mol[0] == 464.77  # mol/s
     m.fs.reformer_mix.steam_inlet.temperature.fix(422)  # K
     m.fs.reformer_mix.steam_inlet.pressure.fix(206843)  # Pa, equal to 30 psia
-    m.fs.reformer_mix.steam_inlet.mole_frac_comp.fix(0)
+    m.fs.reformer_mix.steam_inlet.mole_frac_comp.fix(1e-11)
     m.fs.reformer_mix.steam_inlet.mole_frac_comp[0, 'H2O'].fix(1)
 
     # reformer outlet pressure

@@ -15,9 +15,8 @@ Tests for Flash unit model.
 Author: Jaffer Ghouse
 """
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            value,
                            units,
                            Var)
@@ -162,9 +161,7 @@ class TestBTXIdeal(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -280,9 +277,7 @@ class TestIAPWS(object):
         results = solver.solve(iapws)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -346,9 +341,7 @@ class TestIAPWS(object):
 
         results = solver.solve(iapws)
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
         assert (pytest.approx(63787.06525, abs=1e3) ==
                 value(iapws.fs.unit.costing.base_cost))
         assert (pytest.approx(97660.6169, abs=1e3) ==

@@ -20,8 +20,8 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Constraint, Expression, Param, Reals, NonNegativeReals, value, Var, exp,
-    SolverStatus, TerminationCondition, units as pyunits)
+    check_optimal_termination, Constraint, Expression, Param, Reals,
+    NonNegativeReals, value, Var, exp, units as pyunits, SolverStatus)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES Libraries
@@ -768,34 +768,32 @@ documentation for supported schemes,
             hold_state=True)
 
         init_log.info("Step 2: Steady-State isothermal mass balance")
-        
+
         blk.vapor_phase.properties.release_state(flags=vflag)
-        
+
         blk.liquid_phase.properties.release_state(flags=lflag)
-        
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high("Step 2: {}.".format(idaeslog.condition(res)))
-        
-        assert res.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert res.solver.status == SolverStatus.ok
-        
+
+        assert check_optimal_termination(res)
+
         # ---------------------------------------------------------------------
         init_log.info('Step 3: Interface equilibrium')
-        
-        # Activate interface pressure constraint 
-        
+
+        # Activate interface pressure constraint
+
         blk.pressure_equil.unfix()
         blk.pressure_at_interface.activate()
-        
+
         # ----------------------------------------------------------------------
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high(
             "Step 3 complete: {}.".format(idaeslog.condition(res)))
-        
+
         # ---------------------------------------------------------------------
 
         init_log.info('Step 4: Isothermal chemical absoption')

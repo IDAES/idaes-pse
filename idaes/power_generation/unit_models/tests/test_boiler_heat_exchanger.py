@@ -17,11 +17,8 @@ Author: Miguel Zamarripa
 """
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           value,
-                           units as pyunits)
+from pyomo.environ import (
+    check_optimal_termination, ConcreteModel, value, units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -32,11 +29,16 @@ from idaes.generic_models.properties import iapws95
 from idaes.power_generation.properties import FlueGasParameterBlock
 # Import Power Plant HX Unit Model
 from idaes.power_generation.unit_models.boiler_heat_exchanger import (
-        BoilerHeatExchanger, TubeArrangement, DeltaTMethod)
+        BoilerHeatExchanger, TubeArrangement, DeltaTMethod,
+        delta_temperature_lmtd_callback, delta_temperature_amtd_callback,
+        delta_temperature_underwood_callback,
+        delta_temperature_underwood_tune_callback)
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util import get_solver
+import idaes.core.util.scaling as iscale
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -44,9 +46,8 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 
-
-@pytest.mark.unit
-def test_config():
+def tc(
+    delta_temperature_callback=delta_temperature_underwood_tune_callback):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -55,6 +56,7 @@ def test_config():
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     m.fs.unit = BoilerHeatExchanger(default={
+        "delta_temperature_callback": delta_temperature_callback,
         "side_1_property_package": m.fs.prop_steam,
         "side_2_property_package": m.fs.prop_fluegas,
         "has_pressure_change": True,
@@ -75,11 +77,10 @@ def test_config():
         DeltaTMethod.counterCurrent
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.component
-def test_boiler_hx():
+def th(
+    delta_temperature_callback=delta_temperature_underwood_tune_callback,
+    tout_1=809.55,
+    tout_2=788.53):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -88,6 +89,7 @@ def test_boiler_hx():
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     m.fs.unit = BoilerHeatExchanger(default={
+        "delta_temperature_callback": delta_temperature_callback,
         "side_1_property_package": m.fs.prop_steam,
         "side_2_property_package": m.fs.prop_fluegas,
         "has_pressure_change": True,
@@ -99,7 +101,6 @@ def test_boiler_hx():
 
     #   Set inputs
     h = value(iapws95.htpx(773.15*pyunits.K, 2.5449e7*pyunits.Pa))
-    print(h)
     m.fs.unit.side_1_inlet.flow_mol[0].fix(24678.26)   # mol/s
     m.fs.unit.side_1_inlet.enth_mol[0].fix(h)           # J/mol
     m.fs.unit.side_1_inlet.pressure[0].fix(2.5449e7)    # Pascals
@@ -140,24 +141,21 @@ def test_boiler_hx():
     m.fs.unit.fcorrection_dp_shell.fix(1.0)
 
     assert degrees_of_freedom(m) == 0
-
+    iscale.calculate_scaling_factors(m)
     m.fs.unit.initialize()
 
     results = solver.solve(m)
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
     assert value(m.fs.unit.side_1.properties_out[0].temperature) == \
-        pytest.approx(588.07, 1)
+        pytest.approx(tout_1, abs=0.5)
     assert value(m.fs.unit.side_2.properties_out[0].temperature) == \
-        pytest.approx(573.07, 1)
+        pytest.approx(tout_2, abs=0.5)
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
-@pytest.mark.integration
-def test_units():
+
+def tu(
+    delta_temperature_callback=delta_temperature_underwood_tune_callback):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -166,6 +164,7 @@ def test_units():
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     m.fs.unit = BoilerHeatExchanger(default={
+        "delta_temperature_callback": delta_temperature_callback,
         "side_1_property_package": m.fs.prop_steam,
         "side_2_property_package": m.fs.prop_fluegas,
         "has_pressure_change": True,
@@ -176,3 +175,75 @@ def test_units():
         "has_radiation": True})
 
     assert_units_consistent(m)
+
+
+
+@pytest.mark.unit
+def test_config_am():
+    tc(delta_temperature_amtd_callback)
+
+@pytest.mark.unit
+def test_config_lm():
+    tc(delta_temperature_lmtd_callback)
+
+@pytest.mark.unit
+def test_config_uw():
+    tc(delta_temperature_underwood_callback)
+
+@pytest.mark.unit
+def test_config_uwt():
+    tc(delta_temperature_underwood_tune_callback)
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_boiler_hx_am():
+    # arithmetic mean is pretty far off
+    th(delta_temperature_amtd_callback, tout_1=817.7, tout_2=720)
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_boiler_hx_lm():
+    th(delta_temperature_lmtd_callback)
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_boiler_hx_uw():
+    th(delta_temperature_underwood_callback)
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_boiler_hx_uwt():
+    th(delta_temperature_underwood_tune_callback)
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.integration
+def test_units_am():
+    tu(delta_temperature_amtd_callback)
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.integration
+def test_units_lm():
+    tu(delta_temperature_lmtd_callback)
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.integration
+def test_units_uw():
+    tu(delta_temperature_underwood_callback)
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.integration
+def test_units_uwt():
+    tu(delta_temperature_underwood_tune_callback)

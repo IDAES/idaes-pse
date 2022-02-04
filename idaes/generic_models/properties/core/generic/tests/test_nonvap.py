@@ -19,10 +19,9 @@ Author: Andrew Lee
 import pytest
 
 # Import Pyomo components
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Set,
-                           SolverStatus,
-                           TerminationCondition,
                            value,
                            units as pyunits)
 
@@ -264,9 +263,7 @@ class TestNonVapourisable_Vapour(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.component
     @pytest.mark.solver
@@ -375,9 +372,7 @@ class TestNonVapourisable_Liquid(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.component
     @pytest.mark.solver

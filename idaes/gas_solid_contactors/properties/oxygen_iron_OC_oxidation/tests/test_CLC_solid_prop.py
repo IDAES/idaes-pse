@@ -18,9 +18,8 @@ Author: Chinedu Okoli
 import pytest
 
 from pyomo.environ import (
+        check_optimal_termination,
         ConcreteModel,
-        TerminationCondition,
-        SolverStatus,
         Var,
         Constraint,
         value,
@@ -107,9 +106,7 @@ def test_solve(solid_prop):
     results = solver.solve(solid_prop)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
 
 @pytest.mark.solver

@@ -11,8 +11,13 @@
 # license information.
 #################################################################################
 """
-Natural gas property package using the values found in V. Zavala's 2014
-paper "Stochastic Optimal Control..."
+Natural gas property package with a single (pseudo) component for use
+in isothermal unit models.
+
+Data sources:
+    [1] Stochastic Optimal Control Model for Natural Gas Network
+        Operations. V. Zavala, 2014, Comp. Chem. Eng.
+
 """
 
 from pyomo.core.base.units_container import units as pyunits
@@ -37,14 +42,6 @@ from idaes.core.process_base import MaterialFlowBasis
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------
-# Natural Gas
-
-# Data Sources:
-# [1] Stochastic Optimal Control Model for Natural Gas Network
-#     Operations. V. Zavala, 2014
 
 @declare_process_block_class("NaturalGasParameterBlock")
 class NaturalGasParameterBlockData(PhysicalParameterBlock):
@@ -186,7 +183,7 @@ class NaturalGasStateBlockData(StateBlockData):
 
         if not self.config.defined_state:
             # For a single-phase property package, should we just always
-            # "fix" mole fraction? Probably not, as it will violate assumtions
+            # "fix" mole fraction? Probably not, as it will violate assumptions
             # when we combine multiple units (ports) as long as mole_frac_comp
             # is a state variable, which I would rather not change.
             def sum_component_eq_rule(b):
@@ -323,7 +320,7 @@ class NaturalGasStateBlockData(StateBlockData):
         )
 
     def _dens_mol(self):
-        # Make molar density a variable as it is imporant enough that
+        # Make molar density a variable as it is important enough that
         # somebody might want to fix it.
         self.dens_mol = Var(
             initialize=1.0,

@@ -35,11 +35,10 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.generic_models.unit_models import GibbsReactor
 from pyomo.util.check_units import assert_units_consistent
 
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Objective,
                            SolverFactory,
-                           SolverStatus,
-                           TerminationCondition,
                            value)
 
 from idaes.core.util import get_solver
@@ -99,8 +98,7 @@ class TestNaturalGasProps(object):
 
             results = solver.solve(m, tee=True)
 
-            assert results.solver.termination_condition == \
-                TerminationCondition.optimal
+            assert check_optimal_termination(results)
             assert -93000 == pytest.approx(value(
                 m.fs.state[1].enth_mol_phase['Vap']), 1)
             assert 250 == pytest.approx(value(
@@ -128,16 +126,14 @@ class TestNaturalGasProps(object):
 
             results = solver.solve(m)
 
-            assert results.solver.termination_condition == \
-                TerminationCondition.optimal
+            assert check_optimal_termination(results)
 
             while m.fs.state[1].pressure.value <= 1e6:
                 m.fs.state[1].pressure.value = (
                     m.fs.state[1].pressure.value + 2e5)
                 results = solver.solve(m)
 
-                assert results.solver.termination_condition == \
-                    TerminationCondition.optimal
+                assert check_optimal_termination(results)
 
                 assert -70000 >= value(m.fs.state[1].enth_mol_phase['Vap'])
                 assert -105000 <= value(m.fs.state[1].enth_mol_phase['Vap'])
@@ -169,15 +165,14 @@ class TestNaturalGasProps(object):
         m.fs.reactor.inlet.mole_frac_comp[0, "N2"].fix(0.05)
         m.fs.reactor.inlet.mole_frac_comp[0, "Ar"].fix(0.05)
         m.fs.reactor.inlet.mole_frac_comp[0, "CH4"].fix(0.4)
-        
-        constraint_scaling_transform(m.fs.reactor.control_volume.enthalpy_balances[0.0],1E-6)
+
+        constraint_scaling_transform(
+            m.fs.reactor.control_volume.enthalpy_balances[0.0], 1E-6)
         m.fs.reactor.gibbs_scaling = 1E-6
-        
+
         results = solver.solve(m, tee=True)
 
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         assert 0.017 == pytest.approx(value(
             m.fs.reactor.outlet.mole_frac_comp[0, 'H2']), 1e-1)

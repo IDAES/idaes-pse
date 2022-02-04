@@ -214,7 +214,6 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
             if x != x0:
                 cv.pressure[t0, x].fix()
             if x != xf:
-                #m.fs.pipeline.flow_mass[t0, x].fix()
                 cv.flow_mass[t0, x].fix()
 
         # I want to deactivate differential equations at (t0, xf)
@@ -235,7 +234,6 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
             var.set_value(val)
 
         cv.material_accumulation[...].set_value(0.0)
-        #m.fs.pipeline.flow_mass_dt[...].set_value(0.0)
         cv.flow_mass_dt[...].set_value(0.0)
 
         for con in large_residuals_set(m):
@@ -351,8 +349,6 @@ class TestConstructPipelineCompressorFlowsheet(unittest.TestCase):
         # Fix compressor degrees of freedom:
         compressor.boost_pressure[:].fix()
         # Inlet variables:
-        #x0 = m.fs.pipeline.control_volume.length_domain.first()
-        #state = m.fs.pipeline.control_volume.properties
         state = m.fs.compressor.inlet_state
         state[:].mole_frac_comp[j].fix(1.0)
         state[:].temperature.fix(300.0*pyo.units.K)

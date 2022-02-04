@@ -29,7 +29,8 @@ import os
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import (Constraint,
+from pyomo.environ import (check_optimal_termination,
+                           Constraint,
                            exp,
                            Expression,
                            ExternalFunction,
@@ -40,9 +41,7 @@ from pyomo.environ import (Constraint,
                            PositiveReals,
                            value,
                            Var,
-                           units as pyunits,
-                           SolverStatus,
-                           TerminationCondition)
+                           units as pyunits)
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -558,9 +557,7 @@ class _CubicStateBlock(StateBlock):
         )
 
         # ---------------------------------------------------------------------
-        if (results.solver.termination_condition !=
-                TerminationCondition.optimal or
-                results.solver.status != SolverStatus.ok):
+        if not check_optimal_termination(results):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")
