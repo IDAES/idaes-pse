@@ -45,6 +45,18 @@ Data sources:
 
 """
 
+EXPLICIT_DISCRETIZATION_SCHEMES = {
+    "FORWARD",
+}
+IMPLICIT_DISCRETIZATION_SCHEMES = {
+    "BACKWARD",
+    "LAGRANGE-RADAU",
+}
+UNSUPPORTED_DISCRETIZATION_SCHEMES = {
+    "CENTRAL",
+    "LAGRANGE-LEGENDRE",
+}
+
 
 @declare_process_block_class("GasPipeline")
 class GasPipelineData(UnitModelBlockData):
@@ -143,10 +155,35 @@ argument)."""))
         #
         self.control_volume.apply_transformation()
 
-        # NOTE: Later we may try to support switches in direction of flow.
-        # At this time these may need to be renamed...
+        #
+        # Deactivate momentum balance at point where discretization equation
+        # doesn't exist.
+        #
+        t0 = self.flowsheet().time.first()
         x0 = self.control_volume.length_domain.first()
         xf = self.control_volume.length_domain.last()
+        dynamic = self.flowsheet().config.dynamic
+        if dynamic:
+            # In a dynamic model with an implicit time discretization,
+            # at t0 and the point in space where the spatial discretization
+            # equation is not defined, the momentum balance contains two
+            # variables, the time and space derivatives, that are not present
+            # in any other equations. For the model to have a perfect matching,
+            # this equation must be deactivated.
+            scheme = self.config.transformation_scheme
+            momentum_bal = self.control_volume.momentum_balance
+            if scheme in IMPLICIT_DISCRETIZATION_SCHEMES:
+                momentum_bal[t0, x0].deactivate()
+            elif scheme in EXPLICIT_DISCRETIZATION_SCHEMES:
+                momentum_bal[t0, xf].deactivate()
+            elif scheme in UNSUPPORTED_DISCRETIZATION_SCHEMES:
+                raise ValueError(
+                    "Discretization scheme %s is not supported for "
+                    "dynamic pipelines" % scheme
+                )
+
+        # NOTE: Later we may try to support switches in direction of flow.
+        # At this time these may need to be renamed...
         inlet_state = Reference(
             self.control_volume.properties[:, x0],
             ctype=StateBlock,
