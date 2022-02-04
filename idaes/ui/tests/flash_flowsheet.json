@@ -87,7 +87,53 @@
             }
         }
     },
-    "routing_config": {},
+    "routing_config": {
+        "s_inlet_1": {
+            "cell_index": 2,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "s_liq_outlet_1": {
+            "cell_index": 4,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "s_vap_outlet_1": {
+            "cell_index": 6,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        }
+    },
     "cells": [
         {
             "type": "standard.Image",
@@ -183,10 +229,8 @@
                         "position": {
                             "name": "left",
                             "args": {
-                                "x": 8,
-                                "y": 25,
-                                "dx": 1,
-                                "dy": 1
+                                "dx": 8,
+                                "dy": 0
                             }
                         },
                         "attrs": {
@@ -221,12 +265,10 @@
                     },
                     "out": {
                         "position": {
-                            "name": "left",
+                            "name": "right",
                             "args": {
-                                "x": 45,
-                                "y": 45,
-                                "dx": 1,
-                                "dy": 1
+                                "dx": -8,
+                                "dy": 0
                             }
                         },
                         "attrs": {

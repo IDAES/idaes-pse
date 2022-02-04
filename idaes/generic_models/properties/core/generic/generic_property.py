@@ -18,6 +18,7 @@ import types
 
 # Import Pyomo libraries
 from pyomo.environ import (Block,
+                           check_optimal_termination,
                            Constraint,
                            exp,
                            Expression,
@@ -27,9 +28,7 @@ from pyomo.environ import (Block,
                            value,
                            Var,
                            units as pyunits,
-                           Reference,
-                           TerminationCondition,
-                           SolverStatus)
+                           Reference)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -207,7 +206,6 @@ class GenericParameterData(PhysicalParameterBlock):
 
         # Set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)
-        units_meta = self.get_metadata().default_units
 
         # Call configure method to set construction arguments
         self.configure()
@@ -686,7 +684,7 @@ class GenericParameterData(PhysicalParameterBlock):
                                 f"type argument was not an instance of "
                                 f"HenryType.")
                         elif (self.config.phases_in_equilibrium is not None and
-                                  d["type"] != HenryType.Kpx):
+                              d["type"] != HenryType.Kpx):
                             raise PropertyNotSupportedError(
                                 f"{self.name} currently only Kpx type Henry's "
                                 f"constants are supported with full phase "
@@ -716,19 +714,18 @@ class GenericParameterData(PhysicalParameterBlock):
                         # First validate that p is a phase
                         if p not in self.phase_list:
                             raise ConfigurationError(
-                                f"{self.name} property {prop} definition contained"
-                                f" unrecognised phase {p}.")
+                                f"{self.name} property {prop} definition "
+                                f"contained unrecognised phase {p}.")
                         else:
                             try:
                                 meth.build_parameters(cobj, p)
                             except AttributeError:
-                                # Method provided has no build_parameters method
+                                # No build_parameters method
                                 # Assume it is not needed and continue
                                 continue
 
         for p in self.phase_list:
             pobj = self.get_phase(p)
-            # pobj.config.equation_of_state.build_parameters(pobj)
 
             for a, v in pobj.config.items():
                 # Check to see if v has an attribute build_parameters
@@ -749,7 +746,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     except KeyError:
                         raise ConfigurationError(
                             "{} values were not defined for parameter {} in "
-                            "phase{}. Please check the parameter_data "
+                            "phase {}. Please check the parameter_data "
                             "argument to ensure values are provided."
                             .format(self.name, a, p))
 
@@ -849,12 +846,12 @@ class GenericParameterData(PhysicalParameterBlock):
         for v in self.component_objects(Var, descend_into=True):
             for i in v:
                 if v[i].value is None:
-                    if i is None: # Scalar Var
+                    if i is None:  # Scalar Var
                         raise ConfigurationError(
                             "{} parameter {} was not assigned"
                             " a value. Please check your configuration "
                             "arguments.".format(self.name, v.local_name))
-                    else: # Indexed Var
+                    else:  # Indexed Var
                         raise ConfigurationError(
                             "{} parameter {}[{}] was not assigned"
                             " a value. Please check your configuration "
@@ -969,8 +966,10 @@ class GenericParameterData(PhysicalParameterBlock):
              'gibbs_mol': {'method': '_gibbs_mol'},
              'gibbs_mol_phase': {'method': '_gibbs_mol_phase'},
              'gibbs_mol_phase_comp': {'method': '_gibbs_mol_phase_comp'},
-             'isentropic_speed_sound_phase': {'method': '_isentropic_speed_sound_phase'},
-             'isothermal_speed_sound_phase': {'method': '_isothermal_speed_sound_phase'},
+             'isentropic_speed_sound_phase': {
+                 'method': '_isentropic_speed_sound_phase'},
+             'isothermal_speed_sound_phase': {
+                 'method': '_isothermal_speed_sound_phase'},
              'henry': {'method': '_henry'},
              'mass_frac_phase_comp': {'method': '_mass_frac_phase_comp'},
              'mass_frac_phase_comp_apparent': {
@@ -1144,7 +1143,7 @@ class _GenericStateBlock(StateBlock):
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
 
         init_log.info('Starting initialization')
-        
+
         res = None
 
         for k in blk.keys():
@@ -1307,7 +1306,8 @@ class _GenericStateBlock(StateBlock):
                                 sum_flow)
                         lb = blk[k].mole_frac_phase_comp_true[p, j].lb
                         if lb is not None and x <= lb:
-                            blk[k].mole_frac_phase_comp_true[p, j].set_value(lb)
+                            blk[k].mole_frac_phase_comp_true[p, j].set_value(
+                                lb)
                         else:
                             blk[k].mole_frac_phase_comp_true[p, j].set_value(x)
 
@@ -1340,8 +1340,8 @@ class _GenericStateBlock(StateBlock):
                         c.activate()
                         for p, j in blk[k].params._phase_component_set:
                             calculate_variable_from_constraint(
-                                blk[k].log_mole_frac_phase_comp[p,j],
-                                blk[k].log_mole_frac_phase_comp_eqn[p,j])
+                                blk[k].log_mole_frac_phase_comp[p, j],
+                                blk[k].log_mole_frac_phase_comp_eqn[p, j])
                 for pp in blk[k].params._pe_pairs:
                     # Activate formulation specific constraints
                     blk[k].params.config.phase_equilibrium_state[pp] \
@@ -1386,8 +1386,8 @@ class _GenericStateBlock(StateBlock):
                 "molality_phase_comp",
                 "molality_phase_comp_apparent",
                 "molality_phase_comp_true",
-                "mole_frac_comp", # Might have already been initialized
-                "mole_frac_phase_comp", # Might have already been initialized
+                "mole_frac_comp",  # Might have already been initialized
+                "mole_frac_phase_comp",  # Might have already been initialized
                 "mole_frac_phase_comp_apparent",
                 "mole_frac_phase_comp_true",
                 "pressure_phase_comp",
@@ -1429,10 +1429,7 @@ class _GenericStateBlock(StateBlock):
                         .state_definition.do_not_initialize):
                     c.activate()
 
-        if (res is not None and (
-                res.solver.termination_condition !=
-                TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok)):
+        if res is not None and not check_optimal_termination(res):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
                 f"the output logs for more information.")
@@ -1545,7 +1542,7 @@ class _GenericStateBlock(StateBlock):
                 if blk.is_property_constructed("log_mole_frac_tbub"):
                     blk.log_mole_frac_tbub[pp, j].value = value(
                         log(blk._mole_frac_tbub[pp, j]))
-                    
+
             for j in henry_comps:
                 blk._mole_frac_tbub[pp, j].value = value(
                     blk.mole_frac_comp[j] *
@@ -1897,8 +1894,10 @@ class GenericStateBlockData(StateBlockData):
                                 self, k[0], k[1], k[2])
 
                     iscale.constraint_scaling_transform(
-                        self.equilibrium_constraint[k], sf_fug, overwrite=False)
-                except KeyError: # component not in phase
+                        self.equilibrium_constraint[k],
+                        sf_fug,
+                        overwrite=False)
+                except KeyError:  # component not in phase
                     pass
 
         # Inherent reactions
@@ -1924,11 +1923,10 @@ class GenericStateBlockData(StateBlockData):
 
         # Add scaling for additional Vars and Constraints
         # Bubble and dew points
-        
         def bubble_dew_scaling(b, pt_var):
             # Ditch the m.fs.unit.control_volume...
             short_name = pt_var.name.split(".")[-1]
-            
+
             if short_name.startswith("temperature"):
                 abbrv = "t"
                 sf_pt = sf_T
@@ -1937,26 +1935,26 @@ class GenericStateBlockData(StateBlockData):
                 sf_pt = sf_P
             else:
                 _raise_dev_burnt_toast()
-            
+
             if short_name.endswith("bubble"):
                 phase = VaporPhase
                 abbrv += "bub"
             elif short_name.endswith("dew"):
                 phase = LiquidPhase
                 abbrv += "dew"
-            
-            x_var = getattr(b,"_mole_frac_"+abbrv)
+
+            x_var = getattr(b, "_mole_frac_"+abbrv)
 
             if b.is_property_constructed("log_mole_frac_"+abbrv):
-                log_eq = getattr(b,"log_mole_frac_"+abbrv+"_eqn")
+                log_eq = getattr(b, "log_mole_frac_"+abbrv+"_eqn")
             else:
                 log_eq = None
-            
+
             # Directly scale the bubble/dew temperature/pressure variable
             for v in pt_var.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, sf_pt)
-            
+
             # Scale mole fractions for bubble/dew calcs
             for i, v in x_var.items():
                 if iscale.get_scaling_factor(v) is None:
@@ -1980,27 +1978,26 @@ class GenericStateBlockData(StateBlockData):
                         # component i[2] is not in the new phase, so this
                         # variable is likely unused and scale doesn't matter
                         iscale.set_scaling_factor(v, 1)
-            
+
             scaling_method = getattr(b.params.config.bubble_dew_method,
                                      "scale_"+short_name)
             scaling_method(b, overwrite=False)
-            
+
             return
-        
+
         if self.is_property_constructed("temperature_bubble"):
             bubble_dew_scaling(self, self.temperature_bubble)
 
         if self.is_property_constructed("temperature_dew"):
-             bubble_dew_scaling(self, self.temperature_dew)
-        
+            bubble_dew_scaling(self, self.temperature_dew)
+
         if self.is_property_constructed("pressure_bubble"):
             bubble_dew_scaling(self, self.pressure_bubble)
-                
+
         if self.is_property_constructed("pressure_dew"):
             bubble_dew_scaling(self, self.pressure_dew)
 
         # Scale log form constraints
-        
         if self.is_property_constructed("log_mole_frac_comp"):
             for j, v in self.log_mole_frac_comp_eqn.items():
                 sf_x = iscale.get_scaling_factor(
@@ -2010,8 +2007,8 @@ class GenericStateBlockData(StateBlockData):
                     hint="for log_mole_frac_comp")
                 iscale.constraint_scaling_transform(
                     v, sf_x, overwrite=False)
-        
-        #TODO: determine if this is lazy copy and pasting
+
+        # Activity is generally of similar order to mole fractions
         if self.is_property_constructed("log_act_phase_comp"):
             for (p, j), v in self.log_act_phase_comp_eq.items():
                 sf_x = iscale.get_scaling_factor(
@@ -2042,7 +2039,8 @@ class GenericStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(
                     v, sf_x, overwrite=False)
 
-        if self.is_property_constructed("log_act_phase_solvents") and len(self.params.solvent_set) > 1:
+        if (self.is_property_constructed("log_act_phase_solvents") and
+                len(self.params.solvent_set) > 1):
             for p, v in self.log_act_phase_solvents_eq.items():
                 iscale.constraint_scaling_transform(
                     v, 1e-3, overwrite=False)
@@ -2224,29 +2222,29 @@ class GenericStateBlockData(StateBlockData):
     # Bubble and Dew Points
 
     def _temperature_bubble(b):
-        _temperature_pressure_bubble_dew(b,"temperature_bubble")
-        
+        _temperature_pressure_bubble_dew(b, "temperature_bubble")
+
     def _log_mole_frac_tbub(b):
-        _log_mole_frac_bubble_dew(b,"log_mole_frac_tbub")
-    
+        _log_mole_frac_bubble_dew(b, "log_mole_frac_tbub")
+
     def _temperature_dew(b):
-        _temperature_pressure_bubble_dew(b,"temperature_dew")
-            
+        _temperature_pressure_bubble_dew(b, "temperature_dew")
+
     def _log_mole_frac_tdew(b):
-        _log_mole_frac_bubble_dew(b,"log_mole_frac_tdew")        
+        _log_mole_frac_bubble_dew(b, "log_mole_frac_tdew")
 
     def _pressure_bubble(b):
-        _temperature_pressure_bubble_dew(b,"pressure_bubble")
+        _temperature_pressure_bubble_dew(b, "pressure_bubble")
 
     def _log_mole_frac_pbub(b):
-        _log_mole_frac_bubble_dew(b,"log_mole_frac_pbub")
+        _log_mole_frac_bubble_dew(b, "log_mole_frac_pbub")
 
     def _pressure_dew(b):
-        _temperature_pressure_bubble_dew(b,"pressure_dew")
-    
+        _temperature_pressure_bubble_dew(b, "pressure_dew")
+
     def _log_mole_frac_pdew(b):
-        _log_mole_frac_bubble_dew(b,"log_mole_frac_pdew")
-            
+        _log_mole_frac_bubble_dew(b, "log_mole_frac_pdew")
+
     # -------------------------------------------------------------------------
     # Property Methods
     def _act_phase_comp(self):
@@ -2947,7 +2945,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             def rule_isentropic_speed_sound_phase(b, p):
                 p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.isentropic_speed_sound_phase(b, p)
+                return p_config.equation_of_state.isentropic_speed_sound_phase(
+                    b, p)
             self.isentropic_speed_sound_phase = Expression(
                     self.phase_list,
                     doc="Isentropic speed of sound in each phase",
@@ -2960,7 +2959,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             def rule_isothermal_speed_sound_phase(b, p):
                 p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.isothermal_speed_sound_phase(b, p)
+                return p_config.equation_of_state.isothermal_speed_sound_phase(
+                    b, p)
             self.isothermal_speed_sound_phase = Expression(
                     self.phase_list,
                     doc="Isothermal speed of sound in each phase",
@@ -2968,7 +2968,7 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.isothermal_speed_sound_phase)
             raise
-            
+
     def _henry(self):
         try:
             def henry_rule(b, p, j):
@@ -3047,17 +3047,6 @@ class GenericStateBlockData(StateBlockData):
                              for p in self.phase_list))
         except AttributeError:
             self.del_component(self.mw)
-            raise
-
-    def _mw_comp(self):
-        try:
-            def rule_mw_comp(b, j):
-                return b.params.get_component(j).mw
-            self.mw_comp = Expression(self.component_list,
-                                      doc="Component molecular weight",
-                                      rule=rule_mw_comp)
-        except AttributeError:
-            self.del_component(self.mw_comp)
             raise
 
     def _molality_phase_comp(self):
@@ -3351,7 +3340,9 @@ class GenericStateBlockData(StateBlockData):
     def _log_act_phase_solvents(self):
         if len(self.params.solvent_set) == 1:
             self.log_act_phase_solvents = \
-                Reference(self.log_act_phase_comp[:, self.params.solvent_set.first()])
+                Reference(
+                    self.log_act_phase_comp[
+                        :, self.params.solvent_set.first()])
         else:
             try:
                 self.log_act_phase_solvents = Var(
@@ -3368,12 +3359,13 @@ class GenericStateBlockData(StateBlockData):
                         return Expression.Skip
                     else:
                         return exp(b.log_act_phase_solvents[p]) == \
-                               sum(p_config.equation_of_state.act_phase_comp(b, p, j)
+                               sum(p_config.equation_of_state.act_phase_comp(
+                                       b, p, j)
                                    for j in b.params.solvent_set)
 
                 self.log_act_phase_solvents_eq = Constraint(
                         self.phase_list,
-                        doc="Natural log of summed solvent activity in each phase",
+                        doc="Natural log of solvent activity in each phase",
                         rule=rule_log_act_phase_solvents)
             except AttributeError:
                 self.del_component(self.log_act_phase_solvents)
@@ -3778,9 +3770,11 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.log_k_eq_constraint)
             raise
 
+
 def _raise_dev_burnt_toast():
     raise BurntToast("Users shouldn't be calling this function. "
                      "If you're a dev, you know what you did.")
+
 
 def _valid_VL_component_list(blk, pp):
     raoult_comps = []
@@ -3805,7 +3799,7 @@ def _valid_VL_component_list(blk, pp):
 
     return raoult_comps, henry_comps
 
-    
+
 def _temperature_pressure_bubble_dew(b, name):
     #  temperature/pressure bubble/dew
     splt = name.split("_")
@@ -3821,7 +3815,7 @@ def _temperature_pressure_bubble_dew(b, name):
         docstring_mole_frac = "Vapor"+docstring_mole_frac+"at bubble "
     else:
         _raise_dev_burnt_toast()
-        
+
     if splt[0] == "temperature":
         abbrv = "t"+abbrv
         bounds = (b.temperature.lb, b.temperature.ub)
@@ -3833,11 +3827,10 @@ def _temperature_pressure_bubble_dew(b, name):
         units = units_meta["pressure"]
     else:
         _raise_dev_burnt_toast()
-        
-    
+
     docstring_var += splt[0]
     docstring_mole_frac += splt[0]
-      
+
     if b.params.config.bubble_dew_method is None:
         raise GenericPropertyPackageError(b, name)
 
@@ -3847,91 +3840,93 @@ def _temperature_pressure_bubble_dew(b, name):
                 doc=docstring_var,
                 bounds=bounds,
                 units=units))
-        setattr(b,"_mole_frac_"+abbrv, Var(
-                b.params._pe_pairs,
-                b.component_list,
-                initialize=1/len(b.component_list),
-                bounds=(0, None),
-                doc=docstring_mole_frac,
-                units=None))
-        
+        setattr(b, "_mole_frac_"+abbrv, Var(
+                    b.params._pe_pairs,
+                    b.component_list,
+                    initialize=1/len(b.component_list),
+                    bounds=(0, None),
+                    doc=docstring_mole_frac,
+                    units=None))
+
         tmp = getattr(b.params.config.bubble_dew_method, name)
         tmp(b)
+
     except AttributeError:
-        if hasattr(b,name):
-            var = getattr(b,name)
+        if hasattr(b, name):
+            var = getattr(b, name)
             b.del_component(var)
-        if hasattr(b,"_mole_frac_"+abbrv):
-            mole_frac = getattr(b,"_mole_frac_"+abbrv)
+        if hasattr(b, "_mole_frac_"+abbrv):
+            mole_frac = getattr(b, "_mole_frac_"+abbrv)
             b.del_component(mole_frac)
         raise
+
 
 def _log_mole_frac_bubble_dew(b, name):
     abbrv = name.split("_")[-1]
     docstring_var = " log mole fractions at "
     docstring_eqn = "Constraint for log of "
-    
+
     if abbrv.endswith("dew"):
         docstring_var = "Liquid"+docstring_var+"dew "
-        docstring_eqn +=  "dew mole fractions"
+        docstring_eqn += "dew mole fractions"
     elif abbrv.endswith("bub"):
         docstring_var = "Vapor"+docstring_var+"bubble "
-        docstring_eqn +=  "bubble mole fractions"
+        docstring_eqn += "bubble mole fractions"
     else:
         _raise_dev_burnt_toast()
-        
+
     if abbrv.startswith("t"):
         docstring_var += "temperature"
     elif abbrv.startswith("p"):
         docstring_var += "pressure"
     else:
         _raise_dev_burnt_toast()
-        
+
     try:
-        setattr(b,"log_mole_frac_"+abbrv, Var(
-                b.params._pe_pairs,
-                b.component_list,
-                initialize=log(1/len(b.component_list)),
-                bounds=(None, 0),
-                doc=docstring_var,
-                units=None)
-            )
-        
+        setattr(b, "log_mole_frac_"+abbrv, Var(
+                    b.params._pe_pairs,
+                    b.component_list,
+                    initialize=log(1/len(b.component_list)),
+                    bounds=(None, 0),
+                    doc=docstring_var,
+                    units=None))
+
         def rule_log_mole_frac(b, p1, p2, j):
             (l_phase,
              v_phase,
              vl_comps,
              henry_comps,
              l_only_comps,
-             v_only_comps) = bub_dew_VL_comp_list(b,(p1,p2))
-            
+             v_only_comps) = bub_dew_VL_comp_list(b, (p1, p2))
+
             if l_phase is None or v_phase is None:
                 # Not a VLE pair
-                return Constraint.Skip               
-            elif not j in set(vl_comps+henry_comps):
                 return Constraint.Skip
-            
+            elif j not in set(vl_comps+henry_comps):
+                return Constraint.Skip
+
             if abbrv.endswith("dew") and (l_only_comps != []):
                 # Non-vaporisables present, no dew point
                 return Constraint.Skip
             elif abbrv.endswith("bub") and (v_only_comps != []):
                 # Non-condensables present, no bubble point
                 return Constraint.Skip
-            log_mole_frac = getattr(b,"log_mole_frac_"+abbrv)
-            mole_frac = getattr(b,"_mole_frac_"+abbrv)
-            
+            log_mole_frac = getattr(b, "log_mole_frac_"+abbrv)
+            mole_frac = getattr(b, "_mole_frac_"+abbrv)
+
             return exp(log_mole_frac[p1, p2, j]) == mole_frac[p1, p2, j]
+
         setattr(b, "log_mole_frac_"+abbrv+"_eqn", Constraint(
             b.params._pe_pairs,
             b.component_list,
             rule=rule_log_mole_frac,
             doc=docstring_eqn
             ))
-    except:
-        if hasattr(b,"log_mole_frac_"+abbrv):
-            var = getattr(b,"log_mole_frac_"+abbrv)
+    except AttributeError:
+        if hasattr(b, "log_mole_frac_"+abbrv):
+            var = getattr(b, "log_mole_frac_"+abbrv)
             b.del_component(var)
-        if hasattr(b,"log_mole_frac_"+abbrv+"_eqn"):
-            eqn = getattr(b,"log_mole_frac_"+abbrv+"_eqn")
+        if hasattr(b, "log_mole_frac_"+abbrv+"_eqn"):
+            eqn = getattr(b, "log_mole_frac_"+abbrv+"_eqn")
             b.del_component(eqn)
         raise

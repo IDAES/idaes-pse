@@ -42,7 +42,8 @@ import pandas as pd
 import pytest
 from pytest import approx
 
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Expression,
                            Constraint,
                            ExternalFunction,
@@ -50,8 +51,6 @@ from pyomo.environ import (ConcreteModel,
                            Param,
                            Reals,
                            SolverFactory,
-                           SolverStatus,
-                           TerminationCondition,
                            sqrt,
                            value,
                            Var,
@@ -280,8 +279,7 @@ def get_reference_entropy(comp):
     solver = SolverFactory('ipopt')
     results = solver.solve(m)
     
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
     assert (value(m.S_ref) 
             == approx(value(m.props.entr_mol_phase_comp["Vap",comp]), rel=1E-12))
     
@@ -443,8 +441,7 @@ def test_thermo(model,dataframe):
             prop.pressure.fix(row["P"]*1E6)
         tester.set_pressure(row["P"]*1E6)
         results = solver.solve(m)
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
         
         # Make sure that log mole fractions have been created and validated
         for comp in tester.component_list:
