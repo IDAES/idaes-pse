@@ -896,7 +896,6 @@ class TestConstructPipeline(unittest.TestCase):
         igraph = IncidenceGraphInterface(m)
         N, M = igraph.incidence_matrix.shape
         matching = igraph.maximum_matching()
-        var_dmp, con_dmp = igraph.dulmage_mendelsohn()
         self.assertEqual(degrees_of_freedom(m), 0)
         self.assertEqual(N, M) # Sanity check
         self.assertEqual(len(matching), N)
@@ -904,7 +903,7 @@ class TestConstructPipeline(unittest.TestCase):
     def test_dynamic_inlet_pressure_outlet_flow(self):
         """
         Dynamic simulation with both inlets fixed appears to be unstable,
-        so we'll procede with inlet pressure and outlet flow specified.
+        so we'll proceed with inlet pressure and outlet flow specified.
         This test makes sure this version of the model is structurally sound.
         """
         m = pyo.ConcreteModel()
@@ -964,7 +963,6 @@ class TestConstructPipeline(unittest.TestCase):
         igraph = IncidenceGraphInterface(m)
         N, M = igraph.incidence_matrix.shape
         matching = igraph.maximum_matching()
-        var_dmp, con_dmp = igraph.dulmage_mendelsohn()
         self.assertEqual(degrees_of_freedom(m), 0)
         self.assertEqual(N, M) # Sanity check
         self.assertEqual(len(matching), N)
