@@ -26,6 +26,7 @@ from typing import Union
 import pytest
 
 #
+from pyomo.environ import value
 from idaes.dmf import util, resource
 from .util import init_logging
 
@@ -101,7 +102,7 @@ def test_datetime_timestamp():
     ts = time.time()
     dt = datetime.datetime.fromtimestamp(ts)
     ts1 = util.datetime_timestamp(dt)
-    assert pytest.approx(ts, ts1, 0.000001)
+    assert pytest.approx(value(ts), value(ts1), 0.000001)
 
 
 @pytest.mark.unit

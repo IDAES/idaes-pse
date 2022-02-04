@@ -458,7 +458,7 @@ def test_common(m):
     for i in m.params.component_list:
         for j in m.params.component_list:
             assert pytest.approx(value(m.props[1].PR_daij_dT[i,j])
-                                 == (1-m.params.PR_kappa[i, j])
+                                 == value((1-m.params.PR_kappa[i, j])
                                  * (m.props[1].PR_fw[j] 
                                  * sqrt(m.props[1].PR_a[i]
                                      *  m.params.get_component(j).temperature_crit
@@ -466,7 +466,7 @@ def test_common(m):
                                   + m.props[1].PR_fw[i]
                                   * sqrt(m.props[1].PR_a[j]
                                       * m.params.get_component(i).temperature_crit
-                                      / m.params.get_component(i).pressure_crit)))
+                                      / m.params.get_component(i).pressure_crit))))
                                      
     assert isinstance(m.props[1].PR_dam_dT, Expression)
     assert len(m.props[1].PR_dam_dT) == len(m.params.phase_list)
