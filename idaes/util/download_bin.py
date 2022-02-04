@@ -15,6 +15,7 @@ import hashlib
 import idaes.logger as idaeslog
 import tarfile
 import idaes
+from idaes.config import extra_binaries
 from shutil import copyfile
 from pyomo.common.download import FileDownloader
 import urllib
@@ -182,6 +183,14 @@ def download_binaries(
         furl.append("/".join([url, f]))
 
     for e in extra:
+        if e not in extra_binaries:
+            _log.warning(f"Unknown extra package {e}, not installed.")
+            continue
+        if platform not in extra_binaries[e]:
+            _log.warning(
+                f"Extra package {e} not available for {platform}, not installed."
+            )
+            continue
         _add_pack(e) # you have to explicitly ask for extras so assume you want
     if not extras_only:
         _add_pack("lib")

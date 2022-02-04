@@ -19,6 +19,7 @@ from pandas import DataFrame
 
 from pyomo.environ import (
     Block,
+    check_optimal_termination,
     Constraint,
     Param,
     Reals,
@@ -35,7 +36,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
     MaterialBalanceType,
-    MaterialFlowBasis
+    MaterialFlowBasis,
 )
 from idaes.core.util.config import (
     is_physical_parameter_block,
@@ -45,6 +46,7 @@ from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
     PropertyNotSupportedError,
+    InitializationError,
 )
 from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -1574,6 +1576,12 @@ objects linked the mixed state and all outlet states,
         if blk.config.mixed_state_block is None:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
+
+            if not check_optimal_termination(res):
+                raise InitializationError(
+                    f"{blk.name} failed to initialize successfully. Please "
+                    f"check the output logs for more information.")
+
             init_log.info(
                 "Initialization Step 2 Complete: {}"
                 .format(idaeslog.condition(res))

@@ -135,9 +135,7 @@ def test_run_drum1D(build_drum1D):
     # solve model
     results = solver.solve(m, tee=True)
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
     assert degrees_of_freedom(m) == 0
     assert (pytest.approx(0.6, abs=1e-3) ==
             pyo.value(m.fs.unit.level[0]))

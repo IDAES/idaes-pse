@@ -16,7 +16,7 @@ This module contains utility functions for initialization of IDAES models.
 """
 
 from pyomo.environ import (
-    Block, Constraint, Param, TerminationCondition, Var, value)
+    Block, check_optimal_termination, Constraint, Param, Var, value)
 from pyomo.network import Arc
 from pyomo.dae import ContinuousSet
 from pyomo.core.expr.visitor import identify_variables
@@ -358,7 +358,7 @@ def initialize_by_time_element(fs, time, **kwargs):
     'Model is inactive except at t=0. Solving for consistent initial conditions.')
     with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
         results = solver.solve(fs, tee=slc.tee)
-    if results.solver.termination_condition == TerminationCondition.optimal:
+    if check_optimal_termination(results):
         init_log.info('Successfully solved for consistent initial conditions')
     else:
         init_log.error('Failed to solve for consistent initial conditions')
@@ -456,7 +456,7 @@ def initialize_by_time_element(fs, time, **kwargs):
 
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(fs, tee=slc.tee)
-        if results.solver.termination_condition == TerminationCondition.optimal:
+        if check_optimal_termination(results):
            init_log.info(f'Successfully solved finite element {i}')
         else:
            init_log.error(f'Failed to solve finite element {i}')

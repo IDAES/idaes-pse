@@ -22,7 +22,7 @@ import idaes.logger as idaeslog
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Arc, Port
 from pyomo.environ import value, Integers, RangeSet, TransformationFactory, \
-    Block, Reference
+    Block, Reference, check_optimal_termination
 
 # Import IDAES cores
 from idaes.generic_models.unit_models.column_models import Tray, Condenser, \
@@ -32,7 +32,7 @@ from idaes.generic_models.unit_models.column_models.condenser \
 from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
                         useDefault)
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util import get_solver
 
@@ -553,3 +553,9 @@ see property package for documentation.}"""))
         # release feed tray state once initialization is complete
         self.feed_tray.properties_in_feed.\
             release_state(flags=feed_flags, outlvl=outlvl)
+
+        # TODO : This fails in the current model
+        # if not check_optimal_termination(res):
+        #     raise InitializationError(
+        #         f"{self.name} failed to initialize successfully. Please check "
+        #         f"the output logs for more information.")

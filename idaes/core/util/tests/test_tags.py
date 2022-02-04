@@ -439,3 +439,19 @@ def test_doc_example_and_bound(model):
     assert str(g["x"][1]) == "2.000"
     assert abs(g["x"][1].expression.lb - 0.001) < 1e-5 # x is in kg
     assert abs(g["x"][1].expression.ub - 0.003) < 1e-5 # x is in kg
+
+@pytest.mark.unit
+def test_tag_slice(model):
+    m = model
+
+    tw = ModelTag(
+        expr=m.w[1,:],
+        format_string=lambda x: "{:,.0f}" if x >= 100 else "{:.2f}",
+        doc="Tag for x",
+        display_units=pyo.units.g
+    )
+
+    tw.set(1*pyo.units.g)
+    assert str(tw["a"]) == "1.00 g"
+    tw.set(1*pyo.units.kg)
+    assert str(tw["b"]) == "1,000 g"

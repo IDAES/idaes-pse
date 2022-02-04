@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 # Import Pyomo libraries
 from pyomo.environ import (Var, Param, Reals, value,
                            TransformationFactory, Constraint,
-                           TerminationCondition)
+                           check_optimal_termination)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae import ContinuousSet
@@ -884,8 +884,7 @@ see reaction package for documentation.}"""))
         init_log.info('Initialize Hydrodynamics')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 2 {}.".format(
                         idaeslog.condition(results))
@@ -942,8 +941,7 @@ see reaction package for documentation.}"""))
                            'and no pressure drop')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 3a {}.".format(
                         idaeslog.condition(results))
@@ -1052,8 +1050,7 @@ see reaction package for documentation.}"""))
                                'and no pressure drop')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 3b {}.".format(
                             idaeslog.condition(results))
@@ -1088,8 +1085,7 @@ see reaction package for documentation.}"""))
                                'and pressure drop')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 3c {}.".format(
                             idaeslog.condition(results))
@@ -1152,8 +1148,7 @@ see reaction package for documentation.}"""))
             init_log.info('Initialize Energy Balances')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 4 {}.".format(
                             idaeslog.condition(results))
@@ -1182,8 +1177,7 @@ see reaction package for documentation.}"""))
             init_log.info('Initialize Energy Balances')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 4 {}.".format(
                             idaeslog.condition(results))

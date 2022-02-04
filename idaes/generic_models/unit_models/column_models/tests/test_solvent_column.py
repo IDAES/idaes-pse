@@ -17,8 +17,8 @@ Author: Paul Akula, Anuja Deshpande, Andrew Lee
 import pytest
 
 # Import Pyomo libraries
-from pyomo.environ import ConcreteModel, value, Param, TransformationFactory,\
-    SolverStatus, TerminationCondition, units as pyunits
+from pyomo.environ import ConcreteModel, value, Param, TransformationFactory, \
+    check_optimal_termination, units as pyunits
 
 # Import IDAES Libraries
 from idaes.core import FlowsheetBlock
@@ -196,8 +196,7 @@ class TestColumn(object):
         results=solver.solve(model_absorber_steady_state)
         
         # Solver status and condition
-        assert results.solver.status == SolverStatus.ok
-        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert check_optimal_termination(results)
         
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -386,8 +385,7 @@ class TestColumn(object):
         results=solver.solve(model_stripper_steady_state)
         
         # Solver status and condition
-        assert results.solver.status == SolverStatus.ok
-        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert check_optimal_termination(results)
         
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component

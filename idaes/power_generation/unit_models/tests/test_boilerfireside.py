@@ -153,9 +153,7 @@ def test_solve_unit(build_unit):
 
     results = solver.solve(m, tee=True)
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
 
     # flue gas outlet temperature
     assert (pytest.approx(1236.780228, abs=1e-3) == pyo.value(m.fs.unit.

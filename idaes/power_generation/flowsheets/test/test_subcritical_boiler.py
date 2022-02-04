@@ -73,9 +73,7 @@ def test_init(model):
             model.fs.Waterwalls[i].heat_flux_conv[0], 1e-5)
     iscale.calculate_scaling_factors(model)
     results = solver.solve(model, tee=True)
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
 
     assert (pyo.value(model.fs.downcomer.deltaP[0]) > 0)
 

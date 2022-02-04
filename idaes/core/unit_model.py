@@ -14,7 +14,7 @@
 Base class for unit models
 """
 
-from pyomo.environ import Reference
+from pyomo.environ import check_optimal_termination, Reference
 from pyomo.network import Port
 from pyomo.common.config import ConfigValue
 
@@ -28,7 +28,8 @@ from .control_volume_base import (ControlVolumeBlockData,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError,
-                                        BalanceTypeNotSupportedError)
+                                        BalanceTypeNotSupportedError,
+                                        InitializationError)
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
@@ -655,6 +656,11 @@ Must be True if dynamic = True,
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
+
+        if not check_optimal_termination(results):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
         init_log.info('Initialization Complete: {}'
                       .format(idaeslog.condition(results)))
