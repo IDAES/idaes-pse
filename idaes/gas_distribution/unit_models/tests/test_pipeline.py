@@ -803,6 +803,7 @@ class TestConstructPipeline(unittest.TestCase):
         m.fs.pipeline.control_volume.length.fix(300.0*pyo.units.m)
         # Inlet variables:
         x0 = m.fs.pipeline.control_volume.length_domain.first()
+        xf = m.fs.pipeline.control_volume.length_domain.last()
         state = m.fs.pipeline.control_volume.properties
         state[:, x0].mole_frac_comp[j].fix(1.0)
         state[:, x0].temperature.fix(300.0*pyo.units.K)
@@ -811,6 +812,9 @@ class TestConstructPipeline(unittest.TestCase):
             3.0e5*pyo.units.kg/pyo.units.hr
             # close to 10 * (1e6 SCM) / day, the nominal value in the model
         )
+
+        t0 = m.fs.time.first()
+        m.fs.pipeline.control_volume.momentum_balance[t0, xf].deactivate()
 
         # This test asserts:
         # (a) consistent units
@@ -966,6 +970,278 @@ class TestConstructPipeline(unittest.TestCase):
         self.assertEqual(degrees_of_freedom(m), 0)
         self.assertEqual(N, M) # Sanity check
         self.assertEqual(len(matching), N)
+
+    def test_dynamic_dof_forward_space(self):
+        """
+        Test that dynamic degrees of freedom are what we expect when using
+        a forward discretization in the space domain.
+        """
+        m = pyo.ConcreteModel()
+        default = {
+            "dynamic": True,
+            "time_set": [0.0, 20.0],
+            "time_units": pyo.units.hr,
+        }
+        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs.properties = NaturalGasParameterBlock()
+        pipeline_config = {
+            "property_package": m.fs.properties,
+            "finite_elements": 2,
+            "transformation_method": "dae.finite_difference",
+            "transformation_scheme": "FORWARD",
+        }
+        m.fs.pipeline = GasPipeline(default=pipeline_config)
+
+        cv = m.fs.pipeline.control_volume
+
+        disc = pyo.TransformationFactory("dae.finite_difference")
+        ntfe = 2
+        disc.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
+
+        # Fix geometry variables
+        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
+        cv.length.fix(300.0*pyo.units.km)
+
+        # Inputs are inlet pressure, mole frac, and temperature, and outlet
+        # flow rate.
+        n_inputs = 4
+        # pressure and flow mass are differential except where they are
+        # specified by inputs.
+        n_differential = 2*(len(cv.length_domain) - 1)
+        pred_dof = n_inputs * len(m.fs.time) + n_differential
+        self.assertEqual(degrees_of_freedom(m), pred_dof)
+
+        # Fix degrees of freedom.
+        x0 = cv.length_domain.first()
+        xf = cv.length_domain.last()
+        t0 = m.fs.time.first()
+        # Inputs at every point in time:
+        cv.pressure[:, x0].fix()
+        cv.flow_mass[:, xf].fix()
+        for j in m.fs.properties.component_list:
+            cv.properties[:, x0].mole_frac_comp[j].fix()
+        cv.properties[:, x0].temperature.fix()
+
+        # Initial conditions:
+        for x in cv.length_domain:
+            if x != x0:
+                cv.pressure[t0, x].fix()
+            if x != xf:
+                cv.flow_mass[t0, x].fix()
+
+        igraph = IncidenceGraphInterface(m)
+        N, M = igraph.incidence_matrix.shape
+        matching = igraph.maximum_matching()
+        self.assertEqual(degrees_of_freedom(m), 0)
+        self.assertEqual(N, M) # Sanity check
+        self.assertEqual(len(matching), N)
+
+    def test_dynamic_dof_backward_space(self):
+        """
+        Test that dynamic degrees of freedom are what we expect when using
+        a backward discretization in the space domain.
+        """
+        m = pyo.ConcreteModel()
+        default = {
+            "dynamic": True,
+            "time_set": [0.0, 20.0],
+            "time_units": pyo.units.hr,
+        }
+        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs.properties = NaturalGasParameterBlock()
+        pipeline_config = {
+            "property_package": m.fs.properties,
+            "finite_elements": 2,
+            "transformation_method": "dae.finite_difference",
+            "transformation_scheme": "BACKWARD",
+        }
+        m.fs.pipeline = GasPipeline(default=pipeline_config)
+
+        cv = m.fs.pipeline.control_volume
+
+        disc = pyo.TransformationFactory("dae.finite_difference")
+        ntfe = 2
+        disc.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
+
+        # Fix geometry variables
+        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
+        cv.length.fix(300.0*pyo.units.km)
+
+        # Inputs are inlet pressure, mole frac, and temperature, and outlet
+        # flow rate.
+        n_inputs = 4
+        # pressure and flow mass are differential except where they are
+        # specified by inputs.
+        n_differential = 2*(len(cv.length_domain) - 1)
+        pred_dof = n_inputs * len(m.fs.time) + n_differential
+        self.assertEqual(degrees_of_freedom(m), pred_dof)
+
+        # Fix degrees of freedom.
+        x0 = cv.length_domain.first()
+        xf = cv.length_domain.last()
+        t0 = m.fs.time.first()
+        # Inputs at every point in time:
+        cv.pressure[:, x0].fix()
+        cv.flow_mass[:, xf].fix()
+        for j in m.fs.properties.component_list:
+            cv.properties[:, x0].mole_frac_comp[j].fix()
+        cv.properties[:, x0].temperature.fix()
+
+        # Initial conditions:
+        for x in cv.length_domain:
+            if x != x0:
+                cv.pressure[t0, x].fix()
+            if x != xf:
+                cv.flow_mass[t0, x].fix()
+
+        igraph = IncidenceGraphInterface(m)
+        N, M = igraph.incidence_matrix.shape
+        matching = igraph.maximum_matching()
+        self.assertEqual(degrees_of_freedom(m), 0)
+        self.assertEqual(N, M) # Sanity check
+        self.assertEqual(len(matching), N)
+
+    def test_dynamic_dof_radau_space(self):
+        """
+        Test that dynamic degrees of freedom are what we expect when using
+        a Radau discretization in the space domain.
+        """
+        m = pyo.ConcreteModel()
+        default = {
+            "dynamic": True,
+            "time_set": [0.0, 20.0],
+            "time_units": pyo.units.hr,
+        }
+        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs.properties = NaturalGasParameterBlock()
+        pipeline_config = {
+            "property_package": m.fs.properties,
+            "finite_elements": 2,
+            "collocation_points": 2,
+            "transformation_method": "dae.collocation",
+            "transformation_scheme": "LAGRANGE-RADAU",
+        }
+        m.fs.pipeline = GasPipeline(default=pipeline_config)
+
+        cv = m.fs.pipeline.control_volume
+
+        disc = pyo.TransformationFactory("dae.finite_difference")
+        ntfe = 2
+        disc.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
+
+        # Fix geometry variables
+        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
+        cv.length.fix(300.0*pyo.units.km)
+
+        # Inputs are inlet pressure, mole frac, and temperature, and outlet
+        # flow rate.
+        n_inputs = 4
+        # pressure and flow mass are differential except where they are
+        # specified by inputs.
+        n_differential = 2*(len(cv.length_domain) - 1)
+        pred_dof = n_inputs * len(m.fs.time) + n_differential
+        self.assertEqual(degrees_of_freedom(m), pred_dof)
+
+        # Fix degrees of freedom.
+        x0 = cv.length_domain.first()
+        xf = cv.length_domain.last()
+        t0 = m.fs.time.first()
+        # Inputs at every point in time:
+        cv.pressure[:, x0].fix()
+        cv.flow_mass[:, xf].fix()
+        for j in m.fs.properties.component_list:
+            cv.properties[:, x0].mole_frac_comp[j].fix()
+        cv.properties[:, x0].temperature.fix()
+
+        # Initial conditions:
+        for x in cv.length_domain:
+            if x != x0:
+                cv.pressure[t0, x].fix()
+            if x != xf:
+                cv.flow_mass[t0, x].fix()
+
+        igraph = IncidenceGraphInterface(m)
+        N, M = igraph.incidence_matrix.shape
+        matching = igraph.maximum_matching()
+        self.assertEqual(degrees_of_freedom(m), 0)
+        self.assertEqual(N, M) # Sanity check
+        self.assertEqual(len(matching), N)
+
+    def test_dynamic_dof_legendre_space(self):
+        """
+        Test that trying to create a dynamic pipeline with a Legendre
+        discretization throws an error. The commented code is what we
+        would like to work. Debugging the Legendre discretization is not
+        a high priority, so for now it is not supported.
+
+        """
+        m = pyo.ConcreteModel()
+        default = {
+            "dynamic": True,
+            "time_set": [0.0, 20.0],
+            "time_units": pyo.units.hr,
+        }
+        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs.properties = NaturalGasParameterBlock()
+        pipeline_config = {
+            "property_package": m.fs.properties,
+            "finite_elements": 2,
+            "collocation_points": 2,
+            "transformation_method": "dae.collocation",
+            "transformation_scheme": "LAGRANGE-LEGENDRE",
+        }
+        with self.assertRaisesRegex(ValueError, "Discretization scheme"):
+            m.fs.pipeline = GasPipeline(default=pipeline_config)
+
+        #
+        # The following is the failing test that causes Legendre
+        # discretization to not be supported. If at any point we really
+        # need to use a Legendre discretization, this test will need to
+        # be addressed.
+        #
+        #cv = m.fs.pipeline.control_volume
+
+        #disc = pyo.TransformationFactory("dae.finite_difference")
+        #ntfe = 2
+        #disc.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
+
+        ## Fix geometry variables
+        #m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
+        #cv.length.fix(300.0*pyo.units.km)
+
+        ## Inputs are inlet pressure, mole frac, and temperature, and outlet
+        ## flow rate.
+        #n_inputs = 4
+        ## pressure and flow mass are differential except where they are
+        ## specified by inputs.
+        #n_differential = 2*(len(cv.length_domain) - 1)
+        #pred_dof = n_inputs * len(m.fs.time) + n_differential
+        #self.assertEqual(degrees_of_freedom(m), pred_dof)
+
+        ## Fix degrees of freedom.
+        #x0 = cv.length_domain.first()
+        #xf = cv.length_domain.last()
+        #t0 = m.fs.time.first()
+        ## Inputs at every point in time:
+        #cv.pressure[:, x0].fix()
+        #cv.flow_mass[:, xf].fix()
+        #for j in m.fs.properties.component_list:
+        #    cv.properties[:, x0].mole_frac_comp[j].fix()
+        #cv.properties[:, x0].temperature.fix()
+
+        ## Initial conditions:
+        #for x in cv.length_domain:
+        #    if x != x0:
+        #        cv.pressure[t0, x].fix()
+        #    if x != xf:
+        #        cv.flow_mass[t0, x].fix()
+
+        #igraph = IncidenceGraphInterface(m)
+        #N, M = igraph.incidence_matrix.shape
+        #matching = igraph.maximum_matching()
+        #self.assertEqual(degrees_of_freedom(m), 0)
+        #self.assertEqual(N, M) # Sanity check
+        #self.assertEqual(len(matching), N)
 
 
 if __name__ == "__main__":
