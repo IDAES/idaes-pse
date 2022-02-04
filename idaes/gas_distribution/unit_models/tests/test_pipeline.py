@@ -569,9 +569,7 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         for x in cv.length_domain:
             # For dynamic optimization, I believe we want these variables
             # fixed everywhere
-            #if x != x0:
             cv.pressure[t0, x].fix()
-            #if x != xf:
             cv.flow_mass[t0, x].fix()
 
         # I want to deactivate differential equations at (t0, xf)
@@ -756,8 +754,6 @@ class TestConstructPipeline(unittest.TestCase):
             isinstance(cv.pressure_dx_disc_eq, pyo.Constraint)
         )
         assert_units_consistent(cv.momentum_balance)
-        # TODO: What can I do to test the momentum balance more thoroughly?
-        # Something about the friction term?
 
         t = m.fs.time.first()
         x = m.fs.pipeline.control_volume.length_domain.first()
@@ -783,8 +779,6 @@ class TestConstructPipeline(unittest.TestCase):
         m.fs.pipeline = GasPipeline(default=pipeline_config)
         pipeline = m.fs.pipeline
 
-        # TODO: Move these tests for material balance equation into
-        # their own test.
         cv = m.fs.pipeline.control_volume
         self.assertTrue(isinstance(cv.material_balances, pyo.Constraint))
         self.assertTrue(isinstance(cv.material_flow_dx, dae.DerivativeVar))
