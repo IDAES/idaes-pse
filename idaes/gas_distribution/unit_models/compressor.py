@@ -71,7 +71,7 @@ class IsothermalCompressorData(UnitModelBlockData):
         # A little annoying that add_port assumes the state block is indexed
         # by exactly time. If we supported unindexed state blocks here,
         # this entire unit model could be agnostic of time.
-        # (This is not strictly true becaucse add_state_material_balances
+        # (This is not strictly true because add_state_material_balances
         # writes time-indexed balance equations, but we could get around this
         # by writing our own balance equations, which is easy enough.)
         self.add_port(
