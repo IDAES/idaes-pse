@@ -646,7 +646,6 @@ def test_dens_mol_phase(m):
     assert value(Cubic.dens_mol_phase(m.props[1], "Liq")) == pytest.approx(
             41.157, rel=1e-3)
 
-# TODO mutating fixture
 @pytest.mark.unit
 def test_energy_internal_mol_phase(m):
     assert pytest.approx(Uv, rel=1e-4) == value(
@@ -654,7 +653,6 @@ def test_energy_internal_mol_phase(m):
     assert pytest.approx(Ul, rel=1e-4) == value(
         Cubic.energy_internal_mol_phase(m.props[1], "Liq"))
 
-# TODO mutating fixture
 @pytest.mark.unit
 def test_energy_internal_mol_phase_comp(m):
     for p in m.params.phase_list:
