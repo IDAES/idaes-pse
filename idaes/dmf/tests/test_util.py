@@ -102,7 +102,7 @@ def test_datetime_timestamp():
     ts = time.time()
     dt = datetime.datetime.fromtimestamp(ts)
     ts1 = util.datetime_timestamp(dt)
-    assert pytest.approx(value(ts), value(ts1), 0.000001)
+    assert pytest.approx(ts, 0.000001) == ts1
 
 
 @pytest.mark.unit
