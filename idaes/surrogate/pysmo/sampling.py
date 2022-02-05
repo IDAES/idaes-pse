@@ -342,7 +342,7 @@ class SamplingMethods:
                 self.x_data = self.data[:, :-1]
                 self.data_headers_xvars = self.data_headers[:-1] # Last column is y
             elif not set(set_of_labels).issubset(data_input.columns):
-                raise Exception('Invalid column names in "xlabels" or "ylabels". ')
+                raise IndexError('Invalid column names in "xlabels" or "ylabels". ')
             elif not ylabels:
                 # When only xlabels are supplied, assume all non-inputs are outputs
                 self.x_data = data_input.filter(xlabels).values
@@ -384,7 +384,7 @@ class SamplingMethods:
                 self.x_data = self.data[:, :-1]
                 self.data_headers_xvars = self.data_headers[:-1] # Last column is y
             elif not set(set_of_labels).issubset(range(0, data_input.shape[1])):
-                raise Exception('Invalid column names in "xlabels" or "ylabels". ')
+                raise IndexError('Invalid column names in "xlabels" or "ylabels". ')
             elif not ylabels:
                 # Assumes all non-inputs are outputs
                 self.x_data = data_input[:, xlabels]
