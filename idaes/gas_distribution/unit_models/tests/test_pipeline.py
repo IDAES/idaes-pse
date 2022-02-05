@@ -416,10 +416,6 @@ class TestSolveDynamicPipeline(unittest.TestCase):
             if x != xf:
                 cv.flow_mass[t0, x].fix()
 
-        # I want to deactivate differential equations at (t0, xf)
-        # Material balance already doesn't exist here.
-        cv.momentum_balance[t0, xf].deactivate()
-
         self.assertEqual(degrees_of_freedom(m), 0)
 
         # Load initial steady state into model at all time points.
@@ -571,10 +567,6 @@ class TestSolveDynamicPipeline(unittest.TestCase):
             # fixed everywhere
             cv.pressure[t0, x].fix()
             cv.flow_mass[t0, x].fix()
-
-        # I want to deactivate differential equations at (t0, xf)
-        # Material balance already doesn't exist here.
-        cv.momentum_balance[t0, xf].deactivate()
 
         # Now we set up the dynamic optimization problem:
         tracking_variables = [
@@ -813,9 +805,6 @@ class TestConstructPipeline(unittest.TestCase):
             # close to 10 * (1e6 SCM) / day, the nominal value in the model
         )
 
-        t0 = m.fs.time.first()
-        m.fs.pipeline.control_volume.momentum_balance[t0, xf].deactivate()
-
         # This test asserts:
         # (a) consistent units
         # (b) zero degrees of freedom
@@ -891,12 +880,6 @@ class TestConstructPipeline(unittest.TestCase):
                 cv.pressure[t0, x].fix()
                 cv.flow_mass[t0, x].fix()
 
-        # Material balances skipped at outlet, for some reason.
-        # Is this okay?
-        # I want to deactivate differential equations at (t0, xf)
-        # Material balance already doesn't exist here.
-        cv.momentum_balance[t0, xf].deactivate()
-
         igraph = IncidenceGraphInterface(m)
         N, M = igraph.incidence_matrix.shape
         matching = igraph.maximum_matching()
@@ -957,12 +940,6 @@ class TestConstructPipeline(unittest.TestCase):
                 cv.pressure[t0, x].fix()
             if x != xf:
                 cv.flow_mass[t0, x].fix()
-
-        # Material balances skipped at outlet, for some reason.
-        # Is this okay?
-        # I want to deactivate differential equations at (t0, xf)
-        # Material balance already doesn't exist here.
-        cv.momentum_balance[t0, xf].deactivate()
 
         igraph = IncidenceGraphInterface(m)
         N, M = igraph.incidence_matrix.shape
