@@ -151,6 +151,7 @@ class TestSamplingMethods:
     @pytest.mark.parametrize("array_type", [np.array])
     def test_nearest_neighbour_01(self, array_type):
         input_array = array_type(self.test_data_3d)
+        self.x_data = np.zeros((2, input_array.shape[1] - 1))
         closest_point = SamplingMethods.nearest_neighbour(self, input_array, [-0.5, 1])
         np.testing.assert_array_equal(closest_point, input_array[0, :])
 
@@ -158,6 +159,7 @@ class TestSamplingMethods:
     @pytest.mark.parametrize("array_type", [np.array])
     def test_nearest_neighbour_02(self, array_type):
         input_array = array_type(self.test_data_2d)
+        self.x_data = np.zeros((2, input_array.shape[1] - 1))
         closest_point = SamplingMethods.nearest_neighbour(self, input_array, [-0.5])
         np.testing.assert_array_equal(closest_point, input_array[0, :])
 
@@ -165,6 +167,7 @@ class TestSamplingMethods:
     @pytest.mark.parametrize("array_type", [np.array])
     def test_nearest_neighbour_03(self, array_type):
         input_array = array_type(self.test_data_1d)
+        self.x_data = np.zeros((2, input_array.shape[1] - 1))
         closest_point = SamplingMethods.nearest_neighbour(self, input_array, [])
         np.testing.assert_array_equal(closest_point, input_array[0, :])
 
@@ -172,6 +175,7 @@ class TestSamplingMethods:
     @pytest.mark.parametrize("array_type", [np.array])
     def test_nearest_neighbour_04(self, array_type):
         input_array = array_type(self.test_data_3d)
+        self.x_data = np.zeros((2, input_array.shape[1] - 1))
         closest_point = SamplingMethods.nearest_neighbour(self, input_array, [0.5])
         np.testing.assert_array_equal(closest_point, input_array[0, :])
 
@@ -179,6 +183,7 @@ class TestSamplingMethods:
     @pytest.mark.parametrize("array_type", [np.array])
     def test_nearest_neighbour_05(self, array_type):
         input_array = array_type(self.test_data_3d)
+        self.x_data = np.zeros((2, input_array.shape[1] - 1))
         with pytest.raises(ValueError):
             closest_point = SamplingMethods.nearest_neighbour(
                 self, input_array, [0.5, 0.9, 10]
@@ -189,6 +194,8 @@ class TestSamplingMethods:
         input_array = array_type(self.test_data_3d)
         generated_sample_points = np.array([[-0.5, 10], [10, 100]])
         SamplingClass = SamplingMethods()
+        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
         equivalent_points = SamplingClass.points_selection(
             input_array, generated_sample_points
         )
@@ -201,6 +208,8 @@ class TestSamplingMethods:
         input_array = array_type(self.test_data_2d)
         generated_sample_points = np.array([[-0.5], [10]])
         SamplingClass = SamplingMethods()
+        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
         equivalent_points = SamplingClass.points_selection(
             input_array, generated_sample_points
         )
@@ -213,6 +222,8 @@ class TestSamplingMethods:
         input_array = array_type(self.test_data_1d)
         generated_sample_points = np.array([[], []])
         SamplingClass = SamplingMethods()
+        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
         equivalent_points = SamplingClass.points_selection(
             input_array, generated_sample_points
         )
@@ -225,6 +236,8 @@ class TestSamplingMethods:
         input_array = array_type(self.test_data_3d)
         generated_sample_points = np.array([[0.5], [10]])
         SamplingClass = SamplingMethods()
+        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))    
         with pytest.raises(ValueError):
             equivalent_points = SamplingClass.points_selection(
                 input_array, generated_sample_points
@@ -236,6 +249,8 @@ class TestSamplingMethods:
         input_array = array_type(self.test_data_3d)
         generated_sample_points = np.array([[0.5, 0.7, 10], [10, 0.9, 20]])
         SamplingClass = SamplingMethods()
+        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
         with pytest.raises(ValueError):
             equivalent_points = SamplingClass.points_selection(
                 input_array, generated_sample_points
@@ -246,6 +261,8 @@ class TestSamplingMethods:
         input_array = array_type(self.test_data_3d)
         generated_sample_points = np.array([[0, 0], [10, 19]])
         SamplingClass = SamplingMethods()
+        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))    
         unique_sample_points = SamplingClass.sample_point_selection(
             input_array, generated_sample_points, sampling_type="selection"
         )
@@ -258,6 +275,8 @@ class TestSamplingMethods:
         input_array = array_type(self.test_data_2d)
         generated_sample_points = np.array([[0], [7]])
         SamplingClass = SamplingMethods()
+        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))    
         unique_sample_points = SamplingClass.sample_point_selection(
             input_array, generated_sample_points, sampling_type="selection"
         )
@@ -270,6 +289,8 @@ class TestSamplingMethods:
         input_array = array_type(self.test_data_1d)
         generated_sample_points = np.array([[], []])
         SamplingClass = SamplingMethods()
+        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))    
         unique_sample_points = SamplingClass.sample_point_selection(
             input_array, generated_sample_points, sampling_type="selection"
         )
@@ -281,6 +302,8 @@ class TestSamplingMethods:
         input_array = array_type(self.test_data_3d)
         generated_sample_points = np.array([[0.5], [7]])
         SamplingClass = SamplingMethods()
+        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))    
         with pytest.raises(ValueError):
             unique_sample_points = SamplingClass.sample_point_selection(
                 input_array, generated_sample_points, sampling_type="selection"
@@ -292,6 +315,8 @@ class TestSamplingMethods:
         input_array = array_type(self.test_data_3d)
         generated_sample_points = np.array([[0.5, 1, 10], [7, 19, 20]])
         SamplingClass = SamplingMethods()
+        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))    
         with pytest.raises(ValueError):
             unique_sample_points = SamplingClass.sample_point_selection(
                 input_array, generated_sample_points, sampling_type="selection"

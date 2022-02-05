@@ -35,11 +35,11 @@ print(dt4)
 plt.plot(dt4['Temperature (K)'].values, dt4['Entropy (J/mol*K)'].values, 'o')
 plt.show()
 
-init5 = ns.CVTSampling(df_test, number_of_samples=100, sampling_type='selection', xlabels=['Pressure (MPa)', 'Temperature (K)'], tolerance=1e-8)#, ylabels=['Enthalpy (kJ/mol)', 'Entropy (J/mol*K)'])
-dt5 = init5.sample_points()
-print(dt5)
-plt.plot(dt5['Pressure (MPa)'].values, dt5['Temperature (K)'].values, 'o')
-plt.show()
+# init5 = ns.CVTSampling(df_test, number_of_samples=100, sampling_type='selection', xlabels=['Pressure (MPa)', 'Temperature (K)'], tolerance=1e-8)#, ylabels=['Enthalpy (kJ/mol)', 'Entropy (J/mol*K)'])
+# dt5 = init5.sample_points()
+# print(dt5)
+# plt.plot(dt5['Pressure (MPa)'].values, dt5['Temperature (K)'].values, 'o')
+# plt.show()
 
 
 
@@ -73,8 +73,41 @@ plt.plot(dt4[:, 0], dt4[:, 1], 'o')
 plt.show()
 
 
-init5 = ns.CVTSampling(df_test.values, number_of_samples=100, sampling_type='selection', xlabels=[1, 0], tolerance=1e-8)#, ylabels=['Enthalpy (kJ/mol)', 'Entropy (J/mol*K)'])
-dt5 = init5.sample_points()
-print(dt5)
-plt.plot(dt5[:, 0], dt5[:, 1], 'o')
+# init5 = ns.CVTSampling(df_test.values, number_of_samples=100, sampling_type='selection', xlabels=[1, 0], tolerance=1e-8)#, ylabels=['Enthalpy (kJ/mol)', 'Entropy (J/mol*K)'])
+# dt5 = init5.sample_points()
+# print(dt5)
+# plt.plot(dt5[:, 0], dt5[:, 1], 'o')
+# plt.show()
+
+
+
+# Test that creation still works
+init4 = ns.LatinHypercubeSampling([[0, 100], [1, 500]], number_of_samples=100, sampling_type='creation')#, ylabels=['Enthalpy (kJ/mol)', 'Entropy (J/mol*K)'])
+dt4 = init4.sample_points()
+print(dt4)
+plt.plot(dt4[:, 0], dt4[:, 1], 'o')
+plt.show()
+
+init4 = ns.HaltonSampling([[0, 100], [1, 500]], number_of_samples=100, sampling_type='creation')#, ylabels=['Enthalpy (kJ/mol)', 'Entropy (J/mol*K)'])
+dt4 = init4.sample_points()
+print(dt4)
+plt.plot(dt4[:, 0], dt4[:, 1], 'o')
+plt.show()
+
+init4 = ns.HammersleySampling([[0, 100], [1, 500]], number_of_samples=100, sampling_type='creation')#, ylabels=['Enthalpy (kJ/mol)', 'Entropy (J/mol*K)'])
+dt4 = init4.sample_points()
+print(dt4)
+plt.plot(dt4[:, 0], dt4[:, 1], 'o')
+plt.show()
+
+init4 = ns.CVTSampling([[0, 100], [1, 500]], number_of_samples=100, sampling_type='creation')#, ylabels=['Enthalpy (kJ/mol)', 'Entropy (J/mol*K)'])
+dt4 = init4.sample_points()
+print(dt4)
+plt.plot(dt4[:, 0], dt4[:, 1], 'o')
+plt.show()
+
+init4 = ns.UniformSampling([[0, 100], [1, 500]], list_of_samples_per_variable=[10, 10], sampling_type='creation')#, ylabels=['Enthalpy (kJ/mol)', 'Entropy (J/mol*K)'])
+dt4 = init4.sample_points()
+print(dt4)
+plt.plot(dt4[:, 0], dt4[:, 1], 'o')
 plt.show()
