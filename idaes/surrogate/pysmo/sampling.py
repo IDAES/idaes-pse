@@ -325,6 +325,7 @@ class SamplingMethods:
             xlabels:        list of input variables
             ylabels:        list of output variab;es
         """
+        self.df_flag = True
 
         if isinstance(data_input, pd.DataFrame):
             if xlabels is None:
@@ -367,6 +368,8 @@ class SamplingMethods:
 
 
         elif isinstance(data_input, np.ndarray):
+            self.df_flag = False 
+
             if xlabels is None:
                 xlabels = []
             if ylabels is None:
@@ -594,7 +597,7 @@ class LatinHypercubeSampling(SamplingMethods):
         generated_sample_points = self.random_shuffling(vector_of_points)
         unique_sample_points = self.sample_point_selection(self.data, generated_sample_points, self.sampling_type)
 
-        if len(self.data_headers) > 0: ## NEEDS FIXING FOR NUMPY##
+        if len(self.data_headers) > 0 and self.df_flag: 
             unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
         return unique_sample_points
 
@@ -734,7 +737,7 @@ class UniformSampling(SamplingMethods):
         samples_list = list(itertools.product(*points_spread))
         samples_array = np.asarray(samples_list)
         unique_sample_points = self.sample_point_selection(self.data, samples_array, self.sampling_type)
-        if len(self.data_headers) > 0: ## NEEDS FIXING
+        if len(self.data_headers) > 0 and self.df_flag: 
             unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
         return unique_sample_points
 
@@ -874,7 +877,7 @@ class HaltonSampling(SamplingMethods):
             sample_points[:, i] = self.data_sequencing(self.number_of_samples, prime_list[i])
         # Scale input data, then find data points closest in sample space. Unscale before returning points
         unique_sample_points = self.sample_point_selection(self.data, sample_points, self.sampling_type)
-        if len(self.data_headers) > 0:
+        if len(self.data_headers) > 0 and self.df_flag:
             unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
         return unique_sample_points
 
@@ -1018,7 +1021,7 @@ class HammersleySampling(SamplingMethods):
             sample_points[:, i + 1] = self.data_sequencing(self.number_of_samples, prime_list[i])
 
         unique_sample_points = self.sample_point_selection(self.data, sample_points, self.sampling_type)
-        if len(self.data_headers) > 0:
+        if len(self.data_headers) > 0 and self.df_flag:
             unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
         return unique_sample_points
 
@@ -1273,6 +1276,6 @@ class CVTSampling(SamplingMethods):
         sample_points = new_centres
 
         unique_sample_points = self.sample_point_selection(self.data, sample_points, self.sampling_type)
-        if len(self.data_headers) > 0: ## NEEDS FIXING FOR NUMPY##
+        if len(self.data_headers) > 0 and self.df_flag:
             unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
         return unique_sample_points
