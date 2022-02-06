@@ -210,12 +210,16 @@ class PipelineNodeData(UnitModelBlockData):
             b.port = port
             b.has_pipeline = False
 
-            # Add equality constraints for intensive state variables
-            b.temperature_eq = self.get_temperature_eq_con(self.state, b.state)
+            # Add equality constraints between the node states and inlet/outlet
+            # states for pressure and temperature.
             b.pressure_eq = self.get_pressure_eq_con(self.state, b.state)
+            # This temperature equation will be redundant if we end up adding
+            # an enthalpy mixing equation.
+            b.temperature_eq = self.get_temperature_eq_con(self.state, b.state)
 
             if outlet:
                 # For inlets, mole fractions are already defined.
+                # (By the mixing rule)
                 b.mole_frac_comp_eq = self.get_mole_frac_comp_eq_con(
                     self.state, b.state
                 )
@@ -258,6 +262,11 @@ class PipelineNodeData(UnitModelBlockData):
             # Add a reference here so we can access flow in the same way
             # as on demand blocks.
             b.flow_mol = Reference(b.state[:].flow_mol)
+
+            # Add equations to link temperature and pressure of this supply
+            # to that of the node.
+            b.isothermal_eq = self.get_temperature_eq_con(self.state, b.state)
+            b.isobaric_eq = self.get_pressure_eq_con(self.state, b.state)
         return block_rule
 
     def get_demand_block_rule(self):
@@ -267,6 +276,8 @@ class PipelineNodeData(UnitModelBlockData):
         as this node's state block.
 
         """
+        # Should these demand blocks have references to the node's intensive
+        # state variables? This would probably be convenient.
         time = self.flowsheet().time
         def block_rule(b, i):
             b.flow_mol = Var(
