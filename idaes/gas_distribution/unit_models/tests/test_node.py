@@ -533,5 +533,4 @@ class TestConstructNode(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    #unittest.main()
-    TestConstructNode().test_multiple_inlets_outlets()
+    unittest.main()
