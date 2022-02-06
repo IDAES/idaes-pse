@@ -436,17 +436,23 @@ class LatinHypercubeSampling(SamplingMethods):
         Args:
             data_input (NumPy Array, Pandas Dataframe or list) :  The input data set or range to be sampled.
             
-                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information in this case.
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information in this case.
 
             number_of_samples (int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
+                   
+        Keyword Args:
+            xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
+            ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
 
         Returns:
             **self** function containing the input information
 
         Raises:
             ValueError: The input data (**data_input**) is the wrong type.
+
+            IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
             Exception: When **number_of_samples** is invalid (not an integer, too large, zero, or negative)
 
@@ -630,14 +636,16 @@ class UniformSampling(SamplingMethods):
         Args:
             data_input (NumPy Array, Pandas Dataframe or list) :  The input data set or range to be sampled.
 
-                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information in this case.
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information in this case.
 
             list_of_samples_per_variable (list): The list containing the number of subdivisions for each variable. Each dimension (variable) must be represented by a positive integer variable greater than 1.
             sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
 
         Keyword Args:
-            edges(bool): Boolean variable representing bow the points should be selected. A value of True (default) indicates the points should be equally spaced edge to edge, otherwise they will be in the centres of the bins filling the unit cube
+            xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
+            ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
+            edges (bool): Boolean variable representing how the points should be selected. A value of True (default) indicates the points should be equally spaced edge to edge, otherwise they will be in the centres of the bins filling the unit cube
 
         Returns:
             **self** function containing the input information
@@ -646,6 +654,8 @@ class UniformSampling(SamplingMethods):
             ValueError: The **data_input** is the wrong type
 
             ValueError: When **list_of_samples_per_variable** is of the wrong length, is not a list or contains elements other than integers
+
+            IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
             Exception: When **edges** entry is not Boolean
 
@@ -773,17 +783,23 @@ class HaltonSampling(SamplingMethods):
         Args:
             data_input (NumPy Array, Pandas Dataframe or list) : The input data set or range to be sampled.
             
-                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information  in this case.
-            
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information  in this case.
+
             number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
 
+        Keyword Args:
+            xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
+            ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
+            
         Returns:
             **self** function containing the input information.
 
         Raises:
             ValueError: The **data_input** is the wrong type.
+
+            IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
             
             Exception: When the **number_of_samples** is invalid (not an integer, too large, zero or negative.)
             
@@ -911,18 +927,24 @@ class HammersleySampling(SamplingMethods):
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list): The input data set or range to be sampled.
-
-                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information  in this case.
+    
+               - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
+               - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information  in this case.
 
             number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
+
+        Keyword Args:
+            xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
+            ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
 
             Returns:
                 **self** function containing the input information.
 
             Raises:
                 ValueError: When **data_input** is the wrong type.
+        
+                IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
                 Exception: When the **number_of_samples** is invalid (not an integer, too large, zero, negative)
 
@@ -1050,14 +1072,16 @@ class CVTSampling(SamplingMethods):
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list): The input data set or range to be sampled.
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information  in this case.
 
-                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information  in this case.
 
             number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
 
         Keyword Args:
+            xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
+            ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
             tolerance(float): Maximum allowable Euclidean distance between centres from consectutive iterations of the algorithm. Termination condition for algorithm.
 
                 - The smaller the value of tolerance, the better the solution but the longer the algorithm requires to converge. Default value is :math:`10^{-7}`.
@@ -1068,6 +1092,8 @@ class CVTSampling(SamplingMethods):
 
         Raises:
                 ValueError: When **data_input** is the wrong type.
+
+                IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
                 Exception: When the **number_of_samples** is invalid (not an integer, too large, zero, negative)
 
