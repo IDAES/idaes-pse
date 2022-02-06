@@ -251,10 +251,15 @@ class SamplingMethodsTestCases(unittest.TestCase):
         input_array_np_1d = np.array([[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]])
         input_array_np_2d = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
         input_array_np_3d = np.array([[0,10, 11], [1,11, 15], [2,12, 21], [3,13, 29], [4,14, 39], [5,15, 51], [6,16, 65], [7,17, 81], [8,18, 99], [9,19, 119]])
-        
+        input_array_pd = pd.DataFrame({'x1': [0,1,2,3,4,5,6,7,8,9],
+                                       'x2': [10,10,10,10,10,10,10,10,10,10],
+                                       'y1': [11,14,19,26,35,46,59,74,91,110],
+                                       'y2': [21,24,29,36,45,56,69,84,101,120]})
+       
         self.test_data_numpy_1d = input_array_np_1d
         self.test_data_numpy_2d = input_array_np_2d
         self.test_data_numpy_3d = input_array_np_3d
+        self.test_data_pandas = input_array_pd
     """
    
     test_nearest_neighbour_01: Test behaviour with array N x d = (10,3) data and a=[-0.5,1]
@@ -297,8 +302,20 @@ class SamplingMethodsTestCases(unittest.TestCase):
     test_prime_base_to_decimal_02: Test behaviour with 0.01 in base 20 to base 10
     test_prime_base_to_decimal_03: working with base 1
     test_prime_base_to_decimal_04: working with base -1
-    
-    test_data_sequencing: in the notes, (3,2) -> expected [0, 0.5, 0.75], but returns [0.  , 0.5 , 0.25]
+
+    test_selection_columns_preprocessing_01: Test behaviour with no labels specified
+    test_selection_columns_preprocessing_02: Test behaviour with only xlabels specified with multiple elements, same order as in dataframe
+    test_selection_columns_preprocessing_03: Test behaviour with only xlabels specified with multiple elements, different order from dataframe
+    test_selection_columns_preprocessing_04: Test behaviour with only xlabels specified with only 1 element
+    test_selection_columns_preprocessing_05: Test behaviour with only ylabels specified with multiple elements, same order as in dataframe
+    test_selection_columns_preprocessing_06: Test behaviour with only ylabels specified with multiple elements, different order from dataframe
+    test_selection_columns_preprocessing_07: Test behaviour with only ylabels specified with only 1 element
+    test_selection_columns_preprocessing_11: Test behaviour with both xlabels and ylabels specified; multiple x and single y
+    test_selection_columns_preprocessing_08: Test behaviour with both xlabels and ylabels specified; single x and single y; ordered
+    test_selection_columns_preprocessing_09: Test behaviour with both xlabels and ylabels specified; single x and multiple y
+    test_selection_columns_preprocessing_10: Test behaviour with both xlabels and ylabels specified; single x and single y; unordered
+    test_selection_columns_preprocessing_12: Test behaviour with both xlabels and ylabels specified; multiple x and y, all initial columns present
+    test_selection_columns_preprocessing_13: Test behaviour when non-existent column name is supplied in label - should raias ValueError
     """
     @pytest.mark.unit
     def test_nearest_neighbour_01(self):
@@ -581,7 +598,210 @@ class SamplingMethodsTestCases(unittest.TestCase):
     def test_data_sequencing(self):
         SamplingClass = SamplingMethods()
         sequence_decimal = SamplingClass.data_sequencing(3, 2)
-        
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_01(self):
+        SamplingClass = SamplingMethods()
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, None, None)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
+        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - 1     
+        assert SamplingClass.data_headers == self.test_data_pandas.columns.values.tolist()
+        assert SamplingClass.data_headers_xvars == self.test_data_pandas.columns.values.tolist()[:-1]
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, :-1])
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_02(self):
+        SamplingClass = SamplingMethods()
+        x_lab = ['x1', 'x2']
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, None)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
+        assert SamplingClass.x_data.shape[1] == len(x_lab)   
+        assert SamplingClass.data_headers == self.test_data_pandas.columns.values.tolist()
+        assert SamplingClass.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, :-2])
+
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_03(self):
+        SamplingClass = SamplingMethods()
+        x_lab = ['y1', 'x1']
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, None)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
+        assert SamplingClass.x_data.shape[1] == len(x_lab)   
+        assert SamplingClass.data_headers == ['y1', 'x1', 'x2', 'y2']
+        assert SamplingClass.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[['y1', 'x1', 'x2', 'y2']].values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values)       
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_04(self):
+        SamplingClass = SamplingMethods()
+        x_lab = ['y2']
+        expected_order = ['y2', 'x1', 'x2', 'y1']
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, None)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
+        assert SamplingClass.x_data.shape[1] == len(x_lab)   
+        assert SamplingClass.data_headers == expected_order
+        assert SamplingClass.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_05(self):
+        SamplingClass = SamplingMethods()
+        y_lab = ['y1', 'y2']
+        expected_order = ['x1', 'x2', 'y1', 'y2']
+        expected_x_lab = ['x1', 'x2']
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, None, y_lab)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
+        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab)   
+        assert SamplingClass.data_headers == expected_order
+        assert SamplingClass.data_headers_xvars == expected_x_lab
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[expected_x_lab].values)
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_06(self):
+        SamplingClass = SamplingMethods()
+        y_lab = ['y1', 'x1']
+        expected_order = ['x2', 'y2', 'y1', 'x1']
+        expected_x_lab = ['x2', 'y2']
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, None, y_lab)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
+        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab) 
+        assert SamplingClass.data_headers == expected_order
+        assert SamplingClass.data_headers_xvars == expected_x_lab
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[expected_x_lab].values)       
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_07(self):
+        SamplingClass = SamplingMethods()
+        y_lab = ['x2']
+        expected_order = ['x1', 'y1', 'y2', 'x2']
+        expected_x_lab = ['x1', 'y1', 'y2']
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, None, y_lab)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
+        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab)  
+        assert SamplingClass.data_headers == expected_order
+        assert SamplingClass.data_headers_xvars == expected_x_lab
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[expected_x_lab].values) 
+
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_11(self):
+        SamplingClass = SamplingMethods()
+        x_lab = ['x1', 'x2']
+        y_lab = ['y2']
+        expected_order = x_lab + y_lab
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == len(expected_order)
+        assert SamplingClass.x_data.shape[1] == len(x_lab)  
+        assert SamplingClass.data_headers == expected_order
+        assert SamplingClass.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_08(self):
+        SamplingClass = SamplingMethods()
+        x_lab = ['x1']
+        y_lab = ['y1']
+        expected_order = x_lab + y_lab
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab,y_lab)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == len(x_lab) + len(y_lab)
+        assert SamplingClass.x_data.shape[1] == len(x_lab)  
+        assert SamplingClass.data_headers == expected_order
+        assert SamplingClass.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_09(self):
+        SamplingClass = SamplingMethods()
+        x_lab = ['x1']
+        y_lab = ['y1', 'y2']
+        expected_order = x_lab + y_lab
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == len(expected_order)
+        assert SamplingClass.x_data.shape[1] == len(x_lab)  
+        assert SamplingClass.data_headers == expected_order
+        assert SamplingClass.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_10(self):
+        SamplingClass = SamplingMethods()
+        x_lab = ['y1']
+        y_lab = ['x2']
+        expected_order = x_lab + y_lab
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == len(expected_order)
+        assert SamplingClass.x_data.shape[1] == len(x_lab)  
+        assert SamplingClass.data_headers == expected_order
+        assert SamplingClass.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_12(self):
+        SamplingClass = SamplingMethods()
+        x_lab = ['y1', 'x2']
+        y_lab = ['x1', 'y2']
+        expected_order = x_lab + y_lab
+        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
+        assert SamplingClass.df_flag == True
+        assert SamplingClass.data.shape[1] == len(expected_order)
+        assert SamplingClass.x_data.shape[1] == len(x_lab)  
+        assert SamplingClass.data_headers == expected_order
+        assert SamplingClass.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+
+
+    @pytest.mark.unit
+    def test_selection_columns_preprocessing_13(self):
+        SamplingClass = SamplingMethods()
+        x_lab = ['x1']
+        y_lab = ['y3']
+        expected_order = x_lab + y_lab
+
+        with pytest.raises(IndexError):
+            SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class LatinHypercubeSamplingTestCases(unittest.TestCase):
     """
