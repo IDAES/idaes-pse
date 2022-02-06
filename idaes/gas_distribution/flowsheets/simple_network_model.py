@@ -115,6 +115,8 @@ def make_simple_model(
     # Fix "dynamic inputs." This needs to be done after a potential
     # discretization transformation.
     nodes[0].state[:].mole_frac_comp[j].fix()
+    # Fixing node temperature specifies the temperature of the supply
+    # and the pipeline inlet.
     nodes[0].state[:].temperature.fix()
     #nodes[0].state[:].pressure.fix()
     #nodes[1].state[:].flow_mol.fix()
