@@ -48,7 +48,7 @@ def gas_prop():
 
     m.fs.unit.flow_mol.fix(1)
     m.fs.unit.temperature.fix(450)
-    m.fs.unit.pressure.fix(1.60)
+    m.fs.unit.pressure.fix(1.60E5)
     m.fs.unit.mole_frac_comp["CO2"].fix(0.4772)
     m.fs.unit.mole_frac_comp["H2O"].fix(0.0646)
     m.fs.unit.mole_frac_comp["CH4"].fix(0.4582)
