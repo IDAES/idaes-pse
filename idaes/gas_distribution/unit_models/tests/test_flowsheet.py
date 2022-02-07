@@ -192,7 +192,7 @@ class TestConstructFlowsheets(unittest.TestCase):
             2 * (len(m.fs.pipeline[2].control_volume.length_domain) - 1)
         )
 
-        self.assertEqual(degrees_of_freedom(m), pred_dof)
+        #self.assertEqual(degrees_of_freedom(m), pred_dof)
 
         for t in m.fs.time:
             m.fs.node[0].supplies[0].state[t].mole_frac_comp[:].fix()
@@ -202,6 +202,26 @@ class TestConstructFlowsheets(unittest.TestCase):
             m.fs.node[2].supplies[0].state[t].flow_mol.fix()
             m.fs.node[1].demands[0].flow_mol[t].fix()
             m.fs.node[3].demands[0].flow_mol[t].fix()
+
+        t0 = m.fs.time.first()
+        x0 = m.fs.pipeline[0].control_volume.length_domain.first()
+        xf = m.fs.pipeline[0].control_volume.length_domain.last()
+        for x in m.fs.pipeline[0].control_volume.length_domain:
+            # Here I assume that all three pipelines have the same
+            # length domain.
+            if x != x0:
+                m.fs.pipeline[0].control_volume.pressure[t0, x].fix()
+                m.fs.pipeline[1].control_volume.pressure[t0, x].fix()
+                m.fs.pipeline[2].control_volume.pressure[t0, x].fix()
+            if x != xf:
+                m.fs.pipeline[0].control_volume.flow_mass[t0, x].fix()
+                m.fs.pipeline[1].control_volume.flow_mass[t0, x].fix()
+                m.fs.pipeline[2].control_volume.flow_mass[t0, x].fix()
+
+        igraph = IncidenceGraphInterface(m)
+        N, M = len(igraph.variables), len(igraph.constraints)
+        
+        self.assertEqual(degrees_of_freedom(m), 0)
 
 
 if __name__ == "__main__":
