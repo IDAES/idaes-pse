@@ -210,12 +210,16 @@ class PipelineNodeData(UnitModelBlockData):
             b.port = port
             b.has_pipeline = False
 
-            # Add equality constraints for intensive state variables
-            b.temperature_eq = self.get_temperature_eq_con(self.state, b.state)
+            # Add equality constraints between the node states and inlet/outlet
+            # states for pressure and temperature.
             b.pressure_eq = self.get_pressure_eq_con(self.state, b.state)
+            # This temperature equation will be redundant if we end up adding
+            # an enthalpy mixing equation.
+            b.temperature_eq = self.get_temperature_eq_con(self.state, b.state)
 
             if outlet:
                 # For inlets, mole fractions are already defined.
+                # (By the mixing rule)
                 b.mole_frac_comp_eq = self.get_mole_frac_comp_eq_con(
                     self.state, b.state
                 )
@@ -237,6 +241,11 @@ class PipelineNodeData(UnitModelBlockData):
         self.outlets = Block(self.outlet_set, rule=rule)
 
     def get_supply_block_rule(self):
+        """
+        Add a block for each supply, which contains a state block,
+        allowing us to specify different conditions for each supply.
+
+        """
         time = self.flowsheet().time
         properties = self.config.property_package
         state_config = {"defined_state": True}
@@ -253,11 +262,22 @@ class PipelineNodeData(UnitModelBlockData):
             # Add a reference here so we can access flow in the same way
             # as on demand blocks.
             b.flow_mol = Reference(b.state[:].flow_mol)
+
+            # Add equations to link temperature and pressure of this supply
+            # to that of the node.
+            b.isothermal_eq = self.get_temperature_eq_con(self.state, b.state)
+            b.isobaric_eq = self.get_pressure_eq_con(self.state, b.state)
         return block_rule
 
     def get_demand_block_rule(self):
         """
+        Add a block for each demand, which only contains a variable
+        for flow rate. Other (intensive) variables have the same value
+        as this node's state block.
+
         """
+        # Should these demand blocks have references to the node's intensive
+        # state variables? This would probably be convenient.
         time = self.flowsheet().time
         def block_rule(b, i):
             b.flow_mol = Var(
@@ -266,12 +286,18 @@ class PipelineNodeData(UnitModelBlockData):
         return block_rule
 
     def add_supplies(self):
+        """
+        Add set and indexed block for supplies.
+        """
         n_supplies = self.config.n_supplies
         self.supply_set = Set(initialize=list(range(n_supplies)), dimen=1)
         rule = self.get_supply_block_rule()
         self.supplies = Block(self.supply_set, rule=rule)
 
     def add_demands(self):
+        """
+        Add set and indexed block for demands.
+        """
         n_demands = self.config.n_demands
         self.demand_set = Set(initialize=list(range(n_demands)), dimen=1)
         # Should I give demands a state block? This seems redundant.
@@ -279,6 +305,12 @@ class PipelineNodeData(UnitModelBlockData):
         self.demands = Block(self.demand_set, rule=rule)
 
     def add_flow_balance_con(self):
+        """
+        Adds a total flow rate balance stating that inlet flow must equal
+        outlet flow.
+
+        """
+        # Should this be a balance on component flow rates instead?
         time = self.flowsheet().time
         def flow_balance_rule(b, t):
             return (
@@ -290,6 +322,11 @@ class PipelineNodeData(UnitModelBlockData):
         self.flow_balance = Constraint(time, rule=flow_balance_rule)
 
     def add_total_flow_con(self):
+        """
+        Calculates the flow rate through this node as the sum of flow rates
+        from supplies and inlet pipelines.
+
+        """
         time = self.flowsheet().time
         def total_flow_rule(b, t):
             return (
@@ -300,6 +337,12 @@ class PipelineNodeData(UnitModelBlockData):
         self.total_flow_eq = Constraint(time, rule=total_flow_rule)
 
     def add_component_mixing_con(self):
+        """
+        Adds a component mixing equation that calculates mole fractions
+        of the node from mole fractions and flow rates of the supplies
+        and inlet pipelines.
+
+        """
         time = self.flowsheet().time
         component_list = self.config.property_package.component_list
         def component_mixing_rule(b, t, j):
@@ -320,6 +363,9 @@ class PipelineNodeData(UnitModelBlockData):
 
     def add_pipeline_to_inlet(self, pipeline, idx=None):
         """
+        Creates an Arc between the outlet port of a pipeline and one
+        of this node's inlet ports.
+
         """
         pipeline_port = pipeline.outlet_port
         if idx is None:
@@ -339,6 +385,9 @@ class PipelineNodeData(UnitModelBlockData):
 
     def add_pipeline_to_outlet(self, pipeline, idx=None):
         """
+        Adds an Arc between one of this node's outlet ports
+        and the inlet port of a pipeline.
+
         """
         pipeline_port = pipeline.inlet_port
         if idx is None:
