@@ -79,7 +79,7 @@ def main(m):
     # is excess gas flowrate which means all state variables remain unchanged)
     for t in m.fs.time:
         m.fs.TGA.gas[t].temperature.fix(1273.15)
-        m.fs.TGA.gas[t].pressure.fix(1.01325)  # 1atm
+        m.fs.TGA.gas[t].pressure.fix(1.01325E5)  # 1atm
         m.fs.TGA.gas[t].mole_frac_comp['CO2'].fix(0.4)
         m.fs.TGA.gas[t].mole_frac_comp['H2O'].fix(0.5)
         m.fs.TGA.gas[t].mole_frac_comp['CH4'].fix(0.1)
