@@ -234,7 +234,7 @@ def test_dens_mol_phase_liq(m):
 @pytest.mark.unit
 def test_dens_mol_phase_vap(m):
     assert str(Ideal.dens_mol_phase(m.props[1], "Vap")) == (
-            'props[1].pressure/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K)'
+            'props[1].pressure/('+str(Ideal.gas_constant(m.props[1])) +
             '*props[1].temperature)')
 
 
@@ -292,8 +292,8 @@ def test_energy_internal_mol_phase_comp_with_h_form(m):
         # For liquid phase, delta(n) should be 4 (2*He + 2*O2)
         assert (
             str(Ideal.energy_internal_mol_phase_comp(m.props[1], "Liq", j)) ==
-            "42 -4.0*(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))"
-            "*params.temperature_ref")
+            "42 -4.0*("+str(Ideal.gas_constant(m.props[1])) +
+            ")*params.temperature_ref")
         # For vapor phase, delta(n) should be 3 (2*He + 2*O2 - 1*component)
         assert (
             str(Ideal.energy_internal_mol_phase_comp(m.props[1], "Vap", j)) ==
@@ -373,7 +373,7 @@ def test_entr_mol_phase_comp(m):
 
         assert str(Ideal.entr_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
         assert str(Ideal.entr_mol_phase_comp(m.props[1], "Vap", j)) == (
-            '42 - kg*m**2/J/s**2*(8.314462618*(J)/mol/K)'
+            '42 - '+str(Ideal.gas_constant(m.props[1])) +
             '*log(props[1].mole_frac_phase_comp'
             '[Vap,{}]*props[1].pressure/params.pressure_ref)'.format(j))
 
@@ -498,8 +498,7 @@ def test_pressure_osm_phase(m):
                          rel=1e-6) == value(
         m.props[1].pressure_osm_phase["Liq"])
     assert str(m.props[1].pressure_osm_phase["Liq"]._expr) == (
-        'kg*m**2/J/s**2*(' +
-        str(const.gas_constant)+')*' +
+        str(Ideal.gas_constant(m.props[1]))+'*' +
         str(m.props[1].temperature*(
             m.props[1].conc_mol_phase_comp["Liq", "b"] +
             m.props[1].conc_mol_phase_comp["Liq", "c"])))
@@ -552,8 +551,7 @@ def test_pressure_osm_phase_w_apparent_component():
                          rel=1e-6) == value(
         m.props[1].pressure_osm_phase["Liq"])
     assert str(m.props[1].pressure_osm_phase["Liq"]._expr) == (
-        'kg*m**2/J/s**2*(' +
-        str(const.gas_constant)+')*' +
+        str(Ideal.gas_constant(m.props[1]))+'*' +
         str(m.props[1].temperature*(
             m.props[1].conc_mol_phase_comp["Liq", "b"] +
             2*m.props[1].conc_mol_phase_comp["Liq", "c"])))
@@ -609,8 +607,8 @@ def test_vol_mol_phase():
     for p in m.params.phase_list:
         if p == "Vap":
             assert str(Ideal.vol_mol_phase(m.props[1], p)) == (
-                "kg*m**2/J/s**2*(8.314462618*(J)/mol/K)*"
-                "props[1].temperature/props[1].pressure")
+                str(Ideal.gas_constant(m.props[1])) +
+                "*props[1].temperature/props[1].pressure")
         else:
             assert str(Ideal.vol_mol_phase(m.props[1], p)) == str(
                 1/42*m.props[1].mole_frac_phase_comp["Liq", "a"] +
