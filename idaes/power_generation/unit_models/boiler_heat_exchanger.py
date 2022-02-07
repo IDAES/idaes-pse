@@ -100,7 +100,7 @@ class TubeArrangement(Enum):
 
 
 class _DeprecateDeltaTMethod(EnumMeta):
-    # This is used to log a deprication warning if someone uses DeltaTMethod
+    # This is used to log a deprecation warning if someone uses DeltaTMethod
     def __getattribute__(cls, name):
         obj = super().__getattribute__(name)
         if isinstance(obj, Enum):
@@ -307,7 +307,7 @@ arrangement to use for delta T
 
     def _process_config(self):
         """Deal with old style config arguments by converting them to be
-        consitent with the generic heat exchanger.  Log a deprication warning
+        consitent with the generic heat exchanger.  Log a deprecation warning
         for old style args.
         """
         super()._process_config()
