@@ -148,16 +148,18 @@ export class Paper {
             linkView.showTools();
 
             // Highlight the corresponding Link and the column in the Stream Table
-            const highlightStreamEvent = new CustomEvent(
-                'HighlightStream',
-                {
-                    detail: {
-                        streamId: linkView.model.id
+            if (document.querySelector("#view-stream-highlight-btn").checked) {
+                const highlightStreamEvent = new CustomEvent(
+                    'HighlightStream',
+                    {
+                        detail: {
+                            streamId: linkView.model.id
+                        }
                     }
-                }
-            );
-            streamTable.dispatchEvent(highlightStreamEvent);
-            idaesCanvas.dispatchEvent(highlightStreamEvent);
+                );
+                streamTable.dispatchEvent(highlightStreamEvent);
+                idaesCanvas.dispatchEvent(highlightStreamEvent);
+            }
         });
 
         // Setup event when the hovering over link ends
