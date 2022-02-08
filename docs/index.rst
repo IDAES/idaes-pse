@@ -14,7 +14,7 @@ of the full range of advanced fossil energy systems, including chemical looping
 and other transformational |CO2| capture technologies, as well as integration with
 other new technologies such as supercritical |CO2|.
 
-For a more detailed overview of the :term:`IDAES integrated platform <IDAES-IP>`, see :doc:`this page <user_guide/concepts>`.
+For a more detailed overview of the :term:`IDAES integrated platform <IDAES-IP>`, see :doc:`this page <explanations/concepts>`.
 
 Contents
 --------
@@ -22,44 +22,40 @@ Contents
    :class: index-table
 
    * - Getting Started (Tutorials)
-         * :doc:`Installing IDAES for users <getting_started/index>`
-         * :doc:`Installing IDAES for developers <advanced_user_guide/advanced_install/index>`
-         * :doc:`IDAES Examples & Tutorials <tutorials_examples>`
+         * :doc:`Installing IDAES for users <tutorials/getting_started/index>`
+         * :doc:`Installing IDAES for developers <tutorials/advanced_install/index>`
+         * :doc:`IDAES Examples & Tutorials <tutorials/tutorials_examples>`
      - How-To Guides
-         * :doc:`Setting up IDAES Models <user_guide/workflow/index>`
-         * :doc:`Developing Custom Models <advanced_user_guide/custom_models/general_model_development>`
-         * :doc:`Using IDAES Flowsheet Visualizer <user_guide/vis/index>`
+         * :doc:`Setting up IDAES Models <how_to_guides/workflow/index>`
+         * :doc:`Developing Custom Models <how_to_guides/custom_models/general_model_development>`
+         * :doc:`Using IDAES Flowsheet Visualizer <how_to_guides/vis/index>`
    * - Explanations
-         * :doc:`Why IDAES <user_guide/why_idaes>`
-         * :doc:`Concepts <user_guide/concepts>`
-         * :doc:`Components of IDAES <user_guide/components/index>`
-         * :doc:`Conventions <user_guide/conventions>`
-         * :doc:`Modeling Extensions <user_guide/modeling_extensions/index>`
-         * :doc:`Related Packages <related_packages/index>`
-         * :doc:`FAQ <faq>`
-         * :doc:`License <license>`
-         * :doc:`Copyright <copyright>`
+         * :doc:`Why IDAES <explanations/why_idaes>`
+         * :doc:`Concepts <explanations/concepts>`
+         * :doc:`Components of IDAES <explanations/components/index>`
+         * :doc:`Conventions <explanations/conventions>`
+         * :doc:`Modeling Extensions <explanations/modeling_extensions/index>`
+         * :doc:`Related Packages <explanations/related_packages/index>`
+         * :doc:`FAQ <explanations/faq>`
+         * :doc:`License <explanations/license>`
+         * :doc:`Copyright <explanations/copyright>`
      - Reference Guides
-         * :doc:`IDAES Model Libraries <technical_specs/model_libraries/index>`
-         * :doc:`IDAES Core <technical_specs/core/index>`
-         * :doc:`Command-line interface tools <user_guide/commands/index>`
-         * :doc:`Configuring IDAES <user_guide/configuration>`
-         * :doc:`Logging Processing & Outputs <user_guide/logging>`
-         * :doc:`Developing for IDAES <advanced_user_guide/developer/index>`
+         * :doc:`IDAES Model Libraries <reference_guides/model_libraries/index>`
+         * :doc:`IDAES Core <reference_guides/core/index>`
+         * :doc:`Command-line interface tools <reference_guides/commands/index>`
+         * :doc:`Configuring IDAES <reference_guides/configuration>`
+         * :doc:`Logging Processing & Outputs <reference_guides/logging>`
+         * :doc:`Developing for IDAES <reference_guides/developer/index>`
 
 .. toctree::
     :hidden:
     :maxdepth: 2
-    
-    getting_started/index
-    user_guide/index
-    advanced_user_guide/index
-    tutorials_examples
-    technical_specs/index
-    related_packages/index
-    faq
-    license
-    copyright
+
+    tutorials/index
+    how_to_guides/index
+    explanations/index
+    reference_guides/index
+
 
 Collaborating institutions
 --------------------------
