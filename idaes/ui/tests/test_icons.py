@@ -33,8 +33,8 @@ from idaes.ui.icons import UnitModelIcon
     ("pressure_changer", "compressor.svg"),
     ("heat_exchanger", "heat_exchanger_1.svg"),
     ("heat_exchanger_1D", "heat_exchanger_1.svg"),
-    ("statejunction", "NONE"),
-    ("translator", "NONE"),
+    ("statejunction", "default.svg"),
+    ("translator", "default.svg"),
     ("packed_column", "packed_column_1.svg"),
     ("tray_column", "tray_column_1.svg")]
 )
