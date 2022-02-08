@@ -30,6 +30,7 @@ from pyomo.environ import (
     check_optimal_termination
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -643,6 +644,11 @@ class HeatExchangerData(UnitModelBlockData):
             time_point=time_point,
         )
 
+    @deprecated(
+        "The get_costing method is being deprecated in favor of the new "
+        "FlowsheetCostingBlock tools.",
+        version=1.13,
+    )
     def get_costing(self, module=costing, year=None, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year)

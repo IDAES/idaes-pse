@@ -16,6 +16,7 @@ Standard IDAES PFR model.
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Var, Reference, Block
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
@@ -289,6 +290,11 @@ domain,
 
         return {"vars": var_dict}
 
+    @deprecated(
+        "The get_costing method is being deprecated in favor of the new "
+        "FlowsheetCostingBlock tools.",
+        version=1.13,
+    )
     def get_costing(self, year=None, module=costing, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)

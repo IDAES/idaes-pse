@@ -20,6 +20,7 @@ from pyomo.dae import ContinuousSet
 from pyomo.network import Arc
 from pyomo.common.config import ConfigValue, ListOf
 from pyomo.core.base.units_container import _PyomoUnit
+from pyomo.common.deprecation import deprecated
 
 from idaes.core import (ProcessBlockData, declare_process_block_class,
                         UnitModelBlockData, useDefault)
@@ -209,6 +210,11 @@ within this flowsheet if not otherwise specified,
         """
         visualize(self, model_name, **kwargs)
 
+    @deprecated(
+        "The get_costing method is being deprecated in favor of the new "
+        "FlowsheetCostingBlock tools.",
+        version=1.13,
+    )
     def get_costing(self, module=costing, year=None, integer_n_units=False):
         """
         Creates a new block called 'costing' at the flowsheet level. This block
