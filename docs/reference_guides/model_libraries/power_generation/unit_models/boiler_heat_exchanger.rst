@@ -7,11 +7,7 @@ BoilerHeatExchanger
 .. currentmodule:: idaes.power_generation.unit_models.boiler_heat_exchanger
 
 The BoilerHeatExchanger model can be used to represent boiler heat exchangers in
-<<<<<<< HEAD:docs/technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger.rst
 sub-critical and super critical power plant flowsheets (i.e. economizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).
-=======
-sub-critical and super critical power plant flowsheets (i.e. econmizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).
->>>>>>> 7406effa3b8582b7c1940c43ac74f47ea257664b:docs/reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger.rst
 The model consists of a shell and tube crossflow heat exchanger, in which the shell is used as the gas side and the tube is used as the water or steam side.
 Rigorous heat transfer calculations (convective heat transfer for shell side, and convective heat transfer for tube side) and shell and tube pressure drop calculations have been included.
 
@@ -57,7 +53,6 @@ and override the default temperature difference calculation.
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     # Create unit models
-<<<<<<< HEAD:docs/technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger.rst
     m.fs.ECON = BoilerHeatExchanger(
         default={
             "tube: {"property_package": m.fs.prop_water},
@@ -70,17 +65,6 @@ and override the default temperature difference calculation.
             "has_radiation": False
         }
     )
-=======
-    m.fs.ECON = BoilerHeatExchanger(default=
-                              {"side_1_property_package": m.fs.prop_water,
-                               "side_2_property_package": m.fs.prop_fluegas,
-                               "has_pressure_change": True,
-                               "has_holdup": False,
-                               "delta_T_method": DeltaTMethod.counterCurrent,
-                               "tube_arrangement": TubeArrangement.inLine,
-                               "side_1_water_phase": "Liq",
-                               "has_radiation": False})
->>>>>>> 7406effa3b8582b7c1940c43ac74f47ea257664b:docs/reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger.rst
 
     # Set Inputs
     # BFW Boiler Feed Water inlet temperature = 555 F = 563.706 K
@@ -167,11 +151,7 @@ The sign convention is that duty is positive for heat flowing from the hot side 
 side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
-<<<<<<< HEAD:docs/technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger.rst
-:ref:`Heater model <technical_specs/model_libraries/generic/unit_models/heater:Heater>`.
-=======
 :ref:`Heater model <reference_guides/model_libraries/generic/unit_models/heater:Heater>`.
->>>>>>> 7406effa3b8582b7c1940c43ac74f47ea257664b:docs/reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger.rst
 The ``BoilerHeatExchanger`` model contains additional constraints that calculate the amount
 of heat transferred from the hot side to the cold side.
 
@@ -198,11 +178,7 @@ Constraints
 -----------
 
 The default constraints can be overridden by providing :ref:`alternative rules
-<<<<<<< HEAD:docs/technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger.rst
-<technical_specs/model_libraries/generic/unit_models/heat_exchanger:Callbacks>` for
-=======
 <reference_guides/model_libraries/generic/unit_models/heat_exchanger:Callbacks>` for
->>>>>>> 7406effa3b8582b7c1940c43ac74f47ea257664b:docs/reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger.rst
 the heat transfer equation, temperature difference, heat transfer coefficient, shell
 and tube pressure drop. This section describes the default constraints.
 
@@ -326,11 +302,7 @@ Class Documentation
 .. Note::
   The ``hot_side_config`` and ``cold_side_config`` can also be supplied using the name of
   the hot and cold sides (``shell`` and ``tube`` by default) as in
-<<<<<<< HEAD:docs/technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger.rst
-  :ref:`the example <technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger:Example>`.
-=======
   :ref:`the example <reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger:Example>`.
->>>>>>> 7406effa3b8582b7c1940c43ac74f47ea257664b:docs/reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger.rst
 
 .. autoclass:: BoilerHeatExchanger
    :members:
