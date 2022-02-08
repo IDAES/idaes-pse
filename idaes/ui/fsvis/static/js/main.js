@@ -109,7 +109,7 @@ export class App {
                 $.ajax({url: url, dataType: "json"})
                     // If we got the model, save it
                     .done(data => {
-                        paper.graph = data;  // uses setter
+                        this.renderModel(data);
                         this.stream_table.initTable(data)
                     }) 
                     // Otherwise fail
