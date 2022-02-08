@@ -16,12 +16,11 @@ Author: Akula Paul, Andrew Lee
 """
 
 import pytest
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Constraint,
                            Expression,
                            Param,
-                           TerminationCondition,
-                           SolverStatus,
                            units as pyunits,
                            value,
                            Var)
@@ -39,6 +38,7 @@ from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_sol
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
 from idaes.core.util.testing import initialization_tester
+from idaes.core.util.exceptions import InitializationError
 
 
 # -----------------------------------------------------------------------------
@@ -171,9 +171,7 @@ class TestHXNTU(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -260,3 +258,10 @@ class TestHXNTU(object):
     @pytest.mark.unit
     def test_report(self, model):
         model.fs.unit.report()
+
+    @pytest.mark.component
+    def test_initialization_error(self, model):
+        model.fs.unit.hot_outlet.pressure[0].fix(1)
+
+        with pytest.raises(InitializationError):
+            model.fs.unit.initialize()

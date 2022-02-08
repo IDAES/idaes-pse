@@ -167,6 +167,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -308,6 +314,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -441,6 +453,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -582,6 +600,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -710,6 +734,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -810,12 +840,7 @@
                         },
                         "markup": "<g><rect/></g>",
                         "position": {
-                            "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 48,
-                                "y": 25
-                            },
+                            "args": {},
                             "name": "right"
                         }
                     }
@@ -847,6 +872,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -988,6 +1019,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1042,6 +1079,12 @@
             "z": 2
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1174,6 +1217,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1228,6 +1277,12 @@
             "z": 2
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1282,6 +1337,12 @@
             "z": 2
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1391,6 +1452,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1500,6 +1567,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1609,6 +1682,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1718,6 +1797,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1827,6 +1912,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1936,6 +2027,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -2707,31 +2804,259 @@
     },
     "routing_config": {
         "FSHtoATMP1": {
-            "cell_index": 10,
-            "destination": {
+            "cell_config": {
                 "gap": {
-                    "direction": "left",
-                    "distance": 30
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
                 }
-            }
+            },
+            "cell_index": 10
+        },
+        "econ2ww": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 2
+        },
+        "fg_fsh2PrSH": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 15
+        },
+        "fg_fsh2_separator": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 12
+        },
+        "fg_fsh2rh": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 14
+        },
+        "fg_mix2econ": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 19
         },
         "fg_prsh2mix": {
-            "cell_index": 18,
-            "destination": {
+            "cell_config": {
                 "gap": {
-                    "direction": "left",
-                    "distance": 30
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
                 }
-            }
+            },
+            "cell_index": 18
         },
         "fg_rhtomix": {
-            "cell_index": 17,
-            "destination": {
+            "cell_config": {
                 "gap": {
-                    "direction": "left",
-                    "distance": 30
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
                 }
-            }
+            },
+            "cell_index": 17
+        },
+        "plsh2fsh": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 8
+        },
+        "prsh2plsh": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 6
+        },
+        "s_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 21
+        },
+        "s_side_1_inlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 23
+        },
+        "s_side_1_inlet_2": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 29
+        },
+        "s_side_1_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 31
+        },
+        "s_side_2_inlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 27
+        },
+        "s_side_2_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 25
+        },
+        "ww2prsh": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 4
         }
     }
 }

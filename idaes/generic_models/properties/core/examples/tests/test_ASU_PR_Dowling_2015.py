@@ -14,10 +14,9 @@
 Author: Andrew Lee, Alejandro Garciadiego
 """
 import pytest
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Set,
-                           SolverStatus,
-                           TerminationCondition,
                            value,
                            Var,
                            units as pyunits)
@@ -243,9 +242,7 @@ class TestStateBlock(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.component
     def test_solution(self, model):
@@ -284,9 +281,7 @@ class TestStateBlock(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
 
         assert model.props[1].mole_frac_phase_comp["Vap", "nitrogen"].value == \
@@ -317,9 +312,7 @@ class TestStateBlock(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
 
         assert model.props[1].mole_frac_phase_comp["Liq", "nitrogen"].value == \

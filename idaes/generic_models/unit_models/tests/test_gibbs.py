@@ -17,10 +17,9 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Constraint,
-                           TerminationCondition,
-                           SolverStatus,
                            value,
                            units)
 from pyomo.util.check_units import (assert_units_consistent,
@@ -247,9 +246,7 @@ class TestMethane(object):
         results = solver.solve(methane)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -339,9 +336,7 @@ class TestMethane(object):
         results = solver.solve(methane, tee=True)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
