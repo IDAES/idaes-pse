@@ -584,7 +584,7 @@
         }
     },
     "statejunction": {
-        "image": "NONE",
+        "image": "default.svg",
         "port_groups": {
             "in": {
                 "position": {
@@ -625,7 +625,7 @@
         }
     },
     "translator": {
-        "image": "NONE",
+        "image": "default.svg",
         "port_groups": {
             "in": {
                 "position": {
