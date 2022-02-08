@@ -49,7 +49,7 @@ kwargs = dict(
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
         "bunch",
-        "click<=7.1.2", # problems with 8.x
+        "click",
         "colorama",
         "flask",  # for ui/fsvis
         "flask-cors",
@@ -77,6 +77,8 @@ kwargs = dict(
         "sympy",
         "tinydb",
         "rbfopt",
+        # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
+        "ipython<8.0.0",
     ],
     entry_points={
         "console_scripts": [
@@ -88,7 +90,9 @@ kwargs = dict(
     extras_require={
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
-            "tensorflow"  # idaes.surrogate.keras_surrogate
+            "tensorflow",  # idaes.surrogate.keras_surrogate
+            # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
+            "coolprop; python_version < '3.9'"  # idaes.generic_models.properties.general.coolprop
         ]
     },
     package_data={
@@ -134,7 +138,6 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

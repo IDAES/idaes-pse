@@ -15,8 +15,8 @@ Test for skeleton unit model.
 """
 
 import pytest
-from pyomo.environ import ConcreteModel, Constraint, Var, Set, value, \
-    SolverStatus, TerminationCondition
+from pyomo.environ import (
+    check_optimal_termination, ConcreteModel, Constraint, Var, Set, value)
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import SkeletonUnitModel
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -149,9 +149,7 @@ class TestSkeletonDefault(object):
     def test_solve(self, skeleton_default):
         results = solver.solve(skeleton_default)
 
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -311,9 +309,7 @@ class TestSkeletonCustom(object):
     def test_solve(self, skeleton_custom):
         results = solver.solve(skeleton_custom)
 
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component

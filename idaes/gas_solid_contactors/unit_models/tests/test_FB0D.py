@@ -1,15 +1,15 @@
-###############################################################################
+#################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
 # by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University,
-# West Virginia UniversityResearch Corporation, et al.  All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-###############################################################################
+#################################################################################
 """
 Tests for ControlVolumeBlockData, and for initializing the 0D fixed bed module
 
@@ -18,10 +18,9 @@ Author: Brandon Paul
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            TransformationFactory,
-                           TerminationCondition,
-                           SolverStatus,
                            value,
                            units as pyunits,
                            Constraint)
@@ -130,7 +129,7 @@ class TestIronOC(object):
         # remain unchanged)
         for t in m.fs.time:
             m.fs.unit.gas[t].temperature.fix(1273.15)
-            m.fs.unit.gas[t].pressure.fix(1.01325)  # 1atm
+            m.fs.unit.gas[t].pressure.fix(1.01325E5)  # 1atm
             m.fs.unit.gas[t].mole_frac_comp['CO2'].fix(0.4)
             m.fs.unit.gas[t].mole_frac_comp['H2O'].fix(0.5)
             m.fs.unit.gas[t].mole_frac_comp['CH4'].fix(0.1)
@@ -185,9 +184,7 @@ class TestIronOC(object):
         results = solver.solve(iron_oc)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -208,7 +205,7 @@ class TestIronOC(object):
 
     @pytest.mark.component
     def test_units_consistent(self, iron_oc):
-        pass  # assert_units_consistent(iron_oc)
+        assert_units_consistent(iron_oc)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -349,7 +346,7 @@ class TestIronOC_EnergyBalanceType(object):
         # remain unchanged)
         for t in m.fs.time:
             m.fs.unit.gas[t].temperature.fix(1273.15)
-            m.fs.unit.gas[t].pressure.fix(1.01325)  # 1atm
+            m.fs.unit.gas[t].pressure.fix(1.01325E5)  # 1atm
             m.fs.unit.gas[t].mole_frac_comp['CO2'].fix(0.4)
             m.fs.unit.gas[t].mole_frac_comp['H2O'].fix(0.5)
             m.fs.unit.gas[t].mole_frac_comp['CH4'].fix(0.1)
@@ -401,9 +398,7 @@ class TestIronOC_EnergyBalanceType(object):
         results = solver.solve(iron_oc)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -424,7 +419,7 @@ class TestIronOC_EnergyBalanceType(object):
 
     @pytest.mark.component
     def test_units_consistent(self, iron_oc):
-        pass  # assert_units_consistent(iron_oc)
+        assert_units_consistent(iron_oc)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

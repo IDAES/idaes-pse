@@ -19,7 +19,8 @@ plots.
 __author__ = "Alejandro Garciadiego"
 
 # Import objects from pyomo package
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            SolverFactory,
                            value,
                            Var,
@@ -28,7 +29,6 @@ from pyomo.environ import (ConcreteModel,
                            units as pyunits)
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
-from pyomo.opt import TerminationCondition, SolverStatus
 
 import idaes.logger as idaeslog
 
@@ -152,7 +152,7 @@ def Txy_data(model, component_1, component_2, pressure, num_points = 20, tempera
         # solve the model
         status = solver.solve(model, tee = False)
         # If solution is optimal store the concentration, and calculated temperatures in the created arrays
-        if (status.solver.status == SolverStatus.ok) and (status.solver.termination_condition == TerminationCondition.optimal):
+        if check_optimal_termination(status):
 
             print('Case: ',count,' Optimal. ', component_1, 'x = {:.2f}'.format(x_d[i]))
 

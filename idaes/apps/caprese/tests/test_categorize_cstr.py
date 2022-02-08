@@ -15,23 +15,14 @@ Test for Caprese's module for NMPC.
 """
 
 import pytest
-from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
-                           Set, SolverFactory, Var, value, 
-                           TransformationFactory, TerminationCondition)
-from pyomo.network import Arc
+from pyomo.environ import Var
 from pyomo.common.collections import ComponentSet
 from pyomo.dae.flatten import flatten_dae_components
 
-from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
-        MomentumBalanceType)
-from idaes.core.util.model_statistics import (degrees_of_freedom, 
-        activated_equalities_generator)
 from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
-        categorize_dae_variables_and_constraints,
         )
 from idaes.apps.caprese.common.config import VariableCategory as VC
-import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_model import make_model
 
 __author__ = "Robert Parker"

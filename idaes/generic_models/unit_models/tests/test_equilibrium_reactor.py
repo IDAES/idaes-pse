@@ -16,9 +16,8 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            value,
                            units)
 from idaes.core import (FlowsheetBlock,
@@ -42,6 +41,7 @@ from idaes.core.util.testing import (PhysicalParameterTestBlock,
 from idaes.core.util import get_solver
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
+from idaes.core.util.exceptions import InitializationError
 
 
 # -----------------------------------------------------------------------------
@@ -166,9 +166,7 @@ class TestSaponification(object):
         results = solver.solve(sapon)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -208,3 +206,10 @@ class TestSaponification(object):
     @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
+
+    @pytest.mark.component
+    def test_initialization_error(self, sapon):
+        sapon.fs.unit.outlet.pressure[0].fix(1)
+
+        with pytest.raises(InitializationError):
+            sapon.fs.unit.initialize()

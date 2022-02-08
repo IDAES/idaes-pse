@@ -88,7 +88,7 @@ def main():
     # Fix inlet port variables for gas and solid
     m.fs.BFB.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
     m.fs.BFB.gas_inlet.temperature[0].fix(373)  # K
-    m.fs.BFB.gas_inlet.pressure[0].fix(1.86)  # bar
+    m.fs.BFB.gas_inlet.pressure[0].fix(1.86E5)  # Pa = 1E5 bar
     m.fs.BFB.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.4772)
     m.fs.BFB.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
     m.fs.BFB.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)

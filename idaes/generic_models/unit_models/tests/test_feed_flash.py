@@ -16,10 +16,7 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           value)
+from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.generic_models.unit_models.feed_flash import FeedFlash, FlashType
 from idaes.generic_models.properties import iapws95
@@ -127,9 +124,7 @@ class TestBTXIdeal(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -212,9 +207,7 @@ class TestIAPWS(object):
         results = solver.solve(iapws)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

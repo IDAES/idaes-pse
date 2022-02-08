@@ -162,9 +162,7 @@ def test_run_unit(build_unit):
     # solve model
     results = solver.solve(m, tee=True)
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
 
     # energy balance
     assert (pytest.approx(0, abs=1e-3) ==

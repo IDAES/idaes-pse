@@ -14,26 +14,18 @@
 Test for Cappresse's module for NMPC.
 """
 
-import pytest
-from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
-                           Set, SolverFactory, Var, value, units as pyunits,
-                           TransformationFactory, TerminationCondition)
+from pyomo.environ import (
+    ConcreteModel, SolverFactory, units as pyunits, TransformationFactory)
 from pyomo.network import Arc
-from pyomo.common.collections import ComponentSet
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
-        MomentumBalanceType)
+                        MomentumBalanceType)
 from idaes.core.util.tests.test_initialization import (
-        AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock,
-        EnzymeReactionBlock)
-from idaes.core.util.model_statistics import (degrees_of_freedom, 
-        activated_equalities_generator)
-from idaes.core.util.initialization import initialize_by_time_element
-from idaes.core.util.exceptions import ConfigurationError
+        AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock)
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.apps.caprese import nmpc
 from idaes.apps.caprese.nmpc import *
-import idaes.logger as idaeslog
 
 __author__ = "Robert Parker"
 
