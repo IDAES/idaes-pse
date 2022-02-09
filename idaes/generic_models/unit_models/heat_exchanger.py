@@ -127,7 +127,7 @@ countercurrent temperature difference.}""",
             default=True,
             domain=bool,
             doc="""If True, side_1 is an alias for hot_side. Otherwise, side_1
-is alias an alias for cold_side""",
+is an alias for cold_side""",
         ),
     )
 
