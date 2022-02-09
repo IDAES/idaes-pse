@@ -377,6 +377,43 @@
             }
         }
     },
+    "compressor": {
+        "image": "compressor.svg",
+        "port_groups": {
+            "in": {
+                "position": {
+                    "name": "left",
+                    "args": {
+                        "x": -1,
+                        "y": 25
+                    }
+                }
+            },
+            "out": {
+                "position": {
+                    "name": "left",
+                    "args": {
+                        "x": 49,
+                        "y": 25
+                    }
+                }
+            }
+        },
+        "routing_config": {
+            "in": {
+                "gap": {
+                    "x": -30,
+                    "y": 0
+                }
+            },
+            "out": {
+                "gap": {
+                    "x": 30,
+                    "y": 0
+                }
+            }
+        }
+    },
     "turbine": {
         "image": "expander.svg",
         "port_groups": {
