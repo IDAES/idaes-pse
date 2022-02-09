@@ -346,17 +346,55 @@
             "in": {
                 "position": {
                     "name": "left",
-                    "args": {}
+                    "args": {
+                        "x": -1,
+                        "y": 25
+                    }
                 }
             },
             "out": {
                 "position": {
                     "name": "left",
                     "args": {
-                        "x": 50,
-                        "y": 25,
-                        "dx": 1,
-                        "dy": 1
+                        "x": 49,
+                        "y": 25
+                    }
+                }
+            }
+        },
+        "routing_config": {
+            "in": {
+                "gap": {
+                    "x": -30,
+                    "y": 0
+                }
+            },
+            "out": {
+                "gap": {
+                    "x": 30,
+                    "y": 0
+                }
+            }
+        }
+    },
+    "turbine": {
+        "image": "expander.svg",
+        "port_groups": {
+            "in": {
+                "position": {
+                    "name": "left",
+                    "args": {
+                        "x": -1,
+                        "y": 25
+                    }
+                }
+            },
+            "out": {
+                "position": {
+                    "name": "left",
+                    "args": {
+                        "x": 49,
+                        "y": 25
                     }
                 }
             }
@@ -377,6 +415,42 @@
         }
     },
     "separator": {
+        "image": "splitter.svg",
+        "port_groups": {
+            "in": {
+                "position": {
+                    "name": "left",
+                    "args": {
+                        "x": 2,
+                        "y": 25,
+                        "dx": 1,
+                        "dy": 1
+                    }
+                }
+            },
+            "out": {
+                "position": {
+                    "name": "right",
+                    "args": {}
+                }
+            }
+        },
+        "routing_config": {
+            "in": {
+                "gap": {
+                    "x": -30,
+                    "y": 0
+                }
+            },
+            "out": {
+                "gap": {
+                    "x": 30,
+                    "y": 0
+                }
+            }
+        }
+    },
+    "splitter": {
         "image": "splitter.svg",
         "port_groups": {
             "in": {
@@ -769,6 +843,47 @@
                         "y": 50,
                         "dx": 1,
                         "dy": 1
+                    }
+                }
+            }
+        },
+        "routing_config": {
+            "in": {
+                "gap": {
+                    "x": -30,
+                    "y": 0
+                }
+            },
+            "out": {
+                "gap": {
+                    "x": 30,
+                    "y": 0
+                }
+            }
+        }
+    },
+    "default_2": {
+        "image": "default_2.svg",
+        "port_groups": {
+            "in": {
+                "position": {
+                    "name": "left",
+                    "args": {
+                        "x": -1,
+                        "y": 10,
+                        "dx": 0,
+                        "dy": 0
+                    }
+                }
+            },
+            "out": {
+                "position": {
+                    "name": "left",
+                    "args": {
+                        "x": 19,
+                        "y": 10,
+                        "dx": 0,
+                        "dy": 0
                     }
                 }
             }
