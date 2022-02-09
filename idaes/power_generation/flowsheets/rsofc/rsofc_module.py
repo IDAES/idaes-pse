@@ -130,10 +130,10 @@ def cost_rsofc(m):
         m.rsofc_total_fixed_OM_cost_eq
     )
 
-    # # Display results
+    # Display results
     # m.fs.costing.display()
-    # m.sofc_fs.costing.display()
-    # m.soec_fs.H2_costing.display()
+    m.sofc_fs.costing.display()
+    m.soec_fs.H2_costing.display()
 
     return m
 
