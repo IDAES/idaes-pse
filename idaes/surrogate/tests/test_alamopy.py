@@ -272,8 +272,7 @@ class TestAlamoTrainer:
             "ZLABELS z1\n"
             "XMIN 0 0\n"
             "XMAX 5 10\n"
-            "NDATA 4\n"
-            "NVALDATA 1\n\n"
+            "NDATA 4\n\n"
             "linfcns 1\n"
             "constant 1\n"
             "maxtime 1000.0\n"
@@ -284,10 +283,7 @@ class TestAlamoTrainer:
             "2 6 20\n"
             "3 7 30\n"
             "4 8 40\n"
-            "END_DATA\n"
-            "\nBEGIN_VALDATA\n"
-            "2.5 6.5 25\n"
-            "END_VALDATA\n")
+            "END_DATA\n")
 
     @pytest.mark.unit
     def test_writer_validation_data_reordered(self):
@@ -319,8 +315,7 @@ class TestAlamoTrainer:
             "ZLABELS z1\n"
             "XMIN 0 0\n"
             "XMAX 5 10\n"
-            "NDATA 4\n"
-            "NVALDATA 1\n\n"
+            "NDATA 4\n\n"
             "linfcns 1\n"
             "constant 1\n"
             "maxtime 1000.0\n"
@@ -331,10 +326,7 @@ class TestAlamoTrainer:
             "2 6 20\n"
             "3 7 30\n"
             "4 8 40\n"
-            "END_DATA\n"
-            "\nBEGIN_VALDATA\n"
-            "2.5 6.5 25\n"
-            "END_VALDATA\n")
+            "END_DATA\n")
 
     @pytest.mark.unit
     def test_writer_full_config(self, alamo_trainer):
@@ -1243,3 +1235,78 @@ class TestWorkflow():
             float(alamo_trainer._results["RMSE"]["z1"])**2*0.1, rel=1e-8)
         assert metrics["z1"]["RMSE"] == pytest.approx(
             float(alamo_trainer._results["RMSE"]["z1"])*0.1, rel=1e-8)
+
+
+@pytest.mark.skipif(alamo.executable is None, reason="ALAMO not available")
+@pytest.mark.integration
+class TestWorkflowValidation():
+    training_data = pd.DataFrame(np.array(
+        [[0.353837234435, 0.99275270941666, 0.762878272854],
+         [0.904978848612, -0.746908518721, 0.387963718723],
+         [0.643706630938, -0.617496599522, -0.0205375902284],
+         [1.29881420688, 0.305594881575, 2.43011137696],
+         [1.35791650867, 0.351045058258, 2.36989368612],
+         [0.938369314089, -0.525167416293, 0.829756159423],
+         [-1.46593541641, 0.383902178482, 1.14054797964],
+         [-0.374378293218, -0.689730440659, -0.219122783909],
+         [0.690326213554, 0.569364994374, 0.982068847698],
+         [-0.961163301329, 0.499471920546, 0.936855365038]]),
+        columns=["x1", "x2", "z1"])
+
+    @pytest.fixture(scope="class")
+    def alamo_trainer(self):
+        # Test end-to-end workflow with a simple problem.
+        bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        alamo_trainer = AlamoTrainer(
+            input_labels=["x1", "x2"],
+            output_labels=["z1"],
+            input_bounds=bnds,
+            training_dataframe=TestWorkflow.training_data,
+            validation_dataframe=TestWorkflow.training_data)
+        # Include valdiation data set, and make sure still runs as expected
+
+        alamo_trainer.config.linfcns = True
+        alamo_trainer.config.monomialpower = [2, 3, 4, 5, 6]
+        alamo_trainer.config.multi2power = [1, 2]
+
+        (alamo_trainer.status,
+         alamo_trainer.alamo_object,
+         alamo_trainer.msg) = alamo_trainer.train_surrogate()
+
+        return alamo_trainer
+
+    def test_execution(self, alamo_trainer):
+        # Check execution
+        assert alamo_trainer.status is True
+        assert alamo_trainer.msg == " Normal termination"
+
+        # Check temp file clean up
+        assert alamo_trainer._temp_context is None
+        assert not os.path.exists(alamo_trainer._almfile)
+        assert not os.path.exists(alamo_trainer._trcfile)
+
+    def test_alamo_results(self, alamo_trainer):
+        assert alamo_trainer._results is not None
+        assert alamo_trainer._results['NINPUTS'] == '2'
+        assert alamo_trainer._results['NOUTPUTS'] == '1'
+        assert alamo_trainer._results['SSEOLR'] == {'z1': '0.373E-29'}
+        assert alamo_trainer._results['SSE'] == {'z1': '0.976E-23'}
+        assert alamo_trainer._results['RMSE'] == {'z1': '0.988E-12'}
+        assert alamo_trainer._results['R2'] == {'z1': '1.00'}
+        assert alamo_trainer._results['ModelSize'] == {'z1': '6'}
+        assert alamo_trainer._results['BIC'] == {'z1': '-539.'}
+        assert alamo_trainer._results['RIC'] == {'z1': '32.5'}
+        assert alamo_trainer._results['Cp'] == {'z1': '2.00'}
+        assert alamo_trainer._results['AICc'] == {'z1': '-513.'}
+        assert alamo_trainer._results['HQC'] == {'z1': '-543.'}
+        assert alamo_trainer._results['MSE'] == {'z1': '0.325E-23'}
+        assert alamo_trainer._results['SSEp'] == {'z1': '0.976E-23'}
+        assert alamo_trainer._results['MADp'] == {'z1': '0.115E-07'}
+
+        assert alamo_trainer._results['Model'] == {
+                "z1": " z1 == 3.9999999999925432980774 * x1**2 - "
+                "4.0000000000020792256805 * x2**2 - "
+                "2.0999999999859380039879 * x1**4 + "
+                "4.0000000000043085535140 * x2**4 + "
+                "0.33333333332782683067208 * x1**6 + "
+                "0.99999999999973088193883 * x1*x2"}

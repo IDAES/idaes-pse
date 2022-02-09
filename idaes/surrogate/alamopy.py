@@ -570,27 +570,22 @@ class AlamoTrainer(SurrogateTrainer):
         self._wrkdir = wrkdir
 
     def _write_alm_to_stream(
-            self, stream, trace_fname=None,
-            training_data=None, validation_data=None):
+            self, stream, trace_fname=None, training_data=None):
         """
-        Method to write an ALAMO input file (.alm) to a stream.
-        Users may provide specific data sets for training and validation.
-        If no data sets are provided, the data sets contained in the
-        AlamoModelTrainer are used.
+        Method to write an ALAMO input file (.alm) to a stream. Users may
+        provide a specific data set for training. If no data set is provided,
+        the data set contained in the AlamoModelTrainer is used.
 
         Args:
             stream: stream that data should be writen to
             trace_fname: name for trace file (.trc) to be included in .alm file
             training_data: Pandas dataframe to use for training surrogate
-            validation_data: Pandas dataframe to use for validating surrogate
 
         Returns:
             None
         """
         if training_data is None:
             training_data = self._training_dataframe
-        if validation_data is None:
-            validation_data = self._validation_dataframe
 
         # Check bounds on inputs to avoid potential ALAMO failures
         input_max = list()
@@ -614,11 +609,6 @@ class AlamoTrainer(SurrogateTrainer):
         # Get number of data points to build alm file
         n_rdata, n_inputs = training_data.shape
 
-        if validation_data is not None:
-            n_vdata, n_inputs = validation_data.shape
-        else:
-            n_vdata = 0
-
         stream.write("# IDAES Alamopy input file\n")
         stream.write(f"NINPUTS {len(self._input_labels)}\n")
         stream.write(f"NOUTPUTS {len(self._output_labels)}\n")
@@ -627,8 +617,6 @@ class AlamoTrainer(SurrogateTrainer):
         stream.write(f"XMIN {' '.join(map(str, input_min))}\n")
         stream.write(f"XMAX {' '.join(map(str, input_max))}\n")
         stream.write(f"NDATA {n_rdata}\n")
-        if validation_data is not None:
-            stream.write(f"NVALDATA {n_vdata}\n")
         stream.write("\n")
 
         # Other options for config
@@ -685,28 +673,17 @@ class AlamoTrainer(SurrogateTrainer):
         stream.write(training_data_str)
         stream.write("\nEND_DATA\n")
 
-        if validation_data is not None:
-            # Add validation data defintion
-            stream.write("\nBEGIN_VALDATA\n")
-            val_data_str = _df_to_data_fragment(
-                validation_data,
-                columns=self._input_labels + self._output_labels,
-            )
-            stream.write(val_data_str)
-            stream.write("\nEND_VALDATA\n")
-
         if self.config.custom_basis_functions is not None:
             stream.write("\nBEGIN_CUSTOMBAS\n")
             for i in self.config.custom_basis_functions:
                 stream.write(f"{str(i)}\n")
             stream.write("END_CUSTOMBAS\n")
 
-    def _write_alm_file(self, training_data=None, validation_data=None):
+    def _write_alm_file(self, training_data=None):
         """
         Method to write an ALAMO input file (.alm) using the current settings.
-        Users may provide specific data sets for training and validation.
-        If no data sets are provided, the data sets contained in the
-        AlamoModelTrainer are used.
+        Users may provide a specific data set for training. If no data set is
+        provided, the data set contained in the AlamoModelTrainer is used.
 
         Args:
             training_data: Pandas dataframe to use for training surrogate
@@ -716,8 +693,7 @@ class AlamoTrainer(SurrogateTrainer):
             None
         """
         f = open(self._almfile, "w")
-        self._write_alm_to_stream(
-            f, self._trcfile, training_data, validation_data)
+        self._write_alm_to_stream(f, self._trcfile, training_data)
         f.close()
 
     def _call_alamo(self):
