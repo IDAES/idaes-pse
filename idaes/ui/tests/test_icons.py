@@ -48,9 +48,9 @@ def test_icon_mapping(test_input, expected):
     "model_name,expected",
     [(
         "default",
-        "{'groups': {'in': {'position': {'name': 'left', 'args': {'x': -1, 'y': 10}}, "
+        "{'groups': {'in': {'position': {'name': 'left', 'args': {'x': 10, 'y': 35}}, "
         "'attrs': {'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': "
-        "'<g><rect/></g>'}, 'out': {'position': {'name': 'left', 'args': {'x': 19, 'y': 10}}, "
+        "'<g><rect/></g>'}, 'out': {'position': {'name': 'left', 'args': {'x': 41, 'y': 35}}, "
         "'attrs': {'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': "
         "'<g><rect/></g>'}}, 'items':[]}"
     ),
