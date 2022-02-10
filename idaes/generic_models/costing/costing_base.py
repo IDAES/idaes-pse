@@ -59,12 +59,10 @@ class CostingPackageBase():
     @staticmethod
     def build_global_params(self):
         """
-        This is where we can declare any global parameters we need, such as
-        Lang factors, or coefficients for costing methods that should be
-        shared across the process.
-
-        You can do what you want here, so you could have e.g. sub-Blocks
-        for ach costing method to separate the parameters for each method.
+        This is where any global parameters, such as Lang factors or
+        coefficients for costing methods that should be shared across the
+        process, should be declared. Sub-Blocks may be used ot help organize
+        parameters if requried.
         """
         raise NotImplementedError(
             "Derived CostingPackage class has not defined a "
@@ -73,9 +71,9 @@ class CostingPackageBase():
     @staticmethod
     def build_process_costs(self):
         """
-        This is where you do all your process wide costing.
-        This is completely up to you, but you will have access to the
-        following aggregate costs:
+        This is where process wide costing correlations should be declared.
+        The following aggregate costs are available for use in calculating
+        these process-wide costs:
 
             1. blk.aggregate_capital_cost
             2. blk.aggregate_fixed_operating_cost
@@ -89,8 +87,8 @@ class CostingPackageBase():
     @staticmethod
     def initialize(self):
         """
-        Here we can add intialization steps for the things we built in
-        build_process_costs.
+        This method allows users to definean initialization routine for any
+        components createby the build_process_Costs method.
 
         Note that the aggregate costs will be initialized by the framework.
         """
@@ -126,10 +124,10 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
     This class is used to create IDAES Flowsheet Costing Blocks, which are
     used to define capital and operating costs for a process. Each Flowsheet
-    Costing Block is assoicated with a user-defined "costing package" module
+    Costing Block is associated with a user-defined "costing package" module
     which must contain a library of methods for costing capital equipment
-    as well as defintiions of stadnrd currency conversions and material and
-    utiltiy costs.
+    as well as definitions of standard currency conversions and material and
+    utility costs.
     """
 
     # Create Class ConfigBlock
@@ -181,12 +179,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
     def cost_flow(self, flow_expr, flow_type):
         """
         This method registers a given flow component (Var or expression) for
-        costing.
-
-        Generally speaking, all flows are assumed to be positive and have a
-        lower bound of zero. This is not required, but a warning will be logged
-        in these cases to ensure the user is aware of any flows that could be
-        negative.
+        costing. All flows are required to be bounded to be non-negative (i.e.
+        a lower bound equal to or greater than 0).
 
         Args:
             flow_expr - Pyomo Var or expression that represents a material flow
@@ -231,7 +225,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
     def cost_unit(self, unit_model, method=None, **kwargs):
         """
-        This method registers the given unit mdoel with the
+        This method registers the given unit model with the
         FlowsheetCostingBlock and constructs the associated Vars and
         Constraints. User may also provide a specific costing method to use for
         the unit, otherwise the framework will attempt to identify the correct
@@ -247,7 +241,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             unit_model - a UnitModelBlock for which costing is to be performed.
             method - (optional) specific costing method to use when costing.
                      unit_model (default = None, use costing package mapping).
-            kwargs - any addiitonal arguments to be passed to method.
+            kwargs - any additional arguments to be passed to method.
 
         Raises:
             RuntimeError if unit model already appears in Set of costed units.
@@ -376,7 +370,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
     def register_flow_type(self, flow_type, cost):
         """
-        This method allows users to register new material and utiltiy flows
+        This method allows users to register new material and utility flows
         with the FlowsheetCostingBlock for use when costing flows.
 
         Args:
@@ -407,8 +401,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             *fixed_operating_costs, and
             *variable_operating_costs
 
-        Additionally, aggreagate flow variables are created for all registered
-        flow types along with aggreagte costs assoicated with each of these.
+        Additionally, aggregate flow variables are created for all registered
+        flow types along with aggregate costs associated with each of these.
 
         Args:
             None
@@ -515,12 +509,12 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
     def del_unit_costing(self, unit_model):
         """
-        This method un-registers the provided unit model from the current
+        This method unregisters the provided unit model from the current
         FlowsheetCostingBlock and delete the associated UnitModelCostingBlock
         element.
 
         Args:
-            unit_model - unit model to be un-registered
+            unit_model - unit model to be unregistered
 
         Raises:
             RuntimeError if unit_model is not registered with this
@@ -571,7 +565,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
     # -------------------------------------------------------------------------
     def report(self):
-        # Need a clean reproting function
+        # Need a clean reporting function
         # This will need input from the costing package
         pass
 

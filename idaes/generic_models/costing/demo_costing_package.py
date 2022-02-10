@@ -127,6 +127,6 @@ class MyCosting(CostingPackageBase):
 
     # Map costing methods to unit model classes
     # Here we can provide a dict mapping unit model classes to costing methods
-    # EVen better, this is inheritance aware so e.g. Pump will first look for a
+    # Even better, this is inheritance aware so e.g. Pump will first look for a
     # method assigned to Pump, and then fall back to PressureChanger
     unit_mapping = {Heater: cost_heater}
