@@ -627,8 +627,8 @@
      id="layer1"
      transform="translate(-25.927416,-658.30181)">
     <path
-       style="visibility:visible;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.23047;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 26.327757,658.61723 v 28.125 h 28.125 v -28.125 z"
+       style="visibility:visible;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.05078;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 40.390257,686.74223 v 46.875 h 46.875001 v -46.875 z"
        id="path4292"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccc"
