@@ -19,6 +19,14 @@ class AbstractBidder(ABC):
     def write_results(self, *args, **kwargs):
         pass
 
+    @abstractmethod
+    def formulate_bidding_problem(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def record_bids(self, *args, **kwargs):
+        pass
+
     @abstractproperty
     def generator(self):
         return "AbstractGenerator"
@@ -31,11 +39,175 @@ class AbstractBidderTestBidder(AbstractBidder):
     def compute_bids(self):
         print("computing bids")
 
+    def record_bids(self):
+        print("recording bids")
+
     def write_results(self):
         print("writing results")
 
     def update_model(self):
         print("updating the model")
+
+    def formulate_bidding_problem(self):
+        print("formulating bidding problem")
+
+    @property
+    def generator(self):
+        return self._generator
+
+    @generator.setter
+    def generator(self, name):
+        self._generator = name
+
+
+class SelfScheduler(AbstractBidder):
+    def __init__(self, bidding_model_object, n_scenario, horizon, solver, forecaster):
+        self.bidding_model_object = bidding_model_object
+        self.n_scenario = n_scenario
+        self.horizon = horizon
+        self.solver = solver
+        self.forecaster = forecaster
+        self.generator = self.bidding_model_object.generator
+
+        # add flowsheets to model
+        self.model = pyo.ConcreteModel()
+
+        # declare scenario set
+        self.model.SCENARIOS = pyo.Set(initialize=range(self.n_scenario))
+
+        # populate scenario blocks
+        self.model.fs = pyo.Block(self.model.SCENARIOS)
+        for i in self.model.SCENARIOS:
+            self.bidding_model_object.populate_model(self.model.fs[i])
+
+        # save power output variable in the model object
+        self._save_power_outputs()
+
+        self.formulate_bidding_problem()
+
+        # declare a list to store results
+        self.bids_result_list = []
+
+    def _save_power_outputs(self):
+
+        """
+        Create references of the power output variable in each price scenario
+        block.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+
+        for i in self.model.SCENARIOS:
+            # get the power output
+            power_output_name = self.bidding_model_object.power_output
+            self.model.fs[i].power_output_ref = pyo.Reference(
+                getattr(self.model.fs[i], power_output_name)
+            )
+
+        return
+
+    def formulate_bidding_problem(self):
+
+        """
+        Formulate the bidding optimization problem by adding necessary
+        parameters, constraints, and objective function.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+
+        # add bidding params
+        for i in self.model.SCENARIOS:
+            time_index = self.model.fs[i].power_output_ref.index_set()
+            self.model.fs[i].energy_price = pyo.Param(
+                time_index, initialize=0, mutable=True
+            )
+
+        # nonanticipativity constraints
+        self.model.NonanticipativityConstraints = pyo.ConstraintList()
+        for i in range(self.n_scenario - 1):
+            time_index = self.model.fs[i].power_output_ref.index_set()
+            for t in time_index:
+                self.model.NonanticipativityConstraints.add(
+                    self.model.fs[i].power_output_ref[t]
+                    == self.model.fs[i + 1].power_output_ref[t]
+                )
+
+        # declare an empty objective
+        self.model.obj = pyo.Objective(expr=0, sense=pyo.maximize)
+        for k in self.model.SCENARIOS:
+            time_index = self.model.fs[k].power_output_ref.index_set()
+
+            cost_name = self.bidding_model_object.total_cost[0]
+            cost = getattr(self.model.fs[k], cost_name)
+            weight = self.bidding_model_object.total_cost[1]
+
+            for t in time_index:
+                self.model.obj.expr += (
+                    self.model.fs[k].power_output_ref[t]
+                    * self.model.fs[k].energy_price[t]
+                    - weight * cost[t]
+                )
+
+        return
+
+    def compute_bids(self, date, hour=None, **kwargs):
+
+        price_forecasts = self.forecaster.forecast(date=date, hour=hour, **kwargs)
+
+        # update the price forecasts
+        self._pass_price_forecasts(price_forecasts)
+        self.solver.solve(self.model, tee=True)
+        bids = {
+            self.generator: [
+                pyo.value(self.model.fs[0].power_output_ref[t])
+                for t in range(self.horizon)
+            ]
+        }
+        self.record_bids(bids, date=date, hour=hour)
+
+        return bids
+
+    def _pass_price_forecasts(self, price_forecasts):
+
+        """
+        Pass the price forecasts into model parameters.
+
+        Arguments:
+            price_forecasts: price forecasts needed to solve the bidding problem. {LMP scenario: [forecast timeseries] }
+
+        Returns:
+            None
+        """
+
+        for i in self.model.SCENARIOS:
+            time_index = self.model.fs[i].energy_price.index_set()
+            for t, p in zip(time_index, price_forecasts[i]):
+                self.model.fs[i].energy_price[t] = p
+
+        return
+
+    # TODO
+    def record_bids(self, bids, date, hour):
+        print(f"recording bids for {date} {hour}")
+
+    def write_results(self):
+        print("")
+        print("Saving bidding results to disk...")
+        pd.concat(self.bids_result_list).to_csv(
+            os.path.join(path, "bidding_detail.csv"), index=False
+        )
+
+    def update_model(self, **kwargs):
+        for i in self.model.SCENARIOS:
+            self.bidding_model_object.update_model(b=self.model.fs[i], **kwargs)
 
     @property
     def generator(self):
