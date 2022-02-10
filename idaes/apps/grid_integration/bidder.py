@@ -3,6 +3,47 @@ import pyomo.environ as pyo
 from pyomo.opt.base.solvers import OptSolver
 import os
 from itertools import combinations
+from abc import ABC, abstractmethod, abstractproperty
+
+
+class AbstractBidder(ABC):
+    @abstractmethod
+    def update_model(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def compute_bids(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def write_results(self, *args, **kwargs):
+        pass
+
+    @abstractproperty
+    def generator(self):
+        return "AbstractGenerator"
+
+
+class AbstractBidderTestBidder(AbstractBidder):
+    def __init__(self, generator_name):
+        self.generator = generator_name
+
+    def compute_bids(self):
+        print("computing bids")
+
+    def write_results(self):
+        print("writing results")
+
+    def update_model(self):
+        print("updating the model")
+
+    @property
+    def generator(self):
+        return self._generator
+
+    @generator.setter
+    def generator(self, name):
+        self._generator = name
 
 
 class Bidder:
@@ -383,7 +424,7 @@ class Bidder:
                 pre_power = power
                 pre_cost += marginal_cost * delta_p
 
-        #check if bids are convex
+        # check if bids are convex
         for t in bids:
             for gen in bids[t]:
                 if not self._is_convex_bid(bids[t][gen]):
@@ -393,7 +434,7 @@ class Bidder:
 
         return bids
 
-    #note: need to check form of input. it will return true with bad inputs
+    # note: need to check form of input. it will return true with bad inputs
     @staticmethod
     def _is_convex_bid(bids):
 
@@ -429,7 +470,7 @@ class Bidder:
         # Jordan note: this needs to use a tolerance.
         idx = 0
         while idx < len(marginal_cost) - 1:
-            if round(marginal_cost[idx],8) > round(marginal_cost[idx + 1],8):
+            if round(marginal_cost[idx], 8) > round(marginal_cost[idx + 1], 8):
                 return False
             idx += 1
 
@@ -504,3 +545,14 @@ class Bidder:
         pd.concat(self.bids_result_list).to_csv(
             os.path.join(path, "bidding_detail.csv"), index=False
         )
+
+
+if __name__ == "__main__":
+
+    abstract_bidder_test_bidder = AbstractBidderTestBidder(
+        generator_name="awesome_generator"
+    )
+    abstract_bidder_test_bidder.compute_bids()
+    abstract_bidder_test_bidder.write_results()
+    abstract_bidder_test_bidder.update_model()
+    print(abstract_bidder_test_bidder.generator)
