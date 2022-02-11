@@ -21,10 +21,27 @@ from pyomo.network import Port, Arc
 from pyomo.common.config import ConfigBlock
 from pyomo.core.base.units_container import UnitsError
 
-from idaes.core.util.misc import (add_object_reference, copy_port_values,
-                                  TagReference, VarLikeExpression,
-                                  set_param_from_config)
+from idaes.core.util.misc import (add_object_reference,
+                                  copy_port_values,
+                                  TagReference,
+                                  VarLikeExpression,
+                                  set_param_from_config,
+                                  register_units_of_measurement)
 import idaes.logger as idaeslog
+
+
+# Author: Andrew Lee
+@pytest.mark.unit
+def test_register_units_of_measurement():
+    register_units_of_measurement("USD2010 = [currency]")
+
+    assert "USD2010" in units.pint_registry
+
+    register_units_of_measurement(["USD2020 = 0.5 * USD2010",
+                                   "USD2015 = 0.75 * USD2010"])
+
+    assert "USD2015" in units.pint_registry
+    assert "USD2020" in units.pint_registry
 
 
 # Author: Andrew Lee

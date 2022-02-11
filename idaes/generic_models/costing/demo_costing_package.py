@@ -17,9 +17,9 @@ import pyomo.environ as pyo
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.generic_models.unit_models import Heater
+from idaes.core.util.misc import register_units_of_measurement
 
-from idaes.costing.costing_base import \
-    register_currency_unit, CostingPackageBase
+from idaes.costing.costing_base import CostingPackageBase
 
 
 class MyCosting(CostingPackageBase):
@@ -28,7 +28,7 @@ class MyCosting(CostingPackageBase):
         "USD2010 = [currency]",
         "USD2020 = 0.5 * USD2010"]  # Massive inflation
     # Need to register these units before we continue
-    register_currency_unit(currency_units)
+    register_units_of_measurement(currency_units)
 
     # Set the base year for all costs
     base_currency = pyo.units.USD2020

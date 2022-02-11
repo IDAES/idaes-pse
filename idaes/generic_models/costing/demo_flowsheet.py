@@ -28,7 +28,7 @@ from idaes.generic_models.unit_models import Mixer, Heater, Flash
 import idaes.logger as idaeslog
 
 from idaes.costing.costing_base import \
-    FlowsheetCostingBlock, register_currency_unit
+    FlowsheetCostingBlock, register_unit
 
 from demo_costing_package import MyCosting
 
@@ -101,7 +101,7 @@ def build_flowsheet():
     m.fs.costing.cost_flow(m.fs.H02.heat_duty[0], "steam")
 
     # We can also register new units and flows
-    register_currency_unit(["USD2015 = 0.75 * USD2010"])
+    register_unit(["USD2015 = 0.75 * USD2010"])
     m.fs.costing.register_flow_type(
         "benzene_feed", 5*pyo.units.USD2015/pyo.units.mol)
 

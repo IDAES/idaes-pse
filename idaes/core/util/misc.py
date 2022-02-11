@@ -32,6 +32,28 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Author: Andrew Lee
+def register_units_of_measurement(unit_def):
+    """
+    Method for registering new units of measurement with pint for use in
+    models. Units are defined using pint's API, e.g.:
+
+        'dog_year = 52 * day = dy'
+        'USD2010 = [currency]'
+
+    Args:
+        unit_def - a string or list of strings defining new units.
+    """
+    # TODO : Can we check for re-defining existing units?
+    if isinstance(unit_def, str):
+        udef = [unit_def]
+    else:
+        udef = unit_def
+
+    for u in udef:
+        pyo.units.pint_registry.define(u)
+
+
+# Author: Andrew Lee
 def get_solver(solver=None, options=None):
     """
     General method for getting a solver object which defaults to the standard
