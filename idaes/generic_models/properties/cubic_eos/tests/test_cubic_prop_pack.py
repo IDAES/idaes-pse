@@ -289,10 +289,8 @@ class TestStateBlock_LV_PR(object):
         assert isinstance(model.fs.props[1].fw, Param)
         assert isinstance(model.fs.props[1].b, Param)
 
-        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].compress_fact_liq_func, ExternalFunction)
+        assert isinstance(model.fs.props[1].compress_fact_vap_func, ExternalFunction)
 
 
 class TestStateBlock_L_PR(object):
@@ -399,10 +397,7 @@ class TestStateBlock_L_PR(object):
         assert isinstance(model.fs.props[1].fw, Param)
         assert isinstance(model.fs.props[1].b, Param)
 
-        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].compress_fact_liq_func, ExternalFunction)
 
 
 class TestStateBlock_V_PR(object):
@@ -509,10 +504,7 @@ class TestStateBlock_V_PR(object):
         assert isinstance(model.fs.props[1].fw, Param)
         assert isinstance(model.fs.props[1].b, Param)
 
-        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].compress_fact_vap_func, ExternalFunction)
 
 
 class TestStateBlock_LV_SRK(object):
@@ -676,10 +668,8 @@ class TestStateBlock_LV_SRK(object):
         assert isinstance(model.fs.props[1].fw, Param)
         assert isinstance(model.fs.props[1].b, Param)
 
-        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].compress_fact_liq_func, ExternalFunction)
+        assert isinstance(model.fs.props[1].compress_fact_vap_func, ExternalFunction)
 
 
 class TestStateBlock_L_SRK(object):
@@ -786,10 +776,7 @@ class TestStateBlock_L_SRK(object):
         assert isinstance(model.fs.props[1].fw, Param)
         assert isinstance(model.fs.props[1].b, Param)
 
-        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].compress_fact_liq_func, ExternalFunction)
 
 
 class TestStateBlock_V_SRK(object):
@@ -896,7 +883,4 @@ class TestStateBlock_V_SRK(object):
         assert isinstance(model.fs.props[1].fw, Param)
         assert isinstance(model.fs.props[1].b, Param)
 
-        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
-        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].compress_fact_vap_func, ExternalFunction)
