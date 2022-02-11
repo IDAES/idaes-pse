@@ -9,7 +9,7 @@ class DoubleLoopCoordinator:
     Coordinate Prescient, tracker and bidder.
     """
 
-    def __init__(self, bidder, tracker, projection_tracker):
+    def __init__(self, bidder, tracker, projection_tracker, self_schedule=False):
 
         """
         Initializes the DoubleLoopCoordinator object and registers functionalities
@@ -31,6 +31,7 @@ class DoubleLoopCoordinator:
         self.bidder = bidder
         self.tracker = tracker
         self.projection_tracker = projection_tracker
+        self.self_schedule = self_schedule
 
     def register_plugins(
         self,
@@ -287,6 +288,14 @@ class DoubleLoopCoordinator:
         }
         return
 
+    def _pass_DA_schedule_to_prescient(self, options, ruc_instance, schedule):
+
+        gen_name = self.bidder.generator
+        gen_dict = ruc_instance.data["elements"]["generator"][gen_name]
+        gen_dict["p_max"]["values"][0 : len(schedule[gen_name])] = schedule[gen_name]
+
+        return
+
     def assemble_project_tracking_signal(self, options, simulator, hour):
 
         """
@@ -436,7 +445,10 @@ class DoubleLoopCoordinator:
             self.next_bids = bids
 
         # pass to prescient
-        self._pass_DA_bid_to_prescient(options, ruc_instance, bids)
+        if self.self_schedule:
+            self._pass_DA_schedule_to_prescient(options, ruc_instance, bids)
+        else:
+            self._pass_DA_bid_to_prescient(options, ruc_instance, bids)
 
         return
 
@@ -472,6 +484,18 @@ class DoubleLoopCoordinator:
         }
         return
 
+    def _pass_RT_schedule_to_prescient(
+        self, options, simulator, sced_instance, schedule, hour
+    ):
+
+        gen_name = self.bidder.generator
+        gen_dict = sced_instance.data["elements"]["generator"][gen_name]
+        gen_dict["p_max"]["values"] = schedule[gen_name][
+            hour : hour + options.sced_horizon
+        ]
+
+        return
+
     def bid_into_RTM(self, options, simulator, sced_instance):
 
         """
@@ -494,7 +518,14 @@ class DoubleLoopCoordinator:
         bids = self.current_bids
 
         # pass bids into sced model
-        self._pass_RT_bid_to_prescient(options, simulator, sced_instance, bids, hour)
+        if self.self_schedule:
+            self._pass_RT_schedule_to_prescient(
+                options, simulator, sced_instance, bids, hour
+            )
+        else:
+            self._pass_RT_bid_to_prescient(
+                options, simulator, sced_instance, bids, hour
+            )
 
         return
 
