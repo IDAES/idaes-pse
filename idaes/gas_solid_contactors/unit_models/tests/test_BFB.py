@@ -19,9 +19,8 @@ Author: Chinedu Okoli
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            value,
                            Var,
                            Constraint)
@@ -142,7 +141,7 @@ class TestIronOC(object):
         # Fix inlet port variables for gas and solid
         m.fs.unit.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
         m.fs.unit.gas_inlet.temperature[0].fix(373)  # K
-        m.fs.unit.gas_inlet.pressure[0].fix(1.86)  # bar
+        m.fs.unit.gas_inlet.pressure[0].fix(1.86E5)  # Pa = 1E5 bar
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.4772)
         m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
@@ -227,7 +226,7 @@ class TestIronOC(object):
                 optarg={'tol': 1e-6},
                 gas_phase_state_args={"flow_mol": 272.81,
                                       "temperature": 1186,
-                                      "pressure": 1.86},
+                                      "pressure": 1.86E5},
                 solid_phase_state_args={"flow_mass": 1230,
                                         "temperature": 1186})
 
@@ -238,9 +237,7 @@ class TestIronOC(object):
         results = solver.solve(iron_oc)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -262,7 +259,7 @@ class TestIronOC(object):
                 iron_oc.fs.unit.delta[0, 0].value)
         assert (pytest.approx(0.307, abs=1e-2) ==
                 iron_oc.fs.unit.delta[0, 1].value)
-        assert (pytest.approx(1.24, abs=1e-2) ==
+        assert (pytest.approx(124169.5118, abs=1e-2) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
         # Check that pressure drop occurs across the bed
         assert value(
@@ -365,7 +362,7 @@ class TestIronOC_EnergyBalanceType(object):
         # # Fix inlet port variables for gas and solid
         m.fs.unit.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
         m.fs.unit.gas_inlet.temperature[0].fix(1186)  # K
-        m.fs.unit.gas_inlet.pressure[0].fix(1.86)  # bar
+        m.fs.unit.gas_inlet.pressure[0].fix(1.86E5)  # Pa = 1E5 bar
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.4772)
         m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
@@ -435,7 +432,7 @@ class TestIronOC_EnergyBalanceType(object):
                 optarg={'tol': 1e-6},
                 gas_phase_state_args={"flow_mol": 272.81,
                                       "temperature": 1186,
-                                      "pressure": 1.86},
+                                      "pressure": 1.86E5},
                 solid_phase_state_args={"flow_mass": 1422,
                                         "temperature": 1186})
 
@@ -446,9 +443,7 @@ class TestIronOC_EnergyBalanceType(object):
         results = solver.solve(iron_oc)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

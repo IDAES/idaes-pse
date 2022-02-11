@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 # Import Pyomo libraries
 from pyomo.environ import (Var, Param, Reals, value,
                            TransformationFactory, Constraint,
-                           TerminationCondition)
+                           check_optimal_termination)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae import ContinuousSet
@@ -549,9 +549,9 @@ see reaction package for documentation.}"""))
                                doc='Particle Nusselt number [-]')
         self.gas_solid_htc = Var(self.flowsheet().time,
                                  self.length_domain,
-                                 domain=Reals, initialize=1.0,
+                                 domain=Reals, initialize=1.0E3,
                                  doc='Gas-solid heat transfer coefficient'
-                                 '[kJ/(m2Ks)]')
+                                 '[J/(m2Ks)]')
 
         # Fixed variables (these are parameters that can be estimated)
         self.bed_voidage = Var(domain=Reals,
@@ -620,7 +620,7 @@ see reaction package for documentation.}"""))
                              doc="Gas side pressure drop calculation -"
                                  "simplified pressure drop")
             def gas_phase_config_pressure_drop(b, t, x):
-                return b.gas_phase.deltaP[t, x]*1e5 == -0.2*(
+                return b.gas_phase.deltaP[t, x] == -0.2*(
                         b.velocity_superficial_gas[t, x] *
                         (b.solid_phase.properties[t, x].dens_mass_particle -
                          b.gas_phase.properties[t, x].dens_mass))
@@ -632,7 +632,7 @@ see reaction package for documentation.}"""))
                              doc="Gas side pressure drop calculation -"
                                  "ergun equation")
             def gas_phase_config_pressure_drop(b, t, x):
-                return (1e2*-b.gas_phase.deltaP[t, x]*1e5 ==
+                return (1e2*-b.gas_phase.deltaP[t, x] ==
                         1e2*(
                         150*(1 - b.bed_voidage) ** 2 *
                         b.gas_phase.properties[t, x].visc_d *
@@ -884,8 +884,7 @@ see reaction package for documentation.}"""))
         init_log.info('Initialize Hydrodynamics')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 2 {}.".format(
                         idaeslog.condition(results))
@@ -942,8 +941,7 @@ see reaction package for documentation.}"""))
                            'and no pressure drop')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 3a {}.".format(
                         idaeslog.condition(results))
@@ -1052,8 +1050,7 @@ see reaction package for documentation.}"""))
                                'and no pressure drop')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 3b {}.".format(
                             idaeslog.condition(results))
@@ -1088,8 +1085,7 @@ see reaction package for documentation.}"""))
                                'and pressure drop')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 3c {}.".format(
                             idaeslog.condition(results))
@@ -1152,8 +1148,7 @@ see reaction package for documentation.}"""))
             init_log.info('Initialize Energy Balances')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 4 {}.".format(
                             idaeslog.condition(results))
@@ -1182,8 +1177,7 @@ see reaction package for documentation.}"""))
             init_log.info('Initialize Energy Balances')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 4 {}.".format(
                             idaeslog.condition(results))
@@ -1243,7 +1237,7 @@ see reaction package for documentation.}"""))
         plt.legend(loc=0, ncol=2)
         plt.grid()
         plt.xlabel("Bed height [-]")
-        plt.ylabel("Total Pressure [bar]")
+        plt.ylabel("Total Pressure [Pa]")
         fig_P.savefig('Pressure.png')
 
         # Temperature profile

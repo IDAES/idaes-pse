@@ -257,7 +257,7 @@ def test_visualize_save_overwrite(flash_model, save_files_prefix):
     )
     howdy_stat2 = os.stat(result.store.filename)
     assert (
-        howdy_stat2.st_mtime > howdy_stat.st_mtime
+        howdy_stat2.st_mtime >= howdy_stat.st_mtime
     )  # modification time should be later
 
 
@@ -267,16 +267,23 @@ def test_visualize_save_loadfromsaved(flash_model, save_files_prefix):
     name = "flash_tvslfs"
     save_dir = Path(save_files_prefix).parent
     # save initial
-    result = fsvis.visualize(flowsheet, name, save_dir=save_dir)
+    result = fsvis.visualize(
+        flowsheet, name, save_dir=save_dir, browser=False
+    )
     path_base = save_dir / (name + ".json")
     assert path_base.exists()
     # this time, should use loaded one
     # there should still be only one file
-    result = fsvis.visualize(flowsheet, name, save_dir=save_dir)
+    result = fsvis.visualize(
+        flowsheet, name, save_dir=save_dir, browser=False
+    )
     path_v1 = save_dir / (name + "-1.json")
     assert not path_v1.exists()
     # same behavior with explicit flag
-    result = fsvis.visualize(flowsheet, name, save_dir=save_dir, load_from_saved=True)
+    result = fsvis.visualize(
+        flowsheet, name, save_dir=save_dir, browser=False,
+        load_from_saved=True
+    )
     assert not path_v1.exists()
 
 

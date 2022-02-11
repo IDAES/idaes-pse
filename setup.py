@@ -68,7 +68,7 @@ kwargs = dict(
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
         "bunch",
-        "click<=7.1.2",  # problems with 8.x
+        "click",
         "colorama",
         "flask",  # for ui/fsvis
         "flask-cors",
@@ -110,6 +110,11 @@ kwargs = dict(
     # Only installed if [<key>] is added to package name
     extras_require={
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
+        "optional": [
+            "tensorflow",  # idaes.surrogate.keras_surrogate
+            # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
+            "coolprop; python_version < '3.9'"  # idaes.generic_models.properties.general.coolprop
+        ]
     },
     package_data={
         # If any package contains these files, include them:

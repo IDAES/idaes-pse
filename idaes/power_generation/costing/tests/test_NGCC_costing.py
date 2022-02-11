@@ -109,9 +109,7 @@ def test_units1_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
 
      # Accounts with raw water withdrawal as reference parameter
     assert pytest.approx(26.435, abs=0.5) \
@@ -187,9 +185,7 @@ def test_units2_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
     # Accounts with HRSG duty as reference parameter
     assert pytest.approx(90.794, abs=0.1) \
         == sum(pyo.value(m.fs.b7.costing.total_plant_cost[ac])
@@ -309,9 +305,7 @@ def test_units3_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
 
     # Accounts with condenser duty as reference parameter
     assert pytest.approx(14.27, abs=0.1) \
@@ -337,9 +331,7 @@ def test_flowsheet_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
+    assert pyo.check_optimal_termination(results)
 
     # Verify total plant costs
     assert pytest.approx(574.85, abs=0.1) == pyo.value(m.fs.flowsheet_cost)

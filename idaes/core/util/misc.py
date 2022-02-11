@@ -152,6 +152,15 @@ def set_param_from_config(b, param, config=None, index=None):
     converting units if required. This method directly sets the value of the
     parameter.
 
+    This method supports three forms for defining the parameter value:
+
+    1. a 2-tuple of the form (value, units) where units are the units that
+    the value are defined in
+    2. a float where the float is assumed to be the value of the parameter
+    value in the base units of the property package
+    3. a Python Class which has a get_parameter_value method which will
+    return a 2-tuple of (value, units) based on a lookup of the parameter name
+
     Args:
         b - block on which parameter and config block are defined
         param - name of parameter as str. Used to find param and config arg
@@ -216,6 +225,11 @@ def set_param_from_config(b, param, config=None, index=None):
                 .format(b.name, param, index))
 
     units = param_obj.get_units()
+
+    # Check to see if p_data is callable, and if so, try to call the
+    # get_parameter_value method to get 2-tuple
+    if hasattr(p_data, 'get_parameter_value'):
+        p_data = p_data.get_parameter_value(b.local_name, param)
 
     if isinstance(p_data, tuple):
         # 11 Dec 2020 - There is currently a bug in Pyomo where trying to

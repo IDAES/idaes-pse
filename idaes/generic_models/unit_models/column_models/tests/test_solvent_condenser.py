@@ -16,11 +16,10 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Constraint,
                            Param,
-                           TerminationCondition,
-                           SolverStatus,
                            units,
                            value)
 from pyomo.util.check_units import (assert_units_consistent,
@@ -42,6 +41,7 @@ from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_sol
     import configuration as aqueous_mea
 from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_vapor \
     import wet_co2
+from idaes.core.util.exceptions import InitializationError
 
 
 # -----------------------------------------------------------------------------
@@ -70,13 +70,29 @@ class TestStripperVaporFlow(object):
         m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(0.1183)
 
         m.fs.unit.reflux.flow_mol[0].fix(0.1083)
-        
+
+        iscale.set_scaling_factor(
+            m.fs.unit.vapor_phase.mass_transfer_term[0, "Vap", "CO2"], 1e4)
+        iscale.set_scaling_factor(
+            m.fs.unit.vapor_phase.mass_transfer_term[0, "Vap", "H2O"], 10)
+
+        iscale.set_scaling_factor(
+            m.fs.unit.vapor_phase.properties_out[0].pressure, 1e-5)
         iscale.set_scaling_factor(
             m.fs.unit.vapor_phase.properties_out[0].fug_phase_comp[
                 "Vap", "CO2"], 1e-5)
         iscale.set_scaling_factor(
             m.fs.unit.vapor_phase.properties_out[0].fug_phase_comp[
                 "Vap", "H2O"], 1e-3)
+        iscale.set_scaling_factor(
+            m.fs.unit.vapor_phase.properties_out[0].temperature, 1e-2)
+        iscale.set_scaling_factor(
+            m.fs.unit.vapor_phase.properties_out[0].enth_mol_phase["Vap"],
+            1e-3)
+
+        iscale.set_scaling_factor(
+            m.fs.unit.vapor_phase.enthalpy_transfer[0],
+            1e-3)
 
         iscale.calculate_scaling_factors(m.fs.unit)
 
@@ -132,16 +148,14 @@ class TestStripperVaporFlow(object):
     def test_initialize(self, model):
         initialization_tester(model)
 
-    # @pytest.mark.solver
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -290,9 +304,7 @@ class TestStripperHeatDuty(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -390,3 +402,10 @@ class TestStripperHeatDuty(object):
 
         assert iscale.get_constraint_transform_applied_scaling_factor(
             model.fs.unit.unit_pressure_balance[0]) == 1e-5
+
+    @pytest.mark.component
+    def test_initialization_error_dof(self, model):
+        model.fs.unit.reflux.flow_mol[0].fix(100)
+
+        with pytest.raises(InitializationError):
+            model.fs.unit.initialize()

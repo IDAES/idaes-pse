@@ -20,6 +20,7 @@ Assumptions:
 
 # Import Pyomo libraries
 from pyomo.environ import (Block,
+                           check_optimal_termination,
                            Constraint,
                            Expression,
                            Param,
@@ -41,6 +42,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.math import smooth_min, smooth_max
 from idaes.core.util import get_solver
+from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.unit_costing as costing
 import idaes.logger as idaeslog
 
@@ -421,6 +423,11 @@ constructed,
         if hasattr(self, "costing"):
             self.costing.activate()
             costing.initialize(self.costing)
+
+        if not check_optimal_termination(res):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
