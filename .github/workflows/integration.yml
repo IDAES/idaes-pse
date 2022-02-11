@@ -116,12 +116,7 @@ jobs:
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
     runs-on: ${{ matrix.os }}
     needs: [precheck]
-    if: >-
-      (
-        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
-        || needs.precheck.outputs.workflow-trigger == 'not_pr'
-        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
-      )
+    if: "false"
     strategy:
       fail-fast: false
       matrix:
@@ -151,12 +146,7 @@ jobs:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     needs: [precheck]
-    if: >-
-      (
-        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
-        || needs.precheck.outputs.workflow-trigger == 'not_pr'
-        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
-      )
+    if: "true"
     strategy:
       fail-fast: false
       matrix:
@@ -196,12 +186,7 @@ jobs:
     # NOTE: using ubuntu-latest (20.04) instead of 18.04 results in failures in power_generation/carbon_capture/mea_solvent_system/unit_models/tests/test_column.py
     runs-on: ubuntu-18.04
     needs: [precheck]
-    if: >-
-      (
-        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
-        || needs.precheck.outputs.workflow-trigger == 'not_pr'
-        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
-      )
+    if: "false"
     steps:
       - uses: actions/checkout@v2
       - name: Set up Conda environment
