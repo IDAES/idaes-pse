@@ -29,9 +29,10 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util import get_solver
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock, StateIndex)
-from idaes.generic_models.properties.core.pure.RPP4 import cp_mol_ig_comp
+from idaes.generic_models.properties.core.pure.RPP4 import (cp_mol_ig_comp,
+                                                            enth_mol_ig_comp)
 from idaes.generic_models.properties.core.eos.virial import (
-    Virial, entr_mol_ig_comp_G_H_ref, enth_mol_ig_comp)
+    Virial, entr_mol_ig_comp_G_H_ref)
 from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_solvent import PressureSatSolvent
 
 

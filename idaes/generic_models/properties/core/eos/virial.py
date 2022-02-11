@@ -13,12 +13,16 @@
 """
 Methods for virial equations of state (veos) for gases
 
-Currently supports B-truncated volume explicit virial equation of state with validity at low to moderate pressures where the compresiibility factor is approximately a linear function of  pressure. It is most accurate for non-polar species.
+Currently supports B-truncated volume explicit virial equation of state with
+validity at low to moderate pressures where the compresiibility factor is
+approximately a linear function of  pressure. It is most accurate for
+ non-polar species.
 
-Refernces**
+Refernces
 [1] J. M Prausnitz, R, N Lichtenthaler, and E. G de Azvedo,
-    Molecular thermodynamics of Fluid-phase Equilibruim 3rd ed. Prentice-Hall, Nj, 1998
-**Any standard chemical engineering thermodynamic textbook
+    Molecular thermodynamics of Fluid-phase Equilibruim 3rd ed.
+    Prentice-Hall, Nj, 1998
+[2] Any standard chemical engineering thermodynamic textbook
 
 Author: Akula Paul
 
@@ -26,9 +30,12 @@ Author: Akula Paul
 
 from copy import deepcopy
 from pyomo.environ import (Expression,
-                           log, exp,
-                           value, NonNegativeReals,
-                           Var, units as pyunits)
+                           log,
+                           exp,
+                           value,
+                           NonNegativeReals,
+                           Var,
+                           units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 
 from idaes.core.util.exceptions import PropertyNotSupportedError
@@ -36,7 +43,8 @@ from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as gcobj)
 from idaes.generic_models.properties.core.eos.eos_base import EoSBase
 from idaes.core.util.misc import set_param_from_config
-from idaes.generic_models.properties.core.pure.RPP4 import entr_mol_ig_comp
+from idaes.generic_models.properties.core.pure.RPP4 import (entr_mol_ig_comp,
+                                                            cp_mol_ig_comp)
 
 
 VirialConfig = ConfigBlock()
@@ -55,41 +63,6 @@ VirialConfig.declare("use_pseudocritical_rules", ConfigValue(
 critical properties of pure components.
 **False** - use mixing rule based on composition and corresponding
 pure component properties.}'''))
-
-
-class enth_mol_ig_comp():
-    # This fixes the bug in RPP4.Since its just a specific method,recreating it
-    # here
-    @staticmethod
-    def build_parameters(cobj):
-        if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
-            cp_mol_ig_comp.build_parameters(cobj)
-
-        units = cobj.parent_block().get_metadata().derived_units
-        cobj.enth_mol_form_vap_comp_ref = Var(
-            doc="Vapor phase molar heat of formation @ Tref",
-            units=units["energy_mole"])
-        if cobj.parent_block().config.include_enthalpy_of_formation:
-            set_param_from_config(cobj, param="enth_mol_form_vap_comp_ref")
-        else:
-            cobj.enth_mol_form_vap_comp_ref.set_value(0.0)
-
-    @staticmethod
-    def return_expression(b, cobj, T):
-        # Specific enthalpy
-        T = pyunits.convert(T, to_units=pyunits.K)
-        Tref = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
-
-        units = b.params.get_metadata().derived_units
-
-        h = (pyunits.convert(
-            (cobj.cp_mol_ig_comp_coeff_D / 4) * (T**4 - Tref**4) +
-            (cobj.cp_mol_ig_comp_coeff_C / 3) * (T**3 - Tref**3) +
-            (cobj.cp_mol_ig_comp_coeff_B / 2) * (T**2 - Tref**2) +
-            cobj.cp_mol_ig_comp_coeff_A * (T - Tref), units["energy_mole"]) +
-            cobj.enth_mol_form_vap_comp_ref)
-
-        return h
 
 
 class entr_mol_ig_comp_G_H_ref(entr_mol_ig_comp):
@@ -114,21 +87,27 @@ class Virial(EoSBase):
 
         # Add expressions for pseudocritical parameters
         def func_p_omega(m):
-            return rule_pseudocritical_omega(m)
+            return sum(m.mole_frac_phase_comp['Vap', i] *
+                       m.params.get_component(i).omega
+                       for i in m.components_in_phase('Vap'))
 
         b.add_component('pseudo_omega',
                         Expression(rule=func_p_omega,
                                    doc='Pseudocritical omega for gas mixture'))
 
         def func_p_Tc(m):
-            return rule_pseudocritical_temperature(m)
+            return sum(m.mole_frac_phase_comp['Vap', i] *
+                       m.params.get_component(i).temperature_crit
+                       for i in m.components_in_phase('Vap'))
 
         b.add_component('pseudo_Tc',
                         Expression(rule=func_p_Tc,
                                    doc='Pseudocritical temperature for gas mixture'))
 
         def func_p_Pc(m):
-            return rule_pseudocritical_pressure(m)
+            return sum(m.mole_frac_phase_comp['Vap', i] *
+                       m.params.get_component(i).pressure_crit
+                       for i in m.components_in_phase('Vap'))
 
         b.add_component('pseudo_Pc',
                         Expression(rule=func_p_Pc,
@@ -213,7 +192,7 @@ class Virial(EoSBase):
         param_block = b.parent_block()
         # virial eos supports only vapor phase
         if not b.is_vapor_phase():
-            raise PropertyNotSupportedError(f"{b.parent_block().name} "
+            raise PropertyNotSupportedError(f"{b.name} "
                                             "received unrecognized phase name"
                                             f"{b}. Virial equation of"
                                             "state supports only Vap phase.")
@@ -252,23 +231,17 @@ class Virial(EoSBase):
 
         try:
             kappa_data = param_block.config.parameter_data["kappa"]
-            param_block.add_component(
-                'kappa',
-                Var(param_block.component_list,
-                    param_block.component_list,
-                    within=NonNegativeReals,
-                    initialize=kappa_data,
-                    doc='Binary interaction parameters',
-                    units=pyunits.dimensionless))
         except KeyError:
-            param_block.add_component(
-                'kappa',
-                Var(param_block.component_list,
-                    param_block.component_list,
-                    within=NonNegativeReals,
-                    initialize=0.0,
-                    doc='Binary interaction parameters',
-                    units=pyunits.dimensionless))
+            kappa_data = 0
+
+        param_block.add_component(
+            'kappa',
+            Var(param_block.component_list,
+                param_block.component_list,
+                within=NonNegativeReals,
+                initialize=kappa_data,
+                doc='Binary interaction parameters',
+                units=pyunits.dimensionless))
 
         # Since standard property changes of formation are readily available for
         # Enthalpy(H_ref) and Gibbs free energy (G_ref),
@@ -739,26 +712,6 @@ def rule_second_virial_coeff(m, phase):
                    m.B_ij[i, j]
                    for i in m.components_in_phase(phase))
                for j in m.components_in_phase(phase))
-
-# Pseudocritical rules
-
-
-def rule_pseudocritical_omega(m):
-    return sum(m.mole_frac_phase_comp['Vap', i] *
-               m.params.get_component(i).omega
-               for i in m.components_in_phase('Vap'))
-
-
-def rule_pseudocritical_temperature(m):
-    return sum(m.mole_frac_phase_comp['Vap', i] *
-               m.params.get_component(i).temperature_crit
-               for i in m.components_in_phase('Vap'))
-
-
-def rule_pseudocritical_pressure(m):
-    return sum(m.mole_frac_phase_comp['Vap', i] *
-               m.params.get_component(i).pressure_crit
-               for i in m.components_in_phase('Vap'))
 
 # -----------------------------------------------------------------------------
 # Rules for Abbortt equations and their derivatives
