@@ -1,183 +1,7 @@
 {
-    "model": {
-        "stream_table": {
-            "index": [],
-            "columns": [
-                "",
-                "Variable"
-            ],
-            "data": []
-        },
-        "id": "demo",
-        "unit_models": {
-            "flash": {
-                "type": "flash",
-                "image": "/images/icons/flash.svg",
-                "performance_contents": {
-                    "0": {
-                        "Variable": "Heat Duty",
-                        "Value": 0
-                    },
-                    "1": {
-                        "Variable": "Pressure Change",
-                        "Value": 0
-                    }
-                },
-                "stream_contents": {
-                    "0": {
-                        "Variable": "flow_mol",
-                        "Inlet": "-Inf",
-                        "Vapor Outlet": 0.5,
-                        "Liquid Outlet": 0.5
-                    },
-                    "1": {
-                        "Variable": "mole_frac_comp benzene",
-                        "Inlet": 0.5,
-                        "Vapor Outlet": 0.5,
-                        "Liquid Outlet": 0.5
-                    },
-                    "2": {
-                        "Variable": "mole_frac_comp toluene",
-                        "Inlet": 0.5,
-                        "Vapor Outlet": 0.5,
-                        "Liquid Outlet": 0.5
-                    },
-                    "3": {
-                        "Variable": "temperature",
-                        "Inlet": "Inf",
-                        "Vapor Outlet": 298.15,
-                        "Liquid Outlet": 298.15
-                    },
-                    "4": {
-                        "Variable": "pressure",
-                        "Inlet": "NaN",
-                        "Vapor Outlet": 101325.0,
-                        "Liquid Outlet": 101325.0
-                    }
-                }
-            },
-            "inlet_1": {
-                "type": "feed",
-                "image": "/images/icons/feed.svg"
-            },
-            "liq_outlet_1": {
-                "type": "product",
-                "image": "/images/icons/product.svg"
-            },
-            "vap_outlet_1": {
-                "type": "product",
-                "image": "/images/icons/product.svg"
-            }
-        },
-        "arcs": {
-            "s_inlet_1": {
-                "source": "inlet_1",
-                "dest": "flash",
-                "label": "feed info"
-            },
-            "s_liq_outlet_1": {
-                "source": "flash",
-                "dest": "liq_outlet_1",
-                "label": "product info"
-            },
-            "s_vap_outlet_1": {
-                "source": "flash",
-                "dest": "vap_outlet_1",
-                "label": "product info"
-            }
-        }
-    },
-    "routing_config": {
-        "s_inlet_1": {
-            "cell_index": 2,
-            "cell_config": {
-                "gap": {
-                    "source": {
-                        "x": 30,
-                        "y": 0
-                    },
-                    "destination": {
-                        "x": -30,
-                        "y": 0
-                    }
-                }
-            }
-        },
-        "s_liq_outlet_1": {
-            "cell_index": 4,
-            "cell_config": {
-                "gap": {
-                    "source": {
-                        "x": 30,
-                        "y": 0
-                    },
-                    "destination": {
-                        "x": -30,
-                        "y": 0
-                    }
-                }
-            }
-        },
-        "s_vap_outlet_1": {
-            "cell_index": 6,
-            "cell_config": {
-                "gap": {
-                    "source": {
-                        "x": 30,
-                        "y": 0
-                    },
-                    "destination": {
-                        "x": -30,
-                        "y": 0
-                    }
-                }
-            }
-        }
-    },
     "cells": [
         {
-            "type": "standard.Image",
-            "position": {
-                "x": 10,
-                "y": 10
-            },
-            "size": {
-                "width": 50,
-                "height": 50
-            },
             "angle": 0,
-            "id": "inlet_1",
-            "z": 1,
-            "ports": {
-                "groups": {
-                    "out": {
-                        "position": {
-                            "name": "left",
-                            "args": {
-                                "x": 48,
-                                "y": 25,
-                                "dx": 1,
-                                "dy": 1
-                            }
-                        },
-                        "attrs": {
-                            "rect": {
-                                "stroke": "#000000",
-                                "stroke-width": 0,
-                                "width": 0,
-                                "height": 0
-                            }
-                        },
-                        "markup": "<g><rect/></g>"
-                    }
-                },
-                "items": [
-                    {
-                        "group": "out",
-                        "id": 0
-                    }
-                ]
-            },
             "attrs": {
                 "image": {
                     "xlinkHref": "/images/icons/feed.svg"
@@ -188,98 +12,140 @@
                 "root": {
                     "title": "feed"
                 }
-            }
-        },
-        {
-            "type": "standard.Image",
+            },
+            "id": "inlet_1",
+            "ports": {
+                "groups": {
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "out",
+                        "id": 0
+                    }
+                ]
+            },
             "position": {
-                "x": 110,
-                "y": 110
+                "x": 10,
+                "y": 10
             },
             "size": {
-                "width": 50,
-                "height": 50
+                "height": 50,
+                "width": 50
             },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
             "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/flash.svg"
+                },
+                "label": {
+                    "text": "flash"
+                },
+                "root": {
+                    "title": "flash"
+                }
+            },
             "id": "flash",
-            "z": 1,
             "ports": {
                 "groups": {
                     "bottom": {
-                        "position": {
-                            "name": "bottom",
-                            "args": {
-                                "x": 25,
-                                "y": 50,
-                                "dx": 1,
-                                "dy": 1
-                            }
-                        },
                         "attrs": {
                             "rect": {
+                                "height": 0,
                                 "stroke": "#000000",
                                 "stroke-width": 0,
-                                "width": 0,
-                                "height": 0
+                                "width": 0
                             }
                         },
-                        "markup": "<g><rect/></g>"
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 25,
+                                "y": 50
+                            },
+                            "name": "bottom"
+                        }
                     },
                     "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
                         "position": {
-                            "name": "left",
                             "args": {
                                 "dx": 8,
                                 "dy": 0
-                            }
-                        },
-                        "attrs": {
-                            "rect": {
-                                "stroke": "#000000",
-                                "stroke-width": 0,
-                                "width": 0,
-                                "height": 0
-                            }
-                        },
-                        "markup": "<g><rect/></g>"
-                    },
-                    "top": {
-                        "position": {
-                            "name": "top",
-                            "args": {
-                                "x": 25,
-                                "y": 0,
-                                "dx": 1,
-                                "dy": 1
-                            }
-                        },
-                        "attrs": {
-                            "rect": {
-                                "stroke": "#000000",
-                                "stroke-width": 0,
-                                "width": 0,
-                                "height": 0
-                            }
-                        },
-                        "markup": "<g><rect/></g>"
+                            },
+                            "name": "left"
+                        }
                     },
                     "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
                         "position": {
-                            "name": "right",
                             "args": {
                                 "dx": -8,
                                 "dy": 0
-                            }
-                        },
+                            },
+                            "name": "right"
+                        }
+                    },
+                    "top": {
                         "attrs": {
                             "rect": {
+                                "height": 0,
                                 "stroke": "#000000",
                                 "stroke-width": 0,
-                                "width": 0,
-                                "height": 0
+                                "width": 0
                             }
                         },
-                        "markup": "<g><rect/></g>"
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 25,
+                                "y": 0
+                            },
+                            "name": "top"
+                        }
                     }
                 },
                 "items": [
@@ -297,39 +163,31 @@
                     }
                 ]
             },
-            "attrs": {
-                "image": {
-                    "xlinkHref": "/images/icons/flash.svg"
-                },
-                "label": {
-                    "text": "flash"
-                },
-                "root": {
-                    "title": "flash"
-                }
-            }
+            "position": {
+                "x": 110,
+                "y": 110
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
         },
         {
-            "type": "standard.Link",
-            "source": {
-                "id": "inlet_1",
-                "port": 0
-            },
-            "target": {
-                "id": "flash",
-                "port": 1
-            },
-            "router": {
-                "name": "manhattan",
-                "padding": 10
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
             },
             "connector": {
-                "name": "jumpover",
                 "attrs": {
                     "line": {
                         "stroke": "#5c9adb"
                     }
-                }
+                },
+                "name": "jumpover"
             },
             "id": "s_inlet_1",
             "labels": [
@@ -337,15 +195,15 @@
                     "attrs": {
                         "rect": {
                             "fill": "#d7dce0",
+                            "fill-opacity": 0,
                             "stroke": "white",
-                            "stroke-width": 0,
-                            "fill-opacity": 0
+                            "stroke-width": 0
                         },
                         "text": {
-                            "text": "feed info",
+                            "display": "none",
                             "fill": "black",
-                            "text-anchor": "left",
-                            "display": "none"
+                            "text": "feed info",
+                            "text-anchor": "left"
                         }
                     },
                     "position": {
@@ -361,51 +219,23 @@
                     }
                 }
             ],
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "source": {
+                "id": "inlet_1",
+                "port": 0
+            },
+            "target": {
+                "id": "flash",
+                "port": 1
+            },
+            "type": "standard.Link",
             "z": 2
         },
         {
-            "type": "standard.Image",
-            "position": {
-                "x": 210,
-                "y": 210
-            },
-            "size": {
-                "width": 50,
-                "height": 50
-            },
             "angle": 0,
-            "id": "liq_outlet_1",
-            "z": 1,
-            "ports": {
-                "groups": {
-                    "in": {
-                        "position": {
-                            "name": "left",
-                            "args": {
-                                "x": 2,
-                                "y": 25,
-                                "dx": 1,
-                                "dy": 1
-                            }
-                        },
-                        "attrs": {
-                            "rect": {
-                                "stroke": "#000000",
-                                "stroke-width": 0,
-                                "width": 0,
-                                "height": 0
-                            }
-                        },
-                        "markup": "<g><rect/></g>"
-                    }
-                },
-                "items": [
-                    {
-                        "group": "in",
-                        "id": 3
-                    }
-                ]
-            },
             "attrs": {
                 "image": {
                     "xlinkHref": "/images/icons/product.svg"
@@ -416,29 +246,63 @@
                 "root": {
                     "title": "product"
                 }
-            }
+            },
+            "id": "liq_outlet_1",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 3
+                    }
+                ]
+            },
+            "position": {
+                "x": 210,
+                "y": 210
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
         },
         {
-            "type": "standard.Link",
-            "source": {
-                "id": "flash",
-                "port": 2
-            },
-            "target": {
-                "id": "liq_outlet_1",
-                "port": 3
-            },
-            "router": {
-                "name": "manhattan",
-                "padding": 10
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
             },
             "connector": {
-                "name": "jumpover",
                 "attrs": {
                     "line": {
                         "stroke": "#5c9adb"
                     }
-                }
+                },
+                "name": "jumpover"
             },
             "id": "s_liq_outlet_1",
             "labels": [
@@ -446,15 +310,15 @@
                     "attrs": {
                         "rect": {
                             "fill": "#d7dce0",
+                            "fill-opacity": 0,
                             "stroke": "white",
-                            "stroke-width": 0,
-                            "fill-opacity": 0
+                            "stroke-width": 0
                         },
                         "text": {
-                            "text": "product info",
+                            "display": "none",
                             "fill": "black",
-                            "text-anchor": "left",
-                            "display": "none"
+                            "text": "product info",
+                            "text-anchor": "left"
                         }
                     },
                     "position": {
@@ -470,51 +334,23 @@
                     }
                 }
             ],
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "source": {
+                "id": "flash",
+                "port": 2
+            },
+            "target": {
+                "id": "liq_outlet_1",
+                "port": 3
+            },
+            "type": "standard.Link",
             "z": 2
         },
         {
-            "type": "standard.Image",
-            "position": {
-                "x": 310,
-                "y": 310
-            },
-            "size": {
-                "width": 50,
-                "height": 50
-            },
             "angle": 0,
-            "id": "vap_outlet_1",
-            "z": 1,
-            "ports": {
-                "groups": {
-                    "in": {
-                        "position": {
-                            "name": "left",
-                            "args": {
-                                "x": 2,
-                                "y": 25,
-                                "dx": 1,
-                                "dy": 1
-                            }
-                        },
-                        "attrs": {
-                            "rect": {
-                                "stroke": "#000000",
-                                "stroke-width": 0,
-                                "width": 0,
-                                "height": 0
-                            }
-                        },
-                        "markup": "<g><rect/></g>"
-                    }
-                },
-                "items": [
-                    {
-                        "group": "in",
-                        "id": 5
-                    }
-                ]
-            },
             "attrs": {
                 "image": {
                     "xlinkHref": "/images/icons/product.svg"
@@ -525,29 +361,63 @@
                 "root": {
                     "title": "product"
                 }
-            }
+            },
+            "id": "vap_outlet_1",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 5
+                    }
+                ]
+            },
+            "position": {
+                "x": 310,
+                "y": 310
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
         },
         {
-            "type": "standard.Link",
-            "source": {
-                "id": "flash",
-                "port": 4
-            },
-            "target": {
-                "id": "vap_outlet_1",
-                "port": 5
-            },
-            "router": {
-                "name": "manhattan",
-                "padding": 10
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
             },
             "connector": {
-                "name": "jumpover",
                 "attrs": {
                     "line": {
                         "stroke": "#5c9adb"
                     }
-                }
+                },
+                "name": "jumpover"
             },
             "id": "s_vap_outlet_1",
             "labels": [
@@ -555,15 +425,15 @@
                     "attrs": {
                         "rect": {
                             "fill": "#d7dce0",
+                            "fill-opacity": 0,
                             "stroke": "white",
-                            "stroke-width": 0,
-                            "fill-opacity": 0
+                            "stroke-width": 0
                         },
                         "text": {
-                            "text": "product info",
+                            "display": "none",
                             "fill": "black",
-                            "text-anchor": "left",
-                            "display": "none"
+                            "text": "product info",
+                            "text-anchor": "left"
                         }
                     },
                     "position": {
@@ -579,7 +449,155 @@
                     }
                 }
             ],
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "source": {
+                "id": "flash",
+                "port": 4
+            },
+            "target": {
+                "id": "vap_outlet_1",
+                "port": 5
+            },
+            "type": "standard.Link",
             "z": 2
         }
-    ]
+    ],
+    "model": {
+        "arcs": {
+            "s_inlet_1": {
+                "dest": "flash",
+                "label": "feed info",
+                "source": "inlet_1"
+            },
+            "s_liq_outlet_1": {
+                "dest": "liq_outlet_1",
+                "label": "product info",
+                "source": "flash"
+            },
+            "s_vap_outlet_1": {
+                "dest": "vap_outlet_1",
+                "label": "product info",
+                "source": "flash"
+            }
+        },
+        "id": "demo",
+        "stream_table": {
+            "columns": [
+                "",
+                "Variable"
+            ],
+            "data": [],
+            "index": []
+        },
+        "unit_models": {
+            "flash": {
+                "image": "/images/icons/flash.svg",
+                "performance_contents": {
+                    "0": {
+                        "Value": 0,
+                        "Variable": "Heat Duty"
+                    },
+                    "1": {
+                        "Value": 0,
+                        "Variable": "Pressure Change"
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Inlet": "-Inf",
+                        "Liquid Outlet": 0.5,
+                        "Vapor Outlet": 0.5,
+                        "Variable": "flow_mol"
+                    },
+                    "1": {
+                        "Inlet": 0.5,
+                        "Liquid Outlet": 0.5,
+                        "Vapor Outlet": 0.5,
+                        "Variable": "mole_frac_comp benzene"
+                    },
+                    "2": {
+                        "Inlet": 0.5,
+                        "Liquid Outlet": 0.5,
+                        "Vapor Outlet": 0.5,
+                        "Variable": "mole_frac_comp toluene"
+                    },
+                    "3": {
+                        "Inlet": "Inf",
+                        "Liquid Outlet": 298.15,
+                        "Vapor Outlet": 298.15,
+                        "Variable": "temperature"
+                    },
+                    "4": {
+                        "Inlet": "NaN",
+                        "Liquid Outlet": 101325.0,
+                        "Vapor Outlet": 101325.0,
+                        "Variable": "pressure"
+                    }
+                },
+                "type": "flash"
+            },
+            "inlet_1": {
+                "image": "/images/icons/feed.svg",
+                "type": "feed"
+            },
+            "liq_outlet_1": {
+                "image": "/images/icons/product.svg",
+                "type": "product"
+            },
+            "vap_outlet_1": {
+                "image": "/images/icons/product.svg",
+                "type": "product"
+            }
+        }
+    },
+    "routing_config": {
+        "s_inlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 2
+        },
+        "s_liq_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 4
+        },
+        "s_vap_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 6
+        }
+    }
 }
