@@ -860,7 +860,8 @@ class AlamoTrainer(SurrogateTrainer):
                             f"Mismatch when reading ALAMO trace file. "
                             f"Expected OUTPUT = {j+1}, found {trace_val}.")
                 elif header == "SET":
-                    # OUTPUT should be equal to the current index of outputs
+                    # SET should always be 0 - higher numebrs are for
+                    # valdiation data sets
                     if trace_val != "0":
                         raise RuntimeError(
                             f"Mismatch when reading ALAMO trace file. "
