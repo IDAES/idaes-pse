@@ -19,7 +19,8 @@ Costing package based on methods from:
     Chapter 22. Cost Accounting and Capital Cost Estimation
     22.2 Cost Indexes and Capital Investment
 
-This costing package currently only supports capital costing of units.
+Curently, this costing package only includes methods for capital costing of
+unit operations.
 """
 from enum import Enum
 import pyomo.environ as pyo
@@ -32,7 +33,7 @@ from idaes.generic_models.unit_models.heat_exchanger \
     import HeatExchangerFlowPattern
 from idaes.core.util.misc import register_units_of_measurement
 
-from idaes.costing.costing_base import CostingPackageBase
+from idaes.generic_models.costing.costing_base import CostingPackageBase
 
 # Some more information about this module
 __author__ = "Miguel Zamarripa, Andrew Lee"
@@ -203,7 +204,7 @@ class SSLWCosting(CostingPackageBase):
         alpha = alpha_dict[hx_type]
 
         # Convert area to square feet
-        area_unit = (pyo.units.convert(blk.parent_block().area,
+        area_unit = (pyo.units.convert(blk.unit_model.area,
                                        to_units=pyo.units.ft**2) /
                      blk.number_of_units)
 
@@ -213,7 +214,8 @@ class SSLWCosting(CostingPackageBase):
             return (blk.base_cost_per_unit ==
                     pyo.exp(alpha[1] -
                             alpha[2]*pyo.log(area_unit*blk.hx_oversize) +
-                            alpha[3]*pyo.log(area_unit*blk.hx_oversize)**2))
+                            alpha[3]*pyo.log(area_unit*blk.hx_oversize)**2) *
+                    pyo.units.USD_500)
         blk.base_cost_per_unit_eq = pyo.Constraint(rule=hx_cost_rule)
 
         @blk.Expression(doc="Base cost for all installed units")
@@ -248,24 +250,25 @@ class SSLWCosting(CostingPackageBase):
         # Pressure factor calculation
         # assume higher pressure fluid is tube side
         try:
-            tube_props = blk.parent_block().tube.properties_in[0]
+            tube_props = blk.unit_model.tube.properties_in[0]
         except AttributeError:
             # Assume HX1D
-            if (blk.parent_block().config.flow_type ==
+            if (blk.unit_model.config.flow_type ==
                     HeatExchangerFlowPattern.cocurrent):
                 inlet_x = 0
             else:
                 inlet_x = 1
-            tube_props = blk.parent_block().tube.properties[0, inlet_x]
+            tube_props = blk.unit_model.tube.properties[0, inlet_x]
 
         # Pressure units must be in psig
-        pressure = (pyo.units.convert(tube_props, to_units=pyo.units.psi) -
+        pressure = (pyo.units.convert(tube_props.pressure,
+                                      to_units=pyo.units.psi) -
                     pyo.units.convert(1*pyo.units.atm, to_units=pyo.units.psi))
 
         def hx_P_factor(blk):
             # Equation valid from 600 pisg to 3000 psig
-            #    return self.pressure_factor == 0.8510 + 0.1292*(pressure/600)
-            #                                + 0.0198*(pressure/600)**2
+            # return self.pressure_factor == (
+            #     0.8510 + 0.1292*(pressure/600) + 0.0198*(pressure/600)**2)
             # Equation valid from 100 pisg to 2000 psig
             return blk.pressure_factor == (
                 0.9803 + 0.0180 * (pressure/(100*pyo.units.psi)) +
@@ -275,10 +278,9 @@ class SSLWCosting(CostingPackageBase):
         # ---------------------------------------------------------
         # purchase cost equation
         def hx_CP_rule(blk):
-            return blk.purchase_cost == (
+            return blk.capital_cost == (
                 blk.pressure_factor*blk.material_factor *
-                blk.length_factor*blk.base_cost *
-                pyo.units.USD_500)
+                blk.length_factor*blk.base_cost)
         blk.capital_cost_constraint = pyo.Constraint(rule=hx_CP_rule)
 
     # Map costing methods to unit model classes
