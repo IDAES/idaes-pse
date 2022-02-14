@@ -795,7 +795,7 @@ class AlamoTrainer(SurrogateTrainer):
                Path to the trcfile to read
             output_labels : list of str
                List of strings of the output_labels (in order)
-            has_validation_Data : bool
+            has_validation_data : bool
                 Bool indicating whether valdiation data was included in ALAMO run
 
         Returns:
