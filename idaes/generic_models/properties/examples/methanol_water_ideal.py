@@ -210,7 +210,7 @@ config_dict = {
     "state_definition": FPhx,
     "state_bounds": {"flow_mol": (1e-10, 100, 1e10, pyunits.mol/pyunits.s),
                      "enth_mol": (-1e10, 100, 1e10, pyunits.J/pyunits.mol),
-                     "temperature": (198.15, 298.15, 598.15, pyunits.K),
+                     "temperature": (198.15, 298.15, 512.75, pyunits.K),
                      "pressure": (1e-10, 1e5, 1e10, pyunits.Pa)},
     "pressure_ref": (1e5, pyunits.Pa),
     "temperature_ref": (298.15, pyunits.K),

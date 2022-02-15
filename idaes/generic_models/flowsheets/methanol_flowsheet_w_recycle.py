@@ -66,10 +66,6 @@ def build_model(m):
     # Define model components and blocks
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    # lower upper state bound on temperature to allow convergence with recycle
-    thermo_props.config_dict["state_bounds"]["temperature"] = \
-        (198.15, 298.15, 512.15, pyunits.K)
-
     m.fs.thermo_params = GenericParameterBlock(
         default=thermo_props.config_dict)
     m.fs.reaction_params = GenericReactionParameterBlock(
