@@ -13,6 +13,8 @@
 """
 Base classes for process costing
 """
+from enum import Enum
+
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -28,6 +30,15 @@ import idaes.logger as idaeslog
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class DefaultCostingComponents(str, Enum):
+    capital = "capital_cost"
+    fixed = "fixed_operating_cost"
+    variable = "variable_operating_cost"
+
+    def __str__(self):
+        return self.value
 
 
 class CostingPackageBase():
@@ -69,7 +80,7 @@ class CostingPackageBase():
 
             1. blk.aggregate_capital_cost
             2. blk.aggregate_fixed_operating_cost
-            3. blk.aggregate_variable_operating_costs
+            3. blk.aggregate_variable_operating_cost
             4. blk.aggregate_flow_costs (indexed by flow type)
         """
         raise NotImplementedError(
@@ -293,9 +304,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         method(parent.unit_costing[unit_model.local_name], **kwargs)
 
         # Check that costs are Vars and have lower bound of 0
-        cost_vars = ["capital_cost",
-                     "fixed_operating_costs",
-                     "variable_operating_costs"]
+        cost_vars = DefaultCostingComponents
         for v in cost_vars:
             try:
                 cvar = getattr(parent.unit_costing[unit_model.local_name], v)
@@ -330,28 +339,17 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             parent = u.parent_block()
             cblock = parent.unit_costing[u.local_name]
 
-            if hasattr(cblock, "capital_cost"):
-                calculate_variable_from_constraint(
-                    cblock.capital_cost, cblock.capital_cost_constraint)
-            if hasattr(cblock, "fixed_operating_costs"):
-                calculate_variable_from_constraint(
-                    cblock.fixed_operating_costs,
-                    cblock.fixed_operating_costs_constraint)
-            if hasattr(cblock, "variable_operating_costs"):
-                calculate_variable_from_constraint(
-                    cblock.variable_operating_costs,
-                    cblock.variable_operating_costs_constraint)
+            for c in DefaultCostingComponents:
+                if hasattr(cblock, c):
+                    var = getattr(cblock, c)
+                    cons = getattr(cblock, f"{c}_constraint")
+                    calculate_variable_from_constraint(var, cons)
 
         # Initialize aggregate cost vars
-        calculate_variable_from_constraint(
-            self.aggregate_capital_cost,
-            self.aggregate_capital_cost_constraint)
-        calculate_variable_from_constraint(
-            self.aggregate_fixed_operating_costs,
-            self.aggregate_fixed_operating_costs_constraint)
-        calculate_variable_from_constraint(
-            self.aggregate_variable_operating_costs,
-            self.aggregate_variable_operating_costs_constraint)
+        for c in DefaultCostingComponents:
+            var = getattr(self, f"aggregate_{c}")
+            cons = getattr(self, f"aggregate_{c}_constraint")
+            calculate_variable_from_constraint(var, cons)
 
         # Initialize aggregate flows and costs
         for f in self.flow_types:
@@ -404,8 +402,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         The following costing variables are aggregated from all the registered
         UnitModelCostingBlocks (if they exist):
             * capital_cost,
-            *fixed_operating_costs, and
-            *variable_operating_costs
+            *fixed_operating_cost, and
+            *variable_operating_cost
 
         Additionally, aggregate flow variables are created for all registered
         flow types along with aggregate costs associated with each of these.
@@ -435,7 +433,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             rule=agg_cap_cost_rule)
 
         # Aggregate unit operating costs
-        self.aggregate_fixed_operating_costs = pyo.Var(
+        self.aggregate_fixed_operating_cost = pyo.Var(
             units=c_units/t_units)
 
         def agg_fixed_om_cost_rule(blk):
@@ -445,16 +443,16 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                 cblock = parent.unit_costing[u.local_name]
 
                 # Allow for units that might only have a subset of cost Vars
-                if hasattr(cblock, "fixed_operating_costs"):
-                    e += pyo.units.convert(cblock.fixed_operating_costs,
+                if hasattr(cblock, "fixed_operating_cost"):
+                    e += pyo.units.convert(cblock.fixed_operating_cost,
                                            to_units=c_units/t_units)
 
-            return blk.aggregate_fixed_operating_costs == e
+            return blk.aggregate_fixed_operating_cost == e
 
-        self.aggregate_fixed_operating_costs_constraint = pyo.Constraint(
+        self.aggregate_fixed_operating_cost_constraint = pyo.Constraint(
             rule=agg_fixed_om_cost_rule)
 
-        self.aggregate_variable_operating_costs = pyo.Var(
+        self.aggregate_variable_operating_cost = pyo.Var(
             units=c_units/t_units)
 
         def agg_var_om_cost_rule(blk):
@@ -464,13 +462,13 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                 cblock = parent.unit_costing[u.local_name]
 
                 # Allow for units that might only have a subset of cost Vars
-                if hasattr(cblock, "variable_operating_costs"):
-                    e += pyo.units.convert(cblock.variable_operating_costs,
+                if hasattr(cblock, "variable_operating_cost"):
+                    e += pyo.units.convert(cblock.variable_operating_cost,
                                            to_units=c_units/t_units)
 
-            return blk.aggregate_variable_operating_costs == e
+            return blk.aggregate_variable_operating_cost == e
 
-        self.aggregate_variable_operating_costs_constraint = pyo.Constraint(
+        self.aggregate_variable_operating_cost_constraint = pyo.Constraint(
             rule=agg_var_om_cost_rule)
 
         # Aggregate flows

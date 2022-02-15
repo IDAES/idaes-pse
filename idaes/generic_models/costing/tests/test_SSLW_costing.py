@@ -153,13 +153,11 @@ def test_cost_heat_exchanger(model, material, hxtype, tube_length):
 @pytest.mark.parametrize("weight_limit", [1, 2])
 @pytest.mark.parametrize("aspect_ratio_range", [1, 2])
 @pytest.mark.parametrize("include_pl", [True, False])
-@pytest.mark.parametrize("number_of_trays", [None, 10])
 def test_cost_vessel(model,
                      material_type,
                      weight_limit,
                      aspect_ratio_range,
-                     include_pl,
-                     number_of_trays):
+                     include_pl):
     model.fs.unit.length = Param(initialize=0.00075,
                                  units=pyunits.m)
     model.fs.unit.diameter = Param(initialize=2,
@@ -171,8 +169,7 @@ def test_cost_vessel(model,
                                material_type=material_type,
                                weight_limit=weight_limit,
                                aspect_ratio_range=aspect_ratio_range,
-                               include_platforms_ladders=include_pl,
-                               number_of_trays=number_of_trays)
+                               include_platforms_ladders=include_pl)
 
     assert isinstance(model.fs.unit_costing["unit"].shell_thickness, Param)
     assert isinstance(model.fs.unit_costing["unit"].material_factor, Param)
@@ -180,7 +177,6 @@ def test_cost_vessel(model,
 
     assert isinstance(model.fs.unit_costing["unit"].base_cost_per_unit, Var)
     assert isinstance(model.fs.unit_costing["unit"].capital_cost, Var)
-    assert isinstance(model.fs.unit_costing["unit"].number_of_units, Var)
     assert isinstance(model.fs.unit_costing["unit"].weight, Var)
 
     assert isinstance(model.fs.unit_costing["unit"].capital_cost_constraint,
@@ -199,31 +195,6 @@ def test_cost_vessel(model,
             model.fs.unit_costing["unit"].cost_platforms_ladders_eq,
             Constraint)
 
-    # Trays
-    if number_of_trays is not None:
-        assert isinstance(model.fs.unit_costing["unit"].tray_type_factor,
-                          Param)
-
-        assert isinstance(model.fs.unit_costing["unit"].base_cost_trays, Var)
-        assert isinstance(model.fs.unit_costing["unit"].tray_material_factor,
-                          Var)
-        assert isinstance(model.fs.unit_costing["unit"].number_trays_factor,
-                          Var)
-        assert isinstance(model.fs.unit_costing["unit"].base_cost_per_tray,
-                          Var)
-
-        assert isinstance(
-            model.fs.unit_costing["unit"].tray_material_factor_eq, Constraint)
-        assert isinstance(
-            model.fs.unit_costing["unit"].num_tray_factor_constraint,
-            Constraint)
-        assert isinstance(
-            model.fs.unit_costing["unit"].single_tray_cost_constraint,
-            Constraint)
-        assert isinstance(
-            model.fs.unit_costing["unit"].tray_costing_constraint,
-            Constraint)
-
     assert degrees_of_freedom(model) == 0
     assert_units_consistent(model.fs.unit_costing)
 
@@ -231,12 +202,80 @@ def test_cost_vessel(model,
 
     assert check_optimal_termination(res)
 
-    model.fs.unit_costing["unit"].display()
-
     # Test solution for one known case
     if (material_type == VesselMaterial.CS and
-            weight_limit == 1 and aspect_ratio_range == 1 and
-            include_pl and number_of_trays is None):
+            weight_limit == 1 and aspect_ratio_range == 1 and include_pl):
         assert pytest.approx(40012.3, 1e-5) == value(pyunits.convert(
             model.fs.unit_costing["unit"].capital_cost,
             to_units=pyunits.USD2018))
+
+
+@pytest.mark.component
+@pytest.mark.parametrize("tray_material", TrayMaterial)
+@pytest.mark.parametrize("tray_type", TrayType)
+def test_cost_vessel_trays(model,
+                           tray_material,
+                           tray_type):
+    model.fs.unit.length = Param(initialize=0.00075,
+                                 units=pyunits.m)
+    model.fs.unit.diameter = Param(initialize=2,
+                                   units=pyunits.m)
+
+    model.fs.costing.cost_unit(model.fs.unit,
+                               SSLWCosting.cost_vessel,
+                               vertical=True,
+                               number_of_trays=10,
+                               tray_material=tray_material,
+                               tray_type=tray_type)
+
+    assert isinstance(model.fs.unit_costing["unit"].shell_thickness, Param)
+    assert isinstance(model.fs.unit_costing["unit"].material_factor, Param)
+    assert isinstance(model.fs.unit_costing["unit"].material_density, Param)
+
+    assert isinstance(model.fs.unit_costing["unit"].base_cost_per_unit, Var)
+    assert isinstance(model.fs.unit_costing["unit"].capital_cost, Var)
+    assert isinstance(model.fs.unit_costing["unit"].weight, Var)
+
+    assert isinstance(model.fs.unit_costing["unit"].capital_cost_constraint,
+                      Constraint)
+    assert isinstance(model.fs.unit_costing["unit"].base_cost_constraint,
+                      Constraint)
+    assert isinstance(model.fs.unit_costing["unit"].weight_eq,
+                      Constraint)
+
+    assert isinstance(
+        model.fs.unit_costing["unit"].base_cost_platforms_ladders, Var)
+
+    assert isinstance(
+        model.fs.unit_costing["unit"].cost_platforms_ladders_eq,
+        Constraint)
+
+    assert isinstance(model.fs.unit_costing["unit"].tray_type_factor,
+                      Param)
+
+    assert isinstance(model.fs.unit_costing["unit"].base_cost_trays, Var)
+    assert isinstance(model.fs.unit_costing["unit"].tray_material_factor,
+                      Var)
+    assert isinstance(model.fs.unit_costing["unit"].number_trays_factor,
+                      Var)
+    assert isinstance(model.fs.unit_costing["unit"].base_cost_per_tray,
+                      Var)
+
+    assert isinstance(
+        model.fs.unit_costing["unit"].tray_material_factor_eq, Constraint)
+    assert isinstance(
+        model.fs.unit_costing["unit"].num_tray_factor_constraint,
+        Constraint)
+    assert isinstance(
+        model.fs.unit_costing["unit"].single_tray_cost_constraint,
+        Constraint)
+    assert isinstance(
+        model.fs.unit_costing["unit"].tray_costing_constraint,
+        Constraint)
+
+    assert degrees_of_freedom(model) == 0
+    assert_units_consistent(model.fs.unit_costing)
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)

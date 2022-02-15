@@ -148,7 +148,7 @@ class SSLWCosting(CostingPackageBase):
         shared across the process.
 
         You can do what you want here, so you could have e.g. sub-Blocks
-        for ach costing method to separate the parameters for each method.
+        for each costing method to separate the parameters for each method.
         """
         pass
 
@@ -338,8 +338,6 @@ class SSLWCosting(CostingPackageBase):
                 blk.length_factor*blk.base_cost)
         blk.capital_cost_constraint = pyo.Constraint(rule=hx_CP_rule)
 
-    # TODO: Vertical vessel only options (trays, aspect ratio)
-    # TODO: Number of units as argument
     def cost_vessel(blk,
                     vertical=False,
                     material_type=VesselMaterial.CS,
@@ -349,6 +347,7 @@ class SSLWCosting(CostingPackageBase):
                     include_platforms_ladders=True,
                     vessel_diameter=None,
                     vessel_length=None,
+                    number_of_units=1,
                     number_of_trays=None,
                     tray_material=TrayMaterial.CS,
                     tray_type=TrayType.Sieve,
@@ -374,6 +373,9 @@ class SSLWCosting(CostingPackageBase):
                               If not provided, assumed to be named "diameter"
             vessel_length - Pyomo component representing vessel length.
                             If not provided, assumed to be named "length".
+            number_of_units - Integer or Pyomo component representing the
+                               number of parallel units to be costed,
+                               default = 1.
             number_of_trays - Pyomo component representing the number of
                               distillation trays in vessel (default=None)
             tray_material - Only required if number_of_trays is not None.
@@ -387,7 +389,16 @@ class SSLWCosting(CostingPackageBase):
                       an integer or not (default = True).
         """
         # Build generic costing variables
-        _make_common_vars(blk, integer)
+        blk.base_cost_per_unit = pyo.Var(initialize=1e5,
+                                         domain=pyo.NonNegativeReals,
+                                         units=pyo.units.USD_500,
+                                         doc='Base cost per unit')
+
+        blk.capital_cost = pyo.Var(initialize=1e4,
+                                   domain=pyo.NonNegativeReals,
+                                   bounds=(0, None),
+                                   units=pyo.units.USD_500,
+                                   doc='Capital cost of all units')
 
         # Check arguments
         if material_type not in VesselMaterial:
@@ -395,6 +406,11 @@ class SSLWCosting(CostingPackageBase):
                 f"{blk.unit_model.name} received invalid argument for "
                 f"material_type: {material_type}. Argument must be a member "
                 "of the VesselMaterial Enum.")
+
+        if not vertical and number_of_trays is not None:
+            raise ConfigurationError(
+                f"{blk.unit_model.name} distillation trays are only supported "
+                "for vertical vessels.")
 
         if weight_limit == 2 and not vertical:
             raise ConfigurationError(
@@ -516,7 +532,7 @@ class SSLWCosting(CostingPackageBase):
             if number_of_trays is not None:
                 cost_expr += blk.base_cost_trays
 
-            return blk.capital_cost == cost_expr*blk.number_of_units
+            return blk.capital_cost == cost_expr*number_of_units
         blk.capital_cost_constraint = pyo.Constraint(rule=capital_cost_rule)
 
     def _cost_platforms_ladders(blk,
