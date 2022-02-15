@@ -49,24 +49,12 @@ from idaes.generic_models.properties.core.pure.RPP4 import (entr_mol_ig_comp,
 
 VirialConfig = ConfigBlock()
 
-doc_pseudocritical_option = '''
-Flag indicating whether to compute mixture property based on
-composition and critical properties of pure components:
-
-**default** - True.
-**Valid values:** {
-**True** - use pseudocritical_rule: mixing rule based on composition and
-critical properties of pure components.
-**False** - use mixing rule based on composition and corresponding
-pure component properties.}'''
-
-
 # virial eos options
 VirialConfig.declare("use_pseudocritical_rules", ConfigValue(
     default=True,
     domain=Bool,
     description="Flag indicating usage of pseudocritical rules",
-    doc=doc_pseudocritical_option))
+    doc="Option to use pseudocritical rules, default is True"))
 
 
 class entr_mol_ig_comp_G_H_ref(entr_mol_ig_comp):
