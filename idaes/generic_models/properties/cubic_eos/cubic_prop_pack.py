@@ -63,36 +63,19 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_equalities)
 from idaes.core.util.math import safe_log
 from idaes.core.util import get_solver
-from idaes import bin_directory
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-
+from idaes.core.util.functions import functions_lib
+from idaes.generic_models.properties.core.eos.ceos_common import (
+    EoS_param,
+    cubic_roots_available,
+    CubicThermoExpressions,
+    CubicType as CubicEoS,
+)
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-
-
-# Set path to root finder .so file
-_so = os.path.join(bin_directory, "cubic_roots.so")
-
-
-def cubic_roots_available():
-    """Make sure the compiled cubic root functions are available. Yes, in
-    Windows the .so extention is still used.
-    """
-    return os.path.isfile(_so)
-
-
-class CubicEoS(Enum):
-    PR = 0
-    SRK = 1
-
-
-EoS_param = {
-        CubicEoS.PR: {'u': 2, 'w': -1, 'omegaA': 0.45724, 'coeff_b': 0.07780},
-        CubicEoS.SRK: {'u': 1, 'w': 0, 'omegaA': 0.42748, 'coeff_b': 0.08664}
-        }
 
 
 @declare_process_block_class("CubicParameterBlock")
@@ -603,6 +586,7 @@ class CubicStateBlockData(StateBlockData):
         """Callable method for Block construction."""
         super(CubicStateBlockData, self).build()
 
+        self.expr_write = CubicThermoExpressions(self)
         # Add state variables
         self.flow_mol = Var(initialize=1.0,
                             domain=NonNegativeReals,
@@ -1170,7 +1154,7 @@ class CubicStateBlockData(StateBlockData):
                  sum(b.mole_frac_comp[i]*sqrt(a(i))*(1-b.params.kappa[j, i])
                      for i in b.params.component_list))
 
-        Z = b.proc_Z_liq(b._ext_func_param, A, B)
+        Z = b.expr_write.z_liq(eos=b.params.cubic_type, A=A, B=B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
                    safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
@@ -1200,7 +1184,7 @@ class CubicStateBlockData(StateBlockData):
                  sum(b._mole_frac_tdew[i]*sqrt(a(i))*(1-b.params.kappa[j, i])
                      for i in b.params.component_list))
 
-        Z = b.proc_Z_liq(b._ext_func_param, A, B)
+        Z = b.expr_write.z_liq(eos=b.params.cubic_type, A=A, B=B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
                    safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
@@ -1223,7 +1207,7 @@ class CubicStateBlockData(StateBlockData):
                  sum(b.mole_frac_comp[i]*sqrt(b.a[i])*(1-b.params.kappa[j, i])
                      for i in b.params.component_list))
 
-        Z = b.proc_Z_liq(b._ext_func_param, A, B)
+        Z = b.expr_write.z_liq(eos=b.params.cubic_type, A=A, B=B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
                    safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
@@ -1247,7 +1231,7 @@ class CubicStateBlockData(StateBlockData):
                      (1-b.params.kappa[j, i])
                      for i in b.params.component_list))
 
-        Z = b.proc_Z_liq(b._ext_func_param, A, B)
+        Z = b.expr_write.z_liq(eos=b.params.cubic_type, A=A, B=B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
                    safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
@@ -1309,7 +1293,7 @@ class CubicStateBlockData(StateBlockData):
                  sum(b._mole_frac_tbub[i]*sqrt(a(i))*(1-b.params.kappa[j, i])
                      for i in b.params.component_list))
 
-        Z = b.proc_Z_vap(b._ext_func_param, A, B)
+        Z = b.expr_write.z_vap(eos=b.params.cubic_type, A=A, B=B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
                    safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
@@ -1339,7 +1323,7 @@ class CubicStateBlockData(StateBlockData):
                  sum(b.mole_frac_comp[i]*sqrt(a(i))*(1-b.params.kappa[j, i])
                      for i in b.params.component_list))
 
-        Z = b.proc_Z_vap(b._ext_func_param, A, B)
+        Z = b.expr_write.z_vap(eos=b.params.cubic_type, A=A, B=B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
                    safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
@@ -1363,7 +1347,7 @@ class CubicStateBlockData(StateBlockData):
                      (1-b.params.kappa[j, i])
                      for i in b.params.component_list))
 
-        Z = b.proc_Z_vap(b._ext_func_param, A, B)
+        Z = b.expr_write.z_vap(eos=b.params.cubic_type, A=A, B=B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
                    safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
@@ -1386,7 +1370,7 @@ class CubicStateBlockData(StateBlockData):
                  sum(b.mole_frac_comp[i]*sqrt(b.a[i])*(1-b.params.kappa[j, i])
                      for i in b.params.component_list))
 
-        Z = b.proc_Z_vap(b._ext_func_param, A, B)
+        Z = b.expr_write.z_vap(eos=b.params.cubic_type, A=A, B=B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
                    safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
@@ -1496,35 +1480,6 @@ class CubicStateBlockData(StateBlockData):
                     (const.gas_constant*b._teq))
         blk._B_eq = Expression(blk.params.phase_list, rule=rule_B_eq)
 
-        blk.proc_Z_liq = ExternalFunction(
-            library=_so,
-            function="ceos_z_liq",
-            units=pyunits.dimensionless,
-            arg_units=[pyunits.dimensionless,
-                       pyunits.dimensionless,
-                       pyunits.dimensionless])
-        blk.proc_Z_vap = ExternalFunction(
-            library=_so,
-            function="ceos_z_vap",
-            units=pyunits.dimensionless,
-            arg_units=[pyunits.dimensionless,
-                       pyunits.dimensionless,
-                       pyunits.dimensionless])
-        blk.proc_Z_liq_x = ExternalFunction(
-            library=_so,
-            function="ceos_z_liq_extend",
-            units=pyunits.dimensionless,
-            arg_units=[pyunits.dimensionless,
-                       pyunits.dimensionless,
-                       pyunits.dimensionless])
-        blk.proc_Z_vap_x = ExternalFunction(
-            library=_so,
-            function="ceos_z_vap_extend",
-            units=pyunits.dimensionless,
-            arg_units=[pyunits.dimensionless,
-                       pyunits.dimensionless,
-                       pyunits.dimensionless])
-
         def rule_delta(b, p, i):
             # See pg. 145 in Properties of Gases and Liquids
             return (2*sqrt(blk.a[i])/b.am[p] *
@@ -1562,21 +1517,19 @@ class CubicStateBlockData(StateBlockData):
                      sqrt(b.temperature))
         blk.dadT = Expression(blk.params.phase_list, rule=rule_dadT)
 
-        blk._ext_func_param = Param(default=blk.params.cubic_type.value)
-
         def rule_compress_fact(b, p):
             if p == "Vap":
-                return b.proc_Z_vap(b._ext_func_param, b.A[p], b.B[p])
+                return blk.expr_write.z_vap(eos=b.params.cubic_type, A=b.A[p], B=b.B[p])
             else:
-                return b.proc_Z_liq(b._ext_func_param, b.A[p], b.B[p])
+                return blk.expr_write.z_liq(eos=b.params.cubic_type, A=b.A[p], B=b.B[p])
         blk.compress_fact_phase = Expression(blk.params.phase_list,
                                              rule=rule_compress_fact)
 
         def rule_compress_fact_eq(b, p):
             if p == "Vap":
-                return b.proc_Z_vap(b._ext_func_param, b._A_eq[p], b._B_eq[p])
+                return blk.expr_write.z_vap(eos=b.params.cubic_type, A=b._A_eq[p], B=b._B_eq[p])
             else:
-                return b.proc_Z_liq(b._ext_func_param, b._A_eq[p], b._B_eq[p])
+                return blk.expr_write.z_liq(eos=b.params.cubic_type, A=b._A_eq[p], B=b._B_eq[p])
         blk._compress_fact_eq = Expression(blk.params.phase_list,
                                            rule=rule_compress_fact_eq)
 
