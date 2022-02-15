@@ -202,7 +202,8 @@ def set_inputs(m):
     m.fs.C101.outlet.pressure.fix(51e5)  # Pa
 
     m.fs.H101.outlet_temp = Constraint(
-        expr=m.fs.H101.control_volume.properties_out[0].temperature == 488.15)
+        expr=m.fs.H101.control_volume.properties_out[0].temperature
+        == 488.15*pyunits.K)
 
     m.fs.R101.conversion = Var(initialize=0.75, bounds=(0, 1))
     m.fs.R101.conv_constraint = Constraint(
@@ -214,14 +215,16 @@ def set_inputs(m):
               m.fs.R101.outlet.mole_frac_comp[0, "CO"]))
     m.fs.R101.conversion.fix(0.75)
     m.fs.R101.outlet_temp = Constraint(
-        expr=m.fs.R101.control_volume.properties_out[0].temperature == 507.15)
+        expr=m.fs.R101.control_volume.properties_out[0].temperature
+        == 507.15*pyunits.K)
     m.fs.R101.heat_duty.setub(0)  # rxn is exothermic, so duty is cooling only
 
     m.fs.T101.deltaP.fix(-2e6)
     m.fs.T101.efficiency_isentropic.fix(0.9)
 
     m.fs.H102.outlet_temp = Constraint(
-        expr=m.fs.H102.control_volume.properties_out[0].temperature == 407.15)
+        expr=m.fs.H102.control_volume.properties_out[0].temperature
+        == 407.15*pyunits.K)
 
     m.fs.F101.recovery = Var(initialize=0.01, bounds=(0, 1))
     m.fs.F101.rec_constraint = Constraint(
@@ -231,7 +234,8 @@ def set_inputs(m):
                m.fs.F101.inlet.mole_frac_comp[0, "CH3OH"])))
     m.fs.F101.deltaP.fix(0)  # Pa
     m.fs.F101.outlet_temp = Constraint(
-        expr=m.fs.F101.control_volume.properties_out[0].temperature == 407.15)
+        expr=m.fs.F101.control_volume.properties_out[0].temperature
+        == 407.15*pyunits.K)
 
     m.fs.S101.split_fraction[0, "purge"].fix(0.9999)  # initially no recycle
 
