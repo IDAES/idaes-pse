@@ -16,17 +16,17 @@ Methods for virial equations of state (veos) for gases
 Currently supports B-truncated volume explicit virial equation of state with
 validity at low to moderate pressures where the compresiibility factor is
 approximately a linear function of  pressure. It is most accurate for
- non-polar species.
+non-polar species.
 
-Refernces
+References
 [1] J. M Prausnitz, R, N Lichtenthaler, and E. G de Azvedo,
-    Molecular thermodynamics of Fluid-phase Equilibruim 3rd ed.
-    Prentice-Hall, Nj, 1998
+Molecular thermodynamics of Fluid-phase Equilibruim 3rd ed.
+Prentice-Hall, Nj, 1998
 [2] Any standard chemical engineering thermodynamic textbook
 
 Author: Akula Paul
-
 """
+
 
 from copy import deepcopy
 from pyomo.environ import (Expression,
@@ -58,8 +58,9 @@ VirialConfig.declare("use_pseudocritical_rules", ConfigValue(
 
 
 class entr_mol_ig_comp_G_H_ref(entr_mol_ig_comp):
-    # This updates the build_parameter method to avoid setting S_ref
-    # So that S_sef is calculated from H_ref and G_ref.
+    """This updates the build_parameter method to avoid setting S_ref
+    So that S_sef is calculated from H_ref and G_ref.
+    """
     @staticmethod
     def build_parameters(cobj):
         if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
@@ -74,11 +75,25 @@ class entr_mol_ig_comp_G_H_ref(entr_mol_ig_comp):
 
 class Virial(EoSBase):
 
+    """Methods for virial equations of state (veos) for gases"""
     @staticmethod
     def common(b, pobj):
+        """Common objects
 
+        Args:
+            b : Current block
+            pobj (block): Phase object
+        """
         # Add expressions for pseudocritical parameters
         def func_p_omega(m):
+            """Pseudocritical accentric factor
+
+            Args:
+                m (block): Phase object
+
+            Returns:
+                Expression: Pseudocritical parameter
+            """
             return sum(m.mole_frac_phase_comp['Vap', i] *
                        m.params.get_component(i).omega
                        for i in m.components_in_phase('Vap'))
@@ -88,6 +103,14 @@ class Virial(EoSBase):
                                    doc='Pseudocritical omega for gas mixture'))
 
         def func_p_Tc(m):
+            """Pseudocritical temperature
+
+            Args:
+               m (block): Phase object
+
+            Returns:
+                Expression: Pseudocritical parameter
+            """
             return sum(m.mole_frac_phase_comp['Vap', i] *
                        m.params.get_component(i).temperature_crit
                        for i in m.components_in_phase('Vap'))
@@ -97,6 +120,14 @@ class Virial(EoSBase):
                                    doc='Pseudocritical temperature for gas mixture'))
 
         def func_p_Pc(m):
+            """Pseudocritical Pressure
+
+            Args:
+               m (block): Phase object
+
+            Returns:
+                Expression: Pseudocritical parameter
+            """
             return sum(m.mole_frac_phase_comp['Vap', i] *
                        m.params.get_component(i).pressure_crit
                        for i in m.components_in_phase('Vap'))
@@ -115,6 +146,16 @@ class Virial(EoSBase):
 
         # Add combining rules proposed by Prausnitz et al. [1]
         def rule_omega_ij(m, i, j):
+            """Accentric factor i-j molecular pair
+
+            Args:
+               m (block): Phase object
+               i : Component
+               j : Component
+
+            Returns:
+                Expression: Interaction parameter
+            """
             return 0.5 * (m.params.get_component(i).omega +
                           m.params.get_component(j).omega)
         b.add_component('omega_ij',
@@ -124,6 +165,16 @@ class Virial(EoSBase):
                                    doc='Omega combining rule for i-j molecular pair'))
 
         def rule_Zc_ij(m, i, j):
+            """Critical compressibility factor i-j molecular pair
+
+            Args:
+               m (block): Phase object
+               i : Component
+               j : Component
+
+            Returns:
+                Expression: Interaction parameter
+            """
             return 0.5 * (m.params.get_component(i).compress_fact_crit +
                           m.params.get_component(j).compress_fact_crit)
         b.add_component('Zc_ij',
@@ -134,6 +185,16 @@ class Virial(EoSBase):
                                        'combining rule for i-j molecular pair'))
 
         def rule_Vc_ij(m, i, j):
+            """Critical volume i-j molecular pair
+
+            Args:
+               m (block): Phase object
+               i : Component
+               j : Component
+
+            Returns:
+                Expression: Interaction parameter
+            """
             return (0.5 * (m.params.get_component(i).volume_crit**(1 / 3) +
                            m.params.get_component(j).volume_crit**(1 / 3)))**3
         b.add_component('Vc_ij',
@@ -144,6 +205,16 @@ class Virial(EoSBase):
                                        'i-j molecular pair'))
 
         def rule_Tc_ij(m, i, j):
+            """Critical temperature i-j molecular pair
+
+            Args:
+               m (block): Phase object
+               i : Component
+               j : Component
+
+            Returns:
+                Expression: Interaction parameter
+            """
             return ((1 - m.params.kappa[i, j]) *
                     (m.params.get_component(i).temperature_crit *
                      m.params.get_component(j).temperature_crit)**0.5)
@@ -155,6 +226,16 @@ class Virial(EoSBase):
                                        'for i-j molecular pair'))
 
         def rule_Pc_ij(m, i, j):
+            """Critical pressure i-j molecular pair
+
+            Args:
+               m (block): Phase object
+               i : Component
+               j : Component
+
+            Returns:
+                Expression: Interaction parameter
+            """
             return (m.Zc_ij[i, j] * m.Tc_ij[i, j] / m.Vc_ij[i, j] *
                     Virial.gas_constant(m))
         b.add_component('Pc_ij',
@@ -165,6 +246,16 @@ class Virial(EoSBase):
                                        'for i-j molecular pair'))
 
         def rule_B_ij(m, i, j):
+            """Binary second virial coefficient
+
+            Args:
+               m (block): Phase object
+               i : Component
+               j : Component
+
+            Returns:
+                Expression: Interaction parameter
+            """
             return (m.Tc_ij[i, j] / m.Pc_ij[i, j] * Virial.gas_constant(m) *
                     (f_BO(m.temperature / m.Tc_ij[i, j]) +
                      f_B1(m.temperature / m.Tc_ij[i, j]) * m.omega_ij[i, j]))
@@ -177,10 +268,24 @@ class Virial(EoSBase):
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):
+        """Scaling factors
+
+        Args:
+            b : Current block
+            pobj : Phase object
+        """
         pass
 
     @staticmethod
     def build_parameters(b):
+        """Build Parameters
+
+        Args:
+            b : Current block
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         param_block = b.parent_block()
         # virial eos supports only vapor phase
         if not b.is_vapor_phase():
@@ -263,8 +368,15 @@ class Virial(EoSBase):
 
     @staticmethod
     def compress_fact_vap_comp_pure(b, comp):
-        # Method for calculating pure component  vapor compressiblity
+        """Method for calculating pure component  vapor compressiblity
 
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         cobj = b.params.get_component(comp)
         Tr = b.temperature / cobj.temperature_crit
         Pr = b.pressure / cobj.pressure_crit
@@ -273,13 +385,29 @@ class Virial(EoSBase):
 
     @staticmethod
     def vol_mol_vap_comp_pure(b, comp):
-        # Method for calculating pure component  vapor molar volume
+        """Method for calculating pure component  vapor molar volume
+
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         return (Virial.compress_fact_vap_comp_pure(b, comp) *
                 Virial.gas_constant(b) * b.temperature / b.pressure)
 
     @staticmethod
     def enth_mol_vap_comp_pure(b, comp):
-        # Method for calculating pure component  vapor molar enthalpy
+        """Method for calculating pure component  vapor molar enthalpy
+
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         cobj = b.params.get_component(comp)
         Tc = cobj.temperature_crit
         Tr = b.temperature / Tc
@@ -297,7 +425,15 @@ class Virial(EoSBase):
 
     @staticmethod
     def entr_mol_vap_comp_pure(b, comp):
-        # Method for calculating pure component  vapor molar entropy
+        """Method for calculating pure component  vapor molar entropy
+
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         cobj = b.params.get_component(comp)
         Tr = b.temperature / cobj.temperature_crit
         Pr = b.pressure / cobj.pressure_crit
@@ -315,19 +451,43 @@ class Virial(EoSBase):
 
     @staticmethod
     def gibbs_mol_vap_comp_pure(b, comp):
-        # Method for calculating pure component  vapor molar Gibbs free energy
+        """Method for calculating pure component  vapor molar Gibbs free energy
+
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         return (Virial.enth_mol_vap_comp_pure(b, comp) -
                 Virial.entr_mol_vap_comp_pure(b, comp) * b.temperature)
 
     @staticmethod
     def energy_internal_mol_vap_comp_pure(b, comp):
-        # Method for calculating pure component  vapor molar internal energy
+        """Method for calculating pure component  vapor molar internal energy
+
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         return (Virial.enth_mol_vap_comp_pure(b, comp) -
                 Virial.vol_mol_vap_comp_pure(b, comp) * b.pressure)
 
     @staticmethod
     def log_fug_coeff_vap_comp_pure(b, comp):
-        # Method for natural log of pure component  vapor fugacity coefficient
+        """Method for natural log of pure component  vapor fugacity coefficient
+
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         cobj = b.params.get_component(comp)
         Tr = b.temperature / cobj.temperature_crit
         Pr = b.pressure / cobj.pressure_crit
@@ -336,18 +496,41 @@ class Virial(EoSBase):
 
     @staticmethod
     def fug_coeff_vap_comp_pure(b, comp):
-        # Method for pure component  vapor fugacity coefficient
+        """Method for pure component  vapor fugacity coefficient
+
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         return exp(Virial.log_fug_coeff_vap_comp_pure(b, comp))
 
     @staticmethod
     def fug_vap_comp_pure(b, comp):
-        # Method for pure component  vapor fugacity
+        """Method for pure component  vapor fugacity
+
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         return Virial.fug_coeff_vap_comp_pure(b, comp) * b.pressure
 
     @staticmethod
     def log_fug_coeff_vap_sat_comp(b, comp):
-        # Method for natural log of pure component  vapor fugacity coefficient
-        # at saturation pressure
+        """Method for natural log of pure component  vapor fugacity coefficient
+        at saturation pressure
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         cobj = b.params.get_component(comp)
         Tr = b.temperature / cobj.temperature_crit
         Pr_sat = (get_method(b, "pressure_sat_comp", comp)(
@@ -357,12 +540,28 @@ class Virial(EoSBase):
 
     @staticmethod
     def fug_coeff_vap_sat_comp(b, comp):
-        # Pure component  vapor fugacity coefficient at saturation pressure
+        """Pure component  vapor fugacity coefficient at saturation pressure
+
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         return exp(Virial.log_fug_coeff_vap_sat_comp(b, comp))
 
     @staticmethod
     def fug_vap_sat_comp(b, comp):
-        # Method for pure component  vapor fugacity at saturation pressure
+        """Method for pure component  vapor fugacity at saturation pressure
+
+        Args:
+            b : Current block
+            comp: vapor component
+
+        Returns:
+            Property method
+        """
         cobj = b.params.get_component(comp)
         return (get_method(b, "pressure_sat_comp", comp)(b, cobj, b.temperature)
                 ) * Virial.fug_coeff_vap_sat_comp(b, comp)
@@ -372,8 +571,19 @@ class Virial(EoSBase):
 
     @staticmethod
     def second_virial_coeff_vap(b, p):
-        # Method for calculating gas mixture second virial coefficient
-        # either via pseoudocritical rules or combining rules
+        """Method for calculating gas mixture second virial coefficient
+        either via pseoudocritical rules or combining rules
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             if pobj._use_pseudocritical_rules:
@@ -387,7 +597,18 @@ class Virial(EoSBase):
 
     @staticmethod
     def compress_fact_phase(b, p):
-        # Method for calculating gas mixture compressibility factor
+        """Method for calculating gas mixture compressibility factor
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return 1 + (Virial.second_virial_coeff_vap(b, p) *
@@ -397,7 +618,18 @@ class Virial(EoSBase):
 
     @staticmethod
     def vol_mol_phase(b, p):
-        # Method for calculating gas mixture molar volume
+        """Method for calculating gas mixture molar volume
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return (Virial.gas_constant(b) * b.temperature *
@@ -407,12 +639,28 @@ class Virial(EoSBase):
 
     @staticmethod
     def dens_mass_phase(b, p):
-        # Method for calculating gas mixture mass density
+        """Method for calculating gas mixture mass density
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+        """
         return b.dens_mol_phase[p] * b.mw_phase[p]
 
     @staticmethod
     def dens_mol_phase(b, p):
-        # Method for calculating gas mixture molar density
+        """Method for calculating gas mixture molar density
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return b.pressure / (Virial.gas_constant(b) * b.temperature
@@ -422,7 +670,18 @@ class Virial(EoSBase):
 
     @staticmethod
     def enth_mol_phase(b, p):
-        # Method for calculating gas mixture molar enthalpy
+        """Method for calculating gas mixture molar enthalpy
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             enth_ideal_gas = sum(b.mole_frac_phase_comp[p, j] *
@@ -444,7 +703,18 @@ class Virial(EoSBase):
 
     @staticmethod
     def entr_mol_phase(b, p):
-        # Method for calculating gas mixture molar entropy
+        """Method for calculating gas mixture molar entropy
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             # Note: this assumes that "entr_mol_ig_comp" method
@@ -473,7 +743,18 @@ class Virial(EoSBase):
 
     @staticmethod
     def energy_internal_mol_phase(b, p):
-        # Method for calculating gas mixture molar internal energy
+        """Method for calculating gas mixture molar internal energy
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return b.enth_mol_phase[p] - b.pressure * b.vol_mol_phase[p]
@@ -482,7 +763,18 @@ class Virial(EoSBase):
 
     @staticmethod
     def gibbs_mol_phase(b, p):
-        # Method for calculating gas mixture molar internal energy
+        """Method for calculating gas mixture molar internal energy
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return (b.enth_mol_phase[p] - b.entr_mol_phase[p] * b.temperature)
@@ -491,8 +783,19 @@ class Virial(EoSBase):
 
     @staticmethod
     def log_fug_coeff_phase_comp(b, p, k):
-        # Method for natural logarithm of fugacity coefficient of species k
-        # in the gas mixture
+        """Method for natural logarithm of fugacity coefficient of species k
+        in the gas mixture
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+            k : Component
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return b.pressure / Virial.gas_constant(b) / b.temperature * (
@@ -505,7 +808,19 @@ class Virial(EoSBase):
 
     @staticmethod
     def fug_coeff_phase_comp(b, p, k):
-        # Method for fugacity coeffcient of species k in the gas mixture
+        """Method for fugacity coeffcient of species k in the gas mixture
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+            k : Component
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return exp(Virial.log_fug_coeff_phase_comp(b, p, k))
@@ -514,7 +829,19 @@ class Virial(EoSBase):
 
     @staticmethod
     def fug_phase_comp(b, p, k):
-        # Method for fugacity  of species k in the gas mixture
+        """Method for fugacity  of species k in the gas mixture
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+            k : Component
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return (Virial.fug_coeff_phase_comp(b, p, k) *
@@ -524,7 +851,18 @@ class Virial(EoSBase):
 
     @staticmethod
     def cp_mol_phase(b, p):
-        # Method for calculating gas mixture molar cp
+        """Method for calculating gas mixture molar cp
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             cp_ig = sum(b.mole_frac_phase_comp[p, j] *
@@ -545,7 +883,18 @@ class Virial(EoSBase):
 
     @staticmethod
     def cv_mol_phase(b, p):
-        # Method for calculating gas mixture molar cv
+        """Method for calculating gas mixture molar cv
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             if pobj._use_pseudocritical_rules:
@@ -568,7 +917,19 @@ class Virial(EoSBase):
     # derivations of PMP, pseudocritial rules are not used
     @staticmethod
     def gibbs_mol_phase_comp(b, p, j):
-        # Method for partial molar Gibbs energy for species j in gas mixture
+        """Method for partial molar Gibbs energy for species j in gas mixture
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+           j : Component
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         cobj = b.params.get_component(j)
         enth_ig_comp = get_method(b, "enth_mol_ig_comp", j)(
@@ -590,7 +951,19 @@ class Virial(EoSBase):
 
     @staticmethod
     def entr_mol_phase_comp(b, p, k):
-        # Method for partial molar entropy for species k in gas mixture
+        """Method for partial molar entropy for species k in gas mixture
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+            k : Component
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         #cobj = b.params.get_component(k)
         if pobj.is_vapor_phase():
@@ -616,7 +989,20 @@ class Virial(EoSBase):
 
     @staticmethod
     def enth_mol_phase_comp(b, p, j):
-        # Method for partial molar enthalpy for species j in gas mixture
+        """Method for partial molar enthalpy for species j in gas mixture
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+           j : Component
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
+
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return (b.gibbs_mol_phase_comp[p, j] + b.temperature *
@@ -626,7 +1012,19 @@ class Virial(EoSBase):
 
     @staticmethod
     def vol_mol_phase_comp(b, p, j):
-        # Method for partial molar volume for species j in gas mixture
+        """Method for partial molar volume for species j in gas mixture
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+           j : Component
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return (Virial.gas_constant(b) * b.temperature / b.pressure -
@@ -638,7 +1036,19 @@ class Virial(EoSBase):
 
     @staticmethod
     def energy_internal_mol_phase_comp(b, p, j):
-        # Method for partial molar internal energy for species j in gas mixture
+        """Method for partial molar internal energy for species j in gas mixture
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+            j : Component
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return (b.enth_mol_phase_comp[p, j] - b.pressure *
@@ -654,8 +1064,19 @@ class Virial(EoSBase):
 
     @staticmethod
     def second_virial_coeff_mix(b, p):
-        # Method for calculating gas mixture second virial coefficient
-        # via combining rule only
+        """Method for calculating gas mixture second virial coefficient
+        via combining rule only
+
+        Args:
+            b : Cuurent Block
+            p : Phase, Valid Phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return rule_second_virial_coeff(b, p)
@@ -664,8 +1085,19 @@ class Virial(EoSBase):
 
     @staticmethod
     def dBdT(b, p):
-        # Method for calculating first temperature derivative of gas mixture
-        # second virial coefficient
+        """Method for calculating first temperature derivative of gas mixture
+        second virial coefficient
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return sum(sum(b.mole_frac_phase_comp[p, i] *
@@ -679,8 +1111,19 @@ class Virial(EoSBase):
 
     @staticmethod
     def dBdT2(b, p):
-        # Method for calculating second temperature derivative of gas
-        # mixture second virial coefficient
+        """Method for calculating second temperature derivative of gas
+        mixture second virial coefficient
+
+        Args:
+            b : Current block
+            p : Phase, valid phase = 'Vap'
+
+        Returns:
+            Property method
+
+        Raises:
+            PropertyNotSupportedError: if Phase not equal 'Vap'
+        """
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return sum(sum(b.mole_frac_phase_comp[p, i] *
@@ -699,6 +1142,15 @@ class Virial(EoSBase):
 
 
 def rule_second_virial_coeff(m, phase):
+    """Summary
+
+    Args:
+       m (block): Phase object
+       phase (string): valid phase = 'Vap'
+
+    Returns:
+        Property method
+    """
     return sum(sum(m.mole_frac_phase_comp[phase, i] *
                    m.mole_frac_phase_comp[phase, j] *
                    m.B_ij[i, j]
@@ -710,33 +1162,87 @@ def rule_second_virial_coeff(m, phase):
 
 
 def f_BO(Tr):
+    """Abbortt B0 equation
+
+    Args:
+        Tr : Reduced temperature
+
+    Returns:
+        Property method
+    """
     return 0.083 - 0.422 / Tr**1.6
 
 
 def f_B1(Tr):
+    """Abbortt B1 equation
+
+    Args:
+        Tr : Reduced temperature
+
+    Returns:
+        Property method
+    """
     return 0.139 - 0.172 / Tr**4.2
 
 
 def f_dBO_dTr(Tr):
+    """Derivative of Abbortt B0 equation
+
+    Args:
+        Tr : Reduced temperature
+
+    Returns:
+        Property method
+    """
     return 0.6752 / Tr**2.6
 
 
 def f_dB1_dTr(Tr):
+    """Derivative of Abbortt B1 equation
+
+    Args:
+        Tr : Reduced temperature
+
+    Returns:
+        Property method
+    """
     return 0.7224 / Tr**5.2
 
 
 def f_dBO_dTr2(Tr):
+    """Derivative of Abbortt Bo equation
+
+    Args:
+        Tr : Reduced temperature
+
+    Returns:
+        Property method
+    """
     return -1.75552 / Tr**3.6
 
 
 def f_dB1_dTr2(Tr):
+    """Derivative of Abbortt B1 equation
+
+    Args:
+        Tr : Reduced temperature
+
+    Returns:
+        Property method
+    """
     return -3.75648 / Tr**6.2
 
-#------------------------------------------------------------------------------
-# virial eos supports only gas properties: error message if used for phases
-# other that 'Vap'.
-
+# -----------------------------------------------------------------------------
 
 def _invalid_phase_msg(name, phase):
+    """Virial eos supports only gas properties
+
+    Args:
+        name : Name of block
+        phase: Phase
+
+    Returns:
+        String: Error message
+    """
     return (f"{name} received a non-vapor phase {phase}. Virial equation of "
             "state only supports vapor phase properties")
