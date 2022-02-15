@@ -8,3 +8,4 @@ Property Models
     activity_coefficient
     helmholtz
     interrogator
+    virial
