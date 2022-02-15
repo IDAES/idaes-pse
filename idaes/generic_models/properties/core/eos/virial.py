@@ -54,9 +54,9 @@ VirialConfig.declare("use_pseudocritical_rules", ConfigValue(
     default=True,
     domain=Bool,
     description='''Flag indicating whether pseudocritical rules should be used
-    when applicable''',
+when applicable''',
     doc='''Flag indicating whether to compute mixture property based on
-    composition and critical properties of pure components:
+composition and critical properties of pure components:
 **default** - True.
 **Valid values:** {
 **True** - use pseudocritical_rule: mixing rule based on composition and
