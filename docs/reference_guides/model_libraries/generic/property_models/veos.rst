@@ -128,11 +128,5 @@ Config Block Documentation
 --------------------------
 .. module:: idaes.generic_models.properties.core.eos.virial
 
-.. autoclass:: VirialParameterData
-   :members:
-
-.. autoclass:: VirialStateBlock
-   :members:
-
-.. autoclass:: VirialStateBlockData
+.. autoclass:: Virial
    :members:
