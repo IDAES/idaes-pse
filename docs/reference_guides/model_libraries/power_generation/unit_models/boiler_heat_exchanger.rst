@@ -7,7 +7,7 @@ BoilerHeatExchanger
 .. currentmodule:: idaes.power_generation.unit_models.boiler_heat_exchanger
 
 The BoilerHeatExchanger model can be used to represent boiler heat exchangers in
-sub-critical and super critical power plant flowsheets (i.e. econmizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).
+sub-critical and super critical power plant flowsheets (i.e. economizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).
 The model consists of a shell and tube crossflow heat exchanger, in which the shell is used as the gas side and the tube is used as the water or steam side.
 Rigorous heat transfer calculations (convective heat transfer for shell side, and convective heat transfer for tube side) and shell and tube pressure drop calculations have been included.
 
@@ -32,8 +32,11 @@ and override the default temperature difference calculation.
     # import ideal flue gas prop pack
     from idaes.power_generation.properties.IdealProp_FlueGas import FlueGasParameterBlock
     # Import Power Plant HX Unit Model
-    from idaes.power_generation.unit_models.boiler_heat_exchanger import BoilerHeatExchanger, TubeArrangement, \
-        DeltaTMethod
+    from idaes.power_generation.unit_models.boiler_heat_exchanger import (
+        BoilerHeatExchanger,
+        TubeArrangement,
+        HeatExchangerFlowPattern,
+    )
     import pyomo.environ as pe # Pyomo environment
     from idaes.core import FlowsheetBlock, StateBlock
     from idaes.unit_models.heat_exchanger import delta_temperature_amtd_callback
@@ -50,18 +53,21 @@ and override the default temperature difference calculation.
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     # Create unit models
-    m.fs.ECON = BoilerHeatExchanger(default=
-                              {"side_1_property_package": m.fs.prop_water,
-                               "side_2_property_package": m.fs.prop_fluegas,
-                               "has_pressure_change": True,
-                               "has_holdup": False,
-                               "delta_T_method": DeltaTMethod.counterCurrent,
-                               "tube_arrangement": TubeArrangement.inLine,
-                               "side_1_water_phase": "Liq",
-                               "has_radiation": False})
+    m.fs.ECON = BoilerHeatExchanger(
+        default={
+            "tube: {"property_package": m.fs.prop_water},
+            "shell": {"property_package": m.fs.prop_fluegas},
+            "has_pressure_change": True,
+            "has_holdup": False,
+            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
+            "tube_arrangement": TubeArrangement.inLine,
+            "side_1_water_phase": "Liq",
+            "has_radiation": False
+        }
+    )
 
     # Set Inputs
-    # BFW Boiler Feed Water inlet temeperature = 555 F = 563.706 K
+    # BFW Boiler Feed Water inlet temperature = 555 F = 563.706 K
     # inputs based on NETL Baseline Report v3 (SCPC 650 MW net, no carbon capture case)
     h = iapws95.htpx(563.706, 2.5449e7)
     m.fs.ECON.side_1_inlet.flow_mol[0].fix(24678.26) # mol/s
@@ -303,4 +309,3 @@ Class Documentation
 
 .. autoclass:: BoilerHeatExchangerData
    :members:
-
