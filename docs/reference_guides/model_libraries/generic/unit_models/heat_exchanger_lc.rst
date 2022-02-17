@@ -100,18 +100,17 @@ control volumes are not.
 
 To use dynamic control volumes, constraints should be added that relate flow rate to 
 pressure loss. In that case, the :ref:`volume <reference_guides/core/control_volume_0d:add_geometry>` 
-variables should also be fixed.
+variables of the hot and cold sides should also be fixed.
 
 .. testcode::
-
+  
   import pyomo.environ as pe
   from idaes.core import FlowsheetBlock
   from idaes.generic_models.unit_models import HeatExchangerLumpedCapacitance, HeatExchangerFlowPattern
   from idaes.generic_models.unit_models.heat_exchanger import delta_temperature_lmtd_callback
   from idaes.generic_models.properties import swco2
   from idaes.power_generation.properties import FlueGasParameterBlock
-  import numpy as np
-  import matplotlib.pyplot as plt
+  from idaes.core.util.plot import plot_grid_dynamic
   
   m = pe.ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": True,
@@ -190,34 +189,34 @@ variables should also be fixed.
   
   solver.solve(m)
   
-  # Post processing / visualizations
-  t_tube_out = pe.value(m.fs.HE.tube.properties_out[:].temperature)
-  rho_tube_out = pe.value(m.fs.HE.tube.properties_out[:].dens_mass)
-  t_shell_in = pe.value(m.fs.HE.shell.properties_in[:].temperature)
-  time = np.array([t for t in m.fs.time])
+  # Plot some results and save the figure to a file.
+  plot_grid_dynamic(
+      x=m.fs.time,
+      xlabel="time (s)",
+      y=[
+          m.fs.HE.tube.properties_out[:].temperature,
+          m.fs.HE.tube.properties_out[:].dens_mass,
+          m.fs.HE.temperature_wall[:],
+          m.fs.HE.shell.properties_in[:].temperature
+      ],
+      ylabel=[
+          "sCO2 out (K)",
+          "sCO2 out (kg/m^3)",
+          "wall temperature (K)",
+          "air in (K)"
+      ],
+      yunits=[
+          pe.units.K,
+          pe.units.kg / pe.units.m ** 3,
+          pe.units.K,
+          pe.units.K
+      ],
+      cols=2,
+      rows=2,
+      to_file="transient_sco2.pdf"
+  )
   
-  fig, ax = plt.subplots(2, 1)
-  ax[0].plot(time, t_tube_out, c='b', label='CO2 Exit')
-  ax[0].set_ylabel('Temperature (K)')
-  ax[0].set_title('Transient Response')
-  ax[0].legend(loc='upper left')
-  ax[1].plot(time, t_shell_in, c='r', label='Air Inlet')
-  ax[1].set_xlabel('Time (s)')
-  ax[1].set_ylabel('Temperature (K)')
-  ax[1].legend(loc='upper left')
-  
-  fig, ax = plt.subplots(2, 1)
-  ax[0].plot(time, rho_tube_out, c='g', label='CO2 Exit')
-  ax[0].set_ylabel('Density (kg/m^3)')
-  ax[0].set_title('Transient Response')
-  ax[0].legend(loc='upper left')
-  ax[1].plot(time, t_shell_in, c='r', label='Air Inlet')
-  ax[1].set_xlabel('Time (s)')
-  ax[1].set_ylabel('Temperature (K)')
-  ax[1].legend(loc='upper left')
-  
-  plt.show()
-  
+
 Class Documentation
 -------------------
 
