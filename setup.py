@@ -49,15 +49,11 @@ kwargs = dict(
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
         "bunch",
-        "click<=7.1.2", # problems with 8.x
+        "click",
         "colorama",
         "flask",  # for ui/fsvis
         "flask-cors",
         "jupyter",
-        # pinning pywin32 to version 225 as a workaround for Python 3.8 compatibility issues
-        # (ImportError: DLL load failed while importing ...)
-        # for more information see e.g. https://stackoverflow.com/a/62249872
-        "pywin32==225; sys_platform=='win32' and python_version>='3.8'",
         "lxml",
         "matplotlib",
         "nbconvert",

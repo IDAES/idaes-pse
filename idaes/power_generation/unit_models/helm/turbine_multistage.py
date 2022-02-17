@@ -37,7 +37,7 @@ from idaes.power_generation.unit_models.helm import HelmValve as SteamValve
 
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.core.util.misc import copy_port_values as copy_port
+from idaes.core.util.initialization import propagate_state
 import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
@@ -495,7 +495,11 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             )
 
         self.power = pyo.Var(
-            self.flowsheet().time, initialize=-1e8, doc="power (W)")
+            self.flowsheet().time,
+            initialize=-1e8,
+            doc="total turbine power",
+            units=pyo.units.W
+        )
         @self.Constraint(self.flowsheet().time)
         def power_eqn(b, t):
             return (b.power[t] ==
@@ -598,12 +602,12 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         """ Reuse the initializtion for HP, IP and, LP sections.
         """
         if 0 in splits:
-            copy_port(splits[0].inlet, prev_port)
+            propagate_state(splits[0].inlet, prev_port)
             splits[0].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
             prev_port = splits[0].outlet_1
         for i in stages:
             if i - 1 not in disconnects:
-                copy_port(stages[i].inlet, prev_port)
+                propagate_state(stages[i].inlet, prev_port)
             else:
                 if copy_disconneted_flow:
                     for t in stages[i].inlet.flow_mol:
@@ -614,7 +618,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             stages[i].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
             prev_port = stages[i].outlet
             if i in splits:
-                copy_port(splits[i].inlet, prev_port)
+                propagate_state(splits[i].inlet, prev_port)
                 splits[i].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
                 prev_port = splits[i].outlet_1
         return prev_port
@@ -685,7 +689,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             # Initialize valves
             for i in self.inlet_stage_idx:
                 u = self.throttle_valve[i]
-                copy_port(u.inlet, getattr(
+                propagate_state(u.inlet, getattr(
                     self.inlet_split, "outlet_{}".format(i)))
                 u.initialize(
                     outlvl=outlvl, solver=solver, optarg=optarg)
@@ -693,7 +697,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             # Initialize turbine
             for i in self.inlet_stage_idx:
                 u = self.inlet_stage[i]
-                copy_port(u.inlet, self.throttle_valve[i].outlet)
+                propagate_state(u.inlet, self.throttle_valve[i].outlet)
                 u.initialize(
                     outlvl=outlvl,
                     solver=solver,
@@ -704,7 +708,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             # Initialize Mixer
             self.inlet_mix.use_minimum_inlet_pressure_constraint()
             for i in self.inlet_stage_idx:
-                copy_port(
+                propagate_state(
                     getattr(self.inlet_mix, "inlet_{}".format(i)),
                     self.inlet_stage[i].outlet,
                 )
@@ -754,7 +758,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 copy_disconneted_pressure=copy_disconneted_pressure,
             )
 
-            copy_port(self.outlet_stage.inlet, prev_port)
+            propagate_state(self.outlet_stage.inlet, prev_port)
             self.outlet_stage.initialize(
                 outlvl=outlvl,
                 solver=solver,

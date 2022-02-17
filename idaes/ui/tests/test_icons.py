@@ -17,7 +17,8 @@ from idaes.ui.icons import UnitModelIcon
 
 @pytest.mark.parametrize(
     "test_input,expected",
-    [("cstr", "reactor_c.svg"),
+    [("default", "default.svg"),
+    ("cstr", "reactor_c.svg"),
     ("equilibrium_reactor", "reactor_e.svg"),
     ("gibbs_reactor", "reactor_g.svg"),
     ("plug_flow_reactor", "reactor_pfr.svg"),
@@ -32,22 +33,24 @@ from idaes.ui.icons import UnitModelIcon
     ("pressure_changer", "compressor.svg"),
     ("heat_exchanger", "heat_exchanger_1.svg"),
     ("heat_exchanger_1D", "heat_exchanger_1.svg"),
-    ("statejunction", "NONE"),
-    ("translator", "NONE"),
+    ("statejunction", "default.svg"),
+    ("translator", "default.svg"),
     ("packed_column", "packed_column_1.svg"),
     ("tray_column", "tray_column_1.svg")]
 )
 @pytest.mark.unit
 def test_icon_mapping(test_input, expected):
     assert UnitModelIcon(test_input).icon == expected
+    with pytest.raises(ValueError):
+        UnitModelIcon("unregistered_model", "not_default")
 
 @pytest.mark.parametrize(
     "model_name,expected",
     [(
         "default",
-        "{'groups': {'in': {'position': {'name': 'left', 'args': {'x': 2, 'y': 0, 'dx': 1, 'dy': 1}}, "
+        "{'groups': {'in': {'position': {'name': 'left', 'args': {'x': 10, 'y': 35}}, "
         "'attrs': {'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': "
-        "'<g><rect/></g>'}, 'out': {'position': {'name': 'left', 'args': {'x': 48, 'y': 50, 'dx': 1, 'dy': 1}}, "
+        "'<g><rect/></g>'}, 'out': {'position': {'name': 'left', 'args': {'x': 41, 'y': 35}}, "
         "'attrs': {'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': "
         "'<g><rect/></g>'}}, 'items':[]}"
     ),

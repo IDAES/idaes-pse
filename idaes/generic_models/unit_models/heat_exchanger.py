@@ -121,7 +121,15 @@ This config can be given by the cold side name instead of cold_side_config.""",
 countercurrent temperature difference.}""",
         ),
     )
-
+    config.declare(
+        "side_1_is_hot",
+        ConfigValue(
+            default=True,
+            domain=bool,
+            doc="""If True, side_1 is an alias for hot_side. Otherwise, side_1
+is an alias for cold_side""",
+        ),
+    )
 
 def delta_temperature_lmtd_callback(b):
     r"""
@@ -286,10 +294,16 @@ class HeatExchangerData(UnitModelBlockData):
             # compatible with the tube and shell notation
             setattr(config, config.cold_side_name, config.cold_side_config)
 
-        if config.cold_side_name in ["hot_side", "side_1"]:
-            raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_1'].")
-        if config.hot_side_name in ["cold_side", "side_2"]:
-            raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_2'].")
+        if config.side_1_is_hot:
+            if config.cold_side_name in ["hot_side", "side_1"]:
+                raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_1'].")
+            if config.hot_side_name in ["cold_side", "side_2"]:
+                raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_2'].")
+        else:
+            if config.cold_side_name in ["hot_side", "side_2"]:
+                raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_2'].")
+            if config.hot_side_name in ["cold_side", "side_1"]:
+                raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_1'].")
 
     def build(self):
         """
@@ -329,10 +343,16 @@ class HeatExchangerData(UnitModelBlockData):
         # compatability with older models.  Using add_object_reference keeps
         # these from showing up when you iterate through pyomo compoents in a
         # model, so only the user specified control volume names are "seen"
-        if not hasattr(self, "side_1"):
-            add_object_reference(self, "side_1", hot_side)
-        if not hasattr(self, "side_2"):
-            add_object_reference(self, "side_2", cold_side)
+        if config.side_1_is_hot:
+            if not hasattr(self, "side_1"):
+                add_object_reference(self, "side_1", hot_side)
+            if not hasattr(self, "side_2"):
+                add_object_reference(self, "side_2", cold_side)
+        else:
+            if not hasattr(self, "side_1"):
+                add_object_reference(self, "side_1", cold_side)
+            if not hasattr(self, "side_2"):
+                add_object_reference(self, "side_2", hot_side)
         if not hasattr(self, "hot_side"):
             add_object_reference(self, "hot_side", hot_side)
         if not hasattr(self, "cold_side"):
@@ -404,17 +424,29 @@ class HeatExchangerData(UnitModelBlockData):
             block=cold_side,
             doc="Cold side outlet")
 
+        if not config.side_1_is_hot:
+            i1, i2 = i2, i1
+            o1, o2 = o2, o1
+
         # Using Andrew's function for now.  I want these port names for backward
         # compatablity, but I don't want them to appear if you iterate throught
         # components and add_object_reference hides them from Pyomo.
         if not hasattr(self, "inlet_1"):
             add_object_reference(self, "inlet_1", i1)
+        if not hasattr(self, "side_1_inlet"):
+            add_object_reference(self, "side_1_inlet", i1)
         if not hasattr(self, "inlet_2"):
             add_object_reference(self, "inlet_2", i2)
+        if not hasattr(self, "side_2_inlet"):
+            add_object_reference(self, "side_2_inlet", i2)
         if not hasattr(self, "outlet_1"):
             add_object_reference(self, "outlet_1", o1)
+        if not hasattr(self, "side_1_outlet"):
+            add_object_reference(self, "side_1_outlet", o1)
         if not hasattr(self, "outlet_2"):
             add_object_reference(self, "outlet_2", o2)
+        if not hasattr(self, "side_2_outlet"):
+            add_object_reference(self, "side_2_outlet", o2)
 
         if not hasattr(self, "hot_inlet"):
             add_object_reference(self, "hot_inlet", i1)
