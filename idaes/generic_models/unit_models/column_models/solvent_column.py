@@ -285,18 +285,18 @@ documentation for supported schemes,
         # Packing  parameters
         self.eps_ref = Param(initialize=0.97,units=None,
                              mutable=True,
-                             doc="Packing void space m3/m3")
+                             doc="Packing void space")
 
         self.packing_specific_area = Param(initialize=250,units=pyunits.m**2 / pyunits.m**3,
                            mutable=True,
-                           doc="Packing specific surface area (m2/m3)")
+                           doc="Packing specific surface area")
         
         self.packing_channel_size = Param(initialize=0.1,units=pyunits.m,
                            mutable=True,
-                           doc="Packing channel size (m)")
+                           doc="Packing channel size")
         
         self.hydraulic_diameter = Expression(expr=4 * self.eps_ref / self.packing_specific_area,
-                                 doc="Hydraulic diameter (m)")
+                                 doc="Hydraulic diameter")
 
         # Add the integer indices along vapor phase length domain
         self.zi = Param(self.vapor_phase.length_domain, mutable=True,
@@ -312,17 +312,17 @@ documentation for supported schemes,
         self.diameter_column = Var(domain=Reals,
                                    initialize=0.1,
                                    units=pyunits.m,
-                                   doc='Column diameter (m)')
+                                   doc='Column diameter')
         
         self.area_column = Var(domain=Reals,
                                initialize=0.5,
                                units=pyunits.m**2,
-                               doc='Column cross-sectional area (m2)')
+                               doc='Column cross-sectional area')
         
         self.length_column = Var(domain=Reals,
                                  initialize=4.9,
                                  units=pyunits.m,
-                                 doc='Column length (m)')
+                                 doc='Column length')
 
         # Hydrodynamics
         self.velocity_vap = Var(self.flowsheet().time,
@@ -330,14 +330,14 @@ documentation for supported schemes,
                                 domain=NonNegativeReals,
                                 initialize=2,
                                 units=pyunits.m / pyunits.s,
-                                doc='Vapor superficial velocity (m/s)')
+                                doc='Vapor superficial velocity')
         
         self.velocity_liq = Var(self.flowsheet().time,
                                 self.liquid_phase.length_domain,
                                 domain=NonNegativeReals,
                                 initialize=0.01,
                                 units=pyunits.m / pyunits.s,
-                                doc='Liquid superficial velocity (m/s)')
+                                doc='Liquid superficial velocity')
         
         self.holdup_liq = Var(self.flowsheet().time,
                               self.liquid_phase.length_domain,
@@ -357,7 +357,7 @@ documentation for supported schemes,
                                 self.vapor_phase.length_domain,
                                 initialize=1,
                                 units=pyunits.m / pyunits.s,
-                                doc='Gas velocity at flooding point (m/s)')
+                                doc='Gas velocity at flooding point')
             
         # Flooding fraction 
         def rule_flood_fraction(blk, t, x):
@@ -378,7 +378,7 @@ documentation for supported schemes,
             domain=NonNegativeReals,
             initialize=500,
             units=pyunits.Pa,
-            doc='Equilibruim pressure of diffusing components at interface (Pa)')
+            doc='Equilibruim pressure of diffusing components at interface')
         
         self.interphase_mass_transfer = Var(
             self.flowsheet().time,
@@ -387,7 +387,7 @@ documentation for supported schemes,
             domain=Reals,
             initialize=0.1,
             units=pyunits.mol / (pyunits.s * pyunits.m),
-            doc='Rate at which moles of diffusing species are transfered into/out of vapor phase (mol/m.s)')
+            doc='Rate at which moles of diffusing species are transfered into/out of vapor phase')
         
         self.enhancement_factor = Var(self.flowsheet().time,
                                       self.liquid_phase.length_domain,
@@ -401,7 +401,7 @@ documentation for supported schemes,
                             domain=Reals,
                             initialize=0.0,
                             units=pyunits.J / (pyunits.s * (pyunits.m)),
-                            doc='Rate of convective heat transfer in vapor phase (J/m.s)')
+                            doc='Rate of convective heat transfer in vapor phase')
 
         # =====================================================================
         # Add performance equations
@@ -412,7 +412,7 @@ documentation for supported schemes,
                                     self.vapor_phase.length_domain,
                                     initialize=0.9,
                                     units=(pyunits.m)**2 / (pyunits.m)**3,
-                                    doc='Specific interfacial area (m2/m3)')
+                                    doc='Specific interfacial area')
 
         # ---------------------------------------------------------------------
         # Geometry constraints
@@ -630,14 +630,12 @@ documentation for supported schemes,
                          doc="Convective interphase heat transfer")
         def vapor_phase_convective_heat_flow(blk, t, x):
             if x == self.vapor_phase.length_domain.first():
-                return blk.heat_flow_vap[t, x] == 0
+                return Constraint.Skip
             else:
                 zb = self.vapor_phase.length_domain.at(value(self.zi[x]) - 1)
                 return blk.heat_flow_vap[t, x] == blk.h_v_Ack[t, x] * \
-                    (((blk.liquid_phase.properties[t, x].temperature + \
-                      blk.liquid_phase.properties[t, zb].temperature)/2) -
-                      ((blk.vapor_phase.properties[t, zb].temperature + \
-                        blk.vapor_phase.properties[t, x].temperature)/2))
+                    (blk.liquid_phase.properties[t, zb].temperature -
+                     blk.vapor_phase.properties[t, x].temperature)
                     
         # Total rate of heat transfer into/out of vapor phase[J/s.m]
         @self.Constraint(self.flowsheet().time,
