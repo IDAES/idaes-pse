@@ -22,7 +22,8 @@ from idaes.generic_models.properties.core.generic.generic_property import \
 from idaes.generic_models.properties.core.state_definitions import FTPx
 
 from idaes.generic_models.properties.core.phase_equil.henry import \
-    ConstantH, HenryType, henry_equilibrium_ratio
+    ConstantH, HenryType, henry_equilibrium_ratio, _raise_henry_type_error, \
+        get_henry_concentration_term
 from idaes.generic_models.properties.core.phase_equil.forms import \
     fugacity
 from pytest import approx
@@ -148,6 +149,49 @@ def test_constant_H():
     assert isinstance(m.state[0].henry, Expression)
     assert len(m.state[0].henry) == 1
     assert m.state[0].henry["Liq", "H2O"]._expr is m.params.H2O.henry_ref_Liq
+
+@pytest.mark.unit
+def test_invalid_henry_type():
+    with pytest.raises(ConfigurationError,
+                   match="Unrecognized value for HenryType HenryType.Dummy"):
+        _raise_henry_type_error(HenryType.Dummy)
+    
+    m = ConcreteModel()
+    m.henry = {("Liq","H2O"):1}
+    henry_dict = {"type":HenryType.Dummy}
+    
+    def debugMethod():
+        return 42
+    
+    m.params = GenericParameterBlock(default={
+        "components": {"H2O": {"parameter_data": {"temperature_crit": 647.3,
+                                                  "henry_ref": {
+                                                      "Liq": 86}},
+                                "henry_component": {
+                                    "Liq": {"method": debugMethod,
+                                            "type": HenryType.Dummy}},
+                                "phase_equilibrium_form": {
+                                    ("Vap", "Liq"): fugacity}}},
+        "phases": {"Liq": {"equation_of_state": DummyEoS},
+                    "Vap": {"equation_of_state": DummyEoS}},
+        "state_definition": FTPx,
+        "pressure_ref": 1e5,
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                        "length": pyunits.m,
+                        "mass": pyunits.kg,
+                        "amount": pyunits.mol,
+                        "temperature": pyunits.K}})
+    
+    with pytest.raises(ConfigurationError,
+                   match="Unrecognized value for HenryType HenryType.Dummy"):
+        get_henry_concentration_term(m,henry_dict)
+        
+
+    with pytest.raises(ConfigurationError,
+                   match="Unrecognized value for HenryType HenryType.Dummy"):
+        henry_equilibrium_ratio(m, "Liq", "H2O")
+        
     
 @pytest.mark.component
 def test_equilibrium_ratio():

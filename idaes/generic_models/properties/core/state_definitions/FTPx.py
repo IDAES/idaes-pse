@@ -766,7 +766,7 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps,
         mRR_failed=True
     # Regardless of the failure mode, log a warning
     if mRR_failed:
-        _log.warning("{} - phase faction initialization using "
+        _log.warning("Block {} - phase faction initialization using "
                      "modified Rachford-Rice failed. This could be "
                      "because a component is essentially "
                      "nonvolatile or noncondensible, or "

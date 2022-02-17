@@ -63,6 +63,25 @@ class DummyParameterData(GenericParameterData):
 def test_set_metadata():
     assert set_metadata(None) is None
 
+# Dummy methods for dummied submodules
+class dummy_pe():
+    def return_expression(b, *args):
+        # Return a dummy expression for the constraint
+        return b.temperature == 100
+
+
+def phase_equil(b, *args):
+    pass
+
+
+# @declare_process_block_class("DummyParameterBlock")
+# class DummyParameterData(GenericParameterData):
+#     def configure(self):
+#         self.configured = True
+
+#     def parameters(self):
+#         self.parameters_set = True
+
 
 class TestInvalidBounds(object):
 
@@ -1266,7 +1285,10 @@ class TestCommon(object):
                            "in block props\[1\]. Check your initialization."):
             frame.props[1].params.\
                 config.state_definition.state_initialization(frame.props[1])
-                
+
+# class TestInitialization(object):
+#     pass
+
 class TestModifiedRachfordRice(object):
     @pytest.fixture(scope="class")
     def model(self):
@@ -1319,3 +1341,27 @@ class TestModifiedRachfordRice(object):
                 "implementation of the saturation pressure, Henry's law method, "
                 "or liquid density.")
         m.K["a"] = 0.5
+        
+    @pytest.mark.unit
+    def test_unphysical_mole_fracs(self,model,caplog):
+        m = model
+        m.mole_frac_comp["a"] = -20
+        m.mole_frac_comp["b"] = -20
+        m.mole_frac_comp["c"] = -20
+        #vl_comps_list = ["a","b","c"]
+        vap_frac = _modified_rachford_rice(m, m.K, ["a"], ["b"],["c"])
+        assert vap_frac is None
+        assert len(caplog.records) == 1
+        record = caplog.records[0]
+        assert record.levelno == idaeslog.WARNING
+        assert record.getMessage() == (
+            "Block George - phase faction initialization using "
+                         "modified Rachford-Rice failed. This could be "
+                         "because a component is essentially "
+                         "nonvolatile or noncondensible, or "
+                         "because mole fractions sum to more than "
+                         "one."
+            )
+        m.mole_frac_comp["a"] = 1/3
+        m.mole_frac_comp["b"] = 1/3
+        m.mole_frac_comp["c"] = 1/3

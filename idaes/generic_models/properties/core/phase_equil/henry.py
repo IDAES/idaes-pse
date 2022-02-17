@@ -39,6 +39,7 @@ class HenryType(Enum):
     Kpc = 51
     Hxp = 2
     Kpx = 52
+    Dummy = 999 # To test error handling
 
 
 # Define a method for getting the correct concentration term
