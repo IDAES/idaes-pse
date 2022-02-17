@@ -703,6 +703,12 @@ class FlowsheetSerializer:
             "router": {"name": "manhattan", "padding": padding},
             "connector": {"name": "jumpover", "attrs": {"line": {"stroke": "#5c9adb"}}},
             "id": name,
+            "attrs": {
+                "line": {
+                    "stroke": '#979797',
+                    "stroke-width": 2
+                }
+            },
             "labels": [
                 # This label MUST be first or the show/hide will fail
                 {
