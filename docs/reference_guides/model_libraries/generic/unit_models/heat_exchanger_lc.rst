@@ -188,7 +188,7 @@ variables should also be fixed.
       elif t >= 1200:
           m.fs.HE.shell_inlet.temperature[t].fix(288.15)
   
-  solver.solve(m, tee=True)
+  solver.solve(m)
   
   # Post processing / visualizations
   t_tube_out = pe.value(m.fs.HE.tube.properties_out[:].temperature)
