@@ -16,7 +16,7 @@ Degrees of Freedom
 ``HeatExchangerLumpedCapacitance`` has three degrees of freedom. For most scenarios, these will be the wall 
 temperature and exit temperatures on the hot and cold sides. The constraints for this model 
 should be similar to those of the standard 
-:ref:`Heat Exchanger <technical_specs/model_libraries/generic/unit_models/heat_exchanger:HeatExchanger (0D)>` 
+:ref:`Heat Exchanger <reference_guides/model_libraries/generic/unit_models/heat_exchanger:HeatExchanger (0D)>` 
 model. In lieu of "heat_transfer_coefficient", however, the following should be fixed:
 
 * ua_cold_side
@@ -27,13 +27,13 @@ The user may also add constraints to make these functions of fluid state.
 Model Structure
 ---------------
 
-Structure is derived from the base 0D :ref:`Heat Exchanger <technical_specs/model_libraries/generic/unit_models/heat_exchanger:Model Structure>` 
+Structure is derived from the base 0D :ref:`Heat Exchanger <reference_guides/model_libraries/generic/unit_models/heat_exchanger:Model Structure>` 
 model. Aside from adding new variables and constraints, the structure of this model is unchanged.
 
 Variables
 ---------
 
-All variables from the base 0D :ref:`Heat Exchanger <technical_specs/model_libraries/generic/unit_models/heat_exchanger:Variables>` 
+All variables from the base 0D :ref:`Heat Exchanger <reference_guides/model_libraries/generic/unit_models/heat_exchanger:Variables>` 
 model are included. This model contains the following variables in addition. Each of these is indexed in the time domain.
 
 =========================== ============================= ==========================================================================================
@@ -67,7 +67,7 @@ thermal_fouling_hot_side    :math:`R_{foul, hot}`  Total thermal resistance due 
 Constraints
 -----------
 
-Note: all constraints from the base 0D :ref:`Heat Exchanger <technical_specs/model_libraries/generic/unit_models/heat_exchanger:Constraints>` 
+Note: all constraints from the base 0D :ref:`Heat Exchanger <reference_guides/model_libraries/generic/unit_models/heat_exchanger:Constraints>` 
 model are also included.
 
 Total overall heat transfer coefficient:
@@ -99,7 +99,7 @@ Although the flowsheet configuration is ``dynamic``, the unit model and its
 control volumes are not.
 
 To use dynamic control volumes, constraints should be added that relate flow rate to 
-pressure loss. In that case, the :ref:`volume <technical_specs/core/control_volume_0d:add_geometry>` 
+pressure loss. In that case, the :ref:`volume <reference_guides/core/control_volume_0d:add_geometry>` 
 variables should also be fixed.
 
 .. testcode::
