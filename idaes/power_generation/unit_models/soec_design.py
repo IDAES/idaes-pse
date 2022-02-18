@@ -381,11 +381,12 @@ class SoecDesignData(UnitModelBlockData):
         properties.  The stream being translated contains only O2.
         """
         t0 = self.flowsheet().time.first()
-        for c in self.o2_translator.properties_out[t0].mole_frac_comp.keys():
-            self.o2_translator.properties_out[:].mole_frac_comp[c].fix(0)
+        comps = set(self.o2_translator.properties_out[t0].mole_frac_comp.keys())
+        comps.remove("O2")
+        @self.o2_translator.Constraint(self.flowsheet().time, comps)
+        def mole_frac_comp_eqn(b, t, c):
+            return b.properties_out[t].mole_frac_comp[c] == 1e-19
         self.o2_translator.properties_out[:].mole_frac_comp["O2"] = 1
-        # Unfix the O2 mole fraction because there is a sum to 1 constraint
-        self.o2_translator.properties_out[:].mole_frac_comp["O2"].unfix()
 
         self._translator_ftp_constraints(self.o2_translator)
 
@@ -396,7 +397,7 @@ class SoecDesignData(UnitModelBlockData):
         t0 = self.flowsheet().time.first()
         # There is no O2.  So set the value to zero.  Don't need a constraint
         # for this due to the sum = 1 constraint
-        self.o2_translator.properties_out[:].mole_frac_comp["O2"] = 0
+        self.o2_translator.properties_out[:].mole_frac_comp["O2"] = 1e-19
 
         # Add constraints for the other componets
         comps = set(self.h2_inlet_translator.properties_in[t0].mole_frac_comp.keys())
