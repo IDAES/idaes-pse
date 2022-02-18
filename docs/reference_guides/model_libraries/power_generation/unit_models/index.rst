@@ -17,6 +17,7 @@ Unit Models
     phase_separator
     drum
     downcomer
+    soec_design
     steamheater
     boiler_fireside
     watertank
