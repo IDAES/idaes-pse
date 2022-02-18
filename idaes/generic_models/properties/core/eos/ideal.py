@@ -247,6 +247,7 @@ class Ideal(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
         return 1
 
+    # TODO Bubble/dew methods broken for Henry's law
     @staticmethod
     def log_fug_phase_comp_Tbub(b, p, j, pp):
         pobj = b.params.get_phase(p)

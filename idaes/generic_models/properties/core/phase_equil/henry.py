@@ -70,6 +70,7 @@ def get_henry_concentration_term(blk, henry_dict, log=False):
     return getattr(blk, pre+conc_type+sub)
 
 
+# TODO pressure -> fugacity
 # Define a method for returning vapor pressure of Henry components
 def henry_pressure(b, p, j, T=None):
     henry_def = b.params.get_component(j).config.henry_component[p]
@@ -94,7 +95,7 @@ def henry_pressure(b, p, j, T=None):
 
     return h_press
 
-
+# TODO pressure -> fugacity
 def log_henry_pressure(b, p, j, T=None):
     henry_def = b.params.get_component(j).config.henry_component[p]
 
