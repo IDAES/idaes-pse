@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 # Import Pyomo libraries
 from pyomo.environ import (Var, Param, Reals, value,
                            TransformationFactory, Constraint,
-                           TerminationCondition, units as pyunits)
+                           check_optimal_termination, units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae import ContinuousSet
@@ -178,7 +178,7 @@ constructed,
 **default** - "simple_correlation".
 **Valid values:** {
 **"simple_correlation"** - Use a simplified pressure drop correlation,
-**"ergun_correlation"** - Use the ergun equation.}"""))
+**"ergun_correlation"** - Use the Ergun equation.}"""))
 
     # Create template for phase specific config arguments
     _PhaseTemplate = UnitModelBlockData.CONFIG()
@@ -647,11 +647,11 @@ see reaction package for documentation.}"""))
                              doc="Gas side pressure drop calculation -"
                                  "simplified pressure drop")
             def gas_phase_config_pressure_drop(b, t, x):
-                #  add 1/pyunits.s to account for missing parameter units
+                #  0.2/s is a unitted constant in the correlation
                 return pyunits.convert(
                     b.gas_phase.deltaP[t, x],
                     to_units=units_meta_solid('pressure') /
-                    units_meta_solid('length')) == -0.2/pyunits.s*(
+                    units_meta_solid('length')) == -(0.2/pyunits.s)*(
                         b.velocity_superficial_gas[t, x] *
                         (pyunits.convert(
                             b.solid_phase.properties[t, x].dens_mass_particle,
@@ -663,15 +663,15 @@ see reaction package for documentation.}"""))
             @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Gas side pressure drop calculation -"
-                                 "ergun equation")
+                                 "Ergun equation")
             def gas_phase_config_pressure_drop(b, t, x):
-                #  add 1/pyunits.s to account for missing parameter units
+                #  150/s is a unitted constant in the correlation
                 return (-pyunits.convert(
                     b.gas_phase.deltaP[t, x],
                     to_units=units_meta_solid('pressure') /
                     units_meta_solid('length')) ==
                         (
-                        150/pyunits.s*(1 - b.bed_voidage) ** 2 *
+                        (150/pyunits.s)*(1 - b.bed_voidage) ** 2 *
                         b.gas_phase.properties[t, x].visc_d *
                         (b.velocity_superficial_gas[t, x] +
                          pyunits.convert(b.velocity_superficial_solid[t],
@@ -948,8 +948,7 @@ see reaction package for documentation.}"""))
         init_log.info('Initialize Hydrodynamics')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 2 {}.".format(
                         idaeslog.condition(results))
@@ -1006,8 +1005,7 @@ see reaction package for documentation.}"""))
                            'and no pressure drop')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 3a {}.".format(
                         idaeslog.condition(results))
@@ -1116,8 +1114,7 @@ see reaction package for documentation.}"""))
                                'and no pressure drop')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 3b {}.".format(
                             idaeslog.condition(results))
@@ -1152,8 +1149,7 @@ see reaction package for documentation.}"""))
                                'and pressure drop')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 3c {}.".format(
                             idaeslog.condition(results))
@@ -1216,8 +1212,7 @@ see reaction package for documentation.}"""))
             init_log.info('Initialize Energy Balances')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 4 {}.".format(
                             idaeslog.condition(results))
@@ -1246,8 +1241,7 @@ see reaction package for documentation.}"""))
             init_log.info('Initialize Energy Balances')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 4 {}.".format(
                             idaeslog.condition(results))

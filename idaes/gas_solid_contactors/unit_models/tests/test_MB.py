@@ -19,7 +19,7 @@ Author: Chinedu Okoli
 import pytest
 
 from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
+                           check_optimal_termination,
                            SolverStatus,
                            value,
                            Var,
@@ -230,8 +230,7 @@ class TestIronOC(object):
         results = solver.solve(iron_oc)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
+        assert check_optimal_termination(results)
         assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.solver
@@ -244,12 +243,12 @@ class TestIronOC(object):
                 iron_oc.fs.unit.velocity_superficial_gas[0, 1].value)
         assert (pytest.approx(0.0039, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_solid[0].value)
+        # Check the pressure drop that occurs across the bed
         assert (pytest.approx(198217.7068, abs=1e-2) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
-        # Check that pressure drop occurs across the bed
-        assert value(
+        assert (pytest.approx(1782.2932, abs=1e-2) ==
                 iron_oc.fs.unit.gas_inlet.pressure[0] -
-                iron_oc.fs.unit.gas_outlet.pressure[0]) >= 0
+                iron_oc.fs.unit.gas_outlet.pressure[0])
 
     @pytest.mark.component
     def test_units_consistent(self, iron_oc):
@@ -352,7 +351,7 @@ class TestIronOC_EnergyBalanceType(object):
         # Fix inlet port variables for gas and solid
         m.fs.unit.gas_inlet.flow_mol[0].fix(128.20513)  # mol/s
         m.fs.unit.gas_inlet.temperature[0].fix(1183.15)  # K
-        m.fs.unit.gas_inlet.pressure[0].fix(2.00E5) # Pa = 1E5 bar
+        m.fs.unit.gas_inlet.pressure[0].fix(2.00E5)  # Pa = 1E5 bar
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.02499)
         m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.00001)
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.975)
@@ -429,8 +428,7 @@ class TestIronOC_EnergyBalanceType(object):
         results = solver.solve(iron_oc)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
+        assert check_optimal_termination(results)
         assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.solver
