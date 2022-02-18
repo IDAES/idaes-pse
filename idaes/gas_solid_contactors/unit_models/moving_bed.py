@@ -570,7 +570,7 @@ see reaction package for documentation.}"""))
                                units=pyunits.dimensionless)
         self.gas_solid_htc = Var(self.flowsheet().time,
                                  self.length_domain,
-                                 domain=Reals, initialize=1.0,
+                                 domain=Reals, initialize=1.0E3,
                                  doc='Gas-solid heat transfer coefficient',
                                  units=units_meta_gas(
                                      'heat_transfer_coefficient'))
@@ -1330,7 +1330,7 @@ see reaction package for documentation.}"""))
         plt.legend(loc=0, ncol=2)
         plt.grid()
         plt.xlabel("Bed height [-]")
-        plt.ylabel("Total Pressure [bar]")
+        plt.ylabel("Total Pressure [Pa]")
         fig_P.savefig('Pressure.png')
 
         # Temperature profile

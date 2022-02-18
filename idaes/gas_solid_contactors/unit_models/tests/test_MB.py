@@ -143,7 +143,7 @@ class TestIronOC(object):
         # Fix inlet port variables for gas and solid
         m.fs.unit.gas_inlet.flow_mol[0].fix(128.20513)  # mol/s
         m.fs.unit.gas_inlet.temperature[0].fix(298.15)  # K
-        m.fs.unit.gas_inlet.pressure[0].fix(2.00)  # bar
+        m.fs.unit.gas_inlet.pressure[0].fix(2.00E5)  # Pa = 1E5 bar
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.02499)
         m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.00001)
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.975)
@@ -219,7 +219,7 @@ class TestIronOC(object):
                 optarg={'tol': 1e-6},
                 gas_phase_state_args={"flow_mol": 128.20513,
                                       "temperature": 1183.15,
-                                      "pressure": 2.00},
+                                      "pressure": 2.00E5},
                 solid_phase_state_args={"flow_mass": 591.4,
                                         "temperature": 1183.15})
 
@@ -244,7 +244,7 @@ class TestIronOC(object):
                 iron_oc.fs.unit.velocity_superficial_gas[0, 1].value)
         assert (pytest.approx(0.0039, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_solid[0].value)
-        assert (pytest.approx(1.975, abs=1e-2) ==
+        assert (pytest.approx(198217.7068, abs=1e-2) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
         # Check that pressure drop occurs across the bed
         assert value(
@@ -352,7 +352,7 @@ class TestIronOC_EnergyBalanceType(object):
         # Fix inlet port variables for gas and solid
         m.fs.unit.gas_inlet.flow_mol[0].fix(128.20513)  # mol/s
         m.fs.unit.gas_inlet.temperature[0].fix(1183.15)  # K
-        m.fs.unit.gas_inlet.pressure[0].fix(2.00)  # bar
+        m.fs.unit.gas_inlet.pressure[0].fix(2.00E5) # Pa = 1E5 bar
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.02499)
         m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.00001)
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.975)
@@ -418,7 +418,7 @@ class TestIronOC_EnergyBalanceType(object):
                 optarg={'tol': 1e-6},
                 gas_phase_state_args={"flow_mol": 128.20513,
                                       "temperature": 1183.15,
-                                      "pressure": 2.00},
+                                      "pressure": 2.00E5},
                 solid_phase_state_args={"flow_mass": 591.4,
                                         "temperature": 1183.15})
 
@@ -443,7 +443,7 @@ class TestIronOC_EnergyBalanceType(object):
                 iron_oc.fs.unit.velocity_superficial_gas[0, 1].value)
         assert (pytest.approx(0.0039, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_solid[0].value)
-        assert (pytest.approx(1.975, abs=1e-2) ==
+        assert (pytest.approx(198214.8255, abs=1e-2) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
         # Check that pressure drop occurs across the bed
         assert value(
