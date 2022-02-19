@@ -287,7 +287,7 @@ class SoecDesignData(UnitModelBlockData):
     def _add_constraints(self):
         """Add unit model constraints"""
         @self.Constraint(self.flowsheet().time)
-        def water_utilitzation_eqn(b, t):
+        def water_utilization_eqn(b, t):
             return (
                 b.electrolysis_reactor.control_volume.properties_out[t].flow_mol *
                 b.electrolysis_reactor.control_volume.properties_out[
@@ -504,13 +504,11 @@ class SoecDesignData(UnitModelBlockData):
         self.config.hydrogen_side_package.set_default_scaling("mole_frac_comp", 10)
         self.electrolysis_prop_params.set_default_scaling("mole_frac_comp", 10)
         self.config.oxygen_side_package.set_default_scaling("mole_frac_phase_comp", 10)
-        self.config.hydrogen_side_package.set_default_scaling("mole_frac_comp", 10)
+        self.config.hydrogen_side_package.set_default_scaling("mole_frac_phase_comp", 10)
         self.electrolysis_prop_params.set_default_scaling("mole_frac_phase_comp", 10)
 
         # Set some other scale factors that we have a good guess for
         unt = self.electrolysis_reactor
-        iscale.set_scaling_factor(
-            unt.control_volume.rate_reaction_extent[0.0, "h2_cmb"], 10)
         iscale.set_scaling_factor(
             unt.control_volume.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
         iscale.set_scaling_factor(
@@ -537,13 +535,30 @@ class SoecDesignData(UnitModelBlockData):
         """Calculate scale factors for the unit model equations"""
         for t in self.flowsheet().time:
             iscale.constraint_scaling_transform(
+                self.water_utilization_eqn[t],
+                iscale.get_scaling_factor(
+                    self.electrolysis_reactor.control_volume.properties_in[
+                        t
+                    ].flow_mol
+                )
+            )
+            iscale.constraint_scaling_transform(
                 self.current_eqn[t],
                 iscale.get_scaling_factor(self.current[t])
+            )
+            iscale.constraint_scaling_transform(
+                self.o2_mixer.pressure_eqn[t],
+                iscale.get_scaling_factor(self.o2_mixer.mixed_state[t].pressure)
             )
             iscale.constraint_scaling_transform(
                 self.o2_translator.pressure_eqn[t],
                 iscale.get_scaling_factor(
                     self.o2_translator.properties_in[t].pressure)
+            )
+            iscale.constraint_scaling_transform(
+                self.o2_translator.temperature_eqn[t],
+                iscale.get_scaling_factor(
+                    self.o2_translator.properties_in[t].temperature)
             )
             iscale.constraint_scaling_transform(
                 self.o2_translator.temperature_eqn[t],
@@ -570,11 +585,57 @@ class SoecDesignData(UnitModelBlockData):
                 iscale.get_scaling_factor(
                     self.h2_inlet_translator.properties_in[t].flow_mol)
             )
-            if self.config.has_heat_transfer:
+            iscale.constraint_scaling_transform(
+                self.h2_outlet_translator.pressure_eqn[t],
+                iscale.get_scaling_factor(
+                    self.h2_outlet_translator.properties_in[t].pressure)
+            )
+            iscale.constraint_scaling_transform(
+                self.h2_outlet_translator.temperature_eqn[t],
+                iscale.get_scaling_factor(
+                    self.h2_outlet_translator.properties_in[t].temperature)
+            )
+            iscale.constraint_scaling_transform(
+                self.h2_outlet_translator.flow_mol_eqn[t],
+                iscale.get_scaling_factor(
+                    self.h2_outlet_translator.properties_in[t].flow_mol)
+            )
+            iscale.constraint_scaling_transform(self.cell_potential_eqn[t], 1)
+            if not self.config.has_heat_transfer:
                 iscale.constraint_scaling_transform(
                     self.heat_transfer_eqn[t],
                     iscale.get_scaling_factor(self.heat[t])
                 )
+        for (t, i), c in self.o2_translator.mole_frac_comp_eqn.items():
+            iscale.constraint_scaling_transform(
+                c,
+                iscale.get_scaling_factor(
+                    self.o2_translator.properties_out[t].mole_frac_comp[i])
+            )
+        for (t, i), c in self.h2_inlet_translator.mole_frac_comp_eqn.items():
+            iscale.constraint_scaling_transform(
+                c,
+                iscale.get_scaling_factor(
+                    self.h2_inlet_translator.properties_out[t].mole_frac_comp[i])
+            )
+        for (t, i), c in self.h2_outlet_translator.mole_frac_comp_eqn.items():
+            iscale.constraint_scaling_transform(
+                c,
+                iscale.get_scaling_factor(
+                    self.h2_outlet_translator.properties_out[t].mole_frac_comp[i])
+            )
+        for (t, i), v in self.electrolysis_reactor.control_volume.rate_reaction_extent.items():
+            iscale.set_scaling_factor(
+                v,
+                iscale.get_scaling_factor(
+                    self.h2_inlet_translator.properties_out[t].flow_mol)
+            )
+        for (t, p, i), v in self.electrolysis_reactor.control_volume.rate_reaction_generation.items():
+            iscale.set_scaling_factor(
+                v,
+                iscale.get_scaling_factor(
+                    self.h2_inlet_translator.properties_out[t].flow_mol)
+            )
 
 
     def initialize(
