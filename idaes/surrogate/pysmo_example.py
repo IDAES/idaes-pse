@@ -27,55 +27,55 @@ pysmo_trainer = ps.PysmoPolyTrainer(
     extra_features = ['x1 / x2'],
     solution_method='pyomo')
 
-# # Train surrogate
-# a1 = pysmo_trainer.train_surrogate()
+# Train surrogate
+a1 = pysmo_trainer.train_surrogate()
 
-# p1 = ps.PysmoSurrogate(a1, input_labels, output_labels, bnds)
-# # Test surrogate evaluation
-# b1 = p1.evaluate_surrogate(validation_data[['x1', 'x2']])
-# # Test block generation
-# blk1 = SurrogateBlock(concrete=True)
-# blk1.build_model(p1)
-# blk1.pprint()
-# # Test save and load
-# zv1 = p1.save()
-# p1_load = p1.load(zv1)
-# c1 = p1_load.evaluate_surrogate(validation_data[['x1', 'x2']])
-# assert b1.equals(c1)
-# blk1_load = SurrogateBlock(concrete=True)
-# blk1_load.build_model(p1_load)
-# blk1_load.pprint()
+p1 = ps.PysmoSurrogate(a1, input_labels, output_labels, bnds)
+# Test surrogate evaluation
+b1 = p1.evaluate_surrogate(validation_data[['x1', 'x2']])
+# Test block generation
+blk1 = SurrogateBlock(concrete=True)
+blk1.build_model(p1)
+blk1.pprint()
+# Test save and load
+zv1 = p1.save()
+p1_load = p1.load(zv1)
+c1 = p1_load.evaluate_surrogate(validation_data[['x1', 'x2']])
+assert b1.equals(c1)
+blk1_load = SurrogateBlock(concrete=True)
+blk1_load.build_model(p1_load)
+blk1_load.pprint()
 
 
 
-# pysmo_trainer = ps.PysmoRBFTrainer(
-#     input_labels=input_labels,
-#     output_labels=output_labels,
-#     # input_bounds=bnds,
-#     training_dataframe=training_data,
-#     validation_dataframe=validation_data,
-#     solution_method = 'bfgs',
-#     regularization=False,
-#     basis_function = 'cubic')
+pysmo_trainer = ps.PysmoRBFTrainer(
+    input_labels=input_labels,
+    output_labels=output_labels,
+    # input_bounds=bnds,
+    training_dataframe=training_data,
+    validation_dataframe=validation_data,
+    solution_method = 'bfgs',
+    regularization=False,
+    basis_function = 'cubic')
 
-# # Train surrogate
-# a2 = pysmo_trainer.train_surrogate()
+# Train surrogate
+a2 = pysmo_trainer.train_surrogate()
 
-# p2 = ps.PysmoSurrogate(a2, input_labels, output_labels)
-# # Test surrogate evaluation
-# b2 = p2.evaluate_surrogate(validation_data[['x1', 'x2']])
-# # Test block generation
-# blk2 = SurrogateBlock(concrete=True)
-# blk2.build_model(p2)
-# blk2.pprint()
-# # Test save and load
-# zv2 = p2.save()
-# p2_load = p2.load(zv2)
-# c2 = p2_load.evaluate_surrogate(validation_data[['x1', 'x2']])
-# assert b2.equals(c2)
-# blk2_load = SurrogateBlock(concrete=True)
-# blk2_load.build_model(p2_load)
-# blk2_load.pprint()
+p2 = ps.PysmoSurrogate(a2, input_labels, output_labels)
+# Test surrogate evaluation
+b2 = p2.evaluate_surrogate(validation_data[['x1', 'x2']])
+# Test block generation
+blk2 = SurrogateBlock(concrete=True)
+blk2.build_model(p2)
+blk2.pprint()
+# Test save and load
+zv2 = p2.save()
+p2_load = p2.load(zv2)
+c2 = p2_load.evaluate_surrogate(validation_data[['x1', 'x2']])
+assert b2.equals(c2)
+blk2_load = SurrogateBlock(concrete=True)
+blk2_load.build_model(p2_load)
+blk2_load.pprint()
 
 
 
