@@ -466,6 +466,13 @@ class SoecDesignData(UnitModelBlockData):
         self.config.hydrogen_side_package.set_default_scaling("flow_mol_phase", scale)
         self.electrolysis_prop_params.set_default_scaling("flow_mol_phase", scale)
 
+        for (t, i), v in self.electrolysis_reactor.control_volume.rate_reaction_extent.items():
+            iscale.set_scaling_factor(v, scale)
+        for (t, p, i), v in self.electrolysis_reactor.control_volume.rate_reaction_generation.items():
+            iscale.set_scaling_factor(v, scale)
+
+
+
     def set_heat_scale(self, scale=1e-5):
         """Set the heat transfer scale factor roughly based on the size of the
         process.
@@ -623,18 +630,6 @@ class SoecDesignData(UnitModelBlockData):
                 c,
                 iscale.get_scaling_factor(
                     self.h2_outlet_translator.properties_out[t].mole_frac_comp[i])
-            )
-        for (t, i), v in self.electrolysis_reactor.control_volume.rate_reaction_extent.items():
-            iscale.set_scaling_factor(
-                v,
-                iscale.get_scaling_factor(
-                    self.h2_inlet_translator.properties_out[t].flow_mol)
-            )
-        for (t, p, i), v in self.electrolysis_reactor.control_volume.rate_reaction_generation.items():
-            iscale.set_scaling_factor(
-                v,
-                iscale.get_scaling_factor(
-                    self.h2_inlet_translator.properties_out[t].flow_mol)
             )
 
 
