@@ -30,9 +30,7 @@ from pyomo.environ import (check_optimal_termination,
                            Objective,
                            value)
 
-import idaes
 from idaes.core.util import get_solver
-from idaes.core.solvers import use_idaes_solver_configuration_defaults
 import idaes.core.util.scaling as iscale
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness

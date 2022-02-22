@@ -73,16 +73,6 @@ class dummy_pe():
 def phase_equil(b, *args):
     pass
 
-
-# @declare_process_block_class("DummyParameterBlock")
-# class DummyParameterData(GenericParameterData):
-#     def configure(self):
-#         self.configured = True
-
-#     def parameters(self):
-#         self.parameters_set = True
-
-
 class TestInvalidBounds(object):
 
     @pytest.mark.unit
@@ -261,9 +251,6 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
                 str(frame.props[1].phase_frac[i])
 
         assert_units_consistent(frame.props[1])
-        
-    
-
 
 class Test1PhaseDefinedStateTrueWithBounds(object):
     # Test define_state method with no bounds and defined_State = False
@@ -1286,8 +1273,6 @@ class TestCommon(object):
             frame.props[1].params.\
                 config.state_definition.state_initialization(frame.props[1])
 
-# class TestInitialization(object):
-#     pass
 
 class TestModifiedRachfordRice(object):
     @pytest.fixture(scope="class")
@@ -1348,7 +1333,6 @@ class TestModifiedRachfordRice(object):
         m.mole_frac_comp["a"] = -20
         m.mole_frac_comp["b"] = -20
         m.mole_frac_comp["c"] = -20
-        #vl_comps_list = ["a","b","c"]
         vap_frac = _modified_rachford_rice(m, m.K, ["a"], ["b"],["c"])
         assert vap_frac is None
         assert len(caplog.records) == 1

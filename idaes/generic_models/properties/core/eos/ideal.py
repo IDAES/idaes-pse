@@ -247,7 +247,10 @@ class Ideal(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
         return 1
 
-    # TODO Bubble/dew methods broken for Henry's law
+    # TODO Bubble/dew methods broken for Henry's law---see issue #718
+    # Need to update to call either (log)_henry_pressure() or
+    # or henry_equilibrium_ratio(). Using the former is a problem, because they
+    # don't return Henry pressures at bubble/dew mole fractions
     @staticmethod
     def log_fug_phase_comp_Tbub(b, p, j, pp):
         pobj = b.params.get_phase(p)
