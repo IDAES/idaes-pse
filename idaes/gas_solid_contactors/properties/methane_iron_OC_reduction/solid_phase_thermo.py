@@ -679,5 +679,5 @@ class SolidPhaseStateBlockData(StateBlockData):
         if self.is_property_constructed("sum_component_eqn"):
             iscale.constraint_scaling_transform(
                 self.sum_component_eqn,
-                iscale.get_scaling_factor(self.mole_frac_comp['Fe2O3']),
+                iscale.get_scaling_factor(self.mass_frac_comp['Fe2O3']),
                 overwrite=False)

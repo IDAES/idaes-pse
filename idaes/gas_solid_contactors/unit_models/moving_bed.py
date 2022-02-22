@@ -1273,6 +1273,55 @@ see reaction package for documentation.}"""))
             for t, v in self.gas_solid_htc_eqn.items():
                 iscale.set_scaling_factor(v, 1e-3)
 
+        # scaling for other constraints
+        if hasattr(self, "bed_area_eqn"):
+            for t, v in self.bed_area_eqn.items():
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "gas_phase_area"):
+            for t, v in self.gas_phase_area.items():
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "solid_phase_area"):
+            for t, v in self.solid_phase_area.items():
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "gas_super_vel"):
+            for t, v in self.gas_super_vel.items():
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "solid_super_vel"):
+            for t, v in self.solid_super_vel.items():
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "solid_phase_heat_transfer"):
+            for t, v in self.solid_phase_heat_transfer.items():
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "reynolds_number_particle"):
+            for t, v in self.reynolds_number_particle.items():
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "prandtl_number"):
+            for t, v in self.prandtl_number.items():
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "nusselt_number_particle"):
+            for t, v in self.nusselt_number_particle.items():
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "gas_phase_heat_transfer"):
+            for t, v in self.gas_phase_heat_transfer.items():
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "isothermal_gas_phase"):
+            for t, v in self.isothermal_gas_phase.items():
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "isothermal_solid_phase"):
+            for t, v in self.isothermal_solid_phase.items():
+                iscale.set_scaling_factor(v, 1)
+
     def results_plot(blk):
         '''
         Plot method for common moving bed variables

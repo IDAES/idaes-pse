@@ -37,7 +37,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables,
                                               unused_variables_set)
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
 
 # Import MBR unit model
 from idaes.gas_solid_contactors.unit_models.moving_bed import MBR
@@ -314,6 +314,88 @@ class TestIronOC(object):
         ebal_tol = ebal_gas + ebal_solid - e_reaction
         assert abs(ebal_tol) <= 1e-2
 
+    @pytest.mark.component
+    def test_scaling(self, iron_oc):
+        iscale.calculate_scaling_factors(iron_oc.fs.unit)
+
+        if iron_oc.fs.unit.config.has_pressure_change:
+            assert hasattr(iron_oc.fs.unit, "gas_phase_config_pressure_drop")
+            for t, v in iron_oc.fs.unit.gas_phase_config_pressure_drop.items():
+                assert iscale.get_scaling_factor(v) == 1e2
+
+        if hasattr(iron_oc.fs.unit.gas_phase, "reactions"):
+            assert hasattr(iron_oc.fs.unit, "gas_phase_config_rxn_ext")
+            for t, v in iron_oc.fs.unit.gas_phase_config_rxn_ext.items():
+                assert iscale.get_scaling_factor(v) == 1e3
+
+        if hasattr(iron_oc.fs.unit.solid_phase, "reactions"):
+            assert hasattr(iron_oc.fs.unit, "solid_phase_config_rxn_ext")
+            for t, v in iron_oc.fs.unit.solid_phase_config_rxn_ext.items():
+                assert iscale.get_scaling_factor(v) == 1e3
+
+            assert hasattr(iron_oc.fs.unit, "gas_comp_hetero_rxn")
+            for t, v in iron_oc.fs.unit.gas_comp_hetero_rxn.items():
+                assert iscale.get_scaling_factor(v) == 1e3
+
+        if (iron_oc.fs.unit.config.energy_balance_type
+                != EnergyBalanceType.none):
+            assert hasattr(iron_oc.fs.unit, "gas_solid_htc_eqn")
+            for t, v in iron_oc.fs.unit.gas_solid_htc_eqn.items():
+                assert iscale.get_scaling_factor(v) == 1e-3
+
+        # scaling for other constraints
+        assert hasattr(iron_oc.fs.unit, "bed_area_eqn")
+        for t, v in iron_oc.fs.unit.bed_area_eqn.items():
+            assert iscale.get_scaling_factor(v) == 1
+
+        assert hasattr(iron_oc.fs.unit, "gas_phase_area")
+        for t, v in iron_oc.fs.unit.gas_phase_area.items():
+            assert iscale.get_scaling_factor(v) == 1
+
+        assert hasattr(iron_oc.fs.unit, "solid_phase_area")
+        for t, v in iron_oc.fs.unit.solid_phase_area.items():
+            assert iscale.get_scaling_factor(v) == 1
+
+        assert hasattr(iron_oc.fs.unit, "gas_super_vel")
+        for t, v in iron_oc.fs.unit.gas_super_vel.items():
+            assert iscale.get_scaling_factor(v) == 1
+
+        assert hasattr(iron_oc.fs.unit, "solid_super_vel")
+        for t, v in iron_oc.fs.unit.solid_super_vel.items():
+            assert iscale.get_scaling_factor(v) == 1
+
+        if (iron_oc.fs.unit.config.energy_balance_type
+                != EnergyBalanceType.none):
+            assert hasattr(iron_oc.fs.unit, "solid_phase_heat_transfer")
+            for t, v in iron_oc.fs.unit.solid_phase_heat_transfer.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+            assert hasattr(iron_oc.fs.unit, "reynolds_number_particle")
+            for t, v in iron_oc.fs.unit.reynolds_number_particle.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+            assert hasattr(iron_oc.fs.unit, "prandtl_number")
+            for t, v in iron_oc.fs.unit.prandtl_number.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+            assert hasattr(iron_oc.fs.unit, "nusselt_number_particle")
+            for t, v in iron_oc.fs.unit.nusselt_number_particle.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+            assert hasattr(iron_oc.fs.unit, "gas_phase_heat_transfer")
+            for t, v in iron_oc.fs.unit.gas_phase_heat_transfer.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+        elif (iron_oc.fs.unit.config.energy_balance_type
+                == EnergyBalanceType.none):
+            assert hasattr(iron_oc.fs.unit, "isothermal_gas_phase")
+            for t, v in iron_oc.fs.unit.isothermal_gas_phase.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+            assert hasattr(iron_oc.fs.unit, "isothermal_solid_phase")
+            for t, v in iron_oc.fs.unit.isothermal_solid_phase.items():
+                assert iscale.get_scaling_factor(v) == 1
+
     @pytest.mark.ui
     @pytest.mark.unit
     def test_report(self, iron_oc):
@@ -493,6 +575,88 @@ class TestIronOC_EnergyBalanceType(object):
              _params.mw_comp['Fe2O3']))
         stoichiometric_ratio = mole_solid_reacted/mole_gas_reacted
         assert (pytest.approx(12, abs=1e-6) == stoichiometric_ratio)
+
+    @pytest.mark.component
+    def test_scaling(self, iron_oc):
+        iscale.calculate_scaling_factors(iron_oc.fs.unit)
+
+        if iron_oc.fs.unit.config.has_pressure_change:
+            assert hasattr(iron_oc.fs.unit, "gas_phase_config_pressure_drop")
+            for t, v in iron_oc.fs.unit.gas_phase_config_pressure_drop.items():
+                assert iscale.get_scaling_factor(v) == 1e2
+
+        if hasattr(iron_oc.fs.unit.gas_phase, "reactions"):
+            assert hasattr(iron_oc.fs.unit, "gas_phase_config_rxn_ext")
+            for t, v in iron_oc.fs.unit.gas_phase_config_rxn_ext.items():
+                assert iscale.get_scaling_factor(v) == 1e3
+
+        if hasattr(iron_oc.fs.unit.solid_phase, "reactions"):
+            assert hasattr(iron_oc.fs.unit, "solid_phase_config_rxn_ext")
+            for t, v in iron_oc.fs.unit.solid_phase_config_rxn_ext.items():
+                assert iscale.get_scaling_factor(v) == 1e3
+
+            assert hasattr(iron_oc.fs.unit, "gas_comp_hetero_rxn")
+            for t, v in iron_oc.fs.unit.gas_comp_hetero_rxn.items():
+                assert iscale.get_scaling_factor(v) == 1e3
+
+        if (iron_oc.fs.unit.config.energy_balance_type
+                != EnergyBalanceType.none):
+            assert hasattr(iron_oc.fs.unit, "gas_solid_htc_eqn")
+            for t, v in iron_oc.fs.unit.gas_solid_htc_eqn.items():
+                assert iscale.get_scaling_factor(v) == 1e-3
+
+        # scaling for other constraints
+        assert hasattr(iron_oc.fs.unit, "bed_area_eqn")
+        for t, v in iron_oc.fs.unit.bed_area_eqn.items():
+            assert iscale.get_scaling_factor(v) == 1
+
+        assert hasattr(iron_oc.fs.unit, "gas_phase_area")
+        for t, v in iron_oc.fs.unit.gas_phase_area.items():
+            assert iscale.get_scaling_factor(v) == 1
+
+        assert hasattr(iron_oc.fs.unit, "solid_phase_area")
+        for t, v in iron_oc.fs.unit.solid_phase_area.items():
+            assert iscale.get_scaling_factor(v) == 1
+
+        assert hasattr(iron_oc.fs.unit, "gas_super_vel")
+        for t, v in iron_oc.fs.unit.gas_super_vel.items():
+            assert iscale.get_scaling_factor(v) == 1
+
+        assert hasattr(iron_oc.fs.unit, "solid_super_vel")
+        for t, v in iron_oc.fs.unit.solid_super_vel.items():
+            assert iscale.get_scaling_factor(v) == 1
+
+        if (iron_oc.fs.unit.config.energy_balance_type
+                != EnergyBalanceType.none):
+            assert hasattr(iron_oc.fs.unit, "solid_phase_heat_transfer")
+            for t, v in iron_oc.fs.unit.solid_phase_heat_transfer.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+            assert hasattr(iron_oc.fs.unit, "reynolds_number_particle")
+            for t, v in iron_oc.fs.unit.reynolds_number_particle.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+            assert hasattr(iron_oc.fs.unit, "prandtl_number")
+            for t, v in iron_oc.fs.unit.prandtl_number.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+            assert hasattr(iron_oc.fs.unit, "nusselt_number_particle")
+            for t, v in iron_oc.fs.unit.nusselt_number_particle.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+            assert hasattr(iron_oc.fs.unit, "gas_phase_heat_transfer")
+            for t, v in iron_oc.fs.unit.gas_phase_heat_transfer.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+        elif (iron_oc.fs.unit.config.energy_balance_type
+                == EnergyBalanceType.none):
+            assert hasattr(iron_oc.fs.unit, "isothermal_gas_phase")
+            for t, v in iron_oc.fs.unit.isothermal_gas_phase.items():
+                assert iscale.get_scaling_factor(v) == 1
+
+            assert hasattr(iron_oc.fs.unit, "isothermal_solid_phase")
+            for t, v in iron_oc.fs.unit.isothermal_solid_phase.items():
+                assert iscale.get_scaling_factor(v) == 1
 
     @pytest.mark.ui
     @pytest.mark.unit
