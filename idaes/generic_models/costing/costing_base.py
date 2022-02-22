@@ -16,10 +16,11 @@ Base classes for process costing
 from enum import Enum
 
 import pyomo.environ as pyo
-from pyomo.common.config import ConfigValue
+from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 
+from idaes.core import UnitModelBlockData
 from idaes.core.process_base import (declare_process_block_class,
                                      ProcessBlockData)
 from idaes.core.util.misc import add_object_reference
@@ -31,6 +32,8 @@ import idaes.logger as idaeslog
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+
+# TODO: Other functionality: methods for listing costed and uncosted units
 
 class DefaultCostingComponents(str, Enum):
     capital = "capital_cost"
@@ -120,6 +123,25 @@ def is_costing_package(val):
             "be a sub-class of CostingPackageBase")
 
 
+def is_flowsheet_costing_block(val):
+    '''Domain validator for fowhseet costing block attributes
+
+    Args:
+        val : value to be checked
+
+    Returns:
+        ConfigurationError if val is not an instance of FlowsheetCostingBlock
+    '''
+    if isinstance(val, FlowsheetCostingBlockData):
+        return val
+    else:
+        _log.error(f"Flowsheet costing block argument {val} should "
+                   "be an instacne of a FlowsheetCostingBlock")
+        raise ConfigurationError(
+            f"Flowsheet costing block argument {val} should "
+            "be an instacne of a FlowsheetCostingBlock")
+
+
 @declare_process_block_class("FlowsheetCostingBlock")
 class FlowsheetCostingBlockData(ProcessBlockData):
     """
@@ -192,6 +214,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         self.config.costing_package.build_process_costs(self)
 
+    # TODO : check bounds for flows r.e. revenues
+    # TODO : Relax checking of bounds
     def cost_flow(self, flow_expr, flow_type):
         """
         This method registers a given flow component (Var or expression) for
@@ -239,89 +263,6 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                     "costs.")
 
         self._registered_flows[flow_type].append(flow_expr)
-
-    def cost_unit(self, unit_model, method=None, **kwargs):
-        """
-        This method registers the given unit model with the
-        FlowsheetCostingBlock and constructs the associated Vars and
-        Constraints. User may also provide a specific costing method to use for
-        the unit, otherwise the framework will attempt to identify the correct
-        method from the costing package mappings.
-
-        An indexed entry for the given unit model is made in a
-        UnitModelCostingBlock as a peer of the unit model (and a new
-        UnitModelCostingBlock is created if required). The identified costing
-        method is then called to populate this UnitModelCostingBlock with the
-        required Vars and Constraints.
-
-        Args:
-            unit_model - a UnitModelBlock for which costing is to be performed.
-            method - (optional) specific costing method to use when costing.
-                     unit_model (default = None, use costing package mapping).
-            kwargs - any additional arguments to be passed to method.
-
-        Raises:
-            RuntimeError if unit model already appears in Set of costed units.
-            RuntimeError if method not provided and no default can be found in
-            costing package mapping.
-        """
-        if method is None:
-            method = self._get_costing_method_for(unit_model)
-
-        parent = unit_model.parent_block()
-
-        # Check to see if parent block has UnitCostingBlock already
-        if not hasattr(parent, "unit_costing"):
-            parent.unit_costing_set = pyo.Set()
-            parent.unit_costing = UnitModelCostingBlock(
-                parent.unit_costing_set)
-        else:
-            # Check if unit model is already in costing Set
-            # We can skip this if the Set didn't exist before, as it is
-            # obvious that costing hasn't been done yet
-            if unit_model.local_name in parent.unit_costing_set:
-                raise RuntimeError(
-                    f"Unit model {unit_model.name} already appears in the "
-                    "Set of costed units. Each unit model can only be costed "
-                    "once.")
-
-        # Register unit model with this costing package
-        self._registered_unit_models.append(unit_model)
-
-        # Add unit model to costing set
-        parent.unit_costing_set.add(unit_model.local_name)
-
-        # Assign obejct references for costing package and unit model to
-        # UnitCostingBlockData
-        add_object_reference(parent.unit_costing[unit_model.local_name],
-                             "costing_package",
-                             self)
-        add_object_reference(parent.unit_costing[unit_model.local_name],
-                             "unit_model",
-                             unit_model)
-
-        # Call unit costing method with unit_model
-        method(parent.unit_costing[unit_model.local_name], **kwargs)
-
-        # Check that costs are Vars and have lower bound of 0
-        cost_vars = DefaultCostingComponents
-        for v in cost_vars:
-            try:
-                cvar = getattr(parent.unit_costing[unit_model.local_name], v)
-                if not isinstance(cvar, pyo.Var):
-                    raise TypeError(
-                        f"{unit_model.name} {v} component must be a Var. "
-                        "Please check the costingpackage you are using to "
-                        "ensure that all costing components are declared as "
-                        "variables.")
-                elif cvar.lb is None or cvar.lb < 0:
-                    raise ValueError(
-                        f"{unit_model.name} {v} component has a lower bound "
-                        "less than zero. All costing components are required "
-                        "to have lower bounds of 0 or greater to avoid "
-                        "negative costs.")
-            except AttributeError:
-                pass
 
     def initialize(self):
         """
@@ -511,33 +452,6 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         self.aggregate_flow_costs_constraint = pyo.Constraint(
             self.flow_types, rule=agg_flow_cost_rule)
 
-    def del_unit_costing(self, unit_model):
-        """
-        This method unregisters the provided unit model from the current
-        FlowsheetCostingBlock and delete the associated UnitModelCostingBlock
-        element.
-
-        Args:
-            unit_model - unit model to be unregistered
-
-        Raises:
-            RuntimeError if unit_model is not registered with this
-            FlowsheetCostingBlock
-        """
-        if unit_model not in self._registered_unit_models:
-            raise RuntimeError(
-                f"{unit_model.name} was not registered with this "
-                "FlowsheetCostingBlock. del_unit_costing can only be used "
-                "from the block with which the unit model is registered for "
-                "costing.")
-
-        parent = unit_model.parent_block()
-
-        del parent.unit_costing[unit_model.local_name]
-        parent.unit_costing_set.discard(unit_model.local_name)
-
-        self._registered_unit_models.remove(unit_model)
-
     def _build_costing_methods_map(self):
         """
         This method takes the mapping of unit model classes to costing methods
@@ -594,6 +508,96 @@ class UnitModelCostingBlockData(ProcessBlockData):
     At this stage, the only purpose of this class it to provide a distinct
     type for type-checking.
     """
+    CONFIG = ConfigBlock()
+
+    CONFIG.declare("flowsheet_costing_block", ConfigValue(
+        domain=is_flowsheet_costing_block,
+        doc="Reference to assoicated FlowsheetCostingBlock to use."))
+    CONFIG.declare("costing_method", ConfigValue(
+        doc=("Costing method to use for unit (default from Costing Package "
+             "used if not provided).")))
+    CONFIG.declare("costing_method_arguments", ConfigValue(
+        default={},
+        domain=dict,
+        doc="Arguments to be passed to the costing method."))
 
     def build(self):
         super().build()
+
+        # Alias flowsheet costing block reference
+        fcb = self.config.flowsheet_costing_block
+
+        # Get reference to unit model
+        unit_model = self.parent_block()
+
+        # Check that parent is an instance of a UnitModelBlockData
+        if UnitModelBlockData not in unit_model.__class__.__mro__:
+            raise TypeError(
+                f"{self.name} - parent object ({unit_model.name}) is not an "
+                f"instance of a UnitModelBlockData object. "
+                "UnitModelCostingBlocks can only be added to UnitModelBlocks.")
+
+        # Check to see if unit model already has costing
+        if unit_model._costing_block_ref is None:
+            # If None, register current block as costing
+            add_object_reference(unit_model, "_costing_block_ref", self)
+        else:
+            raise RuntimeError(
+                f"Unit model {unit_model.name} already has a costing block "
+                f"registered: {unit_model._costing_block_ref.name}. Each unit "
+                f"may only have a single UnitModelCostingBlock associated "
+                f"with it.")
+
+        # Get costing method if not provided
+        method = self.config.costing_method
+        if method is None:
+            method = fcb._get_costing_method_for(unit_model)
+
+        # Register unit model with this costing package
+        fcb._registered_unit_models.append(unit_model)
+
+        # Assign obejct references for costing package and unit model
+        add_object_reference(self, "costing_package", fcb)
+        add_object_reference(self, "unit_model", unit_model)
+
+        # Call unit costing method
+        method(self, **self.config.costing_method_arguments)
+
+        # Check that costs are Vars and have lower bound of 0
+        cost_vars = DefaultCostingComponents
+        for v in cost_vars:
+            try:
+                cvar = getattr(self, v)
+                if not isinstance(cvar, pyo.Var):
+                    raise TypeError(
+                        f"{unit_model.name} {v} component must be a Var. "
+                        "Please check the costing package you are using to "
+                        "ensure that all costing components are declared as "
+                        "variables.")
+                elif cvar.lb is None or cvar.lb < 0:
+                    _log.warn(
+                        f"{unit_model.name} {v} component has a lower bound "
+                        "less than zero. Be aware that this may result in "
+                        "negative costs during optimization.")
+            except AttributeError:
+                pass
+
+    def initialize(self, *args, **kwargs):
+        """
+        Placeholder method for initialization
+        """
+        raise NotImplementedError()
+
+    def __delattr__(self, name):
+        # Need to clean up references before deletion
+
+        # Alias flowsheet costing block and unit model (parent)
+        fcb = self.config.flowsheet_costing_block
+        unit_model = self.parent_block()
+
+        # Clean up references from fsb and unit_model
+        del fcb._registered_unit_models[unit_model]
+        unit_model._costing_block_ref = None
+
+        # Call super method to continue
+        super().__delattr(name)

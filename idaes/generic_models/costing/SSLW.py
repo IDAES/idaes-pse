@@ -117,21 +117,18 @@ class TrayMaterial(str, Enum):
 # TODO : Mapping to unit models
 class SSLWCosting(CostingPackageBase):
 
-    # DEfine currency and conversion rates based on CE Index
-    currency_units = [
-        "USD_500 = [currency]",  # base USD at CE Index of 500
-        "USD2010 = 500/550.8 * USD_500",
-        "USD2011 = 500/585.7 * USD_500",
-        "USD2012 = 500/584.6 * USD_500",
-        "USD2013 = 500/567.3 * USD_500",
-        "USD2014 = 500/576.1 * USD_500",
-        "USD2015 = 500/556.8 * USD_500",
-        "USD2016 = 500/541.7 * USD_500",
-        "USD2017 = 500/567.5 * USD_500",
-        "USD2018 = 500/671.1 * USD_500",
-        "USD2019 = 500/680.0 * USD_500"]
-    # Need to register these units before we continue
-    register_units_of_measurement(currency_units)
+    # Register currency and conversion rates based on CE Index
+    register_units_of_measurement("USD_500", "[currency]")  # base USD @ CEI 500
+    register_units_of_measurement("USD2010", "500/550.8 * USD_500")
+    register_units_of_measurement("USD2011", "500/585.7 * USD_500")
+    register_units_of_measurement("USD2012", "500/584.6 * USD_500")
+    register_units_of_measurement("USD2013", "500/567.3 * USD_500")
+    register_units_of_measurement("USD2014", "500/576.1* USD_500")
+    register_units_of_measurement("USD2015", "500/556.8 * USD_500")
+    register_units_of_measurement("USD2016", "500/541.7 * USD_500")
+    register_units_of_measurement("USD2017", "500/567.5 * USD_500")
+    register_units_of_measurement("USD2018", "500/671.1 * USD_500")
+    register_units_of_measurement("USD2019", "500/680.0 * USD_500")
 
     # Set the base year for all costs
     base_currency = pyo.units.USD2018
