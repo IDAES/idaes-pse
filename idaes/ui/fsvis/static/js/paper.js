@@ -148,17 +148,17 @@ export class Paper {
             linkView.showTools();
 
             // Highlight the corresponding Link and the column in the Stream Table
-            if (document.querySelector("#view-stream-highlight-btn").checked) {
-                const highlightStreamEvent = new CustomEvent(
-                    'HighlightStream',
-                    {
-                        detail: {
-                            streamId: linkView.model.id
-                        }
+            const highlightStreamEvent = new CustomEvent(
+                'HighlightStream',
+                {
+                    detail: {
+                        streamId: linkView.model.id
                     }
-                );
+                }
+            );
+            idaesCanvas.dispatchEvent(highlightStreamEvent);
+            if (document.querySelector("#view-stream-highlight-btn").checked) {
                 streamTable.dispatchEvent(highlightStreamEvent);
-                idaesCanvas.dispatchEvent(highlightStreamEvent);
             }
         });
 

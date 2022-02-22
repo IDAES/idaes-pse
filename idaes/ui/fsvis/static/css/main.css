@@ -14,6 +14,12 @@ hr {
   margin: 5px 0px 0px 0px;
 }
 
+/* Dotted border */
+hr.dotted {
+  border-top: 2px dotted #bbb;
+  margin-bottom: 10px;
+}
+
 #idaes-header {
   margin: 20px auto 10px auto;
   width: 90%;
