@@ -92,6 +92,9 @@ Must be True if dynamic = True,
         """
         super(UnitModelBlockData, self).build()
 
+        # Add a placeholder for referecnes to costing blocks
+        self._costing_block_ref = None
+
         # Set up dynamic flag and time domain
         self._setup_dynamics()
 
@@ -590,8 +593,56 @@ Must be True if dynamic = True,
                     f"names (inet and outlet). Please contact the unit model "
                     f"developer to develop a unit specific stream table.")
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+    def initialize(blk, *args, **kwargs):
+        """
+        Initialization routine for Unit Model objects and associated
+        components.
+
+        This method is intended for initializing IDAES unit models and any
+        modeling components attached to them, such as costing blocks. First,
+        any attached components are deactivated, after which the
+        initialize_unit method is called. Following this, the attached
+        components are reactivated and theri initialize method called.
+
+        Currently, this method supports the following attached components:
+            * UnitModelCostingBlocks
+
+        Args:
+            costing_args - dict oarguments to be passed to costing block
+                           initialize method
+
+        For other arguments, see the initilize_unit method.
+        """
+        # Get any arguments for costing if provided
+        cost_args = kwargs.pop("costing_args", {})
+
+        # Get the costing block if present
+        # TODO: Clean up in IDAES v2.0
+        if hasattr(blk, "costing"):
+            costing = blk.costing
+        else:
+            costing = blk._costing_block_ref
+
+        # If costing block exists, deactivate
+        if costing is not None:
+            costing.deactivate()
+
+        blk.initialize_unit(*args, **kwargs)
+
+        # If costing block exists, activate and initialize
+        if costing is not None:
+            costing.activate()
+
+            if hasattr(costing, "initialize"):
+                # New type costing block
+                costing.initialize(**cost_args)
+            else:
+                # TODO: Deprecate in IDAES v2.0
+                # Old style costing package
+                idaes.core.util.unit_costing.initialize(costing, **cost_args)
+
+    def initialize_unit(blk, state_args=None, outlvl=idaeslog.NOTSET,
+                        solver=None, optarg=None):
         '''
         This is a general purpose initialization routine for simple unit
         models. This method assumes a single ControlVolume block called
@@ -637,11 +688,6 @@ Must be True if dynamic = True,
 
         # ---------------------------------------------------------------------
         # Solve unit
-
-        # if costing block exists, deactivate
-        if hasattr(blk, "costing"):
-            blk.costing.deactivate()
-
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
 
@@ -649,10 +695,6 @@ Must be True if dynamic = True,
             "Initialization Step 2 {}.".format(idaeslog.condition(results))
         )
 
-        # if costing block exists, activate and initialize
-        if hasattr(blk, "costing"):
-            blk.costing.activate()
-            idaes.core.util.unit_costing.initialize(blk.costing)
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
