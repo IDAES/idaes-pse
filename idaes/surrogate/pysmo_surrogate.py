@@ -40,7 +40,7 @@ from idaes.core.util import to_json
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-
+GLOBAL_FUNCS = {"sin": sin, "cos": cos, "log": log, "exp": exp}
 
 class PysmoPolyTrainer(SurrogateTrainer):
 
@@ -131,7 +131,7 @@ class PysmoPolyTrainer(SurrogateTrainer):
                     add_terms = self.config.extra_features
                     for j in model.regression_data_columns:
                         add_terms = [add_terms[k].replace(j, "variable_headers['"+str(j)+"']") for k in range(0, len(add_terms))]
-                    model.set_additional_terms([eval(m, {}, {"variable_headers":variable_headers}) for m in add_terms])
+                    model.set_additional_terms([eval(m, GLOBAL_FUNCS, {"variable_headers":variable_headers}) for m in add_terms])
                 except:
                     raise ValueError("Additional features could not be constructed.")
 
@@ -500,7 +500,7 @@ class PysmoSurrogate(SurrogateBase):
                 setattr(self, 'feature_list', p)
                 setattr(self, 'extra_terms_feature_vector', list(self.feature_list[i] for i in self.regression_data_columns))
                 list_terms = str_conv_back(dictionary['additional_term_expressions'], p)
-                setattr(self, 'additional_term_expressions', [eval(m, {}, {"p":p}) for m in list_terms])
+                setattr(self, 'additional_term_expressions', [eval(m, GLOBAL_FUNCS, {"p":p}) for m in list_terms])
 
 
         class RbfUnserializer(rbf.RadialBasisFunctions):

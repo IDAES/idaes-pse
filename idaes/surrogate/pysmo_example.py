@@ -24,6 +24,7 @@ pysmo_trainer = ps.PysmoPolyTrainer(
     maximum_polynomial_order = 1, 
     multinomials=False,
     number_of_crossvalidations=3,
+    # extra_features = ['sin(x1)'], 
     extra_features = ['x1 / x2'],
     solution_method='pyomo')
 
