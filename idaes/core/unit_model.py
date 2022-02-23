@@ -95,6 +95,17 @@ Must be True if dynamic = True,
         # Add a placeholder for referecnes to costing blocks
         self._costing_block_ref = None
 
+        # Check for overloading of initialize method
+        # TODO: Remove in IDAES v2.0
+        if type(self).initialize != UnitModelBlockData.initialize:
+            _log.warn(f"DEPRECATION: {str(self.__class__)} has overloaded the "
+                      "initialize method. In v2.0, IDAES Will be moving to "
+                      "having a centralized initialize method which calls "
+                      "unit-specific initialize_unit methods instead. "
+                      "Model developers should update their models to "
+                      "implement the initialize_unit method instead of "
+                      "overloading initialize.")
+
         # Set up dynamic flag and time domain
         self._setup_dynamics()
 
@@ -227,12 +238,12 @@ Must be True if dynamic = True,
             try:
                 member_list = (block.properties_in[
                                     block.flowsheet().time.first()]
-                                .define_port_members())
+                               .define_port_members())
             except AttributeError:
                 try:
                     member_list = (block.properties[
                                     block.flowsheet().time.first(), 0]
-                                    .define_port_members())
+                                   .define_port_members())
                 except AttributeError:
                     raise PropertyPackageError(
                             "{} property package does not appear to have "
@@ -627,7 +638,8 @@ Must be True if dynamic = True,
         if costing is not None:
             costing.deactivate()
 
-        blk.initialize_unit(*args, **kwargs)
+        # Remember to collect flags for fixed vars
+        flags = blk.initialize_unit(*args, **kwargs)
 
         # If costing block exists, activate and initialize
         if costing is not None:
@@ -640,6 +652,9 @@ Must be True if dynamic = True,
                 # TODO: Deprecate in IDAES v2.0
                 # Old style costing package
                 idaes.core.util.unit_costing.initialize(costing, **cost_args)
+
+        # Return any flags returned by initialize_unit
+        return flags
 
     def initialize_unit(blk, state_args=None, outlvl=idaeslog.NOTSET,
                         solver=None, optarg=None):

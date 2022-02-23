@@ -107,8 +107,8 @@ see property package for documentation.}"""))
         # Add outlet port
         self.add_port(name="outlet", block=self.properties, doc="Outlet Port")
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+    def initialize_unit(blk, state_args=None, outlvl=idaeslog.NOTSET,
+                        solver=None, optarg=None):
         '''
         This method calls the initialization method of the state block.
 
