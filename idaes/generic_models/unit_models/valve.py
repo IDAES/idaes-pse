@@ -166,7 +166,7 @@ variables, expressions, or constraints required can also be added by the callbac
         self.config.valve_function_callback(self)
         self.config.pressure_flow_callback(self)
 
-    def initialize(
+    def initialize_unit(
         self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
@@ -208,7 +208,7 @@ variables, expressions, or constraints required can also be added by the callbac
 
         # one bad thing about reusing this is that the log messages aren't
         # really compatible with being nested inside another initialization
-        super().initialize(
+        super().initialize_unit(
             state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg)
 
     def calculate_scaling_factors(self):

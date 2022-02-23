@@ -641,7 +641,7 @@ see property package for documentation.}""",
         except AttributeError:
             pass
 
-    def initialize(
+    def initialize_unit(
         blk,
         state_args=None,
         routine=None,
@@ -670,12 +670,6 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        # if costing block exists, deactivate
-        try:
-            blk.costing.deactivate()
-        except AttributeError:
-            pass
-
         if routine is None:
             # Use routine for specific type of unit
             routine = blk.config.thermodynamic_assumption
@@ -697,18 +691,12 @@ see property package for documentation.}""",
             )
         else:
             # Call the general initialization routine in UnitModelBlockData
-            super().initialize(
+            super().initialize_unit(
                 state_args=state_args,
                 outlvl=outlvl,
                 solver=solver,
                 optarg=optarg
             )
-        # if costing block exists, activate
-        try:
-            blk.costing.activate()
-            costing.initialize(blk.costing)
-        except AttributeError:
-            pass
 
     def init_adiabatic(blk, state_args, outlvl, solver, optarg):
         """

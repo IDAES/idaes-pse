@@ -117,6 +117,7 @@ class SkeletonUnitModelData(ProcessBlockData):
             p.add(member_dict[k], name=k)
 
 
+    # TODO : Work out how to make this work iwth new UnitModel initialization
     def initialize(self, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None, initial_guess=None):
         """Initialize method for the SkeletonUnitModel. If a custom function

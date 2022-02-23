@@ -302,7 +302,7 @@ constructed,
 
     # TODO : Add scaling methods
 
-    def initialize(
+    def initialize_unit(
         self,
         hot_side_state_args=None,
         cold_side_state_args=None,
@@ -360,10 +360,6 @@ constructed,
 
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
-        # if costing block exists, deactivate
-        if hasattr(self, "costing"):
-            self.costing.deactivate()
-
         self.energy_balance_constraint.deactivate()
 
         # Get side 1 and side 2 heat units, and convert duty as needed
@@ -419,11 +415,6 @@ constructed,
 
         init_log.info("Initialization Completed, {}".format(
             idaeslog.condition(res)))
-
-        # if costing block exists, activate and initialize
-        if hasattr(self, "costing"):
-            self.costing.activate()
-            costing.initialize(self.costing)
 
         if not check_optimal_termination(res):
             raise InitializationError(
