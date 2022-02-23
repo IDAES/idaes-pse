@@ -31,8 +31,9 @@ from pyomo.environ import (Block,
                            Var)
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import FlowsheetBlock
-from idaes.generic_models.costing import FlowsheetCostingBlock
+from idaes.core import FlowsheetBlock, UnitModelBlock
+from idaes.generic_models.costing import \
+    FlowsheetCostingBlock, UnitModelCostingBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -62,7 +63,7 @@ def model():
         default={"costing_package": SSLWCosting})
 
     # Add a placeholder to represent a unit model
-    m.fs.unit = Block()
+    m.fs.unit = UnitModelBlock()
 
     return m
 
@@ -101,27 +102,28 @@ def test_cost_heat_exchanger(model, material, hxtype, tube_length):
     model.fs.unit.tube.properties_in[0].pressure = Param(
         initialize=2, units=pyunits.atm)
 
-    model.fs.costing.cost_unit(model.fs.unit,
-                               SSLWCosting.cost_heat_exchanger,
-                               hx_type=hxtype,
-                               material_type=material,
-                               tube_length=tube_length)
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_heat_exchanger,
+        "costing_method_arguments": {"hx_type": hxtype,
+                                     "material_type": material,
+                                     "tube_length": tube_length}})
 
-    assert isinstance(model.fs.unit_costing["unit"].base_cost_per_unit, Var)
-    assert isinstance(model.fs.unit_costing["unit"].capital_cost, Var)
-    assert isinstance(model.fs.unit_costing["unit"].number_of_units, Var)
-    assert isinstance(model.fs.unit_costing["unit"].pressure_factor, Var)
-    assert isinstance(model.fs.unit_costing["unit"].material_factor, Var)
+    assert isinstance(model.fs.unit.costing.base_cost_per_unit, Var)
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.number_of_units, Var)
+    assert isinstance(model.fs.unit.costing.pressure_factor, Var)
+    assert isinstance(model.fs.unit.costing.material_factor, Var)
 
-    assert isinstance(model.fs.unit_costing["unit"].capital_cost_constraint,
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
                       Constraint)
-    assert isinstance(model.fs.unit_costing["unit"].hx_material_eqn,
+    assert isinstance(model.fs.unit.costing.hx_material_eqn,
                       Constraint)
-    assert isinstance(model.fs.unit_costing["unit"].p_factor_eq,
+    assert isinstance(model.fs.unit.costing.p_factor_eq,
                       Constraint)
 
     assert degrees_of_freedom(model) == 0
-    assert_units_consistent(model.fs.unit_costing)
+    assert_units_consistent(model.fs.unit.costing)
 
     res = solver.solve(model)
 
@@ -132,20 +134,20 @@ def test_cost_heat_exchanger(model, material, hxtype, tube_length):
             hxtype == HXType.Utube and
             tube_length == HXTubeLength.TwelveFoot):
         assert pytest.approx(87704.6, 1e-5) == value(
-            model.fs.unit_costing["unit"].base_cost_per_unit)
+            model.fs.unit.costing.base_cost_per_unit)
         assert pytest.approx(0.982982, 1e-5) == value(
-            model.fs.unit_costing["unit"].pressure_factor)
+            model.fs.unit.costing.pressure_factor)
         assert pytest.approx(4.08752, 1e-5) == value(
-            model.fs.unit_costing["unit"].material_factor)
+            model.fs.unit.costing.material_factor)
 
         assert pytest.approx(529737, 1e-5) == value(pyunits.convert(
-            model.fs.unit_costing["unit"].capital_cost,
+            model.fs.unit.costing.capital_cost,
             to_units=pyunits.USD2018))
 
 
-# number_of_trays=None,
-# tray_material=TrayMaterial.CS,
-# tray_type=TrayType.Sieve,
+# # number_of_trays=None,
+# # tray_material=TrayMaterial.CS,
+# # tray_type=TrayType.Sieve,
 
 # TODO: Some arguments only apply to vertical vessels
 @pytest.mark.component
@@ -163,40 +165,42 @@ def test_cost_vessel(model,
     model.fs.unit.diameter = Param(initialize=2,
                                    units=pyunits.m)
 
-    model.fs.costing.cost_unit(model.fs.unit,
-                               SSLWCosting.cost_vessel,
-                               vertical=True,
-                               material_type=material_type,
-                               weight_limit=weight_limit,
-                               aspect_ratio_range=aspect_ratio_range,
-                               include_platforms_ladders=include_pl)
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_vessel,
+        "costing_method_arguments": {
+            "vertical": True,
+            "material_type": material_type,
+            "weight_limit": weight_limit,
+            "aspect_ratio_range": aspect_ratio_range,
+            "include_platforms_ladders": include_pl}})
 
-    assert isinstance(model.fs.unit_costing["unit"].shell_thickness, Param)
-    assert isinstance(model.fs.unit_costing["unit"].material_factor, Param)
-    assert isinstance(model.fs.unit_costing["unit"].material_density, Param)
+    assert isinstance(model.fs.unit.costing.shell_thickness, Param)
+    assert isinstance(model.fs.unit.costing.material_factor, Param)
+    assert isinstance(model.fs.unit.costing.material_density, Param)
 
-    assert isinstance(model.fs.unit_costing["unit"].base_cost_per_unit, Var)
-    assert isinstance(model.fs.unit_costing["unit"].capital_cost, Var)
-    assert isinstance(model.fs.unit_costing["unit"].weight, Var)
+    assert isinstance(model.fs.unit.costing.base_cost_per_unit, Var)
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.weight, Var)
 
-    assert isinstance(model.fs.unit_costing["unit"].capital_cost_constraint,
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
                       Constraint)
-    assert isinstance(model.fs.unit_costing["unit"].base_cost_constraint,
+    assert isinstance(model.fs.unit.costing.base_cost_constraint,
                       Constraint)
-    assert isinstance(model.fs.unit_costing["unit"].weight_eq,
+    assert isinstance(model.fs.unit.costing.weight_eq,
                       Constraint)
 
     # Platforms and ladders
     if include_pl:
         assert isinstance(
-            model.fs.unit_costing["unit"].base_cost_platforms_ladders, Var)
+            model.fs.unit.costing.base_cost_platforms_ladders, Var)
 
         assert isinstance(
-            model.fs.unit_costing["unit"].cost_platforms_ladders_eq,
+            model.fs.unit.costing.cost_platforms_ladders_eq,
             Constraint)
 
     assert degrees_of_freedom(model) == 0
-    assert_units_consistent(model.fs.unit_costing)
+    assert_units_consistent(model.fs.unit.costing)
 
     res = solver.solve(model)
 
@@ -206,7 +210,7 @@ def test_cost_vessel(model,
     if (material_type == VesselMaterial.CS and
             weight_limit == 1 and aspect_ratio_range == 1 and include_pl):
         assert pytest.approx(40012.3, 1e-5) == value(pyunits.convert(
-            model.fs.unit_costing["unit"].capital_cost,
+            model.fs.unit.costing.capital_cost,
             to_units=pyunits.USD2018))
 
 
@@ -221,60 +225,62 @@ def test_cost_vessel_trays(model,
     model.fs.unit.diameter = Param(initialize=2,
                                    units=pyunits.m)
 
-    model.fs.costing.cost_unit(model.fs.unit,
-                               SSLWCosting.cost_vessel,
-                               vertical=True,
-                               number_of_trays=10,
-                               tray_material=tray_material,
-                               tray_type=tray_type)
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_vessel,
+        "costing_method_arguments": {
+            "vertical": True,
+            "number_of_trays": 10,
+            "tray_material": tray_material,
+            "tray_type": tray_type}})
 
-    assert isinstance(model.fs.unit_costing["unit"].shell_thickness, Param)
-    assert isinstance(model.fs.unit_costing["unit"].material_factor, Param)
-    assert isinstance(model.fs.unit_costing["unit"].material_density, Param)
+    assert isinstance(model.fs.unit.costing.shell_thickness, Param)
+    assert isinstance(model.fs.unit.costing.material_factor, Param)
+    assert isinstance(model.fs.unit.costing.material_density, Param)
 
-    assert isinstance(model.fs.unit_costing["unit"].base_cost_per_unit, Var)
-    assert isinstance(model.fs.unit_costing["unit"].capital_cost, Var)
-    assert isinstance(model.fs.unit_costing["unit"].weight, Var)
+    assert isinstance(model.fs.unit.costing.base_cost_per_unit, Var)
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.weight, Var)
 
-    assert isinstance(model.fs.unit_costing["unit"].capital_cost_constraint,
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
                       Constraint)
-    assert isinstance(model.fs.unit_costing["unit"].base_cost_constraint,
+    assert isinstance(model.fs.unit.costing.base_cost_constraint,
                       Constraint)
-    assert isinstance(model.fs.unit_costing["unit"].weight_eq,
+    assert isinstance(model.fs.unit.costing.weight_eq,
                       Constraint)
 
     assert isinstance(
-        model.fs.unit_costing["unit"].base_cost_platforms_ladders, Var)
+        model.fs.unit.costing.base_cost_platforms_ladders, Var)
 
     assert isinstance(
-        model.fs.unit_costing["unit"].cost_platforms_ladders_eq,
+        model.fs.unit.costing.cost_platforms_ladders_eq,
         Constraint)
 
-    assert isinstance(model.fs.unit_costing["unit"].tray_type_factor,
+    assert isinstance(model.fs.unit.costing.tray_type_factor,
                       Param)
 
-    assert isinstance(model.fs.unit_costing["unit"].base_cost_trays, Var)
-    assert isinstance(model.fs.unit_costing["unit"].tray_material_factor,
+    assert isinstance(model.fs.unit.costing.base_cost_trays, Var)
+    assert isinstance(model.fs.unit.costing.tray_material_factor,
                       Var)
-    assert isinstance(model.fs.unit_costing["unit"].number_trays_factor,
+    assert isinstance(model.fs.unit.costing.number_trays_factor,
                       Var)
-    assert isinstance(model.fs.unit_costing["unit"].base_cost_per_tray,
+    assert isinstance(model.fs.unit.costing.base_cost_per_tray,
                       Var)
 
     assert isinstance(
-        model.fs.unit_costing["unit"].tray_material_factor_eq, Constraint)
+        model.fs.unit.costing.tray_material_factor_eq, Constraint)
     assert isinstance(
-        model.fs.unit_costing["unit"].num_tray_factor_constraint,
+        model.fs.unit.costing.num_tray_factor_constraint,
         Constraint)
     assert isinstance(
-        model.fs.unit_costing["unit"].single_tray_cost_constraint,
+        model.fs.unit.costing.single_tray_cost_constraint,
         Constraint)
     assert isinstance(
-        model.fs.unit_costing["unit"].tray_costing_constraint,
+        model.fs.unit.costing.tray_costing_constraint,
         Constraint)
 
     assert degrees_of_freedom(model) == 0
-    assert_units_consistent(model.fs.unit_costing)
+    assert_units_consistent(model.fs.unit.costing)
 
     res = solver.solve(model)
 

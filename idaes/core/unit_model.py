@@ -723,3 +723,16 @@ Must be True if dynamic = True,
                       .format(idaeslog.condition(results)))
 
         return None
+
+    def del_component(self, name_or_object):
+        """
+        Delete a component from this block. Need to introduce code to handle
+        un-registering costing blocks
+        """
+        obj = self.component(name_or_object)
+
+        if obj == self._costing_block_ref:
+            # This is a cositng block, so need to unregister it
+            obj.del_costing()
+
+        super().del_component(obj)

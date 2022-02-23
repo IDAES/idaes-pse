@@ -24,7 +24,7 @@ from idaes.core import UnitModelBlockData
 from idaes.core.process_base import (declare_process_block_class,
                                      ProcessBlockData)
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
 
 import idaes.logger as idaeslog
 
@@ -275,16 +275,10 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             None
         """
         for u in self._registered_unit_models:
-            # TODO: Make something more general for this to handle intermediate
-            # Vars and Constraints
-            parent = u.parent_block()
-            cblock = parent.unit_costing[u.local_name]
-
-            for c in DefaultCostingComponents:
-                if hasattr(cblock, c):
-                    var = getattr(cblock, c)
-                    cons = getattr(cblock, f"{c}_constraint")
-                    calculate_variable_from_constraint(var, cons)
+            # Call initialize on all associated costing blocks
+            # TODO: Think about ways to separate initialization of unit costing
+            # TODO: from flowsheet costing
+            u._costing_block_ref.initialize()
 
         # Initialize aggregate cost vars
         for c in DefaultCostingComponents:
@@ -360,8 +354,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         def agg_cap_cost_rule(blk):
             e = 0
             for u in self._registered_unit_models:
-                parent = u.parent_block()
-                cblock = parent.unit_costing[u.local_name]
+                cblock = u._costing_block_ref
 
                 # Allow for units that might only have a subset of cost Vars
                 if hasattr(cblock, "capital_cost"):
@@ -380,8 +373,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         def agg_fixed_om_cost_rule(blk):
             e = 0
             for u in self._registered_unit_models:
-                parent = u.parent_block()
-                cblock = parent.unit_costing[u.local_name]
+                cblock = u._costing_block_ref
 
                 # Allow for units that might only have a subset of cost Vars
                 if hasattr(cblock, "fixed_operating_cost"):
@@ -399,8 +391,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         def agg_var_om_cost_rule(blk):
             e = 0
             for u in self._registered_unit_models:
-                parent = u.parent_block()
-                cblock = parent.unit_costing[u.local_name]
+                cblock = u._costing_block_ref
 
                 # Allow for units that might only have a subset of cost Vars
                 if hasattr(cblock, "variable_operating_cost"):
@@ -538,7 +529,8 @@ class UnitModelCostingBlockData(ProcessBlockData):
                 "UnitModelCostingBlocks can only be added to UnitModelBlocks.")
 
         # Check to see if unit model already has costing
-        if unit_model._costing_block_ref is None:
+        if (unit_model._costing_block_ref is None and
+                unit_model not in fcb._registered_unit_models):
             # If None, register current block as costing
             add_object_reference(unit_model, "_costing_block_ref", self)
         else:
@@ -586,9 +578,18 @@ class UnitModelCostingBlockData(ProcessBlockData):
         """
         Placeholder method for initialization
         """
-        raise NotImplementedError()
+        # TODO: Implement an initialization method
+        # TODO: Need to have a general pupose method (block triangularisation?)
+        # TODO: Should also allow registering custom methods
 
-    def __delattr__(self, name):
+        # Vars and Constraints
+        for c in DefaultCostingComponents:
+            if hasattr(self, c):
+                var = getattr(self, c)
+                cons = getattr(self, f"{c}_constraint")
+                calculate_variable_from_constraint(var, cons)
+
+    def del_costing(self):
         # Need to clean up references before deletion
 
         # Alias flowsheet costing block and unit model (parent)
@@ -596,8 +597,12 @@ class UnitModelCostingBlockData(ProcessBlockData):
         unit_model = self.parent_block()
 
         # Clean up references from fsb and unit_model
-        del fcb._registered_unit_models[unit_model]
+        try:
+            fcb._registered_unit_models.remove(unit_model)
+        except ValueError:
+            # Unit model is not in list of registered units
+            # Something went really wrong
+            raise BurntToast(f"{self.name}: something went really wrong "
+                             "when deleting this cositng block. Please "
+                             "contact the IDAES developers with this bug.")
         unit_model._costing_block_ref = None
-
-        # Call super method to continue
-        super().__delattr(name)

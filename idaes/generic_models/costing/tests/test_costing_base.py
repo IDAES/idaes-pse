@@ -123,7 +123,7 @@ class TestCostingPackage(CostingPackageBase):
         blk.cost_method = 1
 
     def method_2(blk):
-        blk.cost._method = 2
+        blk.cost_method = 2
 
     def method_3(blk):
         blk.cost_method = 3
@@ -315,16 +315,6 @@ class TestFlowsheetCostingBlock:
         assert costing.unit_a in costing.costing._registered_unit_models
 
     @pytest.mark.unit
-    def test_cost_unit_duplicate(self, costing):
-        with pytest.raises(
-                RuntimeError,
-                match="Unit model unit_a already has a costing block "
-                "registered: costing. Each unit may only have a single "
-                "UnitModelCostingBlock associated with it."):
-            costing.unit_a.costing = UnitModelCostingBlock(
-                default={"flowsheet_costing_block": costing.costing})
-
-    @pytest.mark.unit
     def test_del_unit_costing(self, costing):
         costing.unit_a.del_component(costing.unit_a.costing)
 
@@ -332,240 +322,267 @@ class TestFlowsheetCostingBlock:
         assert costing.unit_a._costing_block_ref is None
         assert costing.unit_a not in costing.costing._registered_unit_models
 
-    # @pytest.mark.unit
-    # def test_cost_unit_custom_method(self, costing):
-    #     def custom_method(blk):
-    #         blk.capital_cost = Var(initialize=1,
-    #                                bounds=(0, 1e10),
-    #                                units=pyunits.USD_test)
-    #         blk.fixed_operating_cost = Var(initialize=1,
-    #                                        bounds=(0, 1e10),
-    #                                        units=pyunits.USD_test/pyunits.year)
-    #         blk.variable_operating_cost = Var(
-    #             initialize=1,
-    #             bounds=(0, 1e10),
-    #             units=pyunits.USD_test/pyunits.year)
+    @pytest.mark.unit
+    def test_cost_unit_duplicate(self, costing):
+        costing.unit_a.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": costing.costing})
 
-    #         blk.capital_cost_constraint = Constraint(
-    #             expr=blk.capital_cost == 4.2e6*pyunits.USD_test)
-    #         blk.fixed_operating_cost_constraint = Constraint(
-    #             expr=blk.fixed_operating_cost ==
-    #             1e2*pyunits.USD_test/pyunits.year)
-    #         blk.variable_operating_cost_constraint = Constraint(
-    #             expr=blk.variable_operating_cost ==
-    #             7e4*pyunits.USD_test/pyunits.year)
+        # First, check implicit replacement
+        # This should work
+        costing.unit_a.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": costing.costing,
+                     "costing_method": TestCostingPackage.method_2})
 
-    #     costing.costing.cost_unit(costing.unit_a, method=custom_method)
+        assert costing.unit_a.costing.cost_method == 2
 
-    #     assert isinstance(costing.unit_costing_set, Set)
-    #     assert len(costing.unit_costing_set) == 1
-    #     assert "unit_a" in costing.unit_costing_set
+        assert costing.unit_a._costing_block_ref is costing.unit_a.costing
+        assert costing.unit_a in costing.costing._registered_unit_models
 
-    #     assert isinstance(costing.unit_costing, UnitModelCostingBlock)
-    #     assert "unit_a" in costing.unit_costing
+        # Then check double costing
+        with pytest.raises(
+                RuntimeError,
+                match="Unit model unit_a already has a costing block "
+                "registered: unit_a.costing. Each unit may only have a single "
+                "UnitModelCostingBlock associated with it."):
+            costing.unit_a.costing2 = UnitModelCostingBlock(
+                default={"flowsheet_costing_block": costing.costing})
 
-    #     assert costing.unit_a in costing.costing._registered_unit_models
+        # Clean everything up at the end
+        costing.unit_a.del_component(costing.unit_a.costing)
+        costing.unit_a.del_component(costing.unit_a.costing2)
 
-    #     assert isinstance(costing.unit_costing["unit_a"].capital_cost, Var)
-    #     assert isinstance(
-    #         costing.unit_costing["unit_a"].variable_operating_cost, Var)
-    #     assert isinstance(
-    #         costing.unit_costing["unit_a"].fixed_operating_cost, Var)
+    @pytest.mark.unit
+    def test_cost_unit_custom_method(self, costing):
+        def custom_method(blk):
+            blk.capital_cost = Var(initialize=1,
+                                   bounds=(0, 1e10),
+                                   units=pyunits.USD_test)
+            blk.fixed_operating_cost = Var(initialize=1,
+                                           bounds=(0, 1e10),
+                                           units=pyunits.USD_test/pyunits.year)
+            blk.variable_operating_cost = Var(
+                initialize=1,
+                bounds=(0, 1e10),
+                units=pyunits.USD_test/pyunits.year)
 
-    # @pytest.mark.unit
-    # def test_cost_unit_capital_cost_not_var(self, costing):
-    #     def dummy_method(blk):
-    #         blk.capital_cost = "foo"
+            blk.capital_cost_constraint = Constraint(
+                expr=blk.capital_cost == 4.2e6*pyunits.USD_test)
+            blk.fixed_operating_cost_constraint = Constraint(
+                expr=blk.fixed_operating_cost ==
+                1e2*pyunits.USD_test/pyunits.year)
+            blk.variable_operating_cost_constraint = Constraint(
+                expr=blk.variable_operating_cost ==
+                7e4*pyunits.USD_test/pyunits.year)
 
-    #     with pytest.raises(TypeError,
-    #                        match="unit_b capital_cost component must be a "
-    #                        "Var. Please check the costingpackage you are "
-    #                        "using to ensure that all costing components are "
-    #                        "declared as variables."):
-    #         costing.costing.cost_unit(costing.unit_b, method=dummy_method)
+            blk._checkvar = True
 
-    #     # Clean up for next test
-    #     costing.costing.del_unit_costing(costing.unit_b)
+        costing.unit_a.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": costing.costing,
+                     "costing_method": custom_method})
 
-    # @pytest.mark.unit
-    # def test_cost_unit_capital_cost_lb(self, costing):
-    #     def dummy_method(blk):
-    #         blk.capital_cost = Var()
+        assert isinstance(costing.unit_a.costing, UnitModelCostingBlock)
+        assert costing.unit_a._costing_block_ref is costing.unit_a.costing
+        assert costing.unit_a in costing.costing._registered_unit_models
 
-    #     with pytest.raises(ValueError,
-    #                        match="unit_b capital_cost component has a lower "
-    #                        "bound less than zero. All costing components are "
-    #                        "required to have lower bounds of 0 or greater to "
-    #                        "avoid negative costs."):
-    #         costing.costing.cost_unit(costing.unit_b, method=dummy_method)
+        assert isinstance(costing.unit_a.costing.capital_cost, Var)
+        assert isinstance(
+            costing.unit_a.costing.variable_operating_cost, Var)
+        assert isinstance(
+            costing.unit_a.costing.fixed_operating_cost, Var)
+        assert costing.unit_a.costing._checkvar
 
-    #     # Clean up for next test
-    #     costing.costing.del_unit_costing(costing.unit_b)
+    @pytest.mark.unit
+    def test_cost_unit_capital_cost_not_var(self, costing):
+        def dummy_method(blk):
+            blk.capital_cost = "foo"
 
-    # @pytest.mark.unit
-    # def test_cost_unit_fixed_operating_cost_not_var(self, costing):
-    #     def dummy_method(blk):
-    #         blk.fixed_operating_cost = "foo"
+        with pytest.raises(TypeError,
+                           match="unit_b capital_cost component must be a "
+                           "Var. Please check the costing package you are "
+                           "using to ensure that all costing components are "
+                           "declared as variables."):
+            costing.unit_b.costing = UnitModelCostingBlock(
+                default={"flowsheet_costing_block": costing.costing,
+                         "costing_method": dummy_method})
 
-    #     with pytest.raises(TypeError,
-    #                        match="unit_b fixed_operating_cost component must "
-    #                        "be a Var. Please check the costingpackage you are "
-    #                        "using to ensure that all costing components are "
-    #                        "declared as variables."):
-    #         costing.costing.cost_unit(costing.unit_b, method=dummy_method)
+        # Clean up for next test
+        costing.unit_b.del_component(costing.unit_b.costing)
 
-    #     # Clean up for next test
-    #     costing.costing.del_unit_costing(costing.unit_b)
+    @pytest.mark.unit
+    def test_cost_unit_capital_cost_lb(self, costing, caplog):
+        def dummy_method(blk):
+            blk.capital_cost = Var()
 
-    # @pytest.mark.unit
-    # def test_cost_unit_fixed_operating_cost_lb(self, costing):
-    #     def dummy_method(blk):
-    #         blk.fixed_operating_cost = Var()
+        costing.unit_b.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": costing.costing,
+                     "costing_method": dummy_method})
 
-    #     with pytest.raises(ValueError,
-    #                        match="unit_b fixed_operating_cost component has "
-    #                        "a lower bound less than zero. All costing "
-    #                        "components are required to have lower bounds of 0 "
-    #                        "or greater to avoid negative costs."):
-    #         costing.costing.cost_unit(costing.unit_b, method=dummy_method)
+        assert ("unit_b capital_cost component has a lower bound less than "
+                "zero. Be aware that this may result in negative costs during "
+                "optimization." in caplog.text)
 
-    #     # Clean up for next test
-    #     costing.costing.del_unit_costing(costing.unit_b)
+        # Clean up for next test
+        costing.unit_b.del_component(costing.unit_b.costing)
 
-    # @pytest.mark.unit
-    # def test_cost_unit_variable_operating_cost_not_var(self, costing):
-    #     def dummy_method(blk):
-    #         blk.variable_operating_cost = "foo"
+    @pytest.mark.unit
+    def test_cost_unit_fixed_operating_cost_not_var(self, costing):
+        def dummy_method(blk):
+            blk.fixed_operating_cost = "foo"
 
-    #     with pytest.raises(TypeError,
-    #                        match="unit_b variable_operating_cost component "
-    #                        "must be a Var. Please check the costingpackage "
-    #                        "you are using to ensure that all costing "
-    #                        "components are declared as variables."):
-    #         costing.costing.cost_unit(costing.unit_b, method=dummy_method)
+        with pytest.raises(TypeError,
+                           match="unit_b fixed_operating_cost component must "
+                           "be a Var. Please check the costing package you "
+                           "are using to ensure that all costing components "
+                           "are declared as variables."):
+            costing.unit_b.costing = UnitModelCostingBlock(
+                default={"flowsheet_costing_block": costing.costing,
+                         "costing_method": dummy_method})
 
-    #     # Clean up for next test
-    #     costing.costing.del_unit_costing(costing.unit_b)
+        # Clean up for next test
+        costing.unit_b.del_component(costing.unit_b.costing)
 
-    # @pytest.mark.unit
-    # def test_cost_unit_variable_operating_cost_lb(self, costing):
-    #     def dummy_method(blk):
-    #         blk.variable_operating_cost = Var()
+    @pytest.mark.unit
+    def test_cost_unit_fixed_operating_cost_lb(self, costing, caplog):
+        def dummy_method(blk):
+            blk.fixed_operating_cost = Var()
 
-    #     with pytest.raises(ValueError,
-    #                        match="unit_b variable_operating_cost component "
-    #                        "has a lower bound less than zero. All costing "
-    #                        "components are required to have lower bounds of 0 "
-    #                        "or greater to avoid negative costs."):
-    #         costing.costing.cost_unit(costing.unit_b, method=dummy_method)
+        costing.unit_b.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": costing.costing,
+                     "costing_method": dummy_method})
 
-    #     # Clean up for next test
-    #     costing.costing.del_unit_costing(costing.unit_b)
+        assert ("unit_b fixed_operating_cost component has a lower bound less "
+                "than zero. Be aware that this may result in negative costs "
+                "during optimization." in caplog.text)
 
-    # @pytest.mark.unit
-    # def test_cost_process(self, costing):
-    #     costing.costing.cost_process()
+        # Clean up for next test
+        costing.unit_b.del_component(costing.unit_b.costing)
 
-    #     # Check that build_process_costs was called from costing package
-    #     assert costing.costing._bpc
+    @pytest.mark.unit
+    def test_cost_unit_variable_operating_cost_not_var(self, costing):
+        def dummy_method(blk):
+            blk.variable_operating_cost = "foo"
 
-    #     # Then check aggregation
-    #     assert isinstance(costing.costing.aggregate_capital_cost, Var)
-    #     assert str(costing.costing.aggregate_capital_cost.get_units()) == str(
-    #         pyunits.USD_test)
-    #     assert isinstance(costing.costing.aggregate_capital_cost_constraint,
-    #                       Constraint)
+        with pytest.raises(TypeError,
+                           match="unit_b variable_operating_cost component "
+                           "must be a Var. Please check the costing package "
+                           "you are using to ensure that all costing "
+                           "components are declared as variables."):
+            costing.unit_b.costing = UnitModelCostingBlock(
+                default={"flowsheet_costing_block": costing.costing,
+                         "costing_method": dummy_method})
 
-    #     assert isinstance(costing.costing.aggregate_fixed_operating_cost, Var)
-    #     assert str(pyunits.USD_test/pyunits.year) == str(
-    #         costing.costing.aggregate_fixed_operating_cost.get_units())
-    #     assert isinstance(
-    #         costing.costing.aggregate_fixed_operating_cost_constraint,
-    #         Constraint)
+        # Clean up for next test
+        costing.unit_b.del_component(costing.unit_b.costing)
 
-    #     assert isinstance(
-    #         costing.costing.aggregate_variable_operating_cost, Var)
-    #     assert str(pyunits.USD_test/pyunits.year) == str(
-    #         costing.costing.aggregate_variable_operating_cost.get_units())
-    #     assert isinstance(
-    #         costing.costing.aggregate_variable_operating_cost_constraint,
-    #         Constraint)
+    @pytest.mark.unit
+    def test_cost_unit_variable_operating_cost_lb(self, costing, caplog):
+        def dummy_method(blk):
+            blk.variable_operating_cost = Var()
 
-    #     assert isinstance(
-    #         costing.costing.aggregate_flow_test_flow, Var)
-    #     assert str(pyunits.mol/pyunits.s) == str(
-    #         costing.costing.aggregate_flow_test_flow.get_units())
-    #     assert isinstance(
-    #         costing.costing.aggregate_flow_test_flow_constraint,
-    #         Constraint)
+        costing.unit_b.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": costing.costing,
+                     "costing_method": dummy_method})
 
-    #     # We also have a test_flow_1 type registered, but no flows costed
-    #     # This should have been skipped
-    #     assert not hasattr(costing.costing, "aggregate_flow_test_flow_1")
-    #     assert not hasattr(costing.costing,
-    #                        "aggregate_flow_test_flow_1_constraint")
+        assert ("unit_b variable_operating_cost component has a lower bound "
+                "less than zero. Be aware that this may result in negative "
+                "costs during optimization." in caplog.text)
 
-    #     assert isinstance(
-    #         costing.costing.aggregate_flow_costs, Var)
-    #     assert str(pyunits.USD_test/pyunits.year) == str(
-    #         costing.costing.aggregate_flow_costs.get_units())
-    #     assert len(costing.costing.aggregate_flow_costs) == 2
-    #     assert isinstance(costing.costing.aggregate_flow_costs_constraint,
-    #                       Constraint)
-    #     assert len(costing.costing.aggregate_flow_costs_constraint) == 2
+        # Clean up for next test
+        costing.unit_b.del_component(costing.unit_b.costing)
 
-    # @pytest.mark.unit
-    # def test_unit_consistency(self, costing):
-    #     assert_units_consistent(costing)
+    @pytest.mark.unit
+    def test_cost_process(self, costing):
+        costing.costing.cost_process()
 
-    # @pytest.mark.unit
-    # def test_degrees_of_freedom(self, costing):
-    #     costing.indexed_var[1].fix(2)
-    #     costing.indexed_var[2].fix(-3)
-    #     costing.indexed_var[3].fix(0)
+        # Check that build_process_costs was called from costing package
+        assert costing.costing._bpc
 
-    #     assert degrees_of_freedom(costing) == 0
+        # Then check aggregation
+        assert isinstance(costing.costing.aggregate_capital_cost, Var)
+        assert str(costing.costing.aggregate_capital_cost.get_units()) == str(
+            pyunits.USD_test)
+        assert isinstance(costing.costing.aggregate_capital_cost_constraint,
+                          Constraint)
 
-    # @pytest.mark.unit
-    # def test_initialize(self, costing):
-    #     costing.costing.initialize()
+        assert isinstance(costing.costing.aggregate_fixed_operating_cost, Var)
+        assert str(pyunits.USD_test/pyunits.year) == str(
+            costing.costing.aggregate_fixed_operating_cost.get_units())
+        assert isinstance(
+            costing.costing.aggregate_fixed_operating_cost_constraint,
+            Constraint)
 
-    #     # Check that initialize was called from costing package
-    #     assert costing.costing._init
+        assert isinstance(
+            costing.costing.aggregate_variable_operating_cost, Var)
+        assert str(pyunits.USD_test/pyunits.year) == str(
+            costing.costing.aggregate_variable_operating_cost.get_units())
+        assert isinstance(
+            costing.costing.aggregate_variable_operating_cost_constraint,
+            Constraint)
 
-    #     # Check that unit-level vars were initialized
-    #     assert costing.unit_costing["unit_a"].capital_cost.value == 4.2e6
-    #     assert costing.unit_costing["unit_a"].fixed_operating_cost.value == \
-    #         100
-    #     assert \
-    #         costing.unit_costing["unit_a"].variable_operating_cost.value == 7e4
+        assert isinstance(
+            costing.costing.aggregate_flow_test_flow, Var)
+        assert str(pyunits.mol/pyunits.s) == str(
+            costing.costing.aggregate_flow_test_flow.get_units())
+        assert isinstance(
+            costing.costing.aggregate_flow_test_flow_constraint,
+            Constraint)
 
-    #     # Check that aggregate vars were initialized
-    #     # Capital and operating costs should equal the unit level ones
-    #     assert costing.costing.aggregate_capital_cost.value == 4.2e6
-    #     assert costing.costing.aggregate_fixed_operating_cost.value == \
-    #         100
-    #     assert \
-    #         costing.costing.aggregate_variable_operating_cost.value == 7e4
+        # We also have a test_flow_1 type registered, but no flows costed
+        # This should have been skipped
+        assert not hasattr(costing.costing, "aggregate_flow_test_flow_1")
+        assert not hasattr(costing.costing,
+                           "aggregate_flow_test_flow_1_constraint")
 
-    #     assert costing.costing.aggregate_flow_test_flow.value == 5
+        assert isinstance(
+            costing.costing.aggregate_flow_costs, Var)
+        assert str(pyunits.USD_test/pyunits.year) == str(
+            costing.costing.aggregate_flow_costs.get_units())
+        assert len(costing.costing.aggregate_flow_costs) == 2
+        assert isinstance(costing.costing.aggregate_flow_costs_constraint,
+                          Constraint)
+        assert len(costing.costing.aggregate_flow_costs_constraint) == 2
 
-    #     assert pytest.approx(
-    #         costing.costing.aggregate_flow_costs["test_flow"].value,
-    #         rel=1e-12) == (
-    #             pyunits.convert_value(5*42,
-    #                                   from_units=1/pyunits.s,
-    #                                   to_units=1/pyunits.year))
-    #     assert costing.costing.aggregate_flow_costs["test_flow_1"].value == (
-    #         0)
+    @pytest.mark.unit
+    def test_unit_consistency(self, costing):
+        assert_units_consistent(costing)
 
+    @pytest.mark.unit
+    def test_degrees_of_freedom(self, costing):
+        costing.indexed_var[1].fix(2)
+        costing.indexed_var[2].fix(-3)
+        costing.indexed_var[3].fix(0)
 
-# @pytest.mark.unit
-# def test_UnitModelCostingBlock():
-#     m = ConcreteModel()
-#     m.costing = UnitModelCostingBlock([1, 2, 3])
+        assert degrees_of_freedom(costing) == 0
 
-#     assert isinstance(m.costing, UnitModelCostingBlock)
-#     assert m.costing.is_indexed()
-#     for i in [1, 2, 3]:
-#         assert i in m.costing
+    @pytest.mark.unit
+    def test_initialize(self, costing):
+        costing.costing.initialize()
+
+        # Check that initialize was called from costing package
+        assert costing.costing._init
+
+        # Check that unit-level vars were initialized
+        assert costing.unit_a.costing.capital_cost.value == 4.2e6
+        assert costing.unit_a.costing.fixed_operating_cost.value == \
+            100
+        assert \
+            costing.unit_a.costing.variable_operating_cost.value == 7e4
+
+        # Check that aggregate vars were initialized
+        # Capital and operating costs should equal the unit level ones
+        assert costing.costing.aggregate_capital_cost.value == 4.2e6
+        assert costing.costing.aggregate_fixed_operating_cost.value == \
+            100
+        assert \
+            costing.costing.aggregate_variable_operating_cost.value == 7e4
+
+        assert costing.costing.aggregate_flow_test_flow.value == 5
+
+        assert pytest.approx(
+            costing.costing.aggregate_flow_costs["test_flow"].value,
+            rel=1e-12) == (
+                pyunits.convert_value(5*42,
+                                      from_units=1/pyunits.s,
+                                      to_units=1/pyunits.year))
+        assert costing.costing.aggregate_flow_costs["test_flow_1"].value == (
+            0)
