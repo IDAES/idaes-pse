@@ -35,7 +35,7 @@ from idaes.power_generation.properties.natural_gas_PR import (
     get_prop, get_rxn, EosType)
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
-
+from idaes.core.util import from_json, to_json, StoreSpec
 
 @declare_process_block_class(
     "SoecDesign", doc="Simple SOEC model for process design.")
@@ -645,6 +645,14 @@ class SoecDesignData(UnitModelBlockData):
         init_log.info_high("SOEC Initialization Starting")
         solver_obj = iutil.get_solver(solver, optarg)
 
+        sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
+        istate = to_json(self, return_dict=True, wts=sp)
+
+        self.oxygen_side_inlet.fix()
+        self.hydrogen_side_inlet.fix()
+        self.oxygen_side_outlet.unfix()
+        self.hydrogen_side_outlet.unfix()
+
         self.h2_inlet_translator.initialize(
             outlvl=outlvl, solver=solver, optarg=optarg)
         propagate_state(self.strm1)
@@ -674,4 +682,5 @@ class SoecDesignData(UnitModelBlockData):
         if not pyo.check_optimal_termination(res):
             raise InitializationError(f"SOEC failed to initialize.")
 
+        from_json(self, sd=istate, wts=sp)
         init_log.info_high("SOEC Initialization Complete")
