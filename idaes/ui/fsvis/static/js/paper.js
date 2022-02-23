@@ -156,8 +156,10 @@ export class Paper {
                     }
                 }
             );
-            streamTable.dispatchEvent(highlightStreamEvent);
             idaesCanvas.dispatchEvent(highlightStreamEvent);
+            if (document.querySelector("#view-stream-highlight-btn").checked) {
+                streamTable.dispatchEvent(highlightStreamEvent);
+            }
         });
 
         // Setup event when the hovering over link ends
