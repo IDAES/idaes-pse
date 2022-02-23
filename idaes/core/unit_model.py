@@ -721,3 +721,5 @@ Must be True if dynamic = True,
 
         init_log.info('Initialization Complete: {}'
                       .format(idaeslog.condition(results)))
+
+        return None
