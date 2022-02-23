@@ -43,7 +43,9 @@ from idaes.generic_models.costing.SSLW import (SSLWCosting,
                                                HXType,
                                                VesselMaterial,
                                                TrayType,
-                                               TrayMaterial)
+                                               TrayMaterial,
+                                               HeaterMaterial,
+                                               HeaterSource)
 
 
 # Some more information about this module
@@ -145,11 +147,6 @@ def test_cost_heat_exchanger(model, material, hxtype, tube_length):
             to_units=pyunits.USD2018))
 
 
-# # number_of_trays=None,
-# # tray_material=TrayMaterial.CS,
-# # tray_type=TrayType.Sieve,
-
-# TODO: Some arguments only apply to vertical vessels
 @pytest.mark.component
 @pytest.mark.parametrize("material_type", VesselMaterial)
 @pytest.mark.parametrize("weight_limit", [1, 2])
@@ -278,6 +275,84 @@ def test_cost_vessel_trays(model,
     assert isinstance(
         model.fs.unit.costing.tray_costing_constraint,
         Constraint)
+
+    assert degrees_of_freedom(model) == 0
+    assert_units_consistent(model.fs.unit.costing)
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)
+
+
+@pytest.mark.component
+@pytest.mark.parametrize("material_type", VesselMaterial)
+def test_cost_vessel_horizontal(model, material_type):
+    model.fs.unit.length = Param(initialize=0.00075,
+                                 units=pyunits.m)
+    model.fs.unit.diameter = Param(initialize=2,
+                                   units=pyunits.m)
+
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_vessel,
+        "costing_method_arguments": {
+            "vertical": False,
+            "material_type": material_type,
+            "weight_limit": 1,
+            "include_platforms_ladders": False}})
+
+    assert isinstance(model.fs.unit.costing.shell_thickness, Param)
+    assert isinstance(model.fs.unit.costing.material_factor, Param)
+    assert isinstance(model.fs.unit.costing.material_density, Param)
+
+    assert isinstance(model.fs.unit.costing.base_cost_per_unit, Var)
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.weight, Var)
+
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.base_cost_constraint,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.weight_eq,
+                      Constraint)
+
+    assert degrees_of_freedom(model) == 0
+    assert_units_consistent(model.fs.unit.costing)
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)
+
+
+@pytest.mark.component
+@pytest.mark.parametrize("material_type", HeaterMaterial)
+@pytest.mark.parametrize("heat_source", HeaterSource)
+def test_cost_fired_heater(model, material_type, heat_source):
+    model.fs.unit.heat_duty = Param([0],
+                                    initialize=1000,
+                                    units=pyunits.kJ/pyunits.s)
+    model.fs.unit.control_volume = Block()
+    model.fs.unit.control_volume.properties_in = Block(model.fs.time)
+    model.fs.unit.control_volume.properties_in[0].pressure = Param(
+        initialize=2, units=pyunits.atm)
+
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_fired_heater,
+        "costing_method_arguments": {
+            "material_type": material_type,
+            "heat_source": heat_source}})
+
+    assert isinstance(model.fs.unit.costing.pressure_factor, Var)
+    assert isinstance(model.fs.unit.costing.base_cost_per_unit, Var)
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.base_cost_per_unit_eq,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.pressure_factor_eq,
+                      Constraint)
 
     assert degrees_of_freedom(model) == 0
     assert_units_consistent(model.fs.unit.costing)

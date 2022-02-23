@@ -534,6 +534,8 @@ class UnitModelCostingBlockData(ProcessBlockData):
             # If None, register current block as costing
             add_object_reference(unit_model, "_costing_block_ref", self)
         else:
+            # Blcok already has costing, clean up and raise exception
+            self.parent_block().del_component(self)
             raise RuntimeError(
                 f"Unit model {unit_model.name} already has a costing block "
                 f"registered: {unit_model._costing_block_ref.name}. Each unit "

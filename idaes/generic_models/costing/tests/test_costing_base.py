@@ -347,9 +347,16 @@ class TestFlowsheetCostingBlock:
             costing.unit_a.costing2 = UnitModelCostingBlock(
                 default={"flowsheet_costing_block": costing.costing})
 
+        # Make sure we cleaned up duplicate
+        assert not hasattr(costing.unit_a, "costing2")
+        assert costing.unit_a.costing.cost_method == 2
+        assert costing.unit_a._costing_block_ref is costing.unit_a.costing
+        assert costing.unit_a in costing.costing._registered_unit_models
+        assert costing.costing._registered_unit_models.count(
+            costing.unit_a) == 1
+
         # Clean everything up at the end
         costing.unit_a.del_component(costing.unit_a.costing)
-        costing.unit_a.del_component(costing.unit_a.costing2)
 
     @pytest.mark.unit
     def test_cost_unit_custom_method(self, costing):

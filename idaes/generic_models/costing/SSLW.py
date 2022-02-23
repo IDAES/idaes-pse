@@ -26,9 +26,14 @@ from enum import Enum
 import pyomo.environ as pyo
 
 from idaes.generic_models.unit_models import (
+    CSTR,
+    Flash,
+    Heater,
     HeatExchanger,
     HeatExchanger1D,
-    HeatExchangerNTU)
+    HeatExchangerNTU,
+    PFR,
+    StoichiometricReactor)
 from idaes.generic_models.unit_models.heat_exchanger \
     import HeatExchangerFlowPattern
 from idaes.core.util.misc import register_units_of_measurement
@@ -114,6 +119,54 @@ class TrayMaterial(str, Enum):
         return self.value
 
 
+class HeaterMaterial(str, Enum):
+    CS = "carbon_steel"
+    CrMo = "Cr-Mo_alloy"
+    SS = "stainless_steel"
+
+    def __str__(self):
+        return self.value
+
+
+class HeaterSource(str, Enum):
+    fuel = 'fuel'
+    reformer = "reformer"
+    pyrolysis = "pyrolysis"
+    hotWater = "hot_water"
+    salts = "salts"
+    DowthermA = "dowtherm_a"
+    steamBoiler = "steadm_boiler"
+
+    def __str__(self):
+        return self.value
+
+
+class PumpMaterial(str, Enum):
+    castIron = 'cast_iron'
+    ductileIron = 'ductile_iron'
+    castSteel = 'cast_steel'
+    bronze = 'bronze'
+    SS = 'stain_steel'
+    HastelloyC = 'hastelloy_c'
+    Monel = 'monel'
+    Nickel = 'nickel'
+    Titanium = 'titanium'
+    NiAlBronze = 'Ni_Al_Bronze'
+    CS = 'carbon_steel'
+
+    def __str__(self):
+        return self.value
+
+
+class PumpType(str, Enum):
+    centrifugal = 'centrifugal'
+    externalGear = 'external_gear'
+    reciprocating = 'reciprocating'
+
+    def __str__(self):
+        return self.value
+
+
 # TODO : Mapping to unit models
 class SSLWCosting(CostingPackageBase):
 
@@ -129,6 +182,7 @@ class SSLWCosting(CostingPackageBase):
     register_units_of_measurement("USD2017", "500/567.5 * USD_500")
     register_units_of_measurement("USD2018", "500/671.1 * USD_500")
     register_units_of_measurement("USD2019", "500/680.0 * USD_500")
+    register_units_of_measurement("USD_394", "500/394 * USD_500")  # required for pump costing
 
     # Set the base year for all costs
     base_currency = pyo.units.USD2018
@@ -198,7 +252,7 @@ class SSLWCosting(CostingPackageBase):
                         number_of_units
 
         Args:
-            hx_type - HXType Enum indicating type of heatexchanger design,
+            hx_type - HXType Enum indicating type of heat exchanger design,
                       default = HXType.Utube.
             material_type - HXMaterial Enum indicating material of
                             construction, default = HXMaterial.SS_SS.
@@ -252,8 +306,6 @@ class SSLWCosting(CostingPackageBase):
                                        to_units=pyo.units.ft**2) /
                      blk.number_of_units)
 
-        blk.base_cost_per_unit
-
         def hx_cost_rule(blk):
             return (blk.base_cost_per_unit ==
                     pyo.exp(alpha[1] -
@@ -297,13 +349,15 @@ class SSLWCosting(CostingPackageBase):
 
         # ------------------------------------------------------
         # Pressure factor calculation
+        t0 = blk.unit_model.flowsheet().time.first()
+
         # Assume higher pressure fluid is tube side
         blk.pressure_factor = pyo.Var(initialize=1,
                                       domain=pyo.NonNegativeReals,
                                       doc='Pressure design factor')
 
         try:
-            tube_props = blk.unit_model.tube.properties_in[0]
+            tube_props = blk.unit_model.tube.properties_in[t0]
         except AttributeError:
             # Assume HX1D
             if (blk.unit_model.config.flow_type ==
@@ -347,8 +401,7 @@ class SSLWCosting(CostingPackageBase):
                     number_of_units=1,
                     number_of_trays=None,
                     tray_material=TrayMaterial.CS,
-                    tray_type=TrayType.Sieve,
-                    integer=True):
+                    tray_type=TrayType.Sieve):
         """
         Generic vessel costing method.
 
@@ -382,8 +435,6 @@ class SSLWCosting(CostingPackageBase):
             tray_type - Only required if number_of_trays is not None.
                         TrayType Enum indicating type of distillation trays
                         to use, default = TrayMaterial.Sieve.
-            integer - whether the number of units should be constrained to be
-                      an integer or not (default = True).
         """
         # Build generic costing variables
         blk.base_cost_per_unit = pyo.Var(initialize=1e5,
@@ -651,19 +702,494 @@ class SSLWCosting(CostingPackageBase):
                 blk.tray_material_factor*blk.base_cost_per_tray)
         blk.tray_costing_constraint = pyo.Constraint(rule=cost_trays_rule)
 
+    def cost_vertical_vessel(blk,
+                             material_type=VesselMaterial.CS,
+                             shell_thickness=1.25*pyo.units.inch,
+                             weight_limit=1,
+                             aspect_ratio_range=1,
+                             include_platforms_ladders=True,
+                             vessel_diameter=None,
+                             vessel_length=None,
+                             number_of_units=1,
+                             number_of_trays=None,
+                             tray_material=TrayMaterial.CS,
+                             tray_type=TrayType.Sieve):
+        """
+        Specific case of vessel costing method for vertical vessels.
+
+        Args:
+            material_type - VesselMaterial Enum indicating material of
+                            construction, default = VesselMaterial.CS.
+            shell_thickness - thickness of vessel shell, including pressure
+                              allowance. Default = 1.25 inches.
+            weight_limit - 1: (default) 1000 to 920,000 lb, 2: 4200 to 1M lb.
+                           Option 2 is only valid for vertical vessels.
+            aspect_ratio_range - vertical vessels only, default = 1;
+                                 1: 3 < D < 21 ft, 12 < L < 40 ft,
+                                 2: 3 < D < 24 ft; 27 < L < 170 ft.
+            include_platforms_ladders - whether to include platforms and
+                                        ladders in costing , default = True.
+            vessel_diameter - Pyomo component representing vessel diameter.
+                              If not provided, assumed to be named "diameter"
+            vessel_length - Pyomo component representing vessel length.
+                            If not provided, assumed to be named "length".
+            number_of_units - Integer or Pyomo component representing the
+                               number of parallel units to be costed,
+                               default = 1.
+            number_of_trays - Pyomo component representing the number of
+                              distillation trays in vessel (default=None)
+            tray_material - Only required if number_of_trays is not None.
+                            TrayMaterial Enum indicating material of
+                            construction for distillation trays, default =
+                            TrayMaterial.CS.
+            tray_type - Only required if number_of_trays is not None.
+                        TrayType Enum indicating type of distillation trays
+                        to use, default = TrayMaterial.Sieve.
+        """
+        SSLWCosting.cost_vessel(blk,
+                                vertical=True,
+                                material_type=VesselMaterial.CS,
+                                shell_thickness=1.25*pyo.units.inch,
+                                weight_limit=1,
+                                aspect_ratio_range=1,
+                                include_platforms_ladders=True,
+                                vessel_diameter=None,
+                                vessel_length=None,
+                                number_of_units=1,
+                                number_of_trays=None,
+                                tray_material=TrayMaterial.CS,
+                                tray_type=TrayType.Sieve)
+
+    def cost_horizontal_vessel(blk,
+                               material_type=VesselMaterial.CS,
+                               shell_thickness=1.25*pyo.units.inch,
+                               include_platforms_ladders=True,
+                               vessel_diameter=None,
+                               vessel_length=None,
+                               number_of_units=1):
+        """
+        Specific case of vessel costing method for horizontal vessels.
+
+        Arguments which do not apply ot horizontal vessels are excluded.
+
+        Args:
+            material_type - VesselMaterial Enum indicating material of
+                            construction, default = VesselMaterial.CS.
+            shell_thickness - thickness of vessel shell, including pressure
+                              allowance. Default = 1.25 inches.
+            include_platforms_ladders - whether to include platforms and
+                                        ladders in costing , default = True.
+            vessel_diameter - Pyomo component representing vessel diameter.
+                              If not provided, assumed to be named "diameter"
+            vessel_length - Pyomo component representing vessel length.
+                            If not provided, assumed to be named "length".
+            number_of_units - Integer or Pyomo component representing the
+                               number of parallel units to be costed,
+                               default = 1.
+        """
+        SSLWCosting.cost_vessel(blk,
+                                vertical=False,
+                                material_type=VesselMaterial.CS,
+                                shell_thickness=1.25*pyo.units.inch,
+                                weight_limit=1,
+                                include_platforms_ladders=True,
+                                vessel_diameter=None,
+                                vessel_length=None,
+                                number_of_units=1)
+
+    def cost_fired_heater(blk,
+                          heat_source=HeaterSource.fuel,
+                          material_type=HeaterMaterial.CS,
+                          integer=True):
+        """
+        Generic costing method for fired heaters.
+
+        Args:
+            hx_type - HeaterSource Enum indicating type of source of heat,
+                      default = HeaterSource.fuel.
+            material_type - HeaterMaterial Enum indicating material of
+                            construction, default = HeaterMaterial.CS.
+            integer - whether the number of units should be constrained to be
+                      an integer or not (default = True).
+        """
+        # Validate arguments
+        if heat_source not in HeaterSource:
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for "
+                f"heat_source: {heat_source}. Argument must be a member of "
+                "the HeaterSource Enum.")
+        if material_type not in HeaterMaterial:
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for "
+                f"material_type: {material_type}. Argument must be a member "
+                "of the HeaterMaterial Enum.")
+
+        # Build generic costing variables
+        _make_common_vars(blk, integer)
+
+        # Convert pressure to psi,g
+        t0 = blk.unit_model.flowsheet().time.first()
+
+        P = (pyo.units.convert(
+                blk.unit_model.control_volume.properties_in[t0].pressure,
+                to_units=pyo.units.psi) -
+             pyo.units.convert(
+                 1*pyo.units.atm,
+                 to_units=pyo.units.psi))
+
+        # Convert heat duty to BTU/hr
+        Q = (pyo.units.convert(blk.unit_model.heat_duty[t0],
+                               to_units=pyo.units.BTU/pyo.units.hr) /
+             blk.number_of_units)
+
+        # Material factor
+        material_factor_dict = {HeaterMaterial.CS: 1.0,
+                                HeaterMaterial.CrMo: 1.4,
+                                HeaterMaterial.SS: 1.7}
+        blk.material_factor = pyo.Param(
+            initialize=material_factor_dict[material_type],
+            domain=pyo.NonNegativeReals,
+            doc='Construction material correction factor')
+
+        # Pressure deisgn factor calculation
+        blk.pressure_factor = pyo.Var(initialize=1.1,
+                                      domain=pyo.NonNegativeReals,
+                                      doc='Pressure design factor')
+
+        def p_factor_rule(blk):
+            return blk.pressure_factor == (
+                0.986 - 0.0035*(P/(500.00*pyo.units.psi)) +
+                0.0175*(P/(500.00*pyo.units.psi))**2)
+        blk.pressure_factor_eq = pyo.Constraint(rule=p_factor_rule)
+
+        def CB_rule(blk):
+            if heat_source == HeaterSource.fuel:
+                bc_expr = pyo.exp(
+                    0.32325 + 0.766*pyo.log(Q/pyo.units.BTU*pyo.units.hr))
+            elif heat_source == HeaterSource.reformer:
+                bc_expr = (
+                    0.859*(Q/pyo.units.BTU*pyo.units.hr)**0.81)
+            elif heat_source == HeaterSource.pyrolysis:
+                bc_expr = (
+                    0.650*(Q/pyo.units.BTU*pyo.units.hr)**0.81)
+            elif heat_source == HeaterSource.hotWater:
+                bc_expr = pyo.exp(
+                    9.593 -
+                    0.3769*pyo.log((Q/pyo.units.BTU*pyo.units.hr)) +
+                    0.03434*pyo.log((Q/pyo.units.BTU*pyo.units.hr))**2)
+            elif heat_source == HeaterSource.salts:
+                bc_expr = (
+                    12.32*(Q/pyo.units.BTU*pyo.units.hr)**0.64)
+            elif heat_source == HeaterSource.DowthermA:
+                bc_expr = (
+                    12.74*(Q/pyo.units.BTU*pyo.units.hr)**0.65)
+            elif heat_source == HeaterSource.steamBoiler:
+                bc_expr = (
+                    0.367*(Q/pyo.units.BTU*pyo.units.hr)**0.77)
+
+            return blk.base_cost_per_unit == bc_expr*pyo.units.USD_500
+
+        blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
+
+        @blk.Expression(doc="Base cost for all units installed")
+        def base_cost(blk):
+            return blk.base_cost_per_unit * blk.number_of_units
+
+        # Total capital cost of heater(s)
+        def CP_rule(blk):
+            return blk.capital_cost == (
+                blk.material_factor*blk.pressure_factor*blk.base_cost)
+        blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
+
+    def cost_turbine(blk,
+                     integer=True):
+        """
+        Generic costing method for turbines.
+
+        Args:
+            integer - whether the number of units should be constrained to be
+                      an integer or not (default = True).
+        """
+        # Confirm that unit is a turbine
+        if blk.unit_model.config.compressor:
+            raise TypeError("cost_turbine method is only appropriate for "
+                            "pressure changers with the compressor argument "
+                            "equal to False.")
+
+        # Build costing variables
+        blk.capital_cost = pyo.Var(initialize=1e4,
+                                   domain=pyo.NonNegativeReals,
+                                   bounds=(0, None),
+                                   units=pyo.units.USD_500,
+                                   doc='Capital cost of all units')
+
+        if integer is True:
+            domain = pyo.Integers
+        else:
+            domain = pyo.NonNegativeReals
+        blk.number_of_units = pyo.Var(
+            initialize=1,
+            domain=domain,
+            bounds=(1, 100),
+            doc="Number of units to install.")
+        blk.number_of_units.fix(1)
+
+        work = (-blk.unit_model.work_mechanical[
+            blk.unit_model.flowsheet().time.first()])
+
+        work_hp = pyo.units.convert(work/blk.number_of_units,
+                                    to_units=pyo.units.hp)
+
+        def CP_rule(blk):
+            return blk.capital_cost == (
+                blk.number_of_units*530*(work_hp/pyo.units.hp)**0.81 *
+                pyo.units.USD_500)
+        blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
+
+    def cost_pump(blk,
+                  pump_type=PumpType.centrifugal,
+                  material_type=PumpMaterial.SS,
+                  pump_type_factor=1.4):
+        # Confirm that unit is a turbine
+        if not blk.unit_model.config.compressor:
+            raise TypeError("cost_pump method is only appropriate for "
+                            "pressure changers with the compressor argument "
+                            "equal to True.")
+
+        # Validate argument combinations
+        if pump_type == PumpType.reciprocating:
+            if material_type not in [PumpMaterial.ductileIron,
+                                     PumpMaterial.NiAlBronze,
+                                     PumpMaterial.CS,
+                                     PumpMaterial.SS]:
+                raise ConfigurationError(
+                    f"{blk.name} invalid combination of arguments. If "
+                    "pump_type == PumpType.reciprocating then material_type "
+                    "must be one of PumpMaterial.ductileIron, "
+                    "PumpMaterial.NiAlBronze, PumpMaterial.CS, or "
+                    "PumpMaterial.SS.")
+        else:
+            if material_type not in [PumpMaterial.NiAlBronze,
+                                     PumpMaterial.CS]:
+                raise ConfigurationError(
+                    f"{blk.name} invalid combination of arguments. "
+                    "PumpMaterial.NiAlBronze and PumpMaterial.CS material_type"
+                    " are only valid for pump_type == PumpType.reciprocating.")
+
+        t0 = blk.unit_model.flowsheet().time.first()
+
+        work = pyo.units.convert(blk.unit_model.work_fluid[t0] /
+                                 blk.number_of_units,
+                                 to_units=pyo.units.hp)
+
+        # Pressure units required in lbf/ft^2
+        deltaP = pyo.units.convert(
+            blk.unit_model.deltaP[t0],
+            to_units=pyo.units.psi*pyo.units.inch**2/pyo.units.foot**2)
+
+        # Mass density units required in lb/ft^3
+        dens_mass = pyo.units.convert(
+            blk.unit_model.control_volume.properties_in[t0].dens_mass,
+            to_units=pyo.units.pound/pyo.units.foot**3)
+
+        # Volumetric flow units required in gpm
+        Q = pyo.units.convert(
+            blk.unit_model.control_volume.properties_in[t0].flow_vol /
+            blk.number_of_units,
+            to_units=pyo.units.gallon/pyo.units.minute)
+
+        # Calculate pump head
+        blk.pump_head = pyo.Var(
+            initialize=10,
+            domain=pyo.NonNegativeReals,
+            doc='Pump Head in feet of fluid flowing (Pressure rise/density)',
+            units=pyo.units.pound_force*pyo.units.foot/pyo.units.pound)
+
+        def p_head_rule(blk):
+            return blk.pump_head == deltaP/dens_mass
+        blk.pump_head_eq = pyo.Constraint(rule=p_head_rule)
+
+        # Pump size factor: S = Q(H)**0.5
+        # Q = is the flow rate through the pump in gallons per minute
+        # H = pump head in feet of flowing (pressure rise/liquid density)
+        blk.size_factor = pyo.Var(
+            initialize=10000,
+            domain=pyo.NonNegativeReals,
+            doc='Pump size factor, f(Q,pump_head)')
+
+        def p_s_factor_rule(blk):
+            return blk.size_factor == (
+                Q*pyo.units.minute/pyo.units.gallon *
+                (blk.pump_head *
+                 pyo.units.pound/pyo.units.pound_force/pyo.units.foot)**0.5)
+        blk.size_factor_eq = pyo.Constraint(rule=p_s_factor_rule)
+
+        # Material factor
+        if pump_type != PumpType.reciprocating:
+            material_factor_dict = {PumpMaterial.castIron: 1.00,
+                                    PumpMaterial.ductileIron: 1.15,
+                                    PumpMaterial.castSteel: 1.35,
+                                    PumpMaterial.bronze: 1.90,
+                                    PumpMaterial.SS: 2.00,
+                                    PumpMaterial.HastelloyC: 2.95,
+                                    PumpMaterial.Monel: 3.30,
+                                    PumpMaterial.Nickel: 3.50,
+                                    PumpMaterial.Titanium: 9.70}
+        else:
+            material_factor_dict = {PumpMaterial.ductileIron: 1.00,
+                                    PumpMaterial.SS: 2.20,
+                                    PumpMaterial.NiAlBronze: 1.15,
+                                    PumpMaterial.CS: 1.50}
+        blk.material_factor = pyo.Param(
+            initialize=material_factor_dict[material_type],
+            mutable=True,
+            doc='Construction material correction factor')
+
+        # Pump type factor
+        if pump_type == PumpType.centrifugal:
+            pump_type_factor_dict = {'1.1': 1.00,
+                                     '1.2': 1.50,
+                                     '1.3': 1.70,
+                                     '1.4': 2.00,
+                                     '2.1': 2.70,
+                                     '2.2': 8.90}
+            try:
+                ptf = pump_type_factor_dict[pump_type_factor]
+            except KeyError:
+                raise ConfigurationError(
+                    f"{blk.name} invalid value for pump_type_factor argument: "
+                    f"{pump_type_factor}. Value must be one of [1.1, 1.2, 1.3,"
+                    " 1.4, 2.1, 2.2]")
+        else:
+            ptf = 1
+
+        blk.FT = pyo.Param(mutable=True,
+                           initialize=ptf,
+                           doc='Pump type factor')
+
+        # Base pump cost per unit
+        blk.base_cost_pump_per_unit = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=pyo.units.USD_394,
+            doc='Base cost of pump (less motor) per unit')
+
+        def base_pump_cost_rule(blk):
+            if pump_type == PumpType.centrifugal:
+                bpc = pyo.exp(9.7171 -
+                              0.6019*pyo.log(blk.size_factor) +
+                              0.0519*pyo.log(blk.size_factor)**2)
+            elif pump_type == PumpType.externalGear:
+                bpc = pyo.exp(7.6964 +
+                              0.1986*pyo.log(Q) +
+                              0.0291*pyo.log(Q)**2)
+            elif pump_type == PumpType.reciprocating:
+                bpc = pyo.exp(7.8103 +
+                              0.26986*pyo.log(work) +
+                              0.06718*pyo.log(work)**2)
+            return blk.base_pump_cost_per_unit == bpc*pyo.units.USD_394
+        blk.base_pump_cost_per_unit_eq = pyo.Constraint(
+            rule=base_pump_cost_rule)
+
+        @blk.Expression(doc="Base cost for all pumps (less motors)")
+        def base_pump_cost(blk):
+            return blk.base_cost_per_unit * blk.number_of_units
+
+        blk.pump_capital_cost = pyo.Var(
+            initialize=100000,
+            domain=pyo.NonNegativeReals,
+            units=pyo.units.USD_500,
+            doc='Capital cost of pumps (less motors)')
+
+        def CP_pump_rule(blk):
+            return blk.pump_capital_cost == pyo.units.convert(
+                blk.FT*blk.material_factor*blk.base_cost,
+                to_units=pyo.units.USD_500)
+        blk.pump_capital_cost_eq = pyo.Constraint(rule=CP_pump_rule)
+
+
+        # blk.motor_base_cost_per_unit = Var(initialize=10000,
+        #                                     domain=NonNegativeReals,
+        #                                     doc='Motor base purchase'
+        #                                     ' cost in $ per unit')
+
+ 
+
+        # blk.motor_purchase_cost = Var(initialize=100000,
+        #                                domain=NonNegativeReals,
+        #                                doc='Motor purchase cost in $')
+
+        # 
+
+
+      
+
+
+
+        # # electric motor cost correlations ------------------------------
+        # pump_motor_type_dic = {'open': 1,
+        #                        'enclosed': 1.4,
+        #                        'explosion_proof': 1.8}
+        # blk.motor_FT = Param(mutable=True,
+        #                       initialize=pump_motor_type_dic
+        #                       [pump_motor_type_factor],
+        #                       doc='Motor type factor')
+
+        # # pump fractional efficiency
+        # np = (-0.316 + 0.24015*log(Q_gpm*pyunits.minute/pyunits.gallon) -
+        #       0.01199*log(Q_gpm*pyunits.minute/pyunits.gallon)**2)
+        # # fractional efficiency of the electric motor
+        # nm = (0.80 + 0.0319*log(work_hp/pyunits.hp) -
+        #       0.00182*log(work_hp/pyunits.hp)**2)
+
+        # # power consumption in horsepower
+        # @blk.Expression()
+        # def power_consumption_hp(blk):
+        #     return (Q_gpm*blk.pump_head
+        #             * dens_mass_lb_ft3/7.48052)/(33000*np*nm)
+
+        # def base_motor_cost_rule(blk):
+        #     pc_hp = (blk.power_consumption_hp /
+        #              pyunits.get_units(blk.power_consumption_hp))
+        #     return blk.motor_base_cost_per_unit == exp(
+        #         5.8259 + 0.13141*log(pc_hp) + 0.053255*log(pc_hp)**2 +
+        #         0.028628*log(pc_hp)**3 - 0.0035549*log(pc_hp)**4)
+        # blk.base_motor_cost_eq = Constraint(rule=base_motor_cost_rule)
+
+        # @blk.Expression(doc="Base cost for all units installed")
+        # def motor_base_cost(blk):
+        #     return blk.motor_base_cost_per_unit * blk.number_of_units
+
+        # def CP_motor_rule(blk):
+        #     return blk.motor_purchase_cost == \
+        #         (blk.motor_FT * blk.parent_block().
+        #          flowsheet().costing.CE_index/394 * blk.motor_base_cost)
+        # blk.cp_motor_cost_eq = Constraint(rule=CP_motor_rule)
+
+        # # Total pump cost (pump + electrical motor)
+        # def cp_cost_rule(blk):
+        #     return blk.purchase_cost == blk.motor_purchase_cost \
+        #         + blk.pump_purchase_cost
+        # blk.cp_cost_eq = Constraint(rule=cp_cost_rule)
+
     # -------------------------------------------------------------------------
     # Map costing methods to unit model classes
     # Here we can provide a dict mapping unit model classes to costing methods
     # Even better, this is inheritance aware so e.g. Pump will first look for a
     # method assigned to Pump, and then fall back to PressureChanger
-    unit_mapping = {HeatExchanger: cost_heat_exchanger,
+    unit_mapping = {CSTR: cost_vertical_vessel,
+                    Flash: cost_vertical_vessel,
+                    Heater: cost_fired_heater,
+                    HeatExchanger: cost_heat_exchanger,
                     HeatExchanger1D: cost_heat_exchanger,
-                    HeatExchangerNTU: cost_heat_exchanger}
+                    HeatExchangerNTU: cost_heat_exchanger,
+                    PFR: cost_horizontal_vessel,
+                    StoichiometricReactor: cost_horizontal_vessel}
 
 
 # -----------------------------------------------------------------------------
 def _make_common_vars(blk, integer=True):
-    # Build generic costing variables (all costing models need these vars)
+    # Build generic costing variables (most costing models need these vars)
     blk.base_cost_per_unit = pyo.Var(initialize=1e5,
                                      domain=pyo.NonNegativeReals,
                                      units=pyo.units.USD_500,
