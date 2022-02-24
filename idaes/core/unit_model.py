@@ -92,12 +92,12 @@ Must be True if dynamic = True,
         """
         super(UnitModelBlockData, self).build()
 
-        # Add a placeholder for referecnes to costing blocks
+        # Add a placeholder for references to costing blocks
         self._costing_block_ref = None
 
         # Check for overloading of initialize method
         # TODO: Remove in IDAES v2.0
-        if type(self).initialize != UnitModelBlockData.initialize:
+        if type(self).initialize is not UnitModelBlockData.initialize:
             _log.warn(f"DEPRECATION: {str(self.__class__)} has overloaded the "
                       "initialize method. In v2.0, IDAES Will be moving to "
                       "having a centralized initialize method which calls "
@@ -629,10 +629,10 @@ Must be True if dynamic = True,
 
         # Get the costing block if present
         # TODO: Clean up in IDAES v2.0
-        if hasattr(blk, "costing"):
+        costing = blk._costing_block_ref
+        if blk._costing_block_ref is None and hasattr(blk, "costing"):
+            # Fallback for older style costing
             costing = blk.costing
-        else:
-            costing = blk._costing_block_ref
 
         # If costing block exists, deactivate
         if costing is not None:
