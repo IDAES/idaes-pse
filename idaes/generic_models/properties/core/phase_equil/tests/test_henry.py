@@ -225,7 +225,7 @@ def test_equilibrium_ratio():
         m.params = GenericParameterBlock(default=config_dict)
         
         m.state = m.params.build_state_block([0])
-        m.state[0].mole_frac_phase_comp["Liq","H2O"].value = 2
+        m.state[0].mole_frac_phase_comp["Liq","H2O"].value = 0.5
         m.state[0].dens_mol_phase = Var(["Vap", "Liq"], initialize=0,
                                         units=pyunits.mol/(pyunits.m**3))
         m.state[0].dens_mol_phase["Liq"].value = 3
