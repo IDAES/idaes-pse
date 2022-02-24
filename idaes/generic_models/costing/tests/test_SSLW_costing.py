@@ -30,6 +30,7 @@ from pyomo.environ import (Block,
                            value,
                            Var)
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.common.config import ConfigValue
 
 from idaes.core import FlowsheetBlock, UnitModelBlock
 from idaes.generic_models.costing import \
@@ -45,7 +46,10 @@ from idaes.generic_models.costing.SSLW import (SSLWCosting,
                                                TrayType,
                                                TrayMaterial,
                                                HeaterMaterial,
-                                               HeaterSource)
+                                               HeaterSource,
+                                               PumpType,
+                                               PumpMaterial,
+                                               PumpMotorType)
 
 
 # Some more information about this module
@@ -363,37 +367,232 @@ def test_cost_fired_heater(model, material_type, heat_source):
 
 
 @pytest.mark.component
-# @pytest.mark.parametrize("material_type", HeaterMaterial)
-# @pytest.mark.parametrize("heat_source", HeaterSource)
-def test_cost_pump(model):
+def test_cost_turbine(model):
+    model.fs.unit.config.declare("compressor", ConfigValue(default=False))
     model.fs.unit.work_mechanical = Param([0],
-                                          initialize=1000,
-                                          units=pyunits.kJ/pyunits.s)
+                                          initialize=-1224638,
+                                          units=pyunits.J/pyunits.s)
+
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_turbine})
+
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert degrees_of_freedom(model) == 0
+    assert_units_consistent(model.fs.unit.costing)
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)
+
+    assert pytest.approx(213199, 1e-5) == value(
+        model.fs.unit.costing.capital_cost)
+
+
+@pytest.mark.component
+@pytest.mark.parametrize("material_type",
+                         [PumpMaterial.castIron,
+                          PumpMaterial.ductileIron,
+                          PumpMaterial.castSteel,
+                          PumpMaterial.bronze,
+                          PumpMaterial.SS,
+                          PumpMaterial.HastelloyC,
+                          PumpMaterial.Monel,
+                          PumpMaterial.Nickel,
+                          PumpMaterial.Titanium])
+@pytest.mark.parametrize("pump_type_factor", [1.1, 1.2, 1.3, 1.4, 2.1, 2.2])
+@pytest.mark.parametrize("motor_type", PumpMotorType)
+def test_cost_pump_centrifugal(
+        model, material_type, pump_type_factor, motor_type):
+    model.fs.unit.config.declare("compressor", ConfigValue(default=True))
+    model.fs.unit.work_mechanical = Param([0],
+                                          initialize=10143.79,
+                                          units=pyunits.J/pyunits.s)
     model.fs.unit.deltaP = Param([0],
-                                 initialize=1,
-                                 units=pyunits.atm)
+                                 initialize=50000,
+                                 units=pyunits.Pa)
     model.fs.unit.control_volume = Block()
     model.fs.unit.control_volume.properties_in = Block(model.fs.time)
     model.fs.unit.control_volume.properties_in[0].dens_mass = Param(
-        initialize=1000, units=pyunits.kg/pyunits.m**3)
+        initialize=986.64, units=pyunits.kg/pyunits.m**3)
     model.fs.unit.control_volume.properties_in[0].flow_vol = Param(
-        initialize=1, units=pyunits.m**3/pyunits.s)
+        initialize=0.182592, units=pyunits.m**3/pyunits.s)
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
         "costing_method": SSLWCosting.cost_pump,
-        "costing_method_arguments": {}})
+        "costing_method_arguments": {
+            "pump_type": PumpType.centrifugal,
+            "material_type": material_type,
+            "pump_type_factor": pump_type_factor,
+            "motor_type": motor_type}})
 
-    # assert isinstance(model.fs.unit.costing.pressure_factor, Var)
-    # assert isinstance(model.fs.unit.costing.base_cost_per_unit, Var)
-    # assert isinstance(model.fs.unit.costing.capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.number_of_units, Var)
+    assert isinstance(model.fs.unit.costing.pump_head, Var)
+    assert isinstance(model.fs.unit.costing.size_factor, Var)
+    assert isinstance(model.fs.unit.costing.base_pump_cost_per_unit, Var)
+    assert isinstance(model.fs.unit.costing.pump_capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.base_motor_cost_per_unit, Var)
+    assert isinstance(model.fs.unit.costing.motor_capital_cost, Var)
 
-    # assert isinstance(model.fs.unit.costing.capital_cost_constraint,
-    #                   Constraint)
-    # assert isinstance(model.fs.unit.costing.base_cost_per_unit_eq,
-    #                   Constraint)
-    # assert isinstance(model.fs.unit.costing.pressure_factor_eq,
-    #                   Constraint)
+    assert isinstance(model.fs.unit.costing.material_factor, Param)
+    assert isinstance(model.fs.unit.costing.FT, Param)
+    assert isinstance(model.fs.unit.costing.motor_FT, Param)
+
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.base_pump_cost_per_unit_eq,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.base_motor_cost_eq,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.pump_capital_cost_eq,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.motor_capital_cost_eq,
+                      Constraint)
+
+    assert degrees_of_freedom(model) == 0
+    assert_units_consistent(model.fs.unit.costing)
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)
+
+    # Test solution for one known case
+    if (material_type == PumpMaterial.Nickel and
+            pump_type_factor == 1.4 and
+            motor_type == PumpMotorType.Enclosed):
+        assert pytest.approx(69956.71, 1e-5) == value(pyunits.convert(
+            model.fs.unit.costing.capital_cost,
+            to_units=pyunits.USD2018))
+
+
+@pytest.mark.component
+@pytest.mark.parametrize("material_type",
+                         [PumpMaterial.castIron,
+                          PumpMaterial.ductileIron,
+                          PumpMaterial.castSteel,
+                          PumpMaterial.bronze,
+                          PumpMaterial.SS,
+                          PumpMaterial.HastelloyC,
+                          PumpMaterial.Monel,
+                          PumpMaterial.Nickel,
+                          PumpMaterial.Titanium])
+@pytest.mark.parametrize("motor_type", PumpMotorType)
+def test_cost_pump_externalgear(
+        model, material_type, motor_type):
+    model.fs.unit.config.declare("compressor", ConfigValue(default=True))
+    model.fs.unit.work_mechanical = Param([0],
+                                          initialize=10143.79,
+                                          units=pyunits.J/pyunits.s)
+    model.fs.unit.deltaP = Param([0],
+                                 initialize=50000,
+                                 units=pyunits.Pa)
+    model.fs.unit.control_volume = Block()
+    model.fs.unit.control_volume.properties_in = Block(model.fs.time)
+    model.fs.unit.control_volume.properties_in[0].dens_mass = Param(
+        initialize=986.64, units=pyunits.kg/pyunits.m**3)
+    model.fs.unit.control_volume.properties_in[0].flow_vol = Param(
+        initialize=0.182592, units=pyunits.m**3/pyunits.s)
+
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_pump,
+        "costing_method_arguments": {
+            "pump_type": PumpType.externalGear,
+            "material_type": material_type,
+            "motor_type": motor_type}})
+
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.number_of_units, Var)
+    assert isinstance(model.fs.unit.costing.pump_head, Var)
+    assert isinstance(model.fs.unit.costing.size_factor, Var)
+    assert isinstance(model.fs.unit.costing.base_pump_cost_per_unit, Var)
+    assert isinstance(model.fs.unit.costing.pump_capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.base_motor_cost_per_unit, Var)
+    assert isinstance(model.fs.unit.costing.motor_capital_cost, Var)
+
+    assert isinstance(model.fs.unit.costing.material_factor, Param)
+    assert isinstance(model.fs.unit.costing.FT, Param)
+    assert isinstance(model.fs.unit.costing.motor_FT, Param)
+
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.base_pump_cost_per_unit_eq,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.base_motor_cost_eq,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.pump_capital_cost_eq,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.motor_capital_cost_eq,
+                      Constraint)
+
+    assert degrees_of_freedom(model) == 0
+    assert_units_consistent(model.fs.unit.costing)
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)
+
+
+@pytest.mark.component
+@pytest.mark.parametrize("material_type",
+                         [PumpMaterial.ductileIron,
+                          PumpMaterial.SS,
+                          PumpMaterial.NiAlBronze,
+                          PumpMaterial.CS])
+@pytest.mark.parametrize("motor_type", PumpMotorType)
+def test_cost_pump_reciprocating(
+        model, material_type, motor_type):
+    model.fs.unit.config.declare("compressor", ConfigValue(default=True))
+    model.fs.unit.work_mechanical = Param([0],
+                                          initialize=10143.79,
+                                          units=pyunits.J/pyunits.s)
+    model.fs.unit.deltaP = Param([0],
+                                 initialize=50000,
+                                 units=pyunits.Pa)
+    model.fs.unit.control_volume = Block()
+    model.fs.unit.control_volume.properties_in = Block(model.fs.time)
+    model.fs.unit.control_volume.properties_in[0].dens_mass = Param(
+        initialize=986.64, units=pyunits.kg/pyunits.m**3)
+    model.fs.unit.control_volume.properties_in[0].flow_vol = Param(
+        initialize=0.182592, units=pyunits.m**3/pyunits.s)
+
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_pump,
+        "costing_method_arguments": {
+            "pump_type": PumpType.reciprocating,
+            "material_type": material_type,
+            "motor_type": motor_type}})
+
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.number_of_units, Var)
+    assert isinstance(model.fs.unit.costing.pump_head, Var)
+    assert isinstance(model.fs.unit.costing.size_factor, Var)
+    assert isinstance(model.fs.unit.costing.base_pump_cost_per_unit, Var)
+    assert isinstance(model.fs.unit.costing.pump_capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.base_motor_cost_per_unit, Var)
+    assert isinstance(model.fs.unit.costing.motor_capital_cost, Var)
+
+    assert isinstance(model.fs.unit.costing.material_factor, Param)
+    assert isinstance(model.fs.unit.costing.FT, Param)
+    assert isinstance(model.fs.unit.costing.motor_FT, Param)
+
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.base_pump_cost_per_unit_eq,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.base_motor_cost_eq,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.pump_capital_cost_eq,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.motor_capital_cost_eq,
+                      Constraint)
 
     assert degrees_of_freedom(model) == 0
     assert_units_consistent(model.fs.unit.costing)

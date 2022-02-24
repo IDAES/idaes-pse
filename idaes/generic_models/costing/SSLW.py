@@ -998,8 +998,7 @@ class SSLWCosting(CostingPackageBase):
                     "PumpMaterial.NiAlBronze, PumpMaterial.CS, or "
                     "PumpMaterial.SS.")
         else:
-            if material_type not in [PumpMaterial.NiAlBronze,
-                                     PumpMaterial.CS]:
+            if material_type in [PumpMaterial.NiAlBronze, PumpMaterial.CS]:
                 raise ConfigurationError(
                     f"{blk.name} invalid combination of arguments. "
                     "PumpMaterial.NiAlBronze and PumpMaterial.CS material_type"
@@ -1094,12 +1093,12 @@ class SSLWCosting(CostingPackageBase):
 
         # Pump type factor
         if pump_type == PumpType.centrifugal:
-            pump_type_factor_dict = {'1.1': 1.00,
-                                     '1.2': 1.50,
-                                     '1.3': 1.70,
-                                     '1.4': 2.00,
-                                     '2.1': 2.70,
-                                     '2.2': 8.90}
+            pump_type_factor_dict = {1.1: 1.00,
+                                     1.2: 1.50,
+                                     1.3: 1.70,
+                                     1.4: 2.00,
+                                     2.1: 2.70,
+                                     2.2: 8.90}
             try:
                 ptf = pump_type_factor_dict[pump_type_factor]
             except KeyError:
@@ -1115,7 +1114,7 @@ class SSLWCosting(CostingPackageBase):
                            doc='Pump type factor')
 
         # Base pump cost per unit
-        blk.base_cost_pump_per_unit = pyo.Var(
+        blk.base_pump_cost_per_unit = pyo.Var(
             initialize=1e5,
             domain=pyo.NonNegativeReals,
             units=pyo.units.USD_394,
@@ -1127,20 +1126,21 @@ class SSLWCosting(CostingPackageBase):
                               0.6019*pyo.log(blk.size_factor) +
                               0.0519*pyo.log(blk.size_factor)**2)
             elif pump_type == PumpType.externalGear:
-                bpc = pyo.exp(7.6964 +
-                              0.1986*pyo.log(Q) +
-                              0.0291*pyo.log(Q)**2)
+                bpc = pyo.exp(
+                    7.6964 +
+                    0.1986*pyo.log(Q/(pyo.units.gallon/pyo.units.minute)) +
+                    0.0291*pyo.log(Q/(pyo.units.gallon/pyo.units.minute))**2)
             elif pump_type == PumpType.reciprocating:
                 bpc = pyo.exp(7.8103 +
-                              0.26986*pyo.log(work) +
-                              0.06718*pyo.log(work)**2)
+                              0.26986*pyo.log(work/pyo.units.hp) +
+                              0.06718*pyo.log(work/pyo.units.hp)**2)
             return blk.base_pump_cost_per_unit == bpc*pyo.units.USD_394
         blk.base_pump_cost_per_unit_eq = pyo.Constraint(
             rule=base_pump_cost_rule)
 
         @blk.Expression(doc="Base cost for all pumps (less motors)")
         def base_pump_cost(blk):
-            return blk.base_cost_per_unit * blk.number_of_units
+            return blk.base_pump_cost_per_unit * blk.number_of_units
 
         blk.pump_capital_cost = pyo.Var(
             initialize=100000,
@@ -1150,7 +1150,7 @@ class SSLWCosting(CostingPackageBase):
 
         def CP_pump_rule(blk):
             return blk.pump_capital_cost == pyo.units.convert(
-                blk.FT*blk.material_factor*blk.base_cost,
+                blk.FT*blk.material_factor*blk.base_pump_cost,
                 to_units=pyo.units.USD_500)
         blk.pump_capital_cost_eq = pyo.Constraint(rule=CP_pump_rule)
 
@@ -1168,14 +1168,14 @@ class SSLWCosting(CostingPackageBase):
                  0.00182*pyo.log(work/pyo.units.hp)**2)
         work_motor = work/eta_m
 
-        blk.motor_base_cost_per_unit = pyo.Var(
+        blk.base_motor_cost_per_unit = pyo.Var(
             initialize=10000,
             domain=pyo.NonNegativeReals,
             units=pyo.units.USD_394,
             doc='Motor base purchase cost per unit')
 
         def base_motor_cost_rule(blk):
-            return blk.motor_base_cost_per_unit == (pyo.exp(
+            return blk.base_motor_cost_per_unit == (pyo.exp(
                 5.8259 + 0.13141*pyo.log(work_motor/pyo.units.hp) +
                 0.053255*pyo.log(work_motor/pyo.units.hp)**2 +
                 0.028628*pyo.log(work_motor/pyo.units.hp)**3 -
@@ -1185,7 +1185,7 @@ class SSLWCosting(CostingPackageBase):
 
         @blk.Expression(doc="Base cost for all motors")
         def motor_base_cost(blk):
-            return blk.motor_base_cost_per_unit * blk.number_of_units
+            return blk.base_motor_cost_per_unit * blk.number_of_units
 
         blk.motor_capital_cost = pyo.Var(
             initialize=100000,

@@ -619,7 +619,7 @@ Must be True if dynamic = True,
             * UnitModelCostingBlocks
 
         Args:
-            costing_args - dict oarguments to be passed to costing block
+            costing_args - dict arguments to be passed to costing block
                            initialize method
 
         For other arguments, see the initilize_unit method.
