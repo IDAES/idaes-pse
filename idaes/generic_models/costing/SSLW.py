@@ -33,6 +33,7 @@ from idaes.generic_models.unit_models import (
     HeatExchanger1D,
     HeatExchangerNTU,
     PFR,
+    Pump,
     StoichiometricReactor)
 from idaes.generic_models.unit_models.heat_exchanger \
     import HeatExchangerFlowPattern
@@ -162,6 +163,15 @@ class PumpType(str, Enum):
     centrifugal = 'centrifugal'
     externalGear = 'external_gear'
     reciprocating = 'reciprocating'
+
+    def __str__(self):
+        return self.value
+
+
+class PumpMotorType(str, Enum):
+    Open = 'open'
+    Enclosed = 'enclosed'
+    ExplosionProof = 'explosion_proof'
 
     def __str__(self):
         return self.value
@@ -805,8 +815,8 @@ class SSLWCosting(CostingPackageBase):
         Generic costing method for fired heaters.
 
         Args:
-            hx_type - HeaterSource Enum indicating type of source of heat,
-                      default = HeaterSource.fuel.
+            heat_source - HeaterSource Enum indicating type of source of heat,
+                          default = HeaterSource.fuel.
             material_type - HeaterMaterial Enum indicating material of
                             construction, default = HeaterMaterial.CS.
             integer - whether the number of units should be constrained to be
@@ -949,8 +959,27 @@ class SSLWCosting(CostingPackageBase):
     def cost_pump(blk,
                   pump_type=PumpType.centrifugal,
                   material_type=PumpMaterial.SS,
-                  pump_type_factor=1.4):
-        # Confirm that unit is a turbine
+                  pump_type_factor=1.4,
+                  motor_type=PumpMotorType.Open,
+                  integer=True):
+        """
+        Generic costing method for pumps.
+
+        Args:
+            pump_type - PumpType Enum indicating type of type of equipment,
+                      default = PumpType.centrifugal.
+            material_type - PumpMaterial Enum indicating material of
+                            construction, default = PumpMaterial.SS.
+                            Material type is tied to PumpType.
+            pump_type_factor - empirical factor for centrigual pumps based on
+                               table in source. Valid values are [1.1, 1.2, "
+                               1.3, 1.4 (default), 2.1, 2.2].
+            motor_type - PumpMotorType Enum indicating type of type of motor
+                         to be used, default = PumpMotorType.Open.
+            integer - whether the number of units should be constrained to be
+                      an integer or not (default = True).
+        """
+        # Confirm that unit is a pump/compressor
         if not blk.unit_model.config.compressor:
             raise TypeError("cost_pump method is only appropriate for "
                             "pressure changers with the compressor argument "
@@ -976,9 +1005,27 @@ class SSLWCosting(CostingPackageBase):
                     "PumpMaterial.NiAlBronze and PumpMaterial.CS material_type"
                     " are only valid for pump_type == PumpType.reciprocating.")
 
+        # Add common variables
+        blk.capital_cost = pyo.Var(initialize=1e4,
+                                   domain=pyo.NonNegativeReals,
+                                   bounds=(0, None),
+                                   units=pyo.units.USD_500,
+                                   doc='Capital cost of all units')
+
+        if integer is True:
+            domain = pyo.Integers
+        else:
+            domain = pyo.NonNegativeReals
+        blk.number_of_units = pyo.Var(
+            initialize=1,
+            domain=domain,
+            bounds=(1, 100),
+            doc="Number of units to install.")
+        blk.number_of_units.fix(1)
+
         t0 = blk.unit_model.flowsheet().time.first()
 
-        work = pyo.units.convert(blk.unit_model.work_fluid[t0] /
+        work = pyo.units.convert(blk.unit_model.work_mechanical[t0] /
                                  blk.number_of_units,
                                  to_units=pyo.units.hp)
 
@@ -1107,70 +1154,56 @@ class SSLWCosting(CostingPackageBase):
                 to_units=pyo.units.USD_500)
         blk.pump_capital_cost_eq = pyo.Constraint(rule=CP_pump_rule)
 
+        # Motor Costs
+        pump_motor_type_dict = {PumpMotorType.Open: 1,
+                                PumpMotorType.Enclosed: 1.4,
+                                PumpMotorType.ExplosionProof: 1.8}
+        blk.motor_FT = pyo.Param(
+            mutable=True,
+            initialize=pump_motor_type_dict[motor_type],
+            doc='Motor type factor')
 
-        # blk.motor_base_cost_per_unit = Var(initialize=10000,
-        #                                     domain=NonNegativeReals,
-        #                                     doc='Motor base purchase'
-        #                                     ' cost in $ per unit')
+        # Efficiency of the electric motor
+        eta_m = (0.80 + 0.0319*pyo.log(work/pyo.units.hp) -
+                 0.00182*pyo.log(work/pyo.units.hp)**2)
+        work_motor = work/eta_m
 
- 
+        blk.motor_base_cost_per_unit = pyo.Var(
+            initialize=10000,
+            domain=pyo.NonNegativeReals,
+            units=pyo.units.USD_394,
+            doc='Motor base purchase cost per unit')
 
-        # blk.motor_purchase_cost = Var(initialize=100000,
-        #                                domain=NonNegativeReals,
-        #                                doc='Motor purchase cost in $')
+        def base_motor_cost_rule(blk):
+            return blk.motor_base_cost_per_unit == (pyo.exp(
+                5.8259 + 0.13141*pyo.log(work_motor/pyo.units.hp) +
+                0.053255*pyo.log(work_motor/pyo.units.hp)**2 +
+                0.028628*pyo.log(work_motor/pyo.units.hp)**3 -
+                0.0035549*pyo.log(work_motor/pyo.units.hp)**4) *
+                pyo.units.USD_394)
+        blk.base_motor_cost_eq = pyo.Constraint(rule=base_motor_cost_rule)
 
-        # 
+        @blk.Expression(doc="Base cost for all motors")
+        def motor_base_cost(blk):
+            return blk.motor_base_cost_per_unit * blk.number_of_units
 
+        blk.motor_capital_cost = pyo.Var(
+            initialize=100000,
+            domain=pyo.NonNegativeReals,
+            units=pyo.units.USD_500,
+            doc='Capital cost of all motors')
 
-      
+        def CP_motor_rule(blk):
+            return blk.motor_capital_cost == pyo.units.convert(
+                blk.motor_FT*blk.motor_base_cost,
+                to_units=pyo.units.USD_500)
+        blk.motor_capital_cost_eq = pyo.Constraint(rule=CP_motor_rule)
 
-
-
-        # # electric motor cost correlations ------------------------------
-        # pump_motor_type_dic = {'open': 1,
-        #                        'enclosed': 1.4,
-        #                        'explosion_proof': 1.8}
-        # blk.motor_FT = Param(mutable=True,
-        #                       initialize=pump_motor_type_dic
-        #                       [pump_motor_type_factor],
-        #                       doc='Motor type factor')
-
-        # # pump fractional efficiency
-        # np = (-0.316 + 0.24015*log(Q_gpm*pyunits.minute/pyunits.gallon) -
-        #       0.01199*log(Q_gpm*pyunits.minute/pyunits.gallon)**2)
-        # # fractional efficiency of the electric motor
-        # nm = (0.80 + 0.0319*log(work_hp/pyunits.hp) -
-        #       0.00182*log(work_hp/pyunits.hp)**2)
-
-        # # power consumption in horsepower
-        # @blk.Expression()
-        # def power_consumption_hp(blk):
-        #     return (Q_gpm*blk.pump_head
-        #             * dens_mass_lb_ft3/7.48052)/(33000*np*nm)
-
-        # def base_motor_cost_rule(blk):
-        #     pc_hp = (blk.power_consumption_hp /
-        #              pyunits.get_units(blk.power_consumption_hp))
-        #     return blk.motor_base_cost_per_unit == exp(
-        #         5.8259 + 0.13141*log(pc_hp) + 0.053255*log(pc_hp)**2 +
-        #         0.028628*log(pc_hp)**3 - 0.0035549*log(pc_hp)**4)
-        # blk.base_motor_cost_eq = Constraint(rule=base_motor_cost_rule)
-
-        # @blk.Expression(doc="Base cost for all units installed")
-        # def motor_base_cost(blk):
-        #     return blk.motor_base_cost_per_unit * blk.number_of_units
-
-        # def CP_motor_rule(blk):
-        #     return blk.motor_purchase_cost == \
-        #         (blk.motor_FT * blk.parent_block().
-        #          flowsheet().costing.CE_index/394 * blk.motor_base_cost)
-        # blk.cp_motor_cost_eq = Constraint(rule=CP_motor_rule)
-
-        # # Total pump cost (pump + electrical motor)
-        # def cp_cost_rule(blk):
-        #     return blk.purchase_cost == blk.motor_purchase_cost \
-        #         + blk.pump_purchase_cost
-        # blk.cp_cost_eq = Constraint(rule=cp_cost_rule)
+        # Total capital cost (pump + electrical motor)
+        def cp_cost_rule(blk):
+            return blk.capital_cost == (blk.pump_capital_cost +
+                                        blk.motor_capital_cost)
+        blk.capital_cost_constraint = pyo.Constraint(rule=cp_cost_rule)
 
     # -------------------------------------------------------------------------
     # Map costing methods to unit model classes
@@ -1184,6 +1217,7 @@ class SSLWCosting(CostingPackageBase):
                     HeatExchanger1D: cost_heat_exchanger,
                     HeatExchangerNTU: cost_heat_exchanger,
                     PFR: cost_horizontal_vessel,
+                    Pump: cost_pump,
                     StoichiometricReactor: cost_horizontal_vessel}
 
 

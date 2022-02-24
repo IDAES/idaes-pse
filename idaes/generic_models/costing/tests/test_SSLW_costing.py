@@ -360,3 +360,44 @@ def test_cost_fired_heater(model, material_type, heat_source):
     res = solver.solve(model)
 
     assert check_optimal_termination(res)
+
+
+@pytest.mark.component
+# @pytest.mark.parametrize("material_type", HeaterMaterial)
+# @pytest.mark.parametrize("heat_source", HeaterSource)
+def test_cost_pump(model):
+    model.fs.unit.work_mechanical = Param([0],
+                                          initialize=1000,
+                                          units=pyunits.kJ/pyunits.s)
+    model.fs.unit.deltaP = Param([0],
+                                 initialize=1,
+                                 units=pyunits.atm)
+    model.fs.unit.control_volume = Block()
+    model.fs.unit.control_volume.properties_in = Block(model.fs.time)
+    model.fs.unit.control_volume.properties_in[0].dens_mass = Param(
+        initialize=1000, units=pyunits.kg/pyunits.m**3)
+    model.fs.unit.control_volume.properties_in[0].flow_vol = Param(
+        initialize=1, units=pyunits.m**3/pyunits.s)
+
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_pump,
+        "costing_method_arguments": {}})
+
+    # assert isinstance(model.fs.unit.costing.pressure_factor, Var)
+    # assert isinstance(model.fs.unit.costing.base_cost_per_unit, Var)
+    # assert isinstance(model.fs.unit.costing.capital_cost, Var)
+
+    # assert isinstance(model.fs.unit.costing.capital_cost_constraint,
+    #                   Constraint)
+    # assert isinstance(model.fs.unit.costing.base_cost_per_unit_eq,
+    #                   Constraint)
+    # assert isinstance(model.fs.unit.costing.pressure_factor_eq,
+    #                   Constraint)
+
+    assert degrees_of_freedom(model) == 0
+    assert_units_consistent(model.fs.unit.costing)
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)
