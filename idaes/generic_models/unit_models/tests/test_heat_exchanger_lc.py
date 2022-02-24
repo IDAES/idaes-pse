@@ -312,11 +312,11 @@ class TestHXLCGeneric(object):
         return m
 
     @pytest.mark.unit
+    @pytest.mark.xfail
     def test_units(self, model):
         # Note: using the discretizer makes the units of measure on the time
         # derivative term inconsistent...
-        with pytest.raises(InconsistentUnitsError):
-            assert_units_consistent(model)
+        assert_units_consistent(model)
 
     @pytest.mark.unit
     def test_units_unconstrained(self, unconstrained_model):

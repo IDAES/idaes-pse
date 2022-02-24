@@ -6,6 +6,8 @@ Heat Exchanger (Lumped Capacitance)
 
 .. currentmodule:: idaes.generic_models.unit_models.heat_exchanger_lc
 
+Author: `Rusty Gentile <https://github.com/rustygentile>`_
+
 The ``HeatExchangerLumpedCapacitance`` model can be imported from :code:`idaes.generic_models.unit_models`.
 This model is an extension of ``idaes.generic_models.unit_models.heat_exchanger``,
 with wall temperature and heat holdup terms added for use in transient simulations.

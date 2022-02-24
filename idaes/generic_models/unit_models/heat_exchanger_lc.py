@@ -26,8 +26,6 @@ from .heat_exchanger import HeatExchangerData
                              doc="0D heat exchanger for transient simulations")
 class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
 
-    CONFIG = HeatExchangerData.CONFIG(implicit=True)
-
     def _add_wall_variables(self):
 
         # Use the hot side as a reference
