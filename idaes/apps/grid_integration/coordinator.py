@@ -1,6 +1,7 @@
 import prescient.plugins as pplugins
 from prescient.simulator.config import PrescientConfig
 from pyomo.common.config import ConfigDict, ConfigValue
+import pyomo.environ as pyo
 
 
 class DoubleLoopCoordinator:
@@ -312,14 +313,18 @@ class DoubleLoopCoordinator:
         """
 
         gen_name = self.bidder.generator
-        current_ruc_dispatch = (
-            simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA
-        )
+
+        current_ruc_dispatch_dicts = [
+            simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA,
+            simulator.data_manager.ruc_market_active.renewable_gen_cleared_DA,
+            simulator.data_manager.ruc_market_active.virtual_gen_cleared_DA,
+        ]
+
         sced_horizon = options.sced_horizon
 
         market_signals = self._assemble_project_tracking_signal(
             gen_name=gen_name,
-            current_ruc_dispatch=current_ruc_dispatch,
+            current_ruc_dispatch_dicts=current_ruc_dispatch_dicts,
             hour=hour,
             sced_horizon=sced_horizon,
         )
@@ -327,16 +332,18 @@ class DoubleLoopCoordinator:
 
     @staticmethod
     def _assemble_project_tracking_signal(
-        gen_name, current_ruc_dispatch, hour, sced_horizon
+        gen_name, current_ruc_dispatch_dicts, hour, sced_horizon
     ):
 
         market_signals = []
         # append corresponding RUC dispatch
         for t in range(hour, hour + sced_horizon):
-            if t >= 23:
-                dispatch = current_ruc_dispatch[(gen_name, 23)]
-            else:
-                dispatch = current_ruc_dispatch[(gen_name, t)]
+            dispatch = 0
+            for current_ruc_dispatch in current_ruc_dispatch_dicts:
+                if t >= 23:
+                    dispatch += current_ruc_dispatch.get((gen_name, 23), 0)
+                else:
+                    dispatch += current_ruc_dispatch.get((gen_name, t), 0)
             market_signals.append(dispatch)
 
         return market_signals
@@ -398,7 +405,19 @@ class DoubleLoopCoordinator:
         Returns:
             None
         """
-        self.projection_tracker.model = self.tracker.model.clone()
+        # self.projection_tracker.model = self.tracker.model.clone()
+
+        objects_list = [pyo.Var, pyo.Param]
+        for obj in objects_list:
+            for tracker_obj, proj_tracker_obj in zip(
+                self.tracker.model.component_objects(obj),
+                self.projection_tracker.model.component_objects(obj),
+            ):
+                for idx in tracker_obj.index_set():
+                    if pyo.value(proj_tracker_obj[idx]) != pyo.value(tracker_obj[idx]):
+                        proj_tracker_obj[idx] = pyo.value(tracker_obj[idx])
+
+        return
 
     def bid_into_DAM(self, options, simulator, ruc_instance, ruc_date, ruc_hour):
 
