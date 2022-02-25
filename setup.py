@@ -34,7 +34,7 @@ def rglob(path, glob):
 
 
 DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.3.0.rc1.idaes.2022.02.10.zip"
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.3.0.zip"
 ]
 
 
@@ -49,7 +49,7 @@ kwargs = dict(
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
         "bunch",
-        "click",
+        "click>=8",
         "colorama",
         "flask",  # for ui/fsvis
         "flask-cors",
