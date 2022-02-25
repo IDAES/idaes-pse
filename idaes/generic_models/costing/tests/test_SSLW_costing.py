@@ -37,6 +37,21 @@ from idaes.generic_models.costing import \
     FlowsheetCostingBlock, UnitModelCostingBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.generic_models.unit_models import (
+    Compressor,
+    CSTR,
+    Flash,
+    Heater,
+    HeatExchanger,
+    HeatExchangerNTU,
+    PFR,
+    PressureChanger,
+    Pump,
+    StoichiometricReactor,
+    Turbine)
+from idaes.core.util.testing import \
+    PhysicalParameterTestBlock, ReactionParameterTestBlock
+from idaes.generic_models.properties import iapws95
 
 from idaes.generic_models.costing.SSLW import (SSLWCosting,
                                                HXMaterial,
@@ -721,3 +736,148 @@ def test_cost_blower(model, blower_type, material_type):
     assert check_optimal_termination(res)
 
     # TODO: Test case for solution checking
+
+
+@pytest.mark.integration
+class TestMapping():
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock()
+
+        m.fs.pparams = PhysicalParameterTestBlock()
+        m.fs.rparams = ReactionParameterTestBlock(default={
+            "property_package": m.fs.pparams})
+
+        m.fs.costing = FlowsheetCostingBlock(
+            default={"costing_package": SSLWCosting})
+
+        return m
+
+    def test_compressor(self, model):
+        # Add examples of supported unit models and add costing
+        model.fs.C101 = Compressor(default={
+            "property_package": model.fs.pparams})
+        model.fs.C101.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block": model.fs.costing})
+        assert model.fs.C101.costing.drive_factor.value == 1
+        assert model.fs.C101.costing.material_factor.value == 2.5
+
+    def test_cstr(self, model):
+        model.fs.R102 = CSTR(default={"property_package": model.fs.pparams,
+                                      "reaction_package": model.fs.rparams})
+        # Add length and diameter to CSTR
+        model.fs.R102.length = 1*pyunits.m
+        model.fs.R102.diameter = 1*pyunits.m
+        model.fs.R102.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block": model.fs.costing})
+        assert model.fs.R102.costing.material_factor.value == 1
+        assert model.fs.R102.costing.material_density.value == 0.284
+
+    def test_flash(self, model):
+        model.fs.F103 = Flash(default={"property_package": model.fs.pparams})
+        # Add length and diameter to Flash
+        model.fs.F103.length = 1*pyunits.m
+        model.fs.F103.diameter = 1*pyunits.m
+        model.fs.F103.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block": model.fs.costing})
+        assert model.fs.F103.costing.material_factor.value == 1
+        assert model.fs.F103.costing.material_density.value == 0.284
+
+    def test_heater(self, model):
+        # Add examples of supported unit models and add costing
+        model.fs.unit = Heater(default={
+            "property_package": model.fs.pparams})
+        model.fs.unit.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block": model.fs.costing})
+        assert model.fs.unit.costing.pressure_factor.value == 1.1
+        assert model.fs.unit.costing.material_factor.value == 1
+
+    def test_hx0D(self, model):
+        # Add examples of supported unit models and add costing
+        model.fs.unit = HeatExchanger(default={
+            "shell": {"property_package": model.fs.pparams},
+            "tube": {"property_package": model.fs.pparams}})
+        model.fs.unit.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block": model.fs.costing})
+        assert model.fs.unit.costing.length_factor.value == 1.12
+
+    # TODO : Test for HX1D once supported
+
+    def test_hx_ntu(self):
+        # Need a different property package here
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock()
+
+        m.fs.pparams = iapws95.Iapws95ParameterBlock()
+
+        m.fs.costing = FlowsheetCostingBlock(
+            default={"costing_package": SSLWCosting})
+        # Add examples of supported unit models and add costing
+        m.fs.unit = HeatExchangerNTU(default={
+            "hot_side": {"property_package": m.fs.pparams},
+            "cold_side": {"property_package": m.fs.pparams}})
+        m.fs.unit.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block": m.fs.costing})
+        assert m.fs.unit.costing.length_factor.value == 1.12
+
+    def test_pfr(self, model):
+        model.fs.unit = PFR(default={"property_package": model.fs.pparams,
+                                     "reaction_package": model.fs.rparams})
+        # Add length and diameter to PFR
+        model.fs.unit.length = 1*pyunits.m
+        model.fs.unit.diameter = 1*pyunits.m
+        model.fs.unit.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block": model.fs.costing})
+        assert model.fs.unit.costing.material_factor.value == 1
+        assert model.fs.unit.costing.material_density.value == 0.284
+
+    def test_pressure_changer(self, model):
+        # Add examples of supported unit models and add costing
+        model.fs.unit = PressureChanger(default={
+            "property_package": model.fs.pparams})
+        model.fs.unit.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block": model.fs.costing})
+        assert model.fs.unit.costing.drive_factor.value == 1
+        assert model.fs.unit.costing.material_factor.value == 2.5
+
+    def test_pump(self):
+        # Need a different property package here
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock()
+
+        m.fs.pparams = iapws95.Iapws95ParameterBlock()
+
+        m.fs.costing = FlowsheetCostingBlock(
+            default={"costing_package": SSLWCosting})
+
+        # Add examples of supported unit models and add costing
+        m.fs.unit = Pump(default={
+            "property_package": m.fs.pparams})
+        m.fs.unit.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block": m.fs.costing})
+        assert hasattr(m.fs.unit.costing, "pump_head")
+
+    def test_rstoich(self, model):
+        model.fs.unit = StoichiometricReactor(default={
+            "property_package": model.fs.pparams,
+            "reaction_package": model.fs.rparams})
+        # Add length and diameter to reactor
+        model.fs.unit.length = 1*pyunits.m
+        model.fs.unit.diameter = 1*pyunits.m
+        model.fs.unit.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block": model.fs.costing})
+        assert model.fs.unit.costing.material_factor.value == 1
+        assert model.fs.unit.costing.material_density.value == 0.284
+
+    def test_turbine(self, model):
+        # Add examples of supported unit models and add costing
+        model.fs.unit = Turbine(default={
+            "property_package": model.fs.pparams})
+        model.fs.unit.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block": model.fs.costing})
+        assert hasattr(model.fs.unit.costing, "capital_cost")
+        assert not hasattr(model.fs.unit.costing, "material_factor")

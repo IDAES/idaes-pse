@@ -25,13 +25,13 @@ unit operations.
 from enum import Enum
 import pyomo.environ as pyo
 
+# TODO: HX1D not supported - does not define area (has shell_area & tube_area)
 from idaes.generic_models.unit_models import (
     Compressor,
     CSTR,
     Flash,
     Heater,
     HeatExchanger,
-    HeatExchanger1D,
     HeatExchangerNTU,
     PFR,
     PressureChanger,
@@ -438,7 +438,7 @@ class SSLWCosting(CostingPackageBase):
                                       doc='Pressure design factor')
 
         try:
-            tube_props = blk.unit_model.tube.properties_in[t0]
+            tube_props = blk.unit_model.hot_side.properties_in[t0]
         except AttributeError:
             # Assume HX1D
             if (blk.unit_model.config.flow_type ==
@@ -1498,21 +1498,21 @@ class SSLWCosting(CostingPackageBase):
         """
         if not blk.unit_model.config.compressor or mover_type == "turbine":
             # Unit is a turbine
-            SSLWCosting.cost_turbine(**kwargs)
+            SSLWCosting.cost_turbine(blk, **kwargs)
         elif mover_type == "compressor":
             # Unit is a pump
-            SSLWCosting.cost_compressor(**kwargs)
+            SSLWCosting.cost_compressor(blk, **kwargs)
         elif (mover_type == "pump" or
-                  blk.unit_model.config.thermodynamic_assumption ==
-                  ThermodynamicAssumption.pump):
+              blk.unit_model.config.thermodynamic_assumption ==
+              ThermodynamicAssumption.pump):
             # Unit is a pump
-            SSLWCosting.cost_pump(**kwargs)
+            SSLWCosting.cost_pump(blk, **kwargs)
         elif mover_type == "blower":
             # Unit is a pump
-            SSLWCosting.cost_pump(**kwargs)
+            SSLWCosting.cost_pump(blk, **kwargs)
         elif mover_type == "fan":
             # Unit is a pump
-            SSLWCosting.cost_fan(**kwargs)
+            SSLWCosting.cost_fan(blk, **kwargs)
         else:
             raise ConfigurationError(
                 f"{blk.name} - unrecognised value for mover_type argument: "
@@ -1528,7 +1528,6 @@ class SSLWCosting(CostingPackageBase):
                     Flash: cost_vertical_vessel,
                     Heater: cost_fired_heater,
                     HeatExchanger: cost_heat_exchanger,
-                    HeatExchanger1D: cost_heat_exchanger,
                     HeatExchangerNTU: cost_heat_exchanger,
                     PFR: cost_horizontal_vessel,
                     PressureChanger: cost_pressure_changer,
