@@ -655,9 +655,11 @@ class PetscTrajectory(object):
         Returns:
             None
         """
+        # Variables might show up more than once because of References
+        already_scaled = set()
         for var in m.component_data_objects():
             vname = str(var)
-            if vname in self.vecs:
+            if vname in self.vecs and vname not in already_scaled:
                 s = None
                 if hasattr(var.parent_block(), "scaling_factor"):
                     s = var.parent_block().scaling_factor.get(var, s)
@@ -666,6 +668,7 @@ class PetscTrajectory(object):
                 if s is not None:
                     for i, x in enumerate(self.vecs[vname]):
                         self.vecs[vname][i] = x/s
+                already_scaled.add(vname)
 
     def delete_files(self):
         """Delete the trajectory data and variable information files.
