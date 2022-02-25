@@ -255,7 +255,7 @@ def test_visualize_save_overwrite(flash_model, save_files_prefix):
     )
     howdy_stat2 = os.stat(result.store.filename)
     assert (
-        howdy_stat2.st_mtime > howdy_stat.st_mtime
+        howdy_stat2.st_mtime >= howdy_stat.st_mtime
     )  # modification time should be later
 
 

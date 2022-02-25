@@ -158,6 +158,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -259,10 +265,8 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 8,
-                                "y": 25
+                                "dx": 8,
+                                "dy": 0
                             },
                             "name": "left"
                         }
@@ -279,12 +283,10 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 45,
-                                "y": 45
+                                "dx": -8,
+                                "dy": 0
                             },
-                            "name": "left"
+                            "name": "right"
                         }
                     },
                     "top": {
@@ -335,6 +337,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -444,6 +452,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -553,6 +567,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -741,6 +761,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -850,6 +876,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1038,6 +1070,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1147,6 +1185,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1335,6 +1379,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1444,6 +1494,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1553,6 +1609,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1662,6 +1724,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1850,6 +1918,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -1959,6 +2033,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -2095,9 +2175,7 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 2,
+                                "x": -1,
                                 "y": 25
                             },
                             "name": "left"
@@ -2115,9 +2193,7 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 48,
+                                "x": 49,
                                 "y": 25
                             },
                             "name": "left"
@@ -2147,6 +2223,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -2256,6 +2338,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -2392,9 +2480,7 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 2,
+                                "x": -1,
                                 "y": 25
                             },
                             "name": "left"
@@ -2412,9 +2498,7 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 48,
+                                "x": 49,
                                 "y": 25
                             },
                             "name": "left"
@@ -2444,6 +2528,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -2553,6 +2643,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -2741,6 +2837,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -2850,6 +2952,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -2986,9 +3094,7 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 2,
+                                "x": -1,
                                 "y": 25
                             },
                             "name": "left"
@@ -3006,9 +3112,7 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 48,
+                                "x": 49,
                                 "y": 25
                             },
                             "name": "left"
@@ -3038,6 +3142,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -3147,6 +3257,12 @@
             "z": 1
         },
         {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
             "connector": {
                 "attrs": {
                     "line": {
@@ -3996,23 +4112,335 @@
         }
     },
     "routing_config": {
-        "s_inlet_1_1": {
-            "cell_index": 25,
-            "destination": {
+        "s01": {
+            "cell_config": {
                 "gap": {
-                    "direction": "left",
-                    "distance": 30
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
                 }
-            }
+            },
+            "cell_index": 2
+        },
+        "s02": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 4
+        },
+        "s_inlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 11
+        },
+        "s_inlet_1_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 25
+        },
+        "s_inlet_2": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 16
         },
         "s_inlet_2_1": {
-            "cell_index": 27,
-            "destination": {
+            "cell_config": {
                 "gap": {
-                    "direction": "left",
-                    "distance": 30
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
                 }
-            }
+            },
+            "cell_index": 27
+        },
+        "s_inlet_3": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 21
+        },
+        "s_inlet_4": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 30
+        },
+        "s_inlet_5": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 35
+        },
+        "s_inlet_6": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 40
+        },
+        "s_inlet_7": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 45
+        },
+        "s_inlet_8": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 50
+        },
+        "s_liq_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 6
+        },
+        "s_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 13
+        },
+        "s_outlet_2": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 18
+        },
+        "s_outlet_3": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 23
+        },
+        "s_outlet_4": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 32
+        },
+        "s_outlet_5": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 37
+        },
+        "s_outlet_6": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 42
+        },
+        "s_outlet_7": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 47
+        },
+        "s_outlet_8": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 52
+        },
+        "s_vap_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 8
         }
     }
 }

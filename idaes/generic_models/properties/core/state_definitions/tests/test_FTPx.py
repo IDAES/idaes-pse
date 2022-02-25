@@ -17,25 +17,41 @@ Authors: Andrew Lee
 """
 
 import pytest
+import numpy as np
+from pytest import approx
 from sys import modules
 
 from pyomo.environ import (
-    ConcreteModel, Constraint, Expression, Var, units as pyunits)
+    ConcreteModel, Constraint, Expression, value, Var, Set, units as pyunits)
 from pyomo.util.check_units import (
     check_units_equivalent, assert_units_consistent)
 
 # Need define_default_scaling_factors, even though it is not used directly
 from idaes.generic_models.properties.core.state_definitions.FTPx import \
-    FTPx, define_state, set_metadata, define_default_scaling_factors
+    FTPx, define_state, set_metadata, define_default_scaling_factors,\
+    state_initialization, _set_mole_fractions_vle, _modified_rachford_rice
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType,
-                        declare_process_block_class)
+                        declare_process_block_class,
+                        PhaseType, LiquidPhase, VaporPhase)
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
 from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, UserModelError
+from idaes.generic_models.properties.core.phase_equil.henry import \
+    ConstantH, HenryType
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import(
+    IdealBubbleDew)
 import idaes.logger as idaeslog
+
+from idaes.generic_models.properties.core.generic.generic_property import \
+    GenericParameterBlock
+    
+from idaes.generic_models.properties.core.phase_equil.forms import \
+    fugacity
+
+from idaes.core import VaporPhase, LiquidPhase, Component
 
 
 @declare_process_block_class("DummyParameterBlock")
@@ -47,6 +63,15 @@ class DummyParameterData(GenericParameterData):
 def test_set_metadata():
     assert set_metadata(None) is None
 
+# Dummy methods for dummied submodules
+class dummy_pe():
+    def return_expression(b, *args):
+        # Return a dummy expression for the constraint
+        return b.temperature == 100
+
+
+def phase_equil(b, *args):
+    pass
 
 class TestInvalidBounds(object):
 
@@ -227,7 +252,6 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
 
         assert_units_consistent(frame.props[1])
 
-
 class Test1PhaseDefinedStateTrueWithBounds(object):
     # Test define_state method with no bounds and defined_State = False
     @pytest.fixture(scope="class")
@@ -354,6 +378,31 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
                 str(frame.props[1].phase_frac[i])
 
         assert_units_consistent(frame.props[1])
+        
+    @pytest.mark.unit
+    def test_initialization(self,frame):
+        state_initialization(frame.props[1])
+        assert isinstance(frame.props[1].temperature,Var)
+        assert isinstance(frame.props[1].pressure,Var)
+        assert isinstance(frame.props[1].flow_mol,Var)
+        
+        assert isinstance(frame.props[1].mole_frac_comp,Var)
+        assert isinstance(frame.props[1].flow_mol_phase,Var)
+        assert isinstance(frame.props[1].flow_mol_phase_comp,Expression)
+        assert isinstance(frame.props[1].phase_frac,Var)
+        assert isinstance(frame.props[1].mole_frac_phase_comp,Var)
+        
+        assert frame.props[1].temperature.value == approx(345)
+        assert frame.props[1].pressure.value == approx(3e5)
+        assert frame.props[1].flow_mol.value == approx(100)
+        assert frame.props[1].phase_frac["p1"].value == approx(1)
+        assert frame.props[1].flow_mol_phase["p1"].value == approx(100)
+        for j in frame.props[1].component_list:
+            assert frame.props[1].mole_frac_comp[j].value == approx(1/3)
+            assert (frame.props[1].mole_frac_phase_comp["p1",j].value 
+                    == approx(1/3))
+            assert approx(100/3) == value(
+                                    frame.props[1].flow_mol_phase_comp["p1",j])
 
 
 class Test2PhaseDefinedStateFalseNoBounds(object):
@@ -633,6 +682,56 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
                     frame.props[1].flow_mol_phase[i])
 
         assert_units_consistent(frame.props[1])
+        
+    @pytest.mark.unit
+    def test_initialization(self,frame):
+        state_initialization(frame.props[1])
+        assert isinstance(frame.props[1].temperature,Var)
+        assert isinstance(frame.props[1].pressure,Var)
+        assert isinstance(frame.props[1].flow_mol,Var)
+        
+        assert isinstance(frame.props[1].mole_frac_comp,Var)
+        assert isinstance(frame.props[1].flow_mol_phase,Var)
+        assert isinstance(frame.props[1].flow_mol_phase_comp,Expression)
+        assert isinstance(frame.props[1].phase_frac,Var)
+        assert isinstance(frame.props[1].mole_frac_phase_comp,Var)
+        
+        assert frame.props[1].temperature.value == approx(345)
+        assert frame.props[1].pressure.value == approx(3e5)
+        assert frame.props[1].flow_mol.value == approx(100)
+        
+        for p in frame.props[1].phase_list:
+            assert frame.props[1].phase_frac[p].value == approx(0.5)
+            assert frame.props[1].flow_mol_phase[p].value == approx(50)
+            
+            for j in frame.props[1].component_list:
+                assert frame.props[1].mole_frac_comp[j].value == approx(1/3)
+                assert (frame.props[1].mole_frac_phase_comp[p,j].value 
+                        == approx(1/3))
+                assert approx(50/3) == value(
+                                        frame.props[1].flow_mol_phase_comp[p,j])
+                
+        frame.props[1].phase_frac["p1"].value = 0.4
+        state_initialization(frame.props[1])
+        assert frame.props[1].phase_frac["p1"].value == approx(0.4)
+        assert frame.props[1].flow_mol_phase["p1"].value == approx(40)
+        for j in frame.props[1].component_list:
+            assert frame.props[1].mole_frac_comp[j].value == approx(1/3)
+            assert (frame.props[1].mole_frac_phase_comp["p1",j].value 
+                    == approx(1/3))
+            assert approx(40/3) == value(
+                                    frame.props[1].flow_mol_phase_comp["p1",j])
+            
+        assert frame.props[1].phase_frac["p2"].value == approx(0.5)
+        assert frame.props[1].flow_mol_phase["p2"].value == approx(50)
+        for j in frame.props[1].component_list:
+            assert (frame.props[1].mole_frac_phase_comp["p2",j].value 
+                    == approx(1/3))
+            assert approx(50/3) == value(
+                                    frame.props[1].flow_mol_phase_comp["p2",j])
+        # To avoid side effects
+        frame.props[1].phase_frac["p1"].value = 0.5
+        state_initialization(frame.props[1])
 
 
 class Test3PhaseDefinedStateFalseNoBounds(object):
@@ -898,6 +997,69 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
                     frame.props[1].flow_mol_phase[i])
 
         assert_units_consistent(frame.props[1])
+        
+    @pytest.mark.unit
+    def test_initialization(self,frame):
+        state_initialization(frame.props[1])
+        assert isinstance(frame.props[1].temperature,Var)
+        assert isinstance(frame.props[1].pressure,Var)
+        assert isinstance(frame.props[1].flow_mol,Var)
+        
+        assert isinstance(frame.props[1].mole_frac_comp,Var)
+        assert isinstance(frame.props[1].flow_mol_phase,Var)
+        assert isinstance(frame.props[1].flow_mol_phase_comp,Expression)
+        assert isinstance(frame.props[1].phase_frac,Var)
+        assert isinstance(frame.props[1].mole_frac_phase_comp,Var)
+        
+        assert frame.props[1].temperature.value == approx(345)
+        assert frame.props[1].pressure.value == approx(3e5)
+        assert frame.props[1].flow_mol.value == approx(100)
+        
+        for p in frame.props[1].phase_list:
+            assert frame.props[1].phase_frac[p].value == approx(1/3)
+            assert frame.props[1].flow_mol_phase[p].value == approx(100/3)
+            
+            for j in frame.props[1].component_list:
+                assert frame.props[1].mole_frac_comp[j].value == approx(1/3)
+                assert (frame.props[1].mole_frac_phase_comp[p,j].value 
+                        == approx(1/3))
+                assert approx(100/9) == value(
+                                        frame.props[1].flow_mol_phase_comp[p,j])
+                
+        frame.props[1].phase_frac["p1"].value = 0.2
+        frame.props[1].phase_frac["p2"].value = 0.5
+        frame.props[1].phase_frac["p3"].value = 0.3
+        state_initialization(frame.props[1])
+        assert frame.props[1].phase_frac["p1"].value == approx(0.2)
+        assert frame.props[1].flow_mol_phase["p1"].value == approx(20)
+        for j in frame.props[1].component_list:
+            assert frame.props[1].mole_frac_comp[j].value == approx(1/3)
+            assert (frame.props[1].mole_frac_phase_comp["p1",j].value 
+                    == approx(1/3))
+            assert approx(20/3) == value(
+                                    frame.props[1].flow_mol_phase_comp["p1",j])
+            
+        assert frame.props[1].phase_frac["p2"].value == approx(0.5)
+        assert frame.props[1].flow_mol_phase["p2"].value == approx(50)
+        for j in frame.props[1].component_list:
+            assert (frame.props[1].mole_frac_phase_comp["p2",j].value 
+                    == approx(1/3))
+            assert approx(50/3) == value(
+                                    frame.props[1].flow_mol_phase_comp["p2",j])
+            
+        assert frame.props[1].phase_frac["p3"].value == approx(0.3)
+        assert frame.props[1].flow_mol_phase["p3"].value == approx(30)
+        for j in frame.props[1].component_list:
+            assert frame.props[1].mole_frac_comp[j].value == approx(1/3)
+            assert (frame.props[1].mole_frac_phase_comp["p3",j].value 
+                    == approx(1/3))
+            assert approx(30/3) == value(
+                                    frame.props[1].flow_mol_phase_comp["p3",j])    
+        
+        # To avoid side effects
+        for p in frame.props[1].phase_list:
+            frame.props[1].phase_frac[p].value = 1/3
+        state_initialization(frame.props[1])
 
 
 class TestCommon(object):
@@ -1101,3 +1263,89 @@ class TestCommon(object):
         assert len(frame.props[1].conc_mol_comp) == 3
         assert isinstance(frame.props[1].conc_mol_phase_comp, Expression)
         assert len(frame.props[1].conc_mol_phase_comp) == 6
+        
+    @pytest.mark.unit
+    def test_unphysical_mol_fraction_fail(self,frame):
+        frame.props[1].mole_frac_comp["c1"].value = -0.1
+        with pytest.raises(ValueError,
+                           match = "Component c1 has a negative mole fraction "
+                           "in block props\[1\]. Check your initialization."):
+            frame.props[1].params.\
+                config.state_definition.state_initialization(frame.props[1])
+
+
+class TestModifiedRachfordRice(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel(name="George")
+        m.component_list = ["a","b","c"]
+        m.mole_frac_comp = Var(m.component_list, 
+                               initialize = 1/len(m.component_list))
+        m.K = {"a": 0.5, "b": 1, "c": 3}
+        return m
+        
+    @pytest.mark.unit
+    def test_flash(self, model):
+        m = model
+        vl_comps_list = [["a","b","c"],["b","c"],["a","b"],["b"],["c"],[],[]]
+        l_only_comps_list = [[],["a"],[],["a"],["a","b"],["a","b","c"],[]]
+        v_only_comps_list = [[],[],["c"],["c"],[],[],["a","b","c"]]
+        eps_list = [None, 0, 0.01]
+        # Who will validate the validation?
+        assert len(vl_comps_list) == len(l_only_comps_list)
+        assert len(vl_comps_list) == len(v_only_comps_list)
+        
+        expected_output = np.array([[0.75, 0.25, 1-1e-5, 0.5, 1e-5, 1e-5, 1-1e-5],
+                                    [0.75, 0.25, 1, 0.5, 0, 0, 1],
+                                    [0.75, 0.25, 0.99, 0.5, 0.01, 0.01, 0.99]])
+        for i in range(len(vl_comps_list)):
+            for j in range(len(eps_list)):
+                if eps_list[j] is not None:
+                    vap_frac = _modified_rachford_rice(m, m.K, vl_comps_list[i],
+                                   l_only_comps_list[i], v_only_comps_list[i],
+                                   eps=eps_list[j])
+                else:
+                    vap_frac = _modified_rachford_rice(m, m.K, vl_comps_list[i],
+                                   l_only_comps_list[i],v_only_comps_list[i])
+                # Convergence criterion for Newton's method is 1e-6 (because
+                # we expect to pass it of to IPOPT later). We cannot expect
+                # machine precision here.
+                assert expected_output[j,i] == approx(vap_frac, rel=5e-5)
+    @pytest.mark.unit
+    def test_negative_K(self,model,caplog):
+        m = model
+        m.K["a"] = -1
+        vap_frac = _modified_rachford_rice(m, m.K, m.component_list, [],[])
+        assert vap_frac is None
+        assert len(caplog.records) == 1
+        record = caplog.records[0]
+        assert record.levelno == idaeslog.WARNING
+        assert record.getMessage() == (
+                "While initializing block George, the vapor/liquid split ratio "
+                "of Component a was calculated to be negative. Check the "
+                "implementation of the saturation pressure, Henry's law method, "
+                "or liquid density.")
+        m.K["a"] = 0.5
+        
+    @pytest.mark.unit
+    def test_unphysical_mole_fracs(self,model,caplog):
+        m = model
+        m.mole_frac_comp["a"] = -20
+        m.mole_frac_comp["b"] = -20
+        m.mole_frac_comp["c"] = -20
+        vap_frac = _modified_rachford_rice(m, m.K, ["a"], ["b"],["c"])
+        assert vap_frac is None
+        assert len(caplog.records) == 1
+        record = caplog.records[0]
+        assert record.levelno == idaeslog.WARNING
+        assert record.getMessage() == (
+            "Block George - phase faction initialization using "
+                         "modified Rachford-Rice failed. This could be "
+                         "because a component is essentially "
+                         "nonvolatile or noncondensible, or "
+                         "because mole fractions sum to more than "
+                         "one."
+            )
+        m.mole_frac_comp["a"] = 1/3
+        m.mole_frac_comp["b"] = 1/3
+        m.mole_frac_comp["c"] = 1/3

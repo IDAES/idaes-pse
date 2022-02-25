@@ -5,7 +5,7 @@ computational tools and models to support the design, analysis, optimization,
 scale-up, operation and troubleshooting of innovative, advanced energy systems.
 
 <!-- BEGIN Status badges -->
-## Build statuses
+## Project Build and Download Statuses
 ![Tests](https://github.com/IDAES/idaes-pse/workflows/Tests/badge.svg?branch=main)
 ![Integration](https://github.com/IDAES/idaes-pse/workflows/Integration/badge.svg?branch=main)
 [![codecov](https://codecov.io/gh/IDAES/idaes-pse/branch/main/graph/badge.svg?token=1lNQNbSB29)](https://codecov.io/gh/IDAES/idaes-pse)
@@ -13,6 +13,7 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 [![GitHub contributors](https://img.shields.io/github/contributors/IDAES/idaes-pse.svg)](https://github.com/IDAES/idaes-pse/graphs/contributors)
 [![Merged PRs](https://img.shields.io/github/issues-pr-closed-raw/IDAES/idaes-pse.svg?label=merged+PRs)](https://github.com/IDAES/idaes-pse/pulls?q=is:pr+is:merged)
 [![Issue stats](http://isitmaintained.com/badge/resolution/IDAES/idaes-pse.svg)](http://isitmaintained.com/project/IDAES/idaes-pse)
+[![Downloads](https://pepy.tech/badge/idaes-pse)](https://pepy.tech/project/idaes-pse)
 <!-- END Status badges -->
 
 ## Getting Started
@@ -79,6 +80,7 @@ for Python 3. The following sub-versions are supported:
 * Python 3.7
 * Python 3.8
 * Python 3.9
+* Python 3.10
 
 Note that Python 3.6 is *not* supported.
 
@@ -87,6 +89,14 @@ Note that Python 3.6 is *not* supported.
 General, background and overview information is available at the [IDAES main website](https://www.idaes.org).
 Framework development happens at our [GitHub repo](https://github.com/IDAES/idaes-pse) where you can ask questions by starting a [discussion](https://github.com/IDAES/idaes-pse/discussions), [report issues/bugs](https://github.com/IDAES/idaes-pse/issues) or [make contributions](https://github.com/IDAES/idaes-pse/pulls).
 For further enquiries, send an email to: <idaes-support@idaes.org>
+
+## Funding acknowledgements
+
+This work was conducted as part of the [Institute for the Design of Advanced Energy Systems (IDAES)](https://idaes.org)
+with support through the [Simulation-Based Engineering, Crosscutting Research Program](https://netl.doe.gov/coal/simulation-based-engineering)
+within the U.S. Department of Energy’s [Office of Fossil Energy and Carbon Management (FECM)](https://www.energy.gov/fecm/office-fossil-energy-and-carbon-management).
+As of 2021, additional support was provided by FECM’s [Solid Oxide Fuel Cell Program](https://www.energy.gov/fecm/science-innovation/clean-coal-research/solid-oxide-fuel-cells),
+and [Transformative Power Generation Program](https://www.energy.gov/fecm/science-innovation/office-clean-coal-and-carbon-management/advanced-energy-systems/transformative).
 
 ## Contributing
 
