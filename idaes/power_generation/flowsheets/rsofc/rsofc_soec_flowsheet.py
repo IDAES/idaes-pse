@@ -1375,9 +1375,9 @@ def set_inputs(fs):
 
     # Set known fixed (assumed) conditions for soec
     # TODO - Note:
-    # n_cells is equiv. to value for base case sofc (approx 600 MW stack power)
+    # n_cells is equiv. to value for base case sofc (approx 606 MW AC stack power)
     # Inline with the selection of 550 cm**2 area/cell for the sofc stack
-    fs.soec.n_cells.fix(3.455e6)
+    fs.soec.n_cells.fix(3.222e6)
     fs.soec_heat_duty.fix(0)  # going for the thermoneutral point here
 
     fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.10)  # why not unfixed later
@@ -2290,10 +2290,10 @@ def get_model(m=None, name="SOEC Module"):
 def base_case_solve(fs, solver):
     # Values are changed to solve for the base case H2 production of 2.5 kmol/s
     # or 5 kg/s.
-    fs.preheat_split.split_fraction[:, "oxygen"].fix(0.92633)
+    fs.preheat_split.split_fraction[:, "oxygen"].fix(0.6241)
     fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.0010)
-    fs.soec.fc.flow_mol[:, 0].fix(7.57e-4)
-    fs.soec.ac.flow_mol[:, 0].fix(7.57e-4)
+    fs.soec.fc.flow_mol[:, 0].fix(8.296e-4)
+    fs.soec.ac.flow_mol[:, 0].fix(8.296e-4)
 
     solver.solve(fs, tee=True,
                  options={
