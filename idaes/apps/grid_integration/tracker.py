@@ -143,8 +143,20 @@ class Tracker:
         """
 
         self._add_tracking_params()
+        self._add_tracking_vars()
         self._add_tracking_constraints()
         self._add_tracking_objective()
+
+        return
+
+    def _add_tracking_vars(self):
+
+        self.model.power_underdelivered = pyo.Var(
+            self.time_set, initialize=0, within=pyo.NonNegativeReals
+        )
+        self.model.power_overdelivered = pyo.Var(
+            self.time_set, initialize=0, within=pyo.NonNegativeReals
+        )
 
         return
 
@@ -165,6 +177,8 @@ class Tracker:
         self.model.power_dispatch = pyo.Param(
             self.time_set, initialize=0, within=pyo.Reals, mutable=True
         )
+
+        self.model.deviation_penalty = pyo.Param(initialize=10000, mutable=False)
         return
 
     def _add_tracking_constraints(self):
@@ -200,7 +214,8 @@ class Tracker:
         self.model.tracking_dispatch_constraints = pyo.ConstraintList()
         for t in self.time_set:
             self.model.tracking_dispatch_constraints.add(
-                self.power_output[t] == self.model.power_dispatch[t]
+                self.power_output[t] + self.model.power_underdelivered[t]
+                == self.model.power_dispatch[t] - self.model.power_overdelivered[t]
             )
 
         return
@@ -226,7 +241,9 @@ class Tracker:
         weight = self.tracking_model_object.total_cost[1]
 
         for t in self.time_set:
-            self.model.obj.expr += weight * cost[t]
+            self.model.obj.expr += weight * cost[t] + self.model.deviation_penalty * (
+                self.model.power_underdelivered[t] + self.model.power_overdelivered[t]
+            )
 
         return
 
