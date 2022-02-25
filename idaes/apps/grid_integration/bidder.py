@@ -194,11 +194,32 @@ class SelfScheduler(AbstractBidder):
 
         return
 
-    # TODO
     def record_bids(self, bids, date, hour):
         print(f"recording bids for {date} {hour}")
 
-    def write_results(self):
+        df_list = []
+        for g in bids:
+            for t, power in enumerate(bids[g]):
+
+                result_dict = {}
+                result_dict["Generator"] = g
+                result_dict["Date"] = date
+                if hour:
+                    result_dict["Hour"] = hour
+
+                result_dict["Horizon"] = t
+                result_dict["Bid Power [MW]"] = power
+
+                result_df = pd.DataFrame.from_dict(result_dict, orient="index")
+                df_list.append(result_df.T)
+
+        # save the result to object property
+        # wait to be written when simulation ends
+        self.bids_result_list.append(pd.concat(df_list))
+
+        return
+
+    def write_results(self, path):
         print("")
         print("Saving bidding results to disk...")
         pd.concat(self.bids_result_list).to_csv(
