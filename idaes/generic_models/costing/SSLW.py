@@ -26,6 +26,7 @@ from enum import Enum
 import pyomo.environ as pyo
 
 from idaes.generic_models.unit_models import (
+    Compressor,
     CSTR,
     Flash,
     Heater,
@@ -33,8 +34,12 @@ from idaes.generic_models.unit_models import (
     HeatExchanger1D,
     HeatExchangerNTU,
     PFR,
+    PressureChanger,
     Pump,
-    StoichiometricReactor)
+    StoichiometricReactor,
+    Turbine)
+from idaes.generic_models.unit_models.pressure_changer import \
+    ThermodynamicAssumption
 from idaes.generic_models.unit_models.heat_exchanger \
     import HeatExchangerFlowPattern
 from idaes.core.util.misc import register_units_of_measurement
@@ -87,8 +92,8 @@ class HXTubeLength(str, Enum):
 class VesselMaterial(str, Enum):
     CS = "carbon_steel"
     LowAlloy = "low_alloy_steel"
-    SS304 = "stain_steel_304"
-    SS316 = "stain_steel_316"
+    SS304 = "stainless_steel_304"
+    SS316 = "stainless_steel_316"
     Carpenter = "carpenter_20CB-3"
     Nickel200 = "nickel_200"
     Monel400 = "monel_400"
@@ -111,8 +116,8 @@ class TrayType(str, Enum):
 
 class TrayMaterial(str, Enum):
     CS = "carbon_steel"
-    SS303 = "stain_steel_303"
-    SS316 = "stain_steel_316"
+    SS303 = "stainless_steel_303"
+    SS316 = "stainless_steel_316"
     Carpenter = "carpenter_20CB-3"
     Monel = "monel"
 
@@ -136,7 +141,34 @@ class HeaterSource(str, Enum):
     hotWater = "hot_water"
     salts = "salts"
     DowthermA = "dowtherm_a"
-    steamBoiler = "steadm_boiler"
+    steamBoiler = "steam_boiler"
+
+    def __str__(self):
+        return self.value
+
+
+class CompressorType(str, Enum):
+    centrifugal = 'centrifugal'
+    reciprocating = 'reciprocating'
+    screw = 'screw'
+
+    def __str__(self):
+        return self.value
+
+
+class CompressorDriveType(str, Enum):
+    electricMotor = 'electrical_motor'
+    steamTurbine = 'steam_turbine'
+    gasTurbine = 'gas_turbine'
+
+    def __str__(self):
+        return self.value
+
+
+class CompressorMaterial(str, Enum):
+    CS = 'carbon_steel'
+    SS = 'stainless_steel'
+    Nickel = 'nickel_alloy'
 
     def __str__(self):
         return self.value
@@ -147,7 +179,7 @@ class PumpMaterial(str, Enum):
     ductileIron = 'ductile_iron'
     castSteel = 'cast_steel'
     bronze = 'bronze'
-    SS = 'stain_steel'
+    SS = 'stainless_steel'
     HastelloyC = 'hastelloy_c'
     Monel = 'monel'
     Nickel = 'nickel'
@@ -172,6 +204,45 @@ class PumpMotorType(str, Enum):
     Open = 'open'
     Enclosed = 'enclosed'
     ExplosionProof = 'explosion_proof'
+
+    def __str__(self):
+        return self.value
+
+
+class FanType(str, Enum):
+    centrifugalBackward = 'centrifugal_backward'
+    centrifugalStraight = 'centrifugal_straight'
+    vaneAxial = 'vane_axial'
+    tubeAxial = 'tube_axial'
+
+    def __str__(self):
+        return self.value
+
+
+class FanMaterial(str, Enum):
+    CS = 'carbon_steel'
+    fiberglass = 'fiberglass'
+    SS = 'stainless_steel'
+    Nickel = 'nickel_alloy'
+
+    def __str__(self):
+        return self.value
+
+
+class BlowerType(str, Enum):
+    centrifugal = 'centrifugal'
+    rotary = 'rotary'
+
+    def __str__(self):
+        return self.value
+
+
+class BlowerMaterial(str, Enum):
+    CS = 'carbon_steel'
+    Aluminum = 'aluminum'
+    fiberglass = 'fiberglass'
+    SS = 'stainless_steel'
+    Nickel = 'nickel_alloy'
 
     def __str__(self):
         return self.value
@@ -911,6 +982,211 @@ class SSLWCosting(CostingPackageBase):
                 blk.material_factor*blk.pressure_factor*blk.base_cost)
         blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
 
+    def cost_compressor(blk,
+                        compressor_type=CompressorType.centrifugal,
+                        drive_type=CompressorDriveType.electricMotor,
+                        material_type=CompressorMaterial.SS,
+                        integer=True):
+        """
+        Generic costing method for compressors.
+
+        Args:
+            compressor_type - CompressorType Enum indicating type of type of
+                              equipment, default = CompressorType.centrifugal.
+            material_type - CompressorMaterial Enum indicating material of
+                            construction, default = CompressorMaterial.SS.
+            drive_type - CompressorDriveType Enum indicating type of type of
+                         drive to be used, default =
+                         CompressorDriveType.electricMotor.
+            integer - whether the number of units should be constrained to be
+                      an integer or not (default = True).
+        """
+        # Confirm that unit is a turbine
+        if not blk.unit_model.config.compressor:
+            raise TypeError("cost_compressor method is only appropriate for "
+                            "pressure changers with the compressor argument "
+                            "equal to True.")
+
+        # Build generic costing variables
+        _make_common_vars(blk, integer)
+
+        work = (blk.unit_model.work_mechanical[
+            blk.unit_model.flowsheet().time.first()])
+
+        work_hp = pyo.units.convert(work/blk.number_of_units,
+                                    to_units=pyo.units.hp)
+
+        # Compressor Purchase Cost Correlation
+        FD_param = {CompressorDriveType.electricMotor: 1,
+                    CompressorDriveType.steamTurbine: 1.15,
+                    CompressorDriveType.gasTurbine: 1.25}
+        blk.drive_factor = pyo.Param(mutable=True,
+                                     initialize=FD_param[drive_type],
+                                     doc='Mover drive factor')
+
+        material_factor_dict = {CompressorMaterial.CS: 1,
+                                CompressorMaterial.SS: 2.5,
+                                CompressorMaterial.Nickel: 5.0}
+        blk.material_factor = pyo.Param(
+            mutable=True,
+            initialize=material_factor_dict[material_type],
+            doc='Material factor')
+
+        alpha_dict = {CompressorType.centrifugal: {1: 7.58, 2: 0.8},
+                      CompressorType.reciprocating: {1: 7.9661, 2: 0.8},
+                      CompressorType.screw: {1: 8.1238, 2: 0.7243}}
+        alpha = alpha_dict[compressor_type]
+
+        # Purchase cost rule
+        def CB_rule(blk):
+            return blk.base_cost_per_unit == (
+                pyo.exp(alpha[1] + alpha[2]*pyo.log(work_hp/pyo.units.hp)) *
+                pyo.units.USD_500)
+        blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
+
+        @blk.Expression(doc="Base cost for all units installed")
+        def base_cost(blk):
+            return blk.base_cost_per_unit * blk.number_of_units
+
+        def CP_rule(blk):
+            return blk.capital_cost == (
+                blk.drive_factor*blk.material_factor*blk.base_cost)
+        blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
+
+    def cost_fan(blk,
+                 fan_type=FanType.centrifugalBackward,
+                 fan_head_factor=1.45,
+                 material_type=FanMaterial.SS,
+                 integer=True):
+        """
+        Generic costing method for fans.
+
+        Args:
+            fan_type - FanType Enum indicating type of type of equipment,
+                       default = FanType.centrifugalBackward.
+            fan_head_factor - (float) fan head factor (default=1.45).
+            material_type - FanMaterial Enum indicating material of
+                            construction, default = FanMaterial.SS.
+            integer - whether the number of units should be constrained to be
+                      an integer or not (default = True).
+        """
+        # Confirm that unit is a turbine
+        if not blk.unit_model.config.compressor:
+            raise TypeError("cost_fan method is only appropriate for "
+                            "pressure changers with the compressor argument "
+                            "equal to True.")
+
+        # Build generic costing variables
+        _make_common_vars(blk, integer)
+
+        t0 = blk.unit_model.flowsheet().time.first()
+        Q = blk.unit_model.control_volume.properties_in[t0].flow_vol
+
+        Qcfm = pyo.units.convert(Q/blk.number_of_units,
+                                 to_units=pyo.units.foot**3/pyo.units.minute)
+
+        # Fan cost correlation
+        alpha_dict = {
+            FanType.centrifugalBackward: {1: 11.0757, 2: 1.12906, 3: 0.08860},
+            FanType.centrifugalStraight: {1: 12.1678, 2: 1.31363, 3: 0.09974},
+            FanType.vaneAxial: {1: 9.5229, 2: 0.97566, 3: 0.08532},
+            FanType.tubeAxial: {1: 6.12905, 2: 0.40254, 3: 0.05787}}
+        alpha = alpha_dict[fan_type]
+
+        blk.head_factor = pyo.Param(initialize=fan_head_factor,
+                                    mutable=True,
+                                    doc="Fan head factor")
+
+        material_factor_dict = {FanMaterial.CS: 1.0,
+                                FanMaterial.fiberglass: 1.8,
+                                FanMaterial.SS: 2.5,
+                                FanMaterial.Nickel: 5.0}
+        blk.material_factor = pyo.Param(
+            initialize=material_factor_dict[material_type],
+            mutable=True,
+            doc="Material factor")
+
+        # Base cost
+        def CB_rule(blk):
+            return blk.base_cost_per_unit == (pyo.exp(
+                alpha[1] -
+                alpha[2]*pyo.log(Qcfm/(pyo.units.foot**3/pyo.units.minute)) +
+                alpha[3]*pyo.log(Qcfm/(pyo.units.foot**3/pyo.units.minute))**2) *
+                pyo.units.USD_500)
+        blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
+
+        @blk.Expression(doc="Base cost for all units installed")
+        def base_cost(blk):
+            return blk.base_cost_per_unit * blk.number_of_units
+
+        def CP_rule(blk):
+            return blk.capital_cost == (
+                blk.material_factor*blk.head_factor*blk.base_cost)
+        blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
+
+    def cost_blower(blk,
+                    blower_type=BlowerType.centrifugal,
+                    material_type=BlowerMaterial.SS,
+                    integer=True):
+        """
+        Generic costing method for blowers.
+
+        Args:
+            blower_type - BlowerType Enum indicating type of type of equipment,
+                          default = BlowerType.centrifugal.
+            material_type - BlowerMaterial Enum indicating material of
+                            construction, default = BlowerMaterial.SS.
+            integer - whether the number of units should be constrained to be
+                      an integer or not (default = True).
+        """
+        # Confirm that unit is a turbine
+        if not blk.unit_model.config.compressor:
+            raise TypeError("cost_blower method is only appropriate for "
+                            "pressure changers with the compressor argument "
+                            "equal to True.")
+
+        # Build generic costing variables
+        _make_common_vars(blk, integer)
+
+        t0 = blk.unit_model.flowsheet().time.first()
+        work = (blk.unit_model.work_mechanical[t0])
+
+        work_hp = pyo.units.convert(work/blk.number_of_units,
+                                    to_units=pyo.units.hp)
+
+        # Fan cost correlation
+        alpha_dict = {
+            BlowerType.centrifugal: {1: 6.8929, 2: 0.7900, 3: 0.0},
+            BlowerType.rotary: {1: 7.59176, 2: 0.7932, 3: 0.012900}}
+        alpha = alpha_dict[blower_type]
+
+        material_factor_dict = {BlowerMaterial.CS: 1.0,
+                                BlowerMaterial.Aluminum: 0.60,
+                                BlowerMaterial.fiberglass:   1.8,
+                                BlowerMaterial.SS:  2.5,
+                                BlowerMaterial.Nickel: 5.0}
+        blk.material_factor = pyo.Param(
+            initialize=material_factor_dict[material_type],
+            mutable=True,
+            doc="Material factor")
+
+        # Base cost
+        def CB_rule(blk):
+            return blk.base_cost_per_unit == (pyo.exp(
+                alpha[1] +
+                alpha[2]*pyo.log(work_hp/pyo.units.hp) -
+                alpha[3]*pyo.log(work_hp/pyo.units.hp)**2) *
+                pyo.units.USD_500)
+        blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
+
+        @blk.Expression(doc="Base cost for all units installed")
+        def base_cost(blk):
+            return blk.base_cost_per_unit * blk.number_of_units
+
+        def CP_rule(blk):
+            return blk.capital_cost == blk.material_factor*blk.base_cost
+        blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
+
     def cost_turbine(blk,
                      integer=True):
         """
@@ -1205,20 +1481,60 @@ class SSLWCosting(CostingPackageBase):
                                         blk.motor_capital_cost)
         blk.capital_cost_constraint = pyo.Constraint(rule=cp_cost_rule)
 
+    def cost_pressure_changer(blk,
+                              mover_type="compressor",
+                              **kwargs):
+        """
+        Gateway method for costing pressure changers. This method attempts
+        to determine the type of pressure changer from the compressor and
+        thermodynamic assumption config arguments and then calls th
+        appropriate sub-method. As such, keyword arguments to this method
+        will depend on the sub-method called. Users are generally encouraged
+        to call the specific sub-methods directly as required.
+
+        Args:
+            mover_type - optional arguemnt to indicate type of pressure
+                         changer.
+        """
+        if not blk.unit_model.config.compressor or mover_type == "turbine":
+            # Unit is a turbine
+            SSLWCosting.cost_turbine(**kwargs)
+        elif mover_type == "compressor":
+            # Unit is a pump
+            SSLWCosting.cost_compressor(**kwargs)
+        elif (mover_type == "pump" or
+                  blk.unit_model.config.thermodynamic_assumption ==
+                  ThermodynamicAssumption.pump):
+            # Unit is a pump
+            SSLWCosting.cost_pump(**kwargs)
+        elif mover_type == "blower":
+            # Unit is a pump
+            SSLWCosting.cost_pump(**kwargs)
+        elif mover_type == "fan":
+            # Unit is a pump
+            SSLWCosting.cost_fan(**kwargs)
+        else:
+            raise ConfigurationError(
+                f"{blk.name} - unrecognised value for mover_type argument: "
+                f"{mover_type}.")
+
     # -------------------------------------------------------------------------
     # Map costing methods to unit model classes
     # Here we can provide a dict mapping unit model classes to costing methods
     # Even better, this is inheritance aware so e.g. Pump will first look for a
     # method assigned to Pump, and then fall back to PressureChanger
     unit_mapping = {CSTR: cost_vertical_vessel,
+                    Compressor: cost_compressor,
                     Flash: cost_vertical_vessel,
                     Heater: cost_fired_heater,
                     HeatExchanger: cost_heat_exchanger,
                     HeatExchanger1D: cost_heat_exchanger,
                     HeatExchangerNTU: cost_heat_exchanger,
                     PFR: cost_horizontal_vessel,
+                    PressureChanger: cost_pressure_changer,
                     Pump: cost_pump,
-                    StoichiometricReactor: cost_horizontal_vessel}
+                    StoichiometricReactor: cost_horizontal_vessel,
+                    Turbine: cost_turbine}
 
 
 # -----------------------------------------------------------------------------

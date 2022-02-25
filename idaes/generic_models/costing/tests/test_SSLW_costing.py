@@ -49,7 +49,14 @@ from idaes.generic_models.costing.SSLW import (SSLWCosting,
                                                HeaterSource,
                                                PumpType,
                                                PumpMaterial,
-                                               PumpMotorType)
+                                               PumpMotorType,
+                                               CompressorDriveType,
+                                               CompressorMaterial,
+                                               CompressorType,
+                                               FanMaterial,
+                                               FanType,
+                                               BlowerType,
+                                               BlowerMaterial)
 
 
 # Some more information about this module
@@ -600,3 +607,117 @@ def test_cost_pump_reciprocating(
     res = solver.solve(model)
 
     assert check_optimal_termination(res)
+
+
+@pytest.mark.component
+@pytest.mark.parametrize("compressor_type", CompressorType)
+@pytest.mark.parametrize("drive_type", CompressorDriveType)
+@pytest.mark.parametrize("material_type", CompressorMaterial)
+def test_cost_compressor(model, compressor_type, drive_type, material_type):
+    model.fs.unit.config.declare("compressor", ConfigValue(default=True))
+    model.fs.unit.work_mechanical = Param([0],
+                                          initialize=101410.4,
+                                          units=pyunits.J/pyunits.s)
+
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_compressor,
+        "costing_method_arguments": {
+            "compressor_type": compressor_type,
+            "drive_type": drive_type,
+            "material_type": material_type}})
+
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert degrees_of_freedom(model) == 0
+    assert_units_consistent(model.fs.unit.costing)
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)
+
+    if (compressor_type == CompressorType.centrifugal and
+            drive_type == CompressorDriveType.electricMotor and
+            material_type == CompressorMaterial.SS):
+        assert pytest.approx(334598, 1e-5) == value(pyunits.convert(
+            model.fs.unit.costing.capital_cost,
+            to_units=pyunits.USD2018))
+
+
+@pytest.mark.component
+@pytest.mark.parametrize("fan_type", FanType)
+@pytest.mark.parametrize("material_type", FanMaterial)
+def test_cost_fan(model, fan_type, material_type):
+    model.fs.unit.config.declare("compressor", ConfigValue(default=True))
+    model.fs.unit.control_volume = Block()
+    model.fs.unit.control_volume.properties_in = Block(model.fs.time)
+    model.fs.unit.control_volume.properties_in[0].flow_vol = Param(
+        initialize=0.182592, units=pyunits.m**3/pyunits.s)
+
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_fan,
+        "costing_method_arguments": {
+            "fan_type": fan_type,
+            "material_type": material_type}})
+
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.number_of_units, Var)
+    assert isinstance(model.fs.unit.costing.base_cost_per_unit, Var)
+
+    assert isinstance(model.fs.unit.costing.head_factor, Param)
+    assert isinstance(model.fs.unit.costing.material_factor, Param)
+
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.base_cost_per_unit_eq,
+                      Constraint)
+
+    assert degrees_of_freedom(model) == 0
+    assert_units_consistent(model.fs.unit.costing)
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)
+
+    # TODO: Test case for solution checking
+
+
+@pytest.mark.component
+@pytest.mark.parametrize("blower_type", BlowerType)
+@pytest.mark.parametrize("material_type", BlowerMaterial)
+def test_cost_blower(model, blower_type, material_type):
+    model.fs.unit.config.declare("compressor", ConfigValue(default=True))
+    model.fs.unit.work_mechanical = Param([0],
+                                          initialize=101410.4,
+                                          units=pyunits.J/pyunits.s)
+
+    model.fs.unit.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": model.fs.costing,
+        "costing_method": SSLWCosting.cost_blower,
+        "costing_method_arguments": {
+            "blower_type": blower_type,
+            "material_type": material_type}})
+
+    assert isinstance(model.fs.unit.costing.capital_cost, Var)
+    assert isinstance(model.fs.unit.costing.number_of_units, Var)
+    assert isinstance(model.fs.unit.costing.base_cost_per_unit, Var)
+
+    assert isinstance(model.fs.unit.costing.material_factor, Param)
+
+    assert isinstance(model.fs.unit.costing.capital_cost_constraint,
+                      Constraint)
+    assert isinstance(model.fs.unit.costing.base_cost_per_unit_eq,
+                      Constraint)
+
+    assert degrees_of_freedom(model) == 0
+    assert_units_consistent(model.fs.unit.costing)
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)
+
+    # TODO: Test case for solution checking
