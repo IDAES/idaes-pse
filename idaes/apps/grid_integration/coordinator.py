@@ -192,9 +192,7 @@ class DoubleLoopCoordinator:
             None
         """
 
-        context.register_update_operations_stats_callback(
-            self.update_observed_thermal_dispatch
-        )
+        context.register_update_operations_stats_callback(self.update_observed_dispatch)
 
     def _register_after_ruc_activation_callbacks(
         self,
@@ -554,24 +552,32 @@ class DoubleLoopCoordinator:
             "values"
         ]
         sced_horizon = options.sced_horizon
-        current_ruc_dispatch = (
-            simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA
-        )
+
+        current_ruc_dispatch_dicts = [
+            simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA,
+            simulator.data_manager.ruc_market_active.renewable_gen_cleared_DA,
+            simulator.data_manager.ruc_market_active.virtual_gen_cleared_DA,
+        ]
+
         if simulator.data_manager.ruc_market_pending is not None:
-            next_ruc_dispatch = (
-                simulator.data_manager.ruc_market_pending.thermal_gen_cleared_DA
-            )
+            next_ruc_dispatch_dicts = [
+                simulator.data_manager.ruc_market_pending.thermal_gen_cleared_DA,
+                simulator.data_manager.ruc_market_pending.renewable_gen_cleared_DA,
+                simulator.data_manager.ruc_market_pending.virtual_gen_cleared_DA,
+            ]
+
         else:
-            next_ruc_dispatch = None
+            next_ruc_dispatch_dicts = None
 
         market_signals = self._assemble_sced_tracking_market_signals(
             gen_name=gen_name,
             hour=hour,
             sced_dispatch=sced_dispatch,
             sced_horizon=sced_horizon,
-            current_ruc_dispatch=current_ruc_dispatch,
-            next_ruc_dispatch=None,
+            current_ruc_dispatch_dicts=current_ruc_dispatch_dicts,
+            next_ruc_dispatch_dicts=next_ruc_dispatch_dicts,
         )
+
         return market_signals
 
     @staticmethod
@@ -580,8 +586,8 @@ class DoubleLoopCoordinator:
         hour,
         sced_dispatch,
         sced_horizon,
-        current_ruc_dispatch,
-        next_ruc_dispatch=None,
+        current_ruc_dispatch_dicts,
+        next_ruc_dispatch_dicts=None,
     ):
 
         # append the sced dispatch
@@ -589,13 +595,17 @@ class DoubleLoopCoordinator:
 
         # append corresponding RUC dispatch
         for t in range(hour + 1, hour + sced_horizon):
-            if t > 23 and next_ruc_dispatch:
+            if t > 23 and next_ruc_dispatch_dicts:
                 t = t % 24
-                dispatch = next_ruc_dispatch[(gen_name, t)]
-            elif t > 23 and next_ruc_dispatch is None:
+                dispatch = 0
+                for next_ruc_dispatch in next_ruc_dispatch_dicts:
+                    dispatch += next_ruc_dispatch.get((gen_name, t), 0)
+            elif t > 23 and next_ruc_dispatch_dicts is None:
                 dispatch = sced_dispatch[t - hour]
             else:
-                dispatch = current_ruc_dispatch[(gen_name, t)]
+                dispatch = 0
+                for current_ruc_dispatch in current_ruc_dispatch_dicts:
+                    dispatch += current_ruc_dispatch.get((gen_name, t), 0)
             market_signals.append(dispatch)
 
         return market_signals
@@ -636,7 +646,7 @@ class DoubleLoopCoordinator:
 
         return
 
-    def update_observed_thermal_dispatch(self, options, simulator, ops_stats):
+    def update_observed_dispatch(self, options, simulator, ops_stats):
 
         """
         This methods extract the actual power delivered by the tracking model and
@@ -655,9 +665,16 @@ class DoubleLoopCoordinator:
 
         """
         g = self.bidder.generator
-        ops_stats.observed_thermal_dispatch_levels[
-            g
-        ] = self.tracker.get_last_delivered_power()
+
+        observed_dispatch_level_dicts = [
+            ops_stats.observed_thermal_dispatch_levels,
+            ops_stats.observed_renewables_levels,
+            ops_stats.observed_virtual_dispatch_levels,
+        ]
+
+        for observed_dispatch_level in observed_dispatch_level_dicts:
+            if g in observed_dispatch_level:
+                observed_dispatch_level[g] = self.tracker.get_last_delivered_power()
 
         return
 
