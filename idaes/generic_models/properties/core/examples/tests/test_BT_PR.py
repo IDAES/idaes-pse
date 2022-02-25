@@ -31,6 +31,7 @@ from pyomo.environ import (check_optimal_termination,
                            value)
 
 from idaes.core.util import get_solver
+import idaes.core.util.scaling as iscale
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness
 
@@ -73,8 +74,8 @@ class TestBTExample(object):
                 [1],
                 default={"defined_state": True})
 
-        m.fs.state[1].calculate_scaling_factors()
-
+        iscale.calculate_scaling_factors(m.fs.props)
+        iscale.calculate_scaling_factors(m.fs.state[1])
         return m
 
     @pytest.mark.integration
@@ -121,6 +122,7 @@ class TestBTExample(object):
             while m.fs.state[1].pressure.value <= 1e6:
                 m.fs.state[1].pressure.value = (
                     m.fs.state[1].pressure.value + 1e5)
+
                 results = solver.solve(m)
                 assert check_optimal_termination(results)
                 print(T, m.fs.state[1].pressure.value)
