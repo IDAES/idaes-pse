@@ -24,7 +24,6 @@ __author__ = "Chinedu Okoli", "John Eslick"
 import os
 import csv
 import numpy as np
-# import matplotlib.pyplot as plt
 
 # Import pyomo modules
 import pyomo.environ as pyo
@@ -547,9 +546,10 @@ def add_soec_unit(fs):
     fs.soec.el.thickness.fix(9e-6)
     fs.soec.fe.thickness.fix(1e-3)
     fs.soec.ae.thickness.fix(20e-6)
-    fs.soec.length.fix(0.05)
-    fs.soec.width.fix(0.05)
-    fs.soec.k_ae.fix(26.1e7)
+    # length and width of cell give an area of 550 cm**2
+    fs.soec.length.fix(0.23452)
+    fs.soec.width.fix(0.23452)
+    fs.soec.k_ae.fix(26.1e8)
     fs.soec.eact_ae.fix(120000)
     fs.soec.alpha_ae.fix(0.4)
     fs.soec.k_fe.fix(1.35e10)
@@ -1309,12 +1309,12 @@ def set_guess(fs):
 
     # Set guess for temp, pressure and mole frac conditions to initalize soec
     fs.soec.fc.temperature[:, 0].fix(1073.15)
-    fs.soec.fc.pressure[:, 0].fix(1e5)
+    fs.soec.fc.pressure[:, 0].fix(1.01325e5)
     fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.90)
     fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.10)
 
     fs.soec.ac.temperature[:, 0].fix(1073.15)
-    fs.soec.ac.pressure[:, 0].fix(1e5)
+    fs.soec.ac.pressure[:, 0].fix(1.01325e5)
     fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.2074)
     fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.0099)
     fs.soec.ac.mole_frac_comp[:, 0, "N2"].fix(0.7732)
@@ -1343,11 +1343,11 @@ def set_inputs(fs):
         "C2H6": 0.0320,
         "C3H8": 0.007,
         "C4H10": 0.004,
-        "O2": 1e-5,
-        "H2O": 1e-5,
+        "O2": 1e-8,
+        "H2O": 1e-8,
         "CO2": 0.01,
         "N2": 0.0160,
-        "Ar": 1e-5,
+        "Ar": 1e-8,
     }
     _set_port(  # TODO - relate NG feed to air feed requirement
         fs.air_compressor_s1.inlet, F=5000, T=330, P=1.01325e5,
@@ -1374,13 +1374,15 @@ def set_inputs(fs):
     fs.aux_boiler_feed_pump.inlet.pressure.fix(101325)
 
     # Set known fixed (assumed) conditions for soec
-    # TODO - increased n_cells to meet 600MW usage (equiv prod from sofc stack)
-    fs.soec.n_cells.fix(375e6)
+    # TODO - Note:
+    # n_cells is equiv. to value for base case sofc (approx 600 MW stack power)
+    # Inline with the selection of 550 cm**2 area/cell for the sofc stack
+    fs.soec.n_cells.fix(3.455e6)
     fs.soec_heat_duty.fix(0)  # going for the thermoneutral point here
 
     fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.10)  # why not unfixed later
-    fs.soec.fc.flow_mol[:, 0].fix(1e-5)
-    fs.soec.ac.flow_mol[:, 0].fix(1e-5)
+    fs.soec.fc.flow_mol[:, 0].fix(1e-3)
+    fs.soec.ac.flow_mol[:, 0].fix(1e-3)
 
 
 def initialize_plant(fs, solver):
@@ -1464,9 +1466,9 @@ def initialize_plant(fs, solver):
     # iscale.constraint_autoscale_large_jac(m)
 
     # solver.solve(m, tee=True,
-    #              # options={"max_iter":100},
-    #              symbolic_solver_labels=True
-    #              )
+    #               # options={"max_iter":100},
+    #               symbolic_solver_labels=True
+    #               )
 
     # Connect soec to BOP - activate relavant arcs, unfix relevant variables
     fs.s05_expanded.activate()
@@ -1475,7 +1477,6 @@ def initialize_plant(fs, solver):
     fs.soec.fc.pressure[:, 0].unfix()
     fs.soec.fc.temperature[:, 0].unfix()
     fs.soec.fc.mole_frac_comp[:, 0, "H2O"].unfix()
-    # TODO - fs.soec.fc.mole_frac_comp[:, 0, "H2"].unfix() - why not unfixed
     fs.soec.ac.pressure[:, 0].unfix()
     fs.soec.ac.temperature[:, 0].unfix()
     fs.soec.ac.mole_frac_comp[:, 0, "H2O"].unfix()
@@ -1497,6 +1498,7 @@ def initialize_plant(fs, solver):
                        "max_iter": 200,
                        "tol": 1e-7,
                        "bound_push": 1e-12,
+                       # 'halt_on_ampl_error': 'yes',
                        "linear_solver": "ma57"
                            },
                  symbolic_solver_labels=True)
@@ -1546,8 +1548,8 @@ def initialize_bop(fs, solver):
                                        fs.CPU_inlet_P[0])
     fs.CPU.initialize()
 
-    # TODO - this seems to improve the convergence in some cases
-    iscale.constraint_autoscale_large_jac(fs)
+    # # TODO - this seems to improve the convergence in some cases
+    # iscale.constraint_autoscale_large_jac(fs)
 
     solver.solve(fs, tee=True,
                  options={
@@ -1892,7 +1894,6 @@ def tag_for_pfd_and_tables(fs):
         format_string="{:.4f}",
         display_units=pyo.units.V
     )
-
     tag_group["h2_product_rate_mass"] = iutil.ModelTag(
         expr=fs.h2_product_rate_mass[0],
         format_string="{:.3f}",
@@ -1942,6 +1943,30 @@ def tag_for_pfd_and_tables(fs):
         expr=fs.ng_preheater.shell.properties_in[0].flow_mass,
         format_string="{:.3f}",
         display_units=pyo.units.kg / pyo.units.s,
+    )
+    tag_group["single_cell_h2_side_inlet_flow"] = iutil.ModelTag(
+        expr=fs.soec.fc.flow_mol[0, 0],
+        format_string="{:.3f}",
+        display_units=pyo.units.micromol/pyo.units.s,
+        doc="Single cell H2 side inlet flow (feed)",
+    )
+    tag_group["single_cell_sweep_flow"] = iutil.ModelTag(
+        expr=fs.soec.ac.flow_mol[0, 0],
+        format_string="{:.3f}",
+        display_units=pyo.units.micromol/pyo.units.s,
+        doc="Single cell O2 side inlet flow (sweep)",
+    )
+    tag_group["feed_h2_frac"] = iutil.ModelTag(
+        expr=fs.soec.fc.mole_frac_comp[0, 0, "H2"],
+        format_string="{:.3f}",
+        display_units=None,
+        doc="H2 side inlet H2 mole frac (from recycle)",
+    )
+    tag_group["preheat_fg_split_to_oxygen"] = iutil.ModelTag(
+        expr=fs.preheat_split.split_fraction[0, "oxygen"],
+        format_string="{:.3f}",
+        display_units=None,
+        doc="Split frac. of soec air to air preheater, rest goes to NG heater",
     )
     # sd = tables.stream_states_dict(streams, 0)
     # sdf = tables.generate_table(
@@ -2081,17 +2106,17 @@ def optimize_model(m):
     # Omptimization #
     #############################
     iscale.calculate_scaling_factors(m)
-    iscale.constraint_autoscale_large_jac(m)
+    # iscale.constraint_autoscale_large_jac(m)
     print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
     m.soec_fs.tag_input["hydrogen_product_rate"].fix()
 
     m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].unfix()
-    m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].setlb(8e-6)
-    m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].setub(3e-5)
+    m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].setlb(7e-4)
+    m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].setub(3e-3)
 
     m.soec_fs.tag_input["single_cell_sweep_flow"].unfix()
-    m.soec_fs.tag_input["single_cell_sweep_flow"].setlb(8e-6)
-    m.soec_fs.tag_input["single_cell_sweep_flow"].setub(3e-5)
+    m.soec_fs.tag_input["single_cell_sweep_flow"].setlb(7e-4)
+    m.soec_fs.tag_input["single_cell_sweep_flow"].setub(3e-3)
 
     m.soec_fs.sweep_constraint = pyo.Constraint(
         expr=1e6*m.soec_fs.tag_input["single_cell_sweep_flow"].expression
@@ -2118,7 +2143,7 @@ def optimize_model(m):
     m.soec_fs.obj = pyo.Objective(
         expr=m.soec_fs.H2_costing.total_variable_OM_cost[0])
 
-    rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
+    # rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
     m.soec_fs.tag_pfd["total_variable_OM_cost"] = iutil.ModelTag(
         expr=m.soec_fs.H2_costing.total_variable_OM_cost[0],
         format_string="{:.3f}",
@@ -2127,7 +2152,7 @@ def optimize_model(m):
     )
 
     options = {
-        "max_iter": 100,
+        "max_iter": 150,
         "tol": 1e-7,
         "bound_push": 1e-6,
         "linear_solver": "ma27",
@@ -2149,6 +2174,10 @@ def optimize_model(m):
         "feed_pump_power",
         "net_power",
         "net_power_per_mass_h2",
+        "single_cell_h2_side_inlet_flow",
+        "single_cell_sweep_flow",
+        "feed_h2_frac",
+        "preheat_fg_split_to_oxygen"
     )
 
     head_1 = m.soec_fs.tag_input.table_heading(tags=cols_input, units=True)
@@ -2179,9 +2208,9 @@ def optimize_model(m):
         with open("opt_res_soec.csv", "a", newline="") as f:
             w = csv.writer(f)
             w.writerow(row_1 + row_2)
-        write_pfd_results(
-            m, f"rsofc_soec_{m.soec_fs.tag_input['hydrogen_product_rate'].display(units=False)}.svg"
-        )
+        # write_pfd_results(
+        #     m, f"rsofc_soec_{m.soec_fs.tag_input['hydrogen_product_rate'].display(units=False)}.svg"
+        # )
 
 
 def get_model(m=None, name="SOEC Module"):
@@ -2199,7 +2228,7 @@ def get_model(m=None, name="SOEC Module"):
         add_aux_boiler_steam(m.soec_fs)
         add_soec_unit(m.soec_fs)
         add_more_hx_connections(m.soec_fs)
-        add_soec_inlet_mix(m.soec_fs)        
+        add_soec_inlet_mix(m.soec_fs)
         add_design_constraints(m.soec_fs)
         expand_arcs = pyo.TransformationFactory("network.expand_arcs")
         expand_arcs.apply_to(m.soec_fs)
@@ -2250,11 +2279,30 @@ def get_model(m=None, name="SOEC Module"):
 
         add_result_constraints(m.soec_fs)
         initialize_results(m.soec_fs)
+        base_case_solve(m.soec_fs, solver)  # solve for H2 prod. of 5 kg/s (2.5 kmol/s)
 
         # # save model and results
         # ms.to_json(m, fname=init_fname)
 
     return m, solver
+
+
+def base_case_solve(fs, solver):
+    # Values are changed to solve for the base case H2 production of 2.5 kmol/s
+    # or 5 kg/s.
+    fs.preheat_split.split_fraction[:, "oxygen"].fix(0.92633)
+    fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.0010)
+    fs.soec.fc.flow_mol[:, 0].fix(7.57e-4)
+    fs.soec.ac.flow_mol[:, 0].fix(7.57e-4)
+
+    solver.solve(fs, tee=True,
+                 options={
+                       "max_iter": 200,
+                       "tol": 1e-7,
+                       "bound_push": 1e-12,
+                       "linear_solver": "ma27"
+                           },
+                 symbolic_solver_labels=True)
 
 
 if __name__ == "__main__":
@@ -2268,6 +2316,7 @@ if __name__ == "__main__":
     # m.soec_fs.visualize("rSOEC Flowsheet")  # visualize flowsheet
 
     rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
+
     # optimize_model(m)
 
     # strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")

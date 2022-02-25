@@ -67,8 +67,10 @@ from idaes.generic_models.unit_models.mixer import MomentumMixingType
 
 from idaes.power_generation.flowsheets.sofc.properties.CO2_H2O_Ideal_VLE_scaled import \
     configuration as CO2_H2O_VLE_config
-from idaes.power_generation.flowsheets.sofc.properties.natural_gas_PR_scaled_units import \
-    get_NG_properties, rxn_configuration
+from idaes.power_generation.flowsheets.rsofc.properties.natural_gas_PR_scaled_units  import (
+    get_prop,
+    rxn_configuration,
+    EosType)
 
 from idaes.power_generation.flowsheets.sofc.surrogates.cpu import CPU
 # from idaes.power_generation.flowsheets.sofc.surrogates.sofc_rom_builder \
@@ -87,19 +89,26 @@ def build_NGFC(m):
     m.sofc_fs = FlowsheetBlock(default={"dynamic": False})
 
     # create property packages - 4 property packages and 1 reaction
-    NG_config = get_NG_properties(
-        components=['H2', 'CO', "H2O", 'CO2', 'CH4', "C2H6", "C3H8", "C4H10",
-                    'N2', 'O2', 'Ar'])
-    m.sofc_fs.NG_props = GenericParameterBlock(default=NG_config)
+    ng_comps=['H2', 'CO', "H2O", 'CO2', 'CH4', "C2H6", "C3H8", "C4H10",
+              'N2', 'O2', 'Ar']
+    # m.sofc_fs.NG_props = GenericParameterBlock(default=NG_config)
+    m.sofc_fs.NG_props = GenericParameterBlock(
+        default=get_prop(components=ng_comps, phases=["Vap"],
+                         eos=EosType.IDEAL)
+        )
 
-    syn_config = get_NG_properties(
-        components=["H2", "CO", "H2O", "CO2", "CH4", "N2", "O2", "Ar"])
-    m.sofc_fs.syn_props = GenericParameterBlock(default=syn_config)
+    syn_comps=["H2", "CO", "H2O", "CO2", "CH4", "N2", "O2", "Ar"]
+    m.sofc_fs.syn_props = GenericParameterBlock(
+        default=get_prop(components=syn_comps, phases=["Vap"],
+                         eos=EosType.IDEAL)
+        )
 
-    air_config = get_NG_properties(
-        components=['H2O', 'CO2', 'N2', 'O2', 'Ar'])
+    air_comps=['H2O', 'CO2', 'N2', 'O2', 'Ar']
 
-    m.sofc_fs.air_props = GenericParameterBlock(default=air_config)
+    m.sofc_fs.air_props = GenericParameterBlock(
+        default=get_prop(components=air_comps, phases=["Vap"],
+                         eos=EosType.IDEAL)
+        )
 
     m.sofc_fs.CO2_H2O_VLE = GenericParameterBlock(default=CO2_H2O_VLE_config)
 

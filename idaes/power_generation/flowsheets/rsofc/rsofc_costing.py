@@ -154,9 +154,9 @@ def get_rsofc_soec_capital_cost(fs):
 def lock_rsofc_soec_capital_cost(fs):
     for b in fs.generic_costing_units:
         for v in b.costing.total_plant_cost.values():
-            # print("TPC of generic units")
-            # print(b)
-            # v.display()
+            print("TPC of generic units")
+            print(b)
+            v.display()
             v.set_value(pyo.value(v))
         b.costing.deactivate()
     fs.costing.deactivate()
