@@ -53,9 +53,9 @@ def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
     files_root = Path(root) / "files"
     for files_subdir in files_root.glob("*"):
         file_names = [f.as_posix() for f in files_subdir.glob("*")]
-        file_list.append((files_subdir.as_posix(), file_names))
+        if file_names:  # empty for non-directories and empty directories
+            file_list.append((files_subdir.as_posix(), file_names))
     return file_list
-
 
 kwargs = dict(
     zip_safe=False,
@@ -131,6 +131,7 @@ kwargs = dict(
             "*.dat",
             "*.h5",
             "*.trc",
+            "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
         ]
     },
     include_package_data=True,
