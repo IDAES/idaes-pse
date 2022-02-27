@@ -6,7 +6,7 @@ level components of the IDAES Integrated Platform. Each component is described i
 detail with a link in their description.
 
 .. note::
-    IDAES is based on python-based algebraic modeling language, Pyomo. The documentation for 
+    IDAES is based on Python-based algebraic modeling language, Pyomo. The documentation for
     its components (i.e. sets, parameters, variables, objectives, constraints, expressions, and 
     suffixes) are provided in the 
     `Pyomo documentation <https://pyomo.readthedocs.io/en/stable/pyomo_modeling_components/index.html>`_.
@@ -41,5 +41,4 @@ represent individual pieces of equipment and their processes.
 .. rubric:: Data Management Framework
 
 The :ref:`Data Management Framework <explanations/components/dmf/index:Data Management Framework>`
-is used to manage all the data needed by the platform, including flowsheets, models, 
-and results. It stores metadata and data in persistent storage.
+is used to manage data needed by the platform. It stores metadata and data in persistent storage.

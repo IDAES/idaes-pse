@@ -25,6 +25,9 @@ from urllib.parse import urlparse
 # third-party
 from lxml import html
 
+# package
+from idaes.dmf.dmfbase import DMFConfig
+
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
 
 _log = logging.getLogger(__name__)
@@ -50,12 +53,19 @@ def find_html_docs(dmf, obj=None, obj_name=None, **kw):
 
 def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
     paths = dmf.get_doc_paths()
-    if not paths:
-        raise ValueError("No documentation locations configured")
 
-    _log.info(
-        "find HTML docs for module={} class={} on paths={}".format(module_, name, paths)
-    )
+    if len(paths) == 0:
+        # Error: no configuration, or no paths configured
+        conf_path = DMFConfig.configuration_path()
+        if DMFConfig.configuration_exists():
+            raise ValueError(f"No documentation locations configured. "
+                             f"To set this path, set '{dmf.CONF_HELP_PATH}' in the "
+                             f"DMF configuration file: {conf_path}")
+        else:
+            raise ValueError(f"No DMF configuration file found. "
+                             f"Expected location: {conf_path}")
+
+    _log.info(f"Get HTML docs for module={module_} class={name} on paths={paths}")
     location = None
     for p in paths:
         _log.debug(f"Examine help path '{p}'")
@@ -65,7 +75,7 @@ def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
         if is_web:
             _log.debug(f"Get help from online documentation")
             url = p + "/genindex.html"
-            _log.debug(f"reading index file: {url}")
+            _log.debug(f"(Help) reading index file: {url}")
             try:
                 response = requests.get(url)
                 if response.status_code == 200:
@@ -78,7 +88,7 @@ def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
             _log.debug(f"Get help from local documentation files")
             index_path = Path(p) / "genindex.html"
             if index_path.exists():
-                _log.debug(f"reading index file: {index_path}")
+                _log.debug(f"(Help) reading index file: {index_path}")
                 html_file = str(index_path)
                 html_content = open(html_file).read()
             else:
@@ -100,7 +110,7 @@ def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
                     else:
                         location = os.path.join(dmf.root, p, ref)
         if location:
-            _log.debug(f"Found documentation at: {location}")
+            _log.debug(f"Found help documentation at: {location}")
             break  # stop once we find something
     return [location] if location else []
 
