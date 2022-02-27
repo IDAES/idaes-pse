@@ -480,6 +480,8 @@ class DMF(workspace.Workspace, HasTraits):
             rsrc.set_values(kwargs)
         # add to DMF
         rsrc_id = self.add(rsrc)
+        # Set DMF datafiles dir
+        rsrc._dmf_datafiles_path = self.datafiles_path
         return rsrc
 
     def add(self, rsrc):
