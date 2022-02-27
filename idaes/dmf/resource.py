@@ -293,6 +293,7 @@ class Resource:
         self._validator = jsonschema.Draft4Validator(RESOURCE_SCHEMA)
         self._validations = 0  # count validations; mostly for testing
         self.do_copy = self.is_tmp = False  # flags for copying datafiles
+        self._dmf_datafiles_path = None  # Set when added to a DMF DB
 
     def _set_defaults(self, t, nm):
         now = datetime.now().timestamp()
@@ -720,26 +721,36 @@ class Resource:
         datafiles_dir = self.v["datafiles_dir"]
         for datafile in self.v["datafiles"]:
             if "full_path" in datafile:
-                path = Path(datafile["full_path"])
+                full_path = Path(datafile["full_path"])
             else:
                 path = Path(datafile["path"])
-                if not path.is_absolute():
+                if path.is_absolute():
+                    full_path = path
+                else:
                     if datafiles_dir:
-                        path = Path(datafiles_dir) / path
+                        datafiles_path = Path(datafiles_dir)
+                        if self._dmf_datafiles_path is not None:
+                            full_path = self._dmf_datafiles_path / datafiles_path / path
+                        else:  # maybe we just wanted a relative path
+                            full_path = datafiles_path / path
+                        if not full_path.exists():
+                            msg = f"Path '{full_path}' to file '{path}' does not exist. " \
+                                  f"DMF path={self._dmf_datafiles_path}, resource path={datafiles_path}"
+                            raise ValueError(msg)
                     else:
                         # This is a problem!
-                        deets = ";".join(["{k}={v}" for k, v in datafile.items()])
+                        deets = ", ".join(["{k}={v}" for k, v in datafile.items()])
                         msg = f"Cannot resolve relative path for datafile: No " \
-                              f"'datafiles_dir' in resource. File details: {deets}"
+                              f"'datafiles_dir' in resource. {deets}"
                         raise ValueError(msg)
             if mode is None:
-                yield path
+                yield full_path
             else:
                 try:
-                    fp = path.open(mode=mode)
+                    fp = full_path.open(mode=mode)
                 except FileNotFoundError:
                     if ignore_errors:
-                        _log.warning(f"Failed to open path '{path}' in mode '{mode}'")
+                        _log.warning(f"Failed to open path '{full_path}' in mode '{mode}'")
                     else:
                         raise
                 yield fp
