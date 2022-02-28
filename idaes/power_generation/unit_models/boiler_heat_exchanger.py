@@ -1491,6 +1491,8 @@ arrangement to use for delta T
         # the user should always set.
         sf_a = iscale.get_scaling_factor(self.area, default=1e-4, warning=True)
 
+        iscale.constraint_scaling_transform(self.area_eqn, sf_a)
+
         for t, c in self.v_shell_eqn.items():
             s = iscale.min_scaling_factor(
                 self.side_2.properties_in[t].flow_mol_comp,
