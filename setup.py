@@ -83,7 +83,7 @@ kwargs = dict(
         "pandas",
         "pint",
         "psutil",
-        "pyomo>=6.2",
+        "pyomo>=6.3",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
@@ -105,7 +105,6 @@ kwargs = dict(
     },
     # Only installed if [<key>] is added to package name
     extras_require={
-        "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
             "tensorflow",  # idaes.surrogate.keras_surrogate
             # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
@@ -159,6 +158,7 @@ kwargs = dict(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",
