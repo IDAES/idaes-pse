@@ -102,7 +102,7 @@ class TestUncertaintyPropagation:
             expr = sum((data.y[i] - model.response_function[data.hour[i]])**2 for i in data.index)
             return expr
         parmest_class = parmest.Estimator(rooney_biegler_model, data,variable_name,SSE)
-        obj, theta, cov = parmest_class.theta_est(calc_cov=True)
+        obj, theta, cov = parmest_class.theta_est(calc_cov=True, cov_n=len(data.index))
         model_uncertain= ConcreteModel()
         model_uncertain.asymptote = Var(initialize = 15)
         model_uncertain.rate_constant = Var(initialize = 0.5)
@@ -320,7 +320,7 @@ class TestUncertaintyPropagation:
             expr = sum((data.y[i] - model.response_function[data.hour[i]])**2 for i in data.index)
             return expr
         parmest_class = parmest.Estimator(rooney_biegler_model, data,variable_name,SSE)
-        obj, theta, cov = parmest_class.theta_est(calc_cov=True)
+        obj, theta, cov = parmest_class.theta_est(calc_cov=True, cov_n=len(data.index))
         model_uncertain= ConcreteModel()
         model_uncertain.asymptote = Var(initialize = 15)
         model_uncertain.rate_constant = Var(initialize = 0.5)

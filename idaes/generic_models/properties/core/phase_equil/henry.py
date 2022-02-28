@@ -18,11 +18,11 @@ is prototype code
 """
 from enum import Enum
 
-from pyomo.environ import log, Var
+from pyomo.environ import log, value, Var
 
 from idaes.generic_models.properties.core.generic.utility import (
     StateIndex)
-from idaes.core.util.exceptions import BurntToast
+from idaes.core.util.exceptions import ConfigurationError
 
 
 class HenryType(Enum):
@@ -31,7 +31,7 @@ class HenryType(Enum):
     'Henry Volatiltiy' types are numbered 51-100 (i.e. K = pressure/conc)
     We use this fact to simplify determining wheterh to multiply or divide
     by Henry's constant
-    Any differnt forms can use values 101+, but will need ot add the custom
+    Any different forms can use values 101+, but will need to add the custom
     code in if branches where necessary
     """
     # TODO: Add more forms as needed
@@ -39,6 +39,7 @@ class HenryType(Enum):
     Kpc = 51
     Hxp = 2
     Kpx = 52
+    Dummy = 999 # To test error handling
 
 
 # Define a method for getting the correct concentration term
@@ -64,12 +65,12 @@ def get_henry_concentration_term(blk, henry_dict, log=False):
     elif henry_type == HenryType.Hxp or henry_type == HenryType.Kpx:
         conc_type = "mole_frac_phase_comp"
     else:
-        raise BurntToast(
-            f"Unrecognized value for HenryType {henry_type}")
+        _raise_henry_type_error(henry_type)
 
     return getattr(blk, pre+conc_type+sub)
 
 
+# TODO pressure -> fugacity
 # Define a method for returning vapor pressure of Henry components
 def henry_pressure(b, p, j, T=None):
     henry_def = b.params.get_component(j).config.henry_component[p]
@@ -90,12 +91,11 @@ def henry_pressure(b, p, j, T=None):
         # K = P/c type
         h_press = h_conc*henry
     else:
-        raise BurntToast(
-            f"Unrecognized value for HenryType Enum {henry_def['type']}.")
+        _raise_henry_type_error(henry_def['type'])
 
     return h_press
 
-
+# TODO pressure -> fugacity
 def log_henry_pressure(b, p, j, T=None):
     henry_def = b.params.get_component(j).config.henry_component[p]
 
@@ -117,11 +117,50 @@ def log_henry_pressure(b, p, j, T=None):
         # K = P/c type
         log_h_press = h_conc + log(henry)
     else:
-        raise BurntToast(
-            f"Unrecognized value for HenryType Enum {henry_def['type']}.")
+        _raise_henry_type_error(henry_def['type'])
 
     return log_h_press
 
+def henry_equilibrium_ratio(b, p, j):
+    """
+    Returns vapor/liquid equilibrium mole ratio of Henry component j at the
+    temperature and pressure of block b.
+
+    Arguments:
+        b: Property block for which this calculation is taking place
+        p: Liquid phase for which this ratio is being calculated
+        j: Henry component in phase p
+        
+    Returns:
+        Molar ratio of component j in the vapor phase to that in liquid phase p
+        
+    Notes:
+        If Henry's law is defined in terms of mole fraction, this method
+        gives a meaningful answer whether or not the liquid phase composition
+        has been set. If it is defined in terms of concentration, a reasonable
+        value is given only if a reasonable liquid phase composition has been
+        specified.
+        
+        This function returns a value regardless of whether or not block b
+        is experiencing phase equilibrium at its current conditions.
+    """
+    
+    henry_def = b.params.get_component(j).config.henry_component[p]
+    henry_constant = b.henry[p, j]
+    if henry_def["type"] == HenryType.Hcp:
+        henry_constant /= b.dens_mol_phase[p]
+    elif henry_def["type"] == HenryType.Kpc:
+        henry_constant *= b.dens_mol_phase[p]
+        
+    if henry_def["type"].value <= 50:
+        # H = c/P type
+        return 1/(henry_constant*b.pressure)
+    elif henry_def["type"].value <= 100:
+        # K = P/c type
+        return henry_constant/b.pressure
+    else:
+        _raise_henry_type_error(henry_def['type'])
+    
 
 # Define units for Henry's constant
 def henry_units(henry_type, units):
@@ -134,7 +173,7 @@ def henry_units(henry_type, units):
     elif henry_type == HenryType.Kpx:
         h_units = units["pressure"]
     else:
-        raise BurntToast(f"Unrecognized value for HenryType {henry_type}")
+        _raise_henry_type_error(henry_type)
 
     return h_units
 
@@ -166,3 +205,6 @@ class ConstantH():
     @staticmethod
     def dT_expression(b, p, j, T=None):
         return 0
+
+def _raise_henry_type_error(henry_type):
+    raise ConfigurationError(f"Unrecognized value for HenryType {henry_type}")
