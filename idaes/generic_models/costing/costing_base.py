@@ -93,8 +93,8 @@ class CostingPackageBase():
     @staticmethod
     def initialize(self):
         """
-        This method allows users to definean initialization routine for any
-        components createby the build_process_Costs method.
+        This method allows users to define an initialization routine for any
+        components created by the build_process_costs method.
 
         Note that the aggregate costs will be initialized by the framework.
         """

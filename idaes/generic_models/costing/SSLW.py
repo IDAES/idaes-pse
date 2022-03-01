@@ -257,7 +257,7 @@ class SSLWCosting(CostingPackageBase):
     register_units_of_measurement("USD2011", "500/585.7 * USD_500")
     register_units_of_measurement("USD2012", "500/584.6 * USD_500")
     register_units_of_measurement("USD2013", "500/567.3 * USD_500")
-    register_units_of_measurement("USD2014", "500/576.1* USD_500")
+    register_units_of_measurement("USD2014", "500/576.1 * USD_500")
     register_units_of_measurement("USD2015", "500/556.8 * USD_500")
     register_units_of_measurement("USD2016", "500/541.7 * USD_500")
     register_units_of_measurement("USD2017", "500/567.5 * USD_500")
