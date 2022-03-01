@@ -92,8 +92,8 @@ Must be True if dynamic = True,
         """
         super(UnitModelBlockData, self).build()
 
-        # Add a placeholder for references to costing blocks
-        self._costing_block_ref = None
+        # Add a placeholder for initialization order
+        self._initialization_order = []
 
         # Check for overloading of initialize method
         # TODO: Remove in IDAES v2.0
@@ -101,9 +101,9 @@ Must be True if dynamic = True,
             _log.warn(f"DEPRECATION: {str(self.__class__)} has overloaded the "
                       "initialize method. In v2.0, IDAES Will be moving to "
                       "having a centralized initialize method which calls "
-                      "unit-specific initialize_unit methods instead. "
+                      "unit-specific initialize_build methods instead. "
                       "Model developers should update their models to "
-                      "implement the initialize_unit method instead of "
+                      "implement the initialize_build method instead of "
                       "overloading initialize.")
 
         # Set up dynamic flag and time domain
@@ -612,7 +612,7 @@ Must be True if dynamic = True,
         This method is intended for initializing IDAES unit models and any
         modeling components attached to them, such as costing blocks. First,
         any attached components are deactivated, after which the
-        initialize_unit method is called. Following this, the attached
+        initialize_build method is called. Following this, the attached
         components are reactivated and theri initialize method called.
 
         Currently, this method supports the following attached components:
@@ -629,35 +629,36 @@ Must be True if dynamic = True,
 
         # Get the costing block if present
         # TODO: Clean up in IDAES v2.0
-        costing = blk._costing_block_ref
-        if blk._costing_block_ref is None and hasattr(blk, "costing"):
+        init_order = blk._initialization_order
+        if (hasattr(blk, "costing") and
+                blk.costing not in blk._initialization_order):
             # Fallback for older style costing
-            costing = blk.costing
+            init_order.append(blk.costing)
 
         # If costing block exists, deactivate
-        if costing is not None:
-            costing.deactivate()
+        for c in init_order:
+            c.deactivate()
 
         # Remember to collect flags for fixed vars
-        flags = blk.initialize_unit(*args, **kwargs)
+        flags = blk.initialize_build(*args, **kwargs)
 
         # If costing block exists, activate and initialize
-        if costing is not None:
-            costing.activate()
+        for c in init_order:
+            c.activate()
 
-            if hasattr(costing, "initialize"):
+            if hasattr(c, "initialize"):
                 # New type costing block
-                costing.initialize(**cost_args)
+                c.initialize(**cost_args)
             else:
                 # TODO: Deprecate in IDAES v2.0
                 # Old style costing package
-                idaes.core.util.unit_costing.initialize(costing, **cost_args)
+                idaes.core.util.unit_costing.initialize(c, **cost_args)
 
-        # Return any flags returned by initialize_unit
+        # Return any flags returned by initialize_build
         return flags
 
-    def initialize_unit(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                        solver=None, optarg=None):
+    def initialize_build(blk, state_args=None, outlvl=idaeslog.NOTSET,
+                         solver=None, optarg=None):
         '''
         This is a general purpose initialization routine for simple unit
         models. This method assumes a single ControlVolume block called

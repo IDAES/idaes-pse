@@ -811,8 +811,8 @@ objects linked to all inlet states and the mixed state,
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize_unit(blk, outlvl=idaeslog.NOTSET, optarg=None,
-                        solver=None, hold_state=False):
+    def initialize_build(blk, outlvl=idaeslog.NOTSET, optarg=None,
+                         solver=None, hold_state=False):
         """
         Initialization routine for mixer.
 

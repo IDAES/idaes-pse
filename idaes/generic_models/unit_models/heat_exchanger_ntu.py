@@ -302,7 +302,7 @@ constructed,
 
     # TODO : Add scaling methods
 
-    def initialize_unit(
+    def initialize_build(
         self,
         hot_side_state_args=None,
         cold_side_state_args=None,

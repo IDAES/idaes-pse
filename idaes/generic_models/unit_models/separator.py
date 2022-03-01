@@ -1326,7 +1326,7 @@ objects linked the mixed state and all outlet states,
                     .format(blk.name)
                 )
 
-    def initialize_unit(
+    def initialize_build(
         blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, hold_state=False
     ):
         """
