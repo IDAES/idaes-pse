@@ -531,7 +531,7 @@ class HeatExchangerData(UnitModelBlockData):
         cold_side.heat.latex_symbol = "Q_2"
         self.delta_temperature.latex_symbol = "\\Delta T"
 
-    def initialize_unit(
+    def initialize_build(
         self,
         state_args_1=None,
         state_args_2=None,

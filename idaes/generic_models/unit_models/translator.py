@@ -190,7 +190,7 @@ see property package for documentation.}""",
                       block=self.properties_out,
                       doc="Outlet Port")
 
-    def initialize_unit(
+    def initialize_build(
         blk,
         state_args_in=None,
         state_args_out=None,

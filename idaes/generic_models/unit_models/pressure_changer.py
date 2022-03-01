@@ -640,7 +640,7 @@ see property package for documentation.}""",
         except AttributeError:
             pass
 
-    def initialize_unit(
+    def initialize_build(
         blk,
         state_args=None,
         routine=None,
@@ -690,7 +690,7 @@ see property package for documentation.}""",
             )
         else:
             # Call the general initialization routine in UnitModelBlockData
-            super().initialize_unit(
+            super().initialize_build(
                 state_args=state_args,
                 outlvl=outlvl,
                 solver=solver,
