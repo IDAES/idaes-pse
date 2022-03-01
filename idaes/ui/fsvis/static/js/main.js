@@ -16,6 +16,8 @@ import { StreamTable } from './stream_table.js';
 import { Toolbar } from './toolbar.js';
 import { JointJsCellConfig } from './cell_config.js';
 
+// statusMessage levels
+const {INFO, WARN, ERROR}  = {INFO:0, WARN:1, ERROR:2};
 
 /**
  * The main client app responsible for IDAES related visualizations. Here in
@@ -24,7 +26,9 @@ import { JointJsCellConfig } from './cell_config.js';
  *     2. Display the stream table.
  */
 export class App {
+
     constructor (flowsheetId) {
+
         this.paper = new Paper(this);
         const url = `/fs?id=${ flowsheetId }`;
         $.ajax({url: url, datatype: 'json'})
@@ -55,21 +59,21 @@ export class App {
      *
      * Do NOT use this for internal messages or debugging.
      *
-     * @param level The level of 'severity' of the message. 0=info, 1=warning, 2=error
+     * @param level The level of 'severity' of the message: use constants INFO, WARN or ERROR.
      * @param message The message to show
      * @param duration Duration, in seconds, to show the message. 0=forever
      */
-    informUser(level, message, duration) {
+    statusMessage(level, message, duration) {
         // TODO: Write into a status area
         // Write to console
         switch(level) {
-            case 0:
-                console.log(message);
+            case INFO:
+                console.info(message);
                 break;
-            case 1:
+            case WARN:
                 console.warn(message);
                 break;
-            case 2:
+            case ERROR:
                 console.error(message);
                 break;
             default:
@@ -93,19 +97,19 @@ export class App {
     refreshModel(url, paper) {
         // Inform user of progress (1)
         // console.debug("paper.model=", paper.model);
-        this.informUser(0, "Refresh: save current values from model");
+        this.statusMessage(INFO, "Refresh: save current values from model");
         // First save our version of the model
         let clientModel = paper.graph;
         let clientData = JSON.stringify(clientModel.toJSON());
         // console.debug(`Sending to ${url}: ` + clientData);
         $.ajax({url: url, type: 'PUT', contentType: "application/json", data: clientData})
             // On failure inform user and stop
-            .fail(error => this.informUser(
-                2, "Fatal error: cannot save current model before refresh: " + error))
+            .fail(error => this.statusMessage(
+                ERROR, "Fatal error: cannot save current model before refresh: " + error))
             // On success, continue on to fetch new model
             .done(() => {
                 // Inform user of progress (2)
-                this.informUser(0, "Refresh: load new model values from Python program");
+                this.statusMessage(INFO, "Refresh: load new model values from Python program");
                 $.ajax({url: url, dataType: "json"})
                     // If we got the model, save it
                     .done(data => {
@@ -114,7 +118,7 @@ export class App {
                     }) 
                     // Otherwise fail
                     .fail((jqXHR, textStatus, errorThrown) => {
-                        this.informUser(2, "Fatal error: Could not retrieve new model from Python program: " +
+                        this.statusMessage(ERROR, "Fatal error: Could not retrieve new model from Python program: " +
                             textStatus + ", error=" + errorThrown);
                     });
             });
@@ -129,16 +133,11 @@ export class App {
      * @param model The model to save
      */
     saveModel(url, model) {
+        console.debug("Save model to '" + url + "'", model);
         let clientData = JSON.stringify(model.toJSON());
-        // console.debug(`Sending to ${url}: ` + clientData);
-        this.informUser(0, "Save current values from model");
         $.ajax({url: url, type: 'PUT', contentType: "application/json", data: clientData})
-            // On failure inform user and stop
-            .fail(error => this.informUser(
-                2, "Fatal error: cannot save current model: " + error))
-            .done(() => {
-                this.informUser(0, "Saved new model values");
-            });
+            .fail(error => { this.statusMessage(ERROR, "Save error: " + error); })
+            .done(() => { this.statusMessage(INFO, "Saved model"); })
     }
 }
 

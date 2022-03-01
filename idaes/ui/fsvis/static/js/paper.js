@@ -7,6 +7,9 @@ export class Paper {
         var height = 800;
         var gridSize = 1;
 
+        // Behaviors
+        this._autosave = false; // Save model every time mouse leaves the 'paper'
+
         // Default values for the highlighting events
         this._originalLinkStroke = "#979797";
         this._originalLinkStrokeWidth = 2;
@@ -185,20 +188,11 @@ export class Paper {
         // This is essentially the saving mechanism (for a server instance) for 
         // right now
         // See the comments above the save button for more saving TODOs
-        self._paper.on('paper:mouseleave', () => {this._app.saveModel(url, self._graph)});
-        //     $.ajax({
-        //         type: 'POST',
-        //         contentType: 'application/json',
-        //         data: JSON.stringify(self._graph.toJSON()),
-        //         dataType: 'json',
-        //         url: url,
-        //         success: function (data) {
-        //         },
-        //         error: function(error) {
-        //             console.log(error);
-        //         }
-        //     });
-        // });
+        if (self._autosave) {
+            self._paper.on('paper:mouseleave', () => {
+                this._app.saveModel(url, self._graph)
+            });
+        }
 
         // Link labels will appear and disapper on right click. Replaces browser context menu
         self._paper.on("link:contextmenu", function(linkView, evt) {
