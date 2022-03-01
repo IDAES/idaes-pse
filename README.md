@@ -80,6 +80,7 @@ for Python 3. The following sub-versions are supported:
 * Python 3.7
 * Python 3.8
 * Python 3.9
+* Python 3.10
 
 Note that Python 3.6 is *not* supported.
 

@@ -439,7 +439,8 @@ def test_petsc_read_trajectory():
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
     m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
     m.scaling_factor[m.y[180, 1]] = 10 # make sure unscale works
-
+    
+    m.y_ref = pyo.Reference(m.y) # make sure references don't get unscaled twice
     petsc.petsc_dae_by_time_element(
         m,
         time=m.t,

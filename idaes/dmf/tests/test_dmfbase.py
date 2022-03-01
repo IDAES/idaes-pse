@@ -294,7 +294,7 @@ def test_dmf_add_duplicate():
     pytest.raises(errors.DuplicateResourceError, dmf.add, r)
 
 
-@pytest.mark.linux
+#@pytest.mark.linux
 @pytest.mark.unit
 def test_dmf_add_filesystem_err():
     tmp_dir = Path(scratch_dir) / "dmf_add_filesystem_err"
@@ -304,15 +304,16 @@ def test_dmf_add_filesystem_err():
     tmpf1 = NamedTemporaryFile(delete=False)
     tmpf1.close()
     r.v["datafiles"].append({"path": tmpf1.name})
-    # now, to get an error, make the DMF datafile path unwritable
-    path = os.path.join(dmf.root, dmf.datafile_dir)
-    # this file permissions stuff is problematic in Windows, so this test is Linux-only
-    os.chmod(path, 000)
+    # now, to get an error, move the destination directory
+    dest_dir = Path(dmf.root) / dmf.datafile_dir
+    moved_dest_dir = Path(str(dest_dir) + "-moved")
+    dest_dir.rename(moved_dest_dir)
     # then try to add the resource, which includes copying the file into
     # the (now unwritable) directory
+    r.v["datafiles"][0]["do_copy"] = True  # make sure do_copy flag is on
     pytest.raises(errors.DMFError, dmf.add, r)
-    # make the directory writable again so we can remove it
-    os.chmod(path, 0o777)
+    # move directory back so we can remove it
+    moved_dest_dir.rename(dest_dir)
 
 
 @pytest.mark.linux
