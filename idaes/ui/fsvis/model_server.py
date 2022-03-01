@@ -290,7 +290,12 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
             )
             return
         if u.path == "/fs":
-            self._put_fs(id_)
+            code, msg, err = self._put_fs(id_)
+            if code == 200:
+                self.send_response(200, message="success")
+                self.end_headers()
+            else:
+                self.send_error(code, message=msg, explain=str(err))
 
     def _put_fs(self, id_):
         # read  flowsheet from request (read(LENGTH) is required to avoid hanging)
@@ -300,12 +305,10 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         try:
             self.server.save_flowsheet(id_, data)
         except errors.ProcessingError as err:
-            self.send_error(400, message="Invalid flowsheet", explain=str(err))
-            return
+            return 400, "Invalid flowsheet", err
         except Exception as err:
-            self.send_error(500, message="Unknown error", explain=str(err))
-            return
-        self.send_response(200, message="success")
+            return 500, "Unknown error", err
+        return 200, None, None
 
     # === Internal methods ===
 
