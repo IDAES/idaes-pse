@@ -57,14 +57,24 @@
                     <label class="fancy-checkbox">
                       <input type="checkbox" id="view-flowsheet-btn" checked>
                       <i class="fas fa-check checked"></i>
-                      <i class="far fa-circle unchecked"></i>Flowsheet
+                      <i class="far fa-circle unchecked"></i>Show Flowsheet
                     </label>
                   </li>
                   <li>
                     <label class="fancy-checkbox">
                       <input type="checkbox" id="view-stream-table-btn" checked>
                       <i class="fas fa-check checked"></i>
-                      <i class="far fa-circle unchecked"></i>Stream Table
+                      <i class="far fa-circle unchecked"></i>Show Stream Table
+                    </label>
+                  </li>
+                  <li>
+                    <hr class="dotted">
+                  </li>
+                  <li>
+                    <label class="fancy-checkbox">
+                      <input type="checkbox" id="view-stream-highlight-btn" checked>
+                      <i class="fas fa-check checked"></i>
+                      <i class="far fa-circle unchecked"></i>Highlight Streams
                     </label>
                   </li>
                 </ul>
@@ -91,6 +101,15 @@
               </div>
               <label class="switch">
                 <input type="checkbox" id="labels-toggle">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="p-2">
+              <div class="btn-label">
+                Stream Names
+              </div>
+              <label class="switch">
+                <input type="checkbox" checked="true" id="stream-names-toggle">
                 <span class="slider round"></span>
               </label>
             </div>

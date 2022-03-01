@@ -20,7 +20,7 @@ Author: A. Deshpande and M. Zamarripa
 import pytest
 from idaes.power_generation.costing.power_plant_costing import \
      (get_PP_costing,
-      build_flowsheet_cost_constraint,
+      get_total_TPC,
       costing_initialization)
 from idaes.core.util.model_statistics import degrees_of_freedom
 import pyomo.environ as pyo
@@ -43,7 +43,7 @@ def build_costing():
     return m
 
 
-@pytest.mark.component
+@pytest.mark.unit
 def test_get_costing(build_costing):
     m = build_costing
     assert hasattr(m.fs.costing, "CE_index")
@@ -109,9 +109,11 @@ def test_units1_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
-    assert pyo.check_optimal_termination(results)
+    assert results.solver.termination_condition == \
+        pyo.TerminationCondition.optimal
+    assert results.solver.status == pyo.SolverStatus.ok
 
-     # Accounts with raw water withdrawal as reference parameter
+    # Accounts with raw water withdrawal as reference parameter
     assert pytest.approx(26.435, abs=0.5) \
         == sum(pyo.value(m.fs.b2.costing.total_plant_cost[ac])
                for ac in RW_withdraw_accounts)
@@ -185,7 +187,9 @@ def test_units2_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
-    assert pyo.check_optimal_termination(results)
+    assert results.solver.termination_condition == \
+        pyo.TerminationCondition.optimal
+    assert results.solver.status == pyo.SolverStatus.ok
     # Accounts with HRSG duty as reference parameter
     assert pytest.approx(90.794, abs=0.1) \
         == sum(pyo.value(m.fs.b7.costing.total_plant_cost[ac])
@@ -305,7 +309,9 @@ def test_units3_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
-    assert pyo.check_optimal_termination(results)
+    assert results.solver.termination_condition == \
+        pyo.TerminationCondition.optimal
+    assert results.solver.status == pyo.SolverStatus.ok
 
     # Accounts with condenser duty as reference parameter
     assert pytest.approx(14.27, abs=0.1) \
@@ -323,7 +329,7 @@ def test_units3_costing(build_costing):
 def test_flowsheet_costing(build_costing):
     m = build_costing
     # Build cost constraints
-    build_flowsheet_cost_constraint(m)
+    get_total_TPC(m.fs)
 
     # Initialize costing
     costing_initialization(m.fs)
@@ -331,7 +337,9 @@ def test_flowsheet_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
-    assert pyo.check_optimal_termination(results)
+    assert results.solver.termination_condition == \
+        pyo.TerminationCondition.optimal
+    assert results.solver.status == pyo.SolverStatus.ok
 
     # Verify total plant costs
-    assert pytest.approx(574.85, abs=0.1) == pyo.value(m.fs.flowsheet_cost)
+    assert pytest.approx(574.85, abs=0.1) == pyo.value(m.fs.costing.total_TPC)
