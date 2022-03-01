@@ -125,9 +125,9 @@ def test_global_definitions(model):
 def test_cost_heat_exchanger(model, material, hxtype, tube_length):
     model.fs.unit.area = Param(initialize=1000,
                                units=pyunits.m**2)
-    model.fs.unit.tube = Block()
-    model.fs.unit.tube.properties_in = Block(model.fs.time)
-    model.fs.unit.tube.properties_in[0].pressure = Param(
+    model.fs.unit.hot_side = Block()
+    model.fs.unit.hot_side.properties_in = Block(model.fs.time)
+    model.fs.unit.hot_side.properties_in[0].pressure = Param(
         initialize=2, units=pyunits.atm)
 
     model.fs.unit.costing = UnitModelCostingBlock(default={

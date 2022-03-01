@@ -180,7 +180,7 @@ class TestFlowsheetCostingBlock:
 
     @pytest.mark.unit
     def test_basic_attributes(self, costing):
-        assert costing.costing._registered_unit_models == []
+        assert costing.costing._registered_unit_costing == []
         assert isinstance(costing.costing.flow_types, Set)
         assert len(costing.costing.flow_types) == 1
         assert "test_flow_1" in costing.costing.flow_types
@@ -312,15 +312,15 @@ class TestFlowsheetCostingBlock:
         assert costing.unit_a.costing.cost_method == 1
 
         assert costing.unit_a._costing_block_ref is costing.unit_a.costing
-        assert costing.unit_a in costing.costing._registered_unit_models
+        assert costing.unit_a.costing in costing.costing._registered_unit_costing
 
     @pytest.mark.unit
     def test_del_unit_costing(self, costing):
         costing.unit_a.del_component(costing.unit_a.costing)
 
         assert not hasattr(costing.unit_a, "costing")
-        assert costing.unit_a._costing_block_ref is None
-        assert costing.unit_a not in costing.costing._registered_unit_models
+        assert not hasattr(costing.unit_a, "_costing_block_ref")
+        assert costing.costing._registered_unit_costing == []
 
     @pytest.mark.unit
     def test_cost_unit_duplicate(self, costing):
@@ -336,7 +336,7 @@ class TestFlowsheetCostingBlock:
         assert costing.unit_a.costing.cost_method == 2
 
         assert costing.unit_a._costing_block_ref is costing.unit_a.costing
-        assert costing.unit_a in costing.costing._registered_unit_models
+        assert costing.unit_a.costing in costing.costing._registered_unit_costing
 
         # Then check double costing
         with pytest.raises(
@@ -351,9 +351,9 @@ class TestFlowsheetCostingBlock:
         assert not hasattr(costing.unit_a, "costing2")
         assert costing.unit_a.costing.cost_method == 2
         assert costing.unit_a._costing_block_ref is costing.unit_a.costing
-        assert costing.unit_a in costing.costing._registered_unit_models
-        assert costing.costing._registered_unit_models.count(
-            costing.unit_a) == 1
+        assert costing.unit_a.costing in costing.costing._registered_unit_costing
+        assert costing.costing._registered_unit_costing.count(
+            costing.unit_a.costing) == 1
 
         # Clean everything up at the end
         costing.unit_a.del_component(costing.unit_a.costing)
@@ -389,7 +389,7 @@ class TestFlowsheetCostingBlock:
 
         assert isinstance(costing.unit_a.costing, UnitModelCostingBlock)
         assert costing.unit_a._costing_block_ref is costing.unit_a.costing
-        assert costing.unit_a in costing.costing._registered_unit_models
+        assert costing.unit_a.costing in costing.costing._registered_unit_costing
 
         assert isinstance(costing.unit_a.costing.capital_cost, Var)
         assert isinstance(

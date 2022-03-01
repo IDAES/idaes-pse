@@ -179,7 +179,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                 "FlowsheetCostingBlocks must be assigned a costing package.")
 
         # Set up attributes for registering units and flows
-        self._registered_unit_models = []
+        self._registered_unit_costing = []
         self.flow_types = pyo.Set()
         self._registered_flows = {}
 
@@ -274,11 +274,11 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         Args:
             None
         """
-        for u in self._registered_unit_models:
+        for u in self._registered_unit_costing:
             # Call initialize on all associated costing blocks
             # TODO: Think about ways to separate initialization of unit costing
             # TODO: from flowsheet costing
-            u._costing_block_ref.initialize()
+            u.initialize()
 
         # Initialize aggregate cost vars
         for c in DefaultCostingComponents:
@@ -353,12 +353,10 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         def agg_cap_cost_rule(blk):
             e = 0
-            for u in self._registered_unit_models:
-                cblock = u._costing_block_ref
-
+            for u in self._registered_unit_costing:
                 # Allow for units that might only have a subset of cost Vars
-                if hasattr(cblock, "capital_cost"):
-                    e += pyo.units.convert(cblock.capital_cost,
+                if hasattr(u, "capital_cost"):
+                    e += pyo.units.convert(u.capital_cost,
                                            to_units=c_units)
 
             return blk.aggregate_capital_cost == e
@@ -372,12 +370,10 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         def agg_fixed_om_cost_rule(blk):
             e = 0
-            for u in self._registered_unit_models:
-                cblock = u._costing_block_ref
-
+            for u in self._registered_unit_costing:
                 # Allow for units that might only have a subset of cost Vars
-                if hasattr(cblock, "fixed_operating_cost"):
-                    e += pyo.units.convert(cblock.fixed_operating_cost,
+                if hasattr(u, "fixed_operating_cost"):
+                    e += pyo.units.convert(u.fixed_operating_cost,
                                            to_units=c_units/t_units)
 
             return blk.aggregate_fixed_operating_cost == e
@@ -390,12 +386,10 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         def agg_var_om_cost_rule(blk):
             e = 0
-            for u in self._registered_unit_models:
-                cblock = u._costing_block_ref
-
+            for u in self._registered_unit_costing:
                 # Allow for units that might only have a subset of cost Vars
-                if hasattr(cblock, "variable_operating_cost"):
-                    e += pyo.units.convert(cblock.variable_operating_cost,
+                if hasattr(u, "variable_operating_cost"):
+                    e += pyo.units.convert(u.variable_operating_cost,
                                            to_units=c_units/t_units)
 
             return blk.aggregate_variable_operating_cost == e
@@ -478,7 +472,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         # This will need input from the costing package
         pass
 
-    def display_registered_unit_models(self):
+    def display_registered_unit_costing(self):
         # Need a method for cleanly showing registered unit models for costing
         pass
 
@@ -529,10 +523,11 @@ class UnitModelCostingBlockData(ProcessBlockData):
                 "UnitModelCostingBlocks can only be added to UnitModelBlocks.")
 
         # Check to see if unit model already has costing
-        if (unit_model._costing_block_ref is None and
-                unit_model not in fcb._registered_unit_models):
-            # If None, register current block as costing
+        if not hasattr(unit_model, "_costing_block_ref"):
             add_object_reference(unit_model, "_costing_block_ref", self)
+            # Append to initialization order
+            # TODO: Add tests for this
+            unit_model._initialization_order.append(self)
         else:
             # Blcok already has costing, clean up and raise exception
             self.parent_block().del_component(self)
@@ -548,7 +543,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
             method = fcb._get_costing_method_for(unit_model)
 
         # Register unit model with this costing package
-        fcb._registered_unit_models.append(unit_model)
+        fcb._registered_unit_costing.append(self)
 
         # Assign obejct references for costing package and unit model
         add_object_reference(self, "costing_package", fcb)
@@ -600,11 +595,11 @@ class UnitModelCostingBlockData(ProcessBlockData):
 
         # Clean up references from fsb and unit_model
         try:
-            fcb._registered_unit_models.remove(unit_model)
+            fcb._registered_unit_costing.remove(self)
         except ValueError:
             # Unit model is not in list of registered units
             # Something went really wrong
             raise BurntToast(f"{self.name}: something went really wrong "
                              "when deleting this cositng block. Please "
                              "contact the IDAES developers with this bug.")
-        unit_model._costing_block_ref = None
+        del unit_model._costing_block_ref
