@@ -108,9 +108,7 @@ kwargs = dict(
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
             "tensorflow",  # idaes.surrogate.keras_surrogate
-            # FIXME update requirement once PyPI distribution is updated
-            # (8fef0fa2ca is the commit on main where #128 was merged in)
-            "gridx-prescient @ https://github.com/grid-parity-exchange/Prescient/archive/8fef0fa2ca.zip",  # idaes.tests.prescient
+            "gridx-prescient==2.1",  # idaes.tests.prescient
             # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
             "coolprop; python_version < '3.9'",  # idaes.generic_models.properties.general.coolprop
         ],
