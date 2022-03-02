@@ -1,0 +1,97 @@
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+import pyomo.environ as pe
+from pyomo.core.base.var import _GeneralVarData
+from pyomo.core.base.block import _BlockData
+from typing import MutableMapping, Sequence
+from omlt import OmltBlock, OffsetScaling
+from omlt.neuralnet import ReluBigMFormulation
+from omlt.io import load_keras_sequential
+from .dr_config import DRConfig
+from pyomo.common.config import ConfigValue
+
+
+class ReluDRConfig(DRConfig):
+    def __init__(self, description=None, doc=None, implicit=False, implicit_domain=None, visibility=0):
+        super().__init__(description=description, doc=doc, implicit=implicit, implicit_domain=implicit_domain,
+                         visibility=visibility)
+        self.n_layers: int = self.declare('n_layers', ConfigValue(domain=int, default=4))
+        self.n_nodes_per_layer: int = self.declare('n_nodes_per_layer', ConfigValue(domain=int, default=4))
+        self.tensorflow_seed: int = self.declare('tensorflow_seed', ConfigValue(domain=int, default=0))
+        self.scale_inputs: bool = self.declare('scale_inputs', ConfigValue(domain=bool, default=True))
+        self.scale_outputs: bool = self.declare('scale_outputs', ConfigValue(domain=bool, default=True))
+        self.epochs: int = self.declare('epochs', ConfigValue(domain=int, default=2000))
+        self.batch_size: int = self.declare('batch_size', ConfigValue(domain=int, default=20))
+        self.plot_history: bool = self.declare('plot_history', ConfigValue(domain=bool, default=False))
+
+
+def construct_relu_decision_rule(input_vals: MutableMapping[_GeneralVarData, Sequence[float]],
+                                 output_vals: MutableMapping[_GeneralVarData, Sequence[float]],
+                                 config: ReluDRConfig) -> _BlockData:
+    tf.random.set_seed(config.tensorflow_seed)
+    inputs = list(input_vals.keys())
+    outputs = list(output_vals.keys())
+    n_samples = len(input_vals[inputs[0]])
+
+    config: ReluDRConfig = config()
+    if config.batch_size > n_samples:
+        config.batch_size = n_samples
+
+    training_input = np.empty((n_samples, len(inputs)))
+    for ndx, inp in enumerate(inputs):
+        training_input[:,ndx] = np.array(input_vals[inp], dtype=np.float64)
+
+    training_output = np.empty((n_samples, len(outputs)))
+    for ndx, outp in enumerate(outputs):
+        training_output[:, ndx] = np.array(output_vals[outp], dtype=np.float64)
+
+    if config.scale_inputs:
+        input_mean = training_input.mean(axis=0)
+        input_std = training_input.std(axis=0)
+        for ndx in range(len(inputs)):
+            training_input[:, ndx] = (training_input[:, ndx] - input_mean[ndx]) / input_std[ndx]
+    else:
+        input_mean = [0] * len(inputs)
+        input_std = [1] * len(inputs)
+
+    if config.scale_outputs:
+        output_mean = training_output.mean(axis=0)
+        output_std = training_output.std(axis=0)
+        for ndx in range(len(outputs)):
+            training_output[:, ndx] = (training_output[:, ndx] - output_mean[ndx]) / output_std[ndx]
+    else:
+        output_mean = [0] * len(outputs)
+        output_std = [1] * len(outputs)
+
+    nn = keras.Sequential()
+    nn.add(layers.Dense(units=config.n_nodes_per_layer, input_dim=len(inputs), activation='relu'))
+    for layer_ndx in range(config.n_layers - 1):
+        nn.add(layers.Dense(config.n_nodes_per_layer, activation='relu'))
+    nn.add(layers.Dense(len(outputs)))
+    nn.compile(optimizer=keras.optimizers.Adam(), loss='mse')
+    history = nn.fit(training_input, training_output, batch_size=config.batch_size, epochs=config.epochs, verbose=0)
+
+    if config.plot_history:
+        import matplotlib.pyplot as plt
+        plt.scatter(history.epoch, history.history['loss'])
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.yscale('log')
+        plt.show()
+        plt.close()
+
+    res = pe.Block(concrete=True)
+    res.nn = OmltBlock()
+
+    scaler = OffsetScaling(offset_inputs=[float(i) for i in input_mean],
+                           factor_inputs=[float(i) for i in input_std],
+                           offset_outputs=[float(i) for i in output_mean],
+                           factor_outputs=[float(i) for i in output_std])
+    input_bounds = [(v.lb, v.ub) for v in inputs]
+    net = load_keras_sequential(nn, scaler, input_bounds)
+    formulation = ReluBigMFormulation(net)
+    res.nn.build_formulation(formulation, input_vars=inputs, output_vars=outputs)
+
+    return res

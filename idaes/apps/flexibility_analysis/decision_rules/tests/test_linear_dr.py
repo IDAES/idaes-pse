@@ -1,0 +1,52 @@
+import unittest
+import pyomo.environ as pe
+from flexibility.decision_rules.linear_dr import construct_linear_decision_rule
+from pyomo.contrib.appsi.solvers import Gurobi
+import numpy as np
+from pyomo.core.expr.compare import compare_expressions
+
+
+def y1_func(x1, x2):
+    return 3*x1 - 2*x2 + 5
+
+
+def y2_func(x1, x2):
+    return -x1 + 0.5*x2
+
+
+class TestLinearDecisionRule(unittest.TestCase):
+    def test_construct_linear_dr(self):
+        x1_samples = [float(i) for i in np.linspace(-5, 5, 100)]
+        x2_samples = [float(i) for i in np.linspace(-5, 5, 100)]
+        x1_samples.extend(float(i) for i in np.linspace(-5, 5, 100))
+        x2_samples.extend(float(i) for i in np.linspace(5, -5, 100))
+
+        x1_samples = np.array(x1_samples)
+        x2_samples = np.array(x2_samples)
+        y1_samples = y1_func(x1_samples, x2_samples)
+        y2_samples = y2_func(x1_samples, x2_samples)
+
+        m = pe.ConcreteModel()
+        m.x1 = pe.Var(initialize=1.7)
+        m.x2 = pe.Var(initialize=-3.1)
+        m.y1 = pe.Var(initialize=0.2)
+        m.y2 = pe.Var(initialize=2.5)
+
+        input_vals = pe.ComponentMap()
+        input_vals[m.x1] = [float(i) for i in x1_samples]
+        input_vals[m.x2] = [float(i) for i in x2_samples]
+
+        output_vals = pe.ComponentMap()
+        output_vals[m.y1] = [float(i) for i in y1_samples]
+        output_vals[m.y2] = [float(i) for i in y2_samples]
+
+        opt = Gurobi()
+        m.dr = construct_linear_decision_rule(input_vals=input_vals, output_vals=output_vals, solver=opt)
+
+        self.assertEqual(pe.value(m.dr.decision_rule[0].lower), 0)
+        self.assertEqual(pe.value(m.dr.decision_rule[0].lower), 0)
+        self.assertAlmostEqual(pe.value(m.dr.decision_rule[0].body), y1_func(m.x1.value, m.x2.value) - m.y1.value)
+
+        self.assertEqual(pe.value(m.dr.decision_rule[1].lower), 0)
+        self.assertEqual(pe.value(m.dr.decision_rule[1].lower), 0)
+        self.assertAlmostEqual(pe.value(m.dr.decision_rule[1].body), y2_func(m.x1.value, m.x2.value) - m.y2.value)
