@@ -1,7 +1,6 @@
 import pyomo.environ as pe
-from idaes.apps.flexibility_analysis.sampling import perform_sampling
+from idaes.apps.flexibility_analysis.sampling import perform_sampling, SamplingConfig, SamplingStrategy
 import unittest
-from idaes.apps.flexibility_analysis.indices import _VarIndex
 import numpy as np
 
 
@@ -90,15 +89,18 @@ class TestSampling(unittest.TestCase):
     def test_poly(self):
         m, nominal_values, param_bounds = create_poly_model()
         opt = pe.SolverFactory("scip")
+        config = SamplingConfig()
+        config.solver = opt
+        config.num_points = 5
+        config.strategy = SamplingStrategy.grid
         tmp = perform_sampling(
             m,
-            num_points=5,
-            solver=opt,
             uncertain_params=list(nominal_values.keys()),
             param_nominal_values=nominal_values,
             param_bounds=param_bounds,
             controls=[m.z],
             in_place=True,
+            config=config
         )
         sample_points, max_violation_values, control_values = tmp
         max_viol_ndx = np.argmax(max_violation_values)
@@ -109,50 +111,38 @@ class TestSampling(unittest.TestCase):
     def test_hx_network(self):
         m, nominal_values, param_bounds = create_hx_network_model()
         opt = pe.SolverFactory("gurobi_direct")
+        config = SamplingConfig()
+        config.solver = opt
+        config.num_points = 2
+        config.strategy = SamplingStrategy.grid
         tmp = perform_sampling(
             m,
-            num_points=2,
-            solver=opt,
             uncertain_params=list(nominal_values.keys()),
             param_nominal_values=nominal_values,
             param_bounds=param_bounds,
             controls=[m.qc],
             in_place=True,
+            config=config
         )
         sample_points, max_violation_values, control_values = tmp
         max_viol_ndx = np.argmax(max_violation_values)
         self.assertAlmostEqual(max_violation_values[max_viol_ndx], 8.8)
 
-    def test_hx_network2(self):
-        m, nominal_values, param_bounds = create_hx_network_model()
-        opt = pe.SolverFactory("gurobi_direct")
-        tmp = perform_sampling(
-            m,
-            num_points=2,
-            solver=opt,
-            uncertain_params=list(nominal_values.keys()),
-            param_nominal_values=nominal_values,
-            param_bounds=param_bounds,
-            enforce_equalities=False,
-            controls=[m.qc],
-            in_place=True,
-        )
-        sample_points, max_violation_values, control_values = tmp
-        max_viol_ndx = np.argmax(max_violation_values)
-        self.assertAlmostEqual(max_violation_values[max_viol_ndx], 4, 4)
-
     def test_hx_network3(self):
         m, nominal_values, param_bounds = create_hx_network_model()
         opt = pe.SolverFactory("appsi_gurobi")
+        config = SamplingConfig()
+        config.solver = opt
+        config.num_points = 2
+        config.strategy = SamplingStrategy.grid
         tmp = perform_sampling(
             m,
-            num_points=2,
-            solver=opt,
             uncertain_params=list(nominal_values.keys()),
             param_nominal_values=nominal_values,
             param_bounds=param_bounds,
             controls=[m.qc],
             in_place=True,
+            config=config
         )
         sample_points, max_violation_values, control_values = tmp
         max_viol_ndx = np.argmax(max_violation_values)

@@ -59,12 +59,6 @@ def create_model() -> Tuple[_BlockData, Mapping, Mapping]:
 
     m.performance = pe.Constraint(expr=m.variable_temps[7] <= 323)
 
-    # m.ineq1 = pe.Constraint(expr=-0.67*m.qc + m.uncertain_temps[3] - 350 <= 0)
-    # m.ineq2 = pe.Constraint(expr=-m.uncertain_temps[5] - 0.75*m.uncertain_temps[1] + 0.5*m.qc - m.uncertain_temps[3] + 1388.5 <= 0)
-    # m.ineq3 = pe.Constraint(expr=-m.uncertain_temps[5] - 1.5*m.uncertain_temps[1] + m.qc - 2*m.uncertain_temps[3] + 2044 <= 0)
-    # m.ineq4 = pe.Constraint(expr=-m.uncertain_temps[5] - 1.5*m.uncertain_temps[1] + m.qc - 2*m.uncertain_temps[3] - 2*m.uncertain_temps[8] + 2830 <= 0)
-    # m.ineq5 = pe.Constraint(expr=m.uncertain_temps[5] + 1.5*m.uncertain_temps[1] - m.qc + 2*m.uncertain_temps[3] + 3*m.uncertain_temps[8] - 3153 <= 0)
-
     return m, nominal_values, param_bounds
 
 
@@ -76,7 +70,7 @@ def get_var_bounds(m):
     return res
 
 
-def main(method):
+def main(flex_index: bool = False, method: flexibility.FlexTestMethod = flexibility.FlexTestMethod.active_constraint, plot_history=True):
     m, nominal_values, param_bounds = create_model()
     var_bounds = get_var_bounds(m)
     config = flexibility.FlexTestConfig()
@@ -98,30 +92,33 @@ def main(method):
         config.decision_rule_config.batch_size = 50
         config.decision_rule_config.scale_inputs = True
         config.decision_rule_config.scale_outputs = True
-        config.decision_rule_config.plot_history = True
-    # results = flexibility.solve_flextest(m=m, uncertain_params=list(nominal_values.keys()),
-    #                                      param_nominal_values=nominal_values, param_bounds=param_bounds,
-    #                                      controls=[m.qc], valid_var_bounds=var_bounds, config=config)
-    # print(results)
-    results = flexibility.solve_flex_index(
-        m=m,
-        uncertain_params=list(nominal_values.keys()),
-        param_nominal_values=nominal_values,
-        param_bounds=param_bounds,
-        controls=[m.qc],
-        valid_var_bounds=var_bounds,
-        config=config,
-        reconstruct_decision_rule=False,
-    )
-    print(results)
+        config.decision_rule_config.plot_history = plot_history
+    if not flex_index:
+        results = flexibility.solve_flextest(m=m, uncertain_params=list(nominal_values.keys()),
+                                             param_nominal_values=nominal_values, param_bounds=param_bounds,
+                                             controls=[m.qc], valid_var_bounds=var_bounds, config=config)
+        print(results)
+    else:
+        results = flexibility.solve_flex_index(
+            m=m,
+            uncertain_params=list(nominal_values.keys()),
+            param_nominal_values=nominal_values,
+            param_bounds=param_bounds,
+            controls=[m.qc],
+            valid_var_bounds=var_bounds,
+            config=config,
+            reconstruct_decision_rule=False,
+        )
+        print(results)
+    return results
 
 
 if __name__ == "__main__":
     print("\n\n********************Active Constraint**************************")
-    main(flexibility.FlexTestMethod.active_constraint)
+    main(flex_index=True, method=flexibility.FlexTestMethod.active_constraint)
     print("\n\n********************Linear Decision Rule**************************")
-    main(flexibility.FlexTestMethod.linear_decision_rule)
+    main(flex_index=True, method=flexibility.FlexTestMethod.linear_decision_rule)
     print("\n\n********************Vertex Enumeration**************************")
-    main(flexibility.FlexTestMethod.vertex_enumeration)
+    main(flex_index=True, method=flexibility.FlexTestMethod.vertex_enumeration)
     print("\n\n********************ReLU Decision rule**************************")
-    main(flexibility.FlexTestMethod.relu_decision_rule)
+    main(flex_index=True, method=flexibility.FlexTestMethod.relu_decision_rule)

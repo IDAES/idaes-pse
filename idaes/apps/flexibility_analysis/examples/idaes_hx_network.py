@@ -333,9 +333,6 @@ def nominal_optimization():
     m.fs.cooler3.report()
     m.fs.cooler4.report()
 
-    # for v in ComponentSet(m.component_data_objects(pe.Var, descend_into=True)):
-    #     print(v, v.value)
-
 
 def main(method):
     m, nominal_values, param_bounds = create_model()
@@ -348,8 +345,9 @@ def main(method):
     config.minlp_solver = pe.SolverFactory("scip")
     config.minlp_solver.options["limits/time"] = 300
     config.sampling_config.solver = pe.SolverFactory("appsi_ipopt")
-    config.sampling_config.strategy = flexibility.SamplingStrategy.lhs
-    config.sampling_config.num_points = 100
+    config.sampling_config.solver.config.log_level = logging.DEBUG
+    config.sampling_config.strategy = flexibility.SamplingStrategy.grid
+    config.sampling_config.num_points = 5
     if method == flexibility.FlexTestMethod.linear_decision_rule:
         config.decision_rule_config = flexibility.LinearDRConfig()
         config.decision_rule_config.solver = pe.SolverFactory("appsi_gurobi")
@@ -374,20 +372,8 @@ def main(method):
         config=config,
     )
     print(results)
-    # results = flexibility.solve_flex_index(m=m, uncertain_params=list(nominal_values.keys()),
-    #                                        param_nominal_values=nominal_values, param_bounds=param_bounds,
-    #                                        controls=[m.qc], valid_var_bounds=var_bounds, config=config)
-    # print(results)
+    return results
 
 
 if __name__ == "__main__":
-    print("\n\n********************Active Constraint**************************")
-    main(flexibility.FlexTestMethod.active_constraint)
-    # print('\n\n********************Linear Decision Rule**************************')
-    # main(flexibility.FlexTestMethod.linear_decision_rule)
-    # print('\n\n********************Vertex Enumeration**************************')
-    # main(flexibility.FlexTestMethod.vertex_enumeration)
-    # print('\n\n********************Sampling**************************')
-    # main(flexibility.FlexTestMethod.sampling)
-    # print('\n\n********************ReLU Decision rule**************************')
-    # main(flexibility.FlexTestMethod.relu_decision_rule)
+    main(flexibility.FlexTestMethod.sampling)

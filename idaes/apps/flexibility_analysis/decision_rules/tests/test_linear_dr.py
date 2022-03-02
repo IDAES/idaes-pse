@@ -2,9 +2,10 @@ import unittest
 import pyomo.environ as pe
 from idaes.apps.flexibility_analysis.decision_rules.linear_dr import (
     construct_linear_decision_rule,
+    LinearDRConfig
 )
-from pyomo.contrib.appsi.solvers import Gurobi
 import numpy as np
+import pytest
 
 
 def y1_func(x1, x2):
@@ -15,6 +16,7 @@ def y2_func(x1, x2):
     return -x1 + 0.5 * x2
 
 
+@pytest.mark.solver
 class TestLinearDecisionRule(unittest.TestCase):
     def test_construct_linear_dr(self):
         x1_samples = [float(i) for i in np.linspace(-5, 5, 100)]
@@ -41,20 +43,22 @@ class TestLinearDecisionRule(unittest.TestCase):
         output_vals[m.y1] = [float(i) for i in y1_samples]
         output_vals[m.y2] = [float(i) for i in y2_samples]
 
-        opt = Gurobi()
+        opt = pe.SolverFactory('appsi_gurobi')
+        config = LinearDRConfig()
+        config.solver = opt
         m.dr = construct_linear_decision_rule(
-            input_vals=input_vals, output_vals=output_vals, solver=opt
+            input_vals=input_vals, output_vals=output_vals, config=config
         )
 
         self.assertEqual(pe.value(m.dr.decision_rule[0].lower), 0)
-        self.assertEqual(pe.value(m.dr.decision_rule[0].lower), 0)
+        self.assertEqual(pe.value(m.dr.decision_rule[0].upper), 0)
         self.assertAlmostEqual(
             pe.value(m.dr.decision_rule[0].body),
             y1_func(m.x1.value, m.x2.value) - m.y1.value,
         )
 
         self.assertEqual(pe.value(m.dr.decision_rule[1].lower), 0)
-        self.assertEqual(pe.value(m.dr.decision_rule[1].lower), 0)
+        self.assertEqual(pe.value(m.dr.decision_rule[1].upper), 0)
         self.assertAlmostEqual(
             pe.value(m.dr.decision_rule[1].body),
             y2_func(m.x1.value, m.x2.value) - m.y2.value,
