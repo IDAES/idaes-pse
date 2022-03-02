@@ -214,11 +214,10 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: '.[optional]'
-      - name: Install test dependencies and run pytest in empty directory
+      - name: Install and run pytest in empty directory
         run: |
           pushd "$(mktemp -d)"
-          # TODO this could be an optional [testing] dependency
-          pip install pytest addheader
+          pip install pytest
           # TODO downloading pytest.ini is still needed for the tests to pass
           # eventually it will be moved to the root conftest.py so that is installed as Python code
           wget https://raw.githubusercontent.com/IDAES/idaes-pse/main/pytest.ini 

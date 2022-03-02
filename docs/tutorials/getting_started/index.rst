@@ -187,8 +187,9 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
     Refer to the full :doc:`idaes get-examples command documentation <../../../reference_guides/commands/get_examples>`
     for more information.
 
-4. Run tests::
+4. The ``pytest`` package is required for running the test suite. After installing it using e.g. ``pip``, run the tests::
 
+    pip install pytest
     pytest --pyargs idaes -W ignore
 
 5. You should see the tests run and all should pass to ensure the installation worked. You
