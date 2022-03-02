@@ -11,6 +11,7 @@ from omlt.neuralnet import ReluBigMFormulation
 from omlt.io import load_keras_sequential
 from .dr_config import DRConfig
 from pyomo.common.config import ConfigValue
+from idaes.apps.flexibility_analysis.indices import _VarIndex
 
 
 class ReluDRConfig(DRConfig):
@@ -134,9 +135,29 @@ def construct_relu_decision_rule(
         offset_outputs=[float(i) for i in output_mean],
         factor_outputs=[float(i) for i in output_std],
     )
-    input_bounds = [(v.lb, v.ub) for v in inputs]
+    input_bounds = {
+        ndx: (
+            (v.lb - input_mean[ndx]) / input_std[ndx],
+            (v.ub - input_mean[ndx]) / input_std[ndx],
+        )
+        for ndx, v in enumerate(inputs)
+    }
     net = load_keras_sequential(nn, scaler, input_bounds)
     formulation = ReluBigMFormulation(net)
-    res.nn.build_formulation(formulation, input_vars=inputs, output_vars=outputs)
+    res.nn.build_formulation(formulation)
+
+    res.input_set = pe.Set()
+    res.input_links = pe.Constraint(res.input_set)
+    for ndx, v in enumerate(inputs):
+        key = _VarIndex(v, None)
+        res.input_set.add(key)
+        res.input_links[key] = v == res.nn.inputs[ndx]
+
+    res.output_set = pe.Set()
+    res.output_links = pe.Constraint(res.output_set)
+    for ndx, v in enumerate(outputs):
+        key = _VarIndex(v, None)
+        res.output_set.add(key)
+        res.output_links[key] = v == res.nn.outputs[ndx]
 
     return res

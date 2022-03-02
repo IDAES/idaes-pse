@@ -111,6 +111,7 @@ def main(method):
         controls=[m.qc],
         valid_var_bounds=var_bounds,
         config=config,
+        reconstruct_decision_rule=False,
     )
     print(results)
 
