@@ -62,7 +62,6 @@ def test_update_flowsheet(flash_model):
         srv.update_flowsheet("oscar")
 
 
-
 @pytest.fixture(scope="module")
 def flash_model():
     """Flash unit model. Use '.fs' attribute to get the flowsheet.
@@ -113,3 +112,7 @@ def test_flowsheet_server_run(flash_model):
     print("Bogus PUT")
     resp = requests.put(f"http://localhost:{srv.port}/fs")
     assert not resp.ok
+
+@pytest.mark.unit
+def test_do_put():
+    handler = model_server.FlowsheetServerHandler
