@@ -1,7 +1,12 @@
 import pyomo.environ as pe
 import unittest
-from flexibility.var_utils import (get_all_unfixed_variables, get_used_unfixed_variables, BoundsManager,
-                                   _remove_var_bounds, _apply_var_bounds)
+from flexibility.var_utils import (
+    get_all_unfixed_variables,
+    get_used_unfixed_variables,
+    BoundsManager,
+    _remove_var_bounds,
+    _apply_var_bounds,
+)
 
 
 class TestGetVariables(unittest.TestCase):
@@ -19,7 +24,7 @@ class TestGetVariables(unittest.TestCase):
 
     def test_get_used_unfixed_variables(self):
         m = pe.ConcreteModel()
-        m.x = pe.Var([1,2,3,4,5,6])
+        m.x = pe.Var([1, 2, 3, 4, 5, 6])
         m.x[3].fix(1)
         m.x[4].fix(1)
         m.x[6].fix(1)

@@ -1,5 +1,3 @@
-
-
 class _ConIndex(object):
     def __init__(self, con, bound):
         self._con = con

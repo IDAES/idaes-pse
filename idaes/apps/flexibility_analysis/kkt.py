@@ -3,7 +3,12 @@ from pyomo.core.expr.calculus.diff_with_pyomo import reverse_sd
 from coramin.utils import get_objective
 from pyomo.core.base.block import _BlockData
 from pyomo.contrib.fbbt.fbbt import fbbt
-from .var_utils import get_used_unfixed_variables, _remove_var_bounds, _apply_var_bounds, BoundsManager
+from .var_utils import (
+    get_used_unfixed_variables,
+    _remove_var_bounds,
+    _apply_var_bounds,
+    BoundsManager,
+)
 from typing import Sequence, Mapping, Optional
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.expr.sympy_tools import sympyify_expression, sympy2pyomo_expression
@@ -35,27 +40,27 @@ def _add_grad_lag_constraints(m: _BlockData) -> _BlockData:
 
     for c in m.component_data_objects(pe.Constraint, active=True, descend_into=True):
         if c.equality:
-            key = _ConIndex(c, 'eq')
+            key = _ConIndex(c, "eq")
             m.duals_eq_set.add(key)
             lagrangian += m.duals_eq[key] * (c.body - c.upper)
         else:
             if c.upper is not None:
-                key = _ConIndex(c, 'ub')
+                key = _ConIndex(c, "ub")
                 m.duals_ineq_set.add(key)
                 lagrangian += m.duals_ineq[key] * (c.body - c.upper)
             if c.lower is not None:
-                key = _ConIndex(c, 'lb')
+                key = _ConIndex(c, "lb")
                 m.duals_ineq_set.add(key)
                 lagrangian += m.duals_ineq[key] * (c.lower - c.body)
 
     for v in primal_vars:
         assert v.is_continuous()
         if v.ub is not None:
-            key = _VarIndex(v, 'ub')
+            key = _VarIndex(v, "ub")
             m.duals_ineq_set.add(key)
             lagrangian += m.duals_ineq[key] * (v - v.ub)
         if v.lb is not None:
-            key = _VarIndex(v, 'lb')
+            key = _VarIndex(v, "lb")
             m.duals_ineq_set.add(key)
             lagrangian += m.duals_ineq[key] * (v.lb - v)
 
@@ -90,10 +95,10 @@ def _introduce_inequality_slacks(m) -> _BlockData:
             lb = e.lb
             ub = e.ub
 
-        if bnd == 'ub':
+        if bnd == "ub":
             m.ineq_cons_with_slacks[key] = s + e - ub == 0
         else:
-            assert bnd == 'lb'
+            assert bnd == "lb"
             m.ineq_cons_with_slacks[key] = s + lb - e == 0
 
     for key in m.duals_ineq_set:
@@ -115,15 +120,19 @@ def _do_fbbt(m, uncertain_params):
     fbbt(m)
     for p in uncertain_params:
         if p.lb > p_bounds[p][0] + 1e-6 or p.ub < p_bounds[p][1] - 1e-6:
-            raise RuntimeError('The bounds provided in valid_var_bounds were proven to '
-                               'be invalid for some values of the uncertain parameters.')
+            raise RuntimeError(
+                "The bounds provided in valid_var_bounds were proven to "
+                "be invalid for some values of the uncertain parameters."
+            )
         p.fix()
 
 
-def add_kkt_with_milp_complementarity_conditions(m: _BlockData,
-                                                 uncertain_params: Sequence[_GeneralVarData],
-                                                 valid_var_bounds: Mapping[_GeneralVarData, Sequence[float]],
-                                                 default_M=None) -> _BlockData:
+def add_kkt_with_milp_complementarity_conditions(
+    m: _BlockData,
+    uncertain_params: Sequence[_GeneralVarData],
+    valid_var_bounds: Mapping[_GeneralVarData, Sequence[float]],
+    default_M=None,
+) -> _BlockData:
     for v in uncertain_params:
         v.fix()
 
@@ -146,22 +155,30 @@ def add_kkt_with_milp_complementarity_conditions(m: _BlockData,
     for key in m.duals_ineq_set:
         if m.duals_ineq[key].ub is None:
             if default_M is None:
-                raise RuntimeError(f'could not compute upper bound on multiplier for inequality {key}.')
+                raise RuntimeError(
+                    f"could not compute upper bound on multiplier for inequality {key}."
+                )
             else:
                 dual_M = default_M
         else:
             dual_M = m.duals_ineq[key].ub
         if m.slacks[key].ub is None:
             if default_M is None:
-                raise RuntimeError(f'could not compute upper bound on slack for inequality {key}')
+                raise RuntimeError(
+                    f"could not compute upper bound on slack for inequality {key}"
+                )
             else:
                 slack_M = default_M
         else:
             slack_M = m.slacks[key].ub
         m.dual_M[key].value = dual_M
         m.slack_M[key].value = slack_M
-        m.dual_ineq_0_if_not_active[key] = m.duals_ineq[key] <= m.active_indicator[key] * m.dual_M[key]
-        m.slack_0_if_active[key] = m.slacks[key] <= (1 - m.active_indicator[key]) * m.slack_M[key]
+        m.dual_ineq_0_if_not_active[key] = (
+            m.duals_ineq[key] <= m.active_indicator[key] * m.dual_M[key]
+        )
+        m.slack_0_if_active[key] = (
+            m.slacks[key] <= (1 - m.active_indicator[key]) * m.slack_M[key]
+        )
 
     for v in uncertain_params:
         v.unfix()

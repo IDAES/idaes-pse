@@ -21,8 +21,12 @@ class TestReplaceUncertainParams(unittest.TestCase):
         param_bounds = pe.ComponentMap()
         param_bounds[m.p] = (1, 4)
 
-        _replace_uncertain_params(m=m, uncertain_params=[m.p], param_nominal_values=nominal_values,
-                                  param_bounds=param_bounds)
+        _replace_uncertain_params(
+            m=m,
+            uncertain_params=[m.p],
+            param_nominal_values=nominal_values,
+            param_bounds=param_bounds,
+        )
 
         self.assertEqual(len(m.unc_cons), 4)
 
@@ -36,24 +40,30 @@ class TestReplaceUncertainParams(unittest.TestCase):
         c_ndx = _ConIndex(m.c1, None)
         self.assertEqual(m.unc_cons[c_ndx].lower, 0)
         self.assertEqual(m.unc_cons[c_ndx].upper, 0)
-        self.assertTrue(compare_expressions(m.unc_cons[c_ndx].body, m.x + m.unc_param_vars[v_ndx]))
+        self.assertTrue(
+            compare_expressions(m.unc_cons[c_ndx].body, m.x + m.unc_param_vars[v_ndx])
+        )
 
         self.assertFalse(m.c2.active)
-        c_ndx = _ConIndex(m.c2, 'ub')
+        c_ndx = _ConIndex(m.c2, "ub")
         self.assertEqual(m.unc_cons[c_ndx].lower, None)
         self.assertEqual(m.unc_cons[c_ndx].upper, 0)
         self.assertTrue(compare_expressions(m.unc_cons[c_ndx].body, m.y - m.x))
 
         self.assertFalse(m.c3.active)
-        c_ndx = _ConIndex(m.c3, 'lb')
+        c_ndx = _ConIndex(m.c3, "lb")
         self.assertEqual(m.unc_cons[c_ndx].lower, -1)
         self.assertEqual(m.unc_cons[c_ndx].upper, None)
-        self.assertTrue(compare_expressions(m.unc_cons[c_ndx].body, m.y + m.unc_param_vars[v_ndx]))
+        self.assertTrue(
+            compare_expressions(m.unc_cons[c_ndx].body, m.y + m.unc_param_vars[v_ndx])
+        )
 
-        c_ndx = _ConIndex(m.c3, 'ub')
+        c_ndx = _ConIndex(m.c3, "ub")
         self.assertEqual(m.unc_cons[c_ndx].lower, None)
         self.assertEqual(m.unc_cons[c_ndx].upper, 1)
-        self.assertTrue(compare_expressions(m.unc_cons[c_ndx].body, m.y + m.unc_param_vars[v_ndx]))
+        self.assertTrue(
+            compare_expressions(m.unc_cons[c_ndx].body, m.y + m.unc_param_vars[v_ndx])
+        )
 
     def test_replace_var(self):
         m = pe.ConcreteModel()
@@ -67,15 +77,21 @@ class TestReplaceUncertainParams(unittest.TestCase):
         param_bounds = pe.ComponentMap()
         param_bounds[m.p] = (1, 4)
 
-        _replace_uncertain_params(m=m, uncertain_params=[m.p], param_nominal_values=nominal_values,
-                                  param_bounds=param_bounds)
+        _replace_uncertain_params(
+            m=m,
+            uncertain_params=[m.p],
+            param_nominal_values=nominal_values,
+            param_bounds=param_bounds,
+        )
 
         self.assertFalse(m.c1.active)
         c_ndx = _ConIndex(m.c1, None)
         v_ndx = _VarIndex(m.p, None)
         self.assertEqual(m.unc_cons[c_ndx].lower, 0)
         self.assertEqual(m.unc_cons[c_ndx].upper, 0)
-        self.assertTrue(compare_expressions(m.unc_cons[c_ndx].body, m.x + m.unc_param_vars[v_ndx]))
+        self.assertTrue(
+            compare_expressions(m.unc_cons[c_ndx].body, m.x + m.unc_param_vars[v_ndx])
+        )
         self.assertEqual(m.unc_param_vars[v_ndx].lb, 1)
         self.assertEqual(m.unc_param_vars[v_ndx].ub, 4)
         self.assertEqual(m.unc_param_vars[v_ndx].value, 2.3)
@@ -93,8 +109,12 @@ class TestReplaceUncertainParams(unittest.TestCase):
         param_bounds[m.p] = (1, 4)
 
         with self.assertRaises(ValueError):
-            _replace_uncertain_params(m=m, uncertain_params=[m.p], param_nominal_values=nominal_values,
-                                      param_bounds=param_bounds)
+            _replace_uncertain_params(
+                m=m,
+                uncertain_params=[m.p],
+                param_nominal_values=nominal_values,
+                param_bounds=param_bounds,
+            )
 
     def test_non_constant_var2(self):
         m = pe.ConcreteModel()
@@ -109,5 +129,9 @@ class TestReplaceUncertainParams(unittest.TestCase):
         param_bounds[m.p] = (1, 4)
 
         with self.assertRaises(ValueError):
-            _replace_uncertain_params(m=m, uncertain_params=[m.p], param_nominal_values=nominal_values,
-                                      param_bounds=param_bounds)
+            _replace_uncertain_params(
+                m=m,
+                uncertain_params=[m.p],
+                param_nominal_values=nominal_values,
+                param_bounds=param_bounds,
+            )

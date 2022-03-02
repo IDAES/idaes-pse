@@ -1,5 +1,7 @@
 import pyomo.environ as pe
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import BTXParameterBlock
+from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.heater import Heater
 import coramin
@@ -23,18 +25,22 @@ logging.basicConfig(level=logging.INFO)
 
 def create_model():
     m = pe.ConcreteModel()
-    m.fs = FlowsheetBlock(default={'dynamic': False})
-    m.fs.properties = BTXParameterBlock(default={'valid_phase': 'Vap',
-                                                 'activity_coeff_model': 'Ideal',
-                                                 'state_vars': 'FTPz'})
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = BTXParameterBlock(
+        default={
+            "valid_phase": "Vap",
+            "activity_coeff_model": "Ideal",
+            "state_vars": "FTPz",
+        }
+    )
 
-    m.fs.heater1 = Heater(default={'property_package': m.fs.properties})
-    m.fs.cooler1 = Heater(default={'property_package': m.fs.properties})
-    m.fs.heater2 = Heater(default={'property_package': m.fs.properties})
-    m.fs.cooler2 = Heater(default={'property_package': m.fs.properties})
-    m.fs.heater3 = Heater(default={'property_package': m.fs.properties})
-    m.fs.cooler3 = Heater(default={'property_package': m.fs.properties})
-    m.fs.cooler4 = Heater(default={'property_package': m.fs.properties})
+    m.fs.heater1 = Heater(default={"property_package": m.fs.properties})
+    m.fs.cooler1 = Heater(default={"property_package": m.fs.properties})
+    m.fs.heater2 = Heater(default={"property_package": m.fs.properties})
+    m.fs.cooler2 = Heater(default={"property_package": m.fs.properties})
+    m.fs.heater3 = Heater(default={"property_package": m.fs.properties})
+    m.fs.cooler3 = Heater(default={"property_package": m.fs.properties})
+    m.fs.cooler4 = Heater(default={"property_package": m.fs.properties})
 
     m.fs.s1 = Arc(source=m.fs.heater1.outlet, destination=m.fs.heater2.inlet)
     m.fs.s2 = Arc(source=m.fs.cooler1.outlet, destination=m.fs.cooler4.inlet)
@@ -51,12 +57,30 @@ def create_model():
 
     approach_limit = 5
     m.fs.temp_approach = pe.ConstraintList()
-    m.fs.temp_approach.add(m.fs.cooler1.inlet.temperature[0] >= m.fs.heater1.outlet.temperature[0] + approach_limit)
-    m.fs.temp_approach.add(m.fs.cooler1.outlet.temperature[0] >= m.fs.heater1.inlet.temperature[0] + approach_limit)
-    m.fs.temp_approach.add(m.fs.cooler2.inlet.temperature[0] >= m.fs.heater2.outlet.temperature[0] + approach_limit)
-    m.fs.temp_approach.add(m.fs.cooler2.outlet.temperature[0] >= m.fs.heater2.inlet.temperature[0] + approach_limit)
-    m.fs.temp_approach.add(m.fs.cooler3.inlet.temperature[0] >= m.fs.heater3.outlet.temperature[0] + approach_limit)
-    m.fs.temp_approach.add(m.fs.cooler3.outlet.temperature[0] >= m.fs.heater3.inlet.temperature[0] + approach_limit)
+    m.fs.temp_approach.add(
+        m.fs.cooler1.inlet.temperature[0]
+        >= m.fs.heater1.outlet.temperature[0] + approach_limit
+    )
+    m.fs.temp_approach.add(
+        m.fs.cooler1.outlet.temperature[0]
+        >= m.fs.heater1.inlet.temperature[0] + approach_limit
+    )
+    m.fs.temp_approach.add(
+        m.fs.cooler2.inlet.temperature[0]
+        >= m.fs.heater2.outlet.temperature[0] + approach_limit
+    )
+    m.fs.temp_approach.add(
+        m.fs.cooler2.outlet.temperature[0]
+        >= m.fs.heater2.inlet.temperature[0] + approach_limit
+    )
+    m.fs.temp_approach.add(
+        m.fs.cooler3.inlet.temperature[0]
+        >= m.fs.heater3.outlet.temperature[0] + approach_limit
+    )
+    m.fs.temp_approach.add(
+        m.fs.cooler3.outlet.temperature[0]
+        >= m.fs.heater3.inlet.temperature[0] + approach_limit
+    )
 
     # specs
     m.fs.heater1.inlet.temperature[0].fix(488)
@@ -66,7 +90,9 @@ def create_model():
     m.fs.heater3.inlet.temperature[0].fix(400)
     m.fs.heater3.outlet.temperature[0].fix(550)
     m.fs.cooler4.outlet.temperature[0].fix(450)
-    m.fs.cooler3_out_temp_spec = pe.Constraint(expr=m.fs.cooler3.outlet.temperature[0] <= 423)
+    m.fs.cooler3_out_temp_spec = pe.Constraint(
+        expr=m.fs.cooler3.outlet.temperature[0] <= 423
+    )
 
     m.fs.heater1.inlet.flow_mol[0].fix(1)
     m.fs.cooler1.inlet.flow_mol[0].fix(1)
@@ -80,19 +106,19 @@ def create_model():
     m.fs.cooler2.inlet.pressure[0].fix(101325)
     m.fs.heater3.inlet.pressure[0].fix(101325)
 
-    m.fs.heater1.inlet.mole_frac_comp[0, 'benzene'].fix(0.5)
-    m.fs.cooler1.inlet.mole_frac_comp[0, 'benzene'].fix(0.5)
-    m.fs.cooler2.inlet.mole_frac_comp[0, 'benzene'].fix(0.5)
-    m.fs.heater3.inlet.mole_frac_comp[0, 'benzene'].fix(0.5)
+    m.fs.heater1.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+    m.fs.cooler1.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+    m.fs.cooler2.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+    m.fs.heater3.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
 
-    m.fs.heater1.inlet.mole_frac_comp[0, 'toluene'].fix(0.5)
-    m.fs.cooler1.inlet.mole_frac_comp[0, 'toluene'].fix(0.5)
-    m.fs.cooler2.inlet.mole_frac_comp[0, 'toluene'].fix(0.5)
-    m.fs.heater3.inlet.mole_frac_comp[0, 'toluene'].fix(0.5)
+    m.fs.heater1.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+    m.fs.cooler1.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+    m.fs.cooler2.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+    m.fs.heater3.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
     m.obj = pe.Objective(expr=-m.fs.cooler4.heat_duty[0])
 
-    pe.TransformationFactory('network.expand_arcs').apply_to(m)
+    pe.TransformationFactory("network.expand_arcs").apply_to(m)
     scale_model(m)
 
     nominal_values = pe.ComponentMap()
@@ -126,7 +152,7 @@ def create_model():
     for p in nominal_values.keys():
         assert p.is_fixed()
         p.unfix()
-    
+
     for c in m.component_data_objects(pe.Constraint, active=True, descend_into=True):
         body_degree = polynomial_degree(c.body)
         lower, body, upper = c.lower, c.body, c.upper
@@ -135,7 +161,7 @@ def create_model():
             se = se.simplify()
             body = sympy2pyomo_expression(se, om)
             c.set_value((c.lower, body, c.upper))
-            print('simplified: ', c.body)
+            print("simplified: ", c.body)
 
     for p in nominal_values.keys():
         assert not p.is_fixed()
@@ -194,26 +220,26 @@ def get_var_bounds(m: _BlockData, param_bounds):
             b.properties_in[0].flow_mol.setub(5)
             b.properties_out[0].flow_mol.setlb(0)
             b.properties_out[0].flow_mol.setub(5)
-            b.properties_in[0].flow_mol_phase['Vap'].setlb(0)
-            b.properties_in[0].flow_mol_phase['Vap'].setub(5)
-            b.properties_out[0].flow_mol_phase['Vap'].setlb(0)
-            b.properties_out[0].flow_mol_phase['Vap'].setub(5)
-            b.properties_in[0].mole_frac_comp['benzene'].setlb(0)
-            b.properties_in[0].mole_frac_comp['benzene'].setub(1)
-            b.properties_in[0].mole_frac_comp['toluene'].setlb(0)
-            b.properties_in[0].mole_frac_comp['toluene'].setub(1)
-            b.properties_out[0].mole_frac_comp['benzene'].setlb(0)
-            b.properties_out[0].mole_frac_comp['benzene'].setub(1)
-            b.properties_out[0].mole_frac_comp['toluene'].setlb(0)
-            b.properties_out[0].mole_frac_comp['toluene'].setub(1)
-            b.properties_in[0].mole_frac_phase_comp['Vap','benzene'].setlb(0)
-            b.properties_in[0].mole_frac_phase_comp['Vap','benzene'].setub(1)
-            b.properties_in[0].mole_frac_phase_comp['Vap','toluene'].setlb(0)
-            b.properties_in[0].mole_frac_phase_comp['Vap','toluene'].setub(1)
-            b.properties_out[0].mole_frac_phase_comp['Vap','benzene'].setlb(0)
-            b.properties_out[0].mole_frac_phase_comp['Vap','benzene'].setub(1)
-            b.properties_out[0].mole_frac_phase_comp['Vap','toluene'].setlb(0)
-            b.properties_out[0].mole_frac_phase_comp['Vap','toluene'].setub(1)
+            b.properties_in[0].flow_mol_phase["Vap"].setlb(0)
+            b.properties_in[0].flow_mol_phase["Vap"].setub(5)
+            b.properties_out[0].flow_mol_phase["Vap"].setlb(0)
+            b.properties_out[0].flow_mol_phase["Vap"].setub(5)
+            b.properties_in[0].mole_frac_comp["benzene"].setlb(0)
+            b.properties_in[0].mole_frac_comp["benzene"].setub(1)
+            b.properties_in[0].mole_frac_comp["toluene"].setlb(0)
+            b.properties_in[0].mole_frac_comp["toluene"].setub(1)
+            b.properties_out[0].mole_frac_comp["benzene"].setlb(0)
+            b.properties_out[0].mole_frac_comp["benzene"].setub(1)
+            b.properties_out[0].mole_frac_comp["toluene"].setlb(0)
+            b.properties_out[0].mole_frac_comp["toluene"].setub(1)
+            b.properties_in[0].mole_frac_phase_comp["Vap", "benzene"].setlb(0)
+            b.properties_in[0].mole_frac_phase_comp["Vap", "benzene"].setub(1)
+            b.properties_in[0].mole_frac_phase_comp["Vap", "toluene"].setlb(0)
+            b.properties_in[0].mole_frac_phase_comp["Vap", "toluene"].setub(1)
+            b.properties_out[0].mole_frac_phase_comp["Vap", "benzene"].setlb(0)
+            b.properties_out[0].mole_frac_phase_comp["Vap", "benzene"].setub(1)
+            b.properties_out[0].mole_frac_phase_comp["Vap", "toluene"].setlb(0)
+            b.properties_out[0].mole_frac_phase_comp["Vap", "toluene"].setub(1)
             b.properties_in[0].pressure.setlb(1.01325)
             b.properties_in[0].pressure.setub(1.01325)
             b.properties_out[0].pressure.setlb(1.01325)
@@ -252,12 +278,20 @@ def scale_model(m):
             m.scaling_factor[b.properties_out[0].pressure] = 1e-5
             m.scaling_factor[b.properties_in[0].temperature] = 1e-2
             m.scaling_factor[b.properties_out[0].temperature] = 1e-2
-            m.scaling_factor[b.properties_in[0].enth_mol_phase['Vap']] = 1e-4
-            m.scaling_factor[b.properties_out[0].enth_mol_phase['Vap']] = 1e-4
-            m.scaling_factor[b.properties_in[0].enth_mol_phase_comp['Vap', 'benzene']] = 1e-4
-            m.scaling_factor[b.properties_out[0].enth_mol_phase_comp['Vap', 'benzene']] = 1e-4
-            m.scaling_factor[b.properties_in[0].enth_mol_phase_comp['Vap', 'toluene']] = 1e-4
-            m.scaling_factor[b.properties_out[0].enth_mol_phase_comp['Vap', 'toluene']] = 1e-4
+            m.scaling_factor[b.properties_in[0].enth_mol_phase["Vap"]] = 1e-4
+            m.scaling_factor[b.properties_out[0].enth_mol_phase["Vap"]] = 1e-4
+            m.scaling_factor[
+                b.properties_in[0].enth_mol_phase_comp["Vap", "benzene"]
+            ] = 1e-4
+            m.scaling_factor[
+                b.properties_out[0].enth_mol_phase_comp["Vap", "benzene"]
+            ] = 1e-4
+            m.scaling_factor[
+                b.properties_in[0].enth_mol_phase_comp["Vap", "toluene"]
+            ] = 1e-4
+            m.scaling_factor[
+                b.properties_out[0].enth_mol_phase_comp["Vap", "toluene"]
+            ] = 1e-4
             for c in b.enthalpy_balances.values():
                 m.scaling_factor[c] = 1e-4
             for c in b.pressure_balance.values():
@@ -277,7 +311,7 @@ def scale_model(m):
     m.scaling_factor[m.fs.s3_expanded.pressure_equality[0]] = 1e-4
     m.scaling_factor[coramin.utils.get_objective(m)] = 1e-4
 
-    pe.TransformationFactory('core.scale_model').apply_to(m, rename=False)
+    pe.TransformationFactory("core.scale_model").apply_to(m, rename=False)
 
 
 def nominal_optimization():
@@ -287,7 +321,7 @@ def nominal_optimization():
     log_infeasible_constraints(m, log_variables=False)
     log_infeasible_bounds(m)
 
-    opt = pe.SolverFactory('ipopt')
+    opt = pe.SolverFactory("ipopt")
     res = opt.solve(m, tee=True)
     pe.assert_optimal_termination(res)
 
@@ -311,14 +345,14 @@ def main(method):
     config.feasibility_tol = 1e-6
     config.terminate_early = False
     config.method = method
-    config.minlp_solver = pe.SolverFactory('scip')
-    config.minlp_solver.options['limits/time'] = 300
-    config.sampling_config.solver = pe.SolverFactory('appsi_ipopt')
+    config.minlp_solver = pe.SolverFactory("scip")
+    config.minlp_solver.options["limits/time"] = 300
+    config.sampling_config.solver = pe.SolverFactory("appsi_ipopt")
     config.sampling_config.strategy = flexibility.SamplingStrategy.lhs
     config.sampling_config.num_points = 100
     if method == flexibility.FlexTestMethod.linear_decision_rule:
         config.decision_rule_config = flexibility.LinearDRConfig()
-        config.decision_rule_config.solver = pe.SolverFactory('appsi_gurobi')
+        config.decision_rule_config.solver = pe.SolverFactory("appsi_gurobi")
     elif method == flexibility.FlexTestMethod.relu_decision_rule:
         config.decision_rule_config = flexibility.ReluDRConfig()
         config.decision_rule_config.n_layers = 1
@@ -327,11 +361,18 @@ def main(method):
         config.decision_rule_config.batch_size = 50
         config.decision_rule_config.scale_inputs = True
         config.decision_rule_config.scale_outputs = True
-    results = flexibility.solve_flextest(m=m, uncertain_params=list(nominal_values.keys()),
-                                         param_nominal_values=nominal_values, param_bounds=param_bounds,
-                                         controls=[m.fs.cooler4.control_volume.heat[0],
-                                                   m.fs.heater3.control_volume.properties_in[0].flow_mol],
-                                         valid_var_bounds=var_bounds, config=config)
+    results = flexibility.solve_flextest(
+        m=m,
+        uncertain_params=list(nominal_values.keys()),
+        param_nominal_values=nominal_values,
+        param_bounds=param_bounds,
+        controls=[
+            m.fs.cooler4.control_volume.heat[0],
+            m.fs.heater3.control_volume.properties_in[0].flow_mol,
+        ],
+        valid_var_bounds=var_bounds,
+        config=config,
+    )
     print(results)
     # results = flexibility.solve_flex_index(m=m, uncertain_params=list(nominal_values.keys()),
     #                                        param_nominal_values=nominal_values, param_bounds=param_bounds,
@@ -339,8 +380,8 @@ def main(method):
     # print(results)
 
 
-if __name__ == '__main__':
-    print('\n\n********************Active Constraint**************************')
+if __name__ == "__main__":
+    print("\n\n********************Active Constraint**************************")
     main(flexibility.FlexTestMethod.active_constraint)
     # print('\n\n********************Linear Decision Rule**************************')
     # main(flexibility.FlexTestMethod.linear_decision_rule)

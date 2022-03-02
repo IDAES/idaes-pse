@@ -10,7 +10,9 @@ from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.core.expr.calculus.diff_with_pyomo import reverse_sd
 
 
-def _get_bounds_on_max_constraint_violation(m: _BlockData, valid_var_bounds: Mapping[_GeneralVarData, Sequence[float]]):
+def _get_bounds_on_max_constraint_violation(
+    m: _BlockData, valid_var_bounds: Mapping[_GeneralVarData, Sequence[float]]
+):
     bounds_manager = BoundsManager(m)
     bounds_manager.save_bounds()
 
@@ -38,7 +40,9 @@ def _get_bounds_on_max_constraint_violation(m: _BlockData, valid_var_bounds: Map
     return min_constraint_violation, max_constraint_violation
 
 
-def _get_constraint_violation_bounds(m: _BlockData, valid_var_bounds: Mapping[_GeneralVarData, Sequence[float]]) -> MutableMapping[_GeneralVarData, Tuple[float, float]]:
+def _get_constraint_violation_bounds(
+    m: _BlockData, valid_var_bounds: Mapping[_GeneralVarData, Sequence[float]]
+) -> MutableMapping[_GeneralVarData, Tuple[float, float]]:
     bounds_manager = BoundsManager(m)
     bounds_manager.save_bounds()
 
@@ -63,10 +67,12 @@ def _get_constraint_violation_bounds(m: _BlockData, valid_var_bounds: Mapping[_G
     return constraint_violation_bounds
 
 
-def _build_inner_problem(m: _BlockData,
-                         enforce_equalities: bool,
-                         unique_constraint_violations: bool,
-                         valid_var_bounds: Optional[MutableMapping[_GeneralVarData, Tuple[float, float]]]):
+def _build_inner_problem(
+    m: _BlockData,
+    enforce_equalities: bool,
+    unique_constraint_violations: bool,
+    valid_var_bounds: Optional[MutableMapping[_GeneralVarData, Tuple[float, float]]],
+):
     """
     If enfoce equalities is True and unique_constraint_violations is False, then this function converts
 
@@ -75,7 +81,7 @@ def _build_inner_problem(m: _BlockData,
             c(x) = 0
             g(x) <= 0
 
-    to 
+    to
 
         min u
         s.t.
@@ -89,7 +95,7 @@ def _build_inner_problem(m: _BlockData,
             c(x) = 0
             g(x) <= 0
 
-    to 
+    to
 
         min u
         s.t.
@@ -104,7 +110,7 @@ def _build_inner_problem(m: _BlockData,
             c(x) = 0
             g(x) <= 0
 
-    to 
+    to
 
         min u
         s.t.
@@ -135,41 +141,65 @@ def _build_inner_problem(m: _BlockData,
     if unique_constraint_violations:
         m.constraint_violation = pe.Var(m.ineq_violation_set)
 
-    for c in list(m.component_data_objects(pe.Constraint, descend_into=True, active=True)):
+    for c in list(
+        m.component_data_objects(pe.Constraint, descend_into=True, active=True)
+    ):
         if c.equality and enforce_equalities:
             continue
         if c.lower is not None:
-            key = _ConIndex(c, 'lb')
+            key = _ConIndex(c, "lb")
             m.ineq_violation_set.add(key)
             if unique_constraint_violations:
-                m.ineq_violation_cons[key] = (c.lower - c.body - m.constraint_violation[key], 0)
+                m.ineq_violation_cons[key] = (
+                    c.lower - c.body - m.constraint_violation[key],
+                    0,
+                )
             else:
-                m.ineq_violation_cons[key] = (None, c.lower - c.body - m.max_constraint_violation, 0)
+                m.ineq_violation_cons[key] = (
+                    None,
+                    c.lower - c.body - m.max_constraint_violation,
+                    0,
+                )
         if c.upper is not None:
-            key = _ConIndex(c, 'ub')
+            key = _ConIndex(c, "ub")
             m.ineq_violation_set.add(key)
             if unique_constraint_violations:
-                m.ineq_violation_cons[key] = (c.body - c.upper - m.constraint_violation[key], 0)
+                m.ineq_violation_cons[key] = (
+                    c.body - c.upper - m.constraint_violation[key],
+                    0,
+                )
             else:
-                m.ineq_violation_cons[key] = (None, c.body - c.upper - m.max_constraint_violation, 0)
+                m.ineq_violation_cons[key] = (
+                    None,
+                    c.body - c.upper - m.max_constraint_violation,
+                    0,
+                )
 
     for v in original_vars:
         if v.is_integer():
-            raise ValueError('Original problem must be continuous')
+            raise ValueError("Original problem must be continuous")
         if v.lb is not None:
-            key = _VarIndex(v, 'lb')
+            key = _VarIndex(v, "lb")
             m.ineq_violation_set.add(key)
             if unique_constraint_violations:
                 m.ineq_violation_cons[key] = (v.lb - v - m.constraint_violation[key], 0)
             else:
-                m.ineq_violation_cons[key] = (None, v.lb - v - m.max_constraint_violation, 0)
+                m.ineq_violation_cons[key] = (
+                    None,
+                    v.lb - v - m.max_constraint_violation,
+                    0,
+                )
         if v.ub is not None:
-            key = _VarIndex(v, 'ub')
+            key = _VarIndex(v, "ub")
             m.ineq_violation_set.add(key)
             if unique_constraint_violations:
                 m.ineq_violation_cons[key] = (v - v.ub - m.constraint_violation[key], 0)
             else:
-                m.ineq_violation_cons[key] = (None, v - v.ub - m.max_constraint_violation, 0)
+                m.ineq_violation_cons[key] = (
+                    None,
+                    v - v.ub - m.max_constraint_violation,
+                    0,
+                )
 
     for key in m.ineq_violation_set:
         if isinstance(key, _ConIndex):
@@ -187,11 +217,19 @@ def _build_inner_problem(m: _BlockData,
         # u_hat[i] = constraint_violation[i] * y[i]
         # and use mccormick for the last constraint
 
-        m.max_violation_selector = pe.Var(m.ineq_violation_set, domain=pe.Binary)  # y[i]
-        m.one_max_violation = pe.Constraint(expr=sum(m.max_violation_selector.values()) == 1)
+        m.max_violation_selector = pe.Var(
+            m.ineq_violation_set, domain=pe.Binary
+        )  # y[i]
+        m.one_max_violation = pe.Constraint(
+            expr=sum(m.max_violation_selector.values()) == 1
+        )
         m.u_hat = pe.Var(m.ineq_violation_set)
-        m.max_violation_sum = pe.Constraint(expr=m.max_constraint_violation == sum(m.u_hat.values()))
-        constraint_violation_bounds = _get_constraint_violation_bounds(m, valid_var_bounds)
+        m.max_violation_sum = pe.Constraint(
+            expr=m.max_constraint_violation == sum(m.u_hat.values())
+        )
+        constraint_violation_bounds = _get_constraint_violation_bounds(
+            m, valid_var_bounds
+        )
         m.u_hat_cons = pe.ConstraintList()
         for key in m.ineq_violation_set:
             violation_var = m.constraint_violation[key]
@@ -202,11 +240,20 @@ def _build_inner_problem(m: _BlockData,
             m.u_hat_cons.add(m.u_hat[key] <= violation_var + viol_lb * y_i - viol_lb)
             m.u_hat_cons.add(m.u_hat[key] >= viol_ub * y_i + violation_var - viol_ub)
         valid_var_bounds.update(constraint_violation_bounds)
-        valid_var_bounds[m.max_constraint_violation] = (min(i[0] for i in constraint_violation_bounds.values()), max(i[1] for i in constraint_violation_bounds.values()))
+        valid_var_bounds[m.max_constraint_violation] = (
+            min(i[0] for i in constraint_violation_bounds.values()),
+            max(i[1] for i in constraint_violation_bounds.values()),
+        )
         for key in m.ineq_violation_set:
             valid_var_bounds[m.max_violation_selector[key]] = (0, 1)
-            valid_var_bounds[m.u_hat[key]] = (min(0.0, constraint_violation_bounds[m.constraint_violation[key]][0]),
-                                              max(0.0, constraint_violation_bounds[m.constraint_violation[key]][1]))
+            valid_var_bounds[m.u_hat[key]] = (
+                min(0.0, constraint_violation_bounds[m.constraint_violation[key]][0]),
+                max(0.0, constraint_violation_bounds[m.constraint_violation[key]][1]),
+            )
     else:
         if valid_var_bounds is not None:
-            valid_var_bounds[m.max_constraint_violation] = _get_bounds_on_max_constraint_violation(m=m, valid_var_bounds=valid_var_bounds)
+            valid_var_bounds[
+                m.max_constraint_violation
+            ] = _get_bounds_on_max_constraint_violation(
+                m=m, valid_var_bounds=valid_var_bounds
+            )

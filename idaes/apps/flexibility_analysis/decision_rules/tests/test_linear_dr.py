@@ -7,11 +7,11 @@ from pyomo.core.expr.compare import compare_expressions
 
 
 def y1_func(x1, x2):
-    return 3*x1 - 2*x2 + 5
+    return 3 * x1 - 2 * x2 + 5
 
 
 def y2_func(x1, x2):
-    return -x1 + 0.5*x2
+    return -x1 + 0.5 * x2
 
 
 class TestLinearDecisionRule(unittest.TestCase):
@@ -41,12 +41,20 @@ class TestLinearDecisionRule(unittest.TestCase):
         output_vals[m.y2] = [float(i) for i in y2_samples]
 
         opt = Gurobi()
-        m.dr = construct_linear_decision_rule(input_vals=input_vals, output_vals=output_vals, solver=opt)
+        m.dr = construct_linear_decision_rule(
+            input_vals=input_vals, output_vals=output_vals, solver=opt
+        )
 
         self.assertEqual(pe.value(m.dr.decision_rule[0].lower), 0)
         self.assertEqual(pe.value(m.dr.decision_rule[0].lower), 0)
-        self.assertAlmostEqual(pe.value(m.dr.decision_rule[0].body), y1_func(m.x1.value, m.x2.value) - m.y1.value)
+        self.assertAlmostEqual(
+            pe.value(m.dr.decision_rule[0].body),
+            y1_func(m.x1.value, m.x2.value) - m.y1.value,
+        )
 
         self.assertEqual(pe.value(m.dr.decision_rule[1].lower), 0)
         self.assertEqual(pe.value(m.dr.decision_rule[1].lower), 0)
-        self.assertAlmostEqual(pe.value(m.dr.decision_rule[1].body), y2_func(m.x1.value, m.x2.value) - m.y2.value)
+        self.assertAlmostEqual(
+            pe.value(m.dr.decision_rule[1].body),
+            y2_func(m.x1.value, m.x2.value) - m.y2.value,
+        )

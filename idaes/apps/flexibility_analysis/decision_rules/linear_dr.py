@@ -8,15 +8,31 @@ from pyomo.common.config import ConfigValue
 
 
 class LinearDRConfig(DRConfig):
-    def __init__(self, description=None, doc=None, implicit=False, implicit_domain=None, visibility=0):
-        super().__init__(description=description, doc=doc, implicit=implicit, implicit_domain=implicit_domain,
-                         visibility=visibility)
-        self.solver = self.declare('solver', ConfigValue(default=pe.SolverFactory('appsi_gurobi')))
+    def __init__(
+        self,
+        description=None,
+        doc=None,
+        implicit=False,
+        implicit_domain=None,
+        visibility=0,
+    ):
+        super().__init__(
+            description=description,
+            doc=doc,
+            implicit=implicit,
+            implicit_domain=implicit_domain,
+            visibility=visibility,
+        )
+        self.solver = self.declare(
+            "solver", ConfigValue(default=pe.SolverFactory("appsi_gurobi"))
+        )
 
 
-def construct_linear_decision_rule(input_vals: MutableMapping[_GeneralVarData, Sequence[float]],
-                                   output_vals: MutableMapping[_GeneralVarData, Sequence[float]],
-                                   config: LinearDRConfig) -> _BlockData:
+def construct_linear_decision_rule(
+    input_vals: MutableMapping[_GeneralVarData, Sequence[float]],
+    output_vals: MutableMapping[_GeneralVarData, Sequence[float]],
+    config: LinearDRConfig,
+) -> _BlockData:
     n_inputs = len(input_vals)
     n_outputs = len(output_vals)
 
@@ -35,7 +51,9 @@ def construct_linear_decision_rule(input_vals: MutableMapping[_GeneralVarData, S
         trainer.coefs = pe.Var(trainer.input_set)
         trainer.out_est = pe.Var(trainer.sample_set)
 
-        obj_expr = sum((trainer.out_est[i] - out_samples[i])**2 for i in trainer.sample_set)
+        obj_expr = sum(
+            (trainer.out_est[i] - out_samples[i]) ** 2 for i in trainer.sample_set
+        )
         trainer.objective = pe.Objective(expr=obj_expr)
 
         trainer.est_cons = pe.Constraint(trainer.sample_set)
@@ -56,7 +74,9 @@ def construct_linear_decision_rule(input_vals: MutableMapping[_GeneralVarData, S
         lin_vars = [v for v in input_vals.keys()]
         lin_coefs.append(-1)
         lin_vars.append(output_var)
-        dr_expr = LinearExpression(constant=trainer.const.value, linear_coefs=lin_coefs, linear_vars=lin_vars)
+        dr_expr = LinearExpression(
+            constant=trainer.const.value, linear_coefs=lin_coefs, linear_vars=lin_vars
+        )
         res.decision_rule[out_ndx] = (dr_expr, 0)
 
     return res

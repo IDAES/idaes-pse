@@ -8,7 +8,11 @@ from pyomo.core.base.var import _GeneralVarData
 
 
 def get_all_unfixed_variables(m: _BlockData):
-    return ComponentSet(v for v in m.component_data_objects(pe.Var, descend_into=True, active=True) if not v.is_fixed())
+    return ComponentSet(
+        v
+        for v in m.component_data_objects(pe.Var, descend_into=True, active=True)
+        if not v.is_fixed()
+    )
 
 
 def get_used_unfixed_variables(m: _BlockData):
@@ -45,7 +49,7 @@ def _remove_var_bounds(m: _BlockData):
         v.setlb(None)
         v.setub(None)
         if v.is_integer():
-            raise ValueError('Unwilling to remove domain from integer variable')
+            raise ValueError("Unwilling to remove domain from integer variable")
         v.domain = pe.Reals
 
 

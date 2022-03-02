@@ -14,18 +14,19 @@ def create_model() -> Tuple[_BlockData, Mapping, Mapping]:
     11(6), 675-693.
     """
 
-    print("""This example is based off of \n\n
+    print(
+        """This example is based off of \n\n
     Grossmann, I. E., & Floudas, C. A. (1987). Active constraint strategy for 
     flexibility analysis in chemical processes. Computers & Chemical Engineering, 
-    11(6), 675-693.\n\n""")
+    11(6), 675-693.\n\n"""
+    )
 
     m = pe.ConcreteModel()
 
     m.uncertain_temps_set = pe.Set(initialize=[1, 3, 5, 8])
-    m.uncertain_temps = pe.Param(m.uncertain_temps_set, mutable=True, initialize={1: 620,
-                                                                                  3: 388,
-                                                                                  5: 583,
-                                                                                  8: 313})
+    m.uncertain_temps = pe.Param(
+        m.uncertain_temps_set, mutable=True, initialize={1: 620, 3: 388, 5: 583, 8: 313}
+    )
     nominal_values = pe.ComponentMap()
     for p in m.uncertain_temps.values():
         nominal_values[p] = p.value
@@ -39,9 +40,15 @@ def create_model() -> Tuple[_BlockData, Mapping, Mapping]:
     m.qc = pe.Var()
 
     m.balances = pe.Constraint([1, 2, 3, 4])
-    m.balances[1] = 1.5 * (m.uncertain_temps[1] - m.variable_temps[2]) == 2 * (m.variable_temps[4] - m.uncertain_temps[3])
-    m.balances[2] = m.uncertain_temps[5] - m.variable_temps[6] == 2 * (563 - m.variable_temps[4])
-    m.balances[3] = m.variable_temps[6] - m.variable_temps[7] == 3 * (393 - m.uncertain_temps[8])
+    m.balances[1] = 1.5 * (m.uncertain_temps[1] - m.variable_temps[2]) == 2 * (
+        m.variable_temps[4] - m.uncertain_temps[3]
+    )
+    m.balances[2] = m.uncertain_temps[5] - m.variable_temps[6] == 2 * (
+        563 - m.variable_temps[4]
+    )
+    m.balances[3] = m.variable_temps[6] - m.variable_temps[7] == 3 * (
+        393 - m.uncertain_temps[8]
+    )
     m.balances[4] = m.qc == 1.5 * (m.variable_temps[2] - 350)
 
     m.temp_approaches = pe.Constraint([1, 2, 3, 4])
@@ -52,11 +59,11 @@ def create_model() -> Tuple[_BlockData, Mapping, Mapping]:
 
     m.performance = pe.Constraint(expr=m.variable_temps[7] <= 323)
 
-    #m.ineq1 = pe.Constraint(expr=-0.67*m.qc + m.uncertain_temps[3] - 350 <= 0)
-    #m.ineq2 = pe.Constraint(expr=-m.uncertain_temps[5] - 0.75*m.uncertain_temps[1] + 0.5*m.qc - m.uncertain_temps[3] + 1388.5 <= 0)
-    #m.ineq3 = pe.Constraint(expr=-m.uncertain_temps[5] - 1.5*m.uncertain_temps[1] + m.qc - 2*m.uncertain_temps[3] + 2044 <= 0)
-    #m.ineq4 = pe.Constraint(expr=-m.uncertain_temps[5] - 1.5*m.uncertain_temps[1] + m.qc - 2*m.uncertain_temps[3] - 2*m.uncertain_temps[8] + 2830 <= 0)
-    #m.ineq5 = pe.Constraint(expr=m.uncertain_temps[5] + 1.5*m.uncertain_temps[1] - m.qc + 2*m.uncertain_temps[3] + 3*m.uncertain_temps[8] - 3153 <= 0)
+    # m.ineq1 = pe.Constraint(expr=-0.67*m.qc + m.uncertain_temps[3] - 350 <= 0)
+    # m.ineq2 = pe.Constraint(expr=-m.uncertain_temps[5] - 0.75*m.uncertain_temps[1] + 0.5*m.qc - m.uncertain_temps[3] + 1388.5 <= 0)
+    # m.ineq3 = pe.Constraint(expr=-m.uncertain_temps[5] - 1.5*m.uncertain_temps[1] + m.qc - 2*m.uncertain_temps[3] + 2044 <= 0)
+    # m.ineq4 = pe.Constraint(expr=-m.uncertain_temps[5] - 1.5*m.uncertain_temps[1] + m.qc - 2*m.uncertain_temps[3] - 2*m.uncertain_temps[8] + 2830 <= 0)
+    # m.ineq5 = pe.Constraint(expr=m.uncertain_temps[5] + 1.5*m.uncertain_temps[1] - m.qc + 2*m.uncertain_temps[3] + 3*m.uncertain_temps[8] - 3153 <= 0)
 
     return m, nominal_values, param_bounds
 
@@ -76,13 +83,13 @@ def main(method):
     config.feasibility_tol = 1e-6
     config.terminate_early = False
     config.method = method
-    config.minlp_solver = pe.SolverFactory('gurobi_direct')
-    config.sampling_config.solver = pe.SolverFactory('appsi_gurobi')
+    config.minlp_solver = pe.SolverFactory("gurobi_direct")
+    config.sampling_config.solver = pe.SolverFactory("appsi_gurobi")
     config.sampling_config.strategy = flexibility.SamplingStrategy.lhs
     config.sampling_config.num_points = 200
     if method == flexibility.FlexTestMethod.linear_decision_rule:
         config.decision_rule_config = flexibility.LinearDRConfig()
-        config.decision_rule_config.solver = pe.SolverFactory('appsi_gurobi')
+        config.decision_rule_config.solver = pe.SolverFactory("appsi_gurobi")
     elif method == flexibility.FlexTestMethod.relu_decision_rule:
         config.decision_rule_config = flexibility.ReluDRConfig()
         config.decision_rule_config.n_layers = 1
@@ -96,18 +103,24 @@ def main(method):
     #                                      param_nominal_values=nominal_values, param_bounds=param_bounds,
     #                                      controls=[m.qc], valid_var_bounds=var_bounds, config=config)
     # print(results)
-    results = flexibility.solve_flex_index(m=m, uncertain_params=list(nominal_values.keys()),
-                                           param_nominal_values=nominal_values, param_bounds=param_bounds,
-                                           controls=[m.qc], valid_var_bounds=var_bounds, config=config)
+    results = flexibility.solve_flex_index(
+        m=m,
+        uncertain_params=list(nominal_values.keys()),
+        param_nominal_values=nominal_values,
+        param_bounds=param_bounds,
+        controls=[m.qc],
+        valid_var_bounds=var_bounds,
+        config=config,
+    )
     print(results)
 
 
-if __name__ == '__main__':
-    print('\n\n********************Active Constraint**************************')
+if __name__ == "__main__":
+    print("\n\n********************Active Constraint**************************")
     main(flexibility.FlexTestMethod.active_constraint)
-    print('\n\n********************Linear Decision Rule**************************')
+    print("\n\n********************Linear Decision Rule**************************")
     main(flexibility.FlexTestMethod.linear_decision_rule)
-    print('\n\n********************Vertex Enumeration**************************')
+    print("\n\n********************Vertex Enumeration**************************")
     main(flexibility.FlexTestMethod.vertex_enumeration)
-    print('\n\n********************ReLU Decision rule**************************')
+    print("\n\n********************ReLU Decision rule**************************")
     main(flexibility.FlexTestMethod.relu_decision_rule)

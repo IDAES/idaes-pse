@@ -6,9 +6,11 @@ import flexibility
 from typing import Tuple, MutableMapping, Union
 
 
-def create_model() -> Tuple[_BlockData,
-                            MutableMapping[_ParamData, float],
-                            MutableMapping[_ParamData, Tuple[float, float]]]:
+def create_model() -> Tuple[
+    _BlockData,
+    MutableMapping[_ParamData, float],
+    MutableMapping[_ParamData, Tuple[float, float]],
+]:
     """
     This example is from
 
@@ -17,20 +19,22 @@ def create_model() -> Tuple[_BlockData,
     11(6), 675-693.
     """
 
-    print("""This example is based off of \n\n
+    print(
+        """This example is based off of \n\n
     Grossmann, I. E., & Floudas, C. A. (1987). Active constraint strategy for 
     flexibility analysis in chemical processes. Computers & Chemical Engineering, 
-    11(6), 675-693.\n\n""")
+    11(6), 675-693.\n\n"""
+    )
 
     m = pe.ConcreteModel()
 
     m.qc = pe.Var()
     m.fh1 = pe.Param(mutable=True, initialize=1.4)
 
-    m.f1 = pe.Constraint(expr=-25 + m.qc*((1/m.fh1) - 0.5) + 10/m.fh1 <= 0)
-    m.f2 = pe.Constraint(expr=-190 + 10/m.fh1 + m.qc/m.fh1 <= 0)
-    m.f3 = pe.Constraint(expr=-270 + 250/m.fh1 + m.qc/m.fh1 <= 0)
-    m.f4 = pe.Constraint(expr=260 - 250/m.fh1 - m.qc/m.fh1 <= 0)
+    m.f1 = pe.Constraint(expr=-25 + m.qc * ((1 / m.fh1) - 0.5) + 10 / m.fh1 <= 0)
+    m.f2 = pe.Constraint(expr=-190 + 10 / m.fh1 + m.qc / m.fh1 <= 0)
+    m.f3 = pe.Constraint(expr=-270 + 250 / m.fh1 + m.qc / m.fh1 <= 0)
+    m.f4 = pe.Constraint(expr=260 - 250 / m.fh1 - m.qc / m.fh1 <= 0)
 
     nominal_values = pe.ComponentMap()
     nominal_values[m.fh1] = 1
@@ -54,13 +58,13 @@ def main(method):
     config.feasibility_tol = 1e-6
     config.terminate_early = False
     config.method = method
-    config.minlp_solver = pe.SolverFactory('scip')
-    config.sampling_config.solver = pe.SolverFactory('gurobi_direct')
+    config.minlp_solver = pe.SolverFactory("scip")
+    config.sampling_config.solver = pe.SolverFactory("gurobi_direct")
     config.sampling_config.strategy = flexibility.SamplingStrategy.lhs
     config.sampling_config.num_points = 100
     if method == flexibility.FlexTestMethod.linear_decision_rule:
         config.decision_rule_config = flexibility.LinearDRConfig()
-        config.decision_rule_config.solver = pe.SolverFactory('appsi_gurobi')
+        config.decision_rule_config.solver = pe.SolverFactory("appsi_gurobi")
     elif method == flexibility.FlexTestMethod.relu_decision_rule:
         config.decision_rule_config = flexibility.ReluDRConfig()
         config.decision_rule_config.n_layers = 1
@@ -73,18 +77,24 @@ def main(method):
     #                                      param_nominal_values=nominal_values, param_bounds=param_bounds,
     #                                      controls=[m.qc], valid_var_bounds=var_bounds, config=config)
     # print(results)
-    results = flexibility.solve_flex_index(m=m, uncertain_params=list(nominal_values.keys()),
-                                           param_nominal_values=nominal_values, param_bounds=param_bounds,
-                                           controls=[m.qc], valid_var_bounds=var_bounds, config=config)
+    results = flexibility.solve_flex_index(
+        m=m,
+        uncertain_params=list(nominal_values.keys()),
+        param_nominal_values=nominal_values,
+        param_bounds=param_bounds,
+        controls=[m.qc],
+        valid_var_bounds=var_bounds,
+        config=config,
+    )
     print(results)
 
 
-if __name__ == '__main__':
-    print('\n\n********************Active Constraint**************************')
+if __name__ == "__main__":
+    print("\n\n********************Active Constraint**************************")
     main(flexibility.FlexTestMethod.active_constraint)
-    print('\n\n********************Linear Decision Rule**************************')
+    print("\n\n********************Linear Decision Rule**************************")
     main(flexibility.FlexTestMethod.linear_decision_rule)
-    print('\n\n********************Vertex Enumeration**************************')
+    print("\n\n********************Vertex Enumeration**************************")
     main(flexibility.FlexTestMethod.vertex_enumeration)
-    print('\n\n********************ReLU Decision rule**************************')
+    print("\n\n********************ReLU Decision rule**************************")
     main(flexibility.FlexTestMethod.relu_decision_rule)
