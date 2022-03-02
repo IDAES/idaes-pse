@@ -20,48 +20,52 @@ from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
 
 from idaes.core import declare_process_block_class, UnitModelBlockData
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.misc import register_units_of_measurement
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.generic_models.costing import (CostingPackageBase,
-                                          FlowsheetCostingBlock,
+from idaes.generic_models.costing import (FlowsheetCostingBlock,
+                                          FlowsheetCostingBlockData,
                                           UnitModelCostingBlock)
 
 # TODO : Tests for cases with multiple costing packages
-register_units_of_measurement("USD_test", "[test_currency]")
+pyunits.load_definitions_from_strings(["USD_test = [test_currency]"])
 
 
-class TestCostingPackageBase:
+class TestFlowsheetCostingBlock:
     @pytest.mark.unit
     def test_basic_attributes(self):
-        CP = CostingPackageBase
+        m = ConcreteModel()
 
-        assert CP.base_currency is None
-        assert CP.base_period is pyunits.year
-        assert CP.defined_flows == {}
-        assert CP.unit_mapping == {}
+        with pytest.raises(
+                ValueError,
+                match="costing - costing package has not specified the base "
+                "currency units to use for costing."):
+            m.costing = FlowsheetCostingBlock()
+
+        assert m.costing.base_currency is None
+        assert m.costing.base_period is pyunits.year
+        assert m.costing.defined_flows == {}
+        assert FlowsheetCostingBlockData.unit_mapping == {}
 
     @pytest.mark.unit
     def test_build_global_params(self):
         with pytest.raises(NotImplementedError,
-                           match="Derived CostingPackage class has not "
-                           "defined a build_global_params method"):
-            CostingPackageBase.build_global_params(self)
+                           match="Derived class has not defined a "
+                           "build_global_params method."):
+            FlowsheetCostingBlockData.build_global_params(self)
 
     @pytest.mark.unit
     def test_build_process_costs(self):
         with pytest.raises(NotImplementedError,
-                           match="Derived CostingPackage class has not "
-                           "defined a build_process_costs method"):
-            CostingPackageBase.build_process_costs(self)
+                           match="Derived class has not defined a "
+                           "build_process_costs method."):
+            FlowsheetCostingBlockData.build_process_costs(self)
 
     @pytest.mark.unit
-    def test_initialize(self):
+    def test_initialize_build(self):
         with pytest.raises(NotImplementedError,
-                           match="Derived CostingPackage class has not "
-                           "defined an initialize method"):
-            CostingPackageBase.initialize(self)
+                           match="Derived class has not defined an "
+                           "initialize_build method."):
+            FlowsheetCostingBlockData.initialize(self)
 
 
 # Create some dummy classes to represent inherited unit models
@@ -100,22 +104,21 @@ class TypeEData(UnitModelBlockData):
         self.class_type = "E"
 
 
-class TestCostingPackage(CostingPackageBase):
-    defined_flows = {"test_flow_1": 0.2*pyunits.J}
+@declare_process_block_class("TestCostingPackage")
+class TestCostingPackageData(FlowsheetCostingBlockData):
 
-    base_currency = pyunits.USD_test
-    base_period = pyunits.year
-
-    @staticmethod
     def build_global_params(self):
+        self.base_currency = pyunits.USD_test
+        self.base_period = pyunits.year
+
+        self.defined_flows = {"test_flow_1": 0.2*pyunits.J}
+
         self._bgp = True
 
-    @staticmethod
     def build_process_costs(self):
         self._bpc = True
 
-    @staticmethod
-    def initialize(self):
+    def initialize_build(self):
         self._init = True
 
     def method_1(blk):
@@ -137,28 +140,12 @@ class TestCostingPackage(CostingPackageBase):
 
 class TestFlowsheetCostingBlock:
     @pytest.mark.unit
-    def test_invalid_costing_package(self):
-        m = ConcreteModel()
-
-        with pytest.raises(ConfigurationError,
-                           match="costing - no costing_package was assigned - "
-                           "all FlowsheetCostingBlocks must be assigned a "
-                           "costing package."):
-            m.costing = FlowsheetCostingBlock()
-
-        class foo:
-            pass
-
-        with pytest.raises(
-                ValueError,
-                match="invalid value for configuration 'costing_package'"):
-            m.costing = FlowsheetCostingBlock(
-                default={"costing_package": foo})
-
-    @pytest.mark.unit
     def test_costing_package_no_base_currency(self):
-        class TestCostingPackage2(TestCostingPackage):
-            base_currency = None
+        @declare_process_block_class("TestCostingPackage2")
+        class TestCostingPackage2Data(TestCostingPackageData):
+            def build_global_params(self):
+                super().build_global_params()
+                self.base_currency = None
 
         m = ConcreteModel()
 
@@ -166,14 +153,12 @@ class TestFlowsheetCostingBlock:
                 ValueError,
                 match="costing - costing package has not specified the base "
                 "currency units to use for costing."):
-            m.costing = FlowsheetCostingBlock(
-                default={"costing_package": TestCostingPackage2})
+            m.costing = TestCostingPackage2()
 
     @pytest.fixture(scope="class")
     def costing(self):
         m = ConcreteModel()
-        m.costing = FlowsheetCostingBlock(
-            default={"costing_package": TestCostingPackage})
+        m.costing = TestCostingPackage()
 
         return m
 
@@ -187,9 +172,9 @@ class TestFlowsheetCostingBlock:
             "test_flow_1": []}
 
         assert costing.costing._costing_methods_map == {
-            TypeAData: TestCostingPackage.method_1,
-            TypeBData: TestCostingPackage.method_2,
-            TypeCData: TestCostingPackage.method_3}
+            TypeAData: TestCostingPackageData.method_1,
+            TypeBData: TestCostingPackageData.method_2,
+            TypeCData: TestCostingPackageData.method_3}
 
         # Check that test_flow_1 was properly defined
         assert isinstance(costing.costing.test_flow_1_cost, Var)
@@ -280,18 +265,18 @@ class TestFlowsheetCostingBlock:
         assert isinstance(costing.unit_a, TypeAData)
 
         assert costing.costing._get_costing_method_for(costing.unit_a) is \
-            TestCostingPackage.method_1
+            TestCostingPackageData.method_1
 
         assert costing.costing._get_costing_method_for(costing.unit_b) is \
-            TestCostingPackage.method_2
+            TestCostingPackageData.method_2
 
         assert costing.costing._get_costing_method_for(costing.unit_c) is \
-            TestCostingPackage.method_3
+            TestCostingPackageData.method_3
 
         # TypeD not registered with property package, but inherits from TypeA
         # Should get method_1
         assert costing.costing._get_costing_method_for(costing.unit_d) is \
-            TestCostingPackage.method_1
+            TestCostingPackageData.method_1
 
         # TypeE not registered with property package and no inheritance
         # Should return RuntimeError
@@ -330,7 +315,7 @@ class TestFlowsheetCostingBlock:
         # This should work
         costing.unit_a.costing = UnitModelCostingBlock(
             default={"flowsheet_costing_block": costing.costing,
-                     "costing_method": TestCostingPackage.method_2})
+                     "costing_method": TestCostingPackageData.method_2})
 
         assert costing.unit_a.costing.cost_method == 2
 

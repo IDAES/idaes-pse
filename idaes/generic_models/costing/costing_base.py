@@ -24,7 +24,7 @@ from idaes.core import UnitModelBlockData
 from idaes.core.process_base import (declare_process_block_class,
                                      ProcessBlockData)
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog
 
@@ -42,82 +42,6 @@ class DefaultCostingComponents(str, Enum):
 
     def __str__(self):
         return self.value
-
-
-class CostingPackageBase():
-    """
-    Base Class for defining property packages.
-    """
-
-    # Set the base year for all costs
-    base_currency = None
-    base_period = pyo.units.year
-
-    # Placeholder dict for defining material flows
-    defined_flows = {}
-
-    # Map costing methods to unit model classes
-    unit_mapping = {}
-
-    @staticmethod
-    def build_global_params(self):
-        """
-        This is where any global parameters, such as Lang factors or
-        coefficients for costing methods that should be shared across the
-        process, should be declared. Sub-Blocks may be used ot help organize
-        parameters if requried.
-        """
-        raise NotImplementedError(
-            "Derived CostingPackage class has not defined a "
-            "build_global_params method")
-
-    @staticmethod
-    def build_process_costs(self):
-        """
-        This is where process wide costing correlations should be declared.
-        The following aggregate costs are available for use in calculating
-        these process-wide costs:
-
-            1. blk.aggregate_capital_cost
-            2. blk.aggregate_fixed_operating_cost
-            3. blk.aggregate_variable_operating_cost
-            4. blk.aggregate_flow_costs (indexed by flow type)
-        """
-        raise NotImplementedError(
-            "Derived CostingPackage class has not defined a "
-            "build_process_costs method")
-
-    @staticmethod
-    def initialize(self):
-        """
-        This method allows users to define an initialization routine for any
-        components created by the build_process_costs method.
-
-        Note that the aggregate costs will be initialized by the framework.
-        """
-        raise NotImplementedError(
-            "Derived CostingPackage class has not defined an "
-            "initialize method")
-
-
-def is_costing_package(val):
-    '''Domain validator for property package attributes
-
-    Args:
-        val : value to be checked
-
-    Returns:
-        ConfigurationError if val is not an instance of PhysicalParameterBlock
-        or useDefault
-    '''
-    if issubclass(val, CostingPackageBase):
-        return val
-    else:
-        _log.error(f"Costing package argument {val} should "
-                   "be a sub-class of CostingPackageBase")
-        raise ConfigurationError(
-            f"Costing package argument {val} should "
-            "be a sub-class of CostingPackageBase")
 
 
 def is_flowsheet_costing_block(val):
@@ -142,22 +66,19 @@ def is_flowsheet_costing_block(val):
 @declare_process_block_class("FlowsheetCostingBlock")
 class FlowsheetCostingBlockData(ProcessBlockData):
     """
-    IDAES Process Costing class.
+    IDAES Flowsheet Costing Block class.
 
-    This class is used to create IDAES Flowsheet Costing Blocks, which are
-    used to define capital and operating costs for a process. Each Flowsheet
-    Costing Block is associated with a user-defined "costing package" module
-    which must contain a library of methods for costing capital equipment
-    as well as definitions of standard currency conversions and material and
-    utility costs.
+    This class is the base class used to create IDAES Flowsheet Costing Blocks,
+    which are used to define calculations of capital and operating costs for a
+    process.
+
+    Developers should create a derived version of this class which should
+    contain a library of methods for costing capital equipment as well as
+    definitions of standard currency conversions and material and utility
+    costs.
     """
-
-    # Create Class ConfigBlock
-    CONFIG = ProcessBlockData.CONFIG()
-    CONFIG.declare("costing_package", ConfigValue(
-        default=None,
-        domain=is_costing_package,
-        description="Costing package to be used"))
+    # Map costing methods to unit model classes
+    unit_mapping = {}
 
     def build(self):
         """
@@ -169,34 +90,71 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         """
         super().build()
 
-        # Check that costing package was assigned
-        if self.config.costing_package is None:
-            raise ConfigurationError(
-                f"{self.name} - no costing_package was assigned - all "
-                "FlowsheetCostingBlocks must be assigned a costing package.")
-
         # Set up attributes for registering units and flows
         self._registered_unit_costing = []
         self.flow_types = pyo.Set()
         self._registered_flows = {}
+        self.defined_flows = {}
+
+        # Set the base year for all costs
+        self.base_currency = None
+        self.base_period = pyo.units.year
 
         # Register unit mapping
         self._costing_methods_map = {}
         self._build_costing_methods_map()
 
+        # Build global params
+        self.build_global_params()
+
         # Verify that costing package has set key attributes
-        c_units = self.config.costing_package.base_currency
+        c_units = self.base_currency
         if c_units is None:
             raise ValueError(
                 f"{self.name} - costing package has not specified the base "
                 "currency units to use for costing.")
 
-        # Build global params
-        self.config.costing_package.build_global_params(self)
-
         # Register pre-defined flow types
-        for f, c in self.config.costing_package.defined_flows.items():
+        for f, c in self.defined_flows.items():
             self.register_flow_type(f, c)
+
+    def build_global_params(self):
+        """
+        This is where any global parameters, such as Lang factors or
+        coefficients for costing methods that should be shared across the
+        process, should be declared. Sub-Blocks may be used ot help organize
+        parameters if requried.
+
+        Dervied class must overload this method.
+        """
+        raise NotImplementedError(
+            "Derived class has not defined a build_global_params method.")
+
+    def build_process_costs(self):
+        """
+        This is where process wide costing correlations should be declared.
+        The following aggregate costs are available for use in calculating
+        these process-wide costs:
+
+            1. self.aggregate_capital_cost
+            2. self.aggregate_fixed_operating_cost
+            3. self.aggregate_variable_operating_cost
+            4. self.aggregate_flow_costs (indexed by flow type)
+
+        Dervied class must overload this method.
+        """
+        raise NotImplementedError(
+            "Derived class has not defined a build_process_costs method.")
+
+    def initialize_build(self):
+        """
+        This is where custom initialization procedures can be implemented for
+        flowsheet level costing components.
+
+        Dervied class must overload this method.
+        """
+        raise NotImplementedError(
+            "Derived class has not defined an initialize_build method.")
 
     def cost_process(self):
         """
@@ -209,7 +167,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         """
         self.aggregate_costs()
 
-        self.config.costing_package.build_process_costs(self)
+        self.build_process_costs()
 
     # TODO : check bounds for flows r.e. revenues
     # TODO : Relax checking of bounds
@@ -275,6 +233,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             # Call initialize on all associated costing blocks
             # TODO: Think about ways to separate initialization of unit costing
             # TODO: from flowsheet costing
+            print(u.name)
             u.initialize()
 
         # Initialize aggregate cost vars
@@ -299,7 +258,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         # Call costing package initialization
         try:
             # TODO: More general approach for initializing costing
-            self.config.costing_package.initialize(self)
+            self.initialize_build()
         except AttributeError:
             # Assume the package has no initialize method
             pass
@@ -343,8 +302,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         Args:
             None
         """
-        c_units = self.config.costing_package.base_currency
-        t_units = self.config.costing_package.base_period
+        c_units = self.base_currency
+        t_units = self.base_period
 
         self.aggregate_capital_cost = pyo.Var(units=c_units)
 
@@ -441,9 +400,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         unit model data classes which is used to look up default costing
         methods.
         """
-        package_map = self.config.costing_package.unit_mapping
-
-        for unit_class, meth in package_map.items():
+        for unit_class, meth in self.__class__.unit_mapping.items():
             # Need to get unit data class from unit class
             data_class = unit_class._ComponentDataClass
             self._costing_methods_map[data_class] = meth

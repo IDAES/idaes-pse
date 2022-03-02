@@ -25,32 +25,8 @@ from idaes.core.util.misc import (add_object_reference,
                                   copy_port_values,
                                   TagReference,
                                   VarLikeExpression,
-                                  set_param_from_config,
-                                  register_units_of_measurement)
+                                  set_param_from_config)
 import idaes.logger as idaeslog
-
-
-# Author: Andrew Lee
-@pytest.mark.unit
-def test_register_units_of_measurement():
-    register_units_of_measurement("test_unit", "[test_quantity]")
-
-    assert "test_unit" in units.pint_registry
-
-    register_units_of_measurement("test_unit2", "0.5 * test_unit")
-
-    assert "test_unit2" in units.pint_registry
-    assert units.convert_value(
-        1, from_units=units.test_unit, to_units=units.test_unit2) == 2
-
-
-# Author: Andrew Lee
-@pytest.mark.unit
-def test_register_existing_unit_of_measurement():
-    with pytest.raises(RuntimeError,
-                       match="Cannot register unit test_unit2 - an existing "
-                       "unit of the same name already exists."):
-        register_units_of_measurement("test_unit2", "0.5 * test_unit")
 
 
 # Author: Andrew Lee

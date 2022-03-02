@@ -13,6 +13,6 @@
 
 from .costing_base import (
     FlowsheetCostingBlock,
-    CostingPackageBase,
+    FlowsheetCostingBlockData,
     UnitModelCostingBlock
     )

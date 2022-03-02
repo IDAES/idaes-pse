@@ -33,8 +33,7 @@ from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigValue
 
 from idaes.core import FlowsheetBlock, UnitModelBlock
-from idaes.generic_models.costing import \
-    FlowsheetCostingBlock, UnitModelCostingBlock
+from idaes.generic_models.costing import UnitModelCostingBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.unit_models import (
@@ -54,6 +53,7 @@ from idaes.core.util.testing import \
 from idaes.generic_models.properties import iapws95
 
 from idaes.generic_models.costing.SSLW import (SSLWCosting,
+                                               SSLWCostingData,
                                                HXMaterial,
                                                HXTubeLength,
                                                HXType,
@@ -87,8 +87,7 @@ def model():
 
     m.fs = FlowsheetBlock()
 
-    m.fs.costing = FlowsheetCostingBlock(
-        default={"costing_package": SSLWCosting})
+    m.fs.costing = SSLWCosting()
 
     # Add a placeholder to represent a unit model
     m.fs.unit = UnitModelBlock()
@@ -132,7 +131,7 @@ def test_cost_heat_exchanger(model, material, hxtype, tube_length):
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_heat_exchanger,
+        "costing_method": SSLWCostingData.cost_heat_exchanger,
         "costing_method_arguments": {"hx_type": hxtype,
                                      "material_type": material,
                                      "tube_length": tube_length}})
@@ -190,7 +189,7 @@ def test_cost_vessel(model,
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_vessel,
+        "costing_method": SSLWCostingData.cost_vessel,
         "costing_method_arguments": {
             "vertical": True,
             "material_type": material_type,
@@ -250,7 +249,7 @@ def test_cost_vessel_trays(model,
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_vessel,
+        "costing_method": SSLWCostingData.cost_vessel,
         "costing_method_arguments": {
             "vertical": True,
             "number_of_trays": 10,
@@ -320,7 +319,7 @@ def test_cost_vessel_horizontal(model, material_type):
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_vessel,
+        "costing_method": SSLWCostingData.cost_vessel,
         "costing_method_arguments": {
             "vertical": False,
             "material_type": material_type,
@@ -364,7 +363,7 @@ def test_cost_fired_heater(model, material_type, heat_source):
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_fired_heater,
+        "costing_method": SSLWCostingData.cost_fired_heater,
         "costing_method_arguments": {
             "material_type": material_type,
             "heat_source": heat_source}})
@@ -397,7 +396,7 @@ def test_cost_turbine(model):
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_turbine})
+        "costing_method": SSLWCostingData.cost_turbine})
 
     assert isinstance(model.fs.unit.costing.capital_cost, Var)
 
@@ -446,7 +445,7 @@ def test_cost_pump_centrifugal(
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_pump,
+        "costing_method": SSLWCostingData.cost_pump,
         "costing_method_arguments": {
             "pump_type": PumpType.centrifugal,
             "material_type": material_type,
@@ -523,7 +522,7 @@ def test_cost_pump_externalgear(
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_pump,
+        "costing_method": SSLWCostingData.cost_pump,
         "costing_method_arguments": {
             "pump_type": PumpType.externalGear,
             "material_type": material_type,
@@ -586,7 +585,7 @@ def test_cost_pump_reciprocating(
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_pump,
+        "costing_method": SSLWCostingData.cost_pump,
         "costing_method_arguments": {
             "pump_type": PumpType.reciprocating,
             "material_type": material_type,
@@ -636,7 +635,7 @@ def test_cost_compressor(model, compressor_type, drive_type, material_type):
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_compressor,
+        "costing_method": SSLWCostingData.cost_compressor,
         "costing_method_arguments": {
             "compressor_type": compressor_type,
             "drive_type": drive_type,
@@ -674,7 +673,7 @@ def test_cost_fan(model, fan_type, material_type):
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_fan,
+        "costing_method": SSLWCostingData.cost_fan,
         "costing_method_arguments": {
             "fan_type": fan_type,
             "material_type": material_type}})
@@ -712,7 +711,7 @@ def test_cost_blower(model, blower_type, material_type):
 
     model.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": model.fs.costing,
-        "costing_method": SSLWCosting.cost_blower,
+        "costing_method": SSLWCostingData.cost_blower,
         "costing_method_arguments": {
             "blower_type": blower_type,
             "material_type": material_type}})
@@ -750,8 +749,7 @@ class TestMapping():
         m.fs.rparams = ReactionParameterTestBlock(default={
             "property_package": m.fs.pparams})
 
-        m.fs.costing = FlowsheetCostingBlock(
-            default={"costing_package": SSLWCosting})
+        m.fs.costing = SSLWCosting()
 
         return m
 
@@ -813,8 +811,7 @@ class TestMapping():
 
         m.fs.pparams = iapws95.Iapws95ParameterBlock()
 
-        m.fs.costing = FlowsheetCostingBlock(
-            default={"costing_package": SSLWCosting})
+        m.fs.costing = SSLWCosting()
         # Add examples of supported unit models and add costing
         m.fs.unit = HeatExchangerNTU(default={
             "hot_side": {"property_package": m.fs.pparams},
@@ -851,8 +848,7 @@ class TestMapping():
 
         m.fs.pparams = iapws95.Iapws95ParameterBlock()
 
-        m.fs.costing = FlowsheetCostingBlock(
-            default={"costing_package": SSLWCosting})
+        m.fs.costing = SSLWCosting()
 
         # Add examples of supported unit models and add costing
         m.fs.unit = Pump(default={

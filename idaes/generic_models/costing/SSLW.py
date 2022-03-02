@@ -42,12 +42,13 @@ from idaes.generic_models.unit_models.pressure_changer import \
     ThermodynamicAssumption
 from idaes.generic_models.unit_models.heat_exchanger \
     import HeatExchangerFlowPattern
-from idaes.core.util.misc import register_units_of_measurement
+
+from idaes.core.process_base import declare_process_block_class
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants
 from idaes.core.util.math import smooth_max
 
-from idaes.generic_models.costing.costing_base import CostingPackageBase
+from idaes.generic_models.costing.costing_base import FlowsheetCostingBlockData
 
 # Some more information about this module
 __author__ = "Miguel Zamarripa, Andrew Lee"
@@ -248,32 +249,25 @@ class BlowerMaterial(str, Enum):
         return self.value
 
 
-# TODO : Mapping to unit models
-class SSLWCosting(CostingPackageBase):
+@declare_process_block_class("SSLWCosting")
+class SSLWCostingData(FlowsheetCostingBlockData):
 
     # Register currency and conversion rates based on CE Index
-    register_units_of_measurement("USD_500", "[currency]")  # base USD @ CEI 500
-    register_units_of_measurement("USD2010", "500/550.8 * USD_500")
-    register_units_of_measurement("USD2011", "500/585.7 * USD_500")
-    register_units_of_measurement("USD2012", "500/584.6 * USD_500")
-    register_units_of_measurement("USD2013", "500/567.3 * USD_500")
-    register_units_of_measurement("USD2014", "500/576.1 * USD_500")
-    register_units_of_measurement("USD2015", "500/556.8 * USD_500")
-    register_units_of_measurement("USD2016", "500/541.7 * USD_500")
-    register_units_of_measurement("USD2017", "500/567.5 * USD_500")
-    register_units_of_measurement("USD2018", "500/671.1 * USD_500")
-    register_units_of_measurement("USD2019", "500/680.0 * USD_500")
-    register_units_of_measurement("USD_394", "500/394 * USD_500")  # required for pump costing
+    pyo.units.load_definitions_from_strings(
+        ["USD_500 = [currency]",  # base USD @ CEI 500
+         "USD2010 = 500/550.8 * USD_500",
+         "USD2011 = 500/585.7 * USD_500",
+         "USD2012 = 500/584.6 * USD_500",
+         "USD2013 = 500/567.3 * USD_500",
+         "USD2014 = 500/576.1 * USD_500",
+         "USD2015 = 500/556.8 * USD_500",
+         "USD2016 = 500/541.7 * USD_500",
+         "USD2017 = 500/567.5 * USD_500",
+         "USD2018 = 500/671.1 * USD_500",
+         "USD2019 = 500/680.0 * USD_500",
+         "USD_394 = 500/394.0 * USD_500"])  # required for pump costing
 
-    # Set the base year for all costs
-    base_currency = pyo.units.USD2018
-    # Set a base period for all operating costs
-    base_period = pyo.units.year
-
-    # TODO: Define any default flow costs of interest
-
-    @staticmethod
-    def build_global_params(blk):
+    def build_global_params(self):
         """
         This is where we can declare any global parameters we need, such as
         Lang factors, or coefficients for costing methods that should be
@@ -282,25 +276,27 @@ class SSLWCosting(CostingPackageBase):
         You can do what you want here, so you could have e.g. sub-Blocks
         for each costing method to separate the parameters for each method.
         """
-        pass
+        # Set the base year for all costs
+        self.base_currency = pyo.units.USD2018
+        # Set a base period for all operating costs
+        self.base_period = pyo.units.year
 
-    @staticmethod
-    def build_process_costs(blk):
+    def build_process_costs(self):
         """
         This is where you do all your process wide costing.
         This is completely up to you, but you will have access to the
         following aggregate costs:
 
-            1. blk.aggregate_capital_cost
-            2. blk.aggregate_fixed_operating_cost
-            3. blk.aggregate_variable_operating_cost
-            4. blk.aggregate_flow_costs (indexed by flow type)
+            1. self.aggregate_capital_cost
+            2. self.aggregate_fixed_operating_cost
+            3. self.aggregate_variable_operating_cost
+            4. self.aggregate_flow_costs (indexed by flow type)
         """
         # TODO: Do we have any process level methods to add here?
         pass
 
     @staticmethod
-    def initialize(blk):
+    def initialize_build(self):
         """
         Here we can add intialization steps for the things we built in
         build_process_costs.
@@ -637,7 +633,7 @@ class SSLWCosting(CostingPackageBase):
 
         # Add platform and ladder costs if required
         if include_platforms_ladders:
-            SSLWCosting._cost_platforms_ladders(
+            SSLWCostingData._cost_platforms_ladders(
                 blk,
                 vertical=vertical,
                 aspect_ratio_range=aspect_ratio_range,
@@ -646,7 +642,7 @@ class SSLWCosting(CostingPackageBase):
 
         # Add distillation trays costs if required
         if number_of_trays is not None:
-            SSLWCosting._cost_distillation_trays(
+            SSLWCostingData._cost_distillation_trays(
                 blk,
                 tray_material=tray_material,
                 tray_type=tray_type,
@@ -827,19 +823,19 @@ class SSLWCosting(CostingPackageBase):
                         TrayType Enum indicating type of distillation trays
                         to use, default = TrayMaterial.Sieve.
         """
-        SSLWCosting.cost_vessel(blk,
-                                vertical=True,
-                                material_type=VesselMaterial.CS,
-                                shell_thickness=1.25*pyo.units.inch,
-                                weight_limit=1,
-                                aspect_ratio_range=1,
-                                include_platforms_ladders=True,
-                                vessel_diameter=None,
-                                vessel_length=None,
-                                number_of_units=1,
-                                number_of_trays=None,
-                                tray_material=TrayMaterial.CS,
-                                tray_type=TrayType.Sieve)
+        SSLWCostingData.cost_vessel(blk,
+                                    vertical=True,
+                                    material_type=VesselMaterial.CS,
+                                    shell_thickness=1.25*pyo.units.inch,
+                                    weight_limit=1,
+                                    aspect_ratio_range=1,
+                                    include_platforms_ladders=True,
+                                    vessel_diameter=None,
+                                    vessel_length=None,
+                                    number_of_units=1,
+                                    number_of_trays=None,
+                                    tray_material=TrayMaterial.CS,
+                                    tray_type=TrayType.Sieve)
 
     def cost_horizontal_vessel(blk,
                                material_type=VesselMaterial.CS,
@@ -868,15 +864,15 @@ class SSLWCosting(CostingPackageBase):
                                number of parallel units to be costed,
                                default = 1.
         """
-        SSLWCosting.cost_vessel(blk,
-                                vertical=False,
-                                material_type=VesselMaterial.CS,
-                                shell_thickness=1.25*pyo.units.inch,
-                                weight_limit=1,
-                                include_platforms_ladders=True,
-                                vessel_diameter=None,
-                                vessel_length=None,
-                                number_of_units=1)
+        SSLWCostingData.cost_vessel(blk,
+                                    vertical=False,
+                                    material_type=VesselMaterial.CS,
+                                    shell_thickness=1.25*pyo.units.inch,
+                                    weight_limit=1,
+                                    include_platforms_ladders=True,
+                                    vessel_diameter=None,
+                                    vessel_length=None,
+                                    number_of_units=1)
 
     def cost_fired_heater(blk,
                           heat_source=HeaterSource.fuel,
@@ -1498,21 +1494,21 @@ class SSLWCosting(CostingPackageBase):
         """
         if not blk.unit_model.config.compressor or mover_type == "turbine":
             # Unit is a turbine
-            SSLWCosting.cost_turbine(blk, **kwargs)
+            SSLWCostingData.cost_turbine(blk, **kwargs)
         elif mover_type == "compressor":
             # Unit is a pump
-            SSLWCosting.cost_compressor(blk, **kwargs)
+            SSLWCostingData.cost_compressor(blk, **kwargs)
         elif (mover_type == "pump" or
               blk.unit_model.config.thermodynamic_assumption ==
               ThermodynamicAssumption.pump):
             # Unit is a pump
-            SSLWCosting.cost_pump(blk, **kwargs)
+            SSLWCostingData.cost_pump(blk, **kwargs)
         elif mover_type == "blower":
             # Unit is a pump
-            SSLWCosting.cost_pump(blk, **kwargs)
+            SSLWCostingData.cost_pump(blk, **kwargs)
         elif mover_type == "fan":
             # Unit is a pump
-            SSLWCosting.cost_fan(blk, **kwargs)
+            SSLWCostingData.cost_fan(blk, **kwargs)
         else:
             raise ConfigurationError(
                 f"{blk.name} - unrecognised value for mover_type argument: "

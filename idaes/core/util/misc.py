@@ -32,42 +32,6 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Author: Andrew Lee
-def register_units_of_measurement(unit_name, unit_def):
-    """
-    Method for registering new units of measurement with pint for use in
-    models. Units are definitions are based on the pint API, however in
-    order to check for pre-exisitng units the definition is split into the name
-    of the new units and the conversion defintion.
-
-    Defining new unit of 'dog_years'
-    unit_name = 'dog_year', unit_def='52 * day = dy' is equavalent to
-    'dog_year = 52 * day = dy' in pint
-
-    Defining a new quantity of currency
-    unit_name = 'USD2010, unit_def = '[currency]' is equivalent to
-    'USD2010 = [currency]'
-
-    Args:
-        unit_name - strings representing name of new unit.
-        unit_def - string defining relationship of new unit ot existing units.
-
-    Raises:
-        RuntimeError if an existing unit of the same name is present in unit
-        registry.
-    """
-    # TODO : Can we check for re-defining existing units?
-    if unit_name in pyo.units.pint_registry:
-        raise RuntimeError(
-            f"Cannot register unit {unit_name} - an existing unit of the same "
-            "name already exists.")
-
-    # Combine unit_name and unit_def into single definition string
-    u = unit_name+" = "+unit_def
-
-    pyo.units.pint_registry.define(u)
-
-
-# Author: Andrew Lee
 def get_solver(solver=None, options=None):
     """
     General method for getting a solver object which defaults to the standard
