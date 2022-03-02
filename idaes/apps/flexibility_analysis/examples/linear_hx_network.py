@@ -1,6 +1,6 @@
 import pyomo.environ as pe
 from pyomo.core.base.block import _BlockData
-import flexibility
+import idaes.apps.flexibility_analysis as flexibility
 from typing import Tuple, Mapping
 from pyomo.contrib.fbbt import interval
 

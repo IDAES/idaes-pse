@@ -1,9 +1,10 @@
 import unittest
 import pyomo.environ as pe
-from flexibility.decision_rules.linear_dr import construct_linear_decision_rule
+from idaes.apps.flexibility_analysis.decision_rules.linear_dr import (
+    construct_linear_decision_rule,
+)
 from pyomo.contrib.appsi.solvers import Gurobi
 import numpy as np
-from pyomo.core.expr.compare import compare_expressions
 
 
 def y1_func(x1, x2):

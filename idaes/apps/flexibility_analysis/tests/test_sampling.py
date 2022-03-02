@@ -1,7 +1,7 @@
 import pyomo.environ as pe
-from flexibility.sampling import perform_sampling
+from idaes.apps.flexibility_analysis.sampling import perform_sampling
 import unittest
-from flexibility.indices import _VarIndex
+from idaes.apps.flexibility_analysis.indices import _VarIndex
 import numpy as np
 
 

@@ -13,8 +13,8 @@ from pyomo.util.infeasible import log_infeasible_constraints, log_infeasible_bou
 from idaes.core.control_volume_base import ControlVolumeBlockData
 from pyomo.core.base.block import _BlockData
 import numpy as np
-import flexibility
-from flexibility.var_utils import BoundsManager
+import idaes.apps.flexibility_analysis as flexibility
+from idaes.apps.flexibility_analysis.var_utils import BoundsManager
 from pyomo.core.expr.numvalue import polynomial_degree
 from pyomo.core.expr.sympy_tools import sympy2pyomo_expression, sympyify_expression
 from pyomo.repn.standard_repn import generate_standard_repn

@@ -3,7 +3,7 @@ import pyomo.environ as pe
 from typing import Sequence, Union, Mapping, MutableMapping, Optional
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
-from flexibility.sampling import SamplingStrategy
+from .sampling import SamplingStrategy
 from .flextest import (
     FlexTestConfig,
     solve_flextest,

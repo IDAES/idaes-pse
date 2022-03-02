@@ -1,7 +1,7 @@
 import pyomo.environ as pe
 import unittest
-from flexibility.uncertain_params import _replace_uncertain_params
-from flexibility.indices import _ConIndex, _VarIndex
+from idaes.apps.flexibility_analysis.uncertain_params import _replace_uncertain_params
+from idaes.apps.flexibility_analysis.indices import _ConIndex, _VarIndex
 from pyomo.core.expr.compare import compare_expressions
 
 

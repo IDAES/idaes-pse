@@ -2,7 +2,7 @@ import pyomo.environ as pe
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.param import _ParamData
 from pyomo.core.base.var import _GeneralVarData
-import flexibility
+import idaes.apps.flexibility_analysis as flexibility
 from typing import Tuple, MutableMapping, Union
 
 

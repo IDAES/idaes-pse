@@ -1,6 +1,5 @@
 from pyomo.core.base.block import _BlockData
 import pyomo.environ as pe
-import math
 import numpy as np
 import itertools
 from typing import Sequence, Union, Mapping, Optional, MutableMapping, Tuple

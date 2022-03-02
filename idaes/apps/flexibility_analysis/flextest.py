@@ -12,14 +12,14 @@ from .var_utils import (
 from .indices import _VarIndex, _ConIndex
 from .uncertain_params import _replace_uncertain_params
 from .inner_problem import _build_inner_problem
-from .scaling_check import check_bounds_and_scaling
+from pyomo.util.report_scaling import report_scaling
 import logging
 from typing import Sequence, Union, Mapping, MutableMapping, Optional, Tuple
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
-from flexibility.decision_rules.linear_dr import construct_linear_decision_rule
-from flexibility.decision_rules.relu_dr import construct_relu_decision_rule
-from flexibility.sampling import (
+from .decision_rules.linear_dr import construct_linear_decision_rule
+from .decision_rules.relu_dr import construct_relu_decision_rule
+from .sampling import (
     SamplingStrategy,
     perform_sampling,
     SamplingConfig,
@@ -33,10 +33,25 @@ from pyomo.common.config import (
     InEnum,
     MarkImmutable,
 )
-from flexibility.scaling_check import _get_longest_name
 
 
 logger = logging.getLogger(__name__)
+
+
+def _get_longest_name(comps):
+    longest_name = 0
+
+    for i in comps:
+        i_len = len(str(i))
+        if i_len > longest_name:
+            longest_name = i_len
+
+    if longest_name > 195:
+        longest_name = 195
+    if longest_name < 12:
+        longest_name = 12
+
+    return longest_name
 
 
 class FlexTestMethod(enum.Enum):
@@ -181,7 +196,11 @@ def build_flextest_with_dr(
     bounds_manager.save_bounds()
     _remove_var_bounds(m)
     _apply_var_bounds(valid_var_bounds)
-    check_bounds_and_scaling(m)
+    passed = report_scaling(m)
+    if not passed:
+        raise ValueError(
+            "Please scale the model. If a scaling report was not shown, set the logging level to INFO."
+        )
     bounds_manager.pop_bounds()
 
     # construct the decision rule

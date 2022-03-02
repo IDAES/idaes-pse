@@ -1,7 +1,7 @@
 import pyomo.environ as pe
-from flexibility.flextest import build_active_constraint_flextest
+from idaes.apps.flexibility_analysis.flextest import build_active_constraint_flextest
 import unittest
-from flexibility.indices import _VarIndex
+from idaes.apps.flexibility_analysis.indices import _VarIndex
 from pyomo.contrib.fbbt import interval
 
 

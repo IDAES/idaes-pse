@@ -1,6 +1,6 @@
 import pyomo.environ as pe
 import unittest
-from flexibility.var_utils import (
+from idaes.apps.flexibility_analysis.var_utils import (
     get_all_unfixed_variables,
     get_used_unfixed_variables,
     BoundsManager,

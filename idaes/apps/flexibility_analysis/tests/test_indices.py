@@ -1,6 +1,6 @@
 import unittest
 import pyomo.environ as pe
-from flexibility.indices import _VarIndex, _ConIndex
+from idaes.apps.flexibility_analysis.indices import _VarIndex, _ConIndex
 
 
 class TestIndices(unittest.TestCase):

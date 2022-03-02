@@ -5,11 +5,9 @@ from pyomo.core.base.block import _BlockData
 from pyomo.contrib.fbbt.fbbt import fbbt
 from .var_utils import (
     get_used_unfixed_variables,
-    _remove_var_bounds,
     _apply_var_bounds,
-    BoundsManager,
 )
-from typing import Sequence, Mapping, Optional
+from typing import Sequence, Mapping
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.expr.sympy_tools import sympyify_expression, sympy2pyomo_expression
 from .indices import _VarIndex, _ConIndex
