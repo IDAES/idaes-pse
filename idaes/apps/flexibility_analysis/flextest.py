@@ -251,7 +251,11 @@ def build_active_constraint_flextest(
     bounds_manager.save_bounds()
     _remove_var_bounds(m)
     _apply_var_bounds(valid_var_bounds)
-    check_bounds_and_scaling(m)
+    passed = report_scaling(m)
+    if not passed:
+        raise ValueError(
+            "Please scale the model. If a scaling report was not shown, set the logging level to INFO."
+        )
     bounds_manager.pop_bounds()
 
     orig_equality_cons = [

@@ -40,19 +40,19 @@ def _add_table_row(
     if flex_index_lower is None:
         lb_str = str(flex_index_lower)
     else:
-        lb_str = f"{flex_index_lower:12.3e}"
+        lb_str = f"{flex_index_lower:<12.3e}"
     if flex_index_upper is None:
         ub_str = str(flex_index_upper)
     else:
-        ub_str = f"{flex_index_upper:12.3e}"
+        ub_str = f"{flex_index_upper:<12.3e}"
     if fi_lb_max_viol is None:
         lb_mv_str = str(fi_lb_max_viol)
     else:
-        lb_mv_str = f"{fi_lb_max_viol:12.3e}"
+        lb_mv_str = f"{fi_lb_max_viol:<12.3e}"
     if fi_ub_max_viol is None:
         ub_mv_str = str(fi_ub_max_viol)
     else:
-        ub_mv_str = f"{fi_ub_max_viol:12.3e}"
+        ub_mv_str = f"{fi_ub_max_viol:<12.3e}"
     logger.log(
         log_level,
         f"{outer_iter:<12}{lb_str:<12}{ub_str:<12}{lb_mv_str:<15}{ub_mv_str:<15}",
