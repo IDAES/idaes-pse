@@ -732,8 +732,11 @@ Must be True if dynamic = True,
         """
         obj = self.component(name_or_object)
 
-        if obj is self._costing_block_ref:
-            # This is a costing block, so need to unregister it
+        # TODO: See if Pyomo can give us a call-back to do this
+        try:
+            # If this is a costing block, need to unregister it
             obj.del_costing()
+        except AttributeError:
+            pass
 
         super().del_component(obj)

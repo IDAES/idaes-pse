@@ -37,7 +37,6 @@ class TestCostingPackageBase:
     def test_basic_attributes(self):
         CP = CostingPackageBase
 
-        assert CP.currency_units == []
         assert CP.base_currency is None
         assert CP.base_period is pyunits.year
         assert CP.defined_flows == {}
@@ -311,7 +310,7 @@ class TestFlowsheetCostingBlock:
 
         assert costing.unit_a.costing.cost_method == 1
 
-        assert costing.unit_a._costing_block_ref is costing.unit_a.costing
+        assert costing.unit_a.costing in costing.unit_a._initialization_order
         assert costing.unit_a.costing in costing.costing._registered_unit_costing
 
     @pytest.mark.unit
@@ -319,7 +318,7 @@ class TestFlowsheetCostingBlock:
         costing.unit_a.del_component(costing.unit_a.costing)
 
         assert not hasattr(costing.unit_a, "costing")
-        assert not hasattr(costing.unit_a, "_costing_block_ref")
+        assert costing.unit_a._initialization_order == []
         assert costing.costing._registered_unit_costing == []
 
     @pytest.mark.unit
@@ -335,7 +334,7 @@ class TestFlowsheetCostingBlock:
 
         assert costing.unit_a.costing.cost_method == 2
 
-        assert costing.unit_a._costing_block_ref is costing.unit_a.costing
+        assert costing.unit_a.costing in costing.unit_a._initialization_order
         assert costing.unit_a.costing in costing.costing._registered_unit_costing
 
         # Then check double costing
@@ -350,7 +349,7 @@ class TestFlowsheetCostingBlock:
         # Make sure we cleaned up duplicate
         assert not hasattr(costing.unit_a, "costing2")
         assert costing.unit_a.costing.cost_method == 2
-        assert costing.unit_a._costing_block_ref is costing.unit_a.costing
+        assert costing.unit_a.costing in costing.unit_a._initialization_order
         assert costing.unit_a.costing in costing.costing._registered_unit_costing
         assert costing.costing._registered_unit_costing.count(
             costing.unit_a.costing) == 1
@@ -388,7 +387,7 @@ class TestFlowsheetCostingBlock:
                      "costing_method": custom_method})
 
         assert isinstance(costing.unit_a.costing, UnitModelCostingBlock)
-        assert costing.unit_a._costing_block_ref is costing.unit_a.costing
+        assert costing.unit_a.costing in costing.unit_a._initialization_order
         assert costing.unit_a.costing in costing.costing._registered_unit_costing
 
         assert isinstance(costing.unit_a.costing.capital_cost, Var)

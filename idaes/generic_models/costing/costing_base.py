@@ -49,9 +49,6 @@ class CostingPackageBase():
     Base Class for defining property packages.
     """
 
-    # Placeholders for expected attributes
-    currency_units = []
-
     # Set the base year for all costs
     base_currency = None
     base_period = pyo.units.year
@@ -136,10 +133,10 @@ def is_flowsheet_costing_block(val):
         return val
     else:
         _log.error(f"Flowsheet costing block argument {val} should "
-                   "be an instacne of a FlowsheetCostingBlock")
+                   "be an instance of a FlowsheetCostingBlock")
         raise ConfigurationError(
             f"Flowsheet costing block argument {val} should "
-            "be an instacne of a FlowsheetCostingBlock")
+            "be an instance of a FlowsheetCostingBlock")
 
 
 @declare_process_block_class("FlowsheetCostingBlock")
@@ -523,27 +520,24 @@ class UnitModelCostingBlockData(ProcessBlockData):
                 "UnitModelCostingBlocks can only be added to UnitModelBlocks.")
 
         # Check to see if unit model already has costing
-        if not hasattr(unit_model, "_costing_block_ref"):
-            add_object_reference(unit_model, "_costing_block_ref", self)
-            # Append to initialization order
-            # TODO: Add tests for this
-            unit_model._initialization_order.append(self)
-        else:
-            # Blcok already has costing, clean up and raise exception
-            self.parent_block().del_component(self)
-            raise RuntimeError(
-                f"Unit model {unit_model.name} already has a costing block "
-                f"registered: {unit_model._costing_block_ref.name}. Each unit "
-                f"may only have a single UnitModelCostingBlock associated "
-                f"with it.")
+        for b in unit_model.component_objects(pyo.Block, descend_into=False):
+            if b is not self and isinstance(b, UnitModelCostingBlock):
+                # Block already has costing, clean up and raise exception
+                self.parent_block().del_component(self)
+                raise RuntimeError(
+                    f"Unit model {unit_model.name} already has a costing block"
+                    f" registered: {b.name}. Each unit may only have a single "
+                    "UnitModelCostingBlock associated with it.")
+        # Add block to unit model initialization order
+        unit_model._initialization_order.append(self)
+
+        # Register unit model with this costing package
+        fcb._registered_unit_costing.append(self)
 
         # Get costing method if not provided
         method = self.config.costing_method
         if method is None:
             method = fcb._get_costing_method_for(unit_model)
-
-        # Register unit model with this costing package
-        fcb._registered_unit_costing.append(self)
 
         # Assign obejct references for costing package and unit model
         add_object_reference(self, "costing_package", fcb)
@@ -591,15 +585,15 @@ class UnitModelCostingBlockData(ProcessBlockData):
 
         # Alias flowsheet costing block and unit model (parent)
         fcb = self.config.flowsheet_costing_block
-        unit_model = self.parent_block()
 
         # Clean up references from fsb and unit_model
         try:
             fcb._registered_unit_costing.remove(self)
         except ValueError:
-            # Unit model is not in list of registered units
-            # Something went really wrong
-            raise BurntToast(f"{self.name}: something went really wrong "
-                             "when deleting this cositng block. Please "
-                             "contact the IDAES developers with this bug.")
-        del unit_model._costing_block_ref
+            # Assume this is OK
+            pass
+        try:
+            self.unit_model._initialization_order.remove(self)
+        except ValueError:
+            # Assume this is OK
+            pass
