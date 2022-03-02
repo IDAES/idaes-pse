@@ -129,15 +129,18 @@ def _perform_sampling(
     )
 
     if using_persistent:
-        config.solver.set_instance(m)
         original_update_config = config.solver.update_config()
         config.solver.update_config.check_for_new_or_removed_constraints = False
         config.solver.update_config.check_for_new_or_removed_vars = False
         config.solver.update_config.check_for_new_or_removed_params = False
+        config.solver.update_config.check_for_new_objective = False
         config.solver.update_config.update_constraints = False
         config.solver.update_config.update_vars = False
         config.solver.update_config.update_params = False
         config.solver.update_config.update_named_expressions = False
+        config.solver.update_config.update_objective = False
+        config.solver.update_config.treat_fixed_vars_as_params = False
+        config.solver.set_instance(m)
 
     max_violation_values = list()
 
