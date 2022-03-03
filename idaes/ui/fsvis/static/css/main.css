@@ -14,6 +14,12 @@ hr {
   margin: 5px 0px 0px 0px;
 }
 
+/* Dotted border */
+hr.dotted {
+  border-top: 2px dotted #bbb;
+  margin-bottom: 10px;
+}
+
 #idaes-header {
   margin: 20px auto 10px auto;
   width: 90%;
@@ -54,7 +60,7 @@ hr {
   position: absolute;
   top: 20px;
   right: 40px;
-  width: 350px;
+  width: 500px;
   height: 40px;
   z-index: 1;
 }
@@ -76,7 +82,6 @@ hr {
 
 .idaes-container {
   min-width: 800px;
-  min-height: 800px;
   width: 90%;
   height: 50%;
   flex-grow: 1;
@@ -86,6 +91,8 @@ hr {
   border-radius: 5px;
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.23);
   border: solid 1px #e0e0e0;
+  resize: vertical;
+  overflow: auto;
 }
 
 #idaes-page-contents {
@@ -288,11 +295,6 @@ input:checked + .slider:before {
   font-weight: bold;
 }
 
-.joint-type-standard-link path {
-  stroke: #979797;
-  stroke-width: 2;
-}
-
 .joint-type-standard-link tspan {
   fill: #8d8d8d;
 }
@@ -346,4 +348,24 @@ input:checked + .slider:before {
 .streamtable-units {
   opacity: 0.6;
   float: right;
+}
+
+/* Styling the stream table column header that corresponds to the link mouseover event */
+.link-streamtable-hover-columnheader {
+  border-top: 5px solid #0B79BD ;
+  border-left: 5px solid #0B79BD;
+  border-right: 5px solid #0B79BD;
+}
+
+/* Styling the last row in the stream table column that corresponds to the link mouseover event */
+.link-streamtable-hover-lastrow {
+  border-bottom: 5px solid #0B79BD;
+  border-left: 5px solid #0B79BD;
+  border-right: 5px solid #0B79BD;
+}
+
+/* Styling the grid cell in the stream table column that corresponds to the link mouseover event */
+.link-streamtable-hover {
+  border-left: 5px solid #0B79BD;
+  border-right: 5px solid #0B79BD;
 }

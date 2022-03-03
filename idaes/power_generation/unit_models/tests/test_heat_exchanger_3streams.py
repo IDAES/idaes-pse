@@ -17,9 +17,8 @@ Author: Miguel Zamarripa
 """
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            value,
                            Param)
 from idaes.core import FlowsheetBlock
@@ -139,9 +138,7 @@ def test_run_unit(build_unit):
     # solve model
     results = solver.solve(m, tee=True)
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
     assert degrees_of_freedom(m) == 0
     assert (pytest.approx(434.650, abs=1e-3) ==
             value(m.fs.unit.side_1_outlet.temperature[0]))

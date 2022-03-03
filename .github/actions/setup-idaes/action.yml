@@ -17,7 +17,7 @@ runs:
       shell: bash -l {0}
       run: |
         echo '::group::Output of "conda install" command'
-        conda install --yes --quiet pip=21.1 setuptools wheel
+        conda install --yes --quiet pip setuptools wheel
         conda list
         echo '::endgroup::'
     - name: Install idaes and dependencies
@@ -40,5 +40,5 @@ runs:
       shell: bash -l {0}
       run: |
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --verbose
+        idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'

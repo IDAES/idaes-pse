@@ -18,10 +18,9 @@ IDAES models.
 __author__ = "Alejandro Garciadiego"
 
 import pytest
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Objective,
-                           SolverStatus,
-                           TerminationCondition,
                            units as pyunits)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
@@ -188,9 +187,7 @@ class TestStateBlock(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.initialize
     @pytest.mark.solver

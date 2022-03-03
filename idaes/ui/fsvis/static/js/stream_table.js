@@ -33,7 +33,7 @@ export class StreamTable {
             // There is an empty column because of the way that the pandas dataframe was oriented so 
             // only add the columns that don't have an empty column header
             // Also ignore the "Units" column header
-            let column_header = columns[col]
+            let column_header = columns[col];
             if (column_header !== "" && column_header !== "Units") {
                 // If the column_header is Variable then we don't want the column to be right-aligned and we want the column to be pinned to the left so when the user scrolls the column scrolls with them
                 if (column_header === "Variable") {
@@ -51,7 +51,14 @@ export class StreamTable {
                 }
                 // If the column header isn't "Variable" then we assume that the contents of the column are numbers so they should be right aligned
                 else {
-                    column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true, resizable: true, cellStyle: {"text-align": "right"}});
+                    column_defs.push({
+                        headerName: column_header,
+                        field: column_header,
+                        filter: 'agTextColumnFilter',
+                        sortable: true,
+                        resizable: true,
+                        cellStyle: {"text-align": "right"}
+                    });
                 }
                 let list_item = document.createElement("li");
                 let checkbox_item = document.createElement("div");
@@ -73,7 +80,6 @@ export class StreamTable {
             let data = data_arrays[var_index];
             for (let col_index in columns) {
                 if (columns[col_index] === "Units") {
-                    console.log("data[col_index]:", data[col_index]);
                     if (data[col_index] && data[col_index] !== 'None') {
                         row_object[variable_col] = row_object[variable_col] + '<span class="streamtable-units">' + data[col_index].html + '</span>';
                     }
@@ -126,6 +132,80 @@ export class StreamTable {
                 else {
                     app._gridOptions.columnApi.setColumnVisible(this.id, false)
                 };
+            });
+        });
+
+        // Getting the main elements for the idaes canvas and the stream table
+        // to be able to dispatch highlighting events to the streams existing
+        // on paper and in the stream table
+        let streamTable = document.querySelector('#stream-table-data');
+        let idaesCanvas = document.querySelector('#idaes-canvas');
+
+        // Registering listeners to the stream table to highlight the correct
+        // streams in the stream table
+        streamTable.addEventListener('HighlightStream', (event) => {
+            var streamGridCells = streamTable.querySelectorAll(
+                `[col-id=${event.detail.streamId}]`
+            );
+            streamGridCells.forEach((gridCell, index) => {
+                if (gridCell.getAttribute('role') == 'columnheader') {
+                    gridCell.classList.add('link-streamtable-hover-columnheader');
+                }
+                else if (index == streamGridCells.length - 1) {
+                    gridCell.classList.add('link-streamtable-hover-lastrow');
+                }
+                else {
+                    gridCell.classList.add('link-streamtable-hover');
+                }
+            });
+        });
+
+        // Registering listeners to idaes-canvas to remove the highlight from
+        // the correct streams in the stream table
+        streamTable.addEventListener('RemoveHighlightStream', (event) => {
+            var streamGridCells = streamTable.querySelectorAll(
+                `[col-id=${event.detail.streamId}]`
+            );
+            streamGridCells.forEach((gridCell) => {
+                gridCell.classList.remove('link-streamtable-hover-columnheader');
+                gridCell.classList.remove('link-streamtable-hover-lastrow');
+                gridCell.classList.remove('link-streamtable-hover');
+            });
+        });
+
+        let streamGridCells = document.querySelectorAll('[col-id]');
+        streamGridCells.forEach((gridCell) => {
+            // When the mouse hovers over a grid cell, the link as well as the
+            // stream column that represents the correct stream will be highlighted.
+            gridCell.addEventListener('mouseenter', function(event) {
+                if (document.querySelector("#view-stream-highlight-btn").checked) {
+                    const highlightStreamEvent = new CustomEvent(
+                        'HighlightStream',
+                        {
+                            detail: {
+                                streamId: event.target.attributes['col-id'].value
+                            }
+                        }
+                    );
+                    streamTable.dispatchEvent(highlightStreamEvent);
+                    idaesCanvas.dispatchEvent(highlightStreamEvent);
+                }
+            });
+
+            // When the mouse leaves a grid cell, the link as well as the
+            // stream column that represents the correct stream will remove
+            // the highlighting feature.
+            gridCell.addEventListener('mouseleave', function(event) {
+                const removeHighlightStreamEvent = new CustomEvent(
+                    'RemoveHighlightStream',
+                    {
+                        detail: {
+                            streamId: event.target.attributes['col-id'].value
+                        }
+                    }
+                );
+                streamTable.dispatchEvent(removeHighlightStreamEvent);
+                idaesCanvas.dispatchEvent(removeHighlightStreamEvent);
             });
         });
     };

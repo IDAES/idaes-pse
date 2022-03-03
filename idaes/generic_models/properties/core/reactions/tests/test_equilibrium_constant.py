@@ -586,10 +586,15 @@ class TestGibbsEnergy(object):
         assert str(rform1) == ('exp(rxn[1].log_k_eq[r1])')
         assert str(rform2) == (
             'rxn[1].log_k_eq[r1]  ==  '
-            '- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
-            '(8.314462618*(J)/mol/K)*(300*K)) + '
-            '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))'
-            '*rparams.reaction_r1.ds_rxn_ref')
+            '- rparams.reaction_r1.dh_rxn_ref/(' +
+            str(pyunits.convert(
+                c.gas_constant,
+                to_units=pyunits.kg*pyunits.m**2/pyunits.s**2/pyunits.mol/pyunits.K)) +
+            '*(300*K)) + 1/(' +
+            str(pyunits.convert(
+                c.gas_constant,
+                to_units=pyunits.kg*pyunits.m**2/pyunits.s**2/pyunits.mol/pyunits.K)) +
+            ')*rparams.reaction_r1.ds_rxn_ref')
 
         assert value(rform1) == pytest.approx(1, rel=1e-3)
         assert_units_equivalent(rform1, pyunits.dimensionless)
