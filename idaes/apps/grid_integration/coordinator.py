@@ -629,7 +629,7 @@ class DoubleLoopCoordinator:
 
         return market_signals
 
-    def track_sced_signal(self, options, simulator, sced_instance):
+    def track_sced_signal(self, options, simulator, sced_instance, lmp_sced):
 
         """
         This methods uses the tracking object to track the current real-time market
@@ -641,6 +641,8 @@ class DoubleLoopCoordinator:
             simulator: Prescient simulator.
 
             sced_instance: Prescient SCED object
+
+            lmp_sced: Prescient SCED LMP object
 
         Returns:
             None
