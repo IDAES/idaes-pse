@@ -18,6 +18,7 @@ __author__ = "Rusty Gentile, John Eslick, Andrew Lee"
 
 from pyomo.environ import Var, Param
 from pyomo.dae import DerivativeVar
+from pyomo.common.config import ConfigValue
 from idaes.core import declare_process_block_class
 from .heat_exchanger import HeatExchangerData
 
@@ -25,6 +26,22 @@ from .heat_exchanger import HeatExchangerData
 @declare_process_block_class("HeatExchangerLumpedCapacitance",
                              doc="0D heat exchanger for transient simulations")
 class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
+
+    CONFIG = HeatExchangerData.CONFIG(implicit=True)
+
+    CONFIG.declare(
+        "dynamic_heat_balance",
+        ConfigValue(
+            default=True,
+            domain=bool,
+            doc="""Indicates whether heat holdup in the wall material should 
+be included in the overall energy balance,
+**default** - True.
+**Valid values:** {
+**True** - include wall material heat holdup,
+**False** - do not include wall material heat holdup.}""",
+        ),
+    )
 
     def _add_wall_variables(self):
 
@@ -34,7 +51,6 @@ class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
 
         # Unit system
         temp_units = s1_metadata.get_derived_units("temperature")
-        time_units = s1_metadata.get_derived_units("time")
         energy_units = s1_metadata.get_derived_units("energy")
         u_units = s1_metadata.get_derived_units("heat_transfer_coefficient")
         area_units = s1_metadata.get_derived_units("area")
@@ -123,8 +139,9 @@ class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
 
     def activate_dynamic_heat_eq(self):
         """
-        Adds a heat holdup term to the overall energy balance for transient
-        simulations. Should only be used with dynamic flowsheets.
+        Activates the heat holdup term in the overall energy balance for
+        transient simulations. Should only be used with dynamic flowsheets
+        and if ``dynamic_heat_balance`` is True.
 
         Args:
             None
@@ -163,7 +180,7 @@ class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
         self._add_wall_variables()
         self._add_wall_variable_constraints()
 
-        if self.flowsheet().config.dynamic:
+        if self.config.dynamic_heat_balance:
 
             s1_metadata = self.config.hot_side_config.property_package. \
                 get_metadata()
@@ -190,7 +207,7 @@ class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
 
     def initialize(self, *args, **kwargs):
 
-        if self.flowsheet().config.dynamic:
+        if self.config.dynamic_heat_balance:
             # If the time derivative terms are defined, deactivate them first
             # and reactivate after calling the base initialization method
             self.deactivate_dynamic_heat_eq()

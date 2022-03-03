@@ -19,8 +19,6 @@ import pytest
 
 from pyomo.environ import (check_optimal_termination,
                            ConcreteModel,
-                           Constraint,
-                           Expression,
                            TransformationFactory,
                            value,
                            Var,
@@ -28,6 +26,7 @@ from pyomo.environ import (check_optimal_termination,
                            units as pyunits)
 
 from pyomo.dae import DerivativeVar
+from pyomo.dae.diffvar import DAE_Error
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
@@ -76,12 +75,14 @@ class TestHXRegression(object):
 
         m.fs.unit = HeatExchangerLumpedCapacitance(default={
             "shell": {"property_package": m.fs.properties},
-            "tube": {"property_package": m.fs.properties}})
+            "tube": {"property_package": m.fs.properties},
+            "dynamic_heat_balance": False})
 
         # Check unit config arguments
-        # There are 8 to 10 arguments since you can add a side 1 and 2 config by
-        # side_1, side_2, or whatever the user named them
-        assert len(m.fs.unit.config) >= 9 and len(m.fs.unit.config) <= 11
+        # There are 10 to 12 arguments since you can add a side 1 and 2 config by
+        # side_1, side_2, or whatever the user named them, plus
+        # "dynamic_heat_balance"
+        assert len(m.fs.unit.config) >= 10 and len(m.fs.unit.config) <= 12
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -129,7 +130,9 @@ class TestHXRegression(object):
             "shell": {"property_package": m.fs.properties},
             "tube": {"property_package": m.fs.properties},
             "delta_temperature_callback": cb,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent})
+            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
+            "dynamic_heat_balance": False})
+
         #   Set inputs
         m.fs.unit.inlet_1.flow_mol[0].fix(100)
         m.fs.unit.inlet_1.enth_mol[0].fix(4000)
@@ -193,7 +196,8 @@ class TestHXRegression(object):
         m.fs.unit = HeatExchangerLumpedCapacitance(default={
                 "shell": {"property_package": m.fs.properties},
                 "tube": {"property_package": m.fs.properties},
-                "flow_pattern": HeatExchangerFlowPattern.crossflow})
+                "flow_pattern": HeatExchangerFlowPattern.crossflow,
+                "dynamic_heat_balance": False})
 
         m.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
         m.fs.unit.inlet_1.temperature[0].fix(320)
@@ -273,14 +277,24 @@ class TestHXRegression(object):
 class TestHXLCGeneric(object):
 
     @pytest.fixture()
-    def unconstrained_model(self):
+    def static_flowsheet_model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+        return m
+
+    @pytest.fixture()
+    def dynamic_flowsheet_model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": True,
                                        "time_set": [0, 1],
                                        "time_units": pyunits.s})
-
         m.fs.properties = iapws95.Iapws95ParameterBlock()
+        return m
 
+    @pytest.fixture()
+    def unconstrained_model(self, dynamic_flowsheet_model):
+        m = dynamic_flowsheet_model
         m.fs.unit = HeatExchangerLumpedCapacitance(default={
             "shell": {"property_package": m.fs.properties},
             "tube": {"property_package": m.fs.properties},
@@ -312,7 +326,7 @@ class TestHXLCGeneric(object):
         return m
 
     @pytest.mark.unit
-    @pytest.mark.xfail
+    @pytest.mark.xfail(raises=InconsistentUnitsError)
     def test_units(self, model):
         # Note: using the discretizer makes the units of measure on the time
         # derivative term inconsistent...
@@ -380,6 +394,55 @@ class TestHXLCGeneric(object):
 
         # Check for optimal solution
         assert check_optimal_termination(results)
+
+    @pytest.mark.unit
+    @pytest.mark.xfail(reason="static flowsheet with dynamic heat balance",
+                       raises=DAE_Error)
+    def test_static_flowsheet(self, static_flowsheet_model):
+        m = static_flowsheet_model
+        m.fs.unit = HeatExchangerLumpedCapacitance(default={
+            "shell": {"property_package": m.fs.properties},
+            "tube": {"property_package": m.fs.properties},
+            "dynamic": False,
+            "dynamic_heat_balance": True})
+
+    @pytest.mark.unit
+    @pytest.mark.xfail(reason="activate dynamic heat eq with static model",
+                       raises=AttributeError)
+    def test_static_heat_balance(self, static_flowsheet_model):
+        m = static_flowsheet_model
+        m.fs.unit = HeatExchangerLumpedCapacitance(default={
+            "shell": {"property_package": m.fs.properties},
+            "tube": {"property_package": m.fs.properties},
+            "dynamic": False,
+            "dynamic_heat_balance": False})
+        m.fs.unit.activate_dynamic_heat_eq()
+
+    @pytest.mark.unit
+    def test_build_valid_configs(self, static_flowsheet_model,
+                                 dynamic_flowsheet_model):
+
+        def build_unit_model(m, dyn, dyn_hb):
+            return HeatExchangerLumpedCapacitance(default={
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
+                "dynamic": dyn,
+                "dynamic_heat_balance": dyn_hb})
+
+        # Static model
+        ms = static_flowsheet_model
+        ms.fs.unit = build_unit_model(ms, False, False)
+
+        # Dynamic model
+        md = dynamic_flowsheet_model
+        md.fs.u1 = build_unit_model(ms, False, False)
+        md.fs.u2 = build_unit_model(ms, True, False)
+        md.fs.u3 = build_unit_model(ms, False, True)
+        md.fs.u4 = build_unit_model(ms, True, True)
+        md.discretizer = TransformationFactory('dae.finite_difference')
+        md.discretizer.apply_to(md, nfe=10, wrt=md.fs.time, scheme="BACKWARD")
+
+        assert True
 
 
 class TestHXLCTransientSCO2(object):

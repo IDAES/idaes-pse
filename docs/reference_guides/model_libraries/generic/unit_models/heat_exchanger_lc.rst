@@ -10,7 +10,8 @@ Author: `Rusty Gentile <https://github.com/rustygentile>`_
 
 The ``HeatExchangerLumpedCapacitance`` model can be imported from :code:`idaes.generic_models.unit_models`.
 This model is an extension of ``idaes.generic_models.unit_models.heat_exchanger``,
-with wall temperature and heat holdup terms added for use in transient simulations.
+with wall temperature and heat holdup terms added for use in transient simulations. Using the electric 
+circuit analogy, heat stored in the wall material is similar to charge in a capacitor.
 
 Degrees of Freedom
 ------------------
@@ -87,18 +88,22 @@ Wall temperature equation:
 .. math::
   T_{wall} = \frac{1}{2}(T_{hot, in} + T_{hot, out}) + \frac{Q_{hot}}{UA_{hot, wall}}
 
-Dynamic heat balance:
+Dynamic heat balance (if ``dynamic_heat_balance`` is set to ``True``):
 
 .. math::
   Q_{hot} + Q_{cold} + \frac{dT_{wall}}{dt}C_{wall} = 0
 
+Standard heat balance (if ``dynamic_heat_balance`` is set to ``False``):
+
+.. math::
+  Q_{hot} + Q_{cold} = 0
 
 Example
 -------
 
-In this example, we run a transient simulation of an air-cooled SCO2 heat exchanger. 
-Although the flowsheet configuration is ``dynamic``, the unit model and its 
-control volumes are not.
+In this example, we run a transient simulation of an air-cooled SCO2 heat exchanger using a dynamic 
+heat balance. The control volumes, however, are static. This is essentially an assumption that any 
+mass holdup of the working fluid is negligible.
 
 To use dynamic control volumes, constraints should be added that relate flow rate to 
 pressure loss. In that case, the :ref:`volume <reference_guides/core/control_volume_0d:add_geometry>` 
@@ -131,6 +136,7 @@ variables of the hot and cold sides should also be fixed.
       "tube": {"property_package": m.fs.prop_sco2,
                "has_pressure_change": True},
       "flow_pattern": HeatExchangerFlowPattern.crossflow,
+      "dynamic_heat_balance": True,
       "dynamic": False})
   
   m.discretizer = pe.TransformationFactory('dae.finite_difference')
