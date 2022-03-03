@@ -215,7 +215,7 @@ class Tracker:
         for t in self.time_set:
             self.model.tracking_dispatch_constraints.add(
                 self.power_output[t] + self.model.power_underdelivered[t]
-                == self.model.power_dispatch[t] - self.model.power_overdelivered[t]
+                == self.model.power_dispatch[t] + self.model.power_overdelivered[t]
             )
 
         return
