@@ -123,8 +123,16 @@ def revert_state_vars(blk, flags):
                         'correct StateBlock.')
 
 
-def propagate_state(destination=None, source=None, arc=None,
-        direction="forward", overwrite_fixed=False):
+def propagate_state(
+    destination=None,
+    source=None,
+    arc=None,
+    direction="forward",
+    overwrite_fixed=False,
+    average=False,
+    weight_source=0.5,
+    weight_destination=0.5,
+):
     """
     This method propagates values between Ports along Arcs. Values can be
     propagated in either direction using the direction argument.
@@ -137,7 +145,9 @@ def propagate_state(destination=None, source=None, arc=None,
                 Default = 'forward' Valid values: 'forward', 'backward'.
         overwrite_fixed (bool): If True overwrite fixed values, otherwise do not
             overwrite fixed values.
-
+        average (bool): Write the average fo source and destination in destination
+        weight_source (float):
+        weight_destination (float):
     Returns:
         None
     """
@@ -192,7 +202,13 @@ def propagate_state(destination=None, source=None, arc=None,
         try:
             for i in v:
                 if v[i].is_variable_type() and ((not v[i].fixed) or overwrite_fixed):
-                    v[i].value = value(source_vars[k][i])
+                    if average:
+                        v[i].value = (
+                            weight_source*value(source_vars[k][i]) +
+                            weight_destination*value(v[i])
+                        )
+                    else:
+                        v[i].value = value(source_vars[k][i])
                 elif not v[i].is_variable_type():
                     raise TypeError(
                         f"propagate_state() is can only change the value of "
