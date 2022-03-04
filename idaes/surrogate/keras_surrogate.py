@@ -19,6 +19,7 @@ import os.path
 
 from pyomo.common.dependencies import attempt_import
 keras, keras_available = attempt_import('tensorflow.keras')
+omlt, omlt_available = attempt_import("omlt")
 
 from enum import Enum
 import pandas as pd
