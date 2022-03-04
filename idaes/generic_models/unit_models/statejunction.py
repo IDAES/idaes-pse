@@ -112,7 +112,7 @@ see property package for documentation.}""",
                              block=self.properties,
                              doc="Outlet block")
 
-    def initialize(
+    def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET,
         solver=None, optarg=None
     ):
