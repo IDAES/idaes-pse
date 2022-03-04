@@ -79,11 +79,11 @@ kwargs = dict(
         "nbformat",
         "numpy",
         "networkx",
-        "omlt==0.3", # fix the version for now as package evolves
+        "omlt==0.3.1", # fix the version for now as package evolves
         "pandas",
         "pint",
         "psutil",
-        "pyomo>=6.2",
+        "pyomo>=6.3",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
@@ -159,6 +159,7 @@ kwargs = dict(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",
