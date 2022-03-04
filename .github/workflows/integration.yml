@@ -235,4 +235,4 @@ jobs:
         run: |
           pushd "$(mktemp -d)"
           pip install pytest
-          pytest --pyargs idaes -W ignore
+          pytest --pyargs idaes -x -rs
