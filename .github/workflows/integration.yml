@@ -193,7 +193,7 @@ jobs:
           cat *errors.txt || echo "No error logs found"
 
   pytest-site-packages:
-    name: Run tests from site-packages (non-editable) installation
+    name: Run tests from site-packages (non-editable) installation${{ matrix.label }}
     # NOTE: using ubuntu-latest (20.04) instead of 18.04 results in failures in power_generation/carbon_capture/mea_solvent_system/unit_models/tests/test_column.py
     runs-on: ubuntu-18.04
     needs: [precheck]
@@ -203,6 +203,17 @@ jobs:
         || needs.precheck.outputs.workflow-trigger == 'not_pr'
         || needs.precheck.outputs.workflow-trigger == 'approved_pr'
       )
+    strategy:
+      fail-fast: false
+      matrix:
+        install-target:
+          - '.'
+          - '.[optional]'
+        include:
+          - install-target: '.'
+            label: ''
+          - install-target: '.[optional]'  
+            label: ' (with [optional])'
     steps:
       - uses: actions/checkout@v2
       - name: Set up Conda environment
@@ -213,7 +224,7 @@ jobs:
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: '.[optional]'
+          install-target: ${{ matrix.install-target }}
       - name: Install and run pytest in empty directory
         run: |
           pushd "$(mktemp -d)"
