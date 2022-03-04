@@ -623,7 +623,7 @@ class TestFlowsheetCostingBlock:
         assert pytest.approx(
             costing.costing.aggregate_flow_costs["test_flow"].value,
             rel=1e-12) == (
-                pyunits.convert_value(5*42,
+                pyunits.convert_value(10*42,
                                       from_units=1/pyunits.s,
                                       to_units=1/pyunits.year))
         assert costing.costing.aggregate_flow_costs["test_flow_1"].value == (
