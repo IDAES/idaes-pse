@@ -1,8 +1,11 @@
+from idaes.apps.flexibility_analysis import _check_dependencies, _check_relu_dependencies
 import idaes.apps.flexibility_analysis as flex
 from idaes.apps.flexibility_analysis.examples import linear_hx_network, nonlin_hx_network, idaes_hx_network
 import unittest
+import pytest
 
 
+@pytest.mark.unit
 class TestExamples(unittest.TestCase):
     def test_linear_hx_network(self):
         res = linear_hx_network.main(flex_index=False, method=flex.FlexTestMethod.active_constraint, plot_history=False)

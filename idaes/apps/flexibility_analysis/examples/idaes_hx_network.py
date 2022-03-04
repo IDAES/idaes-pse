@@ -4,7 +4,8 @@ from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VL
 )
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.heater import Heater
-import coramin
+from pyomo.common.dependencies import attempt_import
+coramin, coramin_available = attempt_import('coramin', 'coramin is required for flexibility analysis')
 import logging
 from pyomo.contrib.fbbt.fbbt import fbbt
 from pyomo.network import Arc
@@ -347,7 +348,7 @@ def main(method):
     config.sampling_config.solver = pe.SolverFactory("appsi_ipopt")
     config.sampling_config.solver.config.log_level = logging.DEBUG
     config.sampling_config.strategy = flexibility.SamplingStrategy.grid
-    config.sampling_config.num_points = 5
+    config.sampling_config.num_points = 3
     if method == flexibility.FlexTestMethod.linear_decision_rule:
         config.decision_rule_config = flexibility.LinearDRConfig()
         config.decision_rule_config.solver = pe.SolverFactory("appsi_gurobi")

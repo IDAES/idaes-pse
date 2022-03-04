@@ -1,7 +1,9 @@
+from idaes.apps.flexibility_analysis import _check_dependencies
 import pyomo.environ as pe
 from idaes.apps.flexibility_analysis.sampling import perform_sampling, SamplingConfig, SamplingStrategy
 import unittest
 import numpy as np
+import pytest
 
 
 def create_poly_model():
@@ -85,6 +87,7 @@ def create_hx_network_model():
     return m, nominal_values, param_bounds
 
 
+@pytest.mark.unit
 class TestSampling(unittest.TestCase):
     def test_poly(self):
         m, nominal_values, param_bounds = create_poly_model()

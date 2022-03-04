@@ -1,10 +1,13 @@
+from idaes.apps.flexibility_analysis import _check_dependencies
 import pyomo.environ as pe
 import unittest
 from idaes.apps.flexibility_analysis.uncertain_params import _replace_uncertain_params
 from idaes.apps.flexibility_analysis.indices import _ConIndex, _VarIndex
 from pyomo.core.expr.compare import compare_expressions
+import pytest
 
 
+@pytest.mark.unit
 class TestReplaceUncertainParams(unittest.TestCase):
     def test_replace_mutable_parameter(self):
         m = pe.ConcreteModel()

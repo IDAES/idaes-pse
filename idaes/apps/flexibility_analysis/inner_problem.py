@@ -1,7 +1,8 @@
 import pyomo.environ as pe
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.var import _GeneralVarData, ScalarVar
-from coramin.utils import get_objective
+from pyomo.common.dependencies import attempt_import
+coramin, coramin_available = attempt_import('coramin', 'coramin is required for flexibility analysis')
 from .var_utils import get_all_unfixed_variables, BoundsManager, _apply_var_bounds
 from .indices import _ConIndex, _VarIndex
 from typing import MutableMapping, Tuple, Optional, Mapping, Sequence
@@ -122,7 +123,7 @@ def _build_inner_problem(
 
     This function will also modify valid_var_bounds to include any new variables
     """
-    obj = get_objective(m)
+    obj = coramin.utils.get_objective(m)
     if obj is not None:
         obj.deactivate()
 

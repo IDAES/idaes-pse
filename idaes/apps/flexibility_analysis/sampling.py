@@ -6,18 +6,22 @@ from typing import Sequence, Union, Mapping, Optional, MutableMapping, Tuple
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
 from pyomo.contrib.appsi.base import PersistentSolver
-from tqdm import tqdm
 from .uncertain_params import _replace_uncertain_params
 from .inner_problem import _build_inner_problem
 import enum
 from idaes.surrogate.pysmo.sampling import LatinHypercubeSampling
 from .indices import _VarIndex
 from pyomo.common.config import ConfigDict, ConfigValue, InEnum
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(items, ncols, desc, disable):
+        return items
 
 
 class SamplingStrategy(enum.Enum):
-    grid = enum.auto()
-    lhs = enum.auto()
+    grid = 'grid'
+    lhs = 'lhs'
 
 
 def _grid_sampling(

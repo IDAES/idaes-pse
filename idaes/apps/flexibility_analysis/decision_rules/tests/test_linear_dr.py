@@ -1,3 +1,4 @@
+from idaes.apps.flexibility_analysis import _check_dependencies
 import unittest
 import pyomo.environ as pe
 from idaes.apps.flexibility_analysis.decision_rules.linear_dr import (
@@ -16,8 +17,8 @@ def y2_func(x1, x2):
     return -x1 + 0.5 * x2
 
 
-@pytest.mark.solver
 class TestLinearDecisionRule(unittest.TestCase):
+    @pytest.mark.unit
     def test_construct_linear_dr(self):
         x1_samples = [float(i) for i in np.linspace(-5, 5, 100)]
         x2_samples = [float(i) for i in np.linspace(-5, 5, 100)]

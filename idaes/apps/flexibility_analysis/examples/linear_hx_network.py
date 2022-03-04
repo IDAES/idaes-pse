@@ -75,11 +75,11 @@ def main(flex_index: bool = False, method: flexibility.FlexTestMethod = flexibil
     var_bounds = get_var_bounds(m)
     config = flexibility.FlexTestConfig()
     config.feasibility_tol = 1e-6
-    config.terminate_early = False
+    config.terminate_early = False  # TODO: this does not do anything yet
     config.method = method
-    config.minlp_solver = pe.SolverFactory("gurobi_direct")
+    config.minlp_solver = pe.SolverFactory("gurobi_direct")  # TODO: rename minlp_solver to describe what it is solving
     config.sampling_config.solver = pe.SolverFactory("appsi_gurobi")
-    config.sampling_config.strategy = flexibility.SamplingStrategy.lhs
+    config.sampling_config.strategy = 'lhs'
     config.sampling_config.num_points = 200
     if method == flexibility.FlexTestMethod.linear_decision_rule:
         config.decision_rule_config = flexibility.LinearDRConfig()

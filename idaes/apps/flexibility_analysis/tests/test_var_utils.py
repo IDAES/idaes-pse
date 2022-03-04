@@ -1,3 +1,4 @@
+from idaes.apps.flexibility_analysis import _check_dependencies
 import pyomo.environ as pe
 import unittest
 from idaes.apps.flexibility_analysis.var_utils import (
@@ -7,8 +8,10 @@ from idaes.apps.flexibility_analysis.var_utils import (
     _remove_var_bounds,
     _apply_var_bounds,
 )
+import pytest
 
 
+@pytest.mark.unit
 class TestGetVariables(unittest.TestCase):
     def test_get_all_unfixed_variables(self):
         m = pe.ConcreteModel()
@@ -36,6 +39,7 @@ class TestGetVariables(unittest.TestCase):
         self.assertIn(m.x[5], uuf_vars)
 
 
+@pytest.mark.unit
 class TestBounds(unittest.TestCase):
     def test_bounds_manager1(self):
         m = pe.ConcreteModel()

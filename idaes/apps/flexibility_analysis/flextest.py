@@ -1,7 +1,8 @@
 import numpy as np
 from .kkt import add_kkt_with_milp_complementarity_conditions
 from pyomo.core.base.block import _BlockData
-from coramin.utils import get_objective
+from pyomo.common.dependencies import attempt_import
+coramin, coramin_available = attempt_import('coramin', 'coramin is required for flexibility analysis')
 import pyomo.environ as pe
 from .var_utils import (
     get_used_unfixed_variables,
@@ -18,7 +19,7 @@ from typing import Sequence, Union, Mapping, MutableMapping, Optional, Tuple
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
 from .decision_rules.linear_dr import construct_linear_decision_rule
-from .decision_rules.relu_dr import construct_relu_decision_rule
+from pyomo.common.dependencies import attempt_import
 from .sampling import (
     SamplingStrategy,
     perform_sampling,
@@ -33,6 +34,8 @@ from pyomo.common.config import (
     InEnum,
     MarkImmutable,
 )
+relu_dr, relu_dr_available = attempt_import('idaes.apps.flexibility_analysis.decision_rules.relu_dr',
+                                            'The ReLU decision rule requires Tensorflow and OMLT')
 
 
 logger = logging.getLogger(__name__)
@@ -92,7 +95,7 @@ class FlexTestConfig(ConfigDict):
             ),
         )
         self.minlp_solver = self.declare(
-            "minlp_solver", ConfigValue(default=pe.SolverFactory("scip"))
+            "minlp_solver", ConfigValue()
         )
         self.sampling_config: SamplingConfig = self.declare(
             "sampling_config", SamplingConfig()
@@ -148,7 +151,6 @@ dr_construction_map = dict()
 dr_construction_map[
     FlexTestMethod.linear_decision_rule
 ] = construct_linear_decision_rule
-dr_construction_map[FlexTestMethod.relu_decision_rule] = construct_relu_decision_rule
 
 
 def build_flextest_with_dr(
@@ -160,6 +162,10 @@ def build_flextest_with_dr(
     valid_var_bounds: MutableMapping[_GeneralVarData, Tuple[float, float]],
     config: FlexTestConfig,
 ):
+    # this has to be here in case tensorflow or omlt are not installed
+    dr_construction_map[
+        FlexTestMethod.relu_decision_rule] = relu_dr.construct_relu_decision_rule
+
     # enforce_equalities must be true for this method, or the resulting
     # problem will be unbounded; the key is degrees of freedom
 
@@ -199,12 +205,14 @@ def build_flextest_with_dr(
     passed = report_scaling(m)
     if not passed:
         raise ValueError(
-            "Please scale the model. If a scaling report was not shown, set the logging level to INFO."
+            "Please scale the model. If a scaling report was not shown, "
+            "set the logging level to INFO."
         )
     bounds_manager.pop_bounds()
 
     # construct the decision rule
-    # the keys of sample_points need to be the new variables that replaced the uncertain parameters
+    # the keys of sample_points need to be the new variables
+    # that replaced the uncertain parameters
     sample_points: MutableMapping[_GeneralVarData, Sequence[float]] = pe.ComponentMap()
     for p in uncertain_params:
         ndx = _VarIndex(p, None)
@@ -226,7 +234,7 @@ def build_flextest_with_dr(
     _apply_var_bounds(valid_var_bounds)
     m.decision_rule = dr
 
-    obj = get_objective(m)
+    obj = coramin.utils.get_objective(m)
     obj.deactivate()
 
     m.max_constraint_violation_obj = pe.Objective(
@@ -245,8 +253,9 @@ def build_active_constraint_flextest(
     enforce_equalities = False
     _replace_uncertain_params(m, uncertain_params, param_nominal_values, param_bounds)
     for v in m.unc_param_vars.values():
-        valid_var_bounds[v] = (v.lb, v.ub)
+        valid_var_bounds[v] = v.bounds
 
+    # TODO: make this a context manager or try-finally
     bounds_manager = BoundsManager(m)
     bounds_manager.save_bounds()
     _remove_var_bounds(m)
@@ -254,10 +263,12 @@ def build_active_constraint_flextest(
     passed = report_scaling(m)
     if not passed:
         raise ValueError(
-            "Please scale the model. If a scaling report was not shown, set the logging level to INFO."
+            "Please scale the model. If a scaling report was not "
+            "shown, set the logging level to INFO."
         )
     bounds_manager.pop_bounds()
 
+    # TODO: constraint.equality does not check for range constraints with equal bounds
     orig_equality_cons = [
         c
         for c in m.component_data_objects(pe.Constraint, descend_into=True, active=True)
@@ -283,6 +294,9 @@ def build_active_constraint_flextest(
         valid_var_bounds=valid_var_bounds,
         default_M=default_M,
     )
+
+    # TODO: to control the namespace and reduce cloning:
+    #  take the users model and stick it on a new block as a sub-block
 
     m.equality_cuts = pe.ConstraintList()
     max_viol_lb, max_viol_ub = valid_var_bounds[m.max_constraint_violation]
@@ -466,6 +480,14 @@ def solve_flextest(
     original_controls = controls
     original_valid_var_bounds = valid_var_bounds
     if not in_place:
+        # TODO:
+        #  tmp_name = pyomo.common.modeling.unique_component_name(m, 'tmp_data')
+        #  setattr(m, tmp_name, uncertain_params)
+        #  new_m = m.clone()
+        #  old_to_new_params = ComponentMap(zip(getattr(m, tmp_name),
+        #                                       getattr(new_m, tmp_name)))
+        #  delattr(m, tmp_name)
+        #  m = new_m
         m = m.clone()
         uncertain_params = [m.find_component(i) for i in original_uncertain_params]
         param_nominal_values = pe.ComponentMap(

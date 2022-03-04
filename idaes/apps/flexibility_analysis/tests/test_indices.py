@@ -1,8 +1,11 @@
+from idaes.apps.flexibility_analysis import _check_dependencies
 import unittest
 import pyomo.environ as pe
 from idaes.apps.flexibility_analysis.indices import _VarIndex, _ConIndex
+import pytest
 
 
+@pytest.mark.unit
 class TestIndices(unittest.TestCase):
     def test_var_index(self):
         m = pe.ConcreteModel()

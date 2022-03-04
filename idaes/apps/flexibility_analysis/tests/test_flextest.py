@@ -1,8 +1,10 @@
+from idaes.apps.flexibility_analysis import _check_dependencies
 import pyomo.environ as pe
 from idaes.apps.flexibility_analysis.flextest import build_active_constraint_flextest
 import unittest
 from idaes.apps.flexibility_analysis.indices import _VarIndex
 from pyomo.contrib.fbbt import interval
+import pytest
 
 
 def create_poly_model():
@@ -86,6 +88,7 @@ def create_hx_network_model():
     return m, nominal_values, param_bounds
 
 
+@pytest.mark.unit
 class TestFlexTest(unittest.TestCase):
     def test_poly(self):
         m, nominal_values, param_bounds = create_poly_model()
