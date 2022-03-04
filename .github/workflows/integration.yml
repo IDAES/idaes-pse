@@ -221,7 +221,7 @@ jobs:
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: ${{ matrix.install-target }}
+          install-target: ${{ matrix.pip-install-target }}
       - name: Remove dependencies installable with pip but not with conda
         # NOTE some dependencies that are installed by default with pip are not available through conda
         # so they're not installed if IDAES is installed with `conda -c conda-forge -c IDAES-PSE idaes-pse`
