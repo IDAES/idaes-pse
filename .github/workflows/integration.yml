@@ -230,7 +230,7 @@ jobs:
         # as an approximation of the enviroment that we'd get from `conda install`
         if: matrix.dependencies-to-uninstall
         run: |
-          pip uninstall ${{ matrix.dependencies-to-uninstall }}
+          pip uninstall --yes ${{ matrix.dependencies-to-uninstall }}
       - name: Install and run pytest in empty directory
         run: |
           pushd "$(mktemp -d)"
