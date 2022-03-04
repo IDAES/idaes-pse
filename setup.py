@@ -6,7 +6,7 @@ from pathlib import Path
 import os
 import sys
 from setuptools import setup, find_namespace_packages
-
+from typing import List, Tuple
 
 def warn(s):
     sys.stderr.write("*** WARNING *** {}\n".format(s))
@@ -23,20 +23,39 @@ def get_version():
 NAME = "idaes-pse"
 VERSION = get_version()
 README = open("README.md").read()
-README = README[README.find("#"):]  # ignore everything before title
+README = README[README.find("#") :]  # ignore everything before title
 
 
 def rglob(path, glob):
-    """Return list of paths from `path` matching `glob`.
-    """
+    """Return list of paths from `path` matching `glob`."""
     p = Path(path)
     return list(map(str, p.rglob(glob)))
 
 
 DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.3.0.rc1.idaes.2022.02.10.zip"
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.3.0.zip"
 ]
 
+# For included DMF data
+DMF_DATA_ROOT = "data"
+
+
+def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
+    """Generate a list of pairs (directory, [files..]), covering all the DMF data
+       files, for the `data_files` option to :func:`setup()`.
+    """
+    file_list = [
+        (
+            root,
+            [f"{root}/config.yaml", f"{root}/resourcedb.json"],
+        )
+    ]
+    files_root = Path(root) / "files"
+    for files_subdir in files_root.glob("*"):
+        file_names = [f.as_posix() for f in files_subdir.glob("*")]
+        if file_names:  # empty for non-directories and empty directories
+            file_list.append((files_subdir.as_posix(), file_names))
+    return file_list
 
 kwargs = dict(
     zip_safe=False,
@@ -49,7 +68,7 @@ kwargs = dict(
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
         "bunch",
-        "click",
+        "click>=8",
         "colorama",
         "flask",  # for ui/fsvis
         "flask-cors",
@@ -60,19 +79,21 @@ kwargs = dict(
         "nbformat",
         "numpy",
         "networkx",
-        "omlt==0.3", # fix the version for now as package evolves
+        "omlt==0.3.1", # fix the version for now as package evolves
         "pandas",
         "pint",
         "psutil",
-        "pyomo>=6.2",
+        "pyomo>=6.3",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
-        "python-slugify", # for ui/fsvis
+        "python-slugify",  # for ui/fsvis
         "scipy",
         "sympy",
         "tinydb",
         "rbfopt",
+        "xlrd",  # for DMF read of old .xls Excel files
+        "openpyxl",  # for DMF read of new .xls Excel files
         # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
         "ipython<8.0.0",
     ],
@@ -110,10 +131,11 @@ kwargs = dict(
             "*.dat",
             "*.h5",
             "*.trc",
+            "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
         ]
     },
     include_package_data=True,
-    data_files=[],
+    data_files=dmf_data_files(),
     maintainer="Keith Beattie",
     maintainer_email="ksbeattie@lbl.gov",
     url="https://idaes.org",
@@ -137,6 +159,7 @@ kwargs = dict(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",

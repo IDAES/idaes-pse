@@ -999,7 +999,6 @@ class TestPolynomialRegression:
         np.testing.assert_array_equal(expected_value, np.round(output_1, 4))
 
     @pytest.mark.unit
-    @staticmethod
     def test_mle_estimate_01(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector
         input_array = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])

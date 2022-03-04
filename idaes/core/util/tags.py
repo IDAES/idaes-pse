@@ -580,11 +580,13 @@ class ModelTagGroup(dict):
         tag_list = []
         indexes = []
         for i, tag in enumerate(tags):
-            if not isinstance(tag, collections.Hashable) and len(tag) == 2:
-                tag_list.append(tag[0])
-                indexes.append(tag[1])
-            elif not isinstance(tag, collections.Hashable) and len(tag) != 2:
-                raise ValueError("Key-index pairs should be a list of length 2")
+            if not isinstance(tag, collections.abc.Hashable):
+                if len(tag) == 2:
+                    tag_list.append(tag[0])
+                    indexes.append(tag[1])
+                else:
+                    raise ValueError(
+                        "Key-index pairs should be a list of length 2")
             else:
                 if not self[tag].is_indexed:
                     tag_list.append(tag)
