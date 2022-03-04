@@ -196,6 +196,13 @@ jobs:
     name: Run tests from site-packages (non-editable) installation${{ matrix.label }}
     # NOTE: using ubuntu-latest (20.04) instead of 18.04 results in failures in power_generation/carbon_capture/mea_solvent_system/unit_models/tests/test_column.py
     runs-on: ubuntu-18.04
+    needs: [precheck]
+    if: >-
+      (
+        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
+        || needs.precheck.outputs.workflow-trigger == 'not_pr'
+        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
+      )
     strategy:
       fail-fast: false
       matrix:
