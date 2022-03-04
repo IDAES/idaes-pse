@@ -41,16 +41,16 @@ from idaes.generic_models.properties.core.pure.ConstantProperties import \
     Constant
 
 
+Coolprop = pytest.importorskip("CoolProp.CoolProp", reason="CoolProp not installed")
+
 from idaes.generic_models.properties.core.coolprop.coolprop_wrapper import (
     CoolPropWrapper,
     CoolPropExpressionError,
     CoolPropPropertyError)
 
-CoolProp, coolprop_available = attempt_import('CoolProp.CoolProp')
 solver = get_solver()
 
 
-@pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
 class TestWrapper:
     @pytest.mark.unit
     def test_load_component(self):
@@ -233,7 +233,6 @@ class TestWrapper:
             CoolPropWrapper.pressure_sat_comp.build_parameters(m.TestComp)
 
 
-@pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
 class TestCoolPropProperties(object):
     @pytest.fixture(scope="class")
     def m(self):
@@ -671,7 +670,6 @@ class TestCoolPropProperties(object):
                         m.fs.state[0].pressure_sat_comp["benzene"])
 
 
-@pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
 class TestVerifyExcessLiq(object):
     @pytest.fixture(scope="class")
     def m(self):
