@@ -169,6 +169,8 @@ def test_mock_webbrowser(flash_model):
 
 
 class MockWB:
+    """Use this instead of a real web browser.
+    """
     def __init__(self, ok):
         self.ok = ok
 
@@ -176,7 +178,7 @@ class MockWB:
         return self.ok
 
 
-## Test saving of the status file
+# Test saving of the status file
 
 
 @pytest.fixture
