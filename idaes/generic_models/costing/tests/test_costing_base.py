@@ -24,10 +24,57 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.generic_models.costing import (FlowsheetCostingBlock,
                                           FlowsheetCostingBlockData,
-                                          UnitModelCostingBlock)
+                                          UnitModelCostingBlock,
+                                          register_idaes_currency_units)
 
 # TODO : Tests for cases with multiple costing packages
 pyunits.load_definitions_from_strings(["USD_test = [test_currency]"])
+
+
+@pytest.mark.unit
+def test_register_idaes_currency_units():
+    # Register standard currency units
+    register_idaes_currency_units()
+
+    assert "USD_CE500" in pyunits.pint_registry
+
+    CEI = {"USD_1990": 357.6,
+           "USD_1991": 361.3,
+           "USD_1992": 358.2,
+           "USD_1993": 359.2,
+           "USD_1994": 368.1,
+           "USD_1995": 381.1,
+           "USD_1996": 381.7,
+           "USD_1997": 386.5,
+           "USD_1998": 389.5,
+           "USD_1999": 390.6,
+           "USD_2000": 394.1,
+           "USD_2001": 394.3,
+           "USD_2002": 395.6,
+           "USD_2003": 402.0,
+           "USD_2004": 444.2,
+           "USD_2005": 468.2,
+           "USD_2006": 499.6,
+           "USD_2007": 525.4,
+           "USD_2008": 575.4,
+           "USD_2009": 521.9,
+           "USD_2010": 550.8,
+           "USD_2011": 585.7,
+           "USD_2012": 584.6,
+           "USD_2013": 567.3,
+           "USD_2014": 576.1,
+           "USD_2015": 556.8,
+           "USD_2016": 541.7,
+           "USD_2017": 567.5,
+           "USD_2018": 603.1,
+           "USD_2019": 607.5,
+           "USD_2020": 596.2}
+
+    for c, conv in CEI.items():
+        assert c in pyunits.pint_registry
+
+        assert pytest.approx(conv/500, rel=1e-10) == pyunits.convert_value(
+            1, pyunits.USD_CE500, getattr(pyunits, c))
 
 
 class TestFlowsheetCostingBlock:

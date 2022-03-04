@@ -48,7 +48,8 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants
 from idaes.core.util.math import smooth_max
 
-from idaes.generic_models.costing.costing_base import FlowsheetCostingBlockData
+from idaes.generic_models.costing.costing_base import (
+    FlowsheetCostingBlockData, register_idaes_currency_units)
 
 # Some more information about this module
 __author__ = "Miguel Zamarripa, Andrew Lee"
@@ -253,19 +254,7 @@ class BlowerMaterial(str, Enum):
 class SSLWCostingData(FlowsheetCostingBlockData):
 
     # Register currency and conversion rates based on CE Index
-    pyo.units.load_definitions_from_strings(
-        ["USD_500 = [currency]",  # base USD @ CEI 500
-         "USD2010 = 500/550.8 * USD_500",
-         "USD2011 = 500/585.7 * USD_500",
-         "USD2012 = 500/584.6 * USD_500",
-         "USD2013 = 500/567.3 * USD_500",
-         "USD2014 = 500/576.1 * USD_500",
-         "USD2015 = 500/556.8 * USD_500",
-         "USD2016 = 500/541.7 * USD_500",
-         "USD2017 = 500/567.5 * USD_500",
-         "USD2018 = 500/671.1 * USD_500",
-         "USD2019 = 500/680.0 * USD_500",
-         "USD_394 = 500/394.0 * USD_500"])  # required for pump costing
+    register_idaes_currency_units()
 
     def build_global_params(self):
         """
@@ -277,7 +266,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         for each costing method to separate the parameters for each method.
         """
         # Set the base year for all costs
-        self.base_currency = pyo.units.USD2018
+        self.base_currency = pyo.units.USD_2018
         # Set a base period for all operating costs
         self.base_period = pyo.units.year
 
@@ -388,7 +377,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                     pyo.exp(alpha[1] -
                             alpha[2]*pyo.log(area_unit*blk.hx_oversize) +
                             alpha[3]*pyo.log(area_unit*blk.hx_oversize)**2) *
-                    pyo.units.USD_500)
+                    pyo.units.USD_CE500)
         blk.base_cost_per_unit_eq = pyo.Constraint(rule=hx_cost_rule)
 
         @blk.Expression(doc="Base cost for all installed units")
@@ -516,13 +505,13 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # Build generic costing variables
         blk.base_cost_per_unit = pyo.Var(initialize=1e5,
                                          domain=pyo.NonNegativeReals,
-                                         units=pyo.units.USD_500,
+                                         units=pyo.units.USD_CE500,
                                          doc='Base cost per unit')
 
         blk.capital_cost = pyo.Var(initialize=1e4,
                                    domain=pyo.NonNegativeReals,
                                    bounds=(0, None),
-                                   units=pyo.units.USD_500,
+                                   units=pyo.units.USD_CE500,
                                    doc='Capital cost of all units')
 
         # Check arguments
@@ -628,7 +617,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 pyo.exp(alpha[1] +
                         alpha[2]*(pyo.log(blk.weight/pyo.units.pound)) +
                         alpha[3]*(pyo.log(blk.weight/pyo.units.pound)**2)) *
-                pyo.units.USD_500)
+                pyo.units.USD_CE500)
         blk.base_cost_constraint = pyo.Constraint(rule=base_cost_rule)
 
         # Add platform and ladder costs if required
@@ -670,7 +659,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         """
         blk.base_cost_platforms_ladders = pyo.Var(
             initialize=1000,
-            units=pyo.units.USD_500,
+            units=pyo.units.USD_CE500,
             domain=pyo.NonNegativeReals,
             doc='Base cost of platforms and ladders')
 
@@ -680,19 +669,19 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         if not vertical:
             def CPL_rule(blk):
                 return blk.base_cost_platforms_ladders == (
-                    2005*(D/pyo.units.foot)**0.20294*pyo.units.USD_500)
+                    2005*(D/pyo.units.foot)**0.20294*pyo.units.USD_CE500)
         else:
             def CPL_rule(blk):
                 if aspect_ratio_range == 1:
                     return blk.base_cost_platforms_ladders == (
                         361.8*(D/pyo.units.foot)**0.73960 *
                         (L/pyo.units.foot)**0.70684 *
-                        pyo.units.USD_500)
+                        pyo.units.USD_CE500)
                 elif aspect_ratio_range == 2:
                     return blk.base_cost_platforms_ladders == (
                         309.9*(D/pyo.units.foot)**0.63316 *
                         (L/pyo.units.foot)**0.80161 *
-                        pyo.units.USD_500)
+                        pyo.units.USD_CE500)
                 else:
                     raise ConfigurationError(
                         f"{blk.unit_model.name} recieved invalid value for "
@@ -721,7 +710,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         D = pyo.units.convert(vessel_diameter, to_units=pyo.units.foot)
 
         blk.base_cost_trays = pyo.Var(initialize=1e6,
-                                      units=pyo.units.USD_500,
+                                      units=pyo.units.USD_CE500,
                                       domain=pyo.NonNegativeReals,
                                       doc='Purchase cost of trays')
 
@@ -764,12 +753,12 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # Calcualte base cost of a single tray
         blk.base_cost_per_tray = pyo.Var(initialize=1e4,
                                          domain=pyo.NonNegativeReals,
-                                         units=pyo.units.USD_500,
+                                         units=pyo.units.USD_CE500,
                                          doc='Base cost of a single tray')
 
         def single_tray_rule(blk):
             return blk.base_cost_per_tray == (
-                468.00*pyo.exp(0.1739*D/pyo.units.foot)*pyo.units.USD_500)
+                468.00*pyo.exp(0.1739*D/pyo.units.foot)*pyo.units.USD_CE500)
         blk.single_tray_cost_constraint = pyo.Constraint(rule=single_tray_rule)
 
         # Capital cost of trays
@@ -964,7 +953,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 bc_expr = (
                     0.367*(Q/pyo.units.BTU*pyo.units.hr)**0.77)
 
-            return blk.base_cost_per_unit == bc_expr*pyo.units.USD_500
+            return blk.base_cost_per_unit == bc_expr*pyo.units.USD_CE500
 
         blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
 
@@ -1037,7 +1026,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         def CB_rule(blk):
             return blk.base_cost_per_unit == (
                 pyo.exp(alpha[1] + alpha[2]*pyo.log(work_hp/pyo.units.hp)) *
-                pyo.units.USD_500)
+                pyo.units.USD_CE500)
         blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
 
         @blk.Expression(doc="Base cost for all units installed")
@@ -1108,7 +1097,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 alpha[1] -
                 alpha[2]*pyo.log(Qcfm/(pyo.units.foot**3/pyo.units.minute)) +
                 alpha[3]*pyo.log(Qcfm/(pyo.units.foot**3/pyo.units.minute))**2) *
-                pyo.units.USD_500)
+                pyo.units.USD_CE500)
         blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
 
         @blk.Expression(doc="Base cost for all units installed")
@@ -1172,7 +1161,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 alpha[1] +
                 alpha[2]*pyo.log(work_hp/pyo.units.hp) -
                 alpha[3]*pyo.log(work_hp/pyo.units.hp)**2) *
-                pyo.units.USD_500)
+                pyo.units.USD_CE500)
         blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
 
         @blk.Expression(doc="Base cost for all units installed")
@@ -1202,7 +1191,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         blk.capital_cost = pyo.Var(initialize=1e4,
                                    domain=pyo.NonNegativeReals,
                                    bounds=(0, None),
-                                   units=pyo.units.USD_500,
+                                   units=pyo.units.USD_CE500,
                                    doc='Capital cost of all units')
 
         if integer is True:
@@ -1225,7 +1214,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         def CP_rule(blk):
             return blk.capital_cost == (
                 blk.number_of_units*530*(work_hp/pyo.units.hp)**0.81 *
-                pyo.units.USD_500)
+                pyo.units.USD_CE500)
         blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
 
     def cost_pump(blk,
@@ -1280,7 +1269,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         blk.capital_cost = pyo.Var(initialize=1e4,
                                    domain=pyo.NonNegativeReals,
                                    bounds=(0, None),
-                                   units=pyo.units.USD_500,
+                                   units=pyo.units.USD_CE500,
                                    doc='Capital cost of all units')
 
         if integer is True:
@@ -1389,7 +1378,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         blk.base_pump_cost_per_unit = pyo.Var(
             initialize=1e5,
             domain=pyo.NonNegativeReals,
-            units=pyo.units.USD_394,
+            units=pyo.units.USD_CE394,
             doc='Base cost of pump (less motor) per unit')
 
         def base_pump_cost_rule(blk):
@@ -1406,7 +1395,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 bpc = pyo.exp(7.8103 +
                               0.26986*pyo.log(work/pyo.units.hp) +
                               0.06718*pyo.log(work/pyo.units.hp)**2)
-            return blk.base_pump_cost_per_unit == bpc*pyo.units.USD_394
+            return blk.base_pump_cost_per_unit == bpc*pyo.units.USD_CE394
         blk.base_pump_cost_per_unit_eq = pyo.Constraint(
             rule=base_pump_cost_rule)
 
@@ -1417,13 +1406,13 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         blk.pump_capital_cost = pyo.Var(
             initialize=100000,
             domain=pyo.NonNegativeReals,
-            units=pyo.units.USD_500,
+            units=pyo.units.USD_CE500,
             doc='Capital cost of pumps (less motors)')
 
         def CP_pump_rule(blk):
             return blk.pump_capital_cost == pyo.units.convert(
                 blk.FT*blk.material_factor*blk.base_pump_cost,
-                to_units=pyo.units.USD_500)
+                to_units=pyo.units.USD_CE500)
         blk.pump_capital_cost_eq = pyo.Constraint(rule=CP_pump_rule)
 
         # Motor Costs
@@ -1443,7 +1432,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         blk.base_motor_cost_per_unit = pyo.Var(
             initialize=10000,
             domain=pyo.NonNegativeReals,
-            units=pyo.units.USD_394,
+            units=pyo.units.USD_CE394,
             doc='Motor base purchase cost per unit')
 
         def base_motor_cost_rule(blk):
@@ -1452,7 +1441,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 0.053255*pyo.log(work_motor/pyo.units.hp)**2 +
                 0.028628*pyo.log(work_motor/pyo.units.hp)**3 -
                 0.0035549*pyo.log(work_motor/pyo.units.hp)**4) *
-                pyo.units.USD_394)
+                pyo.units.USD_CE394)
         blk.base_motor_cost_eq = pyo.Constraint(rule=base_motor_cost_rule)
 
         @blk.Expression(doc="Base cost for all motors")
@@ -1462,13 +1451,13 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         blk.motor_capital_cost = pyo.Var(
             initialize=100000,
             domain=pyo.NonNegativeReals,
-            units=pyo.units.USD_500,
+            units=pyo.units.USD_CE500,
             doc='Capital cost of all motors')
 
         def CP_motor_rule(blk):
             return blk.motor_capital_cost == pyo.units.convert(
                 blk.motor_FT*blk.motor_base_cost,
-                to_units=pyo.units.USD_500)
+                to_units=pyo.units.USD_CE500)
         blk.motor_capital_cost_eq = pyo.Constraint(rule=CP_motor_rule)
 
         # Total capital cost (pump + electrical motor)
@@ -1537,13 +1526,13 @@ def _make_common_vars(blk, integer=True):
     # Build generic costing variables (most costing models need these vars)
     blk.base_cost_per_unit = pyo.Var(initialize=1e5,
                                      domain=pyo.NonNegativeReals,
-                                     units=pyo.units.USD_500,
+                                     units=pyo.units.USD_CE500,
                                      doc='Base cost per unit')
 
     blk.capital_cost = pyo.Var(initialize=1e4,
                                domain=pyo.NonNegativeReals,
                                bounds=(0, None),
-                               units=pyo.units.USD_500,
+                               units=pyo.units.USD_CE500,
                                doc='Capital cost of all units')
 
     if integer is True:

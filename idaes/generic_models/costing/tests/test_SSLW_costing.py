@@ -95,28 +95,6 @@ def model():
     return m
 
 
-@pytest.mark.unit
-def test_global_definitions(model):
-    assert "USD_500" in pyunits.pint_registry
-
-    CEI = {"USD2010": 550.8,
-           "USD2011": 585.7,
-           "USD2012": 584.6,
-           "USD2013": 567.3,
-           "USD2014": 576.1,
-           "USD2015": 556.8,
-           "USD2016": 541.7,
-           "USD2017": 567.5,
-           "USD2018": 671.1,
-           "USD2019": 680.0}
-
-    for c, conv in CEI.items():
-        assert c in pyunits.pint_registry
-
-        assert pytest.approx(conv/500, rel=1e-10) == pyunits.convert_value(
-            1, pyunits.USD_500, getattr(pyunits, c))
-
-
 @pytest.mark.component
 @pytest.mark.parametrize("material", HXMaterial)
 @pytest.mark.parametrize("hxtype", HXType)
@@ -167,9 +145,9 @@ def test_cost_heat_exchanger(model, material, hxtype, tube_length):
         assert pytest.approx(4.08752, 1e-5) == value(
             model.fs.unit.costing.material_factor)
 
-        assert pytest.approx(529737, 1e-5) == value(pyunits.convert(
+        assert pytest.approx(476063, 1e-5) == value(pyunits.convert(
             model.fs.unit.costing.capital_cost,
-            to_units=pyunits.USD2018))
+            to_units=pyunits.USD_2018))
 
 
 @pytest.mark.component
@@ -231,9 +209,9 @@ def test_cost_vessel(model,
     # Test solution for one known case
     if (material_type == VesselMaterial.CS and
             weight_limit == 1 and aspect_ratio_range == 1 and include_pl):
-        assert pytest.approx(40012.3, 1e-5) == value(pyunits.convert(
+        assert pytest.approx(35958, 1e-5) == value(pyunits.convert(
             model.fs.unit.costing.capital_cost,
-            to_units=pyunits.USD2018))
+            to_units=pyunits.USD_2018))
 
 
 @pytest.mark.component
@@ -487,9 +465,9 @@ def test_cost_pump_centrifugal(
     if (material_type == PumpMaterial.Nickel and
             pump_type_factor == 1.4 and
             motor_type == PumpMotorType.Enclosed):
-        assert pytest.approx(69956.71, 1e-5) == value(pyunits.convert(
+        assert pytest.approx(62868.3, 1e-5) == value(pyunits.convert(
             model.fs.unit.costing.capital_cost,
-            to_units=pyunits.USD2018))
+            to_units=pyunits.USD_2018))
 
 
 @pytest.mark.component
@@ -656,9 +634,9 @@ def test_cost_compressor(model, compressor_type, drive_type, material_type):
     if (compressor_type == CompressorType.centrifugal and
             drive_type == CompressorDriveType.electricMotor and
             material_type == CompressorMaterial.SS):
-        assert pytest.approx(334598, 1e-5) == value(pyunits.convert(
+        assert pytest.approx(300695, 1e-5) == value(pyunits.convert(
             model.fs.unit.costing.capital_cost,
-            to_units=pyunits.USD2018))
+            to_units=pyunits.USD_2018))
 
 
 @pytest.mark.component

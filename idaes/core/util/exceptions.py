@@ -86,6 +86,7 @@ class InitializationError(ArithmeticError, IdaesError):
     """
     pass
 
+
 class UserModelError(ValueError, IdaesError):
     """
     IDAES exception for when a user model returns unphysical values that

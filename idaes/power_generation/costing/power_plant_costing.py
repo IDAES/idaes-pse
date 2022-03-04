@@ -40,6 +40,7 @@ from pyomo.core.base.units_container import InconsistentUnitsError
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 import idaes.core.util.scaling as iscale
+from idaes.generic_models.costing import register_idaes_currency_units
 from idaes.power_generation.costing.costing_dictionaries import \
     BB_costing_exponents, BB_costing_params, sCO2_costing_params
 
@@ -47,7 +48,8 @@ import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
-pyunits.load_definitions_from_strings(['USD = [currency]'])
+# Register standard currency units
+register_idaes_currency_units()
 
 # -----------------------------------------------------------------------------
 # Power Plant Costing Library
@@ -858,13 +860,13 @@ def get_variable_OM_costs(fs, production_rate, resources, rates,
     try:
         pyunits.convert(production_units, pyunits.MW)
         mode = "power"
-        cost_units = pyunits.USD/pyunits.MWh
+        cost_units = pyunits.USD_2018/pyunits.MWh
         unit_tag = "$/MWh"
     except InconsistentUnitsError:
         try:
             pyunits.convert(production_units, pyunits.kg/pyunits.s)
             mode = "hydrogen"
-            cost_units = pyunits.USD/pyunits.kg
+            cost_units = pyunits.USD_2018/pyunits.kg
             unit_tag = "$/kg"
         except InconsistentUnitsError:
             raise Exception("units not compatable, make sure production rate"
@@ -888,17 +890,17 @@ def get_variable_OM_costs(fs, production_rate, resources, rates,
 
     # dictionary of default prices
     default_prices = {
-        "natural gas": 4.42*pyunits.USD/pyunits.MBtu,  # $/MMbtu
-        "coal": 51.96*pyunits.USD/pyunits.ton,
-        "water": 1.90e-3*pyunits.USD/pyunits.gallon,
-        "water treatment chemicals": 550*pyunits.USD/pyunits.ton,
-        "ammonia": 300*pyunits.USD/pyunits.ton,
-        "SCR catalyst": 150*pyunits.USD/pyunits.ft**3,
-        "triethylene glycol": 6.80*pyunits.USD/pyunits.gallon,
-        "SCR catalyst waste": 2.50*pyunits.USD/pyunits.ft**3,
-        "triethylene glycol waste": 0.35*pyunits.USD/pyunits.gallon,
-        "amine purification unit waste": 38*pyunits.USD/pyunits.ton,
-        "thermal reclaimer unit waste": 38*pyunits.USD/pyunits.ton
+        "natural gas": 4.42*pyunits.USD_2018/pyunits.MBtu,  # $/MMbtu
+        "coal": 51.96*pyunits.USD_2018/pyunits.ton,
+        "water": 1.90e-3*pyunits.USD_2018/pyunits.gallon,
+        "water treatment chemicals": 550*pyunits.USD_2018/pyunits.ton,
+        "ammonia": 300*pyunits.USD_2018/pyunits.ton,
+        "SCR catalyst": 150*pyunits.USD_2018/pyunits.ft**3,
+        "triethylene glycol": 6.80*pyunits.USD_2018/pyunits.gallon,
+        "SCR catalyst waste": 2.50*pyunits.USD_2018/pyunits.ft**3,
+        "triethylene glycol waste": 0.35*pyunits.USD_2018/pyunits.gallon,
+        "amine purification unit waste": 38*pyunits.USD_2018/pyunits.ton,
+        "thermal reclaimer unit waste": 38*pyunits.USD_2018/pyunits.ton
         }
 
     # add entrys from prices to defualt_prices

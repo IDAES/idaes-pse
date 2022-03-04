@@ -14,5 +14,6 @@
 from .costing_base import (
     FlowsheetCostingBlock,
     FlowsheetCostingBlockData,
-    UnitModelCostingBlock
+    UnitModelCostingBlock,
+    register_idaes_currency_units
     )

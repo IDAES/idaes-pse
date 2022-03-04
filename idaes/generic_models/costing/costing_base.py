@@ -34,6 +34,53 @@ _log = idaeslog.getLogger(__name__)
 
 
 # TODO: Other functionality: methods for listing costed and uncosted units
+def register_idaes_currency_units():
+    """
+    Define conversion rates for US Dollars based on CE Index.
+    """
+    if ("USD_CE500" in pyo.units._pint_registry and
+            "USD_CE394" in pyo.units._pint_registry):
+        # Assume that standard units have already been registered
+        # Log a message and end
+        _log.debug("Standard base currency units (USD_CE500, USD_CE394) "
+                   "already appear in Pyomo unit registry. Assuming repreated "
+                   "call of register_idaes_currency_units.")
+    else:
+        pyo.units.load_definitions_from_strings([
+            "USD_CE500 = [currency]",
+            "USD_CE394 = 500/394.0 * USD_CE500",
+            "USD_1990 = 500/357.6 * USD_CE500",
+            "USD_1991 = 500/361.3 * USD_CE500",
+            "USD_1992 = 500/358.2 * USD_CE500",
+            "USD_1993 = 500/359.2 * USD_CE500",
+            "USD_1994 = 500/368.1 * USD_CE500",
+            "USD_1995 = 500/381.1 * USD_CE500",
+            "USD_1996 = 500/381.7 * USD_CE500",
+            "USD_1997 = 500/386.5 * USD_CE500",
+            "USD_1998 = 500/389.5 * USD_CE500",
+            "USD_1999 = 500/390.6 * USD_CE500",
+            "USD_2000 = 500/394.1 * USD_CE500",
+            "USD_2001 = 500/394.3 * USD_CE500",
+            "USD_2002 = 500/395.6 * USD_CE500",
+            "USD_2003 = 500/402.0 * USD_CE500",
+            "USD_2004 = 500/444.2 * USD_CE500",
+            "USD_2005 = 500/468.2 * USD_CE500",
+            "USD_2006 = 500/499.6 * USD_CE500",
+            "USD_2007 = 500/525.4 * USD_CE500",
+            "USD_2008 = 500/575.4 * USD_CE500",
+            "USD_2009 = 500/521.9 * USD_CE500",
+            "USD_2010 = 500/550.8 * USD_CE500",
+            "USD_2011 = 500/585.7 * USD_CE500",
+            "USD_2012 = 500/584.6 * USD_CE500",
+            "USD_2013 = 500/567.3 * USD_CE500",
+            "USD_2014 = 500/576.1 * USD_CE500",
+            "USD_2015 = 500/556.8 * USD_CE500",
+            "USD_2016 = 500/541.7 * USD_CE500",
+            "USD_2017 = 500/567.5 * USD_CE500",
+            "USD_2018 = 500/603.1 * USD_CE500",
+            "USD_2019 = 500/607.5 * USD_CE500",
+            "USD_2020 = 500/596.2 * USD_CE500"])
+
 
 class DefaultCostingComponents(str, Enum):
     capital = "capital_cost"
