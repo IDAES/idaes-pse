@@ -230,6 +230,8 @@ ValveFunctionType.custom}""",
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        calculate_cv=False,
+        calculate_opening=False,
     ):
         """
         For simplicity this initialization requires you to set values for the
@@ -260,7 +262,13 @@ ValveFunctionType.custom}""",
         self.inlet.fix()
         self.outlet.unfix()
         for t, v in self.deltaP.items():
-            if v.fixed:
+            if calculate_cv:
+                self.Cv.unfix()
+            elif calculate_opening:
+                self.valve_opening.unfix()
+            elif (
+                v.fixed and self.pressure_flow_equation.active
+            ):
                 self.inlet.flow_mol[t].unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
