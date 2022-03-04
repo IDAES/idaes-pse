@@ -610,24 +610,12 @@ Must be True if dynamic = True,
         components.
 
         This method is intended for initializing IDAES unit models and any
-<<<<<<< HEAD
         modeling components attached to them, such as costing blocks. First,
         any attached components are deactivated, after which the
         initialize_build method is called. Following this, the attached
         components are reactivated and theri initialize method called.
 
         Currently, this method supports the following attached components:
-=======
-        modeling components attached to them, such as costing blocks. This
-        method iterates through all objects in blk._initialization_order and
-        deactivates them, followed by calling blk.initialize_build. Finally,
-        it iterates through all objects in blk._initialization_order in reverse
-        and re-activates these whilst calling the associated initialize method.
-
-        Currently, parse of arguments to the initialize method of attached
-        blocks is ahrd coded - this will be addressed in a future PR.
-        Currently, the method supports the following attached components:
->>>>>>> f07009ab7e1bbd81937065ef65bbad0f951f1f8f
             * UnitModelCostingBlocks
 
         Args:
