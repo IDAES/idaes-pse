@@ -216,8 +216,6 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         self.build_process_costs()
 
-    # TODO : check bounds for flows r.e. revenues
-    # TODO : Relax checking of bounds
     def cost_flow(self, flow_expr, flow_type):
         """
         This method registers a given flow component (Var or expression) for
@@ -236,6 +234,9 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             ValueError if flow_type is not recognized.
             TypeError if flow_type is an indexed Var.
         """
+        # TODO : Is there any (efficient) way we can check for multiple costing
+        # of the same flow? Given we allow expressions, I don't think this is
+        # possible
         if flow_type not in self.flow_types:
             raise ValueError(
                 f"{flow_type} is not a recognized flow type. Please check "
@@ -250,7 +251,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                     "supports unindexed Vars.")
         if hasattr(flow_expr, "lb"):
             if flow_expr.lb is None or flow_expr.lb < 0:
-                raise ValueError(
+                _log.warning(
                     f"{flow_expr.name} has a lower bound of less than zero. "
                     "Costing requires that all flows have a lower bound "
                     "equal to or greater than zero to avoid negative costs.")
@@ -258,7 +259,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             # Get bounds from expression
             ebounds = compute_bounds_on_expr(flow_expr)
             if ebounds[0] is None or ebounds[0] < 0:
-                raise ValueError(
+                _log.warning(
                     "flow_expr is an expression with a lower bound of less "
                     "than zero. Costing requires that all flows have a lower "
                     "bound equal to or greater than zero to avoid negative "
@@ -280,7 +281,6 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             # Call initialize on all associated costing blocks
             # TODO: Think about ways to separate initialization of unit costing
             # TODO: from flowsheet costing
-            print(u.name)
             u.initialize()
 
         # Initialize aggregate cost vars

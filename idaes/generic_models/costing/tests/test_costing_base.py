@@ -266,13 +266,15 @@ class TestFlowsheetCostingBlock:
             costing.costing.cost_flow(costing.indexed_var, "test_flow")
 
     @pytest.mark.unit
-    def test_cost_flow_unbounded_var(self, costing):
-        with pytest.raises(ValueError,
-                           match="indexed_var\[1\] has a lower bound of less "
-                           "than zero. Costing requires that all flows have a "
-                           "lower bound equal to or greater than zero to "
-                           "avoid negative costs."):
-            costing.costing.cost_flow(costing.indexed_var[1], "test_flow")
+    def test_cost_flow_unbounded_var(self, costing, caplog):
+        costing.costing.cost_flow(costing.indexed_var[1], "test_flow")
+
+        warn_str = ("indexed_var[1] has a lower bound of less "
+                    "than zero. Costing requires that all flows have a "
+                    "lower bound equal to or greater than zero to "
+                    "avoid negative costs.")
+
+        assert warn_str in caplog.text
 
     @pytest.mark.unit
     def test_cost_flow_var(self, costing):
@@ -284,13 +286,15 @@ class TestFlowsheetCostingBlock:
                 costing.costing._registered_flows["test_flow"])
 
     @pytest.mark.unit
-    def test_cost_flow_unbounded_expr(self, costing):
-        with pytest.raises(ValueError,
-                           match="flow_expr is an expression with a lower "
-                           "bound of less than zero. Costing requires that "
-                           "all flows have a lower bound equal to or greater "
-                           "than zero to avoid negative costs."):
-            costing.costing.cost_flow(-costing.indexed_var[2], "test_flow")
+    def test_cost_flow_unbounded_expr(self, costing, caplog):
+        costing.costing.cost_flow(-costing.indexed_var[2], "test_flow")
+
+        warn_str = ("flow_expr is an expression with a lower "
+                    "bound of less than zero. Costing requires that "
+                    "all flows have a lower bound equal to or greater "
+                    "than zero to avoid negative costs.")
+
+        assert warn_str in caplog.text
 
     @pytest.mark.unit
     def test_cost_flow_expr(self, costing):
@@ -614,7 +618,7 @@ class TestFlowsheetCostingBlock:
         assert \
             costing.costing.aggregate_variable_operating_cost.value == 7e4
 
-        assert costing.costing.aggregate_flow_test_flow.value == 5
+        assert costing.costing.aggregate_flow_test_flow.value == 10
 
         assert pytest.approx(
             costing.costing.aggregate_flow_costs["test_flow"].value,
