@@ -282,7 +282,11 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
     def do_PUT(self):
         """Process a request to store data.
         """
-        u, id_ = self._parse_flowsheet_url(self.path)
+        try:
+            u, id_ = self._parse_flowsheet_url(self.path)
+        except ValueError:
+            self.send_error(500, message=f"Malformed query parameter in URL '{self.path}'")
+            return
         _log.info(f"do_PUT: route={u} id={id_}")
         if u.path in ("/fs",) and id_ is None:
             self.send_error(
@@ -330,7 +334,10 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
     def _parse_flowsheet_url(self, path):
         u, id_ = urlparse(self.path), None
         if u.query:
-            queries = dict([q.split("=") for q in u.query.split("&")])
+            try:
+                queries = dict([q.split("=") for q in u.query.split("&")])
+            except ValueError: # if query string is malformed, dict() arg may not be pairs
+                raise
             id_ = queries.get("id", None)
         return u, id_
 
