@@ -222,7 +222,4 @@ jobs:
         run: |
           pushd "$(mktemp -d)"
           pip install pytest
-          # TODO downloading pytest.ini is still needed for the tests to pass
-          # eventually it will be moved to the root conftest.py so that is installed as Python code
-          wget https://raw.githubusercontent.com/IDAES/idaes-pse/main/pytest.ini 
-          pytest --pyargs idaes
+          pytest --pyargs idaes -W ignore -rs
