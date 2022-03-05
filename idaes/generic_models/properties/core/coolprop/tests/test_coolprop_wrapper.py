@@ -800,7 +800,6 @@ class TestVerifyExcessLiq(object):
                         m.fs.state[0].entr_mol_phase["Liq"] - S0_I)
 
 
-@pytest.mark.skipif(not coolprop_available, reason="CoolProp not installed")
 class TestVerifyExcessVap(object):
     @pytest.fixture(scope="class")
     def m(self):
