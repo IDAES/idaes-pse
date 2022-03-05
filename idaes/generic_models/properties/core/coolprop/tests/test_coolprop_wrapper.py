@@ -41,7 +41,7 @@ from idaes.generic_models.properties.core.pure.ConstantProperties import \
     Constant
 
 
-Coolprop = pytest.importorskip("CoolProp.CoolProp", reason="CoolProp not installed")
+CoolProp = pytest.importorskip("CoolProp.CoolProp", reason="CoolProp not installed")
 
 from idaes.generic_models.properties.core.coolprop.coolprop_wrapper import (
     CoolPropWrapper,
