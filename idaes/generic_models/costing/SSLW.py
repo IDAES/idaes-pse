@@ -55,17 +55,19 @@ from idaes.generic_models.costing.costing_base import (
 __author__ = "Miguel Zamarripa, Andrew Lee"
 
 
-class HXType(str, Enum):
+class StrEnum(str, Enum):
+    def __str__(self):
+        return str(self.value)
+
+
+class HXType(StrEnum):
     floating_head = 'floating_head'
     fixed_head = 'fixed_head'
     Utube = 'U-tube'
     kettle_vap = 'Kettle_vap'
 
-    def __str__(self):
-        return self.value
 
-
-class HXMaterial(str, Enum):
+class HXMaterial(StrEnum):
     CS_CS = 'carbon steel/carbon steel'
     CS_Brass = 'carbon steel/brass'
     CS_SS = 'carbon steel/stainless steel'
@@ -77,21 +79,15 @@ class HXMaterial(str, Enum):
     Monel_Monel = 'monel/monel'
     Ti_Ti = 'titanium/titanium'
 
-    def __str__(self):
-        return self.value
 
-
-class HXTubeLength(str, Enum):
+class HXTubeLength(StrEnum):
     EightFoot = '8ft'
     TwelveFoot = '12ft'
     SixteenFoot = '16ft'
     TwentyFoot = '20ft'
 
-    def __str__(self):
-        return self.value
 
-
-class VesselMaterial(str, Enum):
+class VesselMaterial(StrEnum):
     CS = "carbon_steel"
     LowAlloy = "low_alloy_steel"
     SS304 = "stainless_steel_304"
@@ -103,40 +99,28 @@ class VesselMaterial(str, Enum):
     Incoloy825 = "incoloy_825"
     Titanium = "titanium"
 
-    def __str__(self):
-        return self.value
 
-
-class TrayType(str, Enum):
+class TrayType(StrEnum):
     Sieve = "sieve"
     Valve = "valve"
     BubbleCap = "bubble_cap"
 
-    def __str__(self):
-        return self.value
 
-
-class TrayMaterial(str, Enum):
+class TrayMaterial(StrEnum):
     CS = "carbon_steel"
     SS303 = "stainless_steel_303"
     SS316 = "stainless_steel_316"
     Carpenter = "carpenter_20CB-3"
     Monel = "monel"
 
-    def __str__(self):
-        return self.value
 
-
-class HeaterMaterial(str, Enum):
+class HeaterMaterial(StrEnum):
     CS = "carbon_steel"
     CrMo = "Cr-Mo_alloy"
     SS = "stainless_steel"
 
-    def __str__(self):
-        return self.value
 
-
-class HeaterSource(str, Enum):
+class HeaterSource(StrEnum):
     fuel = 'fuel'
     reformer = "reformer"
     pyrolysis = "pyrolysis"
@@ -145,38 +129,26 @@ class HeaterSource(str, Enum):
     DowthermA = "dowtherm_a"
     steamBoiler = "steam_boiler"
 
-    def __str__(self):
-        return self.value
 
-
-class CompressorType(str, Enum):
+class CompressorType(StrEnum):
     centrifugal = 'centrifugal'
     reciprocating = 'reciprocating'
     screw = 'screw'
 
-    def __str__(self):
-        return self.value
 
-
-class CompressorDriveType(str, Enum):
+class CompressorDriveType(StrEnum):
     electricMotor = 'electrical_motor'
     steamTurbine = 'steam_turbine'
     gasTurbine = 'gas_turbine'
 
-    def __str__(self):
-        return self.value
 
-
-class CompressorMaterial(str, Enum):
+class CompressorMaterial(StrEnum):
     CS = 'carbon_steel'
     SS = 'stainless_steel'
     Nickel = 'nickel_alloy'
 
-    def __str__(self):
-        return self.value
 
-
-class PumpMaterial(str, Enum):
+class PumpMaterial(StrEnum):
     castIron = 'cast_iron'
     ductileIron = 'ductile_iron'
     castSteel = 'cast_steel'
@@ -189,65 +161,44 @@ class PumpMaterial(str, Enum):
     NiAlBronze = 'Ni_Al_Bronze'
     CS = 'carbon_steel'
 
-    def __str__(self):
-        return self.value
 
-
-class PumpType(str, Enum):
+class PumpType(StrEnum):
     centrifugal = 'centrifugal'
     externalGear = 'external_gear'
     reciprocating = 'reciprocating'
 
-    def __str__(self):
-        return self.value
 
-
-class PumpMotorType(str, Enum):
+class PumpMotorType(StrEnum):
     Open = 'open'
     Enclosed = 'enclosed'
     ExplosionProof = 'explosion_proof'
 
-    def __str__(self):
-        return self.value
 
-
-class FanType(str, Enum):
+class FanType(StrEnum):
     centrifugalBackward = 'centrifugal_backward'
     centrifugalStraight = 'centrifugal_straight'
     vaneAxial = 'vane_axial'
     tubeAxial = 'tube_axial'
 
-    def __str__(self):
-        return self.value
 
-
-class FanMaterial(str, Enum):
+class FanMaterial(StrEnum):
     CS = 'carbon_steel'
     fiberglass = 'fiberglass'
     SS = 'stainless_steel'
     Nickel = 'nickel_alloy'
 
-    def __str__(self):
-        return self.value
 
-
-class BlowerType(str, Enum):
+class BlowerType(StrEnum):
     centrifugal = 'centrifugal'
     rotary = 'rotary'
 
-    def __str__(self):
-        return self.value
 
-
-class BlowerMaterial(str, Enum):
+class BlowerMaterial(StrEnum):
     CS = 'carbon_steel'
     Aluminum = 'aluminum'
     fiberglass = 'fiberglass'
     SS = 'stainless_steel'
     Nickel = 'nickel_alloy'
-
-    def __str__(self):
-        return self.value
 
 
 @declare_process_block_class("SSLWCosting")
