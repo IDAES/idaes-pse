@@ -34,7 +34,7 @@ def count_N_zero_weights(w):
     return N
 
 # Runs one sparsification step using the desired final sparsity
-def sparsify_NN(model, sparsity):
+def sparsify_sequential(model, sparsity):
 
     # For each layer in the NN sparsify st percent of the weights
     w = model.get_weights()
