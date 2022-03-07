@@ -187,15 +187,21 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
     Refer to the full :doc:`idaes get-examples command documentation <../../../reference_guides/commands/get_examples>`
     for more information.
 
-4. Run tests::
+4. To test that the installation was successful, you can run the IDAES test suite.
+    This is not strictly required, but can offer more confidence that the installation environment is as expected (if the tests pass),
+    and more insight into possible issues (if any of the tests fail).
+    The ``pytest`` package is required for running the test suite. After installing it using e.g. ``pip``, run the tests::
 
-    pytest --pyargs idaes -W ignore
+    pip install pytest
+    pytest --pyargs idaes -W ignore -rs
 
-5. You should see the tests run and all should pass to ensure the installation worked. You
-   may see some "Error" level log messages, but they are okay, and produced by tests for
+5. You should see the tests run and all should pass to ensure the installation worked.
+   You may see some "Error" level log messages, but they are okay, and produced by tests for
    error handling. The number of tests that failed and succeeded is reported at the end of the pytest
-   output. You can report problems on the |github-issues|
-   (Please try to be specific about the command and the offending output.)
+   output.
+   If the optional ``-rs`` flag is given, the output will also display tests that were skipped because of
+   e.g. optional dependencies that can be installed separately (see below).
+   You can report problems on the |github-issues| (Please try to be specific about the command and the offending output.)
 
 **Install IDAES using Conda**
 

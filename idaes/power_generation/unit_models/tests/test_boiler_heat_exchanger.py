@@ -60,8 +60,8 @@ import idaes.logger as idaeslog
 # Get default solver for testing
 solver = get_solver()
 
-# -----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_no_deprecated(caplog):
     m = ConcreteModel()
@@ -88,7 +88,10 @@ def test_no_deprecated(caplog):
     for record in caplog.records:
         if record.levelno == idaeslog.WARNING:
             n_warn += 1
-    assert n_warn == 0 # 1 DeltaTMethod Enum and 1 for delta_T_method option
+    # TODO: 1 warning due to overloading initialize, not sure what the rest
+    # of this is about
+    assert n_warn == 1  # 1 DeltaTMethod Enum and 1 for delta_T_method option
+
 
 @pytest.mark.unit
 def test_deprecated_delta_T_method(caplog):
@@ -118,9 +121,10 @@ def test_deprecated_delta_T_method(caplog):
             n_warn += 1
         if "deprecated" in record.msg:
             n_depreacted += 1
-    assert n_warn == 1
+    assert n_warn == 2  # overload initialize and detalT method
     assert n_depreacted == 1
     assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.countercurrent
+
 
 @pytest.mark.unit
 def test_deprecated_delta_T_method_enum1(caplog):
@@ -150,9 +154,10 @@ def test_deprecated_delta_T_method_enum1(caplog):
             n_warn += 1
         if "deprecated" in record.msg:
             n_depreacted += 1
-    assert n_warn == 3
+    assert n_warn == 4
     assert n_depreacted == 3
     assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.countercurrent
+
 
 @pytest.mark.unit
 def test_deprecated_delta_T_method_enum1(caplog):
@@ -182,9 +187,10 @@ def test_deprecated_delta_T_method_enum1(caplog):
             n_warn += 1
         if "deprecated" in record.msg:
             n_depreacted += 1
-    assert n_warn == 3
+    assert n_warn == 4
     assert n_depreacted == 3
     assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.cocurrent
+
 
 @pytest.mark.unit
 def test_deprecated_prop_pack(caplog):
@@ -214,7 +220,7 @@ def test_deprecated_prop_pack(caplog):
             n_warn += 1
         if "deprecated" in record.msg:
             n_depreacted += 1
-    assert n_warn == 2
+    assert n_warn == 3
     assert n_depreacted == 2
     assert isinstance(
         m.fs.unit.config.hot_side_config.property_package,
