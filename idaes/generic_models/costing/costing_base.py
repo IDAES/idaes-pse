@@ -13,8 +13,6 @@
 """
 Base classes for process costing
 """
-from enum import Enum
-
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -23,7 +21,7 @@ from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from idaes.core import UnitModelBlockData
 from idaes.core.process_base import (declare_process_block_class,
                                      ProcessBlockData)
-from idaes.core.util.misc import add_object_reference
+from idaes.core.util.misc import add_object_reference, StrEnum
 from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog
@@ -82,13 +80,10 @@ def register_idaes_currency_units():
             "USD_2020 = 500/596.2 * USD_CE500"])
 
 
-class DefaultCostingComponents(str, Enum):
+class DefaultCostingComponents(StrEnum):
     capital = "capital_cost"
     fixed = "fixed_operating_cost"
     variable = "variable_operating_cost"
-
-    def __str__(self):
-        return self.value
 
 
 def is_flowsheet_costing_block(val):

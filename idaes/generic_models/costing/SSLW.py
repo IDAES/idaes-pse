@@ -22,7 +22,6 @@ Costing package based on methods from:
 Curently, this costing package only includes methods for capital costing of
 unit operations.
 """
-from enum import Enum
 import pyomo.environ as pyo
 
 # TODO: HX1D not supported - does not define area (has shell_area & tube_area)
@@ -47,17 +46,13 @@ from idaes.core.process_base import declare_process_block_class
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants
 from idaes.core.util.math import smooth_max
+from idaes.core.util.misc import StrEnum
 
 from idaes.generic_models.costing.costing_base import (
     FlowsheetCostingBlockData, register_idaes_currency_units)
 
 # Some more information about this module
 __author__ = "Miguel Zamarripa, Andrew Lee"
-
-
-class StrEnum(str, Enum):
-    def __str__(self):
-        return str(self.value)
 
 
 class HXType(StrEnum):
