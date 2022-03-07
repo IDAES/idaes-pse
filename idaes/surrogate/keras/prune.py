@@ -102,6 +102,8 @@ def build_new_NN(model_old, w_new):
     model.set_weights(w_new)
     return model
 
+
+# Helper function to count the number of nodes in a neural network
 def count_nodes(model):
     cfg = model.get_config()
     N_nodes = 0
@@ -110,6 +112,8 @@ def count_nodes(model):
             N_nodes += layer_config['config']['units']
     return N_nodes
 
+
+# Prune the nodes that have zero weights or are zeroed out by future nodes
 def pruning_step(model):
     w = model.get_weights()
 
@@ -119,7 +123,6 @@ def pruning_step(model):
     # Conduct one pruning step on the model
     for l in range(0, len(w), 2):
         l_w = w[l]
-        l_b = w[l + 1]
 
         # If there is a layer ahead of this layer, get the forward layer weights
         l_w_forward = w[l + 2] if l < len(w) - 2 else None
@@ -146,6 +149,7 @@ def pruning_step(model):
 
     return build_new_NN(model, w_new)
 
+
 """
 Prunes nodes from a keras sequential model by removing nodes with constant outputs.
 While inactive nodes have an affect on the output, they are pruned because their contribution can be shifted to active
@@ -153,22 +157,19 @@ nodes. The model should be retrained after pruning to recover accuracy after rem
 """
 def prune_sequential(model, max_steps=100, verbose=0):
 
-    pruning_steps = 0
-
     # Do while loop to continue pruning until model nodes are constant or max pruning steps occur to prevent inf loop
-    while True:
+    for step in range(max_steps):
 
         initial_nodes = count_nodes(model)
         model = pruning_step(model)
         final_nodes = count_nodes(model)
 
-        pruning_steps += 1
         removed_nodes = initial_nodes - final_nodes
 
         if verbose == 1:
-            print(f"Pruning step {pruning_steps} removed {removed_nodes} nodes")
+            print(f"Pruning step {step+1} removed {removed_nodes} nodes")
 
-        if removed_nodes == 0 or pruning_steps >= max_steps:
+        if removed_nodes == 0:
             break
 
     return model
