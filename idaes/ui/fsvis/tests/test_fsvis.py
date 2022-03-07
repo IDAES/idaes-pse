@@ -95,6 +95,7 @@ def test_visualize(flash_model, tmp_path):
             "arcs": {},
         },
         "cells": [],
+        "routing_config": {}
     }
     assert data == expected
 

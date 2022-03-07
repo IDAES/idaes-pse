@@ -111,7 +111,7 @@ export class App {
                     .done(data => {
                         this.renderModel(data);
                         this.stream_table.initTable(data)
-                    }) 
+                    })
                     // Otherwise fail
                     .fail((jqXHR, textStatus, errorThrown) => {
                         this.informUser(2, "Fatal error: Could not retrieve new model from Python program: " +
