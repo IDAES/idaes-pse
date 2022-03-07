@@ -17,15 +17,20 @@ import numpy as np
 
 # Takes an N dimensional array and finds the kth lowest magnitude elements
 def get_indices_smallest_weights(w, k):
+
     w = abs(w)
     idx = np.argpartition(w.ravel(), k)
     return np.array(np.unravel_index(idx, w.shape))[:, range(k)].transpose().tolist()
 
-# Gets the total number of zero weights + biases in a model
+# Gets the total number of zero weights in a model
 def count_N_zero_weights(w):
+
     N = 0
 
-    for layer in w:
+    # Remove biases from the weights array
+    weights = [w[2*i] for i in range(len(w)//2)]
+
+    for layer in weights:
         unique, counts = np.unique(layer, return_counts=True)
         mapping = dict(zip(unique, counts))
         if 0 in mapping:
