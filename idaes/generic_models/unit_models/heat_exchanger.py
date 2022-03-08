@@ -561,7 +561,7 @@ class HeatExchangerData(UnitModelBlockData):
         cold_side.heat.latex_symbol = "Q_2"
         self.delta_temperature.latex_symbol = "\\Delta T"
 
-    def initialize(
+    def initialize_build(
         self,
         state_args_1=None,
         state_args_2=None,
@@ -616,10 +616,6 @@ class HeatExchangerData(UnitModelBlockData):
         init_log.info_high("Initialization Step 1b (cold side) Complete.")
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
-        # if costing block exists, deactivate
-        if hasattr(self, "costing"):
-            self.costing.deactivate()
-
         self.heat_transfer_equation.deactivate()
 
         # Get side 1 and side 2 heat units, and convert duty as needed
@@ -676,10 +672,6 @@ class HeatExchangerData(UnitModelBlockData):
         cold_side.release_state(flags2, outlvl=outlvl)
 
         init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
-        # if costing block exists, activate and initialize
-        if hasattr(self, "costing"):
-            self.costing.activate()
-            costing.initialize(self.costing)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {
