@@ -58,11 +58,6 @@ class HeatExchangerFlowPattern(Enum):
     cocurrent = 2
     crossflow = 3
 
-class HeatExchangerPhaseChange(Enum):
-    ignore = 1
-    condenser = 2
-    evaporator = 3
-
 
 def _make_heat_exchanger_config(config):
     """
@@ -112,6 +107,13 @@ This config can be given by the cold side name instead of cold_side_config.""",
         ),
     )
     config.declare(
+        "end_temperature_callback",
+        ConfigValue(
+            default=None,
+            description="Callback for for end temperatures",
+        ),
+    )
+    config.declare(
         "flow_pattern",
         ConfigValue(
             default=HeatExchangerFlowPattern.countercurrent,
@@ -135,15 +137,27 @@ countercurrent temperature difference.}""",
 is an alias for cold_side""",
         ),
     )
-    config.declare(
-        "phase_change",
-        ConfigValue(
-            default=HeatExchangerPhaseChange.ignore,
-            domain=In(HeatExchangerPhaseChange),
-            doc="""If condenser or evaporator use the saturation temperature
-to on the hot (evaporator) or cold (condenser) side in the temperature difference.""",
-        ),
-    )
+
+
+def end_temperature_condenser_callback(b):
+    self.cold_inlet_temperature = Reference(
+        cold_side.properties_in[:].temperature)
+    self.hot_inlet_temperature = Reference(
+        hot_side.properties_in[:].temperature_sat)
+    self.cold_outlet_temperature = Reference(
+        cold_side.properties_out[:].temperature)
+    self.hot_outlet_temperature = Reference(
+        hot_side.properties_out[:].temperature_sat)
+
+def end_temperature_evaporator_callback(b):
+    self.cold_inlet_temperature = Reference(
+        cold_side.properties_in[:].temperature_sat)
+    self.hot_inlet_temperature = Reference(
+        hot_side.properties_in[:].temperature)
+    self.cold_outlet_temperature = Reference(
+        cold_side.properties_out[:].temperature_sat)
+    self.hot_outlet_temperature = Reference(
+        hot_side.properties_out[:].temperature)
 
 def delta_temperature_lmtd_callback(b):
     r"""
@@ -474,37 +488,31 @@ class HeatExchangerData(UnitModelBlockData):
         # Add end temperature difference constraints                           #
         ########################################################################
 
-        if self.config.phase_change == HeatExchangerPhaseChange.ignore:
-            cold_in = Reference(cold_side.properties_in[:].temperature)
-            cold_out = Reference(cold_side.properties_out[:].temperature)
-            hot_in = Reference(hot_side.properties_in[:].temperature)
-            hot_out = Reference(hot_side.properties_in[:].temperature)
-        elif self.config.phase_change == HeatExchangerPhaseChange.condenser:
-            cold_in = Reference(cold_side.properties_in[:].temperature)
-            cold_out = Reference(cold_side.properties_out[:].temperature)
-            hot_in = Reference(hot_side.properties_in[:].temperature_sat)
-            hot_out = Reference(hot_side.properties_in[:].temperature_sat)
-        elif self.config.phase_change == HeatExchangerPhaseChange.evaporator:
-            cold_in = Reference(cold_side.properties_in[:].temperature_sat)
-            cold_out = Reference(cold_side.properties_out[:].temperature_sat)
-            hot_in = Reference(hot_side.properties_in[:].temperature)
-            hot_out = Reference(hot_side.properties_in[:].temperature)
+        if self.config.end_temperature_callback is not None:
+            self.config.end_temperature_callback(self)
+        else:
+            self.cold_inlet_temperature = Reference(
+                cold_side.properties_in[:].temperature)
+            self.hot_inlet_temperature = Reference(
+                hot_side.properties_in[:].temperature)
+            self.cold_outlet_temperature = Reference(
+                cold_side.properties_out[:].temperature)
+            self.hot_outlet_temperature = Reference(
+                hot_side.properties_out[:].temperature)
 
         @self.Constraint(self.flowsheet().time)
         def delta_temperature_in_equation(b, t):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
                 return (
                     b.delta_temperature_in[t]
-                    == hot_side.properties_in[t].temperature
-                    - pyunits.convert(cold_side.properties_in[t].temperature,
-                                      to_units=temp_units)
+                    == b.hot_inlet_temperature[t] - pyunits.convert(
+                        b.cold_inlet_temperature[t], to_units=temp_units)
                 )
             else:
                 return (
                     b.delta_temperature_in[t]
-                    == hot_side.properties_in[t].temperature
-                    - pyunits.convert(cold_side.properties_out[t].temperature,
-                                      to_units=temp_units)
+                    == b.hot_inlet_temperature[t] - pyunits.convert(
+                        b.cold_outlet_temperature[t], to_units=temp_units)
                 )
 
         @self.Constraint(self.flowsheet().time)
@@ -512,16 +520,14 @@ class HeatExchangerData(UnitModelBlockData):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
                 return (
                     b.delta_temperature_out[t]
-                    == hot_side.properties_out[t].temperature
-                    - pyunits.convert(cold_side.properties_out[t].temperature,
-                                      to_units=temp_units)
+                    == b.hot_outlet_temperature[t] - pyunits.convert(
+                        b.cold_outlet_temperature[t], to_units=temp_units)
                 )
             else:
                 return (
                     b.delta_temperature_out[t]
-                    == hot_side.properties_out[t].temperature
-                    - pyunits.convert(cold_side.properties_in[t].temperature,
-                                      to_units=temp_units)
+                    == b.hot_outlet_temperature[t] - pyunits.convert(
+                        b.cold_inlet_temperature[t], to_units=temp_units)
                 )
 
         ########################################################################
