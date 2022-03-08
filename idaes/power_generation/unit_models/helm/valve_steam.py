@@ -240,6 +240,7 @@ ValveFunctionType.custom}""",
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+        init_log.info("Steam valve intialization started")
 
         # Create solver
         opt = get_solver(solver, optarg)
@@ -273,6 +274,8 @@ ValveFunctionType.custom}""",
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+
+        init_log.info("Steam valve intialization complete")
 
         from_json(self, sd=istate, wts=sp)
 
