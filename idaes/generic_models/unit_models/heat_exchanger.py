@@ -107,13 +107,6 @@ This config can be given by the cold side name instead of cold_side_config.""",
         ),
     )
     config.declare(
-        "end_temperature_callback",
-        ConfigValue(
-            default=None,
-            description="Callback for for end temperatures",
-        ),
-    )
-    config.declare(
         "flow_pattern",
         ConfigValue(
             default=HeatExchangerFlowPattern.countercurrent,
@@ -137,27 +130,6 @@ countercurrent temperature difference.}""",
 is an alias for cold_side""",
         ),
     )
-
-
-def end_temperature_condenser_callback(b):
-    self.cold_inlet_temperature = Reference(
-        cold_side.properties_in[:].temperature)
-    self.hot_inlet_temperature = Reference(
-        hot_side.properties_in[:].temperature_sat)
-    self.cold_outlet_temperature = Reference(
-        cold_side.properties_out[:].temperature)
-    self.hot_outlet_temperature = Reference(
-        hot_side.properties_out[:].temperature_sat)
-
-def end_temperature_evaporator_callback(b):
-    self.cold_inlet_temperature = Reference(
-        cold_side.properties_in[:].temperature_sat)
-    self.hot_inlet_temperature = Reference(
-        hot_side.properties_in[:].temperature)
-    self.cold_outlet_temperature = Reference(
-        cold_side.properties_out[:].temperature_sat)
-    self.hot_outlet_temperature = Reference(
-        hot_side.properties_out[:].temperature)
 
 def delta_temperature_lmtd_callback(b):
     r"""
@@ -488,31 +460,21 @@ class HeatExchangerData(UnitModelBlockData):
         # Add end temperature difference constraints                           #
         ########################################################################
 
-        if self.config.end_temperature_callback is not None:
-            self.config.end_temperature_callback(self)
-        else:
-            self.cold_inlet_temperature = Reference(
-                cold_side.properties_in[:].temperature)
-            self.hot_inlet_temperature = Reference(
-                hot_side.properties_in[:].temperature)
-            self.cold_outlet_temperature = Reference(
-                cold_side.properties_out[:].temperature)
-            self.hot_outlet_temperature = Reference(
-                hot_side.properties_out[:].temperature)
-
         @self.Constraint(self.flowsheet().time)
         def delta_temperature_in_equation(b, t):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
                 return (
                     b.delta_temperature_in[t]
-                    == b.hot_inlet_temperature[t] - pyunits.convert(
-                        b.cold_inlet_temperature[t], to_units=temp_units)
+                    == hot_side.properties_in[t].temperature
+                    - pyunits.convert(cold_side.properties_in[t].temperature,
+                                      to_units=temp_units)
                 )
             else:
                 return (
                     b.delta_temperature_in[t]
-                    == b.hot_inlet_temperature[t] - pyunits.convert(
-                        b.cold_outlet_temperature[t], to_units=temp_units)
+                    == hot_side.properties_in[t].temperature
+                    - pyunits.convert(cold_side.properties_out[t].temperature,
+                                      to_units=temp_units)
                 )
 
         @self.Constraint(self.flowsheet().time)
@@ -520,14 +482,16 @@ class HeatExchangerData(UnitModelBlockData):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
                 return (
                     b.delta_temperature_out[t]
-                    == b.hot_outlet_temperature[t] - pyunits.convert(
-                        b.cold_outlet_temperature[t], to_units=temp_units)
+                    == hot_side.properties_out[t].temperature
+                    - pyunits.convert(cold_side.properties_out[t].temperature,
+                                      to_units=temp_units)
                 )
             else:
                 return (
                     b.delta_temperature_out[t]
-                    == b.hot_outlet_temperature[t] - pyunits.convert(
-                        b.cold_inlet_temperature[t], to_units=temp_units)
+                    == hot_side.properties_out[t].temperature
+                    - pyunits.convert(cold_side.properties_in[t].temperature,
+                                      to_units=temp_units)
                 )
 
         ########################################################################
@@ -567,7 +531,7 @@ class HeatExchangerData(UnitModelBlockData):
         cold_side.heat.latex_symbol = "Q_2"
         self.delta_temperature.latex_symbol = "\\Delta T"
 
-    def initialize_build(
+    def initialize(
         self,
         state_args_1=None,
         state_args_2=None,
@@ -622,6 +586,10 @@ class HeatExchangerData(UnitModelBlockData):
         init_log.info_high("Initialization Step 1b (cold side) Complete.")
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
+        # if costing block exists, deactivate
+        if hasattr(self, "costing"):
+            self.costing.deactivate()
+
         self.heat_transfer_equation.deactivate()
 
         # Get side 1 and side 2 heat units, and convert duty as needed
@@ -656,10 +624,6 @@ class HeatExchangerData(UnitModelBlockData):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        if not check_optimal_termination(res):
-            raise InitializationError(
-                f"{self.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
         cold_side.heat.unfix()
         self.heat_transfer_equation.activate()
@@ -667,10 +631,6 @@ class HeatExchangerData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        if not check_optimal_termination(res):
-            raise InitializationError(
-                f"{self.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
@@ -678,6 +638,15 @@ class HeatExchangerData(UnitModelBlockData):
         cold_side.release_state(flags2, outlvl=outlvl)
 
         init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
+        # if costing block exists, activate and initialize
+        if hasattr(self, "costing"):
+            self.costing.activate()
+            costing.initialize(self.costing)
+
+        if not check_optimal_termination(res):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {
@@ -739,26 +708,6 @@ class HeatExchangerData(UnitModelBlockData):
         # Since this depends on the process size this is another scaling factor
         # the user should always set.
         sf_a = iscale.get_scaling_factor(self.area, default=1, warning=True)
-
-        for t in self.flowsheet().time:
-            iscale.set_scaling_factor(
-                self.delta_temperature_in[t],
-                iscale.get_scaling_factor(
-                    self.hot_side.properties_in[t].temperature,
-                    default=1,
-                    warning=True
-                )
-            )
-
-        for t in self.flowsheet().time:
-            iscale.set_scaling_factor(
-                self.delta_temperature_out[t],
-                iscale.get_scaling_factor(
-                    self.hot_side.properties_out[t].temperature,
-                    default=1,
-                    warning=True
-                )
-            )
 
         for t, c in self.heat_transfer_equation.items():
             iscale.constraint_scaling_transform(
