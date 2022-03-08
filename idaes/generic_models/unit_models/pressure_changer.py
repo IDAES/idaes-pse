@@ -45,8 +45,11 @@ from idaes.core.util.exceptions import (
     PropertyNotSupportedError, InitializationError)
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
-import idaes.core.util.unit_costing as costing
 from idaes.core.util import get_solver, scaling as iscale
+
+# Clean up in IDAES 2.0
+from idaes.generic_models.costing import UnitModelCostingBlock
+import idaes.core.util.unit_costing as costing
 
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
@@ -1020,7 +1023,7 @@ see property package for documentation.}""",
     @deprecated(
         "The get_costing method is being deprecated in favor of the new "
         "FlowsheetCostingBlock tools.",
-        version=1.13,
+        version="TBD",
     )
     def get_costing(self, module=costing, year=None, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
@@ -1153,7 +1156,10 @@ see property package for documentation.}""",
                 # constraints with different names.
                 _log.warning(f"Unknown material balance type {mb_type}")
 
-        if hasattr(self, "costing"):
+        # TODO: Deprecate as part of IDAES 2.0
+        # Check for old-style costing block, and scale if required
+        if (hasattr(self, "costing") and
+                not isinstance(self.costing, UnitModelCostingBlock)):
             # import costing scaling factors
             costing.calculate_scaling_factors(self.costing)
 

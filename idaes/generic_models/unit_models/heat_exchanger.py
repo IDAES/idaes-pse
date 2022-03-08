@@ -671,7 +671,7 @@ class HeatExchangerData(UnitModelBlockData):
     @deprecated(
         "The get_costing method is being deprecated in favor of the new "
         "FlowsheetCostingBlock tools.",
-        version=1.13,
+        version="TBD",
     )
     def get_costing(self, module=costing, year=None, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):

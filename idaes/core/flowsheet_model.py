@@ -196,7 +196,7 @@ within this flowsheet if not otherwise specified,
 
     def visualize(self, model_name, **kwargs):
         """
-        Starts up a flask server that serializes the model and pops up a 
+        Starts up a flask server that serializes the model and pops up a
         webpage with the visualization
 
         Args:
@@ -213,7 +213,7 @@ within this flowsheet if not otherwise specified,
     @deprecated(
         "The get_costing method is being deprecated in favor of the new "
         "FlowsheetCostingBlock tools.",
-        version=1.13,
+        version="TBD",
     )
     def get_costing(self, module=costing, year=None, integer_n_units=False):
         """
