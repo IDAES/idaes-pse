@@ -418,7 +418,7 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
         self.cold_side_deltaP_eq = Constraint(self.flowsheet().time,
                                               rule=rule_coldside_dP)
 
-    def initialize(
+    def initialize_build(
         self,
         hot_side_state_args=None,
         cold_side_state_args=None,
@@ -476,10 +476,6 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
 
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
-        # if costing block exists, deactivate
-        if hasattr(self, "costing"):
-            self.costing.deactivate()
-
         self.energy_balance_constraint.deactivate()
         self.effectiveness_correlation.deactivate()
         self.effectiveness.fix(0.68)
@@ -551,8 +547,3 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
 
         init_log.info("Initialization Completed, {}".format(
             idaeslog.condition(res)))
-
-        # if costing block exists, activate and initialize
-        if hasattr(self, "costing"):
-            self.costing.activate()
-            costing.initialize(self.costing)

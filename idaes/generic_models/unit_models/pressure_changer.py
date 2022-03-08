@@ -47,7 +47,7 @@ from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver, scaling as iscale
 
-# Clean up in IDAES 2.0
+# TODO: Clean up in IDAES 2.0
 from idaes.generic_models.costing import UnitModelCostingBlock
 import idaes.core.util.unit_costing as costing
 
@@ -1160,7 +1160,6 @@ see property package for documentation.}""",
         # Check for old-style costing block, and scale if required
         if (hasattr(self, "costing") and
                 not isinstance(self.costing, UnitModelCostingBlock)):
-            # import costing scaling factors
             costing.calculate_scaling_factors(self.costing)
 
 
