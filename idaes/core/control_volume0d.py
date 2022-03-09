@@ -269,6 +269,22 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             else:
                 acc_units = None
 
+        # Check if reaction package exists, and get units
+        if hasattr(self.config, "reaction_package"):
+            if self.config.reaction_package is not None:
+                if (self.reactions[self.flowsheet().time.first()]
+                        .get_reaction_rate_basis() == MaterialFlowBasis.molar):
+                    rxn_flow_units = units('flow_mole')
+                elif (self.reactions[self.flowsheet().time.first()]
+                      .get_reaction_rate_basis() == MaterialFlowBasis.mass):
+                    rxn_flow_units = units('flow_mass')
+                else:  # reaction basis not defined
+                    rxn_flow_units = None
+            else:  # reaction package is NoneType object
+                rxn_flow_units = None
+        else:  # reaction package not defined
+            rxn_flow_units = None
+
         # Test for components that must exist prior to calling this method
         if has_holdup:
             if not hasattr(self, "volume"):
@@ -308,7 +324,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         initialize=0.0,
                         doc="Amount of component generated in "
                             "unit by kinetic reactions",
-                        units=flow_units)
+                        units=rxn_flow_units)  # use reaction package flow basis
 
         # Equilibrium reaction generation
         if has_equilibrium_reactions:
@@ -326,7 +342,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 initialize=0.0,
                 doc="Amount of component generated in control volume "
                     "by equilibrium reactions",
-                units=flow_units)
+                units=rxn_flow_units)  # use reaction package flow basis
 
         # Inherent reaction generation
         if self.properties_out.include_inherent_reactions:
@@ -344,7 +360,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 initialize=0.0,
                 doc="Amount of component generated in control volume "
                     "by inherent reactions",
-                units=flow_units)
+                units=flow_units)  # use property package flow basis
 
         # Phase equilibrium generation
         if has_phase_equilibrium and \
@@ -361,7 +377,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 domain=Reals,
                 initialize=0.0,
                 doc="Amount of generation in control volume by phase equilibria",
-                units=flow_units)
+                units=flow_units)  # use property package flow basis
 
         # Material transfer term
         if has_mass_transfer:
@@ -443,7 +459,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     domain=Reals,
                     initialize=0.0,
                     doc="Extent of kinetic reactions",
-                    units=flow_units)
+                    units=rxn_flow_units)  # use reaction package flow basis
 
             @self.Constraint(self.flowsheet().time,
                              pc_set,
@@ -467,7 +483,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     domain=Reals,
                     initialize=0.0,
                     doc="Extent of equilibrium reactions",
-                    units=flow_units)
+                    units=rxn_flow_units)  # use reaction package flow basis
 
             @self.Constraint(self.flowsheet().time,
                              pc_set,
@@ -491,7 +507,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     domain=Reals,
                     initialize=0.0,
                     doc="Extent of inherent reactions",
-                    units=flow_units)
+                    units=flow_units)  # use property package flow basis
 
             @self.Constraint(self.flowsheet().time,
                              pc_set,
@@ -1728,7 +1744,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for (t, p), v in self.energy_holdup.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.get_scaling_factor(self.volume[t])
-                    sf = iscale.get_scaling_factor(self.phase_fraction[t, p])
+                    sf *= iscale.get_scaling_factor(self.phase_fraction[t, p])
                     sf *= iscale.get_scaling_factor(
                         self.properties_out[t].get_energy_density_terms(p),
                         default=1,

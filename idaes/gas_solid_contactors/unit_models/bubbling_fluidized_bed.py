@@ -1,15 +1,15 @@
-###############################################################################
+#################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
 # by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University,
-# West Virginia University Research Corporation, et al.  All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-###############################################################################
+#################################################################################
 """
 IDAES Bubbling Fluidized Bed Model.
 The 2-region bubbling fluidized bed model is a 1D axially discretized model
@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
 from pyomo.environ import (Var, Param, Reals,
-                           TerminationCondition, Constraint,
+                           check_optimal_termination, Constraint,
                            TransformationFactory, sqrt, value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -665,18 +665,18 @@ see reaction package for documentation.}"""))
                 self.length_domain,
                 domain=Reals,
                 doc='Bubble to Emulsion Gas Heat Transfer Coefficient'
-                    '[kJ/m^3.K.s]')
+                    '[J/m^3.K.s]')
         self.Hgbulk = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
-                doc='Gas Phase Bulk Enthalpy Transfer Rate [kJ/m.s]')
+                doc='Gas Phase Bulk Enthalpy Transfer Rate [J/m.s]')
         self.htc_conv = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Gas to Solid Energy Convective Heat Transfer'
-                    'Coefficient [kJ/m^2.K.s]')
+                    'Coefficient [J/m^2.K.s]')
 
         # Heat transfer terms
         self.ht_conv = Var(
@@ -684,7 +684,7 @@ see reaction package for documentation.}"""))
                 self.length_domain,
                 domain=Reals,
                 doc='Gas to Solid Convective Enthalpy Transfer in'
-                    'Emulsion Region [kJ/m^2.K.s]')
+                    'Emulsion Region [J/m^2.K.s]')
 
         # Reformulation variables
         self._reform_var_1 = Var(
@@ -735,8 +735,8 @@ see reaction package for documentation.}"""))
                       doc='Bulk Gas Permeation Coefficient [m/s]')
         self.Kd.fix()
         self.deltaP_orifice = Var(domain=Reals,
-                                  initialize=3.400,
-                                  doc='Pressure Drop Across Orifice [bar]')
+                                  initialize=3.4E5,
+                                  doc='Pressure Drop Across Orifice [Pa]')
         self.deltaP_orifice.fix()
 
     # =========================================================================
@@ -961,9 +961,7 @@ see reaction package for documentation.}"""))
                              self.length_domain,
                              doc="Gas Emulsion Pressure Drop Calculation")
             def gas_emulsion_pressure_drop(b, t, x):
-                # 1e5 = pressure unit conversion factor from Pa to bar
-                return (1e-2*(b.gas_emulsion.deltaP[t, x] *
-                              1e5) ==
+                return (1e-2*(b.gas_emulsion.deltaP[t, x]) ==
                         1e-2*(- constants.acceleration_gravity *
                               (1 - b.voidage_average[t, x]) *
                         b.solid_emulsion.properties[t, x].dens_mass_particle)
@@ -1625,8 +1623,7 @@ see reaction package for documentation.}"""))
         init_log.info('Initialize Geometric Constraints')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 2 {}.".format(
                         idaeslog.condition(results))
@@ -1708,8 +1705,7 @@ see reaction package for documentation.}"""))
         init_log.info('Initialize Hydrodynamics')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 3 {}.".format(
                         idaeslog.condition(results))
@@ -1837,8 +1833,7 @@ see reaction package for documentation.}"""))
         init_log.info_high('initialize mass balances with no reactions')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 4a {}.".format(
                         idaeslog.condition(results))
@@ -1961,8 +1956,7 @@ see reaction package for documentation.}"""))
             init_log.info_high('initialize mass balances with reactions')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 4b {}.".format(
                             idaeslog.condition(results))
@@ -2024,8 +2018,7 @@ see reaction package for documentation.}"""))
             init_log.info('Initialize Energy Balances')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 5 {}.".format(
                             idaeslog.condition(results))
@@ -2049,8 +2042,7 @@ see reaction package for documentation.}"""))
             init_log.info('Initialize Energy Balances')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
+            if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 5 {}.".format(
                             idaeslog.condition(results))
@@ -2089,8 +2081,7 @@ see reaction package for documentation.}"""))
         init_log.info('Initialize Outlet Conditions')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
-        if results.solver.termination_condition \
-                == TerminationCondition.optimal:
+        if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 6 {}.".format(
                         idaeslog.condition(results))

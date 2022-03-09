@@ -1,15 +1,15 @@
-###############################################################################
+#################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
 # by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University,
-# West Virginia University Research Corporation, et al.  All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-###############################################################################
+#################################################################################
 """
 Flowsheet example of the 0D FixedBed model for an iron-oxide reduction
 with methane case study
@@ -79,7 +79,7 @@ def main(m):
     # is excess gas flowrate which means all state variables remain unchanged)
     for t in m.fs.time:
         m.fs.TGA.gas[t].temperature.fix(1273.15)
-        m.fs.TGA.gas[t].pressure.fix(1.01325)  # 1atm
+        m.fs.TGA.gas[t].pressure.fix(1.01325E5)  # 1atm
         m.fs.TGA.gas[t].mole_frac_comp['CO2'].fix(0.4)
         m.fs.TGA.gas[t].mole_frac_comp['H2O'].fix(0.5)
         m.fs.TGA.gas[t].mole_frac_comp['CH4'].fix(0.1)

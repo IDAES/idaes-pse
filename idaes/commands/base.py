@@ -60,7 +60,7 @@ def how_to_report_an_error(embed=False):
 
 
 @click.group()
-@click.version_option(version=None)
+@click.version_option(version=None, package_name="idaes-pse")
 @click.option(
     "--verbose",
     "-v",

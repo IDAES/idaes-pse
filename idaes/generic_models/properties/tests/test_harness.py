@@ -138,8 +138,7 @@ class PropertyTestHarness(object):
                 "mole_frac_phase_comp is not a Pyomo Var or Expression.")
         err = False
         if len(frame.fs.props[1].mole_frac_phase_comp) != (
-                len(frame.fs.params.component_list) *
-                len(frame.fs.params.phase_list)):
+                len(frame.fs.params._phase_component_set)):
             err = True
 
         for k in frame.fs.props[1].mole_frac_phase_comp:
@@ -153,11 +152,10 @@ class PropertyTestHarness(object):
 
     def test_get_material_flow_terms(self, frame):
         try:
-            for p in frame.fs.params.phase_list:
-                for j in frame.fs.params.component_list:
-                    term = frame.fs.props[1].get_material_flow_terms(p, j)
-                    # Assert that the term can be assigned a scale factor
-                    assert isinstance(term, _scalable)
+            for p, j in frame.fs.params._phase_component_set:
+              term = frame.fs.props[1].get_material_flow_terms(p, j)
+              # Assert that the term can be assigned a scale factor
+              assert isinstance(term, _scalable)
         except KeyError:
             raise KeyError(
                 "get_material_flow_terms method is not indexed by phase and "

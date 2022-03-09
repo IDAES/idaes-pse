@@ -1,0 +1,1038 @@
+{
+  "cstr": {
+    "image": "reactor_c.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 15,
+            "y": 0,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 48,
+            "y": 45,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "flash": {
+    "image": "flash.svg",
+    "port_groups": {
+      "bottom": {
+        "position": {
+          "name": "bottom",
+          "args": {
+            "x": 25,
+            "y": 50,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "dx": 8,
+            "dy": 0
+          }
+        }
+      },
+      "top": {
+        "position": {
+          "name": "top",
+          "args": {
+            "x": 25,
+            "y": 0,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "right",
+          "args": {
+            "dx": -8,
+            "dy": 0
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "gibbs_reactor": {
+    "image": "reactor_g.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 5,
+            "y": 10,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 45,
+            "y": 45,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "heat_exchanger": {
+    "image": "heat_exchanger_1.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 2,
+            "y": 25,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 48,
+            "y": 25,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "heater": {
+    "image": "heater_2.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 6,
+            "y": 25,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 43,
+            "y": 25,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "heat_exchanger_1D": {
+    "image": "heat_exchanger_1.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 15,
+            "y": 0,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 48,
+            "y": 45,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "mixer": {
+    "image": "mixer.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {}
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 48,
+            "y": 25,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "plug_flow_reactor": {
+    "image": "reactor_pfr.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 15,
+            "y": 0,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 48,
+            "y": 45,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "pressure_changer": {
+    "image": "compressor.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": -1,
+            "y": 25
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 49,
+            "y": 25
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "compressor": {
+    "image": "compressor.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": -1,
+            "y": 25
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 49,
+            "y": 25
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "turbine": {
+    "image": "expander.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": -1,
+            "y": 25
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 49,
+            "y": 25
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "turbine_stage": {
+    "image": "expander.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": -1,
+            "y": 25
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 49,
+            "y": 25
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "turbine_inlet": {
+    "image": "expander.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": -1,
+            "y": 25
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 49,
+            "y": 25
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "turbine_outlet": {
+    "image": "expander.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": -1,
+            "y": 25
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 49,
+            "y": 25
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "turbine_multistage": {
+    "image": "expander.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": -1,
+            "y": 25
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 49,
+            "y": 25
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "separator": {
+    "image": "splitter.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 2,
+            "y": 25,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "right",
+          "args": {}
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "splitter": {
+    "image": "splitter.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 2,
+            "y": 25,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "right",
+          "args": {}
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "stoichiometric_reactor": {
+    "image": "reactor_s.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 5,
+            "y": 10,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 45,
+            "y": 45,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "equilibrium_reactor": {
+    "image": "reactor_e.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 5,
+            "y": 10,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 45,
+            "y": 45,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "feed": {
+    "image": "feed.svg",
+    "port_groups": {
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 48,
+            "y": 25,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "product": {
+    "image": "product.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 2,
+            "y": 25,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "feed_flash": {
+    "image": "feed.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 25,
+            "y": 0,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 25,
+            "y": 50,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "statejunction": {
+    "image": "default.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 10,
+            "y": 35
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 41,
+            "y": 35
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "translator": {
+    "image": "default.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 10,
+            "y": 35
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 41,
+            "y": 35
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "packed_column": {
+    "image": "packed_column_1.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 48,
+            "y": 10,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 48,
+            "y": 40,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "tray_column": {
+    "image": "tray_column_1.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 48,
+            "y": 10,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 48,
+            "y": 40,
+            "dx": 1,
+            "dy": 1
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  },
+  "default": {
+    "image": "default.svg",
+    "port_groups": {
+      "in": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 10,
+            "y": 35
+          }
+        }
+      },
+      "out": {
+        "position": {
+          "name": "left",
+          "args": {
+            "x": 41,
+            "y": 35
+          }
+        }
+      }
+    },
+    "routing_config": {
+      "in": {
+        "gap": {
+          "x": -30,
+          "y": 0
+        }
+      },
+      "out": {
+        "gap": {
+          "x": 30,
+          "y": 0
+        }
+      }
+    }
+  }
+}

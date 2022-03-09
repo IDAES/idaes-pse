@@ -499,8 +499,7 @@ class AlamoTrainer(SurrogateTrainer):
             return_code, alamo_log = self._call_alamo()
 
             # Read back results
-            trace_dict = self._read_trace_file(
-                self._trcfile, self.output_labels())
+            trace_dict = self._read_trace_file(self._trcfile)
 
             # Populate results and SurrogateModel object
             self._populate_results(trace_dict)
@@ -667,13 +666,6 @@ class AlamoTrainer(SurrogateTrainer):
         if trace_fname is not None:
             stream.write(f"TRACEFNAME {trace_fname}\n")
 
-        def _trim_extra_whitespace(text, sep=' '):
-            trimmed_lines = []
-            for line in text.splitlines():
-                parts = [part.strip() for part in line.split()]
-                trimmed_lines.append(str.join(sep, parts))
-            return str.join('\n', trimmed_lines)
-
         def _df_to_data_fragment(df, **kwargs):
             text = df.to_string(
                 header=False,
@@ -681,10 +673,7 @@ class AlamoTrainer(SurrogateTrainer):
                 float_format=lambda x: str(x).format(":g"),
                 **kwargs
             )
-            # This is only needed to remove the extra spaces (from `justify`?)
-            # on python 3.6 since on 3.7 and up pandas.to_string() returns
-            # already the proper format without any further processing needed
-            return _trim_extra_whitespace(text, sep=' ')
+            return text
 
         stream.write("\nBEGIN_DATA\n")
         # Columns will be writen in order in input and output lists
@@ -795,8 +784,7 @@ class AlamoTrainer(SurrogateTrainer):
 
         return return_code, alamo_log
 
-    @staticmethod
-    def _read_trace_file(trcfile, output_labels):
+    def _read_trace_file(self, trcfile, has_validation_data=False):
         """
         Method to read the results of an ALAMO run from a trace (.trc) file.
         The name location of the trace file is tored on the AlamoModelTrainer
@@ -807,6 +795,8 @@ class AlamoTrainer(SurrogateTrainer):
                Path to the trcfile to read
             output_labels : list of str
                List of strings of the output_labels (in order)
+            has_validation_data : bool
+                Bool indicating whether valdiation data was included in ALAMO run
 
         Returns:
             trace_dict: contents of trace file as a dict
@@ -814,6 +804,8 @@ class AlamoTrainer(SurrogateTrainer):
         with open(trcfile, "r") as f:
             lines = f.readlines()
         f.close()
+
+        output_labels = self.output_labels()
 
         trace_read = {}
         # Get headers from first line in trace file
@@ -828,8 +820,13 @@ class AlamoTrainer(SurrogateTrainer):
         # Get trace output from final line(s) of file
         # ALAMO will append new lines to existing trace files
         # For multiple outputs, each output has its own line in trace file
+        if self._validation_dataframe is not None or has_validation_data:
+            omult = 2
+        else:
+            omult = 1
+
         for j in range(len(output_labels)):
-            trace = lines[-len(output_labels)+j].split(", ")
+            trace = lines[(-len(output_labels)+j)*omult].split(", ")
 
             for i in range(len(headers)):
                 header = headers[i].strip("#\n")
@@ -862,6 +859,15 @@ class AlamoTrainer(SurrogateTrainer):
                         raise RuntimeError(
                             f"Mismatch when reading ALAMO trace file. "
                             f"Expected OUTPUT = {j+1}, found {trace_val}.")
+                elif header == "SET":
+                    # SET should always be 0 - higher numbers are for
+                    # validation data sets
+                    if trace_val != "0":
+                        raise RuntimeError(
+                            f"Mismatch when reading ALAMO trace file. "
+                            f"Expected SET = 0, found {trace_val}. "
+                            f"This likely indicates the presence of "
+                            f"unexpected validation data sets.")
                 elif header == "Model":
                     # Var label on LHS should match output label
                     vlabel = trace_val.split("==")[0].strip()

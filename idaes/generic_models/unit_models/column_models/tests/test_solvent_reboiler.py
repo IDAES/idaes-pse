@@ -16,11 +16,10 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Constraint,
                            Param,
-                           TerminationCondition,
-                           SolverStatus,
                            units,
                            value)
 from pyomo.util.check_units import (assert_units_consistent,
@@ -42,6 +41,7 @@ from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_sol
     import configuration as aqueous_mea
 from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_vapor \
     import flue_gas, wet_co2
+from idaes.core.util.exceptions import InitializationError
 
 
 # -----------------------------------------------------------------------------
@@ -138,9 +138,7 @@ class TestAbsorberVaporFlow(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -303,9 +301,7 @@ class TestAbsorberHeatDuty(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -413,3 +409,10 @@ class TestAbsorberHeatDuty(object):
 
         assert iscale.get_constraint_transform_applied_scaling_factor(
             model.fs.unit.unit_pressure_balance[0]) == 1e-5
+
+    @pytest.mark.component
+    def test_initialization_error_dof(self, model):
+        model.fs.unit.bottoms.flow_mol[0].fix(100)
+
+        with pytest.raises(InitializationError):
+            model.fs.unit.initialize()
