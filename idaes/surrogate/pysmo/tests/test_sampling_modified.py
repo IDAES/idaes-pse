@@ -302,30 +302,16 @@ class SamplingMethodsTestCases(unittest.TestCase):
     test_prime_base_to_decimal_03: working with base 1
     test_prime_base_to_decimal_04: working with base -1
 
-    test_selection_columns_preprocessing_01: Test behaviour with no labels specified
-    test_selection_columns_preprocessing_02: Test behaviour with only xlabels specified with multiple elements, same order as in dataframe
-    test_selection_columns_preprocessing_03: Test behaviour with only xlabels specified with multiple elements, different order from dataframe
-    test_selection_columns_preprocessing_04: Test behaviour with only xlabels specified with only 1 element
-    test_selection_columns_preprocessing_05: Test behaviour with only ylabels specified with multiple elements, same order as in dataframe
-    test_selection_columns_preprocessing_06: Test behaviour with only ylabels specified with multiple elements, different order from dataframe
-    test_selection_columns_preprocessing_07: Test behaviour with only ylabels specified with only 1 element
-    test_selection_columns_preprocessing_11: Test behaviour with both xlabels and ylabels specified; multiple x and single y
-    test_selection_columns_preprocessing_08: Test behaviour with both xlabels and ylabels specified; single x and single y; ordered
-    test_selection_columns_preprocessing_09: Test behaviour with both xlabels and ylabels specified; single x and multiple y
-    test_selection_columns_preprocessing_10: Test behaviour with both xlabels and ylabels specified; single x and single y; unordered
-    test_selection_columns_preprocessing_12: Test behaviour with both xlabels and ylabels specified; multiple x and y, all initial columns present
-    test_selection_columns_preprocessing_13: Test behaviour when non-existent column name is supplied in label - should raias ValueError
+    test_selection_columns_preprocessing_01 - 11: Test behaviour of function for a dataframe input under a variety of xlabels and ylabels conditions. 
+        See test docstrings for more specific details.
     test_selection_columns_preprocessing_14 - 26: Repeats above tests 1-13 for case where input is a numpy array rather than a dataframe
     """
-
-
 
     def _create_sampling(self, input_array, sample_points):
         sampling = SamplingMethods()
         sampling.data_headers = [i for i in range(0, sample_points.shape[1] + 1)]
         sampling.x_data = np.zeros((2, input_array.shape[1] - 1))
         return sampling
-
 
 
     @pytest.mark.unit
@@ -583,6 +569,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_01(self):
+        """
+        Test behaviour with no labels specified
+        """        
         sampling_methods = SamplingMethods()
         sampling_methods.selection_columns_preprocessing(self.test_data_pandas, None, None)
         assert sampling_methods.df_flag == True
@@ -595,6 +584,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_02(self):
+        """
+        Test behaviour with only xlabels specified with multiple elements, same order as in dataframe
+        """
         sampling_methods = SamplingMethods()
         x_lab = ['x1', 'x2']
         sampling_methods.selection_columns_preprocessing(self.test_data_pandas, x_lab, None)
@@ -608,6 +600,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_03(self):
+        """
+        Test behaviour with only xlabels specified with multiple elements, different order from dataframe
+        """
         sampling_methods = SamplingMethods()
         x_lab = ['y1', 'x1']
         sampling_methods.selection_columns_preprocessing(self.test_data_pandas, x_lab, None)
@@ -621,6 +616,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_04(self):
+        """
+        Test behaviour with only xlabels specified with only 1 element
+        """
         sampling_methods = SamplingMethods()
         x_lab = ['y2']
         expected_order = ['y2', 'x1', 'x2', 'y1']
@@ -635,6 +633,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_05(self):
+        """
+        Test behaviour with only ylabels specified with multiple elements, same order as in dataframe
+        """
         sampling_methods = SamplingMethods()
         y_lab = ['y1', 'y2']
         expected_order = ['x1', 'x2', 'y1', 'y2']
@@ -650,6 +651,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_06(self):
+        """
+        Test behaviour with only ylabels specified with multiple elements, different order from dataframe
+        """
         sampling_methods = SamplingMethods()
         y_lab = ['y1', 'x1']
         expected_order = ['x2', 'y2', 'y1', 'x1']
@@ -665,6 +669,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_07(self):
+        """
+        Test behaviour with only ylabels specified with only 1 element
+        """
         sampling_methods = SamplingMethods()
         y_lab = ['x2']
         expected_order = ['x1', 'y1', 'y2', 'x2']
@@ -680,6 +687,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_11(self):
+        """
+        Test behaviour with both xlabels and ylabels specified; multiple x and single y
+        """
         sampling_methods = SamplingMethods()
         x_lab = ['x1', 'x2']
         y_lab = ['y2']
@@ -695,6 +705,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_08(self):
+        """
+        Test behaviour with both xlabels and ylabels specified; single x and single y; ordered
+        """
         sampling_methods = SamplingMethods()
         x_lab = ['x1']
         y_lab = ['y1']
@@ -710,6 +723,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_09(self):
+        """
+        Test behaviour with both xlabels and ylabels specified; single x and multiple y
+        """
         sampling_methods = SamplingMethods()
         x_lab = ['x1']
         y_lab = ['y1', 'y2']
@@ -725,6 +741,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_10(self):
+        """
+        Test behaviour with both xlabels and ylabels specified; single x and single y; unordered
+        """
         sampling_methods = SamplingMethods()
         x_lab = ['y1']
         y_lab = ['x2']
@@ -740,6 +759,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_12(self):
+        """
+        Test behaviour with both xlabels and ylabels specified; multiple x and y, all initial columns present
+        """
         sampling_methods = SamplingMethods()
         x_lab = ['y1', 'x2']
         y_lab = ['x1', 'y2']
@@ -755,6 +777,9 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_13(self):
+        """
+        Test behaviour when non-existent column name is supplied in label - should raise ValueError
+        """
         sampling_methods = SamplingMethods()
         x_lab = ['x1']
         y_lab = ['y3']
