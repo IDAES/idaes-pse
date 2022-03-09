@@ -26,7 +26,6 @@ from pyomo.environ import (check_optimal_termination,
                            units as pyunits)
 
 from pyomo.dae import DerivativeVar
-from pyomo.dae.diffvar import DAE_Error
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
@@ -35,6 +34,7 @@ from pyomo.core.base.units_container import InconsistentUnitsError
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
+from idaes.core.util.exceptions import ConfigurationError, IdaesError
 
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
@@ -396,19 +396,18 @@ class TestHXLCGeneric(object):
         assert check_optimal_termination(results)
 
     @pytest.mark.unit
-    @pytest.mark.xfail(reason="static flowsheet with dynamic heat balance",
-                       raises=DAE_Error)
     def test_static_flowsheet(self, static_flowsheet_model):
         m = static_flowsheet_model
-        m.fs.unit = HeatExchangerLumpedCapacitance(default={
-            "shell": {"property_package": m.fs.properties},
-            "tube": {"property_package": m.fs.properties},
-            "dynamic": False,
-            "dynamic_heat_balance": True})
+        with pytest.raises(ConfigurationError,
+                           match='dynamic heat balance cannot be used with a '
+                                 'steady-state flowsheet'):
+            m.fs.unit = HeatExchangerLumpedCapacitance(default={
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
+                "dynamic": False,
+                "dynamic_heat_balance": True})
 
     @pytest.mark.unit
-    @pytest.mark.xfail(reason="activate dynamic heat eq with static model",
-                       raises=AttributeError)
     def test_static_heat_balance(self, static_flowsheet_model):
         m = static_flowsheet_model
         m.fs.unit = HeatExchangerLumpedCapacitance(default={
@@ -416,7 +415,11 @@ class TestHXLCGeneric(object):
             "tube": {"property_package": m.fs.properties},
             "dynamic": False,
             "dynamic_heat_balance": False})
-        m.fs.unit.activate_dynamic_heat_eq()
+
+        with pytest.raises(IdaesError,
+                           match='heat holdup term cannot be activated when '
+                                 '`dynamic_heat_balance=False`'):
+            m.fs.unit.activate_dynamic_heat_eq()
 
     @pytest.mark.unit
     def test_build_valid_configs(self, static_flowsheet_model,

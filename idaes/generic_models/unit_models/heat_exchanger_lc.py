@@ -20,6 +20,9 @@ from pyomo.environ import Var, Param
 from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigValue
 from idaes.core import declare_process_block_class
+from idaes.core.process_base import useDefault
+from idaes.core.util.config import DefaultBool
+from idaes.core.util.exceptions import ConfigurationError, IdaesError
 from .heat_exchanger import HeatExchangerData
 
 
@@ -32,12 +35,13 @@ class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
     CONFIG.declare(
         "dynamic_heat_balance",
         ConfigValue(
-            default=True,
-            domain=bool,
+            default=useDefault,
+            domain=DefaultBool,
             doc="""Indicates whether heat holdup in the wall material should 
 be included in the overall energy balance,
-**default** - True.
+**default** - useDefault.
 **Valid values:** {
+**useDefault** - get flag from parent (default = False),
 **True** - include wall material heat holdup,
 **False** - do not include wall material heat holdup.}""",
         ),
@@ -148,6 +152,12 @@ be included in the overall energy balance,
         Returns:
             None
         """
+
+        if not self.config.dynamic_heat_balance:
+            raise IdaesError('{} heat holdup term cannot be activated '
+                             'when `dynamic_heat_balance=False`'
+                             .format(self.name))
+
         self.unit_heat_balance.deactivate()
         self.dynamic_heat_balance.activate()
 
@@ -186,6 +196,11 @@ be included in the overall energy balance,
                 get_metadata()
             temp_units = s1_metadata.get_derived_units("temperature")
             time_units = s1_metadata.get_derived_units("time")
+
+            if not self.flowsheet().config.dynamic:
+                raise ConfigurationError('{} dynamic heat balance cannot be '
+                                         'used with a steady-state '
+                                         'flowsheet'.format(self.name))
 
             self.dT_wall_dt = DerivativeVar(
                 self.temperature_wall,
