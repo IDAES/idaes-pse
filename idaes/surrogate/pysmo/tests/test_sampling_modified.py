@@ -356,10 +356,10 @@ class SamplingMethodsTestCases(unittest.TestCase):
         input_array = self.test_data_numpy_3d        
         generated_sample_points =  np.array([[-0.5,10],
                                              [10,100]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
-        equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
+        equivalent_points = sampling_methods.points_selection(input_array, generated_sample_points)
         np.testing.assert_array_equal(equivalent_points[0], input_array[0,:])
         np.testing.assert_array_equal(equivalent_points[1], input_array[-1,:])
 
@@ -368,10 +368,10 @@ class SamplingMethodsTestCases(unittest.TestCase):
         input_array = self.test_data_numpy_2d        
         generated_sample_points =  np.array([[-0.5],
                                              [10]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
-        equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
+        equivalent_points = sampling_methods.points_selection(input_array, generated_sample_points)
         np.testing.assert_array_equal(equivalent_points[0], input_array[0,:])
         np.testing.assert_array_equal(equivalent_points[1], input_array[-1,:])
     
@@ -380,10 +380,10 @@ class SamplingMethodsTestCases(unittest.TestCase):
         input_array = self.test_data_numpy_1d        
         generated_sample_points =  np.array([[],
                                              []])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
-        equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
+        equivalent_points = sampling_methods.points_selection(input_array, generated_sample_points)
         np.testing.assert_array_equal(equivalent_points[0], input_array[0,:])
         np.testing.assert_array_equal(equivalent_points[1], input_array[0,:])
     
@@ -392,32 +392,32 @@ class SamplingMethodsTestCases(unittest.TestCase):
         input_array = self.test_data_numpy_3d        
         generated_sample_points =  np.array([[0.5],
                                              [10]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
         with pytest.raises(ValueError):
-            equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
+            equivalent_points = sampling_methods.points_selection(input_array, generated_sample_points)
     
     @pytest.mark.unit
     def test_points_selection_05(self):
         input_array = self.test_data_numpy_3d        
         generated_sample_points =  np.array([[0.5,0.7,10],
                                              [10,0.9,20]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
         with pytest.raises(ValueError):
-            equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
+            equivalent_points = sampling_methods.points_selection(input_array, generated_sample_points)
     
     @pytest.mark.unit
     def test_sample_point_selection_01(self):
         input_array = self.test_data_numpy_3d        
         generated_sample_points =  np.array([[0,0],
                                              [10,19]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
-        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
+        unique_sample_points = sampling_methods.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
         np.testing.assert_array_equal(unique_sample_points[0], input_array[0,:])
         np.testing.assert_array_equal(unique_sample_points[1], input_array[-1,:])
 
@@ -426,10 +426,10 @@ class SamplingMethodsTestCases(unittest.TestCase):
         input_array = self.test_data_numpy_2d        
         generated_sample_points =  np.array([[0],
                                              [7]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
-        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
+        unique_sample_points = sampling_methods.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
         np.testing.assert_array_equal(unique_sample_points[0], input_array[0,:])
         np.testing.assert_array_equal(unique_sample_points[1], input_array[-1,:])
 
@@ -438,10 +438,10 @@ class SamplingMethodsTestCases(unittest.TestCase):
         input_array = self.test_data_numpy_1d        
         generated_sample_points =  np.array([[],
                                              []])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
-        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
+        unique_sample_points = sampling_methods.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
         np.testing.assert_array_equal(unique_sample_points[0], input_array[0,:])
     
     @pytest.mark.unit
@@ -449,32 +449,32 @@ class SamplingMethodsTestCases(unittest.TestCase):
         input_array = self.test_data_numpy_3d        
         generated_sample_points =  np.array([[0.5],
                                              [7]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
         with pytest.raises(ValueError):
-            unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
+            unique_sample_points = sampling_methods.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
     
     @pytest.mark.unit
     def test_sample_point_selection_05(self):
         input_array = self.test_data_numpy_3d        
         generated_sample_points =  np.array([[0.5,1,10],
                                              [7,19,20]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
         with pytest.raises(ValueError):
-            unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
+            unique_sample_points = sampling_methods.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
 
     @pytest.mark.unit
     def test_sample_point_selection_06(self):
         input_array = self.test_data_numpy_3d        
         generated_sample_points =  np.array([[0.5,11,3],
                                              [7,19,4]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
-        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
+        unique_sample_points = sampling_methods.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
         min_ , max_ = input_array[0, :], input_array[1, :]
         testing = min_ + generated_sample_points * (max_ - min_)
         np.testing.assert_array_equal(testing,unique_sample_points)
@@ -484,10 +484,10 @@ class SamplingMethodsTestCases(unittest.TestCase):
         input_array = self.test_data_numpy_2d        
         generated_sample_points =  np.array([[0.5,1],
                                              [7,19]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
-        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
+        unique_sample_points = sampling_methods.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
         min_ , max_ = input_array[0, :], input_array[1, :]
         testing = min_ + generated_sample_points * (max_ - min_)
         np.testing.assert_array_equal(testing,unique_sample_points)
@@ -497,10 +497,10 @@ class SamplingMethodsTestCases(unittest.TestCase):
         input_array = self.test_data_numpy_1d        
         generated_sample_points =  np.array([[0.5],
                                              [7]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
-        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
+        unique_sample_points = sampling_methods.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
         min_ , max_ = input_array[0, :], input_array[1, :]
         testing = min_ + generated_sample_points * (max_ - min_)
         np.testing.assert_array_equal(testing,unique_sample_points)
@@ -510,22 +510,22 @@ class SamplingMethodsTestCases(unittest.TestCase):
         input_array = self.test_data_numpy_3d        
         generated_sample_points =  np.array([[],
                                              []])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
         with pytest.raises(IndexError):
-            unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
+            unique_sample_points = sampling_methods.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
     
     @pytest.mark.unit
     def test_sample_point_selection_10(self):
         input_array = self.test_data_numpy_3d        
         generated_sample_points =  np.array([[0.5,1,10,11],
                                              [7,19,10,12]])
-        SamplingClass = SamplingMethods()
-        SamplingClass.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
-        SamplingClass.x_data = np.zeros((2, input_array.shape[1] - 1))
+        sampling_methods = SamplingMethods()
+        sampling_methods.data_headers = [i for i in range(0, generated_sample_points.shape[1] + 1)]
+        sampling_methods.x_data = np.zeros((2, input_array.shape[1] - 1))
         with pytest.raises(IndexError):
-            unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
+            unique_sample_points = sampling_methods.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
 
     @pytest.mark.unit
     def test_prime_number_generator_01(self):
@@ -596,374 +596,374 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test_data_sequencing(self):
-        SamplingClass = SamplingMethods()
-        sequence_decimal = SamplingClass.data_sequencing(3, 2)
+        sampling_methods = SamplingMethods()
+        sequence_decimal = sampling_methods.data_sequencing(3, 2)
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_01(self):
-        SamplingClass = SamplingMethods()
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, None, None)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - 1     
-        assert SamplingClass.data_headers == self.test_data_pandas.columns.values.tolist()
-        assert SamplingClass.data_headers_xvars == self.test_data_pandas.columns.values.tolist()[:-1]
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, :-1])
+        sampling_methods = SamplingMethods()
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, None, None)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == self.test_data_pandas.shape[1] - 1     
+        assert sampling_methods.data_headers == self.test_data_pandas.columns.values.tolist()
+        assert sampling_methods.data_headers_xvars == self.test_data_pandas.columns.values.tolist()[:-1]
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, :-1])
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_02(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = ['x1', 'x2']
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, None)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == len(x_lab)   
-        assert SamplingClass.data_headers == self.test_data_pandas.columns.values.tolist()
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, :-2])
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, x_lab, None)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == len(x_lab)   
+        assert sampling_methods.data_headers == self.test_data_pandas.columns.values.tolist()
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, :-2])
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_03(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = ['y1', 'x1']
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, None)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == len(x_lab)   
-        assert SamplingClass.data_headers == ['y1', 'x1', 'x2', 'y2']
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[['y1', 'x1', 'x2', 'y2']].values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values)       
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, x_lab, None)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == len(x_lab)   
+        assert sampling_methods.data_headers == ['y1', 'x1', 'x2', 'y2']
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas[['y1', 'x1', 'x2', 'y2']].values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas[x_lab].values)       
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_04(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = ['y2']
         expected_order = ['y2', 'x1', 'x2', 'y1']
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, None)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == len(x_lab)   
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, x_lab, None)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == len(x_lab)   
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas[x_lab].values) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_05(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         y_lab = ['y1', 'y2']
         expected_order = ['x1', 'x2', 'y1', 'y2']
         expected_x_lab = ['x1', 'x2']
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, None, y_lab)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab)   
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == expected_x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[expected_x_lab].values)
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, None, y_lab)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab)   
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == expected_x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas[expected_x_lab].values)
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_06(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         y_lab = ['y1', 'x1']
         expected_order = ['x2', 'y2', 'y1', 'x1']
         expected_x_lab = ['x2', 'y2']
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, None, y_lab)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab) 
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == expected_x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[expected_x_lab].values)       
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, None, y_lab)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab) 
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == expected_x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas[expected_x_lab].values)       
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_07(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         y_lab = ['x2']
         expected_order = ['x1', 'y1', 'y2', 'x2']
         expected_x_lab = ['x1', 'y1', 'y2']
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, None, y_lab)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == expected_x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[expected_x_lab].values) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, None, y_lab)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == expected_x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas[expected_x_lab].values) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_11(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = ['x1', 'x2']
         y_lab = ['y2']
         expected_order = x_lab + y_lab
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == len(expected_order)
-        assert SamplingClass.x_data.shape[1] == len(x_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == len(expected_order)
+        assert sampling_methods.x_data.shape[1] == len(x_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas[x_lab].values) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_08(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = ['x1']
         y_lab = ['y1']
         expected_order = x_lab + y_lab
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab,y_lab)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == len(x_lab) + len(y_lab)
-        assert SamplingClass.x_data.shape[1] == len(x_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, x_lab,y_lab)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == len(x_lab) + len(y_lab)
+        assert sampling_methods.x_data.shape[1] == len(x_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas[x_lab].values) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_09(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = ['x1']
         y_lab = ['y1', 'y2']
         expected_order = x_lab + y_lab
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == len(expected_order)
-        assert SamplingClass.x_data.shape[1] == len(x_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == len(expected_order)
+        assert sampling_methods.x_data.shape[1] == len(x_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas[x_lab].values) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_10(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = ['y1']
         y_lab = ['x2']
         expected_order = x_lab + y_lab
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == len(expected_order)
-        assert SamplingClass.x_data.shape[1] == len(x_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == len(expected_order)
+        assert sampling_methods.x_data.shape[1] == len(x_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas[x_lab].values) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_12(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = ['y1', 'x2']
         y_lab = ['x1', 'y2']
         expected_order = x_lab + y_lab
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
-        assert SamplingClass.df_flag == True
-        assert SamplingClass.data.shape[1] == len(expected_order)
-        assert SamplingClass.x_data.shape[1] == len(x_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas[expected_order].values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas[x_lab].values) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
+        assert sampling_methods.df_flag == True
+        assert sampling_methods.data.shape[1] == len(expected_order)
+        assert sampling_methods.x_data.shape[1] == len(x_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas[expected_order].values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas[x_lab].values) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_13(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = ['x1']
         y_lab = ['y3']
         expected_order = x_lab + y_lab
 
         with pytest.raises(IndexError):
-            SamplingClass.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
+            sampling_methods.selection_columns_preprocessing(self.test_data_pandas, x_lab, y_lab)
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_14(self):
-        SamplingClass = SamplingMethods()
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, None, None)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - 1     
-        assert SamplingClass.data_headers == [i for i in range(0, self.test_data_pandas.shape[1])]
-        assert SamplingClass.data_headers_xvars == [i for i in range(0, self.test_data_pandas.shape[1] - 1)]
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values)
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, :-1])
+        sampling_methods = SamplingMethods()
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, None, None)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == self.test_data_pandas.shape[1] - 1     
+        assert sampling_methods.data_headers == [i for i in range(0, self.test_data_pandas.shape[1])]
+        assert sampling_methods.data_headers_xvars == [i for i in range(0, self.test_data_pandas.shape[1] - 1)]
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values)
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, :-1])
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_15(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = [0, 1]
         expected_order = [0, 1, 2, 3]
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, None)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == len(x_lab)   
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values[:, expected_order])
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, x_lab])
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, None)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == len(x_lab)   
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values[:, expected_order])
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, x_lab])
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_16(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = [2, 0]
         expected_order = [2, 0, 1, 3]
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, None)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == len(x_lab)   
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values[:, expected_order])
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, x_lab])       
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, None)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == len(x_lab)   
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values[:, expected_order])
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, x_lab])       
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_17(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = [3]
         expected_order = [3, 0, 1, 2]
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, None)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == len(x_lab)   
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values[:, expected_order])
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, x_lab])  
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, None)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == len(x_lab)   
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values[:, expected_order])
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, x_lab])  
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_18(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         y_lab = [2, 3]
         expected_order = [0, 1, 2, 3]
         expected_x_lab = [0, 1]
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, None, y_lab)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab)   
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == expected_x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values[:, expected_order])
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, expected_x_lab])
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, None, y_lab)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab)   
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == expected_x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values[:, expected_order])
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, expected_x_lab])
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_19(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         y_lab = [2, 0]
         expected_order = [1, 3, 2, 0]
         expected_x_lab = [1, 3]
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, None, y_lab)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab) 
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == expected_x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values[:, expected_order])
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, expected_x_lab])       
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, None, y_lab)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab) 
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == expected_x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values[:, expected_order])
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, expected_x_lab])       
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_20(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         y_lab = [1]
         expected_order = [0, 2, 3, 1]
         expected_x_lab = [0, 2, 3]
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, None, y_lab)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == self.test_data_pandas.shape[1]
-        assert SamplingClass.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == expected_x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values[:, expected_order])
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, expected_x_lab]) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, None, y_lab)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == self.test_data_pandas.shape[1]
+        assert sampling_methods.x_data.shape[1] == self.test_data_pandas.shape[1] - len(y_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == expected_x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values[:, expected_order])
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, expected_x_lab]) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_21(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = [0, 1]
         y_lab = [3]
         expected_order = x_lab + y_lab
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, y_lab)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == len(expected_order)
-        assert SamplingClass.x_data.shape[1] == len(x_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values[:, expected_order])
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, x_lab]) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, y_lab)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == len(expected_order)
+        assert sampling_methods.x_data.shape[1] == len(x_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values[:, expected_order])
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, x_lab]) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_22(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = [0]
         y_lab = [2]
         expected_order = x_lab + y_lab
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, x_lab,y_lab)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == len(x_lab) + len(y_lab)
-        assert SamplingClass.x_data.shape[1] == len(x_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values[:, expected_order])
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, x_lab]) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, x_lab,y_lab)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == len(x_lab) + len(y_lab)
+        assert sampling_methods.x_data.shape[1] == len(x_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values[:, expected_order])
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, x_lab]) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_23(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = [0]
         y_lab = [2, 3]
         expected_order = x_lab + y_lab
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, y_lab)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == len(expected_order)
-        assert SamplingClass.x_data.shape[1] == len(x_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values[:, expected_order])
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, x_lab]) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, y_lab)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == len(expected_order)
+        assert sampling_methods.x_data.shape[1] == len(x_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values[:, expected_order])
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, x_lab]) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_24(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = [2]
         y_lab = [1]
         expected_order = x_lab + y_lab
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, y_lab)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == len(expected_order)
-        assert SamplingClass.x_data.shape[1] == len(x_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values[:, expected_order])
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, x_lab]) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, y_lab)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == len(expected_order)
+        assert sampling_methods.x_data.shape[1] == len(x_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values[:, expected_order])
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, x_lab]) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_25(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = [2, 1]
         y_lab = [0, 3]
         expected_order = x_lab + y_lab
-        SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, y_lab)
-        assert SamplingClass.df_flag == False
-        assert SamplingClass.data.shape[1] == len(expected_order)
-        assert SamplingClass.x_data.shape[1] == len(x_lab)  
-        assert SamplingClass.data_headers == expected_order
-        assert SamplingClass.data_headers_xvars == x_lab
-        np.testing.assert_array_equal(SamplingClass.data, self.test_data_pandas.values[:, expected_order])
-        np.testing.assert_array_equal(SamplingClass.x_data, self.test_data_pandas.values[:, x_lab]) 
+        sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, y_lab)
+        assert sampling_methods.df_flag == False
+        assert sampling_methods.data.shape[1] == len(expected_order)
+        assert sampling_methods.x_data.shape[1] == len(x_lab)  
+        assert sampling_methods.data_headers == expected_order
+        assert sampling_methods.data_headers_xvars == x_lab
+        np.testing.assert_array_equal(sampling_methods.data, self.test_data_pandas.values[:, expected_order])
+        np.testing.assert_array_equal(sampling_methods.x_data, self.test_data_pandas.values[:, x_lab]) 
 
     @pytest.mark.unit
     def test_selection_columns_preprocessing_26(self):
-        SamplingClass = SamplingMethods()
+        sampling_methods = SamplingMethods()
         x_lab = [0]
         y_lab = [4]
         expected_order = x_lab + y_lab
 
         with pytest.raises(IndexError):
-            SamplingClass.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, y_lab)
+            sampling_methods.selection_columns_preprocessing(self.test_data_pandas.values, x_lab, y_lab)
 
 
 class LatinHypercubeSamplingTestCases(unittest.TestCase):

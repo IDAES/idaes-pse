@@ -473,7 +473,7 @@ class LatinHypercubeSampling(SamplingMethods):
         print('Sampling type: ', self.sampling_type, '\n')
 
         if self.sampling_type == 'selection':
-            if isinstance(data_input, pd.DataFrame) or isinstance(data_input, np.ndarray):
+            if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
                 raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
@@ -675,7 +675,7 @@ class UniformSampling(SamplingMethods):
         print('Sampling type: ', self.sampling_type, '\n')
 
         if self.sampling_type == 'selection':
-            if isinstance(data_input, pd.DataFrame) or isinstance(data_input, np.ndarray):
+            if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
                 raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
@@ -819,7 +819,7 @@ class HaltonSampling(SamplingMethods):
         print('Sampling type: ', self.sampling_type, '\n')
 
         if self.sampling_type == 'selection':
-            if isinstance(data_input, pd.DataFrame) or isinstance(data_input, np.ndarray):
+            if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
                 raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
@@ -965,7 +965,7 @@ class HammersleySampling(SamplingMethods):
 
         if self.sampling_type == 'selection':
 
-            if isinstance(data_input, pd.DataFrame) or isinstance(data_input, np.ndarray):
+            if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
                 raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
@@ -1117,7 +1117,7 @@ class CVTSampling(SamplingMethods):
         print('Sampling type: ', self.sampling_type, '\n')
 
         if self.sampling_type == 'selection':
-            if isinstance(data_input, pd.DataFrame) or isinstance(data_input, np.ndarray):
+            if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
                 raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
