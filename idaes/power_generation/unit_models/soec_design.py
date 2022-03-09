@@ -88,7 +88,7 @@ class SoecDesignData(UnitModelBlockData):
         "reaction_eos",
         ConfigValue(
             default=EosType.PR,
-            description="Reaction properties equation of state.",
+            description="Physical properies for electrolysis reactions",
             doc=(
                 "Reaction properties equation of state in: "
                 "{EosType.PR, EosType.IDEAL}."
