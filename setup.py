@@ -79,7 +79,7 @@ kwargs = dict(
         "nbformat",
         "numpy",
         "networkx",
-        "omlt==0.3", # fix the version for now as package evolves
+        "omlt==0.3.1", # fix the version for now as package evolves
         "pandas",
         "pint",
         "psutil",
@@ -110,7 +110,7 @@ kwargs = dict(
             "tensorflow",  # idaes.surrogate.keras_surrogate
             # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
             "coolprop; python_version < '3.9'"  # idaes.generic_models.properties.general.coolprop
-        ]
+        ],
     },
     package_data={
         # If any package contains these files, include them:
