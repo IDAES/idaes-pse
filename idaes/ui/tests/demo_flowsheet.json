@@ -2174,7 +2174,10 @@
                         },
                         "markup": "<g><rect/></g>",
                         "position": {
-                            "args": {},
+                            "args": {
+                                "x": -1,
+                                "y": 25
+                            },
                             "name": "left"
                         }
                     },
@@ -2190,9 +2193,7 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 50,
+                                "x": 49,
                                 "y": 25
                             },
                             "name": "left"
@@ -2478,7 +2479,10 @@
                         },
                         "markup": "<g><rect/></g>",
                         "position": {
-                            "args": {},
+                            "args": {
+                                "x": -1,
+                                "y": 25
+                            },
                             "name": "left"
                         }
                     },
@@ -2494,9 +2498,7 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 50,
+                                "x": 49,
                                 "y": 25
                             },
                             "name": "left"
@@ -3091,7 +3093,10 @@
                         },
                         "markup": "<g><rect/></g>",
                         "position": {
-                            "args": {},
+                            "args": {
+                                "x": -1,
+                                "y": 25
+                            },
                             "name": "left"
                         }
                     },
@@ -3107,9 +3112,7 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 50,
+                                "x": 49,
                                 "y": 25
                             },
                             "name": "left"

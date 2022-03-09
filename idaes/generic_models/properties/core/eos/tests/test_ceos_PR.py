@@ -35,7 +35,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
-from idaes.core.util.exceptions import ( PropertyNotSupportedError, 
+from idaes.core.util.exceptions import ( PropertyNotSupportedError,
     ConfigurationError)
 from idaes.core.util.constants import Constants as const
 from idaes import bin_directory
@@ -90,7 +90,7 @@ def define_state(b):
         b.mole_frac_phase_comp["Liq", "a"].value = 0.6
         b.mole_frac_phase_comp["Liq", "b"].value = 0.3
         b.mole_frac_phase_comp["Liq", "c"].value = 0.1
-        
+
         for p in ["Liq","Vap"]:
             for j in "abc":
                 b.log_mole_frac_phase_comp[p,j].value = log(
@@ -167,13 +167,13 @@ def m():
     m.props[1].entr_mol_phase_comp = Var(m.params.phase_list,
                                          m.params.component_list,
                                          initialize=1)
-    
+
     m.props[1].enth_mol_phase = Var(m.params.phase_list)
     m.props[1].entr_mol_phase = Var(m.params.phase_list)
-    
+
     m.props[1].dens_mol_phase = Var(m.params.phase_list)
     m.props[1].mw_phase = Var(m.params.phase_list)
-    
+
 
     for j in m.params.component_list:
         m.params.config.include_enthalpy_of_formation = False
@@ -182,7 +182,7 @@ def m():
 
         m.params.get_component(j).config.entr_mol_liq_comp = dummy_call
         m.params.get_component(j).config.entr_mol_ig_comp = dummy_call
-    
+
     return m
 
 
@@ -309,7 +309,7 @@ def test_mixing_rule_fail():
                                                     ("a", "b"): 0.000,
                                                     ("b", "a"): 0.000,
                                                     ("b", "b"): 0.000,}}})
-        
+
 # This test can be resuscitated when we actually implement another mixing rule
 # @pytest.mark.unit
 # def test_mixing_rule_mismatch():
@@ -488,7 +488,7 @@ def test_common(m):
                         value(-(const.gas_constant/2)*sqrt(0.45724)
                             * (1-m.params.PR_kappa[i, j])
                              /sqrt(m.props[1].temperature)
-                        * (m.props[1].PR_fw[j] 
+                        * (m.props[1].PR_fw[j]
                         * sqrt(m.props[1].PR_a[i]
                             *  m.params.get_component(j).temperature_crit
                             / m.params.get_component(j).pressure_crit)
@@ -497,7 +497,7 @@ def test_common(m):
                              * m.params.get_component(i).temperature_crit
                              / m.params.get_component(i).pressure_crit)))
                         )
-                                     
+
     assert isinstance(m.props[1].PR_dam_dT, Expression)
     assert len(m.props[1].PR_dam_dT) == len(m.params.phase_list)
     for p in m.params.phase_list:
@@ -518,14 +518,14 @@ def test_common(m):
                       for j in m.params.component_list)
                   for i in m.params.component_list) /
               sqrt(m.props[1].temperature)))
-                                 
+
     assert isinstance(m.props[1].PR_d2am_dT2, Expression)
     assert len(m.props[1].PR_d2am_dT2) == len(m.params.phase_list)
     T = m.props[1].temperature
     R = const.gas_constant
     for p in m.params.phase_list:
         assert (pytest.approx(value(m.props[1].PR_d2am_dT2[p]))
-            == value(-(0.5/T)*m.props[1].PR_dam_dT[p] + ((R**2*0.45724)/(2*T)) 
+            == value(-(0.5/T)*m.props[1].PR_dam_dT[p] + ((R**2*0.45724)/(2*T))
             *sum(
                 sum(m.props[1].mole_frac_phase_comp[p, i]
                     * m.props[1].mole_frac_phase_comp[p, j]
@@ -540,7 +540,7 @@ def test_common(m):
                 for i in m.params.component_list)
                 )
             )
-    
+
     # Test equilibrium state Expressions
     assert isinstance(m.props[1]._PR_a_eq, Expression)
     assert len(m.props[1]._PR_a_eq) == len(m.params.component_list)
@@ -606,12 +606,6 @@ def test_common(m):
                 (1-m.params.PR_kappa[idx[3], j])
                 for j in m.params.component_list))
 
-    # Check for external function components
-    assert isinstance(m.props[1]._PR_ext_func_param, Param)
-    assert m.props[1]._PR_ext_func_param.value == 0  # 0 == PR
-    assert isinstance(m.props[1]._PR_proc_Z_liq, ExternalFunction)
-    assert isinstance(m.props[1]._PR_proc_Z_vap, ExternalFunction)
-
 
 @pytest.mark.unit
 def test_compress_fact_phase_Liq(m):
@@ -657,7 +651,7 @@ def test_energy_internal_mol_phase(m):
 def test_energy_internal_mol_phase_comp(m):
     for p in m.params.phase_list:
         for j in m.params.component_list:
-            assert (str(Cubic.energy_internal_mol_phase_comp(m.props[1], p, j)) 
+            assert (str(Cubic.energy_internal_mol_phase_comp(m.props[1], p, j))
                     == str(m.props[1].enth_mol_phase_comp[p, j] -
                            m.props[1].pressure
                            * m.props[1].vol_mol_phase_comp[p, j]
@@ -686,7 +680,7 @@ def test_enth_mol_phase_comp(m):
             Cubic.enth_mol_phase_comp(m.props[1], "Liq", j))
         assert pytest.approx(enth["Vap",j], rel=1e-5) == value(
             Cubic.enth_mol_phase_comp(m.props[1], "Vap", j))
-        
+
     assert pytest.approx(Hl, rel=1e-5) == value(
             sum(Cubic.enth_mol_phase_comp(m.props[1], "Liq", j)
                 * m.props[1].mole_frac_phase_comp["Liq", j]
@@ -719,7 +713,7 @@ def test_entr_mol_phase_comp(m):
             Cubic.entr_mol_phase_comp(m.props[1], "Liq", j))
         assert pytest.approx(entr[("Vap", j)], rel=1e-5) == value(
             Cubic.entr_mol_phase_comp(m.props[1], "Vap", j))
-        
+
     # With real partial molar quantities implemented, we should have that
     # the sum weighted by mole fraction is equal to the molar entropy
     assert (pytest.approx(value(
@@ -809,7 +803,7 @@ def test_gibbs_mol_phase_comp(m):
     for p in m.params.phase_list:
         for j in m.params.component_list:
             assert (pytest.approx(
-                value(Cubic.gibbs_mol_phase_comp(m.props[1], p, j)), rel=1e-5) 
+                value(Cubic.gibbs_mol_phase_comp(m.props[1], p, j)), rel=1e-5)
                 == value(
                     Cubic.enth_mol_phase_comp(m.props[1], p, j)
                     - Cubic.entr_mol_phase_comp(m.props[1], p, j)
@@ -837,7 +831,7 @@ def test_vol_mol_phase_comp(m):
             Cubic.vol_mol_phase_comp(m.props[1], "Liq", j))
         assert pytest.approx(vol[("Vap", j)], rel=1e-5) == value(
             Cubic.vol_mol_phase_comp(m.props[1], "Vap", j))
-        
+
     # With real partial molar quantities implemented, we should have that
     # the sum weighted by mole fraction is equal to the molar volume
     assert (pytest.approx(value(

@@ -28,10 +28,8 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 2,
-                                "y": 0
+                                "x": 10,
+                                "y": 35
                             },
                             "name": "left"
                         }
@@ -48,10 +46,8 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 48,
-                                "y": 50
+                                "x": 41,
+                                "y": 35
                             },
                             "name": "left"
                         }
@@ -67,12 +63,12 @@
                         "id": 21
                     },
                     {
-                        "group": "in",
-                        "id": 25
+                        "group": "out",
+                        "id": 24
                     },
                     {
-                        "group": "out",
-                        "id": 26
+                        "group": "in",
+                        "id": 27
                     }
                 ]
             },
@@ -254,10 +250,8 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 2,
-                                "y": 0
+                                "x": 10,
+                                "y": 35
                             },
                             "name": "left"
                         }
@@ -274,10 +268,8 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 48,
-                                "y": 50
+                                "x": 41,
+                                "y": 35
                             },
                             "name": "left"
                         }
@@ -540,10 +532,8 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 2,
-                                "y": 0
+                                "x": 10,
+                                "y": 35
                             },
                             "name": "left"
                         }
@@ -560,10 +550,8 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 48,
-                                "y": 50
+                                "x": 41,
+                                "y": 35
                             },
                             "name": "left"
                         }
@@ -959,10 +947,8 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 2,
-                                "y": 0
+                                "x": 10,
+                                "y": 35
                             },
                             "name": "left"
                         }
@@ -979,10 +965,8 @@
                         "markup": "<g><rect/></g>",
                         "position": {
                             "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 48,
-                                "y": 50
+                                "x": 41,
+                                "y": 35
                             },
                             "name": "left"
                         }
@@ -1515,19 +1499,19 @@
             "angle": 0,
             "attrs": {
                 "image": {
-                    "xlinkHref": "/images/icons/feed.svg"
+                    "xlinkHref": "/images/icons/product.svg"
                 },
                 "label": {
-                    "text": "side_1_inlet_1"
+                    "text": "shell_outlet_1"
                 },
                 "root": {
-                    "title": "feed"
+                    "title": "product"
                 }
             },
-            "id": "side_1_inlet_1",
+            "id": "shell_outlet_1",
             "ports": {
                 "groups": {
-                    "out": {
+                    "in": {
                         "attrs": {
                             "rect": {
                                 "height": 0,
@@ -1541,7 +1525,7 @@
                             "args": {
                                 "dx": 1,
                                 "dy": 1,
-                                "x": 48,
+                                "x": 2,
                                 "y": 25
                             },
                             "name": "left"
@@ -1550,8 +1534,8 @@
                 },
                 "items": [
                     {
-                        "group": "out",
-                        "id": 24
+                        "group": "in",
+                        "id": 25
                     }
                 ]
             },
@@ -1581,7 +1565,7 @@
                 },
                 "name": "jumpover"
             },
-            "id": "s_side_1_inlet_1",
+            "id": "s_shell_outlet_1",
             "labels": [
                 {
                     "attrs": {
@@ -1594,7 +1578,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "product info",
                             "text-anchor": "left"
                         }
                     },
@@ -1606,7 +1590,7 @@
                 {
                     "attrs": {
                         "text": {
-                            "text": "s_side_1_inlet_1"
+                            "text": "s_shell_outlet_1"
                         }
                     }
                 }
@@ -1616,11 +1600,11 @@
                 "padding": 10
             },
             "source": {
-                "id": "side_1_inlet_1",
+                "id": "ECON",
                 "port": 24
             },
             "target": {
-                "id": "ECON",
+                "id": "shell_outlet_1",
                 "port": 25
             },
             "type": "standard.Link",
@@ -1630,19 +1614,19 @@
             "angle": 0,
             "attrs": {
                 "image": {
-                    "xlinkHref": "/images/icons/product.svg"
+                    "xlinkHref": "/images/icons/feed.svg"
                 },
                 "label": {
-                    "text": "side_2_outlet_1"
+                    "text": "tube_inlet_1"
                 },
                 "root": {
-                    "title": "product"
+                    "title": "feed"
                 }
             },
-            "id": "side_2_outlet_1",
+            "id": "tube_inlet_1",
             "ports": {
                 "groups": {
-                    "in": {
+                    "out": {
                         "attrs": {
                             "rect": {
                                 "height": 0,
@@ -1656,7 +1640,7 @@
                             "args": {
                                 "dx": 1,
                                 "dy": 1,
-                                "x": 2,
+                                "x": 48,
                                 "y": 25
                             },
                             "name": "left"
@@ -1665,8 +1649,8 @@
                 },
                 "items": [
                     {
-                        "group": "in",
-                        "id": 27
+                        "group": "out",
+                        "id": 26
                     }
                 ]
             },
@@ -1696,7 +1680,7 @@
                 },
                 "name": "jumpover"
             },
-            "id": "s_side_2_outlet_1",
+            "id": "s_tube_inlet_1",
             "labels": [
                 {
                     "attrs": {
@@ -1709,7 +1693,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "feed info",
                             "text-anchor": "left"
                         }
                     },
@@ -1721,7 +1705,7 @@
                 {
                     "attrs": {
                         "text": {
-                            "text": "s_side_2_outlet_1"
+                            "text": "s_tube_inlet_1"
                         }
                     }
                 }
@@ -1731,11 +1715,11 @@
                 "padding": 10
             },
             "source": {
-                "id": "ECON",
+                "id": "tube_inlet_1",
                 "port": 26
             },
             "target": {
-                "id": "side_2_outlet_1",
+                "id": "ECON",
                 "port": 27
             },
             "type": "standard.Link",
@@ -1748,13 +1732,13 @@
                     "xlinkHref": "/images/icons/feed.svg"
                 },
                 "label": {
-                    "text": "side_2_inlet_1"
+                    "text": "shell_inlet_1"
                 },
                 "root": {
                     "title": "feed"
                 }
             },
-            "id": "side_2_inlet_1",
+            "id": "shell_inlet_1",
             "ports": {
                 "groups": {
                     "out": {
@@ -1811,7 +1795,7 @@
                 },
                 "name": "jumpover"
             },
-            "id": "s_side_2_inlet_1",
+            "id": "s_shell_inlet_1",
             "labels": [
                 {
                     "attrs": {
@@ -1836,7 +1820,7 @@
                 {
                     "attrs": {
                         "text": {
-                            "text": "s_side_2_inlet_1"
+                            "text": "s_shell_inlet_1"
                         }
                     }
                 }
@@ -1846,7 +1830,7 @@
                 "padding": 10
             },
             "source": {
-                "id": "side_2_inlet_1",
+                "id": "shell_inlet_1",
                 "port": 28
             },
             "target": {
@@ -1863,13 +1847,13 @@
                     "xlinkHref": "/images/icons/feed.svg"
                 },
                 "label": {
-                    "text": "side_1_inlet_2"
+                    "text": "tube_inlet_2"
                 },
                 "root": {
                     "title": "feed"
                 }
             },
-            "id": "side_1_inlet_2",
+            "id": "tube_inlet_2",
             "ports": {
                 "groups": {
                     "out": {
@@ -1926,7 +1910,7 @@
                 },
                 "name": "jumpover"
             },
-            "id": "s_side_1_inlet_2",
+            "id": "s_tube_inlet_2",
             "labels": [
                 {
                     "attrs": {
@@ -1951,7 +1935,7 @@
                 {
                     "attrs": {
                         "text": {
-                            "text": "s_side_1_inlet_2"
+                            "text": "s_tube_inlet_2"
                         }
                     }
                 }
@@ -1961,7 +1945,7 @@
                 "padding": 10
             },
             "source": {
-                "id": "side_1_inlet_2",
+                "id": "tube_inlet_2",
                 "port": 30
             },
             "target": {
@@ -1978,13 +1962,13 @@
                     "xlinkHref": "/images/icons/product.svg"
                 },
                 "label": {
-                    "text": "side_1_outlet_1"
+                    "text": "tube_outlet_1"
                 },
                 "root": {
                     "title": "product"
                 }
             },
-            "id": "side_1_outlet_1",
+            "id": "tube_outlet_1",
             "ports": {
                 "groups": {
                     "in": {
@@ -2041,7 +2025,7 @@
                 },
                 "name": "jumpover"
             },
-            "id": "s_side_1_outlet_1",
+            "id": "s_tube_outlet_1",
             "labels": [
                 {
                     "attrs": {
@@ -2066,7 +2050,7 @@
                 {
                     "attrs": {
                         "text": {
-                            "text": "s_side_1_outlet_1"
+                            "text": "s_tube_outlet_1"
                         }
                     }
                 }
@@ -2080,7 +2064,7 @@
                 "port": 32
             },
             "target": {
-                "id": "side_1_outlet_1",
+                "id": "tube_outlet_1",
                 "port": 33
             },
             "type": "standard.Link",
@@ -2144,30 +2128,30 @@
                 "label": "product info",
                 "source": "ATMP1"
             },
-            "s_side_1_inlet_1": {
-                "dest": "ECON",
-                "label": "feed info",
-                "source": "side_1_inlet_1"
-            },
-            "s_side_1_inlet_2": {
-                "dest": "RH",
-                "label": "feed info",
-                "source": "side_1_inlet_2"
-            },
-            "s_side_1_outlet_1": {
-                "dest": "side_1_outlet_1",
-                "label": "product info",
-                "source": "RH"
-            },
-            "s_side_2_inlet_1": {
+            "s_shell_inlet_1": {
                 "dest": "FSH",
                 "label": "feed info",
-                "source": "side_2_inlet_1"
+                "source": "shell_inlet_1"
             },
-            "s_side_2_outlet_1": {
-                "dest": "side_2_outlet_1",
+            "s_shell_outlet_1": {
+                "dest": "shell_outlet_1",
                 "label": "product info",
                 "source": "ECON"
+            },
+            "s_tube_inlet_1": {
+                "dest": "ECON",
+                "label": "feed info",
+                "source": "tube_inlet_1"
+            },
+            "s_tube_inlet_2": {
+                "dest": "RH",
+                "label": "feed info",
+                "source": "tube_inlet_2"
+            },
+            "s_tube_outlet_1": {
+                "dest": "tube_outlet_1",
+                "label": "product info",
+                "source": "RH"
             },
             "ww2prsh": {
                 "dest": "PrSH",
@@ -2561,14 +2545,252 @@
             },
             "ECON": {
                 "image": "/images/icons/default.svg",
-                "performance_contents": {},
-                "stream_contents": {},
+                "performance_contents": {
+                    "0": {
+                        "Value": 100.0,
+                        "Variable": "HX Coefficient"
+                    },
+                    "1": {
+                        "Value": 1000.0,
+                        "Variable": "HX Area"
+                    },
+                    "2": {
+                        "Value": 0.0,
+                        "Variable": "Heat Duty"
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 1,
+                        "Hot Outlet": 1,
+                        "Variable": "Molar Flow (mol/s)"
+                    },
+                    "1": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 0.01802,
+                        "Hot Outlet": 0.01802,
+                        "Variable": "Mass Flow (kg/s)"
+                    },
+                    "10": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp CO2"
+                    },
+                    "11": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp H2O"
+                    },
+                    "12": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp SO2"
+                    },
+                    "13": {
+                        "Cold Inlet": 500,
+                        "Cold Outlet": 500,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "temperature"
+                    },
+                    "14": {
+                        "Cold Inlet": 101325.0,
+                        "Cold Outlet": 101325.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "pressure"
+                    },
+                    "2": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 286.34379,
+                        "Hot Outlet": 286.34379,
+                        "Variable": "T (K)"
+                    },
+                    "3": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 100000.0,
+                        "Hot Outlet": 100000.0,
+                        "Variable": "P (Pa)"
+                    },
+                    "4": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 0.0,
+                        "Hot Outlet": 0.0,
+                        "Variable": "Vapor Fraction"
+                    },
+                    "5": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 2168.59605,
+                        "Hot Outlet": 2168.59605,
+                        "Variable": "Molar Enthalpy (J/mol) Vap"
+                    },
+                    "6": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 1000.0,
+                        "Hot Outlet": 1000.0,
+                        "Variable": "Molar Enthalpy (J/mol) Liq"
+                    },
+                    "7": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp N2"
+                    },
+                    "8": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp O2"
+                    },
+                    "9": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp NO"
+                    }
+                },
                 "type": "boiler_heat_exchanger"
             },
             "FSH": {
                 "image": "/images/icons/default.svg",
-                "performance_contents": {},
-                "stream_contents": {},
+                "performance_contents": {
+                    "0": {
+                        "Value": 100.0,
+                        "Variable": "HX Coefficient"
+                    },
+                    "1": {
+                        "Value": 1000.0,
+                        "Variable": "HX Area"
+                    },
+                    "2": {
+                        "Value": 0.0,
+                        "Variable": "Heat Duty"
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 1,
+                        "Hot Outlet": 1,
+                        "Variable": "Molar Flow (mol/s)"
+                    },
+                    "1": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 0.01802,
+                        "Hot Outlet": 0.01802,
+                        "Variable": "Mass Flow (kg/s)"
+                    },
+                    "10": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp CO2"
+                    },
+                    "11": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp H2O"
+                    },
+                    "12": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp SO2"
+                    },
+                    "13": {
+                        "Cold Inlet": 500,
+                        "Cold Outlet": 500,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "temperature"
+                    },
+                    "14": {
+                        "Cold Inlet": 101325.0,
+                        "Cold Outlet": 101325.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "pressure"
+                    },
+                    "2": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 286.34379,
+                        "Hot Outlet": 286.34379,
+                        "Variable": "T (K)"
+                    },
+                    "3": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 100000.0,
+                        "Hot Outlet": 100000.0,
+                        "Variable": "P (Pa)"
+                    },
+                    "4": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 0.0,
+                        "Hot Outlet": 0.0,
+                        "Variable": "Vapor Fraction"
+                    },
+                    "5": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 2168.59605,
+                        "Hot Outlet": 2168.59605,
+                        "Variable": "Molar Enthalpy (J/mol) Vap"
+                    },
+                    "6": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 1000.0,
+                        "Hot Outlet": 1000.0,
+                        "Variable": "Molar Enthalpy (J/mol) Liq"
+                    },
+                    "7": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp N2"
+                    },
+                    "8": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp O2"
+                    },
+                    "9": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp NO"
+                    }
+                },
                 "type": "boiler_heat_exchanger"
             },
             "PlSH": {
@@ -2620,14 +2842,252 @@
             },
             "PrSH": {
                 "image": "/images/icons/default.svg",
-                "performance_contents": {},
-                "stream_contents": {},
+                "performance_contents": {
+                    "0": {
+                        "Value": 100.0,
+                        "Variable": "HX Coefficient"
+                    },
+                    "1": {
+                        "Value": 1000.0,
+                        "Variable": "HX Area"
+                    },
+                    "2": {
+                        "Value": 0.0,
+                        "Variable": "Heat Duty"
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 1,
+                        "Hot Outlet": 1,
+                        "Variable": "Molar Flow (mol/s)"
+                    },
+                    "1": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 0.01802,
+                        "Hot Outlet": 0.01802,
+                        "Variable": "Mass Flow (kg/s)"
+                    },
+                    "10": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp CO2"
+                    },
+                    "11": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp H2O"
+                    },
+                    "12": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp SO2"
+                    },
+                    "13": {
+                        "Cold Inlet": 500,
+                        "Cold Outlet": 500,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "temperature"
+                    },
+                    "14": {
+                        "Cold Inlet": 101325.0,
+                        "Cold Outlet": 101325.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "pressure"
+                    },
+                    "2": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 286.34379,
+                        "Hot Outlet": 286.34379,
+                        "Variable": "T (K)"
+                    },
+                    "3": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 100000.0,
+                        "Hot Outlet": 100000.0,
+                        "Variable": "P (Pa)"
+                    },
+                    "4": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 0.0,
+                        "Hot Outlet": 0.0,
+                        "Variable": "Vapor Fraction"
+                    },
+                    "5": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 2168.59605,
+                        "Hot Outlet": 2168.59605,
+                        "Variable": "Molar Enthalpy (J/mol) Vap"
+                    },
+                    "6": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 1000.0,
+                        "Hot Outlet": 1000.0,
+                        "Variable": "Molar Enthalpy (J/mol) Liq"
+                    },
+                    "7": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp N2"
+                    },
+                    "8": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp O2"
+                    },
+                    "9": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp NO"
+                    }
+                },
                 "type": "boiler_heat_exchanger"
             },
             "RH": {
                 "image": "/images/icons/default.svg",
-                "performance_contents": {},
-                "stream_contents": {},
+                "performance_contents": {
+                    "0": {
+                        "Value": 100.0,
+                        "Variable": "HX Coefficient"
+                    },
+                    "1": {
+                        "Value": 1000.0,
+                        "Variable": "HX Area"
+                    },
+                    "2": {
+                        "Value": 0.0,
+                        "Variable": "Heat Duty"
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 1,
+                        "Hot Outlet": 1,
+                        "Variable": "Molar Flow (mol/s)"
+                    },
+                    "1": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 0.01802,
+                        "Hot Outlet": 0.01802,
+                        "Variable": "Mass Flow (kg/s)"
+                    },
+                    "10": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp CO2"
+                    },
+                    "11": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp H2O"
+                    },
+                    "12": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp SO2"
+                    },
+                    "13": {
+                        "Cold Inlet": 500,
+                        "Cold Outlet": 500,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "temperature"
+                    },
+                    "14": {
+                        "Cold Inlet": 101325.0,
+                        "Cold Outlet": 101325.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "pressure"
+                    },
+                    "2": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 286.34379,
+                        "Hot Outlet": 286.34379,
+                        "Variable": "T (K)"
+                    },
+                    "3": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 100000.0,
+                        "Hot Outlet": 100000.0,
+                        "Variable": "P (Pa)"
+                    },
+                    "4": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 0.0,
+                        "Hot Outlet": 0.0,
+                        "Variable": "Vapor Fraction"
+                    },
+                    "5": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 2168.59605,
+                        "Hot Outlet": 2168.59605,
+                        "Variable": "Molar Enthalpy (J/mol) Vap"
+                    },
+                    "6": {
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-",
+                        "Hot Inlet": 1000.0,
+                        "Hot Outlet": 1000.0,
+                        "Variable": "Molar Enthalpy (J/mol) Liq"
+                    },
+                    "7": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp N2"
+                    },
+                    "8": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp O2"
+                    },
+                    "9": {
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0,
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Variable": "flow_mol_comp NO"
+                    }
+                },
                 "type": "boiler_heat_exchanger"
             },
             "Spl1": {
@@ -2780,23 +3240,23 @@
                 "image": "/images/icons/product.svg",
                 "type": "product"
             },
-            "side_1_inlet_1": {
+            "shell_inlet_1": {
                 "image": "/images/icons/feed.svg",
                 "type": "feed"
             },
-            "side_1_inlet_2": {
-                "image": "/images/icons/feed.svg",
-                "type": "feed"
-            },
-            "side_1_outlet_1": {
+            "shell_outlet_1": {
                 "image": "/images/icons/product.svg",
                 "type": "product"
             },
-            "side_2_inlet_1": {
+            "tube_inlet_1": {
                 "image": "/images/icons/feed.svg",
                 "type": "feed"
             },
-            "side_2_outlet_1": {
+            "tube_inlet_2": {
+                "image": "/images/icons/feed.svg",
+                "type": "feed"
+            },
+            "tube_outlet_1": {
                 "image": "/images/icons/product.svg",
                 "type": "product"
             }
@@ -2968,52 +3428,7 @@
             },
             "cell_index": 21
         },
-        "s_side_1_inlet_1": {
-            "cell_config": {
-                "gap": {
-                    "destination": {
-                        "x": -30,
-                        "y": 0
-                    },
-                    "source": {
-                        "x": 30,
-                        "y": 0
-                    }
-                }
-            },
-            "cell_index": 23
-        },
-        "s_side_1_inlet_2": {
-            "cell_config": {
-                "gap": {
-                    "destination": {
-                        "x": -30,
-                        "y": 0
-                    },
-                    "source": {
-                        "x": 30,
-                        "y": 0
-                    }
-                }
-            },
-            "cell_index": 29
-        },
-        "s_side_1_outlet_1": {
-            "cell_config": {
-                "gap": {
-                    "destination": {
-                        "x": -30,
-                        "y": 0
-                    },
-                    "source": {
-                        "x": 30,
-                        "y": 0
-                    }
-                }
-            },
-            "cell_index": 31
-        },
-        "s_side_2_inlet_1": {
+        "s_shell_inlet_1": {
             "cell_config": {
                 "gap": {
                     "destination": {
@@ -3028,7 +3443,22 @@
             },
             "cell_index": 27
         },
-        "s_side_2_outlet_1": {
+        "s_shell_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 23
+        },
+        "s_tube_inlet_1": {
             "cell_config": {
                 "gap": {
                     "destination": {
@@ -3042,6 +3472,36 @@
                 }
             },
             "cell_index": 25
+        },
+        "s_tube_inlet_2": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 29
+        },
+        "s_tube_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 31
         },
         "ww2prsh": {
             "cell_config": {
