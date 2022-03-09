@@ -285,6 +285,11 @@ class DoubleLoopCoordinator:
                 for t in range(options.ruc_horizon)
             ],
         }
+
+        # updated p_cost, so delete p_fuel
+        if "p_fuel" in gen_dict:
+            gen_dict.pop("p_fuel")
+
         return
 
     def _pass_DA_schedule_to_prescient(self, options, ruc_instance, schedule):
@@ -499,6 +504,11 @@ class DoubleLoopCoordinator:
             "cost_curve_type": "piecewise",
             "values": p_cost,
         }
+
+        # updated p_cost, so delete p_fuel
+        if "p_fuel" in gen_dict:
+            gen_dict.pop("p_fuel")
+            
         return
 
     def _pass_RT_schedule_to_prescient(
