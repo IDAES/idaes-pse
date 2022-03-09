@@ -167,7 +167,7 @@ class SelfScheduler(AbstractBidder):
         self.solver.solve(self.model, tee=True)
         bids = {
             self.generator: [
-                pyo.value(self.model.fs[0].power_output_ref[t])
+                round(pyo.value(self.model.fs[0].power_output_ref[t]), 4)
                 for t in range(self.horizon)
             ]
         }

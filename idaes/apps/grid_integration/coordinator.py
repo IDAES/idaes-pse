@@ -415,7 +415,7 @@ class DoubleLoopCoordinator:
             ):
                 for idx in tracker_obj.index_set():
                     if pyo.value(proj_tracker_obj[idx]) != pyo.value(tracker_obj[idx]):
-                        proj_tracker_obj[idx] = pyo.value(tracker_obj[idx])
+                        proj_tracker_obj[idx] = round(pyo.value(tracker_obj[idx]), 4)
 
         return
 
