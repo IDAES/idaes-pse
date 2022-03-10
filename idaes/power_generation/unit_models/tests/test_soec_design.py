@@ -16,22 +16,24 @@ import pyomo.environ as pyo
 import idaes
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import (
-    GenericParameterBlock)
+    GenericParameterBlock,
+)
 import idaes.core.util.scaling as iscale
 from idaes.power_generation.properties.natural_gas_PR import get_prop
 from idaes.power_generation.unit_models.soec_design import SoecDesign, EosType
 import pytest
 
+
 def flowsheet(eos=EosType.PR):
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic":False})
+    m.fs = FlowsheetBlock(default={"dynamic": False})
 
     sweep_comp = {
-        "O2":0.2074,
-        "H2O":0.0099,
-        "CO2":0.0003,
-        "N2":0.7732,
-        "Ar":0.0092,
+        "O2": 0.2074,
+        "H2O": 0.0099,
+        "CO2": 0.0003,
+        "N2": 0.7732,
+        "Ar": 0.0092,
     }
 
     feed_comp = {
@@ -49,9 +51,9 @@ def flowsheet(eos=EosType.PR):
     )
     m.fs.soec = SoecDesign(
         default={
-            "oxygen_side_package": m.fs.o2_side_prop_params,
-            "hydrogen_side_package": m.fs.h2_side_prop_params,
-            "reaction_eos": eos
+            "oxygen_side_property_package": m.fs.o2_side_prop_params,
+            "hydrogen_side_property_package": m.fs.h2_side_prop_params,
+            "reaction_eos": eos,
         }
     )
 
@@ -69,8 +71,9 @@ def flowsheet(eos=EosType.PR):
     m.fs.soec.oxygen_side_outlet_temperature.fix(1023)
     m.fs.soec.water_utilization.fix(0.7)
     iscale.calculate_scaling_factors(m)
-    m.fs.soec.initialize(optarg={"max_iter":30})
+    m.fs.soec.initialize(optarg={"max_iter": 30})
     return m
+
 
 @pytest.mark.component
 def test_soec_design_ideal():
@@ -80,11 +83,12 @@ def test_soec_design_ideal():
     # Make sure it converged
     assert pyo.check_optimal_termination(res)
     # Based on the inlet composition and the water utilization I know this
-    assert pytest.approx(0.703) == \
-        pyo.value(m.fs.soec.hydrogen_side_outlet.mole_frac_comp[0, "H2"])
+    assert pytest.approx(0.703) == pyo.value(
+        m.fs.soec.hydrogen_side_outlet.mole_frac_comp[0, "H2"]
+    )
     # should be at the thermoneutral volatage and I know about what that is
-    assert pytest.approx(1.287, abs=0.02) == \
-        pyo.value(m.fs.soec.cell_potential[0])
+    assert pytest.approx(1.287, abs=0.02) == pyo.value(m.fs.soec.cell_potential[0])
+
 
 @pytest.mark.component
 def test_soec_design_pr():
@@ -94,8 +98,8 @@ def test_soec_design_pr():
     # Make sure it converged
     assert pyo.check_optimal_termination(res)
     # Based on the inlet composition and the water utilization I know this
-    assert pytest.approx(0.703) == \
-        pyo.value(m.fs.soec.hydrogen_side_outlet.mole_frac_comp[0, "H2"])
+    assert pytest.approx(0.703) == pyo.value(
+        m.fs.soec.hydrogen_side_outlet.mole_frac_comp[0, "H2"]
+    )
     # should be at the thermoneutral volatage and I know about what that is
-    assert pytest.approx(1.287, abs=0.02) == \
-        pyo.value(m.fs.soec.cell_potential[0])
+    assert pytest.approx(1.287, abs=0.02) == pyo.value(m.fs.soec.cell_potential[0])

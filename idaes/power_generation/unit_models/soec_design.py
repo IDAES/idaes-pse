@@ -23,29 +23,31 @@ import idaes.core.util.constants as iconst
 from idaes.core import UnitModelBlockData, declare_process_block_class
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.generic_models.properties.core.generic.generic_property import (
-    GenericParameterBlock)
+    GenericParameterBlock,
+)
 from idaes.generic_models.properties.core.generic.generic_reaction import (
-    GenericReactionParameterBlock)
-import idaes.generic_models.unit_models as um # um = unit models
+    GenericReactionParameterBlock,
+)
+import idaes.generic_models.unit_models as um  # um = unit models
 from idaes.core.util.initialization import propagate_state
 import idaes.core.util.scaling as iscale
 import idaes.core.util as iutil
 from idaes.core.util.misc import get_solver
-from idaes.power_generation.properties.natural_gas_PR import (
-    get_prop, get_rxn, EosType)
+from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn, EosType
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
 from idaes.core.util import from_json, to_json, StoreSpec
 
-@declare_process_block_class(
-    "SoecDesign", doc="Simple SOEC model for process design.")
+
+@declare_process_block_class("SoecDesign", doc="Simple SOEC model for process design.")
 class SoecDesignData(UnitModelBlockData):
     """Simple 0D SOEC model. This model can be used to develop a flowsheet at the
-    design point or for the basis of a surrogate. For off-design applications
+    design point or for the basis of a surrogate. For off-design applications,
     a more detailed model is required."""
+
     CONFIG = UnitModelBlockData.CONFIG(implicit=True)
     CONFIG.declare(
-        "oxygen_side_package",
+        "oxygen_side_property_package",
         ConfigValue(
             domain=is_physical_parameter_block,
             description="Property package for the oxygen side.",
@@ -53,11 +55,11 @@ class SoecDesignData(UnitModelBlockData):
                 "Property package for the oxygen side, using "
                 "idaes.power_generation.properties.natural_gas_PR is "
                 "strongly recomended, either Peng-Robinson or Ideal is okay"
-            )
-        )
+            ),
+        ),
     )
     CONFIG.declare(
-        "hydrogen_side_package",
+        "hydrogen_side_property_package",
         ConfigValue(
             domain=is_physical_parameter_block,
             description="Property package for the hydrogen side.",
@@ -65,35 +67,36 @@ class SoecDesignData(UnitModelBlockData):
                 "Property package for the hydrogen side, using "
                 "idaes.power_generation.properties.natural_gas_PR is "
                 "strongly recomended, either Peng-Robinson or Ideal is okay"
-            )
-        )
+            ),
+        ),
     )
     CONFIG.declare(
-        "oxygen_side_package_args",
+        "oxygen_side_property_package_args",
         ConfigBlock(
             implicit=True,
             description="Property package arguments for the oxygen side.",
-            doc="Property package arguments for the oxygen side."
-        )
+            doc="Property package arguments for the oxygen side.",
+        ),
     )
     CONFIG.declare(
-        "hydrogen_side_package_args",
+        "hydrogen_side_property_package_args",
         ConfigBlock(
             implicit=True,
             description="Property package arguments for the hydrogen side.",
-            doc="Property package arguments for the hydrogen side."
-        )
+            doc="Property package arguments for the hydrogen side.",
+        ),
     )
     CONFIG.declare(
         "reaction_eos",
         ConfigValue(
             default=EosType.PR,
+            domain=In(EosType),
             description="Physical properies for electrolysis reactions",
             doc=(
                 "Reaction properties equation of state in: "
                 "{EosType.PR, EosType.IDEAL}."
-            )
-        )
+            ),
+        ),
     )
     CONFIG.declare(
         "has_heat_transfer",
@@ -101,8 +104,8 @@ class SoecDesignData(UnitModelBlockData):
             default=False,
             domain=Bool,
             description="Heat transfer term construction flag",
-            doc="Indicates whether the SOEC is adiabatic. Default=False (adiabatic)"
-        )
+            doc="Indicates whether the SOEC is adiabatic. Default=False (adiabatic)",
+        ),
     )
 
     def build(self):
@@ -111,15 +114,18 @@ class SoecDesignData(UnitModelBlockData):
 
         # Do a little validation.
         # The hydrogen side needs water and hydrogen
-        if set(self.config.hydrogen_side_package.component_list) != {"H2", "H2O"}:
+        if set(self.config.hydrogen_side_property_package.component_list) != {
+            "H2",
+            "H2O",
+        }:
             raise ConfigurationError(
                 "SOEC hydrogen side must contain exactly H2 and H2O"
             )
         # The oxygen side must have oxygen in it.
-        if not "O2" in self.config.oxygen_side_package.component_list:
+        if not "O2" in self.config.oxygen_side_property_package.component_list:
             raise ConfigurationError("SOEC oxygen side must contain O2")
 
-        # build the block, user smaller methods to make it easier to follow
+        # build the block, use smaller methods to make it easier to follow
         self._add_electrolysis_properties()
         self._add_unit_models()
         self._add_arcs()
@@ -132,14 +138,12 @@ class SoecDesignData(UnitModelBlockData):
         self._scaling_guess()
 
     def _add_electrolysis_properties(self):
-        """ Add the electrolysis property package.  This has H2, H2O and O2,
+        """Add the electrolysis property package.  This has H2, H2O and O2,
         and is only used internally by the unit for the electrolysis reaction.
         """
         self.electrolysis_prop_params = GenericParameterBlock(
             default=get_prop(
-                {"H2O", "H2", "O2"},
-                phases={"Vap"},
-                eos=self.config.reaction_eos
+                {"H2O", "H2", "O2"}, phases={"Vap"}, eos=self.config.reaction_eos
             ),
             doc="Physical property parameters for the electrolysis reaction",
         )
@@ -150,7 +154,7 @@ class SoecDesignData(UnitModelBlockData):
         )
 
     def _add_unit_models(self):
-        """ Add the unit models that make up the composite model. The main
+        """Add the unit models that make up the composite model. The main
         things happening are 1) Electrolysis Reaction, 2) O2 Seperation, 3) O2
         mixes with sweep gas, and 4) sweep gas heat transfer.  There are
         translator blocks to switch between property pacakage depending on the
@@ -159,11 +163,11 @@ class SoecDesignData(UnitModelBlockData):
         self.h2_inlet_translator = um.Translator(
             doc="Translate hydrogen side properties to electrolysis properties",
             default={
-                "inlet_property_package": self.config.hydrogen_side_package,
-                "inlet_property_package_args": self.config.hydrogen_side_package_args,
+                "inlet_property_package": self.config.hydrogen_side_property_package,
+                "inlet_property_package_args": self.config.hydrogen_side_property_package_args,
                 "outlet_property_package": self.electrolysis_prop_params,
-                "outlet_state_defined": False
-            }
+                "outlet_state_defined": False,
+            },
         )
         self.electrolysis_reactor = um.StoichiometricReactor(
             doc="Electrolysis reator",
@@ -172,7 +176,7 @@ class SoecDesignData(UnitModelBlockData):
                 "reaction_package": self.electrolysis_rxn_params,
                 "has_pressure_change": False,
                 "has_heat_transfer": True,
-            }
+            },
         )
         self.o2_seperator = um.Separator(
             default={
@@ -182,41 +186,40 @@ class SoecDesignData(UnitModelBlockData):
             }
         )
         self.h2_outlet_translator = um.Translator(
-            doc="Translate hydrogen side properties to electrolysis properties",
+            doc="Translate electrolysis properties to hydrogen properies",
             default={
                 "inlet_property_package": self.electrolysis_prop_params,
-                "outlet_property_package": self.config.hydrogen_side_package,
-                "outlet_property_package_args": self.config.hydrogen_side_package_args,
-                "outlet_state_defined": False
-            }
+                "outlet_property_package": self.config.hydrogen_side_property_package,
+                "outlet_property_package_args": self.config.hydrogen_side_property_package_args,
+                "outlet_state_defined": False,
+            },
         )
         self.o2_translator = um.Translator(
-            doc="Translate hydrogen side properties to electrolysis properties",
+            doc="Translate electrolysis properties to oxygen properies",
             default={
                 "inlet_property_package": self.electrolysis_prop_params,
-                "outlet_property_package": self.config.oxygen_side_package,
-                "outlet_property_package_args": self.config.oxygen_side_package_args,
-                "outlet_state_defined": False
-            }
+                "outlet_property_package": self.config.oxygen_side_property_package,
+                "outlet_property_package_args": self.config.oxygen_side_property_package_args,
+                "outlet_state_defined": False,
+            },
         )
         self.o2_mixer = um.Mixer(
             default={
-                "property_package": self.config.oxygen_side_package,
-                "property_package_args": self.config.oxygen_side_package_args,
+                "property_package": self.config.oxygen_side_property_package,
+                "property_package_args": self.config.oxygen_side_property_package_args,
                 "momentum_mixing_type": um.MomentumMixingType.none,
                 "inlet_list": ["sweep_strm", "o2_strm"],
             }
         )
         self.sweep_heater = um.Heater(
             default={
-                "property_package": self.config.oxygen_side_package,
-                "property_package_args": self.config.oxygen_side_package_args,
+                "property_package": self.config.oxygen_side_property_package,
+                "property_package_args": self.config.oxygen_side_property_package_args,
             }
         )
 
     def _add_arcs(self):
-        """ Add streams to connect internal units.
-        """
+        """Add streams to connect internal units."""
         self.strm1 = Arc(
             doc="Hydrogen side inlet to electrolysis translator",
             source=self.h2_inlet_translator.outlet,
@@ -233,7 +236,7 @@ class SoecDesignData(UnitModelBlockData):
             destination=self.h2_outlet_translator.inlet,
         )
         self.strm4 = Arc(
-            doc="Oxygen seperation to O2 to sweep translator",
+            doc="Oxygen from electrolysis to translator to sweep properies",
             source=self.o2_seperator.o2_strm,
             destination=self.o2_translator.inlet,
         )
@@ -263,19 +266,19 @@ class SoecDesignData(UnitModelBlockData):
         self.water_utilization = pyo.Var(
             self.flowsheet().time,
             units=pyo.units.dimensionless,
-            doc="Fraction of water used in electrolysis reaction"
+            doc="Fraction of water used in electrolysis reaction",
         )
         self.cell_potential = pyo.Var(
             self.flowsheet().time,
             initialize=1.3,
             units=pyo.units.volts,
-            doc="Electric potential for a single cell"
+            doc="Electric potential for a single cell",
         )
         self.heat = pyo.Var(
             self.flowsheet().time,
             units=pyo.units.W,
             initialize=0,
-            doc="Heat transfered to the module"
+            doc="Heat transfered to the module",
         )
         self.hydrogen_side_outlet_temperature = pyo.Reference(
             self.electrolysis_reactor.control_volume.properties_out[:].temperature
@@ -286,18 +289,19 @@ class SoecDesignData(UnitModelBlockData):
 
     def _add_constraints(self):
         """Add unit model constraints"""
+
         @self.Constraint(self.flowsheet().time)
         def water_utilization_eqn(b, t):
-            return (
-                b.electrolysis_reactor.control_volume.properties_out[t].flow_mol *
-                b.electrolysis_reactor.control_volume.properties_out[
-                    t
-                ].mole_frac_comp["H2O"] ==
-                b.electrolysis_reactor.control_volume.properties_in[t].flow_mol *
-                b.electrolysis_reactor.control_volume.properties_in[
-                    t
-                ].mole_frac_comp["H2O"] *
-                (1.0 - b.water_utilization[t])
+            return b.electrolysis_reactor.control_volume.properties_out[
+                t
+            ].flow_mol_comp[
+                "H2O"
+            ] == b.electrolysis_reactor.control_volume.properties_in[
+                t
+            ].flow_mol_comp[
+                "H2O"
+            ] * (
+                1.0 - b.water_utilization[t]
             )
 
         @self.Expression(self.flowsheet().time)
@@ -307,20 +311,22 @@ class SoecDesignData(UnitModelBlockData):
                     (
                         b.electrolysis_reactor.control_volume.properties_in[
                             t
-                        ].mole_frac_comp["H2O"] *
-                        b.electrolysis_reactor.control_volume.properties_in[
-                            t
-                        ].flow_mol
-                    ) -
-                    (
-                        b.electrolysis_reactor.control_volume.properties_out[
-                            t
-                        ].mole_frac_comp["H2O"] *
-                        b.electrolysis_reactor.control_volume.properties_out[
+                        ].mole_frac_comp["H2O"]
+                        * b.electrolysis_reactor.control_volume.properties_in[
                             t
                         ].flow_mol
                     )
-                ) * 2 * iconst.Constants.faraday_constant
+                    - (
+                        b.electrolysis_reactor.control_volume.properties_out[
+                            t
+                        ].mole_frac_comp["H2O"]
+                        * b.electrolysis_reactor.control_volume.properties_out[
+                            t
+                        ].flow_mol
+                    )
+                )
+                * 2
+                * iconst.Constants.faraday_constant
             )
 
         @self.Constraint(self.flowsheet().time)
@@ -337,6 +343,7 @@ class SoecDesignData(UnitModelBlockData):
             return b.mixed_state[t].pressure == b.sweep_strm_state[t].pressure
 
         if not self.config.has_heat_transfer:
+
             @self.Constraint(self.flowsheet().time)
             def heat_transfer_eqn(b, t):
                 return b.heat[t] == 0
@@ -344,26 +351,25 @@ class SoecDesignData(UnitModelBlockData):
         @self.Expression(self.flowsheet().time)
         def delta_enth(b, t):
             return (
-                b.o2_seperator.h2_strm_state[t].get_enthalpy_flow_terms("Vap") +
-                b.sweep_heater.control_volume.properties_out[
+                b.o2_seperator.h2_strm_state[t].get_enthalpy_flow_terms("Vap")
+                + b.sweep_heater.control_volume.properties_out[
                     t
-                ].get_enthalpy_flow_terms("Vap") -
-                b.electrolysis_reactor.control_volume.properties_in[
+                ].get_enthalpy_flow_terms("Vap")
+                - b.electrolysis_reactor.control_volume.properties_in[
                     t
-                ].get_enthalpy_flow_terms("Vap") -
-                b.o2_mixer.sweep_strm_state[t].get_enthalpy_flow_terms("Vap") +
-                b.heat[t]
+                ].get_enthalpy_flow_terms("Vap")
+                - b.o2_mixer.sweep_strm_state[t].get_enthalpy_flow_terms("Vap")
+                + b.heat[t]
             )
 
         @self.Constraint(self.flowsheet().time)
         def cell_potential_eqn(b, t):
-            return (
-                b.cell_potential[t] == b.delta_enth[t]/b.current[t]
-            )
+            return b.cell_potential[t] == b.delta_enth[t] / b.current[t]
 
     @staticmethod
     def _translator_ftp_constraints(translator):
         """Generalize some translator block constraints"""
+
         @translator.Constraint(translator.flowsheet().time)
         def temperature_eqn(b, t):
             return b.properties_out[t].temperature == b.properties_in[t].temperature
@@ -377,21 +383,23 @@ class SoecDesignData(UnitModelBlockData):
             return b.properties_out[t].pressure == b.properties_in[t].pressure
 
     def _add_o2_translator_constraints(self):
-        """ Add constraints to traslate from electrolysis properties to sweep
+        """Add constraints to traslate from electrolysis properties to sweep
         properties.  The stream being translated contains only O2.
         """
         t0 = self.flowsheet().time.first()
         comps = set(self.o2_translator.properties_out[t0].mole_frac_comp.keys())
         comps.remove("O2")
+
         @self.o2_translator.Constraint(self.flowsheet().time, comps)
         def mole_frac_comp_eqn(b, t, c):
             return b.properties_out[t].mole_frac_comp[c] == 1e-19
+
         self.o2_translator.properties_out[:].mole_frac_comp["O2"] = 1
 
         self._translator_ftp_constraints(self.o2_translator)
 
     def _add_h2_inlet_translator_constraints(self):
-        """ Translate the inlet hydrogen stream to electrolysis properties. This
+        """Translate the inlet hydrogen stream to electrolysis properties. This
         stream contains only H2 and H2O.
         """
         t0 = self.flowsheet().time.first()
@@ -401,28 +409,32 @@ class SoecDesignData(UnitModelBlockData):
 
         # Add constraints for the other componets
         comps = set(self.h2_inlet_translator.properties_in[t0].mole_frac_comp.keys())
+
         @self.h2_inlet_translator.Constraint(self.flowsheet().time, comps)
         def mole_frac_comp_eqn(b, t, c):
             return (
-                b.properties_out[t].mole_frac_comp[c] ==
-                b.properties_in[t].mole_frac_comp[c]
+                b.properties_out[t].mole_frac_comp[c]
+                == b.properties_in[t].mole_frac_comp[c]
             )
+
         self._translator_ftp_constraints(self.h2_inlet_translator)
 
     def _add_h2_outlet_translator_constraints(self):
-        """ Translate the electrolysis properties to hydrogen side properties.
+        """Translate the electrolysis properties to hydrogen side properties.
         This stream contains only H2 and H2O.
         """
         t0 = self.flowsheet().time.first()
         # Add constraints for the other componets
         comps = set(self.h2_outlet_translator.properties_out[t0].mole_frac_comp.keys())
-        comps.remove("H2") # Need to remove one component due to sum = 1 constraint
+        comps.remove("H2")  # Need to remove one component due to sum = 1 constraint
+
         @self.h2_outlet_translator.Constraint(self.flowsheet().time, comps)
         def mole_frac_comp_eqn(b, t, c):
             return (
-                b.properties_out[t].mole_frac_comp[c] ==
-                b.properties_in[t].mole_frac_comp[c]
+                b.properties_out[t].mole_frac_comp[c]
+                == b.properties_in[t].mole_frac_comp[c]
             )
+
         self._translator_ftp_constraints(self.h2_outlet_translator)
 
     def _add_ports(self):
@@ -430,22 +442,22 @@ class SoecDesignData(UnitModelBlockData):
         self.add_inlet_port(
             name="hydrogen_side_inlet",
             block=self.h2_inlet_translator.properties_in,
-            doc="Hydrogen side inlet port"
+            doc="Hydrogen side inlet port",
         )
         self.add_inlet_port(
             name="oxygen_side_inlet",
             block=self.o2_mixer.sweep_strm_state,
-            doc="Oxygen side inlet port"
+            doc="Oxygen side inlet port",
         )
         self.add_outlet_port(
             name="hydrogen_side_outlet",
             block=self.h2_outlet_translator.properties_out,
-            doc="Hydrogen side outlet port"
+            doc="Hydrogen side outlet port",
         )
         self.add_outlet_port(
             name="oxygen_side_outlet",
             block=self.sweep_heater.control_volume.properties_out,
-            doc="Oxygen side outlet port"
+            doc="Oxygen side outlet port",
         )
 
     def set_flow_scale(self, scale=1):
@@ -458,20 +470,33 @@ class SoecDesignData(UnitModelBlockData):
         Returns:
             None
         """
-        self.config.oxygen_side_package.set_default_scaling("flow_mol", scale)
-        self.config.hydrogen_side_package.set_default_scaling("flow_mol", scale)
+        self.config.oxygen_side_property_package.set_default_scaling("flow_mol", scale)
+        self.config.hydrogen_side_property_package.set_default_scaling(
+            "flow_mol", scale
+        )
         self.electrolysis_prop_params.set_default_scaling("flow_mol", scale)
 
-        self.config.oxygen_side_package.set_default_scaling("flow_mol_phase", scale)
-        self.config.hydrogen_side_package.set_default_scaling("flow_mol_phase", scale)
+        self.config.oxygen_side_property_package.set_default_scaling(
+            "flow_mol_phase", scale
+        )
+        self.config.hydrogen_side_property_package.set_default_scaling(
+            "flow_mol_phase", scale
+        )
         self.electrolysis_prop_params.set_default_scaling("flow_mol_phase", scale)
 
-        for (t, i), v in self.electrolysis_reactor.control_volume.rate_reaction_extent.items():
+        for (
+            t,
+            i,
+        ), v in self.electrolysis_reactor.control_volume.rate_reaction_extent.items():
             iscale.set_scaling_factor(v, scale)
-        for (t, p, i), v in self.electrolysis_reactor.control_volume.rate_reaction_generation.items():
+        for (
+            t,
+            p,
+            i,
+        ), v in (
+            self.electrolysis_reactor.control_volume.rate_reaction_generation.items()
+        ):
             iscale.set_scaling_factor(v, scale)
-
-
 
     def set_heat_scale(self, scale=1e-5):
         """Set the heat transfer scale factor roughly based on the size of the
@@ -483,8 +508,7 @@ class SoecDesignData(UnitModelBlockData):
         Returns:
             None
         """
-        iscale.set_scaling_factor(
-            self.electrolysis_reactor.control_volume.heat, scale)
+        iscale.set_scaling_factor(self.electrolysis_reactor.control_volume.heat, scale)
         iscale.set_scaling_factor(self.sweep_heater.control_volume.heat, scale)
         iscale.set_scaling_factor(self.heat, scale)
 
@@ -507,36 +531,43 @@ class SoecDesignData(UnitModelBlockData):
         # For components that exist we don't expect particularly low
         # concentrations, so change the default to 10, which should be good
         # for mole fractions > 0.01 which is what we expect here.
-        self.config.oxygen_side_package.set_default_scaling("mole_frac_comp", 10)
-        self.config.hydrogen_side_package.set_default_scaling("mole_frac_comp", 10)
+        self.config.oxygen_side_property_package.set_default_scaling(
+            "mole_frac_comp", 10
+        )
+        self.config.hydrogen_side_property_package.set_default_scaling(
+            "mole_frac_comp", 10
+        )
         self.electrolysis_prop_params.set_default_scaling("mole_frac_comp", 10)
-        self.config.oxygen_side_package.set_default_scaling("mole_frac_phase_comp", 10)
-        self.config.hydrogen_side_package.set_default_scaling("mole_frac_phase_comp", 10)
+        self.config.oxygen_side_property_package.set_default_scaling(
+            "mole_frac_phase_comp", 10
+        )
+        self.config.hydrogen_side_property_package.set_default_scaling(
+            "mole_frac_phase_comp", 10
+        )
         self.electrolysis_prop_params.set_default_scaling("mole_frac_phase_comp", 10)
 
         # Set some other scale factors that we have a good guess for
         unt = self.electrolysis_reactor
         iscale.set_scaling_factor(
-            unt.control_volume.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
+            unt.control_volume.properties_in[0.0].enth_mol_phase["Vap"], 1e-4
+        )
         iscale.set_scaling_factor(
-            unt.control_volume.properties_out[0.0].enth_mol_phase["Vap"], 1e-4)
+            unt.control_volume.properties_out[0.0].enth_mol_phase["Vap"], 1e-4
+        )
         unt = self.o2_seperator
-        iscale.set_scaling_factor(
-            unt.h2_strm_state[0.0].enth_mol_phase["Vap"], 1e-4)
+        iscale.set_scaling_factor(unt.h2_strm_state[0.0].enth_mol_phase["Vap"], 1e-4)
         unt = self.o2_mixer
-        iscale.set_scaling_factor(
-            unt.o2_strm_state[0.0].enth_mol_phase["Vap"], 1e-4)
-        iscale.set_scaling_factor(
-            unt.o2_strm_state[0.0].enth_mol_phase["Vap"], 1e-4)
-        iscale.set_scaling_factor(
-            unt.mixed_state[0.0].enth_mol_phase["Vap"], 1e-4)
-        iscale.set_scaling_factor(
-            unt.sweep_strm_state[0.0].enth_mol_phase["Vap"], 1e-4)
+        iscale.set_scaling_factor(unt.o2_strm_state[0.0].enth_mol_phase["Vap"], 1e-4)
+        iscale.set_scaling_factor(unt.o2_strm_state[0.0].enth_mol_phase["Vap"], 1e-4)
+        iscale.set_scaling_factor(unt.mixed_state[0.0].enth_mol_phase["Vap"], 1e-4)
+        iscale.set_scaling_factor(unt.sweep_strm_state[0.0].enth_mol_phase["Vap"], 1e-4)
         unt = self.sweep_heater
         iscale.set_scaling_factor(
-            unt.control_volume.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
+            unt.control_volume.properties_in[0.0].enth_mol_phase["Vap"], 1e-4
+        )
         iscale.set_scaling_factor(
-            unt.control_volume.properties_out[0.0].enth_mol_phase["Vap"], 1e-4)
+            unt.control_volume.properties_out[0.0].enth_mol_phase["Vap"], 1e-4
+        )
 
     def calculate_scaling_factors(self):
         """Calculate scale factors for the unit model equations"""
@@ -544,96 +575,100 @@ class SoecDesignData(UnitModelBlockData):
             iscale.constraint_scaling_transform(
                 self.water_utilization_eqn[t],
                 iscale.get_scaling_factor(
-                    self.electrolysis_reactor.control_volume.properties_in[
-                        t
-                    ].flow_mol
-                )
+                    self.electrolysis_reactor.control_volume.properties_in[t].flow_mol
+                ),
             )
             iscale.constraint_scaling_transform(
-                self.current_eqn[t],
-                iscale.get_scaling_factor(self.current[t])
+                self.current_eqn[t], iscale.get_scaling_factor(self.current[t])
             )
             iscale.constraint_scaling_transform(
                 self.o2_mixer.pressure_eqn[t],
-                iscale.get_scaling_factor(self.o2_mixer.mixed_state[t].pressure)
+                iscale.get_scaling_factor(self.o2_mixer.mixed_state[t].pressure),
             )
             iscale.constraint_scaling_transform(
                 self.o2_translator.pressure_eqn[t],
-                iscale.get_scaling_factor(
-                    self.o2_translator.properties_in[t].pressure)
+                iscale.get_scaling_factor(self.o2_translator.properties_in[t].pressure),
             )
             iscale.constraint_scaling_transform(
                 self.o2_translator.temperature_eqn[t],
                 iscale.get_scaling_factor(
-                    self.o2_translator.properties_in[t].temperature)
+                    self.o2_translator.properties_in[t].temperature
+                ),
             )
             iscale.constraint_scaling_transform(
                 self.o2_translator.temperature_eqn[t],
                 iscale.get_scaling_factor(
-                    self.o2_translator.properties_in[t].temperature)
+                    self.o2_translator.properties_in[t].temperature
+                ),
             )
             iscale.constraint_scaling_transform(
                 self.o2_translator.flow_mol_eqn[t],
-                iscale.get_scaling_factor(
-                    self.o2_translator.properties_in[t].flow_mol)
+                iscale.get_scaling_factor(self.o2_translator.properties_in[t].flow_mol),
             )
             iscale.constraint_scaling_transform(
                 self.h2_inlet_translator.pressure_eqn[t],
                 iscale.get_scaling_factor(
-                    self.h2_inlet_translator.properties_in[t].pressure)
+                    self.h2_inlet_translator.properties_in[t].pressure
+                ),
             )
             iscale.constraint_scaling_transform(
                 self.h2_inlet_translator.temperature_eqn[t],
                 iscale.get_scaling_factor(
-                    self.h2_inlet_translator.properties_in[t].temperature)
+                    self.h2_inlet_translator.properties_in[t].temperature
+                ),
             )
             iscale.constraint_scaling_transform(
                 self.h2_inlet_translator.flow_mol_eqn[t],
                 iscale.get_scaling_factor(
-                    self.h2_inlet_translator.properties_in[t].flow_mol)
+                    self.h2_inlet_translator.properties_in[t].flow_mol
+                ),
             )
             iscale.constraint_scaling_transform(
                 self.h2_outlet_translator.pressure_eqn[t],
                 iscale.get_scaling_factor(
-                    self.h2_outlet_translator.properties_in[t].pressure)
+                    self.h2_outlet_translator.properties_in[t].pressure
+                ),
             )
             iscale.constraint_scaling_transform(
                 self.h2_outlet_translator.temperature_eqn[t],
                 iscale.get_scaling_factor(
-                    self.h2_outlet_translator.properties_in[t].temperature)
+                    self.h2_outlet_translator.properties_in[t].temperature
+                ),
             )
             iscale.constraint_scaling_transform(
                 self.h2_outlet_translator.flow_mol_eqn[t],
                 iscale.get_scaling_factor(
-                    self.h2_outlet_translator.properties_in[t].flow_mol)
+                    self.h2_outlet_translator.properties_in[t].flow_mol
+                ),
             )
             iscale.constraint_scaling_transform(self.cell_potential_eqn[t], 1)
             if not self.config.has_heat_transfer:
                 iscale.constraint_scaling_transform(
-                    self.heat_transfer_eqn[t],
-                    iscale.get_scaling_factor(self.heat[t])
+                    self.heat_transfer_eqn[t], iscale.get_scaling_factor(self.heat[t])
                 )
         for (t, i), c in self.o2_translator.mole_frac_comp_eqn.items():
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(
-                    self.o2_translator.properties_out[t].mole_frac_comp[i])
+                    self.o2_translator.properties_out[t].mole_frac_comp[i]
+                ),
             )
         for (t, i), c in self.h2_inlet_translator.mole_frac_comp_eqn.items():
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(
-                    self.h2_inlet_translator.properties_out[t].mole_frac_comp[i])
+                    self.h2_inlet_translator.properties_out[t].mole_frac_comp[i]
+                ),
             )
         for (t, i), c in self.h2_outlet_translator.mole_frac_comp_eqn.items():
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(
-                    self.h2_outlet_translator.properties_out[t].mole_frac_comp[i])
+                    self.h2_outlet_translator.properties_out[t].mole_frac_comp[i]
+                ),
             )
 
-
-    def initialize(
+    def initialize_build(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -653,26 +688,23 @@ class SoecDesignData(UnitModelBlockData):
         self.oxygen_side_outlet.unfix()
         self.hydrogen_side_outlet.unfix()
 
-        self.h2_inlet_translator.initialize(
-            outlvl=outlvl, solver=solver, optarg=optarg)
+        self.h2_inlet_translator.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         propagate_state(self.strm1)
         self.electrolysis_reactor.initialize(
-            outlvl=outlvl, solver=solver, optarg=optarg)
+            outlvl=outlvl, solver=solver, optarg=optarg
+        )
         propagate_state(self.strm2)
-        self.o2_seperator.initialize(
-            outlvl=outlvl, solver=solver, optarg=optarg)
+        self.o2_seperator.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         propagate_state(self.strm3)
         self.h2_outlet_translator.initialize(
-            outlvl=outlvl, solver=solver, optarg=optarg)
+            outlvl=outlvl, solver=solver, optarg=optarg
+        )
         propagate_state(self.strm4)
-        self.o2_translator.initialize(
-            outlvl=outlvl, solver=solver, optarg=optarg)
+        self.o2_translator.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         propagate_state(self.strm5)
-        self.o2_mixer.initialize(
-            outlvl=outlvl, solver=solver, optarg=optarg)
+        self.o2_mixer.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         propagate_state(self.strm6)
-        self.sweep_heater.initialize(
-            outlvl=outlvl, solver=solver, optarg=optarg)
+        self.sweep_heater.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
         for t in self.current.keys():
             self.current[t] = pyo.value(self.current_expr[t])

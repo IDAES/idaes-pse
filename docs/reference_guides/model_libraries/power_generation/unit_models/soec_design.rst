@@ -14,8 +14,8 @@ temperature and water utilization, for which typical representative values can
 be readily obtained.  Based on typical current densities the size of the SOEC
 module can be estimated, if rough capital costs are needed.
 
-Performance the SOEC away from the design point can be handled in two way. Either
-the more detailed specially discretized models can be used, or surrogate models
+Performance of the SOEC away from the design point can be handled in two way. Either
+the more detailed spatially discretized models can be used, or surrogate models
 can be coupled with this model.
 
 
@@ -65,8 +65,8 @@ are not necessarily realistic.
       )
       m.fs.soec = SoecDesign(
           default={
-              "oxygen_side_package": m.fs.o2_side_prop_params,
-              "hydrogen_side_package": m.fs.h2_side_prop_params,
+              "oxygen_side_property_package": m.fs.o2_side_prop_params,
+              "hydrogen_side_property_package": m.fs.h2_side_prop_params,
               "reaction_eos": eos
           }
       )
@@ -74,13 +74,13 @@ are not necessarily realistic.
       m.fs.soec.hydrogen_side_inlet.temperature.fix(1023)
       m.fs.soec.hydrogen_side_inlet.pressure.fix(20e5)
       m.fs.soec.hydrogen_side_inlet.flow_mol.fix(2)
-      for c, v in feed_comp.items():
-          m.fs.soec.hydrogen_side_inlet.mole_frac_comp[:, c].fix(v)
+      for (t, i), c in m.fs.soec.hydrogen_side_inlet.mole_frac_comp.items():
+          c.fix(feed_comp[i])
       m.fs.soec.oxygen_side_inlet.temperature.fix(1023)
       m.fs.soec.oxygen_side_inlet.pressure.fix(20e5)
       m.fs.soec.oxygen_side_inlet.flow_mol.fix(2)
-      for c, v in sweep_comp.items():
-          m.fs.soec.oxygen_side_inlet.mole_frac_comp[:, c].fix(v)
+      for (t, i), c in m.fs.soec.oxygen_side_inlet.mole_frac_comp.items():
+          c.fix(sweep_comp[i])
       m.fs.soec.hydrogen_side_outlet_temperature.fix(1023)
       m.fs.soec.oxygen_side_outlet_temperature.fix(1023)
       m.fs.soec.water_utilization.fix(0.7)
@@ -102,10 +102,10 @@ and oxygen.  Hydrogen stays on the hydrogen side and oxygen leaves in the water
 side.
 
 The hydrogen side properties are specified by providing a physical property parameter
-block to the ``hydrogen_side_package`` config option, and must contain only
+block to the ``hydrogen_side_property_package`` config option, and must contain only
 hydrogen and water. The oxygen side properties are specified by providing a physical
-property parameter block to the ``oxygen_side_package`` config option, and must
-contain at least oxygen and other sweep gas components.  Typeical sweep gas choices
+property parameter block to the ``oxygen_side_property_package`` config option, and must
+contain at least oxygen and other sweep gas components.  Typical sweep gas choices
 are air or steam. It is recommended that the ``idaes.power_generation.properties.natural_gas_PR``
 property parameters be used with the generic IDAES property package.  See the example
 above.
@@ -118,12 +118,14 @@ on the oxygen side.  The ports are named ``hydrogen_side_inlet``, ``hydrogen_sid
 Degrees of Freedom
 ------------------
 
-The typical variables that should be specified are: the inlet ports, the water
-utilization ``water_utilization``, the hydrogen side outlet temperature
-``hydrogen_side_outlet_temperature``, and the oxygen side outlet temperature
-``oxygen_side_outlet_temperature``.  If the ``has_heat_transfer`` configuration
-option is set to true the ``heat`` variable should also be specified.
+The typical variables that should be specified are:
+* inlet ports,
+* water utilization ``water_utilization``,
+* hydrogen side outlet temperature ``hydrogen_side_outlet_temperature``, and
+* oxygen side outlet temperature ``oxygen_side_outlet_temperature``.
 
+If the ``has_heat_transfer`` configuration option is set to true the ``heat``
+variable should also be specified.
 
 Output
 ------
