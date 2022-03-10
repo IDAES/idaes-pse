@@ -261,8 +261,8 @@ class TestFlowsheetCostingBlock:
                                   initialize=1,
                                   units=pyunits.mol/pyunits.s)
         with pytest.raises(TypeError,
-                           match="indexed_var is an indexed Var. Flow costing "
-                           "only supports unindexed Vars."):
+                           match="indexed_var is an indexed component. Flow "
+                           "costing only supports unindexed components."):
             costing.costing.cost_flow(costing.indexed_var, "test_flow")
 
     @pytest.mark.unit
@@ -382,16 +382,13 @@ class TestFlowsheetCostingBlock:
             costing.unit_a.costing2 = UnitModelCostingBlock(
                 default={"flowsheet_costing_block": costing.costing})
 
-        # Make sure we cleaned up duplicate
-        assert not hasattr(costing.unit_a, "costing2")
-        assert costing.unit_a.costing.cost_method == 2
-        assert costing.unit_a.costing in costing.unit_a._initialization_order
-        assert costing.unit_a.costing in costing.costing._registered_unit_costing
-        assert costing.costing._registered_unit_costing.count(
-            costing.unit_a.costing) == 1
-
         # Clean everything up at the end
         costing.unit_a.del_component(costing.unit_a.costing)
+        costing.unit_a.del_component(costing.unit_a.costing2)
+
+        # Make sure we cleaned up
+        assert not hasattr(costing.unit_a, "costing")
+        assert not hasattr(costing.unit_a, "costing2")
 
     @pytest.mark.unit
     def test_cost_unit_custom_method(self, costing):

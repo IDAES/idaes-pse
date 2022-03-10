@@ -135,7 +135,7 @@ def test_cost_heat_exchanger(model, material, hxtype, tube_length):
     assert check_optimal_termination(res)
 
     # Test solution for one known case
-    if (material == HXMaterial.SS_SS and
+    if (material == HXMaterial.StainlessSteelStainlessSteel and
             hxtype == HXType.Utube and
             tube_length == HXTubeLength.TwelveFoot):
         assert pytest.approx(87704.6, 1e-5) == value(
@@ -207,7 +207,7 @@ def test_cost_vessel(model,
     assert check_optimal_termination(res)
 
     # Test solution for one known case
-    if (material_type == VesselMaterial.CS and
+    if (material_type == VesselMaterial.CarbonSteel and
             weight_limit == 1 and aspect_ratio_range == 1 and include_pl):
         assert pytest.approx(35958, 1e-5) == value(pyunits.convert(
             model.fs.unit.costing.capital_cost,
@@ -394,11 +394,11 @@ def test_cost_turbine(model):
 
 @pytest.mark.component
 @pytest.mark.parametrize("material_type",
-                         [PumpMaterial.castIron,
-                          PumpMaterial.ductileIron,
-                          PumpMaterial.castSteel,
-                          PumpMaterial.bronze,
-                          PumpMaterial.SS,
+                         [PumpMaterial.CastIron,
+                          PumpMaterial.DuctileIron,
+                          PumpMaterial.CastSteel,
+                          PumpMaterial.Bronze,
+                          PumpMaterial.StainlessSteel,
                           PumpMaterial.HastelloyC,
                           PumpMaterial.Monel,
                           PumpMaterial.Nickel,
@@ -425,7 +425,7 @@ def test_cost_pump_centrifugal(
         "flowsheet_costing_block": model.fs.costing,
         "costing_method": SSLWCostingData.cost_pump,
         "costing_method_arguments": {
-            "pump_type": PumpType.centrifugal,
+            "pump_type": PumpType.Centrifugal,
             "material_type": material_type,
             "pump_type_factor": pump_type_factor,
             "motor_type": motor_type}})
@@ -472,17 +472,17 @@ def test_cost_pump_centrifugal(
 
 @pytest.mark.component
 @pytest.mark.parametrize("material_type",
-                         [PumpMaterial.castIron,
-                          PumpMaterial.ductileIron,
-                          PumpMaterial.castSteel,
-                          PumpMaterial.bronze,
-                          PumpMaterial.SS,
+                         [PumpMaterial.CastIron,
+                          PumpMaterial.DuctileIron,
+                          PumpMaterial.CastSteel,
+                          PumpMaterial.Bronze,
+                          PumpMaterial.StainlessSteel,
                           PumpMaterial.HastelloyC,
                           PumpMaterial.Monel,
                           PumpMaterial.Nickel,
                           PumpMaterial.Titanium])
 @pytest.mark.parametrize("motor_type", PumpMotorType)
-def test_cost_pump_externalgear(
+def test_cost_pump_ExternalGear(
         model, material_type, motor_type):
     model.fs.unit.config.declare("compressor", ConfigValue(default=True))
     model.fs.unit.work_mechanical = Param([0],
@@ -502,7 +502,7 @@ def test_cost_pump_externalgear(
         "flowsheet_costing_block": model.fs.costing,
         "costing_method": SSLWCostingData.cost_pump,
         "costing_method_arguments": {
-            "pump_type": PumpType.externalGear,
+            "pump_type": PumpType.ExternalGear,
             "material_type": material_type,
             "motor_type": motor_type}})
 
@@ -540,10 +540,10 @@ def test_cost_pump_externalgear(
 
 @pytest.mark.component
 @pytest.mark.parametrize("material_type",
-                         [PumpMaterial.ductileIron,
-                          PumpMaterial.SS,
+                         [PumpMaterial.DuctileIron,
+                          PumpMaterial.StainlessSteel,
                           PumpMaterial.NiAlBronze,
-                          PumpMaterial.CS])
+                          PumpMaterial.CarbonSteel])
 @pytest.mark.parametrize("motor_type", PumpMotorType)
 def test_cost_pump_reciprocating(
         model, material_type, motor_type):
@@ -565,7 +565,7 @@ def test_cost_pump_reciprocating(
         "flowsheet_costing_block": model.fs.costing,
         "costing_method": SSLWCostingData.cost_pump,
         "costing_method_arguments": {
-            "pump_type": PumpType.reciprocating,
+            "pump_type": PumpType.Reciprocating,
             "material_type": material_type,
             "motor_type": motor_type}})
 
@@ -631,9 +631,9 @@ def test_cost_compressor(model, compressor_type, drive_type, material_type):
 
     assert check_optimal_termination(res)
 
-    if (compressor_type == CompressorType.centrifugal and
-            drive_type == CompressorDriveType.electricMotor and
-            material_type == CompressorMaterial.SS):
+    if (compressor_type == CompressorType.Centrifugal and
+            drive_type == CompressorDriveType.ElectricMotor and
+            material_type == CompressorMaterial.StainlessSteel):
         assert pytest.approx(300695, 1e-5) == value(pyunits.convert(
             model.fs.unit.costing.capital_cost,
             to_units=pyunits.USD_2018))

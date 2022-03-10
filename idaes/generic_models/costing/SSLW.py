@@ -58,21 +58,21 @@ __author__ = "Miguel Zamarripa, Andrew Lee"
 class HXType(StrEnum):
     floating_head = 'floating_head'
     fixed_head = 'fixed_head'
-    Utube = 'U-tube'
+    Utube = 'Utube'
     kettle_vap = 'Kettle_vap'
 
 
 class HXMaterial(StrEnum):
-    CS_CS = 'carbon steel/carbon steel'
-    CS_Brass = 'carbon steel/brass'
-    CS_SS = 'carbon steel/stainless steel'
-    CS_Monel = 'carbon steel/monel'
-    CS_Ti = 'carbon steel/titanium'
-    CS_CrMo = 'carbon steel/Cr-Mo steel'
-    CrMo_CrMo = 'Cr-Mo steel/Cr-Mo steel'
-    SS_SS = 'stainless steel/stainless steel'
-    Monel_Monel = 'monel/monel'
-    Ti_Ti = 'titanium/titanium'
+    CarbonSteelCarbonSteel = 'CarbonSteelCarbonSteel'
+    CarbonSteelBrass = 'CarbonSteelBrass'
+    CarbonSteelStainlessSteel = 'CarbonSteelStainlessSteel'
+    CarbonSteelMonel = 'CarbonSteelMonel'
+    CarbonSteelTitanium = 'CarbonSteelTitanium'
+    CarbonSteelCrMoSteel = 'CarbonSteelCrMoSteel'
+    CrMoSteelCrMoSteel = 'CrMoSteelCrMoSteel'
+    StainlessSteelStainlessSteel = 'StainlessSteelStainlessSteel'
+    MonelMonel = 'MonelMonel'
+    TitaniumTitanium = 'TitaniumTitanium'
 
 
 class HXTubeLength(StrEnum):
@@ -83,84 +83,84 @@ class HXTubeLength(StrEnum):
 
 
 class VesselMaterial(StrEnum):
-    CS = "carbon_steel"
-    LowAlloy = "low_alloy_steel"
-    SS304 = "stainless_steel_304"
-    SS316 = "stainless_steel_316"
-    Carpenter = "carpenter_20CB-3"
-    Nickel200 = "nickel_200"
-    Monel400 = "monel_400"
-    Inconel600 = "inconel_600"
-    Incoloy825 = "incoloy_825"
-    Titanium = "titanium"
+    CarbonSteel = "Carbon_steel"
+    LowAlloySteel = "LowAlloySteel"
+    StainlessSteel304 = "StainlessSteel304"
+    StainlessSteel316 = "StainlessSteel316"
+    Carpenter20CB3 = "Carpenter20CB3"
+    Nickel200 = "Nickel200"
+    Monel400 = "Monel400"
+    Inconel600 = "inconel600"
+    Incoloy825 = "incoloy825"
+    Titanium = "Titanium"
 
 
 class TrayType(StrEnum):
-    Sieve = "sieve"
-    Valve = "valve"
-    BubbleCap = "bubble_cap"
+    Sieve = "Sieve"
+    Valve = "Valve"
+    BubbleCap = "BubbleCap"
 
 
 class TrayMaterial(StrEnum):
-    CS = "carbon_steel"
-    SS303 = "stainless_steel_303"
-    SS316 = "stainless_steel_316"
-    Carpenter = "carpenter_20CB-3"
-    Monel = "monel"
+    CarbonSteel = "CarbonSteel"
+    StainlessSteel303 = "StainlessSteel303"
+    StainlessSteel316 = "StainlessSteel316"
+    Carpenter20CB3 = "Carpenter20CB3"
+    Monel = "Monel"
 
 
 class HeaterMaterial(StrEnum):
-    CS = "carbon_steel"
-    CrMo = "Cr-Mo_alloy"
-    SS = "stainless_steel"
+    CarbonSteel = "CarbonSteel"
+    CrMoSteel = "CrMoSteel"
+    StainlessSteel = "StainlessSteel"
 
 
 class HeaterSource(StrEnum):
-    fuel = 'fuel'
-    reformer = "reformer"
-    pyrolysis = "pyrolysis"
-    hotWater = "hot_water"
-    salts = "salts"
-    DowthermA = "dowtherm_a"
-    steamBoiler = "steam_boiler"
+    Fuel = 'Fuel'
+    Reformer = "Reformer"
+    Pyrolysis = "Pyrolysis"
+    HotWater = "HotWater"
+    Salts = "Salts"
+    DowthermA = "DowthermA"
+    steamBoiler = "SteamBoiler"
 
 
 class CompressorType(StrEnum):
-    centrifugal = 'centrifugal'
-    reciprocating = 'reciprocating'
-    screw = 'screw'
+    Centrifugal = 'Centrifugal'
+    Reciprocating = 'Reciprocating'
+    Screw = 'Screw'
 
 
 class CompressorDriveType(StrEnum):
-    electricMotor = 'electrical_motor'
-    steamTurbine = 'steam_turbine'
-    gasTurbine = 'gas_turbine'
+    ElectricMotor = 'ElectricMotor'
+    SteamTurbine = 'SteamTurbine'
+    gasTurbine = 'GasTurbine'
 
 
 class CompressorMaterial(StrEnum):
-    CS = 'carbon_steel'
-    SS = 'stainless_steel'
-    Nickel = 'nickel_alloy'
+    CarbonSteel = 'CarbonSteel'
+    StainlessSteel = 'StainlessSteel'
+    NickelAlloy = 'NickelAlloy'
 
 
 class PumpMaterial(StrEnum):
-    castIron = 'cast_iron'
-    ductileIron = 'ductile_iron'
-    castSteel = 'cast_steel'
-    bronze = 'bronze'
-    SS = 'stainless_steel'
-    HastelloyC = 'hastelloy_c'
-    Monel = 'monel'
-    Nickel = 'nickel'
-    Titanium = 'titanium'
-    NiAlBronze = 'Ni_Al_Bronze'
-    CS = 'carbon_steel'
+    CastIron = 'CastIron'
+    DuctileIron = 'DuctileIron'
+    CastSteel = 'CastSteel'
+    Bronze = 'Bronze'
+    StainlessSteel = 'StainlessSteel'
+    HastelloyC = 'HastelloyC'
+    Monel = 'Monel'
+    Nickel = 'Mickel'
+    Titanium = 'Titanium'
+    NiAlBronze = 'NiAlBronze'
+    CarbonSteel = 'CarbonSteel'
 
 
 class PumpType(StrEnum):
-    centrifugal = 'centrifugal'
-    externalGear = 'external_gear'
-    reciprocating = 'reciprocating'
+    Centrifugal = 'Centrifugal'
+    ExternalGear = 'ExternalGear'
+    Reciprocating = 'Reciprocating'
 
 
 class PumpMotorType(StrEnum):
@@ -170,30 +170,30 @@ class PumpMotorType(StrEnum):
 
 
 class FanType(StrEnum):
-    centrifugalBackward = 'centrifugal_backward'
-    centrifugalStraight = 'centrifugal_straight'
-    vaneAxial = 'vane_axial'
-    tubeAxial = 'tube_axial'
+    CentrifugalBackward = 'CentrifugalBackward'
+    CentrifugalStraight = 'CentrifugalStraight'
+    VaneAxial = 'VaneAxial'
+    TubeAxial = 'TubeAxial'
 
 
 class FanMaterial(StrEnum):
-    CS = 'carbon_steel'
-    fiberglass = 'fiberglass'
-    SS = 'stainless_steel'
-    Nickel = 'nickel_alloy'
+    CarbonSteel = 'CarbonSteel'
+    Fiberglass = 'Fiberglass'
+    StainlessSteel = 'StainlessSteel'
+    NickelAlloy = 'NickelAlloy'
 
 
 class BlowerType(StrEnum):
-    centrifugal = 'centrifugal'
-    rotary = 'rotary'
+    Centrifugal = 'Centrifugal'
+    Rotary = 'Rotary'
 
 
 class BlowerMaterial(StrEnum):
-    CS = 'carbon_steel'
-    Aluminum = 'aluminum'
-    fiberglass = 'fiberglass'
-    SS = 'stainless_steel'
-    Nickel = 'nickel_alloy'
+    CarbonSteel = 'CarbonSteel'
+    Aluminum = 'Aluminum'
+    Fiberglass = 'Fiberglass'
+    StainlessSteel = 'StainlessSteel'
+    NickelAlloy = 'NickelAlloy'
 
 
 @declare_process_block_class("SSLWCosting")
@@ -243,7 +243,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
     def cost_heat_exchanger(blk,
                             hx_type=HXType.Utube,
-                            material_type=HXMaterial.SS_SS,
+                            material_type=HXMaterial.StainlessSteelStainlessSteel,
                             tube_length=HXTubeLength.TwelveFoot,
                             integer=True):
         """
@@ -267,7 +267,8 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             hx_type - HXType Enum indicating type of heat exchanger design,
                       default = HXType.Utube.
             material_type - HXMaterial Enum indicating material of
-                            construction, default = HXMaterial.SS_SS.
+                            construction, default =
+                            HXMaterial.StainlessSteelStainlessSteel.
             tube_length - HXTubeLength Enum indicating length of HX tubes,
                           default = HXTubeLength.TwelveFoot.
             integer - whether the number of units should be constrained to be
@@ -318,13 +319,13 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                                        to_units=pyo.units.ft**2) /
                      blk.number_of_units)
 
-        def hx_cost_rule(blk):
+        @blk.Constraint()
+        def base_cost_per_unit_eq(blk):
             return (blk.base_cost_per_unit ==
                     pyo.exp(alpha[1] -
                             alpha[2]*pyo.log(area_unit*blk.hx_oversize) +
                             alpha[3]*pyo.log(area_unit*blk.hx_oversize)**2) *
                     pyo.units.USD_CE500)
-        blk.base_cost_per_unit_eq = pyo.Constraint(rule=hx_cost_rule)
 
         @blk.Expression(doc="Base cost for all installed units")
         def base_cost(blk):
@@ -338,26 +339,26 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             doc='Construction material correction factor')
 
         hx_material_factor_dict = {
-            HXMaterial.CS_CS: {"A": 0.00, "B": 0.00},
-            HXMaterial.CS_Brass: {"A": 1.08, "B": 0.05},
-            HXMaterial.CS_SS: {"A": 1.75, "B": 0.13},
-            HXMaterial.CS_Monel: {"A": 2.10, "B": 0.13},
-            HXMaterial.CS_Ti: {"A": 5.20, "B": 0.16},
-            HXMaterial.CS_CrMo: {"A": 1.55, "B": 0.05},
-            HXMaterial.CrMo_CrMo: {"A": 1.70, "B": 0.07},
-            HXMaterial.SS_SS: {"A": 2.70, "B": 0.07},
-            HXMaterial.Monel_Monel: {"A": 3.30, "B": 0.08},
-            HXMaterial.Ti_Ti: {"A": 9.60, "B": 0.06}}
+            HXMaterial.CarbonSteelCarbonSteel: {"A": 0.00, "B": 0.00},
+            HXMaterial.CarbonSteelBrass: {"A": 1.08, "B": 0.05},
+            HXMaterial.CarbonSteelStainlessSteel: {"A": 1.75, "B": 0.13},
+            HXMaterial.CarbonSteelMonel: {"A": 2.10, "B": 0.13},
+            HXMaterial.CarbonSteelTitanium: {"A": 5.20, "B": 0.16},
+            HXMaterial.CarbonSteelCrMoSteel: {"A": 1.55, "B": 0.05},
+            HXMaterial.CrMoSteelCrMoSteel: {"A": 1.70, "B": 0.07},
+            HXMaterial.StainlessSteelStainlessSteel: {"A": 2.70, "B": 0.07},
+            HXMaterial.MonelMonel: {"A": 3.30, "B": 0.08},
+            HXMaterial.TitaniumTitanium: {"A": 9.60, "B": 0.06}}
 
         mf = hx_material_factor_dict[material_type]
 
-        def hx_material_fact_rule(self):
-            if material_type == HXMaterial.CS_CS:
+        @blk.Constraint()
+        def hx_material_eqn(self):
+            if material_type == HXMaterial.CarbonSteelCarbonSteel:
                 return blk.material_factor == 1
             else:
                 return (blk.material_factor ==
                         mf["A"] + (area_unit/(100*pyo.units.ft**2))**mf["B"])
-        blk.hx_material_eqn = pyo.Constraint(rule=hx_material_fact_rule)
 
         # ------------------------------------------------------
         # Pressure factor calculation
@@ -384,7 +385,8 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                                       to_units=pyo.units.psi) -
                     pyo.units.convert(1*pyo.units.atm, to_units=pyo.units.psi))
 
-        def hx_P_factor(blk):
+        @blk.Constraint()
+        def p_factor_eq(blk):
             # Equation valid from 600 pisg to 3000 psig
             # return self.pressure_factor == (
             #     0.8510 + 0.1292*(pressure/600) + 0.0198*(pressure/600)**2)
@@ -392,18 +394,17 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             return blk.pressure_factor == (
                 0.9803 + 0.0180 * (pressure/(100*pyo.units.psi)) +
                 0.0017 * (pressure/(100*pyo.units.psi))**2)
-        blk.p_factor_eq = pyo.Constraint(rule=hx_P_factor)
 
         # Total capital cost equation
-        def hx_CP_rule(blk):
+        @blk.Constraint()
+        def capital_cost_constraint(blk):
             return blk.capital_cost == (
                 blk.pressure_factor*blk.material_factor *
                 blk.length_factor*blk.base_cost)
-        blk.capital_cost_constraint = pyo.Constraint(rule=hx_CP_rule)
 
     def cost_vessel(blk,
                     vertical=False,
-                    material_type=VesselMaterial.CS,
+                    material_type=VesselMaterial.CarbonSteel,
                     shell_thickness=1.25*pyo.units.inch,
                     weight_limit=1,
                     aspect_ratio_range=1,
@@ -412,7 +413,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                     vessel_length=None,
                     number_of_units=1,
                     number_of_trays=None,
-                    tray_material=TrayMaterial.CS,
+                    tray_material=TrayMaterial.CarbonSteel,
                     tray_type=TrayType.Sieve):
         """
         Generic vessel costing method.
@@ -421,7 +422,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             vertical - alignment of vessel; vertical if True, horizontal if
                        False (default=False).
             material_type - VesselMaterial Enum indicating material of
-                            construction, default = VesselMaterial.CS.
+                            construction, default = VesselMaterial.CarbonSteel.
             shell_thickness - thickness of vessel shell, including pressure
                               allowance. Default = 1.25 inches.
             weight_limit - 1: (default) 1000 to 920,000 lb, 2: 4200 to 1M lb.
@@ -443,7 +444,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             tray_material - Only required if number_of_trays is not None.
                             TrayMaterial Enum indicating material of
                             construction for distillation trays, default =
-                            TrayMaterial.CS.
+                            TrayMaterial.CarbonSteel.
             tray_type - Only required if number_of_trays is not None.
                         TrayType Enum indicating type of distillation trays
                         to use, default = TrayMaterial.Sieve.
@@ -505,11 +506,11 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         # Material densities in lb/cubic inch
         material_factor_dict = {
-            VesselMaterial.CS: {"factor": 1.0, "density": 0.284},
-            VesselMaterial.LowAlloy: {"factor": 1.2, "density": 0.271},
-            VesselMaterial.SS304: {"factor": 1.7, "density": 0.270},
-            VesselMaterial.SS316: {"factor": 2.1, "density": 0.276},
-            VesselMaterial.Carpenter: {"factor": 3.2, "density": 0.29},
+            VesselMaterial.CarbonSteel: {"factor": 1.0, "density": 0.284},
+            VesselMaterial.LowAlloySteel: {"factor": 1.2, "density": 0.271},
+            VesselMaterial.StainlessSteel304: {"factor": 1.7, "density": 0.270},
+            VesselMaterial.StainlessSteel316: {"factor": 2.1, "density": 0.276},
+            VesselMaterial.Carpenter20CB3: {"factor": 3.2, "density": 0.29},
             VesselMaterial.Nickel200: {"factor": 5.4, "density": 0.3216},
             VesselMaterial.Monel400: {"factor": 3.6, "density": 0.319},
             VesselMaterial.Inconel600: {"factor": 3.9, "density": 0.3071},
@@ -539,11 +540,11 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                              doc='Weight of vessel in lb',
                              units=pyo.units.pound)
 
-        def weight_rule(blk):
+        @blk.Constraint()
+        def weight_eq(blk):
             return blk.weight == (
                 Constants.pi*(D_in + blk.shell_thickness) *
                 (L_in + 0.8*D_in)*blk.shell_thickness*blk.material_density)
-        blk.weight_eq = pyo.Constraint(rule=weight_rule)
 
         # Base Vessel cost
         # Alpha factors for correlation
@@ -558,13 +559,13 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         else:
             alpha = alpha_dict["H"][weight_limit]
 
-        def base_cost_rule(blk):
+        @blk.Constraint()
+        def base_cost_constraint(blk):
             return blk.base_cost_per_unit == (
                 pyo.exp(alpha[1] +
                         alpha[2]*(pyo.log(blk.weight/pyo.units.pound)) +
                         alpha[3]*(pyo.log(blk.weight/pyo.units.pound)**2)) *
                 pyo.units.USD_CE500)
-        blk.base_cost_constraint = pyo.Constraint(rule=base_cost_rule)
 
         # Add platform and ladder costs if required
         if include_platforms_ladders:
@@ -585,7 +586,8 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 number_of_trays=number_of_trays)
 
         # Total capital cost of vessel and ancilliary equipment
-        def capital_cost_rule(blk):
+        @blk.Constraint()
+        def capital_cost_constraint(blk):
             cost_expr = blk.material_factor*blk.base_cost_per_unit
             if include_platforms_ladders:
                 cost_expr += blk.base_cost_platforms_ladders
@@ -593,7 +595,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 cost_expr += blk.base_cost_trays
 
             return blk.capital_cost == cost_expr*number_of_units
-        blk.capital_cost_constraint = pyo.Constraint(rule=capital_cost_rule)
 
     def _cost_platforms_ladders(blk,
                                 vertical,
@@ -613,11 +614,13 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         L = pyo.units.convert(vessel_length, to_units=pyo.units.foot)
 
         if not vertical:
-            def CPL_rule(blk):
+            @blk.Constraint()
+            def cost_platforms_ladders_eq(blk):
                 return blk.base_cost_platforms_ladders == (
                     2005*(D/pyo.units.foot)**0.20294*pyo.units.USD_CE500)
         else:
-            def CPL_rule(blk):
+            @blk.Constraint()
+            def cost_platforms_ladders_eq(blk):
                 if aspect_ratio_range == 1:
                     return blk.base_cost_platforms_ladders == (
                         361.8*(D/pyo.units.foot)**0.73960 *
@@ -633,7 +636,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                         f"{blk.unit_model.name} recieved invalid value for "
                         f"aspect_ratio_range argument: {aspect_ratio_range}. "
                         "Value must be 1 or 2.")
-        blk.cost_platforms_ladders_eq = pyo.Constraint(rule=CPL_rule)
 
     def _cost_distillation_trays(blk,
                                  tray_material,
@@ -671,19 +673,19 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             initialize=1.0,
             doc='FTM material of construction factor for trays')
         # Alpha parameters for material factor
-        alpha = {TrayMaterial.CS: {1: 1, 2: 0},
-                 TrayMaterial.SS303: {1: 1.189, 2: 0.0577},
-                 TrayMaterial.SS316: {1: 1.401, 2: 0.0724},
-                 TrayMaterial.Carpenter: {1: 1.525, 2: 0.0788},
+        alpha = {TrayMaterial.CarbonSteel: {1: 1, 2: 0},
+                 TrayMaterial.StainlessSteel303: {1: 1.189, 2: 0.0577},
+                 TrayMaterial.StainlessSteel316: {1: 1.401, 2: 0.0724},
+                 TrayMaterial.Carpenter20CB3: {1: 1.525, 2: 0.0788},
                  TrayMaterial.Monel: {1: 2.306, 2: 0.1120}}
 
         # Calculating tray factor value
         # Column diameter in ft, eqn. valid for 2 to 16 ft
-        def mt_factor_rule(blk):
+        @blk.Constraint()
+        def tray_material_factor_eq(blk):
             return blk.tray_material_factor == (
                 alpha[tray_material][1] +
                 alpha[tray_material][2]*D/pyo.units.foot)
-        blk.tray_material_factor_eq = pyo.Constraint(rule=mt_factor_rule)
 
         # Calcluate cost factor for number of trays
         blk.number_trays_factor = pyo.Var(
@@ -691,10 +693,10 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             units=pyo.units.dimensionless,
             doc='Cost factor for number of trays')
 
-        def num_trays_rule(blk):
+        @blk.Constraint()
+        def num_tray_factor_constraint(blk):
             return blk.number_trays_factor == smooth_max(
                 1, 2.25/(1.0414**number_of_trays))
-        blk.num_tray_factor_constraint = pyo.Constraint(rule=num_trays_rule)
 
         # Calcualte base cost of a single tray
         blk.base_cost_per_tray = pyo.Var(initialize=1e4,
@@ -702,20 +704,20 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                                          units=pyo.units.USD_CE500,
                                          doc='Base cost of a single tray')
 
-        def single_tray_rule(blk):
+        @blk.Constraint()
+        def single_tray_cost_constraint(blk):
             return blk.base_cost_per_tray == (
                 468.00*pyo.exp(0.1739*D/pyo.units.foot)*pyo.units.USD_CE500)
-        blk.single_tray_cost_constraint = pyo.Constraint(rule=single_tray_rule)
 
         # Capital cost of trays
-        def cost_trays_rule(blk):
+        @blk.Constraint()
+        def tray_costing_constraint(blk):
             return blk.base_cost_trays == (
                 number_of_trays*blk.number_trays_factor*blk.tray_type_factor *
                 blk.tray_material_factor*blk.base_cost_per_tray)
-        blk.tray_costing_constraint = pyo.Constraint(rule=cost_trays_rule)
 
     def cost_vertical_vessel(blk,
-                             material_type=VesselMaterial.CS,
+                             material_type=VesselMaterial.CarbonSteel,
                              shell_thickness=1.25*pyo.units.inch,
                              weight_limit=1,
                              aspect_ratio_range=1,
@@ -724,14 +726,14 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                              vessel_length=None,
                              number_of_units=1,
                              number_of_trays=None,
-                             tray_material=TrayMaterial.CS,
+                             tray_material=TrayMaterial.CarbonSteel,
                              tray_type=TrayType.Sieve):
         """
         Specific case of vessel costing method for vertical vessels.
 
         Args:
             material_type - VesselMaterial Enum indicating material of
-                            construction, default = VesselMaterial.CS.
+                            construction, default = VesselMaterial.CarbonSteel.
             shell_thickness - thickness of vessel shell, including pressure
                               allowance. Default = 1.25 inches.
             weight_limit - 1: (default) 1000 to 920,000 lb, 2: 4200 to 1M lb.
@@ -753,14 +755,14 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             tray_material - Only required if number_of_trays is not None.
                             TrayMaterial Enum indicating material of
                             construction for distillation trays, default =
-                            TrayMaterial.CS.
+                            TrayMaterial.CarbonSteel.
             tray_type - Only required if number_of_trays is not None.
                         TrayType Enum indicating type of distillation trays
                         to use, default = TrayMaterial.Sieve.
         """
         SSLWCostingData.cost_vessel(blk,
                                     vertical=True,
-                                    material_type=VesselMaterial.CS,
+                                    material_type=VesselMaterial.CarbonSteel,
                                     shell_thickness=1.25*pyo.units.inch,
                                     weight_limit=1,
                                     aspect_ratio_range=1,
@@ -769,11 +771,11 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                                     vessel_length=None,
                                     number_of_units=1,
                                     number_of_trays=None,
-                                    tray_material=TrayMaterial.CS,
+                                    tray_material=TrayMaterial.CarbonSteel,
                                     tray_type=TrayType.Sieve)
 
     def cost_horizontal_vessel(blk,
-                               material_type=VesselMaterial.CS,
+                               material_type=VesselMaterial.CarbonSteel,
                                shell_thickness=1.25*pyo.units.inch,
                                include_platforms_ladders=True,
                                vessel_diameter=None,
@@ -786,7 +788,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         Args:
             material_type - VesselMaterial Enum indicating material of
-                            construction, default = VesselMaterial.CS.
+                            construction, default = VesselMaterial.CarbonSteel.
             shell_thickness - thickness of vessel shell, including pressure
                               allowance. Default = 1.25 inches.
             include_platforms_ladders - whether to include platforms and
@@ -801,7 +803,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         """
         SSLWCostingData.cost_vessel(blk,
                                     vertical=False,
-                                    material_type=VesselMaterial.CS,
+                                    material_type=VesselMaterial.CarbonSteel,
                                     shell_thickness=1.25*pyo.units.inch,
                                     weight_limit=1,
                                     include_platforms_ladders=True,
@@ -810,17 +812,17 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                                     number_of_units=1)
 
     def cost_fired_heater(blk,
-                          heat_source=HeaterSource.fuel,
-                          material_type=HeaterMaterial.CS,
+                          heat_source=HeaterSource.Fuel,
+                          material_type=HeaterMaterial.CarbonSteel,
                           integer=True):
         """
         Generic costing method for fired heaters.
 
         Args:
             heat_source - HeaterSource Enum indicating type of source of heat,
-                          default = HeaterSource.fuel.
+                          default = HeaterSource.Fuel.
             material_type - HeaterMaterial Enum indicating material of
-                            construction, default = HeaterMaterial.CS.
+                            construction, default = HeaterMaterial.CarbonSteel.
             integer - whether the number of units should be constrained to be
                       an integer or not (default = True).
         """
@@ -855,9 +857,9 @@ class SSLWCostingData(FlowsheetCostingBlockData):
              blk.number_of_units)
 
         # Material factor
-        material_factor_dict = {HeaterMaterial.CS: 1.0,
-                                HeaterMaterial.CrMo: 1.4,
-                                HeaterMaterial.SS: 1.7}
+        material_factor_dict = {HeaterMaterial.CarbonSteel: 1.0,
+                                HeaterMaterial.CrMoSteel: 1.4,
+                                HeaterMaterial.StainlessSteel: 1.7}
         blk.material_factor = pyo.Param(
             initialize=material_factor_dict[material_type],
             domain=pyo.NonNegativeReals,
@@ -868,28 +870,29 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                                       domain=pyo.NonNegativeReals,
                                       doc='Pressure design factor')
 
-        def p_factor_rule(blk):
+        @blk.Constraint()
+        def pressure_factor_eq(blk):
             return blk.pressure_factor == (
                 0.986 - 0.0035*(P/(500.00*pyo.units.psi)) +
                 0.0175*(P/(500.00*pyo.units.psi))**2)
-        blk.pressure_factor_eq = pyo.Constraint(rule=p_factor_rule)
 
-        def CB_rule(blk):
-            if heat_source == HeaterSource.fuel:
+        @blk.Constraint()
+        def base_cost_per_unit_eq(blk):
+            if heat_source == HeaterSource.Fuel:
                 bc_expr = pyo.exp(
                     0.32325 + 0.766*pyo.log(Q/pyo.units.BTU*pyo.units.hr))
-            elif heat_source == HeaterSource.reformer:
+            elif heat_source == HeaterSource.Reformer:
                 bc_expr = (
                     0.859*(Q/pyo.units.BTU*pyo.units.hr)**0.81)
-            elif heat_source == HeaterSource.pyrolysis:
+            elif heat_source == HeaterSource.Pyrolysis:
                 bc_expr = (
                     0.650*(Q/pyo.units.BTU*pyo.units.hr)**0.81)
-            elif heat_source == HeaterSource.hotWater:
+            elif heat_source == HeaterSource.HotWater:
                 bc_expr = pyo.exp(
                     9.593 -
                     0.3769*pyo.log((Q/pyo.units.BTU*pyo.units.hr)) +
                     0.03434*pyo.log((Q/pyo.units.BTU*pyo.units.hr))**2)
-            elif heat_source == HeaterSource.salts:
+            elif heat_source == HeaterSource.Salts:
                 bc_expr = (
                     12.32*(Q/pyo.units.BTU*pyo.units.hr)**0.64)
             elif heat_source == HeaterSource.DowthermA:
@@ -901,34 +904,33 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
             return blk.base_cost_per_unit == bc_expr*pyo.units.USD_CE500
 
-        blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
-
         @blk.Expression(doc="Base cost for all units installed")
         def base_cost(blk):
             return blk.base_cost_per_unit * blk.number_of_units
 
         # Total capital cost of heater(s)
-        def CP_rule(blk):
+        @blk.Constraint()
+        def capital_cost_constraint(blk):
             return blk.capital_cost == (
                 blk.material_factor*blk.pressure_factor*blk.base_cost)
-        blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
 
     def cost_compressor(blk,
-                        compressor_type=CompressorType.centrifugal,
-                        drive_type=CompressorDriveType.electricMotor,
-                        material_type=CompressorMaterial.SS,
+                        compressor_type=CompressorType.Centrifugal,
+                        drive_type=CompressorDriveType.ElectricMotor,
+                        material_type=CompressorMaterial.StainlessSteel,
                         integer=True):
         """
         Generic costing method for compressors.
 
         Args:
             compressor_type - CompressorType Enum indicating type of type of
-                              equipment, default = CompressorType.centrifugal.
+                              equipment, default = CompressorType.Centrifugal.
             material_type - CompressorMaterial Enum indicating material of
-                            construction, default = CompressorMaterial.SS.
+                            construction, default =
+                            CompressorMaterial.StainlessSteel.
             drive_type - CompressorDriveType Enum indicating type of type of
                          drive to be used, default =
-                         CompressorDriveType.electricMotor.
+                         CompressorDriveType.ElectricMotor.
             integer - whether the number of units should be constrained to be
                       an integer or not (default = True).
         """
@@ -948,56 +950,56 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                                     to_units=pyo.units.hp)
 
         # Compressor Purchase Cost Correlation
-        FD_param = {CompressorDriveType.electricMotor: 1,
-                    CompressorDriveType.steamTurbine: 1.15,
+        FD_param = {CompressorDriveType.ElectricMotor: 1,
+                    CompressorDriveType.SteamTurbine: 1.15,
                     CompressorDriveType.gasTurbine: 1.25}
         blk.drive_factor = pyo.Param(mutable=True,
                                      initialize=FD_param[drive_type],
                                      doc='Mover drive factor')
 
-        material_factor_dict = {CompressorMaterial.CS: 1,
-                                CompressorMaterial.SS: 2.5,
-                                CompressorMaterial.Nickel: 5.0}
+        material_factor_dict = {CompressorMaterial.CarbonSteel: 1,
+                                CompressorMaterial.StainlessSteel: 2.5,
+                                CompressorMaterial.NickelAlloy: 5.0}
         blk.material_factor = pyo.Param(
             mutable=True,
             initialize=material_factor_dict[material_type],
             doc='Material factor')
 
-        alpha_dict = {CompressorType.centrifugal: {1: 7.58, 2: 0.8},
-                      CompressorType.reciprocating: {1: 7.9661, 2: 0.8},
-                      CompressorType.screw: {1: 8.1238, 2: 0.7243}}
+        alpha_dict = {CompressorType.Centrifugal: {1: 7.58, 2: 0.8},
+                      CompressorType.Reciprocating: {1: 7.9661, 2: 0.8},
+                      CompressorType.Screw: {1: 8.1238, 2: 0.7243}}
         alpha = alpha_dict[compressor_type]
 
         # Purchase cost rule
-        def CB_rule(blk):
+        @blk.Constraint()
+        def base_cost_per_unit_eq(blk):
             return blk.base_cost_per_unit == (
                 pyo.exp(alpha[1] + alpha[2]*pyo.log(work_hp/pyo.units.hp)) *
                 pyo.units.USD_CE500)
-        blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
 
         @blk.Expression(doc="Base cost for all units installed")
         def base_cost(blk):
             return blk.base_cost_per_unit * blk.number_of_units
 
-        def CP_rule(blk):
+        @blk.Constraint()
+        def capital_cost_constraint(blk):
             return blk.capital_cost == (
                 blk.drive_factor*blk.material_factor*blk.base_cost)
-        blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
 
     def cost_fan(blk,
-                 fan_type=FanType.centrifugalBackward,
+                 fan_type=FanType.CentrifugalBackward,
                  fan_head_factor=1.45,
-                 material_type=FanMaterial.SS,
+                 material_type=FanMaterial.StainlessSteel,
                  integer=True):
         """
         Generic costing method for fans.
 
         Args:
             fan_type - FanType Enum indicating type of type of equipment,
-                       default = FanType.centrifugalBackward.
+                       default = FanType.CentrifugalBackward.
             fan_head_factor - (float) fan head factor (default=1.45).
             material_type - FanMaterial Enum indicating material of
-                            construction, default = FanMaterial.SS.
+                            construction, default = FanMaterial.StainlessSteel.
             integer - whether the number of units should be constrained to be
                       an integer or not (default = True).
         """
@@ -1018,55 +1020,56 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         # Fan cost correlation
         alpha_dict = {
-            FanType.centrifugalBackward: {1: 11.0757, 2: 1.12906, 3: 0.08860},
-            FanType.centrifugalStraight: {1: 12.1678, 2: 1.31363, 3: 0.09974},
-            FanType.vaneAxial: {1: 9.5229, 2: 0.97566, 3: 0.08532},
-            FanType.tubeAxial: {1: 6.12905, 2: 0.40254, 3: 0.05787}}
+            FanType.CentrifugalBackward: {1: 11.0757, 2: 1.12906, 3: 0.08860},
+            FanType.CentrifugalStraight: {1: 12.1678, 2: 1.31363, 3: 0.09974},
+            FanType.VaneAxial: {1: 9.5229, 2: 0.97566, 3: 0.08532},
+            FanType.TubeAxial: {1: 6.12905, 2: 0.40254, 3: 0.05787}}
         alpha = alpha_dict[fan_type]
 
         blk.head_factor = pyo.Param(initialize=fan_head_factor,
                                     mutable=True,
                                     doc="Fan head factor")
 
-        material_factor_dict = {FanMaterial.CS: 1.0,
-                                FanMaterial.fiberglass: 1.8,
-                                FanMaterial.SS: 2.5,
-                                FanMaterial.Nickel: 5.0}
+        material_factor_dict = {FanMaterial.CarbonSteel: 1.0,
+                                FanMaterial.Fiberglass: 1.8,
+                                FanMaterial.StainlessSteel: 2.5,
+                                FanMaterial.NickelAlloy: 5.0}
         blk.material_factor = pyo.Param(
             initialize=material_factor_dict[material_type],
             mutable=True,
             doc="Material factor")
 
         # Base cost
-        def CB_rule(blk):
+        @blk.Constraint()
+        def base_cost_per_unit_eq(blk):
             return blk.base_cost_per_unit == (pyo.exp(
                 alpha[1] -
                 alpha[2]*pyo.log(Qcfm/(pyo.units.foot**3/pyo.units.minute)) +
                 alpha[3]*pyo.log(Qcfm/(pyo.units.foot**3/pyo.units.minute))**2) *
                 pyo.units.USD_CE500)
-        blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
 
         @blk.Expression(doc="Base cost for all units installed")
         def base_cost(blk):
             return blk.base_cost_per_unit * blk.number_of_units
 
-        def CP_rule(blk):
+        @blk.Constraint()
+        def capital_cost_constraint(blk):
             return blk.capital_cost == (
                 blk.material_factor*blk.head_factor*blk.base_cost)
-        blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
 
     def cost_blower(blk,
-                    blower_type=BlowerType.centrifugal,
-                    material_type=BlowerMaterial.SS,
+                    blower_type=BlowerType.Centrifugal,
+                    material_type=BlowerMaterial.StainlessSteel,
                     integer=True):
         """
         Generic costing method for blowers.
 
         Args:
             blower_type - BlowerType Enum indicating type of type of equipment,
-                          default = BlowerType.centrifugal.
+                          default = BlowerType.Centrifugal.
             material_type - BlowerMaterial Enum indicating material of
-                            construction, default = BlowerMaterial.SS.
+                            construction, default =
+                            BlowerMaterial.StainlessSteel.
             integer - whether the number of units should be constrained to be
                       an integer or not (default = True).
         """
@@ -1087,36 +1090,36 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         # Fan cost correlation
         alpha_dict = {
-            BlowerType.centrifugal: {1: 6.8929, 2: 0.7900, 3: 0.0},
-            BlowerType.rotary: {1: 7.59176, 2: 0.7932, 3: 0.012900}}
+            BlowerType.Centrifugal: {1: 6.8929, 2: 0.7900, 3: 0.0},
+            BlowerType.Rotary: {1: 7.59176, 2: 0.7932, 3: 0.012900}}
         alpha = alpha_dict[blower_type]
 
-        material_factor_dict = {BlowerMaterial.CS: 1.0,
+        material_factor_dict = {BlowerMaterial.CarbonSteel: 1.0,
                                 BlowerMaterial.Aluminum: 0.60,
-                                BlowerMaterial.fiberglass:   1.8,
-                                BlowerMaterial.SS:  2.5,
-                                BlowerMaterial.Nickel: 5.0}
+                                BlowerMaterial.Fiberglass:   1.8,
+                                BlowerMaterial.StainlessSteel:  2.5,
+                                BlowerMaterial.NickelAlloy: 5.0}
         blk.material_factor = pyo.Param(
             initialize=material_factor_dict[material_type],
             mutable=True,
             doc="Material factor")
 
         # Base cost
-        def CB_rule(blk):
+        @blk.Constraint()
+        def base_cost_per_unit_eq(blk):
             return blk.base_cost_per_unit == (pyo.exp(
                 alpha[1] +
                 alpha[2]*pyo.log(work_hp/pyo.units.hp) -
                 alpha[3]*pyo.log(work_hp/pyo.units.hp)**2) *
                 pyo.units.USD_CE500)
-        blk.base_cost_per_unit_eq = pyo.Constraint(rule=CB_rule)
 
         @blk.Expression(doc="Base cost for all units installed")
         def base_cost(blk):
             return blk.base_cost_per_unit * blk.number_of_units
 
-        def CP_rule(blk):
+        @blk.Constraint()
+        def capital_cost_constraint(blk):
             return blk.capital_cost == blk.material_factor*blk.base_cost
-        blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
 
     def cost_turbine(blk,
                      integer=True):
@@ -1157,15 +1160,15 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         work_hp = pyo.units.convert(work/blk.number_of_units,
                                     to_units=pyo.units.hp)
 
-        def CP_rule(blk):
+        @blk.Constraint()
+        def capital_cost_constraint(blk):
             return blk.capital_cost == (
                 blk.number_of_units*530*(work_hp/pyo.units.hp)**0.81 *
                 pyo.units.USD_CE500)
-        blk.capital_cost_constraint = pyo.Constraint(rule=CP_rule)
 
     def cost_pump(blk,
-                  pump_type=PumpType.centrifugal,
-                  material_type=PumpMaterial.SS,
+                  pump_type=PumpType.Centrifugal,
+                  material_type=PumpMaterial.StainlessSteel,
                   pump_type_factor=1.4,
                   motor_type=PumpMotorType.Open,
                   integer=True):
@@ -1174,9 +1177,9 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         Args:
             pump_type - PumpType Enum indicating type of type of equipment,
-                      default = PumpType.centrifugal.
+                      default = PumpType.Centrifugal.
             material_type - PumpMaterial Enum indicating material of
-                            construction, default = PumpMaterial.SS.
+                            construction, default = PumpMaterial.StainlessSteel.
                             Material type is tied to PumpType.
             pump_type_factor - empirical factor for centrigual pumps based on
                                table in source. Valid values are [1.1, 1.2, "
@@ -1193,23 +1196,25 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                             "equal to True.")
 
         # Validate argument combinations
-        if pump_type == PumpType.reciprocating:
-            if material_type not in [PumpMaterial.ductileIron,
+        if pump_type == PumpType.Reciprocating:
+            if material_type not in [PumpMaterial.DuctileIron,
                                      PumpMaterial.NiAlBronze,
-                                     PumpMaterial.CS,
-                                     PumpMaterial.SS]:
+                                     PumpMaterial.CarbonSteel,
+                                     PumpMaterial.StainlessSteel]:
                 raise ConfigurationError(
                     f"{blk.name} invalid combination of arguments. If "
-                    "pump_type == PumpType.reciprocating then material_type "
+                    "pump_type == PumpType.Reciprocating then material_type "
                     "must be one of PumpMaterial.ductileIron, "
-                    "PumpMaterial.NiAlBronze, PumpMaterial.CS, or "
-                    "PumpMaterial.SS.")
+                    "PumpMaterial.NiAlBronze, PumpMaterial.CarbonSteel, or "
+                    "PumpMaterial.StainlessSteel.")
         else:
-            if material_type in [PumpMaterial.NiAlBronze, PumpMaterial.CS]:
+            if material_type in [PumpMaterial.NiAlBronze,
+                                 PumpMaterial.CarbonSteel]:
                 raise ConfigurationError(
                     f"{blk.name} invalid combination of arguments. "
-                    "PumpMaterial.NiAlBronze and PumpMaterial.CS material_type"
-                    " are only valid for pump_type == PumpType.reciprocating.")
+                    "PumpMaterial.NiAlBronze and "
+                    "PumpMaterial.CarbonSteel material_type"
+                    " are only valid for pump_type == PumpType.Reciprocating.")
 
         # Add common variables
         blk.capital_cost = pyo.Var(initialize=1e4,
@@ -1258,9 +1263,9 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             doc='Pump Head in feet of fluid flowing (Pressure rise/density)',
             units=pyo.units.pound_force*pyo.units.foot/pyo.units.pound)
 
-        def p_head_rule(blk):
+        @blk.Constraint()
+        def pump_head_eq(blk):
             return blk.pump_head == deltaP/dens_mass
-        blk.pump_head_eq = pyo.Constraint(rule=p_head_rule)
 
         # Pump size factor: S = Q(H)**0.5
         # Q = is the flow rate through the pump in gallons per minute
@@ -1270,36 +1275,36 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             domain=pyo.NonNegativeReals,
             doc='Pump size factor, f(Q,pump_head)')
 
-        def p_s_factor_rule(blk):
+        @blk.Constraint()
+        def size_factor_eq(blk):
             return blk.size_factor == (
                 Q*pyo.units.minute/pyo.units.gallon *
                 (blk.pump_head *
                  pyo.units.pound/pyo.units.pound_force/pyo.units.foot)**0.5)
-        blk.size_factor_eq = pyo.Constraint(rule=p_s_factor_rule)
 
         # Material factor
-        if pump_type != PumpType.reciprocating:
-            material_factor_dict = {PumpMaterial.castIron: 1.00,
-                                    PumpMaterial.ductileIron: 1.15,
-                                    PumpMaterial.castSteel: 1.35,
-                                    PumpMaterial.bronze: 1.90,
-                                    PumpMaterial.SS: 2.00,
+        if pump_type != PumpType.Reciprocating:
+            material_factor_dict = {PumpMaterial.CastIron: 1.00,
+                                    PumpMaterial.DuctileIron: 1.15,
+                                    PumpMaterial.CastSteel: 1.35,
+                                    PumpMaterial.Bronze: 1.90,
+                                    PumpMaterial.StainlessSteel: 2.00,
                                     PumpMaterial.HastelloyC: 2.95,
                                     PumpMaterial.Monel: 3.30,
                                     PumpMaterial.Nickel: 3.50,
                                     PumpMaterial.Titanium: 9.70}
         else:
-            material_factor_dict = {PumpMaterial.ductileIron: 1.00,
-                                    PumpMaterial.SS: 2.20,
+            material_factor_dict = {PumpMaterial.DuctileIron: 1.00,
+                                    PumpMaterial.StainlessSteel: 2.20,
                                     PumpMaterial.NiAlBronze: 1.15,
-                                    PumpMaterial.CS: 1.50}
+                                    PumpMaterial.CarbonSteel: 1.50}
         blk.material_factor = pyo.Param(
             initialize=material_factor_dict[material_type],
             mutable=True,
             doc='Construction material correction factor')
 
         # Pump type factor
-        if pump_type == PumpType.centrifugal:
+        if pump_type == PumpType.Centrifugal:
             pump_type_factor_dict = {1.1: 1.00,
                                      1.2: 1.50,
                                      1.3: 1.70,
@@ -1327,23 +1332,22 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             units=pyo.units.USD_CE394,
             doc='Base cost of pump (less motor) per unit')
 
-        def base_pump_cost_rule(blk):
-            if pump_type == PumpType.centrifugal:
+        @blk.Constraint()
+        def base_pump_cost_per_unit_eq(blk):
+            if pump_type == PumpType.Centrifugal:
                 bpc = pyo.exp(9.7171 -
                               0.6019*pyo.log(blk.size_factor) +
                               0.0519*pyo.log(blk.size_factor)**2)
-            elif pump_type == PumpType.externalGear:
+            elif pump_type == PumpType.ExternalGear:
                 bpc = pyo.exp(
                     7.6964 +
                     0.1986*pyo.log(Q/(pyo.units.gallon/pyo.units.minute)) +
                     0.0291*pyo.log(Q/(pyo.units.gallon/pyo.units.minute))**2)
-            elif pump_type == PumpType.reciprocating:
+            elif pump_type == PumpType.Reciprocating:
                 bpc = pyo.exp(7.8103 +
                               0.26986*pyo.log(work/pyo.units.hp) +
                               0.06718*pyo.log(work/pyo.units.hp)**2)
             return blk.base_pump_cost_per_unit == bpc*pyo.units.USD_CE394
-        blk.base_pump_cost_per_unit_eq = pyo.Constraint(
-            rule=base_pump_cost_rule)
 
         @blk.Expression(doc="Base cost for all pumps (less motors)")
         def base_pump_cost(blk):
@@ -1355,11 +1359,11 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             units=pyo.units.USD_CE500,
             doc='Capital cost of pumps (less motors)')
 
-        def CP_pump_rule(blk):
+        @blk.Constraint()
+        def pump_capital_cost_eq(blk):
             return blk.pump_capital_cost == pyo.units.convert(
                 blk.FT*blk.material_factor*blk.base_pump_cost,
                 to_units=pyo.units.USD_CE500)
-        blk.pump_capital_cost_eq = pyo.Constraint(rule=CP_pump_rule)
 
         # Motor Costs
         pump_motor_type_dict = {PumpMotorType.Open: 1,
@@ -1381,14 +1385,14 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             units=pyo.units.USD_CE394,
             doc='Motor base purchase cost per unit')
 
-        def base_motor_cost_rule(blk):
+        @blk.Constraint()
+        def base_motor_cost_eq(blk):
             return blk.base_motor_cost_per_unit == (pyo.exp(
                 5.8259 + 0.13141*pyo.log(work_motor/pyo.units.hp) +
                 0.053255*pyo.log(work_motor/pyo.units.hp)**2 +
                 0.028628*pyo.log(work_motor/pyo.units.hp)**3 -
                 0.0035549*pyo.log(work_motor/pyo.units.hp)**4) *
                 pyo.units.USD_CE394)
-        blk.base_motor_cost_eq = pyo.Constraint(rule=base_motor_cost_rule)
 
         @blk.Expression(doc="Base cost for all motors")
         def motor_base_cost(blk):
@@ -1400,17 +1404,17 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             units=pyo.units.USD_CE500,
             doc='Capital cost of all motors')
 
-        def CP_motor_rule(blk):
+        @blk.Constraint()
+        def motor_capital_cost_eq(blk):
             return blk.motor_capital_cost == pyo.units.convert(
                 blk.motor_FT*blk.motor_base_cost,
                 to_units=pyo.units.USD_CE500)
-        blk.motor_capital_cost_eq = pyo.Constraint(rule=CP_motor_rule)
 
         # Total capital cost (pump + electrical motor)
-        def cp_cost_rule(blk):
+        @blk.Constraint()
+        def capital_cost_constraint(blk):
             return blk.capital_cost == (blk.pump_capital_cost +
                                         blk.motor_capital_cost)
-        blk.capital_cost_constraint = pyo.Constraint(rule=cp_cost_rule)
 
     def cost_pressure_changer(blk,
                               mover_type="compressor",

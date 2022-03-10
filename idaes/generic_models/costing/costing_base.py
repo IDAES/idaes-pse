@@ -86,7 +86,7 @@ class DefaultCostingComponents(StrEnum):
     variable = "variable_operating_cost"
 
 
-def is_flowsheet_costing_block(val):
+def assert_flowsheet_costing_block(val):
     '''Domain validator for fowhseet costing block attributes
 
     Args:
@@ -150,8 +150,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         self.build_global_params()
 
         # Verify that costing package has set key attributes
-        c_units = self.base_currency
-        if c_units is None:
+        if self.base_currency is None:
             raise ValueError(
                 f"{self.name} - costing package has not specified the base "
                 "currency units to use for costing.")
@@ -238,19 +237,17 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                 "your spelling and that the flow type has been registered with"
                 " the FlowsheetCostingBlock.")
 
-        if isinstance(flow_expr, pyo.Var):
-            # First, check that it is not indexed
-            if flow_expr.is_indexed():
-                raise TypeError(
-                    f"{flow_expr.name} is an indexed Var. Flow costing only "
-                    "supports unindexed Vars.")
-        if hasattr(flow_expr, "lb"):
-            if flow_expr.lb is None or flow_expr.lb < 0:
-                _log.warning(
-                    f"{flow_expr.name} has a lower bound of less than zero. "
-                    "Costing requires that all flows have a lower bound "
-                    "equal to or greater than zero to avoid negative costs.")
-        else:
+        if type(flow_expr) in pyo.native_types:
+            # this is a constant?!?
+            pass
+        elif flow_expr.is_indexed():
+            raise TypeError(
+                f"{flow_expr.name} is an indexed component. Flow costing only "
+                "supports unindexed components.")
+        elif not flow_expr.is_potentially_variable():
+            # this is a constant?!?
+            pass
+        elif flow_expr.is_expression_type():
             # Get bounds from expression
             ebounds = compute_bounds_on_expr(flow_expr)
             if ebounds[0] is None or ebounds[0] < 0:
@@ -259,6 +256,13 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                     "than zero. Costing requires that all flows have a lower "
                     "bound equal to or greater than zero to avoid negative "
                     "costs.")
+        else:
+            # this should be a Var
+            if flow_expr.lb is None or flow_expr.lb < 0:
+                _log.warning(
+                    f"{flow_expr.name} has a lower bound of less than zero. "
+                    "Costing requires that all flows have a lower bound "
+                    "equal to or greater than zero to avoid negative costs.")
 
         self._registered_flows[flow_type].append(flow_expr)
 
@@ -349,7 +353,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         self.aggregate_capital_cost = pyo.Var(units=c_units)
 
-        def agg_cap_cost_rule(blk):
+        @self.Constraint(doc="Aggregation constraint for capital cost")
+        def aggregate_capital_cost_constraint(blk):
             e = 0
             for u in self._registered_unit_costing:
                 # Allow for units that might only have a subset of cost Vars
@@ -359,14 +364,12 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
             return blk.aggregate_capital_cost == e
 
-        self.aggregate_capital_cost_constraint = pyo.Constraint(
-            rule=agg_cap_cost_rule)
-
         # Aggregate unit operating costs
         self.aggregate_fixed_operating_cost = pyo.Var(
             units=c_units/t_units)
 
-        def agg_fixed_om_cost_rule(blk):
+        @self.Constraint(doc="Aggregation constraint for fixed O&M costs")
+        def aggregate_fixed_operating_cost_constraint(blk):
             e = 0
             for u in self._registered_unit_costing:
                 # Allow for units that might only have a subset of cost Vars
@@ -376,13 +379,11 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
             return blk.aggregate_fixed_operating_cost == e
 
-        self.aggregate_fixed_operating_cost_constraint = pyo.Constraint(
-            rule=agg_fixed_om_cost_rule)
-
         self.aggregate_variable_operating_cost = pyo.Var(
             units=c_units/t_units)
 
-        def agg_var_om_cost_rule(blk):
+        @self.Constraint(doc="Aggregation constraint for variable O&M costs")
+        def aggregate_variable_operating_cost_constraint(blk):
             e = 0
             for u in self._registered_unit_costing:
                 # Allow for units that might only have a subset of cost Vars
@@ -391,9 +392,6 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                                            to_units=c_units/t_units)
 
             return blk.aggregate_variable_operating_cost == e
-
-        self.aggregate_variable_operating_cost_constraint = pyo.Constraint(
-            rule=agg_var_om_cost_rule)
 
         # Aggregate flows
         # Units of flows will not be consistent, need separate Vars
@@ -422,7 +420,9 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         self.aggregate_flow_costs = pyo.Var(self.flow_types,
                                             units=c_units/t_units)
 
-        def agg_flow_cost_rule(blk, ftype):
+        @self.Constraint(self.flow_types,
+                         doc="Aggregation constraint for material flow costs")
+        def aggregate_flow_costs_constraint(blk, ftype):
             try:
                 agg_var = getattr(blk, f"aggregate_flow_{ftype}")
                 cost_var = getattr(blk, f"{ftype}_cost")
@@ -431,9 +431,6 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                                       to_units=c_units/t_units))
             except AttributeError:
                 return blk.aggregate_flow_costs[ftype] == 0*c_units/t_units
-
-        self.aggregate_flow_costs_constraint = pyo.Constraint(
-            self.flow_types, rule=agg_flow_cost_rule)
 
     def _build_costing_methods_map(self):
         """
@@ -492,7 +489,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
     CONFIG = ConfigBlock()
 
     CONFIG.declare("flowsheet_costing_block", ConfigValue(
-        domain=is_flowsheet_costing_block,
+        domain=assert_flowsheet_costing_block,
         doc="Reference to assoicated FlowsheetCostingBlock to use."))
     CONFIG.declare("costing_method", ConfigValue(
         doc=("Costing method to use for unit (default from Costing Package "
@@ -522,7 +519,6 @@ class UnitModelCostingBlockData(ProcessBlockData):
         for b in unit_model.component_objects(pyo.Block, descend_into=False):
             if b is not self and isinstance(b, UnitModelCostingBlock):
                 # Block already has costing, clean up and raise exception
-                self.parent_block().del_component(self)
                 raise RuntimeError(
                     f"Unit model {unit_model.name} already has a costing block"
                     f" registered: {b.name}. Each unit may only have a single "
@@ -586,13 +582,5 @@ class UnitModelCostingBlockData(ProcessBlockData):
         fcb = self.config.flowsheet_costing_block
 
         # Clean up references from fsb and unit_model
-        try:
-            fcb._registered_unit_costing.remove(self)
-        except ValueError:
-            # Assume this is OK
-            pass
-        try:
-            self.unit_model._initialization_order.remove(self)
-        except ValueError:
-            # Assume this is OK
-            pass
+        self.unit_model._initialization_order.remove(self)
+        fcb._registered_unit_costing.remove(self)
