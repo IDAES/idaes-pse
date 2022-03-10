@@ -225,7 +225,7 @@ ValveFunctionType.custom}""",
         pc = super()._get_performance_contents(time_point=time_point)
         return pc
 
-    def initialize(
+    def initialize_build(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,

@@ -1324,7 +1324,7 @@ arrangement to use for delta T
         blk.side_1.model_check()
         blk.side_2.model_check()
 
-    def initialize(
+    def initialize_build(
         blk,
         state_args_1=None,
         state_args_2=None,
