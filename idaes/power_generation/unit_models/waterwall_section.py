@@ -958,7 +958,7 @@ constructed,
             self.energy_accumulation_slag[0].fix(0)
             self.energy_accumulation_metal[0].fix(0)
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
+    def initialize_build(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
         '''
         Waterwall section initialization routine.
