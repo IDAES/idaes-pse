@@ -136,7 +136,6 @@ class SamplingMethods:
         """
         no_y_vars = self.x_data.shape[1] - full_data.shape[1]
         dist = full_data[:, :no_y_vars] - a
-        # dist = full_data[:, :-1] - a
         l2_norm = np.sqrt(np.sum((dist ** 2), axis=1))
         l2_norm = l2_norm.reshape(l2_norm.shape[0], 1)
         distances = np.append(full_data, l2_norm, 1)
@@ -157,7 +156,6 @@ class SamplingMethods:
             equivalent_points: Array containing the points (in rows) most similar to those in generated_sample_points
         """
 
-        # equivalent_points = np.zeros((generated_sample_points.shape[0], generated_sample_points.shape[1] + 1))
         equivalent_points = np.zeros((generated_sample_points.shape[0], len(self.data_headers) ))
         for i in range(0, generated_sample_points.shape[0]):
             closest_point = self.nearest_neighbour(full_data, generated_sample_points[i, :])
@@ -323,7 +321,7 @@ class SamplingMethods:
         Args:
             data_input:     data supplied by user (dataframe or numpy array)
             xlabels:        list of input variables
-            ylabels:        list of output variab;es
+            ylabels:        list of output variables
         """
         self.df_flag = True
 
