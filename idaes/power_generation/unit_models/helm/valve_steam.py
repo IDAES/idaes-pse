@@ -230,6 +230,8 @@ ValveFunctionType.custom}""",
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        calculate_cv=False,
+        calculate_opening=False,
     ):
         """
         For simplicity this initialization requires you to set values for the
@@ -238,6 +240,7 @@ ValveFunctionType.custom}""",
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+        init_log.info("Steam valve intialization started")
 
         # Create solver
         opt = get_solver(solver, optarg)
@@ -260,11 +263,19 @@ ValveFunctionType.custom}""",
         self.inlet.fix()
         self.outlet.unfix()
         for t, v in self.deltaP.items():
-            if v.fixed:
+            if calculate_cv:
+                self.Cv.unfix()
+            elif calculate_opening:
+                self.valve_opening.unfix()
+            elif (
+                v.fixed and self.pressure_flow_equation.active
+            ):
                 self.inlet.flow_mol[t].unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+
+        init_log.info("Steam valve intialization complete")
 
         from_json(self, sd=istate, wts=sp)
 
