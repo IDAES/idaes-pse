@@ -258,7 +258,7 @@ from 1 to num_outlets).}""",
             self.add_port(name=p, block=self.outlet_blocks[p], doc="Outlet")
             self.outlet_ports[p] = getattr(self, p)
 
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
+    def initialize_build(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
         """
         Initialization routine for splitter
 

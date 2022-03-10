@@ -130,8 +130,13 @@ see property package for documentation.}"""))
             return b.mixed_state[t].pressure*1e-6 == \
                 b.liq_state[t].pressure*1e-6
 
-    def initialize(blk, state_args_water_steam=None,
-                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
+    def initialize_build(
+        blk,
+        state_args_water_steam=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None
+    ):
         '''
         Drum initialization routine.
 
