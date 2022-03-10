@@ -289,7 +289,11 @@ from 1 to num_outlets).}""",
             for o in self.outlet_list:
                 if self.outlet_blocks[o][t].flow_mol.fixed:
                     self.split_fraction[t, o].fix(
-                        value(self.mixed_state[t]/self.outlet_blocks[o][t].flow_mol))
+                        value(
+                            self.mixed_state[t].flow_mol /
+                            self.outlet_blocks[o][t].flow_mol
+                        )
+                    )
 
         # fix or unfix split fractions so n - 1 are fixed
         for t in self.flowsheet().time:
