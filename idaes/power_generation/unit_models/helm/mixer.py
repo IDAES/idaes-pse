@@ -389,7 +389,7 @@ between flow and pressure driven simulations.}""",
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
+    def initialize_build(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
         """
         Initialization routine for mixer.
 

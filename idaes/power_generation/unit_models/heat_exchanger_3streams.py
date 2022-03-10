@@ -464,7 +464,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
                        b.side_1.properties_in[t].temperature -
                        b.side_3.properties_out[t].temperature)
 
-    def initialize(blk, state_args_1=None, state_args_2=None,
+    def initialize_build(blk, state_args_1=None, state_args_2=None,
                    state_args_3=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
         '''
