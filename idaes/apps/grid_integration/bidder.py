@@ -194,8 +194,7 @@ class SelfScheduler(AbstractBidder):
 
         return
 
-    def record_bids(self, bids, date, hour):
-        print(f"recording bids for {date} {hour}")
+    def _record_bids(self, bids, date, hour):
 
         df_list = []
         for g in bids:
@@ -217,13 +216,27 @@ class SelfScheduler(AbstractBidder):
         # wait to be written when simulation ends
         self.bids_result_list.append(pd.concat(df_list))
 
+    def record_bids(self, bids, date, hour):
+
+        # record bids
+        self._record_bids(bids, date, hour)
+
+        # record the details of bidding model
+        for i in self.model.SCENARIOS:
+            self.bidding_model_object.record_results(
+                self.model.fs[i], date=date, hour=hour, Scenario=i
+            )
+
         return
 
     def write_results(self, path):
         print("")
         print("Saving bidding results to disk...")
         pd.concat(self.bids_result_list).to_csv(
-            os.path.join(path, "bidding_detail.csv"), index=False
+            os.path.join(path, "bidder_detail.csv"), index=False
+        )
+        self.bidding_model_object.write_results(
+            path=os.path.join(path, "bidding_model_detail.csv")
         )
 
     def update_model(self, **kwargs):
@@ -669,7 +682,7 @@ class Bidder:
 
         return True
 
-    def record_bids(self, bids, date, hour):
+    def _record_bids(self, bids, date, hour):
 
         """
         This function records the bids we computed for the given date into a
@@ -722,6 +735,34 @@ class Bidder:
 
         return
 
+    def record_bids(self, bids, date, hour):
+
+        """
+        This function records the bids and the details in the underlying bidding model.
+
+        Arguments:
+            bids: the obtained bids for this date.
+
+            date: the date we bid into
+
+            hour: the hour we bid into
+
+        Returns:
+            None
+
+        """
+
+        # record bids
+        self._record_bids(bids, date, hour)
+
+        # record the details of bidding model
+        for i in self.model.SCENARIOS:
+            self.bidding_model_object.record_results(
+                self.model.fs[i], date=date, hour=hour, Scenario=i
+            )
+
+        return
+
     def write_results(self, path):
         """
         This methods writes the saved operation stats into an csv file.
@@ -736,7 +777,10 @@ class Bidder:
         print("")
         print("Saving bidding results to disk...")
         pd.concat(self.bids_result_list).to_csv(
-            os.path.join(path, "bidding_detail.csv"), index=False
+            os.path.join(path, "bidder_detail.csv"), index=False
+        )
+        self.bidding_model_object.write_results(
+            path=os.path.join(path, "bidding_model_detail.csv")
         )
 
 

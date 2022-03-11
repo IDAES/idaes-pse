@@ -48,6 +48,8 @@ class Tracker:
         self.daily_stats = None
         self.projection = None
 
+        self.result_list = []
+
     def _check_inputs(self):
 
         """
@@ -335,6 +337,46 @@ class Tracker:
             b=self.model.fs, last_implemented_time_step=self.n_tracking_hour - 1
         )
 
+    def _record_tracker_results(self, **kwargs):
+
+        """
+        Record the tracker stats.
+
+        Arguments:
+            kwargs: key word arguments that can be passed into tracking model object's record result function.
+
+        Returns:
+            None
+
+        """
+
+        df_list = []
+        for t in self.time_set:
+
+            result_dict = {}
+
+            result_dict["Date"] = kwargs["date"]
+            result_dict["Hour"] = kwargs["hour"]
+
+            result_dict["Horizon [hr]"] = int(t)
+
+            result_dict["Power Dispatch [MW]"] = round(
+                pyo.value(self.model.power_dispatch[t]), 2
+            )
+            result_dict["Power Output [MW]"] = round(pyo.value(self.power_output[t]), 2)
+            result_dict["Power Underdelivered [MW]"] = round(
+                pyo.value(self.model.power_underdelivered[t]), 2
+            )
+            result_dict["Power Overdelivered [MW]"] = round(
+                pyo.value(self.model.power_overdelivered[t]), 2
+            )
+
+            result_df = pd.DataFrame.from_dict(result_dict, orient="index")
+            df_list.append(result_df.T)
+
+        # append to result list
+        self.result_list.append(pd.concat(df_list))
+
     def record_results(self, **kwargs):
 
         """
@@ -348,6 +390,10 @@ class Tracker:
 
         """
 
+        # record tracker details
+        self._record_tracker_results(**kwargs)
+
+        # tracking model details
         self.tracking_model_object.record_results(self.model.fs, **kwargs)
 
     def write_results(self, path):
@@ -363,6 +409,10 @@ class Tracker:
 
         print("")
         print("Saving tracking results to disk...")
+
+        pd.concat(self.result_list).to_csv(
+            os.path.join(path, "tracker_detail.csv"), index=False
+        )
         self.tracking_model_object.write_results(
-            path=os.path.join(path, "tracking_detail.csv")
+            path=os.path.join(path, "tracking_model_detail.csv")
         )
