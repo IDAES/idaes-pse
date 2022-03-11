@@ -305,7 +305,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
             self.cold_side.material_accumulation[0, :, :].fix(0)
             self.cold_side.energy_accumulation[0, :].fix(0)
 
-    def initialize(
+    def initialize_build(
         self,
         state_args_1=None,
         state_args_2=None,
