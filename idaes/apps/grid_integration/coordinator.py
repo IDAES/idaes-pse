@@ -325,24 +325,24 @@ class DoubleLoopCoordinator:
             simulator.data_manager.ruc_market_active.virtual_gen_cleared_DA,
         ]
 
-        sced_horizon = options.sced_horizon
+        tracking_horizon = len(self.projection_tracker.time_set)
 
         market_signals = self._assemble_project_tracking_signal(
             gen_name=gen_name,
             current_ruc_dispatch_dicts=current_ruc_dispatch_dicts,
             hour=hour,
-            sced_horizon=sced_horizon,
+            tracking_horizon=tracking_horizon,
         )
         return market_signals
 
     @staticmethod
     def _assemble_project_tracking_signal(
-        gen_name, current_ruc_dispatch_dicts, hour, sced_horizon
+        gen_name, current_ruc_dispatch_dicts, hour, tracking_horizon
     ):
 
         market_signals = []
         # append corresponding RUC dispatch
-        for t in range(hour, hour + sced_horizon):
+        for t in range(hour, hour + tracking_horizon):
             dispatch = 0
             for current_ruc_dispatch in current_ruc_dispatch_dicts:
                 if t >= 23:
@@ -508,7 +508,7 @@ class DoubleLoopCoordinator:
         # updated p_cost, so delete p_fuel
         if "p_fuel" in gen_dict:
             gen_dict.pop("p_fuel")
-            
+
         return
 
     def _pass_RT_schedule_to_prescient(
@@ -580,7 +580,7 @@ class DoubleLoopCoordinator:
         sced_dispatch = sced_instance.data["elements"]["generator"][gen_name]["pg"][
             "values"
         ]
-        sced_horizon = options.sced_horizon
+        tracking_horizon = len(self.tracker.time_set)
 
         current_ruc_dispatch_dicts = [
             simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA,
@@ -602,7 +602,7 @@ class DoubleLoopCoordinator:
             gen_name=gen_name,
             hour=hour,
             sced_dispatch=sced_dispatch,
-            sced_horizon=sced_horizon,
+            tracking_horizon=tracking_horizon,
             current_ruc_dispatch_dicts=current_ruc_dispatch_dicts,
             next_ruc_dispatch_dicts=next_ruc_dispatch_dicts,
         )
@@ -614,7 +614,7 @@ class DoubleLoopCoordinator:
         gen_name,
         hour,
         sced_dispatch,
-        sced_horizon,
+        tracking_horizon,
         current_ruc_dispatch_dicts,
         next_ruc_dispatch_dicts=None,
     ):
@@ -623,14 +623,14 @@ class DoubleLoopCoordinator:
         market_signals = [sced_dispatch[0]]
 
         # append corresponding RUC dispatch
-        for t in range(hour + 1, hour + sced_horizon):
+        for t in range(hour + 1, hour + tracking_horizon):
             if t > 23 and next_ruc_dispatch_dicts:
                 t = t % 24
                 dispatch = 0
                 for next_ruc_dispatch in next_ruc_dispatch_dicts:
                     dispatch += next_ruc_dispatch.get((gen_name, t), 0)
-            elif t > 23 and next_ruc_dispatch_dicts is None:
-                dispatch = sced_dispatch[t - hour]
+            # elif t > 23 and next_ruc_dispatch_dicts is None:
+            #     dispatch = sced_dispatch[t - hour]
             else:
                 dispatch = 0
                 for current_ruc_dispatch in current_ruc_dispatch_dicts:
