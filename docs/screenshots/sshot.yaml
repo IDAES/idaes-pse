@@ -1,0 +1,6 @@
+fsvis:
+  desc: "Flowsheet Visualizer"
+  screens:
+    flash:
+      script: fsvis_flash.py
+      output: flash.png
