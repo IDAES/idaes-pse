@@ -33,5 +33,5 @@ def model():
 
 if __name__ == "__main__":
     import sys
-    from sshot import fsvis_main
+    from util import fsvis_main
     sys.exit(fsvis_main(model(), name="Flash"))

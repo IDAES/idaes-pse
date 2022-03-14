@@ -3,17 +3,17 @@ Automate screenshots.
 
 Depends on 'shot-scraper' (pip package).
 
-Uses a YAML configuration file, e.g., `sshot.yaml`.
+Uses a YAML configuration file, e.g., `sshot.yaml`, that is in a given
+directory.
 
 The YAML file is a mapping using the following schema:
 
-    <section_name>:
-        desc: "Describe the app/tool for this section"
-        screens:
-            <screen_name_1>:
-                script: <script_to_run>.py
-                output: <image_filename>.png
-            <screen_name_2>:
+    desc: "Describe the app/tool for this subdirectory"
+    screens:
+        <screen_name_1>:
+            script: <script_to_run>.py
+            output: <image_filename>.png
+        <screen_name_2>:
                 ...
 
 The program will run the `script` and look for a line of output to standard
@@ -32,22 +32,27 @@ details.
 
 Basic usage:
 
-    python sshot.py sshot.yaml
+    python sshot.py
 
-You can also select sections and/or screens from the command line. You can provide
-either a simple string name or a comma-searated list of regular expressions
-as a filter for which section(s) or screen(s) to run.
+This will look for subdirectories containing the file "sshot.yaml".
+For each subdirectory, it will 'chdir' to it, execute the commands in the configuration, and stop.
+There is no guarantee as to the order in which the directories are visited.
+
+You can provide a starting (and possibly terminal) directory:
+
+    python sshot.py my_app_dir
+
+You can also select screens (or patterns of screens) from the command line.
+You can provide either a simple string name or a comma-searated list of regular expressions as a filter for which section(s) or screen(s) to run.
 
 Selecting the "hda" screen:
 
-    python sshot.py sshot.yaml --screen hda
+    python sshot.py --screen hda
 
-Selecting any section with "vis" in it:
-
-    python sshot.py sshot.yaml --section ".*vis.*"
 """
 import argparse
 import logging
+import os
 from pathlib import Path
 import re
 from subprocess import Popen, PIPE
@@ -85,17 +90,7 @@ class Screenshot:
             except Exception as err:
                 raise ConfigError(f"Cannot load configuration file: {err}")
         # Regex filters, see filter_match() functions
-        self._sections = set()
         self._screens = set()
-
-    @property
-    def sections(self):
-        return self._sections.copy()
-
-    @sections.setter
-    def sections(self, value):
-        for v in value:
-            self._sections.add(re.compile(v, flags=re.I))
 
     @property
     def screens(self):
@@ -107,19 +102,12 @@ class Screenshot:
             self._screens.add(re.compile(v, flags=re.I))
 
     def run(self):
-        for section, contents in self._conf.items():
-            if not filter_match(section, self._sections):
-                _log.debug("Skip section. name={section}")
-                continue
-            desc = contents.get("desc", section)
-            _log.info(f"Run section. name={section}, desc={desc}")
-            self._run_section(section, contents)
-
-    def _run_section(self, section, contents):
+        desc = self._conf.get("desc", "No description")
         try:
-            screens = contents["screens"]
+            screens = self._conf["screens"]
         except KeyError:
-            raise ConfigError(f"Section '{section}' is missing 'screens' configuration")
+            raise ConfigError(f"Missing 'screens' configuration")
+        # Create and scrape each 'screen'
         for label, info in screens.items():
             if not filter_match(label, self._screens):
                 _log.debug(f"Skip screen. name={label}")
@@ -129,20 +117,17 @@ class Screenshot:
                 output_file = info["output"]
             except KeyError:
                 raise ConfigError(
-                    f"Screen '{label}' in section '{section}' is "
-                    f"missing output file field 'output'"
+                    f"Screen '{label}' is missing output file field 'output'"
                 )
             try:
                 script = info["script"]
             except KeyError:
                 raise ConfigError(
-                    f"Screen '{label}' in section '{section}' is "
-                    f"missing script file field 'script'"
+                    f"Screen '{label}' is missing script file field 'script'"
                 )
             if not Path(script).exists():
                 raise ConfigError(
-                    f"Screen '{label}' in section '{section}': script "
-                    f"file '{script}' does not exist"
+                    f"Screen '{label}': script file '{script}' does not exist"
                 )
             _log.info(
                 f"Run script. name={script}"
@@ -219,14 +204,12 @@ def change_suffix(p, suffix):
     file_parts[-1] = new_name
     return Path(*file_parts)
 
+g_conf_filename = "sshot.yaml"
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("conf", help="Configuration file", type=argparse.FileType("r"))
+    ap.add_argument("dirname", help="Directory root for files", nargs="?", default=".")
     ap.add_argument("--screen", "-s", help="Regex to select screen(s)", default="")
-    ap.add_argument(
-        "--section", "-S", help="Regex to select a specific section", default=""
-    )
     ap.add_argument(
         "--verbose", "-v", action="count", help="Increase verbosity", default=0
     )
@@ -237,11 +220,23 @@ def main():
         _log.setLevel(logging.INFO)
     else:
         _log.setLevel(logging.WARNING)
-    shot = Screenshot(args.conf)
+    for root, dirs, files in os.walk(args.dirname):
+        _log.debug(f"Examine directory. path={root}")
+        if g_conf_filename in files:
+            _log.info(f"Generating screenshots. path={root}")
+            cwd = os.getcwd()
+            os.chdir(root)
+            status = run_subdir(args)
+            _log.info(f"Generated screenshots. path={root}, code={status}")
+            os.chdir(cwd)
+        else:
+            _log.debug(f"Skipping directory. path={root}")
+
+def run_subdir(args):
+    with Path(g_conf_filename).open() as f:
+        shot = Screenshot(f)
     if args.screen:
         shot.screens = args.screen.split(",")
-    if args.section:
-        shot.sections = args.section.split(",")
     try:
         shot.run()
     except ConfigError as err:
@@ -256,14 +251,4 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
-## Utility code imported by other modules
 
-def fsvis_main(m, name="screen"):
-    from idaes.ui.fsvis import visualize
-    import sys, time
-
-    result = visualize(m.fs, name=name, browser=False)
-    print(f"[scraper] http://localhost:{result.port}/app?id={name}\n")
-    sys.stdout.flush()
-    time.sleep(60)
-    return 0
