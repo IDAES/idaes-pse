@@ -328,6 +328,7 @@ class DoubleLoopCoordinator:
         tracking_horizon = len(self.projection_tracker.time_set)
 
         market_signals = self._assemble_project_tracking_signal(
+            options=options,
             gen_name=gen_name,
             current_ruc_dispatch_dicts=current_ruc_dispatch_dicts,
             hour=hour,
@@ -337,7 +338,7 @@ class DoubleLoopCoordinator:
 
     @staticmethod
     def _assemble_project_tracking_signal(
-        gen_name, current_ruc_dispatch_dicts, hour, tracking_horizon
+        options, gen_name, current_ruc_dispatch_dicts, hour, tracking_horizon
     ):
 
         market_signals = []
@@ -345,8 +346,8 @@ class DoubleLoopCoordinator:
         for t in range(hour, hour + tracking_horizon):
             dispatch = 0
             for current_ruc_dispatch in current_ruc_dispatch_dicts:
-                if t >= 23:
-                    dispatch += current_ruc_dispatch.get((gen_name, 23), 0)
+                if t >= options.ruc_horizon - 1:
+                    dispatch += current_ruc_dispatch.get((gen_name, options.ruc_horizon - 1), 0)
                 else:
                     dispatch += current_ruc_dispatch.get((gen_name, t), 0)
             market_signals.append(dispatch)
