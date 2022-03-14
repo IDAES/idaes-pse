@@ -15,3 +15,15 @@ one line in the following format (they may print other things, too):
     [scraper] <URL>
 
 The `<URL>` represents the URL that is given to shot-scraper to convert into an image.
+
+## Exporting notebooks
+
+To get models, etc. created in Jupyter notebooks, use `jupyter nbconvert` to export the  notebook.
+The default behavior captures the Markdown cells as comments, and also  puts the cell numbers in a comment.
+To remove both of those things, use the template  in the `barepython` directory instead of the default template for converting to Python scripts.
+
+For example:
+
+     jupyter nbconvert --to script --output-dir=. --template barepython /path/to/notebook.ipynb
+
+The `--output-dir=.` option overrides the default behavior of putting the converted .py script in the same directory as the input notebook.
