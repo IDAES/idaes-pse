@@ -1,0 +1,3 @@
+- url: http://localhost:56358/app?id=Flash
+  output: flash.png
+  wait: 1000

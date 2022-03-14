@@ -33,10 +33,9 @@ def model():
 
 def main():
     m = model()
-    result = visualize(m.fs, name="Flash")
-    print(f"[scraper] {result.server}:{result.port}\n")
+    result = visualize(m.fs, name="Flash", browser=False)
+    print(f"[scraper] http://localhost:{result.port}/app?id=Flash\n")
     sys.stdout.flush()
-    sys.stderr.write("@@ wait 1 minute\n")
     time.sleep(60)
     return 0
 

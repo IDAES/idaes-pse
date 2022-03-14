@@ -5,7 +5,6 @@ import argparse
 from pathlib import Path
 from subprocess import Popen, PIPE
 import sys
-from tempfile import NamedTemporaryFile
 import time
 import yaml
 
@@ -19,6 +18,8 @@ class ExecError(Exception):
 
 
 class Screenshot:
+    encoding = "utf-8"
+
     def __init__(self, conf):
         if isinstance(conf, dict):
             self._conf = conf
@@ -67,22 +68,36 @@ class Screenshot:
             script_args = [script]
         proc = Popen(script_args, stdout=PIPE)
         while 1:
-            line = proc.stdout.readline().strip()
-            if line.startswith("[scrape]"):
+            line = proc.stdout.readline().strip().decode(self.encoding)
+            if line.startswith("[scraper]"):
                 url = line.split(" ")[1]
+                break
         return url, proc
 
     def _scrape_screen(self, url, ofile, options):
         # Create a YAML config for the screen scraper tool
-        tmp_conf = NamedTemporaryFile("w+", encoding="utf-8")
-        tmp_conf.write(f"- url: {url}\n")
-        tmp_conf.write(f"  output: {ofile}\n")
-        for okey, ovalue in options.items():
-            tmp_conf.write(f"  {okey}: {ovalue}\n")
-        tmp_conf.seek(0)
+        opath = Path(ofile)
+        conf_file = change_suffix(opath, ".yaml")
+        with open(conf_file, "w", encoding=self.encoding) as f:
+            f.write(f"- url: {url}\n")
+            f.write(f"  output: {ofile}\n")
+            f.write(f"  wait: 1000\n")
+            for okey, ovalue in options.items():
+                f.write(f"  {okey}: {ovalue}\n")
         # Run the screen scraper tool
-        with Popen(["shot-scraper", "multi", tmp_conf.name]):
+        try:
+            opath.unlink(missing_ok=True)
+        except Exception as err:
+            print(f"Failed to remove old output file: {err}")
+        with Popen(["shot-scraper", "multi", str(conf_file)]):
             print(f"Scraping url {url} -> {ofile}")
+
+
+def change_suffix(p, suffix):
+    new_name = Path(f"{p.stem}{suffix}")
+    file_parts = list(p.parts)
+    file_parts[-1] = new_name
+    return Path(*file_parts)
 
 
 def main():
