@@ -8,6 +8,7 @@ from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VL
 from idaes.generic_models.unit_models import Flash
 from idaes.ui.fsvis import visualize
 
+
 def model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -30,15 +31,7 @@ def model():
     m.fs.flash.deltaP.fix(0)
     return m
 
-
-def main():
-    m = model()
-    result = visualize(m.fs, name="Flash", browser=False)
-    print(f"[scraper] http://localhost:{result.port}/app?id=Flash\n")
-    sys.stdout.flush()
-    time.sleep(60)
-    return 0
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    import sys
+    from sshot import fsvis_main
+    sys.exit(fsvis_main(model(), name="Flash"))
