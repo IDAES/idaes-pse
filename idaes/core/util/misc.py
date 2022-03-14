@@ -14,6 +14,8 @@
 """
 This module contains miscellaneous utility functions for use in IDAES models.
 """
+from enum import Enum
+
 from pyomo.common.deprecation import deprecated
 
 import pyomo.environ as pyo
@@ -436,3 +438,12 @@ class IndexedVarLikeExpression(VarLikeExpression):
         raise TypeError(
             "%s is an Expression and can not be unfixed."
             % (self.name))
+
+
+class StrEnum(str, Enum):
+    """
+    Multiple inheritance string-Enum for representing Enums with string values
+    """
+
+    def __str__(self):
+        return str(self.value)

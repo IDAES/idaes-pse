@@ -616,7 +616,7 @@ Must be True if dynamic = True,
         it iterates through all objects in blk._initialization_order in reverse
         and re-activates these whilst calling the associated initialize method.
 
-        Currently, parse of arguments to the initialize method of attached
+        Currently, parsing of arguments to the initialize method of attached
         blocks is ahrd coded - this will be addressed in a future PR.
         Currently, the method supports the following attached components:
             * UnitModelCostingBlocks
@@ -727,3 +727,19 @@ Must be True if dynamic = True,
                       .format(idaeslog.condition(results)))
 
         return None
+
+    def del_component(self, name_or_object):
+        """
+        Delete a component from this block. Need to introduce code to handle
+        un-registering costing blocks
+        """
+        obj = self.component(name_or_object)
+
+        # TODO: See if Pyomo can give us a call-back to do this
+        try:
+            # If this is a costing block, need to unregister it
+            obj.del_costing()
+        except AttributeError:
+            pass
+
+        super().del_component(obj)

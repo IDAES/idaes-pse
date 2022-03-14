@@ -635,7 +635,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         """
         self.outlet_stage.flow_coeff.fix(value)
 
-    def initialize(
+    def initialize_build(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,
