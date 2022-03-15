@@ -129,6 +129,7 @@ jobs:
           - '3.7'
           - '3.8'
           - '3.9'
+          - '3.10'
         os:
           - ubuntu-18.04
           - windows-latest
@@ -161,10 +162,10 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          # TODO restore all Python versions once tests pass
           - '3.7'
           - '3.8'
           - '3.9'
+          - '3.10'
         os:
           - ubuntu-18.04
           - windows-latest
@@ -192,7 +193,7 @@ jobs:
           cat *errors.txt || echo "No error logs found"
 
   pytest-site-packages:
-    name: Run tests from site-packages (non-editable) installation
+    name: Run tests from site-packages (non-editable) installation (${{ matrix.install-mode }})
     # NOTE: using ubuntu-latest (20.04) instead of 18.04 results in failures in power_generation/carbon_capture/mea_solvent_system/unit_models/tests/test_column.py
     runs-on: ubuntu-18.04
     needs: [precheck]
@@ -202,6 +203,21 @@ jobs:
         || needs.precheck.outputs.workflow-trigger == 'not_pr'
         || needs.precheck.outputs.workflow-trigger == 'approved_pr'
       )
+    strategy:
+      fail-fast: false
+      matrix:
+        install-mode:
+          - pip-default
+          - pip-optional
+          - conda-like
+        include:
+          - install-mode: pip-default
+            pip-install-target: '.'
+          - install-mode: pip-optional
+            pip-install-target: .[optional]
+          - install-mode: conda-like
+            pip-install-target: '.'
+            dependencies-to-uninstall: omlt
     steps:
       - uses: actions/checkout@v2
       - name: Set up Conda environment
@@ -212,13 +228,18 @@ jobs:
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: '.[optional]'
-      - name: Install test dependencies and run pytest in empty directory
+          install-target: ${{ matrix.pip-install-target }}
+      - name: Remove dependencies installable with pip but not with conda
+        # NOTE some dependencies that are installed by default with pip are not available through conda
+        # so they're not installed if IDAES is installed with `conda -c conda-forge -c IDAES-PSE idaes-pse`
+        # to ensure this scenario is handled properly, since we don't have (yet) the conda-build process integrated with the CI,
+        # we manually remove the "pip-but-not-conda" dependencies after installing with pip
+        # as an approximation of the enviroment that we'd get from `conda install`
+        if: matrix.dependencies-to-uninstall
+        run: |
+          pip uninstall --yes ${{ matrix.dependencies-to-uninstall }}
+      - name: Install and run pytest in empty directory
         run: |
           pushd "$(mktemp -d)"
-          # TODO this could be an optional [testing] dependency
-          pip install pytest addheader
-          # TODO downloading pytest.ini is still needed for the tests to pass
-          # eventually it will be moved to the root conftest.py so that is installed as Python code
-          wget https://raw.githubusercontent.com/IDAES/idaes-pse/main/pytest.ini 
-          pytest --pyargs idaes
+          pip install pytest
+          pytest --pyargs idaes -W ignore -rs

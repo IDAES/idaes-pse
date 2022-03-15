@@ -73,3 +73,11 @@ def test_InitializationError():
         raise InitializationError()
     with pytest.raises(IdaesError):
         raise InitializationError()
+
+
+@pytest.mark.unit
+def test_UserModelError():
+    with pytest.raises(ValueError):
+        raise UserModelError()
+    with pytest.raises(IdaesError):
+        raise UserModelError()

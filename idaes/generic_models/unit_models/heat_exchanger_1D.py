@@ -621,7 +621,7 @@ thickness of the tube""",
             == c.pi * (self.d_shell**2 - self.N_tubes*self.d_tube_outer**2)
         )
 
-    def initialize(
+    def initialize_build(
         self,
         shell_state_args=None,
         tube_state_args=None,

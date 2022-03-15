@@ -811,8 +811,8 @@ objects linked to all inlet states and the mixed state,
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None,
-                   solver=None, hold_state=False):
+    def initialize_build(blk, outlvl=idaeslog.NOTSET, optarg=None,
+                         solver=None, hold_state=False):
         """
         Initialization routine for mixer.
 
@@ -993,6 +993,24 @@ objects linked to all inlet states and the mixed state,
 
         if hasattr(self, "pressure_equality_constraints"):
             for (t, i), c in self.pressure_equality_constraints.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
+
+        if hasattr(self, "minimum_pressure"):
+            for (t, i), v in self.minimum_pressure.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.set_scaling_factor(v, s)
+
+        if hasattr(self, "minimum_pressure_constraint"):
+            for (t, i), c in self.minimum_pressure_constraint.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
+
+        if hasattr(self, "mixture_pressure"):
+            for t, c in self.mixture_pressure.items():
                 s = iscale.get_scaling_factor(
                     self.mixed_state[t].pressure, default=1, warning=True)
                 iscale.constraint_scaling_transform(c, s)

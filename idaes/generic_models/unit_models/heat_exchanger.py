@@ -30,6 +30,7 @@ from pyomo.environ import (
     check_optimal_termination
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -45,10 +46,13 @@ from idaes.generic_models.unit_models.heater import (
     _make_heater_control_volume,
 )
 
-import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+
+# TODO: Clean up in IDAES 2.0
+from idaes.generic_models.costing import UnitModelCostingBlock
+import idaes.core.util.unit_costing as costing
 
 _log = idaeslog.getLogger(__name__)
 
@@ -121,7 +125,15 @@ This config can be given by the cold side name instead of cold_side_config.""",
 countercurrent temperature difference.}""",
         ),
     )
-
+    config.declare(
+        "side_1_is_hot",
+        ConfigValue(
+            default=True,
+            domain=bool,
+            doc="""If True, side_1 is an alias for hot_side. Otherwise, side_1
+is an alias for cold_side""",
+        ),
+    )
 
 def delta_temperature_lmtd_callback(b):
     r"""
@@ -286,10 +298,16 @@ class HeatExchangerData(UnitModelBlockData):
             # compatible with the tube and shell notation
             setattr(config, config.cold_side_name, config.cold_side_config)
 
-        if config.cold_side_name in ["hot_side", "side_1"]:
-            raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_1'].")
-        if config.hot_side_name in ["cold_side", "side_2"]:
-            raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_2'].")
+        if config.side_1_is_hot:
+            if config.cold_side_name in ["hot_side", "side_1"]:
+                raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_1'].")
+            if config.hot_side_name in ["cold_side", "side_2"]:
+                raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_2'].")
+        else:
+            if config.cold_side_name in ["hot_side", "side_2"]:
+                raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_2'].")
+            if config.hot_side_name in ["cold_side", "side_1"]:
+                raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_1'].")
 
     def build(self):
         """
@@ -329,10 +347,16 @@ class HeatExchangerData(UnitModelBlockData):
         # compatability with older models.  Using add_object_reference keeps
         # these from showing up when you iterate through pyomo compoents in a
         # model, so only the user specified control volume names are "seen"
-        if not hasattr(self, "side_1"):
-            add_object_reference(self, "side_1", hot_side)
-        if not hasattr(self, "side_2"):
-            add_object_reference(self, "side_2", cold_side)
+        if config.side_1_is_hot:
+            if not hasattr(self, "side_1"):
+                add_object_reference(self, "side_1", hot_side)
+            if not hasattr(self, "side_2"):
+                add_object_reference(self, "side_2", cold_side)
+        else:
+            if not hasattr(self, "side_1"):
+                add_object_reference(self, "side_1", cold_side)
+            if not hasattr(self, "side_2"):
+                add_object_reference(self, "side_2", hot_side)
         if not hasattr(self, "hot_side"):
             add_object_reference(self, "hot_side", hot_side)
         if not hasattr(self, "cold_side"):
@@ -404,17 +428,29 @@ class HeatExchangerData(UnitModelBlockData):
             block=cold_side,
             doc="Cold side outlet")
 
+        if not config.side_1_is_hot:
+            i1, i2 = i2, i1
+            o1, o2 = o2, o1
+
         # Using Andrew's function for now.  I want these port names for backward
         # compatablity, but I don't want them to appear if you iterate throught
         # components and add_object_reference hides them from Pyomo.
         if not hasattr(self, "inlet_1"):
             add_object_reference(self, "inlet_1", i1)
+        if not hasattr(self, "side_1_inlet"):
+            add_object_reference(self, "side_1_inlet", i1)
         if not hasattr(self, "inlet_2"):
             add_object_reference(self, "inlet_2", i2)
+        if not hasattr(self, "side_2_inlet"):
+            add_object_reference(self, "side_2_inlet", i2)
         if not hasattr(self, "outlet_1"):
             add_object_reference(self, "outlet_1", o1)
+        if not hasattr(self, "side_1_outlet"):
+            add_object_reference(self, "side_1_outlet", o1)
         if not hasattr(self, "outlet_2"):
             add_object_reference(self, "outlet_2", o2)
+        if not hasattr(self, "side_2_outlet"):
+            add_object_reference(self, "side_2_outlet", o2)
 
         if not hasattr(self, "hot_inlet"):
             add_object_reference(self, "hot_inlet", i1)
@@ -499,7 +535,7 @@ class HeatExchangerData(UnitModelBlockData):
         cold_side.heat.latex_symbol = "Q_2"
         self.delta_temperature.latex_symbol = "\\Delta T"
 
-    def initialize(
+    def initialize_build(
         self,
         state_args_1=None,
         state_args_2=None,
@@ -554,10 +590,6 @@ class HeatExchangerData(UnitModelBlockData):
         init_log.info_high("Initialization Step 1b (cold side) Complete.")
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
-        # if costing block exists, deactivate
-        if hasattr(self, "costing"):
-            self.costing.deactivate()
-
         self.heat_transfer_equation.deactivate()
 
         # Get side 1 and side 2 heat units, and convert duty as needed
@@ -606,10 +638,6 @@ class HeatExchangerData(UnitModelBlockData):
         cold_side.release_state(flags2, outlvl=outlvl)
 
         init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
-        # if costing block exists, activate and initialize
-        if hasattr(self, "costing"):
-            self.costing.activate()
-            costing.initialize(self.costing)
 
         if not check_optimal_termination(res):
             raise InitializationError(
@@ -643,6 +671,11 @@ class HeatExchangerData(UnitModelBlockData):
             time_point=time_point,
         )
 
+    @deprecated(
+        "The get_costing method is being deprecated in favor of the new "
+        "FlowsheetCostingBlock tools.",
+        version="TBD",
+    )
     def get_costing(self, module=costing, year=None, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year)
@@ -691,6 +724,8 @@ class HeatExchangerData(UnitModelBlockData):
         for t, c in self.delta_temperature_out_equation.items():
             iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
 
-        if hasattr(self, "costing"):
-            # import costing scaling factors
+        # TODO: Deprecate as part of IDAES 2.0
+        # Check for old-style costing block, and scale if required
+        if (hasattr(self, "costing") and
+                not isinstance(self.costing, UnitModelCostingBlock)):
             costing.calculate_scaling_factors(self.costing)
