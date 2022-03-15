@@ -949,20 +949,18 @@ class PolynomialRegression:
         """
         This function prints the results of the fitting to the screen.
         """
-        results_df = pd.Series()
+        results_df = pd.Series(dtype='float64')
         counter = 1
         print("\n------------------------------------------------------------")
         print("The final coefficients of the regression terms are: \n")
         print("k               |", beta[0, 0])
-        results_df = results_df.append(pd.Series({"k": beta[0, 0]}))
+        results_df = pd.concat([results_df, pd.Series({"k": beta[0, 0]})])
         if self.multinomials == 1:
             for i in range(1, order + 1):
                 for j in range(1, self.number_of_x_vars + 1):
                     print("(x_", j, ")^", i, "     |", beta[counter, 0])
                     col_name = "(x_" + str(j) + ")^" + str(i)
-                    results_df = results_df.append(
-                        pd.Series({col_name: beta[counter, 0]})
-                    )
+                    results_df = pd.concat([results_df, pd.Series({col_name: beta[counter, 0]})])
                     counter += 1
             for i in range(1, self.number_of_x_vars + 1):
                 for j in range(1, self.number_of_x_vars + 1):
