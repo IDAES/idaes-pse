@@ -1,9 +1,8 @@
-fsvis:
-  desc: "Flowsheet Visualizer"
-  screens:
-    flash:
-      script: fsvis_flash.py
-      output: flash.png
-    hda:
-      script: HDA_distillation.py
-      output: hda_dist.png
+desc: "Flowsheet Visualizer"
+screens:
+  flash:
+    script: flash.py
+    output: flash.png
+  hda:
+    script: HDA_distillation.py
+    output: hda_dist.png
