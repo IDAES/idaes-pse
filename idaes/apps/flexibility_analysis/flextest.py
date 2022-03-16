@@ -298,17 +298,18 @@ def build_active_constraint_flextest(
     # TODO: to control the namespace and reduce cloning:
     #  take the users model and stick it on a new block as a sub-block
 
-    m.equality_cuts = pe.ConstraintList()
-    max_viol_lb, max_viol_ub = valid_var_bounds[m.max_constraint_violation]
-    for c in orig_equality_cons:
-        key1 = _ConIndex(c, "lb")
-        key2 = _ConIndex(m.ineq_violation_cons[key1], "ub")
-        y1 = m.active_indicator[key2]
-        key1 = _ConIndex(c, "ub")
-        key2 = _ConIndex(m.ineq_violation_cons[key1], "ub")
-        y2 = m.active_indicator[key2]
-        m.equality_cuts.add(m.max_constraint_violation <= (1 - y1 * y2) * max_viol_ub)
-        m.equality_cuts.add(m.max_constraint_violation >= (1 - y1 * y2) * max_viol_lb)
+    if not enforce_equalities:
+        m.equality_cuts = pe.ConstraintList()
+        max_viol_lb, max_viol_ub = valid_var_bounds[m.max_constraint_violation]
+        for c in orig_equality_cons:
+            key1 = _ConIndex(c, "lb")
+            key2 = _ConIndex(m.ineq_violation_cons[key1], "ub")
+            y1 = m.active_indicator[key2]
+            key1 = _ConIndex(c, "ub")
+            key2 = _ConIndex(m.ineq_violation_cons[key1], "ub")
+            y2 = m.active_indicator[key2]
+            m.equality_cuts.add(m.max_constraint_violation <= (1 - y1 * y2) * max_viol_ub)
+            m.equality_cuts.add(m.max_constraint_violation >= (1 - y1 * y2) * max_viol_lb)
 
     m.n_active_ineqs = pe.Constraint(expr=sum(m.active_indicator.values()) == n_dof)
 
