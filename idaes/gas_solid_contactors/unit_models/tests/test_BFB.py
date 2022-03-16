@@ -24,6 +24,7 @@ from pyomo.environ import (check_optimal_termination,
                            value,
                            Var,
                            Constraint)
+from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigBlock
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core import (FlowsheetBlock,
@@ -243,28 +244,32 @@ class TestIronOC(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iron_oc):
-        assert (pytest.approx(0.14, abs=1e-2) ==
+        assert (pytest.approx(0.168, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 0].value)
-        assert (pytest.approx(1.052, abs=1e-2) ==
+        assert (pytest.approx(1.601, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 1].value)
         assert (pytest.approx(0.015, abs=1e-2) ==
                 iron_oc.fs.unit.bubble_diameter[0, 0].value)
-        assert (pytest.approx(1.04, abs=1e-2) ==
+        assert (pytest.approx(1.266, abs=1e-2) ==
                 iron_oc.fs.unit.bubble_diameter[0, 1].value)
-        assert (pytest.approx(0.375, abs=1e-2) ==
+        assert (pytest.approx(0.417, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_bubble[0, 0].value)
-        assert (pytest.approx(3.290, abs=1e-2) ==
+        assert (pytest.approx(4.067, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_bubble[0, 1].value)
-        assert (pytest.approx(0.267, abs=1e-2) ==
-                iron_oc.fs.unit.delta[0, 0].value)
         assert (pytest.approx(0.307, abs=1e-2) ==
+                iron_oc.fs.unit.delta[0, 0].value)
+        assert (pytest.approx(0.384, abs=1e-2) ==
                 iron_oc.fs.unit.delta[0, 1].value)
-        assert (pytest.approx(124169.5118, abs=1e-2) ==
+        assert (pytest.approx(100671.070, abs=1e-2) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
         # Check that pressure drop occurs across the bed
         assert value(
                 iron_oc.fs.unit.gas_inlet.pressure[0] -
                 iron_oc.fs.unit.gas_outlet.pressure[0]) >= 0
+
+    @pytest.mark.component
+    def test_units_consistent(self, iron_oc):
+        assert_units_consistent(iron_oc)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -449,22 +454,32 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iron_oc):
-        assert (pytest.approx(0.44, abs=1e-2) ==
+        assert (pytest.approx(0.533, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 0].value)
-        assert (pytest.approx(1.05, abs=1e-2) ==
+        assert (pytest.approx(1.628, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 1].value)
         assert (pytest.approx(0.03, abs=1e-2) ==
                 iron_oc.fs.unit.bubble_diameter[0, 0].value)
-        assert (pytest.approx(1.05, abs=1e-2) ==
+        assert (pytest.approx(1.267, abs=1e-2) ==
                 iron_oc.fs.unit.bubble_diameter[0, 1].value)
-        assert (pytest.approx(0.77, abs=1e-2) ==
+        assert (pytest.approx(0.872, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_bubble[0, 0].value)
-        assert (pytest.approx(3.30, abs=1e-2) ==
+        assert (pytest.approx(4.094, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_bubble[0, 1].value)
-        assert (pytest.approx(0.53, abs=1e-2) ==
+        assert (pytest.approx(0.566, abs=1e-2) ==
                 iron_oc.fs.unit.delta[0, 0].value)
-        assert (pytest.approx(0.307, abs=1e-2) ==
+        assert (pytest.approx(0.388, abs=1e-2) ==
                 iron_oc.fs.unit.delta[0, 1].value)
+        assert (pytest.approx(100185.225, abs=1e-2) ==
+                iron_oc.fs.unit.gas_outlet.pressure[0].value)
+        # Check that pressure drop occurs across the bed
+        assert value(
+                iron_oc.fs.unit.gas_inlet.pressure[0] -
+                iron_oc.fs.unit.gas_outlet.pressure[0]) >= 0
+
+    @pytest.mark.component
+    def test_units_consistent(self, iron_oc):
+        assert_units_consistent(iron_oc)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

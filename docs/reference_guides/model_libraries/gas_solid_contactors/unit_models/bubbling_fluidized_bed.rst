@@ -9,7 +9,7 @@ through reaction, mass and heat transfer.
 
 **Assumptions:**
 
-* Cloud-wake region effects are negligigble and are not modelled.
+* Cloud-wake region effects are negligible and are not modelled.
 * Gas emulsion is at minimum fluidization conditions.
 * Gas feeds into emulsion region before the excess enters into the bubble region.
 * Gas and solids are well mixed in the radial direction but vary axially.
