@@ -92,6 +92,20 @@ Must be True if dynamic = True,
         """
         super(UnitModelBlockData, self).build()
 
+        # Add a placeholder for initialization order
+        self._initialization_order = []
+
+        # Check for overloading of initialize method
+        # TODO: Remove in IDAES v2.0
+        if type(self).initialize is not UnitModelBlockData.initialize:
+            _log.warn(f"DEPRECATION: {str(self.__class__)} has overloaded the "
+                      "initialize method. In v2.0, IDAES Will be moving to "
+                      "having a centralized initialize method which calls "
+                      "unit-specific initialize_build methods instead. "
+                      "Model developers should update their models to "
+                      "implement the initialize_build method instead of "
+                      "overloading initialize.")
+
         # Set up dynamic flag and time domain
         self._setup_dynamics()
 
@@ -224,12 +238,12 @@ Must be True if dynamic = True,
             try:
                 member_list = (block.properties_in[
                                     block.flowsheet().time.first()]
-                                .define_port_members())
+                               .define_port_members())
             except AttributeError:
                 try:
                     member_list = (block.properties[
                                     block.flowsheet().time.first(), 0]
-                                    .define_port_members())
+                                   .define_port_members())
                 except AttributeError:
                     raise PropertyPackageError(
                             "{} property package does not appear to have "
@@ -590,8 +604,64 @@ Must be True if dynamic = True,
                     f"names (inet and outlet). Please contact the unit model "
                     f"developer to develop a unit specific stream table.")
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+    def initialize(blk, *args, **kwargs):
+        """
+        Initialization routine for Unit Model objects and associated
+        components.
+
+        This method is intended for initializing IDAES unit models and any
+        modeling components attached to them, such as costing blocks. This
+        method iterates through all objects in blk._initialization_order and
+        deactivates them, followed by calling blk.initialize_build. Finally,
+        it iterates through all objects in blk._initialization_order in reverse
+        and re-activates these whilst calling the associated initialize method.
+
+        Currently, parsing of arguments to the initialize method of attached
+        blocks is ahrd coded - this will be addressed in a future PR.
+        Currently, the method supports the following attached components:
+            * UnitModelCostingBlocks
+
+        Args:
+            costing_args - dict arguments to be passed to costing block
+                           initialize method
+
+        For other arguments, see the initilize_unit method.
+        """
+        # Get any arguments for costing if provided
+        cost_args = kwargs.pop("costing_args", {})
+
+        # Get the costing block if present
+        # TODO: Clean up in IDAES v2.0
+        init_order = blk._initialization_order
+        if (hasattr(blk, "costing") and
+                blk.costing not in blk._initialization_order):
+            # Fallback for older style costing
+            init_order.append(blk.costing)
+
+        # If costing block exists, deactivate
+        for c in init_order:
+            c.deactivate()
+
+        # Remember to collect flags for fixed vars
+        flags = blk.initialize_build(*args, **kwargs)
+
+        # If costing block exists, activate and initialize
+        for c in init_order:
+            c.activate()
+
+            if hasattr(c, "initialize"):
+                # New type costing block
+                c.initialize(**cost_args)
+            else:
+                # TODO: Deprecate in IDAES v2.0
+                # Old style costing package
+                idaes.core.util.unit_costing.initialize(c, **cost_args)
+
+        # Return any flags returned by initialize_build
+        return flags
+
+    def initialize_build(blk, state_args=None, outlvl=idaeslog.NOTSET,
+                         solver=None, optarg=None):
         '''
         This is a general purpose initialization routine for simple unit
         models. This method assumes a single ControlVolume block called
@@ -637,11 +707,6 @@ Must be True if dynamic = True,
 
         # ---------------------------------------------------------------------
         # Solve unit
-
-        # if costing block exists, deactivate
-        if hasattr(blk, "costing"):
-            blk.costing.deactivate()
-
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
 
@@ -649,10 +714,6 @@ Must be True if dynamic = True,
             "Initialization Step 2 {}.".format(idaeslog.condition(results))
         )
 
-        # if costing block exists, activate and initialize
-        if hasattr(blk, "costing"):
-            blk.costing.activate()
-            idaes.core.util.unit_costing.initialize(blk.costing)
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
@@ -664,3 +725,21 @@ Must be True if dynamic = True,
 
         init_log.info('Initialization Complete: {}'
                       .format(idaeslog.condition(results)))
+
+        return None
+
+    def del_component(self, name_or_object):
+        """
+        Delete a component from this block. Need to introduce code to handle
+        un-registering costing blocks
+        """
+        obj = self.component(name_or_object)
+
+        # TODO: See if Pyomo can give us a call-back to do this
+        try:
+            # If this is a costing block, need to unregister it
+            obj.del_costing()
+        except AttributeError:
+            pass
+
+        super().del_component(obj)

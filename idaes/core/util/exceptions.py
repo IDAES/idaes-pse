@@ -85,3 +85,11 @@ class InitializationError(ArithmeticError, IdaesError):
     enters a state from which recovery is impossible.
     """
     pass
+
+
+class UserModelError(ValueError, IdaesError):
+    """
+    IDAES exception for when a user model returns unphysical values that
+    prevent further execution of code.
+    """
+    pass

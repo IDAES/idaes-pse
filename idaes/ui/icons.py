@@ -41,14 +41,19 @@ class UnitModelIcon:
         mappings_file = os.path.join(dir_path, "mappings", "mappings.json")
         with open(mappings_file, 'r') as mappings_f:
             self._mapping = json.load(mappings_f)
-
-        try:
-            self._model_details = self._mapping[unit_model]
-        except KeyError:
-            if not default or default not in self._mapping:
-                raise ValueError("Specified unit model doesn't exist, and the default model is not set.")
-            self._model_details = self._mapping[default]
+        self._model_details = self._get_mapping(unit_model, default)
         self._pos = self._build_link_positions()
+
+    def _get_mapping(self, unit_model, default):
+        """Find the correct mapping for the given unit_model name.
+        """
+        if unit_model in self._mapping:
+            return self._mapping[unit_model]
+
+        # Couldn't find unit model and using default model instead
+        if not default or default not in self._mapping:
+            raise ValueError("Specified unit model doesn't exist, and the default model is not set.")
+        return self._mapping[default]
 
     @property
     def icon(self) -> str:
