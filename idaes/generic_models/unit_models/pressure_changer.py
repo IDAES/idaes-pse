@@ -28,6 +28,7 @@ from pyomo.environ import (
     Reference,
     check_optimal_termination)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -44,8 +45,11 @@ from idaes.core.util.exceptions import (
     PropertyNotSupportedError, InitializationError)
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
-import idaes.core.util.unit_costing as costing
 from idaes.core.util import get_solver, scaling as iscale
+
+# TODO: Clean up in IDAES 2.0
+from idaes.generic_models.costing import UnitModelCostingBlock
+import idaes.core.util.unit_costing as costing
 
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
@@ -640,7 +644,7 @@ see property package for documentation.}""",
         except AttributeError:
             pass
 
-    def initialize(
+    def initialize_build(
         blk,
         state_args=None,
         routine=None,
@@ -669,12 +673,6 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        # if costing block exists, deactivate
-        try:
-            blk.costing.deactivate()
-        except AttributeError:
-            pass
-
         if routine is None:
             # Use routine for specific type of unit
             routine = blk.config.thermodynamic_assumption
@@ -696,18 +694,12 @@ see property package for documentation.}""",
             )
         else:
             # Call the general initialization routine in UnitModelBlockData
-            super().initialize(
+            super().initialize_build(
                 state_args=state_args,
                 outlvl=outlvl,
                 solver=solver,
                 optarg=optarg
             )
-        # if costing block exists, activate
-        try:
-            blk.costing.activate()
-            costing.initialize(blk.costing)
-        except AttributeError:
-            pass
 
     def init_adiabatic(blk, state_args, outlvl, solver, optarg):
         """
@@ -1028,6 +1020,11 @@ see property package for documentation.}""",
 
         return {"vars": var_dict}
 
+    @deprecated(
+        "The get_costing method is being deprecated in favor of the new "
+        "FlowsheetCostingBlock tools.",
+        version="TBD",
+    )
     def get_costing(self, module=costing, year=None, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year)
@@ -1159,8 +1156,10 @@ see property package for documentation.}""",
                 # constraints with different names.
                 _log.warning(f"Unknown material balance type {mb_type}")
 
-        if hasattr(self, "costing"):
-            # import costing scaling factors
+        # TODO: Deprecate as part of IDAES 2.0
+        # Check for old-style costing block, and scale if required
+        if (hasattr(self, "costing") and
+                not isinstance(self.costing, UnitModelCostingBlock)):
             costing.calculate_scaling_factors(self.costing)
 
 

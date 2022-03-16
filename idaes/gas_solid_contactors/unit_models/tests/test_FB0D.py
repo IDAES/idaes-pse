@@ -129,7 +129,7 @@ class TestIronOC(object):
         # remain unchanged)
         for t in m.fs.time:
             m.fs.unit.gas[t].temperature.fix(1273.15)
-            m.fs.unit.gas[t].pressure.fix(1.01325)  # 1atm
+            m.fs.unit.gas[t].pressure.fix(1.01325E5)  # 1atm
             m.fs.unit.gas[t].mole_frac_comp['CO2'].fix(0.4)
             m.fs.unit.gas[t].mole_frac_comp['H2O'].fix(0.5)
             m.fs.unit.gas[t].mole_frac_comp['CH4'].fix(0.1)
@@ -346,7 +346,7 @@ class TestIronOC_EnergyBalanceType(object):
         # remain unchanged)
         for t in m.fs.time:
             m.fs.unit.gas[t].temperature.fix(1273.15)
-            m.fs.unit.gas[t].pressure.fix(1.01325)  # 1atm
+            m.fs.unit.gas[t].pressure.fix(1.01325E5)  # 1atm
             m.fs.unit.gas[t].mole_frac_comp['CO2'].fix(0.4)
             m.fs.unit.gas[t].mole_frac_comp['H2O'].fix(0.5)
             m.fs.unit.gas[t].mole_frac_comp['CH4'].fix(0.1)

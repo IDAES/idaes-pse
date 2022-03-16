@@ -267,7 +267,7 @@ see property package for documentation.}"""))
         flow_basis = self.vapor_phase[t_init].get_material_flow_basis()
         if flow_basis == MaterialFlowBasis.molar:
             fb = "flow_mole"
-        elif flow_basis == MaterialFlowBasis.molar:
+        elif flow_basis == MaterialFlowBasis.mass:
             fb = "flow_mass"
         else:
             raise ConfigurationError(

@@ -32,7 +32,8 @@ logger = logging.getLogger('idaes.apps.uncertainty_propagation')
 def quantify_propagate_uncertainty(model_function, model_uncertain, data, 
                                    theta_names, obj_function=None, tee=False, 
                                    diagnostic_mode=False, 
-                                   solver_options=None):
+                                   solver_options=None,
+                                   covariance_n=None):
     """This function calculates error propagation of the objective function and 
     constraints. The parmest uses 'model_function' to estimate uncertain 
     parameters. The uncertain parameters in 'model_uncertain' are fixed with 
@@ -70,6 +71,10 @@ def quantify_propagate_uncertainty(model_function, model_uncertain, data,
     solver_options : dict, optional
         Provides options to the solver (also the name of an attribute), 
         by default None
+    covariance_n : int, optional
+        Number of datapoints to use in the objective function to
+        calculate the covariance matrix.  If omitted, defaults to
+        len(data)
 
     Returns
     -------
@@ -120,6 +125,7 @@ def quantify_propagate_uncertainty(model_function, model_uncertain, data,
         When solver_options entry is not None and a Dictionary
     Warnings
         When an element of theta_names includes a space
+
     """    
 
     if not isinstance(tee, bool):
@@ -129,11 +135,19 @@ def quantify_propagate_uncertainty(model_function, model_uncertain, data,
     if not solver_options==None:
         if not isinstance(solver_options, dict):
             raise TypeError('solver_options must be dictionary.')
+    if covariance_n is None:
+        if isinstance(data, pd.DataFrame):
+            covariance_n = len(data.index)
+        else:
+            covariance_n = len(data)
+        logger.info(
+            'covariance_n omitted from quantify_propagate_uncertainty().  '
+            f'Assuming {covariance_n}')
     # Remove all "'" and " " in theta_names
     theta_names, var_dic,variable_clean = clean_variable_name(theta_names)
     parmest_class = parmest.Estimator(model_function, data, theta_names, 
                         obj_function, tee, diagnostic_mode, solver_options)
-    obj, theta,cov = parmest_class.theta_est(calc_cov=True)
+    obj, theta, cov = parmest_class.theta_est(calc_cov=True, cov_n=covariance_n)
     # Convert theta keys to the original name 
     # Revert theta_names to be original
     if variable_clean:

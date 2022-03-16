@@ -116,12 +116,16 @@ class ReactionParameterData(ReactionParameterBlock):
                                             ("R1", "Sol", "Fe3O4"): 8,
                                             ("R1", "Sol", "Al2O3"): 0}
 
-        # Standard Heat of Reaction - kJ/mol_rxn
-        dh_rxn_dict = {"R1": 136.5843}
+        # Standard Heat of Reaction - J/mol_rxn
+        dh_rxn_dict = {"R1": 136.5843E3}
+        # Heat of Reaction should be defined in default units
+        # (default energy units)/(default amount units)
+        # per the define_meta.add_default_units method in the
+        # relevant phase - in this case, the solid phase properties
         self.dh_rxn = Param(self.rate_reaction_idx,
                             initialize=dh_rxn_dict,
-                            doc="Heat of reaction [kJ/mol]",
-                            units=pyunits.kJ/pyunits.mol)
+                            doc="Heat of reaction [J/mol]",
+                            units=pyunits.J/pyunits.mol)
 
     # -------------------------------------------------------------------------
         """ Reaction properties that can be estimated"""
@@ -151,9 +155,9 @@ class ReactionParameterData(ReactionParameterBlock):
         # Activation Energy
         self.energy_activation = Var(self.rate_reaction_idx,
                                      domain=Reals,
-                                     initialize=4.9e1,
-                                     doc='Activation energy [kJ/mol]',
-                                     units=pyunits.kJ/pyunits.mol)
+                                     initialize=4.9e4,
+                                     doc='Activation energy [J/mol]',
+                                     units=pyunits.J/pyunits.mol)
         self.energy_activation.fix()
 
         # Reaction order
@@ -199,7 +203,7 @@ class _ReactionBlock(ReactionBlockBase):
     def initialize(blk, outlvl=idaeslog.NOTSET,
                    optarg=None, solver=None):
         '''
-        Initialisation routine for reaction package.
+        Initialization routine for reaction package.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
@@ -245,7 +249,7 @@ class _ReactionBlock(ReactionBlockBase):
                 blk[k].solid_state_ref.dens_mass_skeletal.fix(
                         blk[k].solid_state_ref.dens_mass_skeletal.value)
 
-        # Initialise values
+        # Initialize values
         for k in blk.keys():
             if hasattr(blk[k], "OC_conv_eqn"):
                 calculate_variable_from_constraint(
@@ -386,7 +390,7 @@ class ReactionBlockData(ReactionBlockDataBase):
                          exp(-self._params.energy_activation[j] /
                              (pyunits.convert(
                                  Constants.gas_constant,  # J/mol/K
-                                 to_units=pyunits.kJ/pyunits.mol/pyunits.K) *
+                                 to_units=pyunits.J/pyunits.mol/pyunits.K) *
                               self.solid_state_ref.temperature)))
             else:
                 return Constraint.Skip

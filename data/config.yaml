@@ -1,0 +1,8 @@
+_id: d779730c7cc94155877a24e2e8be2ad1
+created: '2022-02-09T14:59:17.579871'
+description: Built-in IDAES workspace
+htmldocs:
+- https://idaes-pse.readthedocs.io/en/stable
+- '{dmf_root}/docs/build/html'
+modified: '2022-02-09T14:59:17.579871'
+name: IDAES

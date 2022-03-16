@@ -21,6 +21,7 @@ __author__ = 'Dan Gunter'
 import logging
 
 from .dmfbase import DMF, DMFConfig           # noqa: F401
+from .dmfbase import create_configuration     # noqa: F401
 from .getver import get_version_info          # noqa: F401
 from .userapi import get_workspace            # noqa: F401
 from .userapi import find_property_packages   # noqa: F401
