@@ -142,19 +142,25 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 2. Run the :doc:`idaes get-extensions command<../../../reference_guides/commands/get_extensions>`
    to install the compiled binaries. These binaries include solvers and function libraries.
    See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>`
-   for more details.
+   for more details.  For example::
 
-    idaes get-extensions
+      idaes get-extensions
 
-..
+   ..
 
-    .. note:: If you are not able to successfully run the ``idaes get-extensions``
-              command due to network security settings or another reason, you can
-              download binary release files from
-              https://github.com/IDAES/idaes-ext/releases, and extract them in the
-              directory indicated by the ``idaes bin-directory`` command. You will
-              need both the ``idaes-lib-*`` and ``idaes-solvers-*`` files
-              appropriate for your operating system.
+   or::
+
+     idaes get-extensions --extra petsc
+
+   ..
+
+  .. note:: If you are not able to successfully run the ``idaes get-extensions``
+            command due to network security settings or another reason, you can
+            download binary release files from
+            https://github.com/IDAES/idaes-ext/releases, and extract them in the
+            directory indicated by the ``idaes bin-directory`` command. You will
+            need both the ``idaes-lib-*`` and ``idaes-solvers-*`` files
+            appropriate for your operating system.
 
 ..
 
@@ -188,12 +194,12 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
     for more information.
 
 4. To test that the installation was successful, you can run the IDAES test suite.
-    This is not strictly required, but can offer more confidence that the installation environment is as expected (if the tests pass),
-    and more insight into possible issues (if any of the tests fail).
-    The ``pytest`` package is required for running the test suite. After installing it using e.g. ``pip``, run the tests::
+   This is not strictly required, but can offer more confidence that the installation environment is as expected (if the tests pass),
+   and more insight into possible issues (if any of the tests fail).
+   The ``pytest`` package is required for running the test suite. After installing it using e.g. ``pip``, run the tests::
 
-    pip install pytest
-    pytest --pyargs idaes -W ignore -rs
+      pip install pytest
+      pytest --pyargs idaes -W ignore -rs
 
 5. You should see the tests run and all should pass to ensure the installation worked.
    You may see some "Error" level log messages, but they are okay, and produced by tests for

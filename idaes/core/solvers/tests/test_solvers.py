@@ -18,6 +18,11 @@ from idaes.core.solvers import ipopt_has_linear_solver
 from idaes.core.solvers import petsc
 
 @pytest.mark.unit
+def test_petsc_available():
+    if not pyo.SolverFactory('petsc_snes').available():
+        raise Exception("Could not find petsc (petsc is an optional extra).")
+
+@pytest.mark.unit
 def test_couenne_available():
     if not pyo.SolverFactory('couenne').available():
         raise Exception("Could not find couenne.")
