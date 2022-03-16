@@ -148,7 +148,11 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
    ..
 
-   or::
+   To install extras, the ``--extra`` option can be used. Currently the only
+   extra is PETSc.  PETSc provides nonlinear and time-stepping solvers for
+   problems with zero degrees of freedom (see :ref:`PETSc <reference_guides/core/solvers:PETSc Utilities>`).
+   For example, the following command will install the base binary packages plus
+   PETSc.::
 
      idaes get-extensions --extra petsc
 
@@ -198,8 +202,8 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
    and more insight into possible issues (if any of the tests fail).
    The ``pytest`` package is required for running the test suite. After installing it using e.g. ``pip``, run the tests::
 
-      pip install pytest
-      pytest --pyargs idaes -W ignore -rs
+      python -m pip install pytest
+      python -m pytest --pyargs idaes -W ignore -rs
 
 5. You should see the tests run and all should pass to ensure the installation worked.
    You may see some "Error" level log messages, but they are okay, and produced by tests for
