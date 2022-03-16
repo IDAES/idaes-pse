@@ -1131,7 +1131,7 @@ see reaction package for documentation.}"""))
                              doc="Bubble to Emulsion Gas Heat Transfer"
                                  "Coeff. Reformulation Eqn [reform eqn 4]")
             def _reformulation_eqn_4(b, t, x):
-                # 34.2225/K is a unitted constant in this correlation
+                # 34.2225 (m**6/K) is a unitted constant in this correlation
                 return (b._reform_var_4[t, x]**2 ==
                         34.2225 * (pyunits.m**6)/(pyunits.K) *
                         b.bubble.properties[t, x].therm_cond *
@@ -1178,6 +1178,7 @@ see reaction package for documentation.}"""))
                              doc="Convective Heat Transfer Coefficient")
             def convective_heat_trans_coeff(b, t, x):
                 # 0.03 (kg/mol)**1.3 is a unitted constant in this correlation
+                # unit containers are moved to the LHS of equation for Pyomo stability
                 reform_var_5_units = (units_meta_gas('amount') /
                                       units_meta_gas('mass'))
                 return (

@@ -262,10 +262,9 @@ class TestIronOC(object):
                 iron_oc.fs.unit.delta[0, 1].value)
         assert (pytest.approx(100671.070, abs=1e-2) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
-        # Check that pressure drop occurs across the bed
-        assert value(
-                iron_oc.fs.unit.gas_inlet.pressure[0] -
-                iron_oc.fs.unit.gas_outlet.pressure[0]) >= 0
+        assert (pytest.approx(85328.9301, abs=1e-2) ==
+                iron_oc.fs.unit.gas_inlet.pressure[0].value -
+                iron_oc.fs.unit.gas_outlet.pressure[0].value)
 
     @pytest.mark.component
     def test_units_consistent(self, iron_oc):
@@ -472,10 +471,9 @@ class TestIronOC_EnergyBalanceType(object):
                 iron_oc.fs.unit.delta[0, 1].value)
         assert (pytest.approx(100185.225, abs=1e-2) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
-        # Check that pressure drop occurs across the bed
-        assert value(
-                iron_oc.fs.unit.gas_inlet.pressure[0] -
-                iron_oc.fs.unit.gas_outlet.pressure[0]) >= 0
+        assert (pytest.approx(85814.7748, abs=1e-2) ==
+                iron_oc.fs.unit.gas_inlet.pressure[0].value -
+                iron_oc.fs.unit.gas_outlet.pressure[0].value)
 
     @pytest.mark.component
     def test_units_consistent(self, iron_oc):
