@@ -20,22 +20,22 @@ from idaes.core.solvers import petsc
 @pytest.mark.unit
 def test_petsc_available():
     if not pyo.SolverFactory('petsc_snes').available():
-        raise Exception("Could not find petsc (petsc is an optional extra).")
+        raise RuntimeError("Could not find petsc (petsc is an optional extra).")
 
 @pytest.mark.unit
 def test_couenne_available():
     if not pyo.SolverFactory('couenne').available():
-        raise Exception("Could not find couenne.")
+        raise RuntimeError("Could not find couenne.")
 
 @pytest.mark.unit
 def test_bonmin_available():
     if not pyo.SolverFactory('bonmin').available():
-        raise Exception("Could not find bonmin.")
+        raise RuntimeError("Could not find bonmin.")
 
 @pytest.mark.unit
 def test_sipopt_available():
     if not pyo.SolverFactory('ipopt_sens').available():
-        raise Exception("Could not find ipopt_sens.")
+        raise RuntimeError("Could not find ipopt_sens.")
 
 @pytest.mark.unit
 def test_ipopt_idaes_available():
@@ -43,7 +43,7 @@ def test_ipopt_idaes_available():
     Tries to set-up the IPOPT with the IDAES SolverFactory wrapper
     """
     if not pyo.SolverFactory('ipopt').available():
-        raise Exception(
+        raise RuntimeError(
             "Could not find IPOPT. Users are strongly encouraged to have a "
             "version of IPOPT available, as it is the default solver assumed "
             "by many IDAES examples and tests. See the IDAES install "
@@ -52,12 +52,12 @@ def test_ipopt_idaes_available():
 @pytest.mark.unit
 def test_cbc_available():
     if not pyo.SolverFactory('cbc').available():
-        raise Exception("Could not find cbc.")
+        raise RuntimeError("Could not find cbc.")
 
 @pytest.mark.unit
 def test_clp_available():
     if not pyo.SolverFactory('clp').available():
-        raise Exception("Could not find clp.")
+        raise RuntimeError("Could not find clp.")
 
 @pytest.mark.unit
 def test_sipopt_idaes_solve():
@@ -84,7 +84,7 @@ def test_ipopt_idaes_solve():
 @pytest.mark.unit
 def test_ipopt_has_ma27():
     if not ipopt_has_linear_solver("ma27"):
-        raise Exception(
+        raise RuntimeError(
             "The ma27 linear solver is not available to Ipopt. Models may solve"
             " more reliably with HSL linear solvers see https://www.hsl.rl.ac.uk/,"
             " or use solvers distributed by the IDAES project. See IDAES install"
