@@ -340,7 +340,8 @@ class SamplingMethods:
                 self.x_data = self.data[:, :-1]
                 self.data_headers_xvars = self.data_headers[:-1] # Last column is y
             elif not set(set_of_labels).issubset(data_input.columns):
-                raise IndexError('Invalid column names in "xlabels" or "ylabels". ')
+                raise IndexError('Invalid column names in "xlabels" or "ylabels": ', 
+                    [k for k in set_of_labels if k not in data_input.columns])
             elif not ylabels:
                 # When only xlabels are supplied, assume all non-inputs are outputs
                 self.x_data = data_input.filter(xlabels).values
@@ -359,6 +360,10 @@ class SamplingMethods:
                 self.data = np.concatenate((self.x_data, y_data), axis=1)
             else:
                 # Only provided columns are considered - any column not in xlabels and ylabels is dropped completely.
+                dropped_cols = [k for k in data_input.columns if k not in set_of_labels]
+                if len(dropped_cols) > 0:
+                    warn_str = 'The following columns were dropped: ' + str(dropped_cols) 
+                    warnings.warn(warn_str)
                 self.x_data = data_input.filter(xlabels).values
                 self.data_headers = set_of_labels
                 self.data_headers_xvars = xlabels
@@ -382,7 +387,8 @@ class SamplingMethods:
                 self.x_data = self.data[:, :-1]
                 self.data_headers_xvars = self.data_headers[:-1] # Last column is y
             elif not set(set_of_labels).issubset(range(0, data_input.shape[1])):
-                raise IndexError('Invalid column names in "xlabels" or "ylabels". ')
+                raise IndexError('Invalid column names in "xlabels" or "ylabels": ',
+                    [k for k in set_of_labels if k not in range(0, data_input.shape[1])])
             elif not ylabels:
                 # Assumes all non-inputs are outputs
                 self.x_data = data_input[:, xlabels]
@@ -401,7 +407,10 @@ class SamplingMethods:
                 self.data = np.concatenate((self.x_data, y_data), axis=1)
             else:
                 # Only provided columns are considered
-                ## MAYBE ADD A WARNING HERE TELLING THE USERS IF ANY COLUMNS ARE DROPPED? ##
+                dropped_cols = [k for k in range(0, data_input.shape[1]) if k not in set_of_labels]
+                if len(dropped_cols) > 0:
+                    warn_str = 'The following columns were dropped: ' + str(dropped_cols) 
+                    warnings.warn(warn_str)
                 self.x_data = data_input[:, xlabels]
                 self.data_headers = set_of_labels
                 self.data_headers_xvars = xlabels
