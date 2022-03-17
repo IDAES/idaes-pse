@@ -14,6 +14,7 @@
 Utility function for the creation of custom sparsification loops for keras models
 """
 import numpy as np
+from tensorflow.keras.models import clone_model
 
 # Takes an N dimensional array and finds the kth lowest magnitude elements
 def get_indices_smallest_weights(w, k):
@@ -63,6 +64,7 @@ def sparsify_sequential(model, sparsity):
     # print(count_N_zero_weights(model.get_weights()), count_N_zero_weights(w))
 
     # Update the model weights with the new weight array
-    model.set_weights(w)
+    new_model = clone_model(model)
+    new_model.set_weights(w)g
 
     return model
