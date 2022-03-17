@@ -149,6 +149,15 @@ def pruning_step(model):
 
     return build_new_NN(model, w_new)
 
+# Helper function for the user to compare nodes in the pruned vs unpruned models
+def count_nodes(model):
+    cfg = model.get_config()
+    N_nodes = 0
+    for i, layer_config in enumerate(cfg['layers']):
+        if 'config' in layer_config and 'units' in layer_config['config']:
+            N_nodes += layer_config['config']['units']
+    return N_nodes
+
 
 """
 Prunes nodes from a keras sequential model by removing nodes with constant outputs.
