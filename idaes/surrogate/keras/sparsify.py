@@ -65,6 +65,6 @@ def sparsify_sequential(model, sparsity):
 
     # Update the model weights with the new weight array
     new_model = clone_model(model)
-    new_model.set_weights(w)g
+    new_model.set_weights(w)
 
     return model
