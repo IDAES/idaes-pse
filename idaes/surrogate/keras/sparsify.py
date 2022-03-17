@@ -40,7 +40,7 @@ def count_N_zero_weights(w):
     return N
 
 # Runs one sparsification step using the desired final sparsity
-def sparsify_sequential(model, sparsity):
+def sparsify_sequential(model, sparsity, inplace=True):
 
     # For each layer in the NN sparsify st percent of the weights
     w = model.get_weights()
@@ -63,8 +63,11 @@ def sparsify_sequential(model, sparsity):
 
     # print(count_N_zero_weights(model.get_weights()), count_N_zero_weights(w))
 
-    # Update the model weights with the new weight array
-    new_model = clone_model(model)
-    new_model.set_weights(w)
-
-    return model
+    # Update the model weights with the new weight array - if inplace modify directly, else clone (requires recompiling)
+    if inplace:
+        model.set_weights(w)
+        return model
+    else:
+        new_model = clone_model(model)
+        new_model.set_weights(w)
+        return new_model
