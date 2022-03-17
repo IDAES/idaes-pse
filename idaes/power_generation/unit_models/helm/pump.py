@@ -134,7 +134,7 @@ class HelmPumpData(BalanceBlockData):
                 properties_out[t].pressure)
 
 
-    def initialize(
+    def initialize_build(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,

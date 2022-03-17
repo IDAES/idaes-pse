@@ -21,8 +21,10 @@ from pyomo.network import Port, Arc
 from pyomo.common.config import ConfigBlock
 from pyomo.core.base.units_container import UnitsError
 
-from idaes.core.util.misc import (add_object_reference, copy_port_values,
-                                  TagReference, VarLikeExpression,
+from idaes.core.util.misc import (add_object_reference,
+                                  copy_port_values,
+                                  TagReference,
+                                  VarLikeExpression,
                                   set_param_from_config)
 import idaes.logger as idaeslog
 

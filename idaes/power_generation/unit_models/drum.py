@@ -417,7 +417,7 @@ see property package for documentation.}"""))
             self.control_volume.material_accumulation[0, :, :].fix(0)
             self.control_volume.energy_accumulation[0, :].fix(0)
 
-    def initialize(blk, state_args_feedwater=None, state_args_water_steam=None,
+    def initialize_build(blk, state_args_feedwater=None, state_args_water_steam=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Drum initialization routine.

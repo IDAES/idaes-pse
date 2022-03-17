@@ -137,7 +137,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         def power_shaft(b, t):
             return b.power_thermo[t] * b.efficiency_mech
 
-    def initialize(
+    def initialize_build(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -180,7 +180,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         self.inlet.fix()
         self.outlet.unfix()
 
-        super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+        super().initialize_build(outlvl=outlvl, solver=solver, optarg=optarg)
 
         for t in self.flowsheet().time:
             mw = self.control_volume.properties_in[t].mw
@@ -193,7 +193,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
                     value(cf * Pin * sqrt(1 - Pr ** 2) / mw / sqrt(Tin))
                 )
 
-        super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+        super().initialize_build(outlvl=outlvl, solver=solver, optarg=optarg)
         self.control_volume.properties_out[:].pressure.fix()
 
         # Free eff_isen and activate special constarints

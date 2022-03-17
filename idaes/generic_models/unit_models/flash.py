@@ -21,6 +21,7 @@ from pandas import DataFrame
 from pyomo.environ import Constraint, value, Reference, Var, Block
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -277,6 +278,11 @@ see property package for documentation.}"""))
 
         return DataFrame.from_dict(stream_attributes, orient="columns")
 
+    @deprecated(
+        "The get_costing method is being deprecated in favor of the new "
+        "FlowsheetCostingBlock tools.",
+        version="TBD",
+    )
     def get_costing(self, year=None, module=costing, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)

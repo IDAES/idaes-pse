@@ -258,7 +258,7 @@ from 1 to num_outlets).}""",
             self.add_port(name=p, block=self.outlet_blocks[p], doc="Outlet")
             self.outlet_ports[p] = getattr(self, p)
 
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
+    def initialize_build(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
         """
         Initialization routine for splitter
 
@@ -289,7 +289,11 @@ from 1 to num_outlets).}""",
             for o in self.outlet_list:
                 if self.outlet_blocks[o][t].flow_mol.fixed:
                     self.split_fraction[t, o].fix(
-                        value(self.mixed_state[t]/self.outlet_blocks[o][t].flow_mol))
+                        value(
+                            self.mixed_state[t].flow_mol /
+                            self.outlet_blocks[o][t].flow_mol
+                        )
+                    )
 
         # fix or unfix split fractions so n - 1 are fixed
         for t in self.flowsheet().time:

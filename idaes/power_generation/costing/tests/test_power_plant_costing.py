@@ -601,7 +601,7 @@ def test_OM_costing():
 
     resources = ["natural gas", "solvent"]
     rates = [m.fs.NG_rate, m.fs.solvent_rate]
-    prices = {"solvent": 500*pyunits.USD/pyunits.ton}
+    prices = {"solvent": 500*pyunits.USD_2018/pyunits.ton}
 
     get_variable_OM_costs(m.fs,  # pass a flowsheet object
                           m.fs.net_power,
