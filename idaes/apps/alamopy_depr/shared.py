@@ -19,7 +19,7 @@ Includes:
 - list kwargs options for alamopy for additional capabilities
 """
 import collections as col
-import idaes.surrogate as alamopy
+import idaes.apps as alamopy
 
 debug = {}
 data = {}

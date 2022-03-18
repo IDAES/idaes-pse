@@ -14,9 +14,9 @@
 Alamopy tests with sixhumpcamel examples
 """
 import pytest
-from idaes.surrogate import alamopy_depr as alamopy
-from idaes.surrogate.alamopy_depr import alamo, almconfidence, almplot, wrapwriter
-from idaes.surrogate.alamopy_depr.multos import deletefile
+from idaes.apps import alamopy_depr as alamopy
+from idaes.apps.alamopy_depr import alamo, almconfidence, almplot, wrapwriter
+from idaes.apps.alamopy_depr.multos import deletefile
 import numpy as np
 
 has_alamo_flag = alamopy.multos.has_alamo()

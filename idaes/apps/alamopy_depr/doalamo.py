@@ -18,9 +18,9 @@ import collections
 import numpy as np
 import os
 
-from idaes.surrogate import alamopy_depr as alamopy
-from idaes.surrogate.alamopy_depr import almerror
-from idaes.surrogate.alamopy_depr.multos import deletefile, has_alamo
+from idaes.apps import alamopy_depr as alamopy
+from idaes.apps.alamopy_depr import almerror
+from idaes.apps.alamopy_depr.multos import deletefile, has_alamo
 
 
 def doalamo(xdata, zdata, **kwargs):

@@ -17,12 +17,12 @@ import pytest
 
 @pytest.mark.unit
 def test_doalamo_import():
-    from idaes.surrogate.alamopy_depr import alamo
+    from idaes.apps.alamopy_depr import alamo
 
 
 @pytest.mark.integration()
 def test_hasalamo():
-    from idaes.surrogate import alamopy_depr as alamopy
+    from idaes.apps import alamopy_depr as alamopy
     has_alamo_flag = alamopy.multos.has_alamo()
     if has_alamo_flag:
         alamopy.debug['has_alamo'] = True

@@ -14,7 +14,7 @@
 Plot doalamo output including confidence intervals if they are calculated.
 """
 
-from idaes.surrogate.alamopy_depr import almerror
+from idaes.apps.alamopy_depr import almerror
 
 def almplot(res, show=True):
     try:

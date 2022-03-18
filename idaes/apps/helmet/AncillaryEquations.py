@@ -15,7 +15,7 @@ Modeling for saturated densities and vapor pressure
 """
 
 import sys
-from idaes.surrogate import alamopy_depr as alamopy
+from idaes.apps import alamopy_depr as alamopy
 import importlib
 
 from . import DataImport
