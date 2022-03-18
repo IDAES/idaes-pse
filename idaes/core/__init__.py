@@ -14,8 +14,8 @@ from .base.process_base import ProcessBlockData, useDefault, MaterialFlowBasis
 from .base.process_block import ProcessBlock, declare_process_block_class
 from .base.unit_model import UnitModelBlockData, UnitModelBlock
 from .base.flowsheet_model import FlowsheetBlockData, FlowsheetBlock
-from .property_base import (StateBlockData, PhysicalParameterBlock,
-                            StateBlock)
+from .base.property_base import (StateBlockData, PhysicalParameterBlock,
+                                 StateBlock)
 from .reaction_base import (ReactionBlockDataBase, ReactionParameterBlock,
                             ReactionBlockBase)
 from .base.control_volume_base import (

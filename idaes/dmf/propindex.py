@@ -20,7 +20,7 @@ import logging
 import idaes
 from idaes.dmf import codesearch
 from idaes.dmf import resource
-from idaes.core import property_base  # noqa: F401
+from idaes.core.base import property_base  # noqa: F401
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
 

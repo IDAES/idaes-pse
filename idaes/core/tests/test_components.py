@@ -25,7 +25,7 @@ from idaes.core.components import (Component, Solute, Solvent,
 from idaes.core.phases import (LiquidPhase, VaporPhase, SolidPhase, Phase,
                                PhaseType, AqueousPhase)
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
-from idaes.core.property_meta import PropertyClassMetadata
+from idaes.core.base.property_meta import PropertyClassMetadata
 
 
 class TestComponent():

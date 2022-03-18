@@ -44,7 +44,7 @@ def is_physical_parameter_block(val):
         ConfigurationError if val is not an instance of PhysicalParameterBlock
         or useDefault
     '''
-    from idaes.core.property_base import PhysicalParameterBlock
+    from idaes.core.base.property_base import PhysicalParameterBlock
     if isinstance(val, PhysicalParameterBlock) or val == useDefault:
         return val
     else:
@@ -83,7 +83,7 @@ def is_state_block(val):
         ConfigurationError if val is not an instance of StateBlock
         or None
     '''
-    from idaes.core.property_base import StateBlock
+    from idaes.core.base.property_base import StateBlock
     if (isinstance(val, StateBlock) or val is None):
         return val
     else:

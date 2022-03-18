@@ -27,7 +27,7 @@ from idaes.core.phases import Phase
 from idaes.core.components import Component
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
-from idaes.core.property_meta import PropertyClassMetadata
+from idaes.core.base.property_meta import PropertyClassMetadata
 
 
 # -----------------------------------------------------------------------------

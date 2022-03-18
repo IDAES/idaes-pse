@@ -42,7 +42,7 @@ from idaes.generic_models.unit_models.pressure_changer import \
 from idaes.generic_models.unit_models.heat_exchanger \
     import HeatExchangerFlowPattern
 
-from idaes.core.process_base import declare_process_block_class
+from idaes.core import declare_process_block_class
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants
 from idaes.core.util.math import smooth_max

@@ -21,7 +21,7 @@ from pyomo.environ import Var, Constraint, Expression
 # Import IDAES cores
 from idaes.core.base.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
-from idaes.core import property_meta
+from idaes.core.base import property_meta
 from idaes.core import MaterialFlowBasis
 from idaes.core.util.exceptions import (BurntToast,
                                         PropertyNotSupportedError,

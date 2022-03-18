@@ -26,7 +26,7 @@ from pyomo.common.formatting import tabular_writer
 # Import IDAES cores
 from idaes.core.base.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
-from idaes.core import property_meta
+from idaes.core.base import property_meta
 from idaes.core import MaterialFlowBasis
 from idaes.core.phases import Phase, PhaseData
 from idaes.core.components import Component, ComponentData
