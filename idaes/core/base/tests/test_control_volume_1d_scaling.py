@@ -41,25 +41,27 @@ def test_basic_scaling():
     # Set flag to include inherent reactions
     m.fs.pp._has_inherent_reactions = True
 
-    m.fs.cv = ControlVolume1DBlock(default={
-        "property_package": m.fs.pp,
-        "transformation_method": "dae.finite_difference",
-        "transformation_scheme": "BACKWARD",
-        "finite_elements": 10})
+    m.fs.cv = ControlVolume1DBlock(
+        default={
+            "property_package": m.fs.pp,
+            "transformation_method": "dae.finite_difference",
+            "transformation_scheme": "BACKWARD",
+            "finite_elements": 10,
+        }
+    )
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
 
     m.fs.cv.add_material_balances(
-        balance_type=MaterialBalanceType.componentTotal,
-        has_phase_equilibrium=False)
+        balance_type=MaterialBalanceType.componentTotal, has_phase_equilibrium=False
+    )
 
-    m.fs.cv.add_energy_balances(
-        balance_type=EnergyBalanceType.enthalpyTotal)
+    m.fs.cv.add_energy_balances(balance_type=EnergyBalanceType.enthalpyTotal)
 
     m.fs.cv.add_momentum_balances(
-        balance_type=MomentumBalanceType.pressureTotal,
-        has_pressure_change=True)
+        balance_type=MomentumBalanceType.pressureTotal, has_pressure_change=True
+    )
 
     m.fs.cv.apply_transformation()
 
@@ -68,11 +70,12 @@ def test_basic_scaling():
     # check scaling on select variables
     assert iscale.get_scaling_factor(m.fs.cv.area) == 1
     for (t, x), v in m.fs.cv.deltaP.items():
-        assert iscale.get_scaling_factor(v) == 1040  # 10x the properties pressure scaling factor
+        assert (
+            iscale.get_scaling_factor(v) == 1040
+        )  # 10x the properties pressure scaling factor
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
-            assert iscale.get_scaling_factor(
-                m.fs.cv.properties[t, x].flow_vol) == 100
+            assert iscale.get_scaling_factor(m.fs.cv.properties[t, x].flow_vol) == 100
 
     # check scaling on mass, energy, and pressure balances.
     for c in m.fs.cv.material_balances.values():
@@ -85,29 +88,34 @@ def test_basic_scaling():
         # This uses the inlet pressure scale
         assert iscale.get_constraint_transform_applied_scaling_factor(c) == 104
 
+
 @pytest.mark.unit
 def test_user_set_scaling():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.cv = ControlVolume1DBlock(default={
-        "property_package": m.fs.pp,
-        "transformation_method": "dae.finite_difference",
-        "transformation_scheme": "BACKWARD",
-        "finite_elements": 10})
+    m.fs.cv = ControlVolume1DBlock(
+        default={
+            "property_package": m.fs.pp,
+            "transformation_method": "dae.finite_difference",
+            "transformation_scheme": "BACKWARD",
+            "finite_elements": 10,
+        }
+    )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_material_balances(
-        balance_type=MaterialBalanceType.componentTotal,
-        has_phase_equilibrium=False)
+        balance_type=MaterialBalanceType.componentTotal, has_phase_equilibrium=False
+    )
     m.fs.cv.add_energy_balances(
         balance_type=EnergyBalanceType.enthalpyTotal,
         has_heat_transfer=True,
-        has_work_transfer=True)
+        has_work_transfer=True,
+    )
     # add momentum balance
     m.fs.cv.add_momentum_balances(
-        balance_type=MomentumBalanceType.pressureTotal,
-        has_pressure_change=True)
+        balance_type=MomentumBalanceType.pressureTotal, has_pressure_change=True
+    )
 
     m.fs.cv.apply_transformation()
 
@@ -137,12 +145,15 @@ def test_full_auto_scaling():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-    m.fs.cv = ControlVolume1DBlock(default={
-        "property_package": m.fs.pp,
-        "reaction_package": m.fs.rp,
-        "transformation_method": "dae.finite_difference",
-        "transformation_scheme": "BACKWARD",
-        "finite_elements": 10})
+    m.fs.cv = ControlVolume1DBlock(
+        default={
+            "property_package": m.fs.pp,
+            "reaction_package": m.fs.rp,
+            "transformation_method": "dae.finite_difference",
+            "transformation_scheme": "BACKWARD",
+            "finite_elements": 10,
+        }
+    )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
@@ -152,18 +163,20 @@ def test_full_auto_scaling():
         has_rate_reactions=True,
         has_equilibrium_reactions=True,
         has_phase_equilibrium=True,
-        has_mass_transfer=True)
+        has_mass_transfer=True,
+    )
 
     m.fs.cv.add_energy_balances(
         balance_type=EnergyBalanceType.enthalpyTotal,
         has_heat_of_reaction=True,
         has_heat_transfer=True,
         has_work_transfer=True,
-        has_enthalpy_transfer=True)
+        has_enthalpy_transfer=True,
+    )
 
     m.fs.cv.add_momentum_balances(
-        balance_type=MomentumBalanceType.pressureTotal,
-        has_pressure_change=True)
+        balance_type=MomentumBalanceType.pressureTotal, has_pressure_change=True
+    )
 
     m.fs.cv.apply_transformation()
 
@@ -186,12 +199,15 @@ def test_full_auto_scaling_dynamic():
     m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-    m.fs.cv = ControlVolume1DBlock(default={
-        "property_package": m.fs.pp,
-        "reaction_package": m.fs.rp,
-        "transformation_method": "dae.finite_difference",
-        "transformation_scheme": "BACKWARD",
-        "finite_elements": 10})
+    m.fs.cv = ControlVolume1DBlock(
+        default={
+            "property_package": m.fs.pp,
+            "reaction_package": m.fs.rp,
+            "transformation_method": "dae.finite_difference",
+            "transformation_scheme": "BACKWARD",
+            "finite_elements": 10,
+        }
+    )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
@@ -201,21 +217,23 @@ def test_full_auto_scaling_dynamic():
         has_rate_reactions=True,
         has_equilibrium_reactions=True,
         has_phase_equilibrium=True,
-        has_mass_transfer=True)
+        has_mass_transfer=True,
+    )
 
     m.fs.cv.add_energy_balances(
         balance_type=EnergyBalanceType.enthalpyTotal,
         has_heat_of_reaction=True,
         has_heat_transfer=True,
         has_work_transfer=True,
-        has_enthalpy_transfer=True)
+        has_enthalpy_transfer=True,
+    )
 
     m.fs.cv.add_momentum_balances(
-        balance_type=MomentumBalanceType.pressureTotal,
-        has_pressure_change=True)
+        balance_type=MomentumBalanceType.pressureTotal, has_pressure_change=True
+    )
 
     m.fs.cv.apply_transformation()
-    m.discretizer = pyo.TransformationFactory('dae.finite_difference')
+    m.discretizer = pyo.TransformationFactory("dae.finite_difference")
     m.discretizer.apply_to(m, nfe=3, wrt=m.fs.time, scheme="BACKWARD")
 
     iscale.calculate_scaling_factors(m)
@@ -237,12 +255,15 @@ def test_full_auto_scaling_mbtype_phase():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-    m.fs.cv = ControlVolume1DBlock(default={
-        "property_package": m.fs.pp,
-        "reaction_package": m.fs.rp,
-        "transformation_method": "dae.finite_difference",
-        "transformation_scheme": "BACKWARD",
-        "finite_elements": 10})
+    m.fs.cv = ControlVolume1DBlock(
+        default={
+            "property_package": m.fs.pp,
+            "reaction_package": m.fs.rp,
+            "transformation_method": "dae.finite_difference",
+            "transformation_scheme": "BACKWARD",
+            "finite_elements": 10,
+        }
+    )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
@@ -252,18 +273,20 @@ def test_full_auto_scaling_mbtype_phase():
         has_rate_reactions=True,
         has_equilibrium_reactions=True,
         has_phase_equilibrium=True,
-        has_mass_transfer=True)
+        has_mass_transfer=True,
+    )
 
     m.fs.cv.add_energy_balances(
         balance_type=EnergyBalanceType.enthalpyTotal,
         has_heat_of_reaction=True,
         has_heat_transfer=True,
         has_work_transfer=True,
-        has_enthalpy_transfer=True)
+        has_enthalpy_transfer=True,
+    )
 
     m.fs.cv.add_momentum_balances(
-        balance_type=MomentumBalanceType.pressureTotal,
-        has_pressure_change=True)
+        balance_type=MomentumBalanceType.pressureTotal, has_pressure_change=True
+    )
 
     m.fs.cv.apply_transformation()
 
@@ -287,12 +310,15 @@ def test_full_auto_scaling_mbtype_element():
     m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-    m.fs.cv = ControlVolume1DBlock(default={
-        "property_package": m.fs.pp,
-        "reaction_package": m.fs.rp,
-        "transformation_method": "dae.finite_difference",
-        "transformation_scheme": "BACKWARD",
-        "finite_elements": 10})
+    m.fs.cv = ControlVolume1DBlock(
+        default={
+            "property_package": m.fs.pp,
+            "reaction_package": m.fs.rp,
+            "transformation_method": "dae.finite_difference",
+            "transformation_scheme": "BACKWARD",
+            "finite_elements": 10,
+        }
+    )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
@@ -300,7 +326,7 @@ def test_full_auto_scaling_mbtype_element():
     m.fs.cv.add_total_element_balances(has_mass_transfer=True)
 
     m.fs.cv.apply_transformation()
-    m.discretizer = pyo.TransformationFactory('dae.finite_difference')
+    m.discretizer = pyo.TransformationFactory("dae.finite_difference")
     m.discretizer.apply_to(m, nfe=3, wrt=m.fs.time, scheme="BACKWARD")
 
     iscale.calculate_scaling_factors(m)

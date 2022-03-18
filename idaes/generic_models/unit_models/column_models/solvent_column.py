@@ -32,11 +32,11 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        FlowDirection)
+                        FlowDirection,
+                        DistributedVars)
 from idaes.core.util import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.control_volume1d import DistributedVars
 import idaes.logger as idaeslog
 
 

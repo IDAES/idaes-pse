@@ -19,16 +19,31 @@ import inspect
 import pytest
 from pyomo.environ import ConcreteModel, Block, Set, units
 from pyomo.common.config import ConfigBlock, ConfigValue
-from idaes.core import (ControlVolumeBlockData, CONFIG_Template,
-                        MaterialBalanceType, EnergyBalanceType,
-                        MomentumBalanceType, FlowDirection,
-                        declare_process_block_class,
-                        FlowsheetBlockData, UnitModelBlockData, useDefault,
-                        PhysicalParameterBlock, ReactionParameterBlock,
-                        MaterialFlowBasis, StateBlock, StateBlockData,
-                        ReactionBlockBase, ReactionBlockDataBase)
-from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
-                                        PropertyPackageError, BurntToast)
+from idaes.core import (
+    ControlVolumeBlockData,
+    CONFIG_Template,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+    FlowDirection,
+    declare_process_block_class,
+    FlowsheetBlockData,
+    UnitModelBlockData,
+    useDefault,
+    PhysicalParameterBlock,
+    ReactionParameterBlock,
+    MaterialFlowBasis,
+    StateBlock,
+    StateBlockData,
+    ReactionBlockBase,
+    ReactionBlockDataBase,
+)
+from idaes.core.util.exceptions import (
+    ConfigurationError,
+    DynamicError,
+    PropertyPackageError,
+    BurntToast,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -58,6 +73,7 @@ def test_momentum_balance_type():
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
         MomentumBalanceType.foo  # pylint: disable=no-member
+
 
 @pytest.mark.unit
 def testflow_direction():
@@ -116,10 +132,15 @@ def test_CONFIG_Template_true_false():
     c = CONFIG_Template()
 
     for i in c:
-        if i not in ["material_balance_type", "energy_balance_type",
-                     "momentum_balance_type", "property_package",
-                     "reaction_package", "property_package_args",
-                     "reaction_package_args"]:
+        if i not in [
+            "material_balance_type",
+            "energy_balance_type",
+            "momentum_balance_type",
+            "property_package",
+            "reaction_package",
+            "property_package_args",
+            "reaction_package_args",
+        ]:
             c[i] = True
             c[i] = False
 
@@ -159,10 +180,8 @@ class _Flowsheet(FlowsheetBlockData):
 @declare_process_block_class("Unit")
 class _UnitData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
-    CONFIG.declare("property_package",
-                   ConfigValue(default=None))
-    CONFIG.declare("property_package_args",
-                   ConfigValue(default={}))
+    CONFIG.declare("property_package", ConfigValue(default=None))
+    CONFIG.declare("property_package_args", ConfigValue(default={}))
 
     def build(self):
         super(_UnitData, self).build()
@@ -241,8 +260,7 @@ def test_setup_dynamics_dynamic_in_ss():
 @pytest.mark.unit
 def test_setup_dynamics_dynamic_holdup_inconsistent():
     # Test that dynamic = None works correctly
-    fs = Flowsheet(default={"dynamic": True, "time_units": units.s},
-                   concrete=True)
+    fs = Flowsheet(default={"dynamic": True, "time_units": units.s}, concrete=True)
 
     # Create a Block (with no dynamic attribute)
     fs.b = Block()
@@ -281,8 +299,7 @@ def test_get_property_package_set():
 @pytest.mark.unit
 def test_get_property_package_default_args():
     m = ConcreteModel()
-    m.pp = PropertyParameterBlock(
-                default={"default_arguments": {"test": "foo"}})
+    m.pp = PropertyParameterBlock(default={"default_arguments": {"test": "foo"}})
     m.cv = CVFrame(default={"property_package": m.pp})
     m.cv._get_property_package()
 
@@ -294,11 +311,14 @@ def test_get_reaction_package_module_combine_args():
     # Test that local and default args combine correctly
     m = ConcreteModel()
     m.pp = PropertyParameterBlock(
-            default={"default_arguments": {"test1": "foo",
-                                           "test2": "bar"}})
-    m.cv = CVFrame(default={"property_package": m.pp,
-                            "property_package_args": {"test2": "baz",
-                                                      "test3": "bar"}})
+        default={"default_arguments": {"test1": "foo", "test2": "bar"}}
+    )
+    m.cv = CVFrame(
+        default={
+            "property_package": m.pp,
+            "property_package_args": {"test2": "baz", "test3": "bar"},
+        }
+    )
     m.cv._get_property_package()
 
     assert m.cv.config.property_package_args["test1"] == "foo"
@@ -392,8 +412,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
 @pytest.mark.unit
 def test_get_reaction_package_module():
     m = ConcreteModel()
-    m.rp = ReactionParameterTestBlock(
-                default={"default_arguments": {"test": "foo"}})
+    m.rp = ReactionParameterTestBlock(default={"default_arguments": {"test": "foo"}})
     m.cv = CVFrame(default={"reaction_package": m.rp})
 
     m.cv._get_reaction_package()
@@ -407,11 +426,14 @@ def test_get_reaction_package_module_default_args():
     # Test that local and default args combine correctly
     m = ConcreteModel()
     m.rp = ReactionParameterTestBlock(
-            default={"default_arguments": {"test1": "foo",
-                                           "test2": "bar"}})
-    m.cv = CVFrame(default={"reaction_package": m.rp,
-                            "reaction_package_args": {"test2": "baz",
-                                                      "test3": "bar"}})
+        default={"default_arguments": {"test1": "foo", "test2": "bar"}}
+    )
+    m.cv = CVFrame(
+        default={
+            "reaction_package": m.rp,
+            "reaction_package_args": {"test2": "baz", "test3": "bar"},
+        }
+    )
 
     m.cv._get_reaction_package()
 
@@ -447,8 +469,7 @@ def test_auto_construct():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(default={"property_package": m.fs.pp,
-                               "auto_construct": True})
+    m.fs.cv = CVFrame(default={"property_package": m.fs.pp, "auto_construct": True})
 
     with pytest.raises(NotImplementedError):
         super(CVFrameData, m.fs.cv).build()
