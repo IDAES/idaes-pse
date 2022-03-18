@@ -22,8 +22,8 @@ from enum import Enum
 from pyomo.environ import Set
 from pyomo.common.config import ConfigBlock, ConfigValue
 
-from .process_base import (declare_process_block_class,
-                           ProcessBlockData)
+from .base.process_base import (declare_process_block_class,
+                                ProcessBlockData)
 
 
 # Enumerate recognised Phase types

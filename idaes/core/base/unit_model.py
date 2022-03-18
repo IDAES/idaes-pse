@@ -18,9 +18,9 @@ from pyomo.environ import check_optimal_termination, Reference
 from pyomo.network import Port
 from pyomo.common.config import ConfigValue
 
-from idaes.core.process_base import (declare_process_block_class,
-                                     ProcessBlockData,
-                                     useDefault)
+from idaes.core.base.process_base import (declare_process_block_class,
+                                          ProcessBlockData,
+                                          useDefault)
 from idaes.core.property_base import StateBlock
 from idaes.core.base.control_volume_base import (ControlVolumeBlockData,
                                                  FlowDirection,

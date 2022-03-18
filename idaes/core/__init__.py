@@ -10,7 +10,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from .process_base import ProcessBlockData, useDefault, MaterialFlowBasis
+from .base.process_base import ProcessBlockData, useDefault, MaterialFlowBasis
 from .base.process_block import ProcessBlock, declare_process_block_class
 from .base.unit_model import UnitModelBlockData, UnitModelBlock
 from .base.flowsheet_model import FlowsheetBlockData, FlowsheetBlock
