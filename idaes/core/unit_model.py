@@ -22,9 +22,9 @@ from .process_base import (declare_process_block_class,
                            ProcessBlockData,
                            useDefault)
 from .property_base import StateBlock
-from .control_volume_base import (ControlVolumeBlockData,
-                                  FlowDirection,
-                                  MaterialBalanceType)
+from idaes.core.base.control_volume_base import (ControlVolumeBlockData,
+                                                 FlowDirection,
+                                                 MaterialBalanceType)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError,
