@@ -14,6 +14,7 @@ from pyomo.environ import *
 from pyomo.opt import SolverFactory
 import numpy as np
 import scipy as sp
+from scipy import linalg
 from copy import copy
 
 
@@ -213,7 +214,7 @@ class LinAlgandPyomo:
 
         self.regressors_old_A = [1 for i in range(self.x.shape[1])]
         self.regressors_old_QR = [1 for i in range(self.x.shape[1])]
-        self.Q, self.R = sp.linalg.qr(self.x)
+        self.Q, self.R = linalg.qr(self.x)
 
         self.A = copy(x)
         self.b = copy(y)
@@ -315,13 +316,13 @@ class LinAlgandPyomo:
         for i in range(self.x.shape[1]):
             if self.regressors_old_QR[i] == 0 and self.regressors[i] == 1:
                 # New variable inserted, inserts corresponding column into A
-                self.Q, self.R = sp.linalg.qr_insert(self.Q, self.R, self.x.T[i].T, h, 'col')
+                self.Q, self.R = linalg.qr_insert(self.Q, self.R, self.x.T[i].T, h, 'col')
                 h = h + 1
             if self.regressors_old_QR[i] == 1 and self.regressors[i] == 1:
                 h = h + 1
             if self.regressors_old_QR[i] == 1 and self.regressors[
                 i] == 0:  # Variable removed, deletes corresponding column from A
-                self.Q, self.R = sp.linalg.qr_delete(self.Q, self.R, h, 1, 'col')
+                self.Q, self.R = linalg.qr_delete(self.Q, self.R, h, 1, 'col')
 
     def OLS_soln(self):
         """
@@ -335,7 +336,7 @@ class LinAlgandPyomo:
             nb = np.dot(self.Q.T, self.b)
             c = nb[:np.count_nonzero(self.regressors)]  # Takes the first 'p' rows of nb vector
             d = nb[np.count_nonzero(self.regressors):]
-            self.B_ols = sp.linalg.solve_triangular(Rp, c)
+            self.B_ols = linalg.solve_triangular(Rp, c)
             self.SSRols = sum(d[i] ** 2 for i in range(np.shape(self.A)[0] - np.shape(self.A)[1]))
             self.B_ols_sum = sum(abs(self.B_ols[i]) for i in range(np.shape(self.A)[1]))
 

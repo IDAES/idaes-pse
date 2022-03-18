@@ -17,7 +17,7 @@ minimize objective = OLS + complexity_penalty*number_regressors_chosen
 Additional hyper-parameters and features will be added over time
 """
 
-from idaes.surrogate.roundingRegression.RoundingRegression import RoundingRegression
+from idaes.apps.roundingRegression.RoundingRegression import RoundingRegression
 import numpy as np
 import pytest
 
