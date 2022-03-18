@@ -26,7 +26,7 @@ import pytest
 # package
 import idaes
 from idaes.dmf import codesearch
-from idaes.core import property_meta
+from idaes.core.base import property_meta
 from idaes.util.system import mkdtemp
 from .util import init_logging
 

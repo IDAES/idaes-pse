@@ -78,7 +78,7 @@ def index_property_metadata(
     wlk = codesearch.ModuleClassWalker(
         from_pkg=pkg,
         class_expr=expr,
-        parent_class=idaes.core.property_meta.HasPropertyClassMetadata,
+        parent_class=idaes.core.base.property_meta.HasPropertyClassMetadata,
         suppress_warnings=True,
         **kwargs
     )

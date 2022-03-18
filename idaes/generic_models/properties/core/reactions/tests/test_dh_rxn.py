@@ -25,7 +25,7 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import *
 
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.misc import add_object_reference
-from idaes.core.property_meta import PropertyClassMetadata
+from idaes.core.base.property_meta import PropertyClassMetadata
 from idaes.core import MaterialFlowBasis
 
 
