@@ -90,7 +90,16 @@ def has_declare_block_class_decorator(cls_node, decorator_name="declare_process_
 @functools.lru_cache(maxsize=1)
 def get_base_class_node():
     _notify('Getting base class node')
-    import_node = extract_node('from idaes.core.process_block import ProcessBlock; ProcessBlock')
+    pb_def = """
+        import idaes.core.process_block.ProcessBlock
+        class ProcessBlock(idaes.core.process_block.ProcessBlock):
+            # creating a stub for the __getitem__() method returning the uninferable object
+            # causes pylint to stop further checks on objects returned when calling [] on a derived class
+            # see e.g. https://github.com/PyCQA/astroid/blob/main/astroid/brain/brain_numpy_ndarray.py
+            # for another example of how this can be extended to create "uninferability stubs" for other methods
+            def __getitem__(self, *args): return uninferable
+    """
+    import_node = astroid.extract_node(pb_def)
     cls_node = next(import_node.infer())
     return cls_node
 
