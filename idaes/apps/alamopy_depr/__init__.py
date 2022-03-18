@@ -10,22 +10,61 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-__all__ = ['alamo', 'doalamo', 'getlabels', 'makelabs', 'addCustomFunctions', 
-           'addCustomConstraints', 'addBasisGroups', 'addBasisGroup', 
-           'addBasisConstraints', 'addBasisConstraint',
-           'get_alamo_version', 'almwriter',
-           'almconfidence', 'almpickle', 'postpickle', 'almunpickle',
-           'AlamoError', 'AlamoInputError',
-           'almpywriter', 'almcvwriter', 'wrapwriter',
-           'almplot', 'mapminmax', 'remapminmax', 
-           'data', 'debug', 'deletefile', 'movefile', 'catfile', 
-           'copyfile', 'has_alamo', 'allcard', 'almlsq',
-           'almlsqjac', 'almfeatmat',
-           'ackley', 'branin', 'sixcamel', 'col']
+__all__ = [
+    "alamo",
+    "doalamo",
+    "getlabels",
+    "makelabs",
+    "addCustomFunctions",
+    "addCustomConstraints",
+    "addBasisGroups",
+    "addBasisGroup",
+    "addBasisConstraints",
+    "addBasisConstraint",
+    "get_alamo_version",
+    "almwriter",
+    "almconfidence",
+    "almpickle",
+    "postpickle",
+    "almunpickle",
+    "AlamoError",
+    "AlamoInputError",
+    "almpywriter",
+    "almcvwriter",
+    "wrapwriter",
+    "almplot",
+    "mapminmax",
+    "remapminmax",
+    "data",
+    "debug",
+    "deletefile",
+    "movefile",
+    "catfile",
+    "copyfile",
+    "has_alamo",
+    "allcard",
+    "almlsq",
+    "almlsqjac",
+    "almfeatmat",
+    "ackley",
+    "branin",
+    "sixcamel",
+    "col",
+]
 
-from .doalamo import alamo, doalamo, getlabels, makelabs, addCustomFunctions, \
-    addCustomConstraints, addBasisGroups, addBasisGroup, addBasisConstraints, \
-    addBasisConstraint, get_alamo_version
+from .doalamo import (
+    alamo,
+    doalamo,
+    getlabels,
+    makelabs,
+    addCustomFunctions,
+    addCustomConstraints,
+    addBasisGroups,
+    addBasisGroup,
+    addBasisConstraints,
+    addBasisConstraint,
+    get_alamo_version,
+)
 from .allcard import allcard, almlsq, almlsqjac, almfeatmat
 from .almwriter import almwriter
 from .almconfidence import almconfidence

@@ -37,7 +37,7 @@ def writeExp(textFile, Combination=False):
 
 
 def PVTdt(textFile, DataToWrite, Combination=False, PlotData=False):
-    """ Imports P-V-T data into the GAMS document, to be written in :func:'GamsWrite'
+    """Imports P-V-T data into the GAMS document, to be written in :func:'GamsWrite'
 
     :param textFile: Gams File written to.
     :type textFile: str.
@@ -68,7 +68,7 @@ def PVTdt(textFile, DataToWrite, Combination=False, PlotData=False):
         i += 1
     i = 1
 
-    InSat(textFile, DataImport.InSatValues,Combination)
+    InSat(textFile, DataImport.InSatValues, Combination)
 
     if PlotData:
         x, y, z = [], [], []
@@ -90,7 +90,7 @@ def PVTdt(textFile, DataToWrite, Combination=False, PlotData=False):
 
 
 def CVdt(textFile, DataToWrite, Combination=False, PlotData=False):
-    """ Imports Isochoric Heat Capacity (CV) data into the GAMS document
+    """Imports Isochoric Heat Capacity (CV) data into the GAMS document
 
     :param textFile: Gams File written to.
     :type textFile: str.
@@ -130,8 +130,8 @@ def CVdt(textFile, DataToWrite, Combination=False, PlotData=False):
         plt.show()
 
 
-def CPdt(textFile, DataToWrite, Combination=False, PlotData=False): 
-    """ Imports Isobaric Heat Capacity(CP) data into the GAMS document
+def CPdt(textFile, DataToWrite, Combination=False, PlotData=False):
+    """Imports Isobaric Heat Capacity(CP) data into the GAMS document
 
     :param textFile: Gams File written to.
     :type textFile: str.
@@ -185,7 +185,7 @@ def CPdt(textFile, DataToWrite, Combination=False, PlotData=False):
 
 
 def SNDdt(textFile, DataToWrite, Combination=False, PlotData=False):
-    """ Imports Speed of Sound (SND) data into the GAMS document
+    """Imports Speed of Sound (SND) data into the GAMS document
 
     :param textFile: Gams File written to.
     :type textFile: str.
@@ -219,7 +219,6 @@ def SNDdt(textFile, DataToWrite, Combination=False, PlotData=False):
             textFile.write("tau('%s','%d') = %.13f ;\n" % (i, x[1]))
         i += 1
 
-
     if PlotData:
         x, y, z = [], [], []
         for xs in DataToWrite:
@@ -245,7 +244,7 @@ def SNDdt(textFile, DataToWrite, Combination=False, PlotData=False):
 
 
 def Crit(textFile, DataToWrite, Combination=False):
-    """ Import Critical data points"""
+    """Import Critical data points"""
     BasisFunctions.drd(1, 1)
     drd_vals = BasisFunctions.drd_vals
 

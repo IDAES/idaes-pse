@@ -16,6 +16,7 @@ Plot doalamo output including confidence intervals if they are calculated.
 
 from idaes.apps.alamopy_depr import almerror
 
+
 def almplot(res, show=True):
     try:
         import matplotlib.pyplot as plt
@@ -25,15 +26,17 @@ def almplot(res, show=True):
             "Cannot plot, possibly missing matplotlib package"
         )
 
-    model = res['model']
+    model = res["model"]
 
     if type(model) is dict:
-        for key in list(res['model'].keys()):
-            model = res['model'][key].replace(' - ', ' + -')
+        for key in list(res["model"].keys()):
+            model = res["model"][key].replace(" - ", " + -")
 
-            model = model.split('=')[1]
-            model = model.split(' + ')
-            if model[0] == ' ':  # if there are more than one terms, the first split is ' '
+            model = model.split("=")[1]
+            model = model.split(" + ")
+            if (
+                model[0] == " "
+            ):  # if there are more than one terms, the first split is ' '
                 model = model[1:]
 
             ndp = 100
@@ -44,42 +47,49 @@ def almplot(res, show=True):
             coeff = np.zeros(ndp)
 
             for i in range(len(model)):
-                thisterm = model[i].split(' * ')
+                thisterm = model[i].split(" * ")
                 if thisterm[0].isdigit():
-                    coeff[i] = float(model[i].split(' * ')[0])
+                    coeff[i] = float(model[i].split(" * ")[0])
                 else:
                     coeff[i] = 1
-                if 'conf_inv' in res.keys():
-                    if type(res['conf_inv']) is dict:
+                if "conf_inv" in res.keys():
+                    if type(res["conf_inv"]) is dict:
                         # key = list(res['conf_inv'].keys())[0]
-                        clo[i] = coeff[i] - float(res['conf_inv'][key][i].split('+/-')[1])
-                        chi[i] = coeff[i] + float(res['conf_inv'][key][i].split('+/-')[1])
+                        clo[i] = coeff[i] - float(
+                            res["conf_inv"][key][i].split("+/-")[1]
+                        )
+                        chi[i] = coeff[i] + float(
+                            res["conf_inv"][key][i].split("+/-")[1]
+                        )
                     else:
-                        clo[i] = coeff[i] - float(res['conf_inv'][i].split('+/-')[1])
-                        chi[i] = coeff[i] + float(res['conf_inv'][i].split('+/-')[1])
+                        clo[i] = coeff[i] - float(res["conf_inv"][i].split("+/-")[1])
+                        chi[i] = coeff[i] + float(res["conf_inv"][i].split("+/-")[1])
 
             for i in range(ndp):
-                out[0, i] = float(coeff[0]) * t[i] ** 1.2 \
-                            - float(coeff[1]) * t[i] ** 2 - float(coeff[2])
-                if 'conf_inv' in res.keys():  # If confidence intervals exist
+                out[0, i] = (
+                    float(coeff[0]) * t[i] ** 1.2
+                    - float(coeff[1]) * t[i] ** 2
+                    - float(coeff[2])
+                )
+                if "conf_inv" in res.keys():  # If confidence intervals exist
                     out[1, i] = clo[0] * t[i] ** 1.2 - chi[1] * t[i] ** 2 - chi[2]
                     out[2, i] = chi[0] * t[i] ** 1.2 - clo[1] * t[i] ** 2 - clo[2]
 
-            plt.plot(t, out[0], 'b-')
-            if 'conf_inv' in res.keys():
-                plt.plot(t, out[1], 'r--', t, out[2], 'r--')
+            plt.plot(t, out[0], "b-")
+            if "conf_inv" in res.keys():
+                plt.plot(t, out[1], "r--", t, out[2], "r--")
 
-            plt.xlabel(res['xlabels'][0])
+            plt.xlabel(res["xlabels"][0])
             plt.ylabel(key)
 
             if show:
                 plt.show()
     else:
-        model = res['model'].replace(' - ', ' + -')
+        model = res["model"].replace(" - ", " + -")
 
-        model = model.split('=')[1]
-        model = model.split(' + ')
-        if model[0] == ' ':  # if there are more than one terms, the first split is ' '
+        model = model.split("=")[1]
+        model = model.split(" + ")
+        if model[0] == " ":  # if there are more than one terms, the first split is ' '
             model = model[1:]
         ndp = 100
         t = np.linspace(0.08, 1.7, ndp)
@@ -89,32 +99,39 @@ def almplot(res, show=True):
         coeff = np.zeros(ndp)
 
         for i in range(len(model)):
-            thisterm = model[i].split(' * ')
+            thisterm = model[i].split(" * ")
             if thisterm[0].isdigit():
-                coeff[i] = float(model[i].split(' * ')[0])
+                coeff[i] = float(model[i].split(" * ")[0])
             else:
                 coeff[i] = 1
-            if 'conf_inv' in res.keys():
-                if type(res['conf_inv']) is dict:
-                    firstKey = list(res['conf_inv'].keys())[0]
-                    clo[i] = coeff[i] - float(res['conf_inv'][firstKey][i].split('+/-')[1])
-                    chi[i] = coeff[i] + float(res['conf_inv'][firstKey][i].split('+/-')[1])
+            if "conf_inv" in res.keys():
+                if type(res["conf_inv"]) is dict:
+                    firstKey = list(res["conf_inv"].keys())[0]
+                    clo[i] = coeff[i] - float(
+                        res["conf_inv"][firstKey][i].split("+/-")[1]
+                    )
+                    chi[i] = coeff[i] + float(
+                        res["conf_inv"][firstKey][i].split("+/-")[1]
+                    )
                 else:
-                    clo[i] = coeff[i] - float(res['conf_inv'][i].split('+/-')[1])
-                    chi[i] = coeff[i] + float(res['conf_inv'][i].split('+/-')[1])
+                    clo[i] = coeff[i] - float(res["conf_inv"][i].split("+/-")[1])
+                    chi[i] = coeff[i] + float(res["conf_inv"][i].split("+/-")[1])
 
         for i in range(ndp):
-            out[0, i] = float(coeff[0]) * t[i]**1.2 \
-                - float(coeff[1]) * t[i]**2 - float(coeff[2])
-            if 'conf_inv' in res.keys():  # If confidence intervals exist
-                out[1, i] = clo[0] * t[i]**1.2 - chi[1] * t[i]**2 - chi[2]
-                out[2, i] = chi[0] * t[i]**1.2 - clo[1] * t[i]**2 - clo[2]
+            out[0, i] = (
+                float(coeff[0]) * t[i] ** 1.2
+                - float(coeff[1]) * t[i] ** 2
+                - float(coeff[2])
+            )
+            if "conf_inv" in res.keys():  # If confidence intervals exist
+                out[1, i] = clo[0] * t[i] ** 1.2 - chi[1] * t[i] ** 2 - chi[2]
+                out[2, i] = chi[0] * t[i] ** 1.2 - clo[1] * t[i] ** 2 - clo[2]
 
-        plt.plot(t, out[0], 'b-')
-        if 'conf_inv' in res.keys():
-            plt.plot(t, out[1], 'r--', t, out[2], 'r--')
+        plt.plot(t, out[0], "b-")
+        if "conf_inv" in res.keys():
+            plt.plot(t, out[1], "r--", t, out[2], "r--")
 
-        plt.xlabel(res['xlabels'][0])
-        plt.ylabel(res['zlabels'][0])
+        plt.xlabel(res["xlabels"][0])
+        plt.ylabel(res["zlabels"][0])
         if show:
             plt.show()

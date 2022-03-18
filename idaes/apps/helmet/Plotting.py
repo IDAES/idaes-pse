@@ -27,7 +27,7 @@ from . import (
     DataManipulation,
     BasisFunctions,
     parseGAMS,
-    AncillaryEquations
+    AncillaryEquations,
 )
 
 font = {"size": 12}
@@ -41,7 +41,30 @@ triple = 0
 
 global props
 props = ["PVT", "CV", "CP", "SND"]
-markers = [".", ",","o","v","^", "<", ">", "1","2", "3","4","8","s", "p","P","*","x","X","D","d","|","_"];
+markers = [
+    ".",
+    ",",
+    "o",
+    "v",
+    "^",
+    "<",
+    ">",
+    "1",
+    "2",
+    "3",
+    "4",
+    "8",
+    "s",
+    "p",
+    "P",
+    "*",
+    "x",
+    "X",
+    "D",
+    "d",
+    "|",
+    "_",
+]
 
 
 def molData(fluidData, Dmolecule, RVal):
@@ -57,7 +80,7 @@ def molData(fluidData, Dmolecule, RVal):
 
 # View Ancillary Regressions
 def viewAnc():
-    """ Plots all the ancillary equations for saturated density and vapor pressure"""
+    """Plots all the ancillary equations for saturated density and vapor pressure"""
     plotPV()
     plotDV()
     plotDL()
@@ -286,7 +309,7 @@ def plotSND():
     D = SNDnp[:, 1]
     w = SNDnp[:, 2]
 
-    w = (w ** 2) / R / 1000 * M / T * float(critT)
+    w = (w**2) / R / 1000 * M / T * float(critT)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
@@ -302,7 +325,7 @@ def plotSND():
 
 
 # View Regressed Equation
-def sseCombo(lstFile=None, plot = False, report=False, surface=cm.coolwarm):
+def sseCombo(lstFile=None, plot=False, report=False, surface=cm.coolwarm):
     """Plot regressed equation and data. Calculates statistical anlaysis metrics"""
     Y = []
     Beta = []
@@ -319,13 +342,13 @@ def sseCombo(lstFile=None, plot = False, report=False, surface=cm.coolwarm):
 
     objZ, objCV, objCP, objSND = 0, 0, 0, 0
 
-    if 'PVT' in props:
+    if "PVT" in props:
         objZ = ssePVT(Y, Beta, saveFig, showGraph, report)
-    if 'CV' in props:
+    if "CV" in props:
         objCV = sseCV(Y, Beta, saveFig, showGraph, report)
-    if 'CP' in props:
+    if "CP" in props:
         objCP = sseCP(Y, Beta, saveFig, showGraph, report)
-    if 'SND' in props:
+    if "SND" in props:
         objSND = sseSND(Y, Beta, saveFig, showGraph, report)
 
     if showGraph:
@@ -377,7 +400,6 @@ def ssePVT(PVT1=[], PVT1Vals=[], saveFig=False, show=True, report=False):
     Ta = PVTnp[:, 2]
     Pa = np.array(P)
 
-
     delPcalc = (Pa - PlaceHolder) / Pa
     AAD = np.mean(delPcalc)
 
@@ -422,7 +444,7 @@ def ssePVT(PVT1=[], PVT1Vals=[], saveFig=False, show=True, report=False):
 
     if show or saveFig:
         fig2 = plt.figure()
-        fig2.suptitle('%s Pressure Volume Temperature Regression'% molecule)
+        fig2.suptitle("%s Pressure Volume Temperature Regression" % molecule)
 
         # Pressure Parity Plot
         ax2 = fig2.add_subplot(131)
@@ -444,10 +466,9 @@ def ssePVT(PVT1=[], PVT1Vals=[], saveFig=False, show=True, report=False):
             c="w",
             s=10,
             edgecolor="k",
-            label="Developed equation\n (multivariable)"
+            label="Developed equation\n (multivariable)",
         )
         ax2.legend(loc="upper left")
-
 
         # Pressure Data Plot
         ax = fig2.add_subplot(132)
@@ -461,7 +482,7 @@ def ssePVT(PVT1=[], PVT1Vals=[], saveFig=False, show=True, report=False):
             c="b",
             marker="o",
             edgecolor="k",
-            label="Developed equation"
+            label="Developed equation",
         )
         # ax.set_title('Data Fit');
         # ax1.set_title('Residuals')
@@ -477,7 +498,7 @@ def ssePVT(PVT1=[], PVT1Vals=[], saveFig=False, show=True, report=False):
 
         # 3d Plot
         fig3 = plt.figure()
-        fig3.suptitle('%s Pressure Volume Temperature Regression'% molecule)
+        fig3.suptitle("%s Pressure Volume Temperature Regression" % molecule)
         ax3 = fig3.add_subplot(111, projection="3d")
         ax3.scatter(D, T, Pa, edgecolor="k", label="Data")
         ax3.scatter(D, T, PlaceHolder, edgecolor="k", label="Regression")
@@ -502,7 +523,6 @@ def ssePVT(PVT1=[], PVT1Vals=[], saveFig=False, show=True, report=False):
         # # axAAD.scatter(TAAD, PVTAAD, label=SAAD)
         # axAAD.legend(loc="right")
 
-
         if saveFig:
             fig2.savefig("%sPics/%sPVT.eps" % (molecule, molecule))
             fig3.savefig("%sPics/%sPVTR2.eps" % (molecule, molecule))
@@ -514,12 +534,12 @@ def ssePVT(PVT1=[], PVT1Vals=[], saveFig=False, show=True, report=False):
     # l-1 norm
     sseZ1 = [abs(x) for x in Ze]
     # l-2 norm
-    sseZ2 = [x ** 2 for x in Ze]
+    sseZ2 = [x**2 for x in Ze]
     # print "SSEZ2: ", np.sum(sseZ1)
     return [np.sum(sseZ1) / Zvar, np.sum(sseZ2) / Zvar, np.sum(sseZ1), np.sum(sseZ2)]
 
 
-def sseCV(Y =[], Beta=[], saveFig=False, show=True, report=False):
+def sseCV(Y=[], Beta=[], saveFig=False, show=True, report=False):
     """Plots and metrics for isochoric heat capacity"""
     DT = []
     CVValuesn = []
@@ -551,7 +571,7 @@ def sseCV(Y =[], Beta=[], saveFig=False, show=True, report=False):
 
     for x in CVValues:
         Tau = float(critT) / float(x[1])
-        Delta = float(x[0])/float(critD)
+        Delta = float(x[0]) / float(critD)
         CVValuesn.append((Delta, Tau, float(x[2])))
         DT.append((Delta, Tau))
 
@@ -562,7 +582,7 @@ def sseCV(Y =[], Beta=[], saveFig=False, show=True, report=False):
 
     if show or saveFig:
         fig = plt.figure()
-        fig.suptitle('%s Isochoric Heat Capacity Regression'%molecule)
+        fig.suptitle("%s Isochoric Heat Capacity Regression" % molecule)
         ax = fig.add_subplot(121)
         ax.scatter(
             T, CV, s=10, c="b", edgecolors="k", marker="s", label="%s data" % molecule
@@ -612,7 +632,7 @@ def sseCV(Y =[], Beta=[], saveFig=False, show=True, report=False):
         ax2.set_xlabel(r"$C_V/(J/(mol\cdot K))$ observed")
         ax2.set_ylabel(r"$C_V/(J/(mol\cdot K))$ calculated")
 
-        maxCV = math.ceil(max(max(CV),max(PlaceHolder)))
+        maxCV = math.ceil(max(max(CV), max(PlaceHolder)))
         ax2.plot([0, maxCV], [0, maxCV], label="$R^2 =  %.3f$" % R2calc, color="b")
         # ax2.plot([0,550], [0,550], label='$R^2 =  %.3f$' %R2calc, color='b')
         ax2.scatter(
@@ -694,9 +714,8 @@ def sseCP(CP1=[], CP1Vals=[], saveFig=False, show=True, report=False):
     dPD = [1 + 2 * y + z for x, y, z in zip(DT, rD, rDD)]  # 10 to 10^-2
     dPT = [1 + y - z for x, y, z in zip(DT, rD, rTD)]  # 10^-1
 
-    CPcalc = [-x + (y ** 2) / z for x, y, z in zip(PlaceHolder, dPT, dPD)]
+    CPcalc = [-x + (y**2) / z for x, y, z in zip(PlaceHolder, dPT, dPD)]
     CPcalc = [x * R for x in CPcalc]
-
 
     errors = (CP - CPcalc) ** 2
     delCPcalc = (CP - CPcalc) / CP
@@ -724,19 +743,20 @@ def sseCP(CP1=[], CP1Vals=[], saveFig=False, show=True, report=False):
         print("t value %f, df %i" % (t, len(residuals)))
         print(stats.ttest_1samp(residuals, 0))
 
-
     if show or saveFig:
 
         fig2 = plt.figure()
-        fig2.suptitle("%s Isobaric Heat Capacity Regression"%molecule)
+        fig2.suptitle("%s Isobaric Heat Capacity Regression" % molecule)
 
         # Parity Plot
         ax2 = fig2.add_subplot(131)
         ax2.set_xlabel(r"$C_P/(J/(mol\cdot K))$ observed")
         ax2.set_ylabel(r"$C_P/(J/(mol\cdot K))$ calculated")
-        minCP = math.floor(min(min(CP),min(CPcalc)))
-        maxCP = math.ceil(max(max(CP),max(CPcalc)))
-        ax2.plot([minCP, maxCP], [minCP, maxCP], label="$R^2 = %.3f$" % R2calc, color="b")
+        minCP = math.floor(min(min(CP), min(CPcalc)))
+        maxCP = math.ceil(max(max(CP), max(CPcalc)))
+        ax2.plot(
+            [minCP, maxCP], [minCP, maxCP], label="$R^2 = %.3f$" % R2calc, color="b"
+        )
         ax2.set_xlim([minCP, maxCP])
         ax2.set_ylim([minCP, maxCP])
         ax2.scatter(
@@ -747,7 +767,6 @@ def sseCP(CP1=[], CP1Vals=[], saveFig=False, show=True, report=False):
             label="Developed equation\n (multivariable)",
         )
         ax2.legend(loc="upper right")
-
 
         # Scatter Plot
         ax = fig2.add_subplot(132)
@@ -775,7 +794,6 @@ def sseCP(CP1=[], CP1Vals=[], saveFig=False, show=True, report=False):
         ax.set_xlim((0.8, 3.4))
         ax.set_ylim((0, 900))
 
-
         ax4 = fig2.add_subplot(133)
 
         ax4.scatter(
@@ -801,7 +819,6 @@ def sseCP(CP1=[], CP1Vals=[], saveFig=False, show=True, report=False):
         ax4.legend(loc="upper right")
         # ax4.set_title("%s Isobaric Heat Capacity Regression" % molecule)
         ax.legend(loc="upper right")
-
 
         fig3 = plt.figure()
         ax3 = fig3.add_subplot(111, projection="3d")
@@ -830,7 +847,7 @@ def sseCP(CP1=[], CP1Vals=[], saveFig=False, show=True, report=False):
 
 
 def sseSND(SND1=[], SND1Vals=[], saveFig=False, show=True, report=False):
-    """Plots and calculates metrics for speed of sound """
+    """Plots and calculates metrics for speed of sound"""
     Y = SND1
     Beta = SND1Vals
 
@@ -875,11 +892,11 @@ def sseSND(SND1=[], SND1Vals=[], saveFig=False, show=True, report=False):
 
     dPD = [1 + 2 * x + y for x, y in zip(rD, rDD)]  # 10 to 10^-2
     dPT = [1 + x - y for x, y in zip(rD, rTD)]  # 10^-1
-    Dwcalc = [x - (y ** 2) / z for x, y, z in zip(dPD, dPT, PlaceHolder)]
+    Dwcalc = [x - (y**2) / z for x, y, z in zip(dPD, dPT, PlaceHolder)]
     Dwcalc = [x for x in Dwcalc]
 
-    w = (w ** 2) / R / 1000 * M / T * float(critT)
-    WS = [(x ** 2) / R / 1000 * M * y[1] / float(critT) for x, y in zip(WS, DT)]
+    w = (w**2) / R / 1000 * M / T * float(critT)
+    WS = [(x**2) / R / 1000 * M * y[1] / float(critT) for x, y in zip(WS, DT)]
     We = WS
     Wes = Dwcalc
 
@@ -915,15 +932,17 @@ def sseSND(SND1=[], SND1Vals=[], saveFig=False, show=True, report=False):
 
     if show or saveFig:
         fig2 = plt.figure()
-        fig2.suptitle("%s Speed of Sound Regression"%molecule)
+        fig2.suptitle("%s Speed of Sound Regression" % molecule)
 
         # Parity Plot
         ax2 = fig2.add_subplot(121)
         ax2.set_xlabel("Speed of sound observed")
         ax2.set_ylabel("Speed of sound calculated")
-        minSND = math.floor(min(min(WS),min(Dwcalc)))
-        maxSND = math.ceil(max(max(WS),max(Dwcalc)))
-        ax2.plot([minSND, maxSND], [minSND, maxSND], label="$R^2 = %.3f$" % R2calc, color="b")
+        minSND = math.floor(min(min(WS), min(Dwcalc)))
+        maxSND = math.ceil(max(max(WS), max(Dwcalc)))
+        ax2.plot(
+            [minSND, maxSND], [minSND, maxSND], label="$R^2 = %.3f$" % R2calc, color="b"
+        )
         ax2.set_xlim([minSND, maxSND])
         ax2.set_ylim([minSND, maxSND])
         ax2.scatter(
@@ -952,11 +971,11 @@ def sseSND(SND1=[], SND1Vals=[], saveFig=False, show=True, report=False):
         ax.set_xlabel("Inverse reduced temperature")
         ax.set_ylabel("Speed of sound")
         ax.legend(loc="upper right")
-        ax.set_xlim(min(T)*0.8, max(T)*1.1)
-        ax.set_ylim(min(WS)*0.8, max(WS)*1.1)
+        ax.set_xlim(min(T) * 0.8, max(T) * 1.1)
+        ax.set_ylim(min(WS) * 0.8, max(WS) * 1.1)
 
         fig3 = plt.figure()
-        fig3.suptitle("%s Speed of Sound Regression"%molecule)
+        fig3.suptitle("%s Speed of Sound Regression" % molecule)
         ax3 = fig3.add_subplot(111, projection="3d")
         ax3.scatter(D, T, WS, edgecolor="k", label="Data")
         ax3.scatter(D, T, Dwcalc, edgecolor="k", label="Regression")
@@ -979,14 +998,14 @@ def sseSND(SND1=[], SND1Vals=[], saveFig=False, show=True, report=False):
     return [sum(sseW1) / np.var(We), sum(sseW2) / np.var(We)]
 
 
-def HelmetSurface(Y=[], Beta=[], show = True, surface=cm.coolwarm):
+def HelmetSurface(Y=[], Beta=[], show=True, surface=cm.coolwarm):
     """Plots Helmholtz Surface"""
     global critT, critP, critD, M, triple, acc, R, Rm, molecule
     BasisFunctions.formCustomBasis()
     # print(Y, Beta)
 
     fig = plt.figure()
-    fig.suptitle("%s Helmholtz Energy Surface"%molecule)
+    fig.suptitle("%s Helmholtz Energy Surface" % molecule)
     ax = fig.gca(projection="3d")
 
     D = np.arange(0.1, 2, 0.005)
@@ -1003,9 +1022,7 @@ def HelmetSurface(Y=[], Beta=[], show = True, surface=cm.coolwarm):
             Helm = val + itt_val
             PlaceHolder[i, j] = Helm
 
-    ax.plot_surface(
-        D, T, PlaceHolder, cmap=surface, linewidth=0, antialiased=False
-    )
+    ax.plot_surface(D, T, PlaceHolder, cmap=surface, linewidth=0, antialiased=False)
 
     ax.xaxis.labelpad = 5
     ax.yaxis.labelpad = 5

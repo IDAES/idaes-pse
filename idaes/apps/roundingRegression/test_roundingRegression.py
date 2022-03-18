@@ -21,9 +21,10 @@ from idaes.apps.roundingRegression.RoundingRegression import RoundingRegression
 import numpy as np
 import pytest
 
+
 @pytest.mark.unit
 def test_simple_regression():
-    """ Tests the identification of a simple sparse regression"""
+    """Tests the identification of a simple sparse regression"""
 
     # Create Example Data
     # n = number of data points, p = number of variables, k = true sparsity
@@ -38,7 +39,7 @@ def test_simple_regression():
     X = np.random.rand(n, p)
 
     # Response
-    Y = X@true_coefficients
+    Y = X @ true_coefficients
 
     # Set Regression penalty (range: 0 - 1)
     complexity_penalty_factor = 0.1
@@ -60,7 +61,7 @@ def test_simple_regression():
     chosen_variables = RR.opt_regressors
 
     # Predict
-    Y_predict = X@coefficients
+    Y_predict = X @ coefficients
 
     # Print
     print("Objective: ", objective)
@@ -68,8 +69,10 @@ def test_simple_regression():
     print("Chosen Variables ", chosen_variables)
 
     # Check if solution makes sense
-    assert len(chosen_variables) == np.count_nonzero(coefficients), \
-        "Number of variables chosen ({}) does not equal number of nonzeros in coefficient vector ({})" \
-    .format(len(chosen_variables), np.count_nonzero(coefficients))
+    assert len(chosen_variables) == np.count_nonzero(
+        coefficients
+    ), "Number of variables chosen ({}) does not equal number of nonzeros in coefficient vector ({})".format(
+        len(chosen_variables), np.count_nonzero(coefficients)
+    )
 
     assert objective >= 0, "Objective ({}) cannot be negative".format(objective)

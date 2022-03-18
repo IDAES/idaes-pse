@@ -26,7 +26,6 @@ molecule = ""
 max_time = 1000
 
 
-
 global DLfun, DVfun, PVfun
 DLfun, DVfun, PVfun = None, None, None
 
@@ -63,7 +62,7 @@ def DL():
 
 
 def getDL():
-    """ 
+    """
     Imports the regressed saturated liquid density function
     """
     global DLfun
@@ -103,7 +102,7 @@ def DV():
 
 
 def getDV():
-    """ 
+    """
     Imports the regressed saturated vapor density function
     """
     global DVfun
@@ -140,7 +139,7 @@ def PV():
 
 
 def getPV():
-    """ 
+    """
     Imports the regressed vapor pressure function
     """
     global PVfun

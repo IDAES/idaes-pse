@@ -14,6 +14,7 @@
 
 def remapminmax(x, xmax, xmin):
     import numpy as np
+
     try:
         ndata, ninputs = np.shape(x)
         y = np.ones([ndata, ninputs])

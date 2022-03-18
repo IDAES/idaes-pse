@@ -117,7 +117,7 @@ def SND(x):
     return [Delta, Tau, w]
 
 
-def CP0(x): 
+def CP0(x):
     """
     Calculate dimensionless ideal isobaric heat capacity
     """

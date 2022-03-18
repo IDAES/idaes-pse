@@ -19,7 +19,7 @@ from . import (
     BasisFunctions,
     GAMSDataWrite,
     DataManipulation,
-    #SoaveDensity
+    # SoaveDensity
 )
 
 import numpy as np
@@ -42,14 +42,14 @@ critT, critP, critD, M, triple, acc = [0, 0, 0, 0, 0, 0]
 
 # General
 def molData(Dfluids, Dmolecule, Ddata_name, Dterms, Dmax_time):
-    """ Passing of the Data from the main module ::module:: MPEOSDeveloperModule
+    """Passing of the Data from the main module ::module:: MPEOSDeveloperModule
 
-        :param Dmolecule: Name of molecule of interest
-        :type Dmolecule: str
-        :param Ddata_name: Name of Data files
-        :type Ddata_name: str.
-        :param Dmax_time: Running time limit for the GAMS file.
-        :type Dmax_time: int.
+    :param Dmolecule: Name of molecule of interest
+    :type Dmolecule: str
+    :param Ddata_name: Name of Data files
+    :type Ddata_name: str.
+    :param Dmax_time: Running time limit for the GAMS file.
+    :type Dmax_time: int.
     """
     global molecule, data_name, max_time, constraints
     global critT, critP, critD, M, triple, acc
@@ -65,10 +65,10 @@ def molData(Dfluids, Dmolecule, Ddata_name, Dterms, Dmax_time):
 
 
 def openFile(data_name, ending=".gms"):
-    """ Opens the GAMS file based on the data set
+    """Opens the GAMS file based on the data set
 
-        :param data_name: name of the molecule
-        :type data_name: str
+    :param data_name: name of the molecule
+    :type data_name: str
     """
     global textFile
     name = molecule + data_name + ending
@@ -81,7 +81,7 @@ def openFile(data_name, ending=".gms"):
 
 
 def closeFile():
-    """ Closes the GAMS file"""
+    """Closes the GAMS file"""
     textFile.close()
     print("Closing File")
 
@@ -222,14 +222,14 @@ def GenerateGDXGamsFiledtlmv():
 # GDX Header
 def writeGamsHeaderdtl(num_points, terms, kset, pset, regions=None):
     # TODO: What is the kset and pset?
-    """ Writes the GAMS file Header including the number of terms and data points as well as different thermodynamic properties.
+    """Writes the GAMS file Header including the number of terms and data points as well as different thermodynamic properties.
 
-        :param num_points: number of data points
-        :type num_points: int
-        :param terms: number of basis functions
-        :type terms: int
-        :param kset: what is this
-        :param pset: what is this
+    :param num_points: number of data points
+    :type num_points: int
+    :param terms: number of basis functions
+    :type terms: int
+    :param kset: what is this
+    :param pset: what is this
 
     """
     # print num_points
@@ -256,15 +256,11 @@ def writeGamsHeaderdtl(num_points, terms, kset, pset, regions=None):
                                     "\n %s%s(i) /%d * %d/" % (prop, r, prevx + 1, x)
                                 )
                             prevx = x
-                        elif x >0:
+                        elif x > 0:
                             if r == "HD":
-                                textFile.write(
-                                    "\n %s%s(i) /%d/" % (prop, r, x)
-                                )
+                                textFile.write("\n %s%s(i) /%d/" % (prop, r, x))
                             else:
-                                textFile.write(
-                                    "\n %s%s(i) /%d/" % (prop, r, x)
-                                )
+                                textFile.write("\n %s%s(i) /%d/" % (prop, r, x))
                             prevx = x
                     if DataImport.isothermIndex != 0 and prop == "PVT":
                         textFile.write(
@@ -310,17 +306,17 @@ def writeGamsHeaderdtl(num_points, terms, kset, pset, regions=None):
         # textFile.write("parameters z(p, i), xijk(p, i,j, k),crit(p,i,j,k), isoT(p,i,j,k);\n parameters betalo(j), betaup(j);\n")
         textFile.write(
             "parameters z(p, i), d(j), l(j), t(j), delta(p,i), tau(p,i), itt(p,i);\n"
-        ) 
+        )
     else:
         textFile.write(
             "parameters z(i),  d(j), l(j), t(j), delta(i), tau(i), itt(i);\n"
-        ) 
+        )
 
 
 # GAMS Shells
 def GenerateGamsShell():
     """
-    Generates the multiparameter equation of state regression through gams. 
+    Generates the multiparameter equation of state regression through gams.
     Imports the molecule data.gdx file
     Creates Combination of PVT, CV, CP, and SND GAMS file. (Title precoded in).
     """
@@ -492,10 +488,10 @@ def GenerateGamsShell():
 
 # GAMS Shell imports in GDX
 def writeGamsShellHeaderB(pset, regions=None):
-    """ Writes the GAMS file Header including the number of terms and data points as well as different thermodynamic properties.
+    """Writes the GAMS file Header including the number of terms and data points as well as different thermodynamic properties.
 
-        :param pset: list of thermodynamic properties
-        :param regions: regions of thermodynamic property data
+    :param pset: list of thermodynamic properties
+    :param regions: regions of thermodynamic property data
     """
     textFile.write("$offdigit\n$offsymxref offsymlist\n")
 
@@ -542,9 +538,9 @@ def writeGamsShellHeaderB(pset, regions=None):
 
 
 def writeConstants(terms):
-    """ Writes down the ranges of the fitting Beta value and sets regular to one.
-        param terms: number of basis functions
-        param terms: int
+    """Writes down the ranges of the fitting Beta value and sets regular to one.
+    param terms: number of basis functions
+    param terms: int
     """
     textFile.write("Parameter betalo(j), betaup(j);\n")
     betalo = -5
@@ -556,7 +552,7 @@ def writeConstants(terms):
 
 def writeGamsShellFooterB(data_name, load_in=False):
     """
-        Writes the Gam Footer options, model, and display.
+    Writes the Gam Footer options, model, and display.
     """
 
     textFile.write("\n\n******** GENERAL OPTIONS\n")
@@ -681,9 +677,9 @@ def writeBasisFunctions():
 
 def writeEquationsAndVariablesB(props):
     """
-        Writes multiple thermodynamic parameter equations and constants.
-        :param props: Array containing the available properties.
-        :type props: array
+    Writes multiple thermodynamic parameter equations and constants.
+    :param props: Array containing the available properties.
+    :type props: array
     """
     global constraints
     # properties = len(props);
@@ -947,12 +943,8 @@ def writeCalculateIntermediates(props):
         textFile.write(
             "gammaSNDC.l(i) = sum(jl,beta.l(jl)*SNDvecCV(i,jl)*base('SND',i,jl));\n"
         )
-        textFile.write(
-            "SNDomega.l(i) = gammaSNDA.l(i)*gammaSNDC.l(i);\n"
-        )
-        textFile.write(
-            "SNDpsi.l(i) = gammaSNDB.l(i)*gammaSNDB.l(i);\n\n"
-        )
+        textFile.write("SNDomega.l(i) = gammaSNDA.l(i)*gammaSNDC.l(i);\n")
+        textFile.write("SNDpsi.l(i) = gammaSNDB.l(i)*gammaSNDB.l(i);\n\n")
 
     # textFile.write("Critgamma..  gammaCrit =e= sum(jl, beta(jl)*Critvec(jl));\n")
     # textFile.write("Critgamma1.. gammaCrit1 =e= sum(jl, beta(jl)*Critvec1(jl));\n")

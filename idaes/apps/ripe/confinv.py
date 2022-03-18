@@ -12,7 +12,7 @@
 #################################################################################
 
 
-def confinv(aterm, targets, results, ccon, ptype, pc, sharedata, sigma):  
+def confinv(aterm, targets, results, ccon, ptype, pc, sharedata, sigma):
     # This subroutine calculates 95% confidence intervals for estimated ripe models
     # inputs:
     # aterm     - activity array
@@ -34,6 +34,7 @@ def confinv(aterm, targets, results, ccon, ptype, pc, sharedata, sigma):
     alpha = 0.05
     import numpy as np
     import idaes.apps.ripe as ripe
+
     # from scipy.optimize import curve_fit
     from scipy.stats.distributions import t
 
@@ -126,7 +127,7 @@ def confinv(aterm, targets, results, ccon, ptype, pc, sharedata, sigma):
     )
     invmat = np.linalg.inv(stmat)
     covar = np.multiply(np.multiply(invmat, mmat), invmat)
-    confinvs = [tval * (s ** 0.5) for s in np.diag(covar)]
+    confinvs = [tval * (s**0.5) for s in np.diag(covar)]
     itemp = 0
     if ptype == "arr":
         for i in range(int(0.5 * len(p0))):

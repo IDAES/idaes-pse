@@ -18,7 +18,19 @@ import numpy as np
 
 
 filename, sampleRatio = "", ""
-Values, DVValues, DLValues, CPValues, PVTValues, PVTSamples, CP0Values, BValues, CVValues, CVValuesn, SNDValues = (
+(
+    Values,
+    DVValues,
+    DLValues,
+    CPValues,
+    PVTValues,
+    PVTSamples,
+    CP0Values,
+    BValues,
+    CVValues,
+    CVValuesn,
+    SNDValues,
+) = (
     [],
     [],
     [],
@@ -233,7 +245,7 @@ def sampleData(Regions, ratio):
         except Exception:
             pass
 
-    Data= []
+    Data = []
     [Data.append(x) for x in Reg1s[:]]
     [Data.append(x) for x in Reg2s[:]]
     [Data.append(x) for x in Reg3s[:]]
@@ -353,7 +365,7 @@ def CV(molecule, sample=False, ratio=5):
             i += 1
 
     Reg1, Reg2, Reg3, Reg4, Reg5, Reg6 = regionsOfData(molecule, CVValues, CV=True)
-   
+
     if sample:
         CVValues, CVindexes = sampleData((Reg1, Reg2, Reg3, Reg4, Reg5, Reg6), ratio)
     else:

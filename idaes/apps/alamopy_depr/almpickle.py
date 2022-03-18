@@ -15,23 +15,24 @@
 def almpickle(data, vargs):
     import pickle
     import sys
+
     # remove lambda function from results dictionary
-    if (len(vargs) == 1):
+    if len(vargs) == 1:
         fname = vargs[0]
-    elif (len(vargs) == 2):
+    elif len(vargs) == 2:
         fname = vargs[0]
         dopick = vargs[1]
     else:
-        fname = 'alamo.pick'
+        fname = "alamo.pick"
         dopick = True
 
-    if (not isinstance(data, list)):
-        if ('f(model)' in data.keys()):
-            data['f(model)'] = ()
+    if not isinstance(data, list):
+        if "f(model)" in data.keys():
+            data["f(model)"] = ()
         else:
-            sys.stdout.write('Results dictionary does not contain lambda function')
+            sys.stdout.write("Results dictionary does not contain lambda function")
 
-    if (dopick):
+    if dopick:
         pickle.dump(data, open(fname, "wb"))
 
 
@@ -41,16 +42,18 @@ def postpickle(data):
     from sympy.parsing.sympy_parser import parse_expr
     from sympy import symbols, lambdify
 
-    if (isinstance(data['model'], type({}))):
-        data['f(model)'] = {}
-        for olab in data['zlabels']:
-            model_str = data['model'].split('=')[1].replace('^', '**')
-            data['f(model)'][olab] = lambdify([symbols(data['xlabels'])], 
-                                              parse_expr(model_str), "numpy")
+    if isinstance(data["model"], type({})):
+        data["f(model)"] = {}
+        for olab in data["zlabels"]:
+            model_str = data["model"].split("=")[1].replace("^", "**")
+            data["f(model)"][olab] = lambdify(
+                [symbols(data["xlabels"])], parse_expr(model_str), "numpy"
+            )
     else:
-        model_str = data['model'].split('=')[1].replace('^', '**')
-        data['f(model)'] = lambdify([symbols(data['xlabels'])],
-                                    parse_expr(model_str), "numpy")
+        model_str = data["model"].split("=")[1].replace("^", "**")
+        data["f(model)"] = lambdify(
+            [symbols(data["xlabels"])], parse_expr(model_str), "numpy"
+        )
 
     return data
 
@@ -58,10 +61,11 @@ def postpickle(data):
 def almunpickle(fname):
     # unpickle and relambdify
     from idaes.apps import alamopy_depr as alamopy
+
     # from alamopy import postpickle
     import pickle
 
-    res = pickle.load(open(fname, 'rb'))
-    if ('f(model)' in res[0].keys()):
+    res = pickle.load(open(fname, "rb"))
+    if "f(model)" in res[0].keys():
         res = alamopy.postpickle(res)
     return res

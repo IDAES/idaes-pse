@@ -24,7 +24,7 @@ def deletefile(*fname):
     """
     tos = platform.platform()
     currentDirectory = os.getcwd()
-    if 'Windows' in tos:
+    if "Windows" in tos:
         for name in fname:
             os.system("del %s/" % currentDirectory + name)
     else:
@@ -37,7 +37,7 @@ def movefile(*fname):
     Moves files
     """
     tos = platform.platform()
-    if 'Windows' in tos:
+    if "Windows" in tos:
         for name in fname:
             os.system("move " + name)
     else:
@@ -50,10 +50,10 @@ def copyfile(outf, inf):
     Copies files
     """
     tos = platform.platform()
-    if 'Windows' in tos:
-        os.system("copy " + inf + ' ' + outf)
+    if "Windows" in tos:
+        os.system("copy " + inf + " " + outf)
     else:
-        os.system("cp " + inf + ' ' + outf)
+        os.system("cp " + inf + " " + outf)
 
 
 def catfile(outf, *fname):
@@ -61,17 +61,17 @@ def catfile(outf, *fname):
     Concatenates files
     """
     tos = platform.platform()
-    if 'Windows' in tos:
-        ostr = ''
+    if "Windows" in tos:
+        ostr = ""
         for name in fname:
-            ostr += "echo " + name + ' >> ' + outf + ' & '
+            ostr += "echo " + name + " >> " + outf + " & "
         ostr = ostr[:-3]
         os.system(ostr)
     else:
-        ostr = 'cat '
+        ostr = "cat "
         for name in fname:
-            ostr += name + ' '
-        ostr += '> ' + outf
+            ostr += name + " "
+        ostr += "> " + outf
         os.system(ostr)
 
 
@@ -81,7 +81,7 @@ def has_alamo():
     """
     try:
         s = subprocess.check_output(["alamo"])
-        if b"Licensing error" in s: 
+        if b"Licensing error" in s:
             _alamo_ok = False
         else:
             _alamo_ok = True

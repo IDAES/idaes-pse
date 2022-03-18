@@ -28,6 +28,7 @@ def ripeomo(problem_data, ptype, fixarray, cc_int, task, pc, sharedata):
     aterm, target, sigma, bounds = problem_data
     # import re
     import pyomo.environ as pyo
+
     # from pyomo.opt import SolverFactory
     # import ripe
     import numpy as np

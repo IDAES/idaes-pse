@@ -16,12 +16,15 @@
 import numpy as np
 import rbfopt
 import os
+
 # import sys
 # import random
 import datetime
 import time
+
 # pkg
 from idaes.apps import ripe
+
 
 def constructmodel(riperes, **kwargs):
     # Inputs:

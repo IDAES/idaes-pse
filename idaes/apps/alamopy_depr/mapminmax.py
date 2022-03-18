@@ -14,6 +14,7 @@
 
 def mapminmax(x, *args):
     import numpy as np
+
     if args == ():
         xmax = np.amax(x, 0)
         xmin = np.amin(x, 0)
@@ -30,12 +31,12 @@ def mapminmax(x, *args):
     if ninputs > 1:
         # check for constant column
         for j in range(ninputs):
-            if (xmin[j] != xmax[j]):
+            if xmin[j] != xmax[j]:
                 y[:, j] = 2 * (x[:, j] - xmin[j]) / float(xmax[j] - xmin[j]) - 1
             else:
                 y[:, j] = 1.0
     else:
-        if (xmin != xmax):
+        if xmin != xmax:
             y = 2 * (x - xmin) / float(xmax - xmin) - 1
         else:
             y[:] = 1.0

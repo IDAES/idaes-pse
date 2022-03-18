@@ -20,11 +20,11 @@ def almpywriter(data, debug):
     y=<fname>.f(X)
     handle the multiple output
     """
-    if data['opts']['noutputs'] > 1 or debug['expandoutput']:
-        for output_name, mod_res in data['results']['model'].items():
+    if data["opts"]["noutputs"] > 1 or debug["expandoutput"]:
+        for output_name, mod_res in data["results"]["model"].items():
             almpywriter_help(data, mod_res, output_name)
     else:
-        almpywriter_help(data, data['results']['model'], data['labs']['savezlabels'][0])
+        almpywriter_help(data, data["results"]["model"], data["labs"]["savezlabels"][0])
 
 
 def almpywriter_help(data, mod_res, output_name):
@@ -34,24 +34,24 @@ def almpywriter_help(data, mod_res, output_name):
     y=<fname>.f(X)
     preliminary formatting to get the model ready to write
     """
-    model = mod_res.split('=')[1]
-    model = model + ' '
-    tlist = ('sin', 'cos', 'log', 'exp', 'ln')
+    model = mod_res.split("=")[1]
+    model = model + " "
+    tlist = ("sin", "cos", "log", "exp", "ln")
     for tok in tlist:
-        if tok == 'ln':
-            model = model.replace(tok, 'np.log')
+        if tok == "ln":
+            model = model.replace(tok, "np.log")
         else:
-            model = model.replace(tok, 'np.' + tok)
-    model = model.replace('^', '**')
+            model = model.replace(tok, "np." + tok)
+    model = model.replace("^", "**")
 
-    with open(output_name + '.py', 'w') as r:
-        r.write('import numpy as np\n')
-        r.write('def f(*X):\n')
+    with open(output_name + ".py", "w") as r:
+        r.write("import numpy as np\n")
+        r.write("def f(*X):\n")
         i = 0
-        for lab in data['labs']['savexlabels']:
-            r.write('    ' + lab + '= X[' + str(i) + ']\n')
+        for lab in data["labs"]["savexlabels"]:
+            r.write("    " + lab + "= X[" + str(i) + "]\n")
             i = i + 1
-        r.write('    return ' + model + '\n')
+        r.write("    return " + model + "\n")
 
 
 def almcvwriter(data):
@@ -61,11 +61,11 @@ def almcvwriter(data):
     y=<fname>.f(X)
     handle the multiple output
     """
-    if data['opts']['noutputs'] > 1:
-        for output_name, mod_res in data['results']['model'].items():
+    if data["opts"]["noutputs"] > 1:
+        for output_name, mod_res in data["results"]["model"].items():
             almcvwriter_help(data, mod_res, output_name)
     else:
-        almcvwriter_help(data, data['results']['model'], data['labs']['savezlabels'][0])
+        almcvwriter_help(data, data["results"]["model"], data["labs"]["savezlabels"][0])
 
 
 def almcvwriter_help(data, mod_res, output_name):
@@ -74,33 +74,33 @@ def almcvwriter_help(data, mod_res, output_name):
     - <almname>cv.py
     y=<fname>.f(X,params)
     """
-    model = mod_res.split('=')[1]
-    model = model + ' '
-    tlist = ('sin', 'cos', 'log', 'exp')
+    model = mod_res.split("=")[1]
+    model = model + " "
+    tlist = ("sin", "cos", "log", "exp")
     for tok in tlist:
-        model = model.replace(tok, 'np.' + tok)
-    model = model.replace('^', '**')
+        model = model.replace(tok, "np." + tok)
+    model = model.replace("^", "**")
 
     # remove numerical values of coefficients
-    model = re.sub(r"(?:.\w)?([0-9]+\.[0-9]+)", 'b', model)
-    model = re.sub(r"[E]{1}.\d{3}", '', model)
-    model = model.replace('-', '+')
+    model = re.sub(r"(?:.\w)?([0-9]+\.[0-9]+)", "b", model)
+    model = re.sub(r"[E]{1}.\d{3}", "", model)
+    model = model.replace("-", "+")
 
     tind = 0
-    tstr = ''
-    while 'b' in model:
-        model = model.replace('b', 'B[' + str(tind) + ']', 1)
-        tstr = tstr + ',B' + str(tind)
+    tstr = ""
+    while "b" in model:
+        model = model.replace("b", "B[" + str(tind) + "]", 1)
+        tstr = tstr + ",B" + str(tind)
         tind = tind + 1
-    with open(data['stropts']['almname'].split('.')[0] + 'cv.py', 'w') as r:
-        line = 'def f(X, B):\n'
+    with open(data["stropts"]["almname"].split(".")[0] + "cv.py", "w") as r:
+        line = "def f(X, B):\n"
         r.write(line)
-        r.write('    import numpy as np\n')
+        r.write("    import numpy as np\n")
         i = 0
-        for lab in data['labs']['savexlabels']:
-            r.write('    ' + lab + '= X[' + str(i) + ']\n')
+        for lab in data["labs"]["savexlabels"]:
+            r.write("    " + lab + "= X[" + str(i) + "]\n")
             i = i + 1
-        r.write('    return ' + model + '\n')
+        r.write("    return " + model + "\n")
 
 
 def wrapwriter(sim):
@@ -111,9 +111,9 @@ def wrapwriter(sim):
     import os
     import inspect
 
-    name = 'simwrapper'
-    name = name + '.py'
-    with open(name, 'w') as r:
+    name = "simwrapper"
+    name = name + ".py"
+    with open(name, "w") as r:
         r.write("#!/usr/bin/python\n")
         r.write("def main():\n")
         r.write("    import " + inspect.getmodule(sim).__name__ + "\n")
@@ -132,8 +132,13 @@ def wrapwriter(sim):
         r.write("        for k in range(0, ninputs):\n")
         r.write("            x[k] = float(newlist[k])\n")
         # r.write("        x[ninputs] = "+sim.__name__+"(x[:-1])\n")
-        r.write("        x[ninputs] = " + inspect.getmodule(sim).__name__ 
-                + '.' + sim.__name__ + "(*x[:-1])\n")
+        r.write(
+            "        x[ninputs] = "
+            + inspect.getmodule(sim).__name__
+            + "."
+            + sim.__name__
+            + "(*x[:-1])\n"
+        )
         # r.write("        x[ninputs] = "+str(sim)+"(x[:-1])\n")
         r.write("        for k in range(0, len(x)):\n")
         r.write("            fout.write(str(x[k]) + ' ')\n")

@@ -36,14 +36,14 @@ indexes = []
 
 
 def molData(fluidData, Dmolecule, RVal):
-    """ Passing of the Data from the main module ::module:: MPEOSDeveloperModule
+    """Passing of the Data from the main module ::module:: MPEOSDeveloperModule
 
-        :param fluidData: (critT, critP, critD, M, triple, acc).
-        :type fluidData: array
-        :param Dmolecule: Name of the molecule of interest.
-        :type Dmolecule: str.
-        :param RVal: Gas Constant.
-        :type RVal: int.
+    :param fluidData: (critT, critP, critD, M, triple, acc).
+    :type fluidData: array
+    :param Dmolecule: Name of the molecule of interest.
+    :type Dmolecule: str.
+    :param RVal: Gas Constant.
+    :type RVal: int.
     """
 
     global critT, critP, critD, M, triple, acc, R, Rm, molecule
@@ -54,7 +54,7 @@ def molData(fluidData, Dmolecule, RVal):
 
 
 def formCustomBasis(LemJac=False):
-    """ Basis Functions developed a bank of terms based on literature (Lemmon, Span, Wagner) """
+    """Basis Functions developed a bank of terms based on literature (Lemmon, Span, Wagner)"""
     global coeffs, indexes
     coeffs = []
     if LemJac:
@@ -103,7 +103,7 @@ def formCustomBasis(LemJac=False):
 
 
 def getTerm(Y):
-    """ Prints index and basis function based on Y index"""
+    """Prints index and basis function based on Y index"""
     for y in Y:
         print(y)
         d, t, c, m = coeffs[y - 1]
@@ -198,14 +198,14 @@ def arBY(D, T, Y, Beta):
             [d, t, c, m] = coeffs[x]
             if c == 0:
                 try:
-                    val += y * (D ** d) * (T ** t)
+                    val += y * (D**d) * (T**t)
                     pass
                 except Exception:
                     print("Term", x, d, t, T, D)
             elif m == 0:
-                val = np.exp(-D ** c) * (D ** (d)) * (T ** t)
+                val = np.exp(-(D**c)) * (D ** (d)) * (T**t)
             else:
-                val = np.exp(-D ** c) * (D ** (d)) * (T ** t) * np.exp(-T ** m)
+                val = np.exp(-(D**c)) * (D ** (d)) * (T**t) * np.exp(-(T**m))
 
         return val
 
@@ -219,12 +219,16 @@ def drd(D, T):
     for d, t, c, m in coeffs:
         val = 0
         if c == 0:
-            val = d * (D ** d) * (T ** t)
+            val = d * (D**d) * (T**t)
         elif m == 0:
-            val = np.exp(-D ** c) * ((D ** (d)) * (T ** t) * (d - c * (D ** c)))
+            val = np.exp(-(D**c)) * ((D ** (d)) * (T**t) * (d - c * (D**c)))
         else:
             val = (
-                np.exp(-D ** c) * (D ** (d)) * (T ** t) * np.exp(-T ** m) * (d - c * (D ** c))
+                np.exp(-(D**c))
+                * (D ** (d))
+                * (T**t)
+                * np.exp(-(T**m))
+                * (d - c * (D**c))
             )
         drd_vals.append(val)
 
@@ -237,19 +241,19 @@ def d2rd(D, T):
     for d, t, c, m in coeffs:
         val = 0
         if c == 0:
-            val = d * (d - 1) * (D ** d) * (T ** t)
-        elif m == 0:  
-            val = np.exp(-D ** c) * (
+            val = d * (d - 1) * (D**d) * (T**t)
+        elif m == 0:
+            val = np.exp(-(D**c)) * (
                 (D ** (d))
-                * (T ** t)
-                * ((d - c * (D ** c)) * (d - 1 - c * (D ** c)) - (c ** 2) * (D ** c))
+                * (T**t)
+                * ((d - c * (D**c)) * (d - 1 - c * (D**c)) - (c**2) * (D**c))
             )
         else:
-            val = np.exp(-D ** c) * (
+            val = np.exp(-(D**c)) * (
                 (D ** (d))
-                * (T ** t)
-                * np.exp(-T ** m)
-                * ((d - c * (D ** c)) * (d - 1 - c * (D ** c)) - (c ** 2) * (D ** c))
+                * (T**t)
+                * np.exp(-(T**m))
+                * ((d - c * (D**c)) * (d - 1 - c * (D**c)) - (c**2) * (D**c))
             )
         d2rd_vals.append(val)
 
@@ -262,27 +266,27 @@ def d2rdt(D, T):
     for d, t, c, m in coeffs:
         val = 0
         if c == 0:
-            val = d * (d - 1) * t * (D ** d) * (T ** t)
-        elif m == 0: 
-            val = np.exp(-D ** c) * (
+            val = d * (d - 1) * t * (D**d) * (T**t)
+        elif m == 0:
+            val = np.exp(-(D**c)) * (
                 (D ** (d))
-                * (T ** t)
-                * ((d - c * (D ** c)) * (d - 1 - c * (D ** c)) - (c ** 2) * (D ** c))
+                * (T**t)
+                * ((d - c * (D**c)) * (d - 1 - c * (D**c)) - (c**2) * (D**c))
             )
 
         else:
             val = (
-                np.exp(-D ** c)
+                np.exp(-(D**c))
                 * (
                     (D ** (d))
-                    * (T ** t)
-                    * np.exp(-T ** m)
+                    * (T**t)
+                    * np.exp(-(T**m))
                     * (
-                        (d - c * (D ** c)) * (d - 1 - c * (D ** c))
-                        - (c ** 2) * (D ** c)
+                        (d - c * (D**c)) * (d - 1 - c * (D**c))
+                        - (c**2) * (D**c)
                     )
                 )
-                * (t - m * (T ** m))
+                * (t - m * (T**m))
             )
         d2rdt_vals.append(val)
 
@@ -296,38 +300,38 @@ def d3rd(D, T):
     for d, t, c, m in coeffs:
         val = 0
         if c == 0:
-            val = d * (d - 1) * (d - 2) * (D ** d) * (T ** t)
+            val = d * (d - 1) * (d - 2) * (D**d) * (T**t)
         elif m == 0:
             # val = (D**(d))*(T**t)*exp(-(D**c))*(d*(d-1)*(d-2) + (D**c)*(-2*c + 6*d*c-3*(d**2)*c - 3*d*(c**2) + 3*(c**2) - (c**3)) + (D**(2*c))*(3*d*(c**2) -3*(c**2) + 3*(c**3)) - (c**3)*(D**(3*c)))
             val = (
                 (D ** (d))
                 * (T ** (t))
-                * np.exp(-(D ** c))
+                * np.exp(-(D**c))
                 * (
-                    (d - c * (D ** c)) * (d - 1 - c * (D ** c)) * (d - 2 - c * (D ** c))
-                    + (3 * d - 3 + c - 3 * c * (D ** c)) * (-(c ** 2) * (D ** (c)))
+                    (d - c * (D**c)) * (d - 1 - c * (D**c)) * (d - 2 - c * (D**c))
+                    + (3 * d - 3 + c - 3 * c * (D**c)) * (-(c**2) * (D ** (c)))
                 )
             )
 
         else:
             val = (
                 (D ** (d))
-                * (T ** t)
-                * np.exp(-(T ** m))
-                * np.exp(-(D ** c))
+                * (T**t)
+                * np.exp(-(T**m))
+                * np.exp(-(D**c))
                 * (
                     d * (d - 1) * (d - 2)
-                    + (D ** c)
+                    + (D**c)
                     * (
                         -2 * c
                         + 6 * d * c
-                        - 3 * (d ** 2) * c
-                        - 3 * d * (c ** 2)
-                        + 3 * (c ** 2)
-                        - (c ** 3)
+                        - 3 * (d**2) * c
+                        - 3 * d * (c**2)
+                        + 3 * (c**2)
+                        - (c**3)
                     )
-                    + (D ** (2 * c)) * (3 * d * (c ** 2) - 3 * (c ** 2) + 3 * (c ** 3))
-                    - (c ** 3) * (D ** (3 * c))
+                    + (D ** (2 * c)) * (3 * d * (c**2) - 3 * (c**2) + 3 * (c**3))
+                    - (c**3) * (D ** (3 * c))
                 )
             )
         d3rd_vals.append(val)
@@ -342,53 +346,53 @@ def d4rd(D, T):
     for d, t, c, m in coeffs:
         val = 0
         if c == 0:
-            val = d * (d - 1) * (d - 2) * (d - 3) * (D ** d) * (T ** t)
+            val = d * (d - 1) * (d - 2) * (d - 3) * (D**d) * (T**t)
         elif m == 0:
             # val = (D**(d))*(T**t)*exp(-(D**c))*(d*(d-1)*(d-2) + (D**c)*(-2*c + 6*d*c-3*(d**2)*c - 3*d*(c**2) + 3*(c**2) - (c**3)) + (D**(2*c))*(3*d*(c**2) -3*(c**2) + 3*(c**3)) - (c**3)*(D**(3*c)))
             val = (
                 (D ** (d))
                 * (T ** (t))
-                * np.exp(-(D ** c))
+                * np.exp(-(D**c))
                 * (
-                    (d - c * (D ** c))
-                    * (d - 1 - c * (D ** c))
-                    * (d - 2 - c * (D ** c))
-                    * (d - 3 - c * (D ** c))
+                    (d - c * (D**c))
+                    * (d - 1 - c * (D**c))
+                    * (d - 2 - c * (D**c))
+                    * (d - 3 - c * (D**c))
                     + (
-                        6 * (c ** 2) * D ** (2 * c)
-                        - 7 * (c ** 2) * (D ** c)
-                        + (c ** 2)
-                        - 12 * c * d * (D ** c)
+                        6 * (c**2) * D ** (2 * c)
+                        - 7 * (c**2) * (D**c)
+                        + (c**2)
+                        - 12 * c * d * (D**c)
                         + 4 * c * d
-                        + 18 * c * (D ** c)
+                        + 18 * c * (D**c)
                         - 6 * c
-                        + 6 * d ** 2
+                        + 6 * d**2
                         - 18 * d
                         + 11
                     )
-                    * (-(c ** 2) * (D ** (c)))
+                    * (-(c**2) * (D ** (c)))
                 )
             )
 
-        else:  
+        else:
             val = (
                 (D ** (d))
-                * (T ** t)
-                * np.exp(-(T ** m))
-                * np.exp(-(D ** c))
+                * (T**t)
+                * np.exp(-(T**m))
+                * np.exp(-(D**c))
                 * (
                     d * (d - 1) * (d - 2)
-                    + (D ** c)
+                    + (D**c)
                     * (
                         -2 * c
                         + 6 * d * c
-                        - 3 * (d ** 2) * c
-                        - 3 * d * (c ** 2)
-                        + 3 * (c ** 2)
-                        - (c ** 3)
+                        - 3 * (d**2) * c
+                        - 3 * d * (c**2)
+                        + 3 * (c**2)
+                        - (c**3)
                     )
-                    + (D ** (2 * c)) * (3 * d * (c ** 2) - 3 * (c ** 2) + 3 * (c ** 3))
-                    - (c ** 3) * (D ** (3 * c))
+                    + (D ** (2 * c)) * (3 * d * (c**2) - 3 * (c**2) + 3 * (c**3))
+                    - (c**3) * (D ** (3 * c))
                 )
             )
             val = 0
@@ -403,31 +407,31 @@ def d5rd(D, T):
     for d, t, c, m in coeffs:
         val = 0
         if c == 0:
-            val = d * (d - 1) * (d - 2) * (d - 3) * (d - 4) * (D ** d) * (T ** t)
+            val = d * (d - 1) * (d - 2) * (d - 3) * (d - 4) * (D**d) * (T**t)
         elif m == 0:
             x, y = sy.symbols("x, y")
-            expr = x ** d * y ** t * sy.exp(-(x ** c))
+            expr = x**d * y**t * sy.exp(-(x**c))
             f_prime = expr.diff(x, 5)
-            val = f_prime.subs([(x, D), (y, T)]) * (D ** 5)
-        else: 
+            val = f_prime.subs([(x, D), (y, T)]) * (D**5)
+        else:
             val = (
                 (D ** (d))
-                * (T ** t)
-                * np.exp(-(T ** m))
-                * np.exp(-(D ** c))
+                * (T**t)
+                * np.exp(-(T**m))
+                * np.exp(-(D**c))
                 * (
                     d * (d - 1) * (d - 2)
-                    + (D ** c)
+                    + (D**c)
                     * (
                         -2 * c
                         + 6 * d * c
-                        - 3 * (d ** 2) * c
-                        - 3 * d * (c ** 2)
-                        + 3 * (c ** 2)
-                        - (c ** 3)
+                        - 3 * (d**2) * c
+                        - 3 * d * (c**2)
+                        + 3 * (c**2)
+                        - (c**3)
                     )
-                    + (D ** (2 * c)) * (3 * d * (c ** 2) - 3 * (c ** 2) + 3 * (c ** 3))
-                    - (c ** 3) * (D ** (3 * c))
+                    + (D ** (2 * c)) * (3 * d * (c**2) - 3 * (c**2) + 3 * (c**3))
+                    - (c**3) * (D ** (3 * c))
                 )
             )
             val = 0
@@ -442,32 +446,32 @@ def dtrdt(D, T):
     for d, t, c, m in coeffs:
         val = 0
         if c == 0:
-            val = d * t * (D ** d) * (T ** t)
+            val = d * t * (D**d) * (T**t)
         elif m == 0:
-            val = np.exp(-D ** c) * ((D ** (d)) * (T ** t) * (d - c * (D ** c)))
+            val = np.exp(-(D**c)) * ((D ** (d)) * (T**t) * (d - c * (D**c)))
         else:
             val = (
-                np.exp(-D ** c)
-                * ((D ** (d)) * (T ** t) * (d - c * (D ** c)))
-                * np.exp(-T ** m)
-                * (t - m * (T ** m))
+                np.exp(-(D**c))
+                * ((D ** (d)) * (T**t) * (d - c * (D**c)))
+                * np.exp(-(T**m))
+                * (t - m * (T**m))
             )
         dtrdt_vals.append(val)
 
 
 def rTT(D, T):
-    """Second partial derivative with respect to temperature""" 
+    """Second partial derivative with respect to temperature"""
     global rtt_vals
     global coeffs
     rtt_vals = []
     for d, t, c, m in coeffs:
         val = 0
         if c == 0:
-            val = t * (t - 1) * (D ** d) * (T ** (t))
+            val = t * (t - 1) * (D**d) * (T ** (t))
         elif m == 0:
-            val = np.exp(-D ** c) * ((D ** (d)) * (T ** (t))) * t * (t - 1)
+            val = np.exp(-(D**c)) * ((D ** (d)) * (T ** (t))) * t * (t - 1)
         else:  # NOT DONE
-            val = np.exp(-D ** c) * (D ** (d)) * (T ** t) * np.exp(-T ** t)
+            val = np.exp(-(D**c)) * (D ** (d)) * (T**t) * np.exp(-(T**t))
         rtt_vals.append(val)
 
 
@@ -481,36 +485,36 @@ def d3rdRes(D, T, Y, Beta):
         x = x - 1
         [d, t, c, m] = coeffs[x]
         if c == 0:
-            val += y * d * (d - 1) * (d - 2) * (D ** d) * (T ** t)
+            val += y * d * (d - 1) * (d - 2) * (D**d) * (T**t)
         elif m == 0:  # TODO
             val += (
                 y
-                * np.exp(-D ** c)
+                * np.exp(-(D**c))
                 * (D ** (d))
-                * (T ** t)
+                * (T**t)
                 * (
                     d * (d - 1) * (d - 2)
                     + c
-                    * (D ** c)
-                    * (-2 + 6 * d - 3 * (d ** 2) - 3 * d * c + 3 * c - (c ** 2))
-                    + (D ** (2 * c)) * (3 * d * (c ** 2) - 3 * (c ** 2) + 3 * (c ** 3))
-                    - (c ** 3) * (D ** (3 * c))
+                    * (D**c)
+                    * (-2 + 6 * d - 3 * (d**2) - 3 * d * c + 3 * c - (c**2))
+                    + (D ** (2 * c)) * (3 * d * (c**2) - 3 * (c**2) + 3 * (c**3))
+                    - (c**3) * (D ** (3 * c))
                 )
             )
         else:
             val += (
                 y
-                * np.exp(-D ** c)
+                * np.exp(-(D**c))
                 * (D ** (d))
-                * (T ** t)
-                * np.exp(-T ** m)
+                * (T**t)
+                * np.exp(-(T**m))
                 * (
                     d * (d - 1) * (d - 2)
                     + c
-                    * (D ** c)
-                    * (-2 + 6 * d - 3 * (d ** 2) - 3 * d * c + 3 * c - (c ** 2))
-                    + (D ** (2 * c)) * (3 * d * (c ** 2) - 3 * (c ** 2) + 3 * (c ** 3))
-                    - (c ** 3) * (D ** (3 * c))
+                    * (D**c)
+                    * (-2 + 6 * d - 3 * (d**2) - 3 * d * c + 3 * c - (c**2))
+                    + (D ** (2 * c)) * (3 * d * (c**2) - 3 * (c**2) + 3 * (c**3))
+                    - (c**3) * (D ** (3 * c))
                 )
             )
         # print val
@@ -537,20 +541,22 @@ def drdRes(D, T, Y, Beta):
             [d, t, c, m] = coeffs[x]
             if c == 0:
                 try:
-                    val += y * d * (D ** d) * (T ** t)
+                    val += y * d * (D**d) * (T**t)
                     pass
                 except Exception:
                     print("Term", x, d, t, T, D)
             elif m == 0:
-                val += y * np.exp(-D ** c) * ((D ** (d)) * (T ** t) * (d - c * (D ** c)))
+                val += (
+                    y * np.exp(-(D**c)) * ((D ** (d)) * (T**t) * (d - c * (D**c)))
+                )
             else:
                 val += (
                     y
-                    * np.exp(-D ** c)
+                    * np.exp(-(D**c))
                     * (D ** (d))
-                    * (T ** t)
-                    * np.exp(-T ** m)
-                    * (d - c * (D ** c))
+                    * (T**t)
+                    * np.exp(-(T**m))
+                    * (d - c * (D**c))
                 )
         return val
     else:
@@ -558,19 +564,20 @@ def drdRes(D, T, Y, Beta):
         y = Beta
         [d, t, c, m] = coeffs[x]
         if c == 0:
-            val += y * d * (D ** d) * (T ** t)
+            val += y * d * (D**d) * (T**t)
         elif m == 0:
-            val += y * np.exp(-D ** c) * ((D ** (d)) * (T ** t) * (d - c * (D ** c)))
+            val += y * np.exp(-(D**c)) * ((D ** (d)) * (T**t) * (d - c * (D**c)))
         else:
             val += (
                 y
-                * np.exp(-D ** c)
+                * np.exp(-(D**c))
                 * (D ** (d))
-                * (T ** t)
-                * np.exp(-T ** m)
-                * (d - c * (D ** c))
+                * (T**t)
+                * np.exp(-(T**m))
+                * (d - c * (D**c))
             )
         return val
+
 
 # CV derivatives
 def iTT(D, T):
@@ -629,7 +636,7 @@ def iTT(D, T):
         itt_val = -(c[0] - 1)
     for uit, vi in zip(u, v):
         ui = uit / float(critT)
-        itt_val = itt_val - vi * ((ui) ** 2) * (T ** 2) * np.exp(-ui * T) * (
+        itt_val = itt_val - vi * ((ui) ** 2) * (T**2) * np.exp(-ui * T) * (
             (1 - np.exp(-ui * T)) ** (-2)
         )
     return itt_val
@@ -645,14 +652,14 @@ def rTTRes(D, T, Y, Beta):
         y = Beta
         [d, t, c, m] = coeffs[x]
         if c == 0:
-            value = t * (t - 1) * (D ** d) * (T ** (t))
-        elif m == 0:  
-            value = np.exp(-D ** c) * ((D ** (d)) * (T ** (t))) * t * (t - 1)
+            value = t * (t - 1) * (D**d) * (T ** (t))
+        elif m == 0:
+            value = np.exp(-(D**c)) * ((D ** (d)) * (T ** (t))) * t * (t - 1)
         else:
             value = (
-                np.exp(-D ** c)
+                np.exp(-(D**c))
                 * ((D ** (d)) * (T ** (t)))
-                * ((t - m * (T ** m)) * (t - 1 - m * (T ** m)) - (m ** 2) * (T ** m))
+                * ((t - m * (T**m)) * (t - 1 - m * (T**m)) - (m**2) * (T**m))
             )
         val = y * value
     else:
@@ -660,16 +667,16 @@ def rTTRes(D, T, Y, Beta):
             x = x - 1
             [d, t, c, m] = coeffs[x]
             if c == 0:
-                value = t * (t - 1) * (D ** d) * (T ** (t))
-            elif m == 0: 
-                value = np.exp(-D ** c) * ((D ** (d)) * (T ** (t))) * t * (t - 1)
+                value = t * (t - 1) * (D**d) * (T ** (t))
+            elif m == 0:
+                value = np.exp(-(D**c)) * ((D ** (d)) * (T ** (t))) * t * (t - 1)
             else:
                 value = (
-                    np.exp(-D ** c)
+                    np.exp(-(D**c))
                     * ((D ** (d)) * (T ** (t)))
                     * (
-                        (t - m * (T ** m)) * (t - 1 - m * (T ** m))
-                        - (m ** 2) * (T ** m)
+                        (t - m * (T**m)) * (t - 1 - m * (T**m))
+                        - (m**2) * (T**m)
                     )
                 )
             val += y * value
@@ -687,19 +694,19 @@ def d2rdRes(D, T, Y, Beta):
         y = Beta
         [d, t, c, m] = coeffs[x]
         if c == 0:
-            val = y * d * (d - 1) * (D ** d) * (T ** t)
+            val = y * d * (d - 1) * (D**d) * (T**t)
         elif m != 0:  # TODO
-            val = np.exp(-D ** c) * (D ** (d)) * (T ** t) * np.exp(-T ** t)
+            val = np.exp(-(D**c)) * (D ** (d)) * (T**t) * np.exp(-(T**t))
         else:
             val = (
                 y
-                * np.exp(-D ** c)
+                * np.exp(-(D**c))
                 * (
                     (D ** (d))
-                    * (T ** t)
+                    * (T**t)
                     * (
-                        (d - c * (D ** c)) * (d - 1 - c * (D ** c))
-                        - (c ** 2) * (D ** c)
+                        (d - c * (D**c)) * (d - 1 - c * (D**c))
+                        - (c**2) * (D**c)
                     )
                 )
             )
@@ -708,31 +715,31 @@ def d2rdRes(D, T, Y, Beta):
             x = x - 1
             [d, t, c, m] = coeffs[x]
             if c == 0:
-                val += y * d * (d - 1) * (D ** d) * (T ** t)
+                val += y * d * (d - 1) * (D**d) * (T**t)
             elif m == 0:  # TODO
                 val += (
                     y
-                    * np.exp(-D ** c)
+                    * np.exp(-(D**c))
                     * (
                         (D ** (d))
-                        * (T ** t)
+                        * (T**t)
                         * (
-                            (d - c * (D ** c)) * (d - 1 - c * (D ** c))
-                            - (c ** 2) * (D ** c)
+                            (d - c * (D**c)) * (d - 1 - c * (D**c))
+                            - (c**2) * (D**c)
                         )
                     )
                 )
             else:
                 val += (
                     y
-                    * np.exp(-D ** c)
+                    * np.exp(-(D**c))
                     * (
                         (D ** (d))
-                        * (T ** t)
-                        * np.exp(-T ** m)
+                        * (T**t)
+                        * np.exp(-(T**m))
                         * (
-                            (d - c * (D ** c)) * (d - 1 - c * (D ** c))
-                            - (c ** 2) * (D ** c)
+                            (d - c * (D**c)) * (d - 1 - c * (D**c))
+                            - (c**2) * (D**c)
                         )
                     )
                 )
@@ -750,34 +757,39 @@ def dtrdtRes(D, T, Y, Beta):
         y = Beta
         [d, t, c, m] = coeffs[x]
         if c == 0:
-            val = y * d * t * (D ** d) * (T ** t)
+            val = y * d * t * (D**d) * (T**t)
         elif m == 0:  # TODO
-            val = y * t * np.exp(-D ** c) * ((D ** (d)) * (T ** t) * (d - c * (D ** c)))
+            val = (
+                y * t * np.exp(-(D**c)) * ((D ** (d)) * (T**t) * (d - c * (D**c)))
+            )
         else:
             val = (
                 y
                 * t
-                * np.exp(-D ** c)
-                * ((D ** (d)) * (T ** t) * np.exp(-T ** m) * (d - c * (D ** c)))
-                * (t - m * (T ** m))
+                * np.exp(-(D**c))
+                * ((D ** (d)) * (T**t) * np.exp(-(T**m)) * (d - c * (D**c)))
+                * (t - m * (T**m))
             )
     else:
         for x, y in zip(Y, Beta):
             x = x - 1
             [d, t, c, m] = coeffs[x]
             if c == 0:
-                val += y * d * t * (D ** d) * (T ** t)
+                val += y * d * t * (D**d) * (T**t)
             elif m == 0:
                 val += (
-                    y * t * np.exp(-D ** c) * ((D ** (d)) * (T ** t) * (d - c * (D ** c)))
+                    y
+                    * t
+                    * np.exp(-(D**c))
+                    * ((D ** (d)) * (T**t) * (d - c * (D**c)))
                 )
             else:
                 val += (
                     y
                     * t
-                    * np.exp(-D ** c)
-                    * ((D ** (d)) * (T ** t) * np.exp(-T ** m) * (d - c * (D ** c)))
-                    * (t - m * (T ** m))
+                    * np.exp(-(D**c))
+                    * ((D ** (d)) * (T**t) * np.exp(-(T**m)) * (d - c * (D**c)))
+                    * (t - m * (T**m))
                 )
     return val
 
@@ -793,25 +805,25 @@ def d2rdrtRes(D, T, Y, Beta):
         y = Beta
         [d, t, c, m] = coeffs[x]
         if c == 0:
-            val = y * d * (d - 1) * (D ** d) * t * (T ** t)
+            val = y * d * (d - 1) * (D**d) * t * (T**t)
         elif m != 0:
             val = (
-                np.exp(-D ** c)
+                np.exp(-(D**c))
                 * (D ** (d))
-                * (T ** t)
-                * np.exp(-T ** t)
-                * (t - m * (T ** m))
+                * (T**t)
+                * np.exp(-(T**t))
+                * (t - m * (T**m))
             )
         else:
             val = (
                 y
-                * np.exp(-D ** c)
+                * np.exp(-(D**c))
                 * (
                     (D ** (d))
-                    * (T ** t)
+                    * (T**t)
                     * (
-                        (d - c * (D ** c)) * (d - 1 - c * (D ** c))
-                        - (c ** 2) * (D ** c)
+                        (d - c * (D**c)) * (d - 1 - c * (D**c))
+                        - (c**2) * (D**c)
                     )
                 )
                 * t
@@ -821,17 +833,17 @@ def d2rdrtRes(D, T, Y, Beta):
             x = x - 1
             [d, t, c, m] = coeffs[x]
             if c == 0:
-                val += y * d * (d - 1) * (D ** d) * t * (T ** t)
+                val += y * d * (d - 1) * (D**d) * t * (T**t)
             elif m == 0:
                 val += (
                     y
-                    * np.exp(-D ** c)
+                    * np.exp(-(D**c))
                     * (
                         (D ** (d))
-                        * (T ** t)
+                        * (T**t)
                         * (
-                            (d - c * (D ** c)) * (d - 1 - c * (D ** c))
-                            - (c ** 2) * (D ** c)
+                            (d - c * (D**c)) * (d - 1 - c * (D**c))
+                            - (c**2) * (D**c)
                         )
                     )
                     * t
@@ -839,17 +851,16 @@ def d2rdrtRes(D, T, Y, Beta):
             else:
                 val += (
                     y
-                    * np.exp(-D ** c)
+                    * np.exp(-(D**c))
                     * (
                         (D ** (d))
-                        * (T ** t)
-                        * np.exp(-T ** m)
+                        * (T**t)
+                        * np.exp(-(T**m))
                         * (
-                            (d - c * (D ** c)) * (d - 1 - c * (D ** c))
-                            - (c ** 2) * (D ** c)
+                            (d - c * (D**c)) * (d - 1 - c * (D**c))
+                            - (c**2) * (D**c)
                         )
                     )
-                    * (t - m * (T ** m))
+                    * (t - m * (T**m))
                 )
     return val
-    

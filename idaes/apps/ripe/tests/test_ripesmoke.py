@@ -16,7 +16,7 @@ Smoke tests, to make sure things are working at all.
 
 import pytest
 
+
 @pytest.mark.unit
 def test_ripe_import():
     from idaes.apps.ripe import ripemodel
-

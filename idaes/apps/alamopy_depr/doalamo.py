@@ -87,7 +87,7 @@ def alamo(xdata, zdata, **kwargs):
     data, debug = alamopy.data, alamopy.debug
 
     # patched together validation data check
-    if kwargs.get("xval", None) is not None and kwargs.get("zval",None) is not None:
+    if kwargs.get("xval", None) is not None and kwargs.get("zval", None) is not None:
         vargs = (kwargs["xval"], kwargs["zval"])
     else:
         vargs = ()
@@ -182,7 +182,8 @@ def alamo(xdata, zdata, **kwargs):
         if numOfFolds > len(xdata):
             raise Exception(
                 "Number of Cross validation \
-                            folds exceeds the number of data points %i" % debug["lmo"]
+                            folds exceeds the number of data points %i"
+                % debug["lmo"]
             )
 
         sizeOfFolds = int(len(xdata) / numOfFolds)
@@ -432,7 +433,7 @@ def checkinput(data, debug, xdata, zdata, vargs, kwargs):
 def getTrainingData(xdata, zdata, data, debug):
     """
     Structure data for training the model. Modifies data['opts']
-    
+
     Args:
         xdata: (numpy.array or list[real])
         zdata: (numpy.array or list[real)
@@ -492,9 +493,7 @@ def getValidationData(vargs, data, debug):
             )
         temp = np.shape(zvaldata)
         if temp[0] != data["opts"]["nvaldata"] or temp[1] != data["opts"]["noutputs"]:
-            raise almerror.AlamoInputError(
-                "Problem with zval"
-            )
+            raise almerror.AlamoInputError("Problem with zval")
         return xvaldata, zvaldata
 
 
@@ -693,11 +692,10 @@ def clearCustomFunctions():
 
 
 def writeCustomALAMOOptions(kwargs):
-    global custom_fxn_list, surface_constraint_list, extrapxmax, extrapxmin, \
-        group_list, basis_constraint_list
+    global custom_fxn_list, surface_constraint_list, extrapxmax, extrapxmin, group_list, basis_constraint_list
     name = "almopt.txt"
 
-    if kwargs.get('almopt', None)  is not None:
+    if kwargs.get("almopt", None) is not None:
         name = kwargs["almopt"]
 
     with open(name, "w") as r:
@@ -769,7 +767,7 @@ def manageArguments(xdata, zdata, data, debug, kwargs):
         debug["outkeys"] = True
 
     # Construct xmin and xmax vector based on training data if not provided
-    if kwargs.get('xmin', None) is None:
+    if kwargs.get("xmin", None) is None:
         constructXBounds(xdata, zdata, data, debug)
 
 
@@ -808,7 +806,7 @@ def parseKwargs(data, debug, kwargs):
 
 def buildSimWrapper(data, debug):
     """
-    Builds an executable simulator to sample for data 
+    Builds an executable simulator to sample for data
 
     Args:
         data: shared alamo data options
@@ -863,7 +861,7 @@ def constructXBounds(xdata, zdata, data, debug):
                 tn = xdata[j]
             if float(xdata[j]) > float(tx):
                 tx = xdata[j]
-        xmin = "%s %f "%(xmin, tn)
+        xmin = "%s %f " % (xmin, tn)
         xmax = xmax + str(tx) + " "
     data["set4"]["xmax"] = xmax
     data["set4"]["xmin"] = xmin
@@ -875,7 +873,7 @@ def checkForSampledData(data, debug):
 
     Args:
         data: shared alamo data options
-        debug: Additional options may be specified 
+        debug: Additional options may be specified
                and will be applied to the .alm
     """
 
@@ -1185,7 +1183,7 @@ def cleanFiles(data, debug, pywrite=False, **kwargs):
         surface_constraint_list = []
         extrapxmax = None
         extrapxmin = None
-        if kwargs.get('almopt', None) is not None:
+        if kwargs.get("almopt", None) is not None:
             deletefile(kwargs["almopt"])
 
     if debug["simwrap"]:
@@ -1231,14 +1229,16 @@ def _diagnose_alamo_failure(trace_output, error):
     b_alamo = has_alamo()
     lf_logscratch = open("logscratch").read()
     if not b_alamo:
-        error_message = 'Alamo cannot be found. Please check Alamo is installed.'
+        error_message = "Alamo cannot be found. Please check Alamo is installed."
     elif "termination code" in lf_logscratch:
-        error_message = '{}'.format(lf_logscratch)
-        
+        error_message = "{}".format(lf_logscratch)
+
     else:
-        error_message = 'Cannot read from trace file "{}": {}'.format(trace_output, error)
+        error_message = 'Cannot read from trace file "{}": {}'.format(
+            trace_output, error
+        )
     return error_message
-        
+
 
 def get_alamo_version():
     x = [0, 1]

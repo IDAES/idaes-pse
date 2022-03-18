@@ -64,8 +64,8 @@ def initialize(**kwargs):
     filename - location of data
     gamsname - name of the gams file made
     molecule - name of the molecule/compound
-    data_name - name of the data 
-    fluid data - [critT, critP, critD, M, triple, acentric factor] 
+    data_name - name of the data
+    fluid data - [critT, critP, critD, M, triple, acentric factor]
     R - gas constant value
     """
 
@@ -152,7 +152,7 @@ def updateModelSettings():
 def prepareAncillaryEquations(plot=False, keepFiles=False):
     """
     Develops ancillary equations of state using ALAMOPY
-        DL - saturated liquid density 
+        DL - saturated liquid density
         DV - saturated vapor density
         PV - vapor pressure
 
@@ -176,7 +176,6 @@ def prepareAncillaryEquations(plot=False, keepFiles=False):
         if plot:
             Plotting.viewAnc()
         print("Couldn't regress ancillary equations. ALAMO executable not found")
-
 
 
 def viewPropertyData():
@@ -205,17 +204,17 @@ def setupRegression(numTerms=14, gams=False, pyomo=False):
     GAMSWrite.GenerateGamsShell()
 
 
-def runRegression(gams = False, pyomo=False):
+def runRegression(gams=False, pyomo=False):
     """
     Runs the gdx and main regression gams file
     """
 
-    GAMSWrite.runFile ="gdx"
-    command = "gams %s%s.gms"%(molecule,GAMSWrite.runFile)
+    GAMSWrite.runFile = "gdx"
+    command = "gams %s%s.gms" % (molecule, GAMSWrite.runFile)
     process = subprocess.check_call(command, shell=True)
 
-    GAMSWrite.runFile ="main"
-    command = "gams %s%s.gms"%(molecule,GAMSWrite.runFile)
+    GAMSWrite.runFile = "main"
+    command = "gams %s%s.gms" % (molecule, GAMSWrite.runFile)
     process = subprocess.check_call(command, shell=True)
 
 
@@ -226,18 +225,18 @@ def getFlag():
     return flag_dirty
 
 
-def viewResults(lstFile=None, plot = False, report=False, surface=cm.coolwarm):
+def viewResults(lstFile=None, plot=False, report=False, surface=cm.coolwarm):
     """
     Plot results from gams or pyomo
         lstFile - gams listing file
         surface - colormapping color eg. cm.coolwarm
     """
-    Plotting.sseCombo(lstFile = lstFile, plot= plot, report=report, surface= surface)
+    Plotting.sseCombo(lstFile=lstFile, plot=plot, report=report, surface=surface)
 
 
 def viewMultResults(lstFile, numTerms=0):
     """
-    View mutliple results from a lst file 
+    View mutliple results from a lst file
     """
     # PYLINT-TODO-FIX the multSSECombo function doesn't seem exist in the Plotting module
     # pylint: disable=no-member

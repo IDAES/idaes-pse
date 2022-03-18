@@ -16,6 +16,7 @@ Smoke tests, to make sure things are working at all.
 
 import pytest
 
+
 @pytest.mark.unit
 def test_helmet_import():
     from idaes.apps import helmet

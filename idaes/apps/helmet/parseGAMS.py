@@ -15,6 +15,7 @@ Parses and prints the solutions of the multiparameter equation of state solution
 """
 # stdlib
 import re
+
 # pkg
 from . import BasisFunctions
 
@@ -131,7 +132,7 @@ def writeTerm(index):
     return eqtn
 
 
-def writeEquation(Y, Beta =None):
+def writeEquation(Y, Beta=None):
     """
     Write full multiparameter equation
     """
@@ -143,24 +144,11 @@ def writeEquation(Y, Beta =None):
     indexes = Y
     lastInd = indexes[-1]
     for ind, b in zip(indexes, Beta):
-        d, t, c, m = coeffs[ind-1]
+        d, t, c, m = coeffs[ind - 1]
         if not c == 0:
-            eqtn = eqtn + "%f * %s^%d * %s^%.3f * exp(-D^%d)" % (
-                        b,
-                        "D",
-                        d,
-                        "T",
-                        t,
-                        c
-                    )
+            eqtn = eqtn + "%f * %s^%d * %s^%.3f * exp(-D^%d)" % (b, "D", d, "T", t, c)
         else:
-            eqtn = eqtn + "%f * %s^%d * %s^%.3f" % (
-                        b,
-                        "D",
-                        d,
-                        "T",
-                        t
-                    )
+            eqtn = eqtn + "%f * %s^%d * %s^%.3f" % (b, "D", d, "T", t)
         if not ind == lastInd:
             eqtn = eqtn + " +"
 

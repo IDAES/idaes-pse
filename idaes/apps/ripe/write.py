@@ -16,6 +16,7 @@
 # this should be checked to see if these are real errors and/or this module is still in use
 # pylint: disable=import-error
 
+
 def writeripe(aterm, ccon):
     import os
     import numpy as np

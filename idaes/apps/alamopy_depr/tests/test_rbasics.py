@@ -37,20 +37,29 @@ def sixcamel(*x):
 def test_basic():
 
     if has_alamo_flag:
-        ndata=10
-        x = np.random.uniform([-2,-1],[2,1],(ndata,2))
-        z = [0]*ndata
+        ndata = 10
+        x = np.random.uniform([-2, -1], [2, 1], (ndata, 2))
+        z = [0] * ndata
         # specify simulator as examples.sixcamel
         sim = sixcamel
         for i in range(ndata):
-            z[i]=sim(x[i][0],x[i][1])
+            z[i] = sim(x[i][0], x[i][1])
 
         # Use alamopy's python function wrapper to avoid using ALAMO's I/O format
         almsim = wrapwriter(sim)
         # Call alamo through the alamopy wrapper
-        res = alamo(x, z, almname='cam6',monomialpower=(1,2,3,4,5,6), multi2power=(1,2), simulator=almsim, expandoutput=True,maxiter=20)#,cvfun=True)
-        #conf_inv = almconfidence(res)
+        res = alamo(
+            x,
+            z,
+            almname="cam6",
+            monomialpower=(1, 2, 3, 4, 5, 6),
+            multi2power=(1, 2),
+            simulator=almsim,
+            expandoutput=True,
+            maxiter=20,
+        )  # ,cvfun=True)
+        # conf_inv = almconfidence(res)
 
-        #print('Model: {}'.format(res['model']))
-        #print('Confidence Intervals : {}'.format(conf_inv['conf_inv']))
+        # print('Model: {}'.format(res['model']))
+        # print('Confidence Intervals : {}'.format(conf_inv['conf_inv']))
         almplot(res, show=False)

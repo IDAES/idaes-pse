@@ -12,6 +12,7 @@
 #################################################################################
 from idaes.apps import ripe
 import numpy as np
+
 # import itertools as it
 import sys
 
@@ -76,7 +77,9 @@ def ripemodel(data, **kwargs):
 
     # Initialize sigma then calculate variance of residuals
     if "sigma" in kwargs.keys():
-        if isinstance(kwargs["sigma"], type(0.0)) or isinstance(kwargs["sigma"], type(0)):
+        if isinstance(kwargs["sigma"], type(0.0)) or isinstance(
+            kwargs["sigma"], type(0)
+        ):
             kwargs["sigma"] = np.array(kwargs["sigma"])
         sigma = np.squeeze(kwargs["sigma"])
         dshape = np.shape(sigma)
@@ -100,7 +103,7 @@ def ripemodel(data, **kwargs):
                 if sigma[i, j] < 0.0:
                     sys.exit("Negative varaince defined by user")
                 elif sigma[i, j] == 0.0:
-                    sigma[i, j] = 10 ** -8
+                    sigma[i, j] = 10**-8
         # Initial call of ripeomo to get refined bounds
         sharedata = ripe.bounds.get_bounds(
             [
@@ -139,15 +142,15 @@ def ripemodel(data, **kwargs):
 
     for i in range(dshape[0]):
         for j in range(dshape[1]):
-            if sigma[i, j] < 10 ** -8:
-                sigma[i, j] = 10 ** -8
+            if sigma[i, j] < 10**-8:
+                sigma[i, j] = 10**-8
 
     # w_norm = sum(sum(sigma))
     savesig = sigma
     if sharedata["zscale"]:
         for i in range(n):
             for j in range(ns):
-                sigma[i, j] = sigma[i, j] / (s_targets ** 2)
+                sigma[i, j] = sigma[i, j] / (s_targets**2)
             # if sigma[i,j] < debug['smallnum'] or savesig
 
     if "ccon" in kwargs.keys():
@@ -172,7 +175,7 @@ def ripemodel(data, **kwargs):
             ccon_list = range(1, 1 + np.min([nh, ns, int(n - 1)]))
         bic = []
         # Overwriting results variable here
-        d_results = dict.fromkeys([0] + list(ccon_list)) 
+        d_results = dict.fromkeys([0] + list(ccon_list))
         sys.stdout.write(
             "   ---- Calculating null values for model selection ----    \n"
         )

@@ -41,6 +41,7 @@ def doalamo(data, time, xlo, xup, rpc, rspec, sharedata):
     # import sympy
     from idaes.apps.alamopy_depr import multos as mos
     from idaes.apps.ripe import debug
+
     # from sympy import symbols
 
     if len(np.shape(data)) == 2:

@@ -31,6 +31,7 @@ def sixcamel(*x):
     z = t1 + np.multiply(x1, x2) + t2
     return z
 
+
 @pytest.mark.unit
 def test_multiple_input():
 
@@ -45,21 +46,23 @@ def test_multiple_input():
     # specify simulator as examples.sixcamel
     sim = sixcamel
     for i in range(ndata):
-        z[i,0] = sim(x[i][0], x[i][1])
-        z[i,1] = sim(x[i][0], x[i][1])
+        z[i, 0] = sim(x[i][0], x[i][1])
+        z[i, 1] = sim(x[i][0], x[i][1])
 
     # # Use alamopy's python function wrapper to avoid using ALAMO's I/O format
     almsim = alamopy.wrapwriter(sim)
 
-
     # NON GENERIC
-    alamo_settings = {'almname': "cam6",
-                'monomialpower':(1, 2, 3, 4, 5, 6),
-                'multi2power':(1, 2),
-                'simulator':almsim,
-                'expandoutput':True}
+    alamo_settings = {
+        "almname": "cam6",
+        "monomialpower": (1, 2, 3, 4, 5, 6),
+        "multi2power": (1, 2),
+        "simulator": almsim,
+        "expandoutput": True,
+    }
 
     res = alamopy.doalamo(x, z)
+
 
 @pytest.mark.unit
 def test_single_input_CV():
@@ -75,19 +78,20 @@ def test_single_input_CV():
     # specify simulator as examples.sixcamel
     sim = sixcamel
     for i in range(ndata):
-        z[i,0] = sim(x[i][0], x[i][1])
+        z[i, 0] = sim(x[i][0], x[i][1])
         # z[i,1] = sim(x[i][0], x[i][1])
 
     # # Use alamopy's python function wrapper to avoid using ALAMO's I/O format
     almsim = alamopy.wrapwriter(sim)
 
-
     # NON GENERIC
-    alamo_settings = {'almname': "cam6",
-                'monomialpower':(1, 2, 3, 4, 5, 6),
-                'multi2power':(1, 2),
-                'simulator':almsim,
-                'maxiter':20,
-                'cvfun':True}
+    alamo_settings = {
+        "almname": "cam6",
+        "monomialpower": (1, 2, 3, 4, 5, 6),
+        "multi2power": (1, 2),
+        "simulator": almsim,
+        "maxiter": 20,
+        "cvfun": True,
+    }
 
-    res = alamopy.doalamo(x, z, lmo = 3)
+    res = alamopy.doalamo(x, z, lmo=3)

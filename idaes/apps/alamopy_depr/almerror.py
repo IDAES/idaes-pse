@@ -21,5 +21,5 @@ class AlamoError(Exception):
 
 class AlamoInputError(AlamoError):
     def __init__(self, msg):
-        msg = 'Bad input to doalamo(): {}'.format(msg)
+        msg = "Bad input to doalamo(): {}".format(msg)
         super(AlamoInputError, self).__init__(msg)

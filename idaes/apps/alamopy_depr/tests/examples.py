@@ -33,7 +33,7 @@ def ackley(*x):
     b = 0.2
     c = 2 * 3.14159
     z = (
-        -a * np.exp(-b * np.sqrt(0.5 * (x1 ** 2 + x2 ** 2)))
+        -a * np.exp(-b * np.sqrt(0.5 * (x1**2 + x2**2)))
         - np.exp(0.5 * (np.cos(c * x1) + np.cos(c * x2)))
         + a
         + np.exp(1)
@@ -47,7 +47,7 @@ def branin(*x):
     x1, x2 = x
     pi = 3.14159
     z = (
-        (x2 - (5.1 / (4 * pi ** 2)) * x1 ** 2 + (5 / pi) * x1 - 6) ** 2
+        (x2 - (5.1 / (4 * pi**2)) * x1**2 + (5 / pi) * x1 - 6) ** 2
         + 10 * (1 - (1 / (8 * pi)) * np.cos(x1) + 10)
         + np.random.normal(0, 0.1)
     )

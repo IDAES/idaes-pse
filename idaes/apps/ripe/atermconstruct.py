@@ -13,6 +13,7 @@
 import numpy as np
 from idaes.apps.ripe import mechs
 from .shared import sharedata as sd
+
 # from ripe.shared import debug as debug
 
 consivars = sd["ivars"]
