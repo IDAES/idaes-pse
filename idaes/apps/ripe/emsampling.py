@@ -21,7 +21,7 @@ import os
 import datetime
 import time
 # pkg
-from idaes.surrogate import ripe
+from idaes.apps import ripe
 
 def constructmodel(riperes, **kwargs):
     # Inputs:

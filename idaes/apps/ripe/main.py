@@ -10,7 +10,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from idaes.surrogate import ripe
+from idaes.apps import ripe
 import numpy as np
 # import itertools as it
 import sys

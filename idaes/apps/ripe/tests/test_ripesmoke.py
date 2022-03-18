@@ -18,5 +18,5 @@ import pytest
 
 @pytest.mark.unit
 def test_ripe_import():
-    from idaes.surrogate.ripe import ripemodel
+    from idaes.apps.ripe import ripemodel
 

@@ -12,7 +12,7 @@
 #################################################################################
 # This file contians subroutines related to finding the bounds for big M constraints
 # additionally, depedent reaction stoichiometries are detected here
-from idaes.surrogate import ripe
+from idaes.apps import ripe
 import numpy as np
 
 

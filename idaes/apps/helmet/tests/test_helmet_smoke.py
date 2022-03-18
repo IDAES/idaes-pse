@@ -18,4 +18,4 @@ import pytest
 
 @pytest.mark.unit
 def test_helmet_import():
-    from idaes.surrogate import helmet
+    from idaes.apps import helmet
