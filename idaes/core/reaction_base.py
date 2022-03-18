@@ -19,7 +19,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 from pyomo.environ import Var, Constraint, Expression
 
 # Import IDAES cores
-from idaes.core.process_block import ProcessBlock
+from idaes.core.base.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
 from idaes.core import MaterialFlowBasis

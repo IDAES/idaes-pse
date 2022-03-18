@@ -27,7 +27,7 @@ from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
 from enum import Enum
 
-from idaes.core.process_block import declare_process_block_class
+from idaes.core.base.process_block import declare_process_block_class
 from idaes.core.util.exceptions import (ConfigurationError,
                                         DynamicError,
                                         PropertyPackageError)

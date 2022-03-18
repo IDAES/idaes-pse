@@ -24,7 +24,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.common.formatting import tabular_writer
 
 # Import IDAES cores
-from idaes.core.process_block import ProcessBlock
+from idaes.core.base.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
 from idaes.core import MaterialFlowBasis
