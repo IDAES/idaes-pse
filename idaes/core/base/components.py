@@ -17,12 +17,11 @@ IDAES Component objects
 """
 from pyomo.environ import Set, Param, Var, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
-from pyomo.core.base.units_container import _PyomoUnit
 
-from .base.process_base import (declare_process_block_class,
-                                ProcessBlockData)
-from .phases import PhaseType
-from .util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.base.process_base import (declare_process_block_class,
+                                          ProcessBlockData)
+from idaes.core.base.phases import PhaseType
+from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
 

@@ -20,10 +20,10 @@ import types
 
 from pyomo.environ import ConcreteModel, Set, Param, Var, units as pyunits
 
-from idaes.core.components import (Component, Solute, Solvent,
-                                   Ion, Anion, Cation, Apparent)
-from idaes.core.phases import (LiquidPhase, VaporPhase, SolidPhase, Phase,
-                               PhaseType, AqueousPhase)
+from idaes.core.base.components import (Component, Solute, Solvent,
+                                        Ion, Anion, Cation, Apparent)
+from idaes.core.base.phases import (LiquidPhase, VaporPhase, SolidPhase, Phase,
+                                    PhaseType, AqueousPhase)
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.core.base.property_meta import PropertyClassMetadata
 

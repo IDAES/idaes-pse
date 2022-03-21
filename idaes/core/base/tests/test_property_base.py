@@ -23,8 +23,8 @@ from pyomo.common.config import ConfigBlock
 
 from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
                         StateBlock, StateBlockData)
-from idaes.core.phases import Phase
-from idaes.core.components import Component
+from idaes.core.base.phases import Phase
+from idaes.core.base.components import Component
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
 from idaes.core.base.property_meta import PropertyClassMetadata

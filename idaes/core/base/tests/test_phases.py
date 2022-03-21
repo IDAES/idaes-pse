@@ -17,8 +17,8 @@ Author: Andrew Lee
 """
 from pyomo.environ import ConcreteModel, Set
 
-from idaes.core.phases import (Phase, LiquidPhase, SolidPhase, VaporPhase,
-                               PhaseType, AqueousPhase)
+from idaes.core.base.phases import (Phase, LiquidPhase, SolidPhase, VaporPhase,
+                                    PhaseType, AqueousPhase)
 import pytest
 
 

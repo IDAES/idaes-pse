@@ -26,7 +26,7 @@ from pyomo.environ import Set
 from pyomo.dae import ContinuousSet
 from pyomo.network import Port
 from idaes.core import useDefault
-from idaes.core.phases import PhaseType
+from idaes.core.base.phases import PhaseType
 from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog

@@ -20,16 +20,15 @@ import sys
 from pyomo.environ import Set, value, Var, Expression, Constraint
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.expression import _ExpressionData
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 from pyomo.common.formatting import tabular_writer
 
 # Import IDAES cores
 from idaes.core.base.process_block import ProcessBlock
-from idaes.core import ProcessBlockData
+from idaes.core import ProcessBlockData, MaterialFlowBasis
 from idaes.core.base import property_meta
-from idaes.core import MaterialFlowBasis
-from idaes.core.phases import Phase, PhaseData
-from idaes.core.components import Component, ComponentData
+from idaes.core.base.phases import PhaseData
+from idaes.core.base.components import ComponentData
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
