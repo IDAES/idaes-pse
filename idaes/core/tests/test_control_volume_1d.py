@@ -18,7 +18,8 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import (ConcreteModel, Constraint, Expression, Param,
                            Set, units, value, Var)
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.util.check_units import (assert_units_consistent,
+                                    assert_units_equivalent)
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock
 from pyomo.core.base.constraint import _GeneralConstraintData
@@ -1093,6 +1094,110 @@ def test_add_material_balances_default():
                 _GeneralConstraintData
 
     assert_units_consistent(m)
+
+
+@pytest.mark.unit
+def test_add_material_balances_rxn_molar():
+    # use property package with mass basis to confirm correct rxn term units
+    # add options so that all generation/extent terms exist
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic":False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    # Set property package to contain inherent reactions
+    m.fs.pp._has_inherent_reactions = True
+
+    m.fs.pp.basis_switch = 2
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.rp.basis_switch = 1
+
+    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
+                                            "reaction_package": m.fs.rp,
+                                            "transformation_method": "dae.finite_difference",
+                                            "transformation_scheme": "BACKWARD",
+                                            "finite_elements": 10})
+
+    units = m.fs.cv.config.property_package.get_metadata().get_derived_units
+    pp_units = units('flow_mass')/units('length')  # basis 2 is mass
+    rp_units = units('flow_mole')/units('length')  # basis 1 is molar
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+
+    # add molecular weight variable to each time point, using correct units
+    for t in m.fs.time:
+        for x in m.fs.cv.length_domain:
+            m.fs.cv.properties[t, x].mw_comp = Var(
+                    m.fs.cv.properties[t, x].config.parameters.component_list,
+                    units=units('mass')/units('amount'))
+
+    # add material balances to control volume
+    m.fs.cv.add_material_balances(balance_type=MaterialBalanceType.componentPhase,
+                                  has_rate_reactions=True,
+                                  has_equilibrium_reactions=True,
+                                  has_phase_equilibrium=True)
+
+    assert_units_equivalent(m.fs.cv.rate_reaction_generation, rp_units)
+    assert_units_equivalent(m.fs.cv.rate_reaction_extent, rp_units)
+    assert_units_equivalent(m.fs.cv.equilibrium_reaction_generation, rp_units)
+    assert_units_equivalent(m.fs.cv.equilibrium_reaction_extent, rp_units)
+    assert_units_equivalent(m.fs.cv.inherent_reaction_generation, pp_units)
+    assert_units_equivalent(m.fs.cv.inherent_reaction_extent, pp_units)
+    assert_units_equivalent(m.fs.cv.phase_equilibrium_generation, pp_units)
+
+
+@pytest.mark.unit
+def test_add_material_balances_rxn_mass():
+    # use property package with mass basis to confirm correct rxn term units
+    # add options so that all generation/extent terms exist
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic":False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    # Set property package to contain inherent reactions
+    m.fs.pp._has_inherent_reactions = True
+
+    m.fs.pp.basis_switch = 1
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.rp.basis_switch = 2
+
+    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
+                                            "reaction_package": m.fs.rp,
+                                            "transformation_method": "dae.finite_difference",
+                                            "transformation_scheme": "BACKWARD",
+                                            "finite_elements": 10})
+
+    units = m.fs.cv.config.property_package.get_metadata().get_derived_units
+    pp_units = units('flow_mole')/units('length')  # basis 2 is molar
+    rp_units = units('flow_mass')/units('length')  # basis 1 is mass
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+
+    # add molecular weight variable to each time point, using correct units
+    for t in m.fs.time:
+        for x in m.fs.cv.length_domain:
+            m.fs.cv.properties[t, x].mw_comp = Var(
+                    m.fs.cv.properties[t, x].config.parameters.component_list,
+                    units=units('mass')/units('amount'))
+
+    # add material balances to control volume
+    m.fs.cv.add_material_balances(balance_type=MaterialBalanceType.componentPhase,
+                                  has_rate_reactions=True,
+                                  has_equilibrium_reactions=True,
+                                  has_phase_equilibrium=True)
+
+    assert_units_equivalent(m.fs.cv.rate_reaction_generation, rp_units)
+    assert_units_equivalent(m.fs.cv.rate_reaction_extent, rp_units)
+    assert_units_equivalent(m.fs.cv.equilibrium_reaction_generation, rp_units)
+    assert_units_equivalent(m.fs.cv.equilibrium_reaction_extent, rp_units)
+    assert_units_equivalent(m.fs.cv.inherent_reaction_generation, pp_units)
+    assert_units_equivalent(m.fs.cv.inherent_reaction_extent, pp_units)
+    assert_units_equivalent(m.fs.cv.phase_equilibrium_generation, pp_units)
 
 
 # -----------------------------------------------------------------------------

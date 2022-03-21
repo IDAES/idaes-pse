@@ -17,10 +17,8 @@ Author: Chinedu Okoli
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           Var)
+from pyomo.environ import check_optimal_termination, ConcreteModel, Var
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 
@@ -50,7 +48,7 @@ def gas_prop():
 
     m.fs.unit.flow_mol.fix(1)
     m.fs.unit.temperature.fix(450)
-    m.fs.unit.pressure.fix(1.60)
+    m.fs.unit.pressure.fix(1.60E5)
     m.fs.unit.mole_frac_comp["CO2"].fix(0.4772)
     m.fs.unit.mole_frac_comp["H2O"].fix(0.0646)
     m.fs.unit.mole_frac_comp["CH4"].fix(0.4582)
@@ -95,9 +93,7 @@ def test_solve(gas_prop):
     results = solver.solve(gas_prop)
 
     # Check for optimal solution
-    assert results.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+    assert check_optimal_termination(results)
 
 
 @pytest.mark.solver
@@ -110,3 +106,8 @@ def test_solution(gas_prop):
             gas_prop.fs.unit.cp_mol.value)
     assert (pytest.approx(1, abs=1e-2) ==
             gas_prop.fs.unit.enth_mol.value)
+
+
+@pytest.mark.component
+def test_units_consistent(gas_prop):
+    assert_units_consistent(gas_prop)

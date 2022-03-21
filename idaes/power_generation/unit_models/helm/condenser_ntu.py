@@ -20,6 +20,7 @@ __author__ = "Jinliang Ma"
 import pyomo.environ as pyo
 from pyomo.environ import units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.deprecation import deprecated
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util import get_solver, from_json, to_json, StoreSpec
@@ -304,7 +305,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
             self.cold_side.material_accumulation[0, :, :].fix(0)
             self.cold_side.energy_accumulation[0, :].fix(0)
 
-    def initialize(
+    def initialize_build(
         self,
         state_args_1=None,
         state_args_2=None,
@@ -403,6 +404,11 @@ class HelmNtuCondenserData(UnitModelBlockData):
             time_point=time_point,
         )
 
+    @deprecated(
+        "The get_costing method is being deprecated in favor of the new "
+        "FlowsheetCostingBlock tools.",
+        version="TBD",
+    )
     def get_costing(self, module=costing):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing()

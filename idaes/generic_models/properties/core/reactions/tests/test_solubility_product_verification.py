@@ -17,7 +17,7 @@ Tests for rate forms
 import pytest
 
 from pyomo.environ import \
-    ConcreteModel, units as pyunits, value, SolverStatus, TerminationCondition
+    check_optimal_termination, ConcreteModel, units as pyunits, value
 
 # Import IDAES cores
 from idaes.generic_models.properties.core.generic.generic_property import \
@@ -138,9 +138,7 @@ class TestSingleState(object):
 
             results = solver.solve(model)
 
-            assert results.solver.termination_condition == \
-                TerminationCondition.optimal
-            assert results.solver.status == SolverStatus.ok
+            assert check_optimal_termination(results)
 
             assert pytest.approx(8.235e-3, abs=1e-8) == value(
                 model.state[0].mole_frac_phase_comp["Liq", "Na+"] *
@@ -175,9 +173,7 @@ class TestSingleState(object):
 
                     results = solver.solve(model)
 
-                    assert results.solver.termination_condition == \
-                        TerminationCondition.optimal
-                    assert results.solver.status == SolverStatus.ok
+                    assert check_optimal_termination(results)
 
                     assert pytest.approx(0, abs=1e-5) == value(
                         model.state[0].flow_mol_phase_comp["Sol", "NaCl"])
@@ -225,9 +221,7 @@ class TestUnit(object):
 
             results = solver.solve(model)
 
-            assert results.solver.termination_condition == \
-                TerminationCondition.optimal
-            assert results.solver.status == SolverStatus.ok
+            assert check_optimal_termination(results)
 
             assert pytest.approx(0, abs=1.1e-6) == value(
                 model.fs.R101.outlet.flow_mol_phase_comp[0, "Sol", "NaCl"])
@@ -242,9 +236,7 @@ class TestUnit(object):
 
         results = solver.solve(model)
 
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         assert pytest.approx(0, abs=1.1e-3) == value(
             model.fs.R101.outlet.flow_mol_phase_comp[0, "Sol", "NaCl"])
@@ -260,9 +252,7 @@ class TestUnit(object):
 
             results = solver.solve(model)
 
-            assert results.solver.termination_condition == \
-                TerminationCondition.optimal
-            assert results.solver.status == SolverStatus.ok
+            assert check_optimal_termination(results)
 
             assert pytest.approx(i, rel=1e-5) == value(
                 model.fs.R101.outlet.flow_mol_phase_comp[0, "Sol", "NaCl"] +

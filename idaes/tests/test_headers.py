@@ -17,9 +17,11 @@ Test that headers are on all files
 from pathlib import Path
 import os
 # third-party
-from addheader.add import FileFinder, detect_files
 import pytest
 import yaml
+
+
+addheader_add = pytest.importorskip("addheader.add", reason="`addheader` package is not available")
 
 
 @pytest.fixture
@@ -50,8 +52,8 @@ def test_headers(package_root, patterns):
         print(f"ERROR: Did not get glob patterns: skipping test")
     else:
         # modify patterns to match the files that should have headers
-        ff = FileFinder(package_root, glob_patterns=patterns)
-        has_header, missing_header = detect_files(ff)
+        ff = addheader_add.FileFinder(package_root, glob_patterns=patterns)
+        has_header, missing_header = addheader_add.detect_files(ff)
         # ignore empty files (probably should add option in 'detect_files' for this)
         nonempty_missing_header = list(filter(lambda p: p.stat().st_size > 0, missing_header))
         #
@@ -62,4 +64,3 @@ def test_headers(package_root, patterns):
             print(f"Missing headers from files under '{pfx}{os.path.sep}': {file_list}")
         # uncomment to require all files to have headers
         assert len(nonempty_missing_header) == 0
-        

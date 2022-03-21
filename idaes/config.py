@@ -19,7 +19,7 @@ import importlib
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "2.5.2"
+default_binary_release = "2.5.6"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -40,7 +40,7 @@ binary_platform_map = {
 # Set of known platforms with available binaries and descriptions of them
 known_binary_platform = {
     "auto":"Auto-select windows, darwin or linux",
-    "windows":"Microsoft Windows (built on verion 1909)",
+    "windows":"Microsoft Windows (built on verion 20H2 with MinGW)",
     "darwin": "OSX (currently not available)",
     "linux": (
             f"Linux (auto select distribution or fall back on "
@@ -62,7 +62,7 @@ known_binary_platform = {
 unsupported_binary_platform = ["darwin"]
 # Set of extra binary packages and platforms where they are available
 extra_binaries = {
-    "petsc": ["centos7", "centos8", "ubuntu1804", "ubuntu2004"],
+    "petsc": ["centos7", "centos8", "ubuntu1804", "ubuntu2004", "windows"],
 }
 
 # Store the original environment variable values so we can revert changes
@@ -170,7 +170,7 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigBlock(
             implicit=False,
             description="Default config for 'ipopt' solver",
-            doc="Default config for 'ipopt-iades' solver"
+            doc="Default config for 'ipopt' solver"
         ),
     )
 
@@ -200,6 +200,74 @@ def _new_idaes_config_block():
             default=1e-6,
             description="Ipopt tol option",
             doc="Ipopt tol option"
+        ),
+    )
+
+    cfg.declare(
+        "petsc_ts",
+        pyomo.common.config.ConfigBlock(
+            implicit=False,
+            description="Default config for 'petsc_ts' solver",
+            doc="Default config for 'petsc_ts' solver"
+        ),
+    )
+
+    cfg["petsc_ts"].declare(
+        "options",
+        pyomo.common.config.ConfigBlock(
+            implicit=True,
+            description="Default solver options for 'petsc_ts'",
+            doc="Default solver options for 'petsc_ts' solver"
+        ),
+    )
+
+    cfg["petsc_ts"]["options"].declare(
+        "--ts_max_snes_failures",
+        pyomo.common.config.ConfigValue(
+            domain=int,
+            default=200,
+            description="Number of nonliner solver failures before giving up",
+            doc="Number of nonliner solver failures before giving up"
+        ),
+    )
+
+    cfg["petsc_ts"]["options"].declare(
+        "--ts_max_reject",
+        pyomo.common.config.ConfigValue(
+            domain=int,
+            default=20,
+            description="Maximum number of time steps to reject",
+            doc="Maximum number of time steps to reject"
+        ),
+    )
+
+    cfg["petsc_ts"]["options"].declare(
+        "--ts_type",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="beuler",
+            description="TS solver to use",
+            doc="TS solver to use"
+        ),
+    )
+
+    cfg["petsc_ts"]["options"].declare(
+        "--ts_adapt_type",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="basic",
+            description="TS adaptive step size method to use",
+            doc="TS adaptive step size method to use"
+        ),
+    )
+
+    cfg["petsc_ts"]["options"].declare(
+        "--ts_exact_final_time",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="matchstep",
+            description="How to handle the final time step",
+            doc="How to handle the final time step"
         ),
     )
 

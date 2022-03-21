@@ -16,7 +16,7 @@ General purpose mixer block for IDAES models
 from enum import Enum
 
 from pyomo.environ import (
-    Constraint,
+    check_optimal_termination,
     Param,
     PositiveReals,
     Reals,
@@ -40,6 +40,7 @@ from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
     PropertyNotSupportedError,
+    InitializationError,
 )
 from idaes.core.util.math import smooth_min
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -810,8 +811,8 @@ objects linked to all inlet states and the mixed state,
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None,
-                   solver=None, hold_state=False):
+    def initialize_build(blk, outlvl=idaeslog.NOTSET, optarg=None,
+                         solver=None, hold_state=False):
         """
         Initialization routine for mixer.
 
@@ -909,6 +910,7 @@ objects linked to all inlet states and the mixed state,
             hold_state=False,
         )
 
+        res = None
         # Revert fixed status of variables to what they were before
         for t in blk.flowsheet().time:
             s_vars = mblock[t].define_state_vars()
@@ -941,6 +943,11 @@ objects linked to all inlet states and the mixed state,
             )
         else:
             init_log.info("Initialization Complete.")
+
+        if res is not None and not check_optimal_termination(res):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
         if hold_state is True:
             return flags
@@ -986,6 +993,24 @@ objects linked to all inlet states and the mixed state,
 
         if hasattr(self, "pressure_equality_constraints"):
             for (t, i), c in self.pressure_equality_constraints.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
+
+        if hasattr(self, "minimum_pressure"):
+            for (t, i), v in self.minimum_pressure.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.set_scaling_factor(v, s)
+
+        if hasattr(self, "minimum_pressure_constraint"):
+            for (t, i), c in self.minimum_pressure_constraint.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
+
+        if hasattr(self, "mixture_pressure"):
+            for t, c in self.mixture_pressure.items():
                 s = iscale.get_scaling_factor(
                     self.mixed_state[t].pressure, default=1, warning=True)
                 iscale.constraint_scaling_transform(c, s)

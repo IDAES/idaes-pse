@@ -17,11 +17,10 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Constraint,
-                           TerminationCondition,
                            Set,
-                           SolverStatus,
                            value,
                            Var,
                            units as pyunits)
@@ -43,7 +42,8 @@ from idaes.generic_models.unit_models.separator import (Separator,
                                                         SplittingType,
                                                         EnergySplittingType)
 from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError)
+                                        ConfigurationError,
+                                        InitializationError)
 
 from idaes.generic_models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock)
@@ -871,9 +871,7 @@ class TestSaponification(object):
         results = solver.solve(sapon)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1090,9 +1088,7 @@ class TestBTXIdeal(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1246,9 +1242,7 @@ class TestIAPWS(object):
         results = solver.solve(iapws)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -2912,9 +2906,7 @@ class TestBTX_Ideal(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -2972,3 +2964,21 @@ class TestBTX_Ideal(object):
     @pytest.mark.unit
     def test_report(self, btx):
         btx.fs.unit.report()
+
+
+@pytest.mark.unit
+def test_initialization_error():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.sep = Separator(default={"property_package": m.fs.pp})
+
+    m.fs.sep.outlet_1_state[0].material_flow_mol.fix(10)
+    m.fs.sep.outlet_2_state[0].material_flow_mol.fix(10)
+    m.fs.sep.mixed_state[0].material_flow_mol.fix(100)
+
+    m.fs.sep.split_fraction.fix()
+
+    with pytest.raises(InitializationError):
+        m.fs.sep.initialize()

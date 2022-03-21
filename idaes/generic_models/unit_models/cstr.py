@@ -17,6 +17,7 @@ Standard IDAES CSTR model.
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import Reference, Block, Var, Constraint
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -241,6 +242,11 @@ see reaction package for documentation.}"""))
 
         return {"vars": var_dict}
 
+    @deprecated(
+        "The get_costing method is being deprecated in favor of the new "
+        "FlowsheetCostingBlock tools.",
+        version="TBD",
+    )
     def get_costing(self, year=None, module=costing, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)

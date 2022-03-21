@@ -47,7 +47,7 @@ export class App {
         $('#idaes-fs-name').text(model.model.id);  // set flowsheet name
         var jjCellConfig = new JointJsCellConfig(model);
         var processed_model = jjCellConfig.processRoutingConfig();
-        this.paper.graph.fromJSON(processed_model);
+        this.paper.setup(processed_model);
     }
 
     /**
@@ -109,7 +109,7 @@ export class App {
                 $.ajax({url: url, dataType: "json"})
                     // If we got the model, save it
                     .done(data => {
-                        paper.graph = data;  // uses setter
+                        this.renderModel(data);
                         this.stream_table.initTable(data)
                     }) 
                     // Otherwise fail

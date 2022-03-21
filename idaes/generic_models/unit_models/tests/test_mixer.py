@@ -17,14 +17,13 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Constraint,
                            Param,
                            RangeSet,
                            Set,
                            Var,
-                           TerminationCondition,
-                           SolverStatus,
                            value,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
@@ -53,6 +52,7 @@ from idaes.generic_models.unit_models.mixer import (Mixer,
                                                     MomentumMixingType)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
+                                        InitializationError,
                                         PropertyNotSupportedError)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
@@ -784,9 +784,7 @@ class TestBTX(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1020,9 +1018,7 @@ class TestIAPWS(object):
         results = solver.solve(iapws)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1138,9 +1134,7 @@ class TestSaponification(object):
         results = solver.solve(sapon)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1204,3 +1198,19 @@ def test_construction_component_not_in_phase():
         "inlet_list":["in1", "in2"],
         "momentum_mixing_type":MomentumMixingType.none})
     iscale.calculate_scaling_factors(m)
+
+
+@pytest.mark.unit
+def test_initialization_error():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.mix = Mixer(default={"property_package": m.fs.pp})
+
+    m.fs.mix.inlet_1_state[0].material_flow_mol.fix(10)
+    m.fs.mix.inlet_2_state[0].material_flow_mol.fix(10)
+    m.fs.mix.mixed_state[0].material_flow_mol.fix(100)
+
+    with pytest.raises(InitializationError):
+        m.fs.mix.initialize()

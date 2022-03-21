@@ -21,8 +21,7 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 __Author__ = "John Eslick"
 
-from pyomo.environ import Var, SolverFactory, value, units as pyunits
-from pyomo.opt import TerminationCondition
+from pyomo.environ import Var, units as pyunits
 
 from idaes.core import declare_process_block_class
 from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
@@ -67,7 +66,7 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
         def power_shaft(b, t):
             return b.power_thermo[t] * b.efficiency_mech
 
-    def initialize(
+    def initialize_build(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -83,7 +82,7 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
         """
-        super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+        super().initialize_build(outlvl=outlvl, solver=solver, optarg=optarg)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

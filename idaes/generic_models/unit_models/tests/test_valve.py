@@ -15,9 +15,8 @@ Tests for valve model
 """
 import math
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            units,
                            value)
 from idaes.core import FlowsheetBlock
@@ -48,13 +47,13 @@ class GenericValve(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.properties = iapws95.Iapws95ParameterBlock()
         m.fs.valve = Valve(default={
-            "valve_function_callback":self.type,
+            "valve_function_callback": self.type,
             "property_package": m.fs.properties})
-        fin = 900 # mol/s
-        pin = 200000 # Pa
-        pout = 100000 # Pa
-        tin = 300 # K
-        hin = iapws95.htpx(T=tin*units.K, P=pin*units.Pa) # J/mol
+        fin = 1000  # mol/s
+        pin = 200000  # Pa
+        pout = 100000  # Pa
+        tin = 300  # K
+        hin = iapws95.htpx(T=tin*units.K, P=pin*units.Pa)  # J/mol
         # Calculate the flow coefficient to give 1000 mol/s flow with given P
         if self.type == ValveFunctionType.linear:
             cv = 1000/math.sqrt(pin - pout)/0.5
@@ -65,9 +64,8 @@ class GenericValve(object):
         # set inlet
         m.fs.valve.inlet.enth_mol[0].fix(hin)
         m.fs.valve.inlet.flow_mol[0].fix(fin)
-        m.fs.valve.inlet.flow_mol[0].unfix()
         m.fs.valve.inlet.pressure[0].fix(pin)
-        m.fs.valve.outlet.pressure[0].fix(pout)
+        m.fs.valve.outlet.pressure[0].set_value(pout)
         m.fs.valve.Cv.fix(cv)
         m.fs.valve.valve_opening.fix(0.5)
         iscale.calculate_scaling_factors(m)
@@ -124,9 +122,7 @@ class GenericValve(object):
         results = solver.solve(valve_model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

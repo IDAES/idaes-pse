@@ -7,6 +7,12 @@ export class Paper {
         var height = 800;
         var gridSize = 1;
 
+        // Default values for the highlighting events
+        this._originalLinkStroke = "#979797";
+        this._originalLinkStrokeWidth = 2;
+        this._highlightLinkStroke = "#0B79BD";
+        this._highlightLinkStrokeWidth = 4;
+
         this._graph = new joint.dia.Graph([], { cellNamespace: { standard } });
         this._paper = new joint.dia.Paper({
             model: this._graph,
@@ -35,11 +41,10 @@ export class Paper {
         // We want all of the elements to be the same width so set the width equal to the 
         // stream table
         let stream_table = document.getElementById("stream-table");
-        $('#idaes-canvas').css({ width: stream_table.offsetWidth, height: stream_table.offsetHeight });
+        $('#idaes-canvas').css({ height: stream_table.offsetHeight });
         $("#idaes-canvas")[0].append(self._paperScroller.render().el);
 
-        self.setupEvents();
-
+        self.preSetupRegisterEvents();
     }
 
     get graph() {
@@ -64,15 +69,45 @@ export class Paper {
        return angle_translation[angle];
     }
 
-    setupEvents() {
+    /**
+     * Register Events before the graph model is loaded
+     */
+    preSetupRegisterEvents() {
         let model_id = $("#idaes-fs-name").data("flowsheetId");
         let url = "/fs?id=".concat(model_id);
+
+        // Getting the main elements for the idaes canvas and the stream table
+        // to be able to dispatch highlighting events to the streams existing
+        // on paper and in the stream table
+        let idaesCanvas = document.querySelector('#idaes-canvas');
+        let streamTable = document.querySelector('#stream-table-data');
 
         // Setup paper resize on window resize
         window.onresize = function() {
             let stream_table = document.getElementById("stream-table");
-            $('#idaes-canvas').css({ width: stream_table.offsetWidth, height: stream_table.offsetHeight });
+            $('#idaes-canvas').css({ height: stream_table.offsetHeight });
         }
+
+        // Registering listeners to idaes-canvas to highlight the correct
+        // streams in the paper
+        idaesCanvas.addEventListener('HighlightStream', (event) => {
+            const relatedLinkElement = idaesCanvas.querySelector(
+                `[model-id=${event.detail.streamId}]`
+            );
+            if (relatedLinkElement) {
+                relatedLinkElement.dispatchEvent(new Event('HighlightStream'));
+            }
+        });
+        // Registering listeners to idaes-canvas to remove the highlight from
+        // the correct streams in the paper
+        idaesCanvas.addEventListener('RemoveHighlightStream', (event) => {
+            const relatedLinkElement = idaesCanvas.querySelector(
+                `[model-id=${event.detail.streamId}]`
+            );
+            if (relatedLinkElement) {
+                relatedLinkElement.dispatchEvent(new Event('RemoveHighlightStream'));
+            }
+        });
 
         // /images/icons rotate 90 degrees on right click. Replaces browser 
         // context menu
@@ -92,9 +127,10 @@ export class Paper {
             }
         });
 
-        // Adds link tools (adding vertices, moving segments) to links when your 
-        // mouse over
-        self._paper.on("link:mouseover", function(cellView, evt) {
+        // Setup event when a link in the paper is hovered upon
+        self._paper.on("link:mouseenter", function(linkView) {
+            // Adds link tools (adding vertices, moving segments) to links when your
+            // mouse over
             var verticesTool = new joint.linkTools.Vertices({
                 focusOpacity: 0.5,
                 redundancyRemoval: true,
@@ -108,13 +144,41 @@ export class Paper {
                     verticesTool, segmentsTool
                 ]
             });
-            cellView.addTools(toolsView)
-            cellView.showTools()
+            linkView.addTools(toolsView);
+            linkView.showTools();
+
+            // Highlight the corresponding Link and the column in the Stream Table
+            const highlightStreamEvent = new CustomEvent(
+                'HighlightStream',
+                {
+                    detail: {
+                        streamId: linkView.model.id
+                    }
+                }
+            );
+            idaesCanvas.dispatchEvent(highlightStreamEvent);
+            if (document.querySelector("#view-stream-highlight-btn").checked) {
+                streamTable.dispatchEvent(highlightStreamEvent);
+            }
         });
 
-        // Removes the link tools when you leave the link
-        self._paper.on("link:mouseout", function(cellView, evt) {
-            cellView.hideTools()
+        // Setup event when the hovering over link ends
+        self._paper.on("link:mouseleave", function(linkView) {
+            // Removes the link tools when you leave the link
+            linkView.hideTools();
+
+            // Remove the highlight from the link and the column in the
+            // Stream Table when the hovering ends
+            const removeHighlightStreamEvent = new CustomEvent(
+                'RemoveHighlightStream',
+                {
+                    detail: {
+                        streamId: linkView.model.id
+                    }
+                }
+            );
+            streamTable.dispatchEvent(removeHighlightStreamEvent);
+            idaesCanvas.dispatchEvent(removeHighlightStreamEvent);
         });
 
         // Send a post request to the server with the new this._graph 
@@ -159,6 +223,41 @@ export class Paper {
                 });
             }
         });
+    }
+
+    /**
+     * Register Events after the graph model is loaded
+     */
+    postSetupRegisterEvents() {
+        // Setup event listeners for the links in Paper/Graph
+        this._graph.getLinks().forEach((link) => {
+            let linkView = link.findView(this._paper);
+            linkView.el.addEventListener('HighlightStream', () => {
+                linkView.model.attr({
+                    line: {
+                        stroke: this._highlightLinkStroke,
+                        'stroke-width': this._highlightLinkStrokeWidth
+                    }
+                });
+            });
+
+            linkView.el.addEventListener('RemoveHighlightStream', () => {
+                linkView.model.attr({
+                    line: {
+                        stroke: this._originalLinkStroke,
+                        'stroke-width': this._originalLinkStrokeWidth
+                    }
+                });
+            });
+        });
+    }
+
+    /**
+     * Setup the graph model
+     */
+    setup(model) {
+        this._graph.fromJSON(model);
+        this.postSetupRegisterEvents();
     }
     
 };

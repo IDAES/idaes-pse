@@ -63,7 +63,10 @@ class ModelTag:
         """
         super().__init__()
         self._format = format_string  # format string for printing expression
-        self._expression = expr  # tag expression (can be unnamed)
+        if isinstance(expr, IndexedComponent_slice):
+            self._expression = pyo.Reference(expr)  # tag expression (can be unnamed)
+        else:
+            self._expression = expr
         self._doc = doc  # documentation for a tag
         self._display_units = display_units  # unit to display value in
         self._cache_validation_value = {}  # value when converted value stored
@@ -97,9 +100,7 @@ class ModelTag:
             raise KeyError(
                 f"{k} is not a valid index for tag {self._name}"
             ) from key_err
-        if (
-            self._root is None or self.is_slice
-        ):  # cache the unit conversion in root object
+        if (self._root is None):  # cache the unit conversion in root object
             tag._root = self
         else:
             tag._root = self._root
@@ -308,14 +309,6 @@ class ModelTag:
         """
         try:
             return issubclass(self._expression.ctype, pyo.Var)
-        except AttributeError:
-            return False
-
-    @property
-    def is_slice(self):
-        """Whether the tagged expression is a Pyomo slice."""
-        try:
-            return isinstance(self._expression, IndexedComponent_slice)
         except AttributeError:
             return False
 
@@ -587,11 +580,13 @@ class ModelTagGroup(dict):
         tag_list = []
         indexes = []
         for i, tag in enumerate(tags):
-            if not isinstance(tag, collections.Hashable) and len(tag) == 2:
-                tag_list.append(tag[0])
-                indexes.append(tag[1])
-            elif not isinstance(tag, collections.Hashable) and len(tag) != 2:
-                raise ValueError("Key-index pairs should be a list of length 2")
+            if not isinstance(tag, collections.abc.Hashable):
+                if len(tag) == 2:
+                    tag_list.append(tag[0])
+                    indexes.append(tag[1])
+                else:
+                    raise ValueError(
+                        "Key-index pairs should be a list of length 2")
             else:
                 if not self[tag].is_indexed:
                     tag_list.append(tag)
@@ -726,7 +721,7 @@ def svg_tag(
     # Deal with soon to be depricated input by converting it to new style
     if tags is not None:
         deprecation_warning(
-            "DEPRECATED: svg_tag, the tags, tag_format and "
+            "svg_tag, the tags, tag_format and "
             "tag_format_default arguments are deprecated use tag_group instead.",
             version=1.12,
         )
