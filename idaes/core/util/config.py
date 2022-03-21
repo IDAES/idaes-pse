@@ -64,7 +64,7 @@ def is_reaction_parameter_block(val):
     Returns:
         ConfigurationError if val is not an instance of ReactionParameterBlock
     '''
-    from idaes.core.reaction_base import ReactionParameterBlock
+    from idaes.core.base.reaction_base import ReactionParameterBlock
     if isinstance(val, ReactionParameterBlock):
         return val
     else:

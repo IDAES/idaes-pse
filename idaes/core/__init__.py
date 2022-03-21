@@ -16,7 +16,7 @@ from .base.unit_model import UnitModelBlockData, UnitModelBlock
 from .base.flowsheet_model import FlowsheetBlockData, FlowsheetBlock
 from .base.property_base import (StateBlockData, PhysicalParameterBlock,
                                  StateBlock)
-from .reaction_base import (ReactionBlockDataBase, ReactionParameterBlock,
+from .base.reaction_base import (ReactionBlockDataBase, ReactionParameterBlock,
                             ReactionBlockBase)
 from .base.control_volume_base import (
     ControlVolumeBlockData,
