@@ -30,7 +30,7 @@ from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
-from idaes.core.phases import PhaseType as PT
+from idaes.core.base.phases import PhaseType as PT
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,

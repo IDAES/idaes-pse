@@ -28,7 +28,7 @@ from pyomo.environ import (check_optimal_termination,
 
 # Import IDAES cores
 from idaes.core import AqueousPhase, VaporPhase
-from idaes.core.components import *
+from idaes.core.base.components import *
 
 from idaes.generic_models.properties.core.state_definitions import FcTP
 from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
