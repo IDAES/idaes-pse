@@ -25,6 +25,7 @@ export class Paper {
         });
 
         this._paperScroller = new joint.ui.PaperScroller({
+            padding: 100,
             paper: this._paper,
             autoResizePaper: true,
             scrollWhileDragging: true,
@@ -186,19 +187,6 @@ export class Paper {
         // right now
         // See the comments above the save button for more saving TODOs
         self._paper.on('paper:mouseleave', () => {this._app.saveModel(url, self._graph)});
-        //     $.ajax({
-        //         type: 'POST',
-        //         contentType: 'application/json',
-        //         data: JSON.stringify(self._graph.toJSON()),
-        //         dataType: 'json',
-        //         url: url,
-        //         success: function (data) {
-        //         },
-        //         error: function(error) {
-        //             console.log(error);
-        //         }
-        //     });
-        // });
 
         // Link labels will appear and disappear on right click. Replaces browser context menu
         self._paper.on("link:contextmenu", function(linkView, evt) {
@@ -226,9 +214,19 @@ export class Paper {
     }
 
     /**
+     * Adjust the paper content to the center
+     */
+    zoomToFit(padding = 30) {
+        this._paperScroller.zoomToFit({padding: padding})
+    }
+
+    /**
      * Register Events after the graph model is loaded
      */
     postSetupRegisterEvents() {
+        // Recenter the paper
+        this.zoomToFit();
+
         // Setup event listeners for the links in Paper/Graph
         this._graph.getLinks().forEach((link) => {
             let linkView = link.findView(this._paper);
