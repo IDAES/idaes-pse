@@ -1252,75 +1252,262 @@ see reaction package for documentation.}"""))
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
+        # local aliases used to shorten object names
+        gas_phase = self.config.gas_phase_config
 
-        if hasattr(self, "gas_phase_config_pressure_drop"):
-            for t, v in self.gas_phase_config_pressure_drop.items():
-                iscale.set_scaling_factor(v, 1e2)
+        # Get units meta data from property packages
+        units_meta_gas = \
+            gas_phase.property_package.get_metadata().get_derived_units
 
-        if hasattr(self, "gas_phase_config_rxn_ext"):
-            for t, v in self.gas_phase_config_rxn_ext.items():
-                iscale.set_scaling_factor(v, 1e3)
+        # scale some variables
+        if hasattr(self, "bed_diameter"):
+            if iscale.get_scaling_factor(self.bed_diameter) is None:
+                sf = 1/value(self.bed_diameter)
+                iscale.set_scaling_factor(self.bed_diameter, 1e-1 * sf)
 
-        if hasattr(self, "solid_phase_config_rxn_ext"):
-            for t, v in self.solid_phase_config_rxn_ext.items():
-                iscale.set_scaling_factor(v, 1e3)
+        if hasattr(self, "bed_area"):
+            if iscale.get_scaling_factor(self.bed_area) is None:
+                sf = 1/value(constants.pi*(0.5*self.bed_diameter)**2)
+                iscale.set_scaling_factor(self.bed_area, 1e-1 * sf)
 
-        if hasattr(self, "gas_comp_hetero_rxn"):
-            for t, v in self.gas_comp_hetero_rxn.items():
-                iscale.set_scaling_factor(v, 1e3)
+        if hasattr(self.gas_phase, "area"):
+            if iscale.get_scaling_factor(self.gas_phase.area) is None:
+                sf = iscale.get_scaling_factor(self.bed_area)
+                iscale.set_scaling_factor(self.gas_phase.area, sf)
 
-        if hasattr(self, "gas_solid_htc_eqn"):
-            for t, v in self.gas_solid_htc_eqn.items():
-                iscale.set_scaling_factor(v, 1e-3)
+        if hasattr(self.solid_phase, "area"):
+            if iscale.get_scaling_factor(self.solid_phase.area) is None:
+                sf = iscale.get_scaling_factor(self.bed_area)
+                iscale.set_scaling_factor(self.solid_phase.area, sf)
 
-        # scaling for other constraints
+        if hasattr(self.gas_phase, "deltaP"):
+            if iscale.get_scaling_factor(self.gas_phase.deltaP) is None:
+                iscale.set_scaling_factor(self.gas_phase.deltaP, 1e2)
+
+        if hasattr(self.gas_phase, "rate_reaction_extent"):
+            if iscale.get_scaling_factor(
+                    self.gas_phase.rate_reaction_extent) is None:
+                iscale.set_scaling_factor(
+                    self.gas_phase.rate_reaction_extent, 1e3)
+
+        if hasattr(self.solid_phase, "rate_reaction_extent"):
+            if iscale.get_scaling_factor(
+                    self.solid_phase.rate_reaction_extent) is None:
+                iscale.set_scaling_factor(
+                    self.solid_phase.rate_reaction_extent, 1e3)
+
+        if hasattr(self.gas_phase, "mass_transfer_term"):
+            if iscale.get_scaling_factor(
+                    self.gas_phase.mass_transfer_term) is None:
+                iscale.set_scaling_factor(
+                    self.gas_phase.mass_transfer_term, 1e3)
+
+        if self.config.energy_balance_type != EnergyBalanceType.none:
+            if hasattr(self, "gas_solid_htc"):
+                if iscale.get_scaling_factor(self.gas_solid_htc) is None:
+                    iscale.set_scaling_factor(self.gas_solid_htc, 1e-3)
+
+            if hasattr(self, "Re_particle"):
+                if iscale.get_scaling_factor(self.Re_particle) is None:
+                    sf = 1/(value(self.velocity_superficial_gas[0, 0] *
+                                  pyunits.convert(
+                                      self.solid_phase.properties[0, 0]
+                                      ._params.particle_dia,
+                                      to_units=units_meta_gas('length')
+                                                  ) *
+                                  self.gas_phase.properties[0, 0].dens_mass) /
+                            value(self.gas_phase.properties[0, 0].visc_d))
+                    iscale.set_scaling_factor(self.Re_particle, sf)
+
+            if hasattr(self, "prandtl_number"):
+                if iscale.get_scaling_factor(self.prandtl_number) is None:
+                    sf = 1/(value(self.gas_phase.properties[0, 0].cp_mass *
+                                  self.gas_phase.properties[0, 0].visc_d) /
+                            value(self.gas_phase.properties[0, 0].therm_cond))
+                    iscale.set_scaling_factor(self.Pr, sf)
+
+            if hasattr(self, "Nu_particle"):
+                if iscale.get_scaling_factor(self.Nu_particle) is None:
+                    sf = 1/(value(
+                        ((2.0 + 1.1 *
+                          (smooth_abs(self.Re_particle[0, 0], self.eps) ** 0.6
+                           ) ** 3
+                          ) * self.Pr[0, 0]
+                         )**(1/3)
+                        )
+                        )
+                    iscale.set_scaling_factor(self.Nu_particle, sf)
+
+            # scale CV1D variables
+            for (t, x), v in self.gas_phase.heat.items():
+                sf1 = iscale.get_scaling_factor(
+                    self.gas_phase.properties[t, x].enth_mol)
+                sf2 = iscale.get_scaling_factor(
+                    self.gas_phase.properties[t, x].flow_mol)
+                iscale.set_scaling_factor(v, sf1 * sf2)
+
+            for (t, x), v in self.solid_phase.heat.items():
+                sf1 = iscale.get_scaling_factor(
+                    self.solid_phase.properties[t, x].enth_mass)
+                sf2 = iscale.get_scaling_factor(
+                    self.solid_phase.properties[t, x].flow_mass)
+                iscale.set_scaling_factor(v, sf1 * sf2)
+
+        # scale some constraints
         if hasattr(self, "bed_area_eqn"):
-            for t, v in self.bed_area_eqn.items():
-                iscale.set_scaling_factor(v, 1)
+            for c in self.bed_area_eqn.values():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bed_area),
+                    overwrite=False
+                )
 
         if hasattr(self, "gas_phase_area"):
-            for t, v in self.gas_phase_area.items():
-                iscale.set_scaling_factor(v, 1)
+            for (t, x), c in self.gas_phase_area.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_phase.area),
+                    overwrite=False
+                )
 
         if hasattr(self, "solid_phase_area"):
-            for t, v in self.solid_phase_area.items():
-                iscale.set_scaling_factor(v, 1)
+            for (t, x), c in self.solid_phase_area.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.solid_phase.area),
+                    overwrite=False
+                )
 
         if hasattr(self, "gas_super_vel"):
-            for t, v in self.gas_super_vel.items():
-                iscale.set_scaling_factor(v, 1)
+            for (t, x), c in self.gas_super_vel.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_phase.properties[t, x].flow_mol),
+                    overwrite=False
+                )
 
         if hasattr(self, "solid_super_vel"):
-            for t, v in self.solid_super_vel.items():
-                iscale.set_scaling_factor(v, 1)
+            for (t, x), c in self.solid_super_vel.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.solid_phase.properties[t, x].flow_mass),
+                    overwrite=False
+                )
 
-        if hasattr(self, "solid_phase_heat_transfer"):
-            for t, v in self.solid_phase_heat_transfer.items():
-                iscale.set_scaling_factor(v, 1)
+        if hasattr(self, "gas_phase_config_pressure_drop"):
+            for (t, x), c in self.gas_phase_config_pressure_drop.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_phase.deltaP[t, x]),
+                    overwrite=False
+                )
 
-        if hasattr(self, "reynolds_number_particle"):
-            for t, v in self.reynolds_number_particle.items():
-                iscale.set_scaling_factor(v, 1)
+        if hasattr(self, "gas_phase_config_rxn_ext"):
+            for (t, x, r), c in self.gas_phase_config_rxn_ext.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_phase.rate_reaction_extent[t, x, r]),
+                    overwrite=False
+                )
 
-        if hasattr(self, "prandtl_number"):
-            for t, v in self.prandtl_number.items():
-                iscale.set_scaling_factor(v, 1)
+        if hasattr(self, "solid_phase_config_rxn_ext"):
+            for (t, x, r), c in self.solid_phase_config_rxn_ext.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.solid_phase.rate_reaction_extent[t, x, r]),
+                    overwrite=False
+                )
 
-        if hasattr(self, "nusselt_number_particle"):
-            for t, v in self.nusselt_number_particle.items():
-                iscale.set_scaling_factor(v, 1)
+        if hasattr(self, "gas_comp_hetero_rxn"):
+            for (t, x, p, j), c in self.gas_comp_hetero_rxn.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_phase.mass_transfer_term[t, x, p, j]),
+                    overwrite=False
+                )
 
-        if hasattr(self, "gas_phase_heat_transfer"):
-            for t, v in self.gas_phase_heat_transfer.items():
-                iscale.set_scaling_factor(v, 1)
+        if self.config.energy_balance_type != EnergyBalanceType.none:
+            if hasattr(self, "solid_phase_heat_transfer"):
+                for (t, x), c in self.solid_phase_heat_transfer.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_solid_htc[t, x]),
+                        overwrite=False
+                        )
 
-        if hasattr(self, "isothermal_gas_phase"):
-            for t, v in self.isothermal_gas_phase.items():
-                iscale.set_scaling_factor(v, 1)
+            if hasattr(self, "reynolds_number_particle"):
+                for (t, x), c in self.reynolds_number_particle.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.Re_particle[t, x]),
+                        overwrite=False
+                        )
 
-        if hasattr(self, "isothermal_solid_phase"):
-            for t, v in self.isothermal_solid_phase.items():
-                iscale.set_scaling_factor(v, 1)
+            if hasattr(self, "prandtl_number"):
+                for (t, x), c in self.prandtl_number.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.Pr[t, x]),
+                        overwrite=False
+                        )
+
+            if hasattr(self, "nusselt_number_particle"):
+                for (t, x), c in self.nusselt_number_particle.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.Nu_particle[t, x]),
+                        overwrite=False
+                        )
+
+            if hasattr(self, "gas_solid_htc_eqn"):
+                for (t, x), c in self.gas_solid_htc_eqn.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_solid_htc[t, x]),
+                        overwrite=False
+                        )
+
+            if hasattr(self, "gas_phase_heat_transfer"):
+                for (t, x), c in self.gas_phase_heat_transfer.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_solid_htc[t, x]),
+                        overwrite=False
+                        )
+
+        elif self.config.energy_balance_type == EnergyBalanceType.none:
+            if hasattr(self, "isothermal_gas_phase"):
+                for (t, x), c in self.isothermal_gas_phase.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_phase.properties[t, x].temperature),
+                        overwrite=False
+                        )
+
+            if hasattr(self, "isothermal_solid_phase"):
+                for (t, x), c in self.isothermal_solid_phase.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_phase.properties[t, x].temperature),
+                        overwrite=False
+                        )
 
     def results_plot(blk):
         '''

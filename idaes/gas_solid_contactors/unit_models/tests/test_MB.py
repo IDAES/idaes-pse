@@ -210,6 +210,111 @@ class TestIronOC(object):
     def test_dof(self, iron_oc):
         assert degrees_of_freedom(iron_oc) == 0
 
+    @pytest.fixture(scope="class")
+    def iron_oc_unscaled(self, iron_oc):
+        import copy
+        m = copy.deepcopy(iron_oc)
+
+        return m
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_unscaled(self, iron_oc_unscaled):
+        initialization_tester(
+                iron_oc_unscaled,
+                optarg={'tol': 1e-6},
+                gas_phase_state_args={"flow_mol": 128.20513,
+                                      "temperature": 1183.15,
+                                      "pressure": 2.00E5},
+                solid_phase_state_args={"flow_mass": 591.4,
+                                        "temperature": 1183.15})
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve_unscaled(self, iron_oc_unscaled):
+        results = solver.solve(iron_oc_unscaled)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_scaling(self, iron_oc):
+        MB = iron_oc.fs.unit  # alias to keep test lines short
+        iscale.calculate_scaling_factors(MB)
+
+        assert (pytest.approx(0.01538, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.bed_diameter))
+        assert (pytest.approx(0.003014, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.bed_area))
+        assert (pytest.approx(0.003014, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.gas_phase.area))
+        assert (pytest.approx(0.003014, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.solid_phase.area))
+        assert (pytest.approx(100.0000, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.gas_phase.deltaP))
+        assert (pytest.approx(1000.0000, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.solid_phase.rate_reaction_extent))
+        assert (pytest.approx(0.001, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.gas_solid_htc))
+        assert (pytest.approx(0.1333, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.Re_particle))
+        assert (pytest.approx(1.0000, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.Pr))
+        assert (pytest.approx(0.6858, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.Nu_particle))
+        for (t, x), v in MB.gas_phase.heat.items():
+            assert (pytest.approx(0.001, abs=1e-2) ==
+                    iscale.get_scaling_factor(v))
+        for (t, x), v in MB.solid_phase.heat.items():
+            assert (pytest.approx(0.001, abs=1e-2) ==
+                    iscale.get_scaling_factor(v))
+
+        for c in MB.bed_area_eqn.values():
+            assert (pytest.approx(0.0030, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.gas_phase_area.items():
+            assert (pytest.approx(0.0030, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.solid_phase_area.items():
+            assert (pytest.approx(0.0030, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.gas_super_vel.items():
+            assert (pytest.approx(1.0000, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.solid_super_vel.items():
+            assert (pytest.approx(1.0000, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.gas_phase_config_pressure_drop.items():
+            assert (pytest.approx(100.0000, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x, r), c in MB.solid_phase_config_rxn_ext.items():
+            assert (pytest.approx(1000.0000, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x, p, j), c in MB.gas_comp_hetero_rxn.items():
+            assert (pytest.approx(1000.0000, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.solid_phase_heat_transfer.items():
+            assert (pytest.approx(0.001, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.reynolds_number_particle.items():
+            assert (pytest.approx(0.1333, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.prandtl_number.items():
+            assert (pytest.approx(1.0000, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.nusselt_number_particle.items():
+            assert (pytest.approx(0.6858, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.gas_solid_htc_eqn.items():
+            assert (pytest.approx(0.001, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.gas_phase_heat_transfer.items():
+            assert (pytest.approx(0.001, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -314,88 +419,6 @@ class TestIronOC(object):
         ebal_tol = ebal_gas + ebal_solid - e_reaction
         assert abs(ebal_tol) <= 1e-2
 
-    @pytest.mark.component
-    def test_scaling(self, iron_oc):
-        iscale.calculate_scaling_factors(iron_oc.fs.unit)
-
-        if iron_oc.fs.unit.config.has_pressure_change:
-            assert hasattr(iron_oc.fs.unit, "gas_phase_config_pressure_drop")
-            for t, v in iron_oc.fs.unit.gas_phase_config_pressure_drop.items():
-                assert iscale.get_scaling_factor(v) == 1e2
-
-        if hasattr(iron_oc.fs.unit.gas_phase, "reactions"):
-            assert hasattr(iron_oc.fs.unit, "gas_phase_config_rxn_ext")
-            for t, v in iron_oc.fs.unit.gas_phase_config_rxn_ext.items():
-                assert iscale.get_scaling_factor(v) == 1e3
-
-        if hasattr(iron_oc.fs.unit.solid_phase, "reactions"):
-            assert hasattr(iron_oc.fs.unit, "solid_phase_config_rxn_ext")
-            for t, v in iron_oc.fs.unit.solid_phase_config_rxn_ext.items():
-                assert iscale.get_scaling_factor(v) == 1e3
-
-            assert hasattr(iron_oc.fs.unit, "gas_comp_hetero_rxn")
-            for t, v in iron_oc.fs.unit.gas_comp_hetero_rxn.items():
-                assert iscale.get_scaling_factor(v) == 1e3
-
-        if (iron_oc.fs.unit.config.energy_balance_type
-                != EnergyBalanceType.none):
-            assert hasattr(iron_oc.fs.unit, "gas_solid_htc_eqn")
-            for t, v in iron_oc.fs.unit.gas_solid_htc_eqn.items():
-                assert iscale.get_scaling_factor(v) == 1e-3
-
-        # scaling for other constraints
-        assert hasattr(iron_oc.fs.unit, "bed_area_eqn")
-        for t, v in iron_oc.fs.unit.bed_area_eqn.items():
-            assert iscale.get_scaling_factor(v) == 1
-
-        assert hasattr(iron_oc.fs.unit, "gas_phase_area")
-        for t, v in iron_oc.fs.unit.gas_phase_area.items():
-            assert iscale.get_scaling_factor(v) == 1
-
-        assert hasattr(iron_oc.fs.unit, "solid_phase_area")
-        for t, v in iron_oc.fs.unit.solid_phase_area.items():
-            assert iscale.get_scaling_factor(v) == 1
-
-        assert hasattr(iron_oc.fs.unit, "gas_super_vel")
-        for t, v in iron_oc.fs.unit.gas_super_vel.items():
-            assert iscale.get_scaling_factor(v) == 1
-
-        assert hasattr(iron_oc.fs.unit, "solid_super_vel")
-        for t, v in iron_oc.fs.unit.solid_super_vel.items():
-            assert iscale.get_scaling_factor(v) == 1
-
-        if (iron_oc.fs.unit.config.energy_balance_type
-                != EnergyBalanceType.none):
-            assert hasattr(iron_oc.fs.unit, "solid_phase_heat_transfer")
-            for t, v in iron_oc.fs.unit.solid_phase_heat_transfer.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-            assert hasattr(iron_oc.fs.unit, "reynolds_number_particle")
-            for t, v in iron_oc.fs.unit.reynolds_number_particle.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-            assert hasattr(iron_oc.fs.unit, "prandtl_number")
-            for t, v in iron_oc.fs.unit.prandtl_number.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-            assert hasattr(iron_oc.fs.unit, "nusselt_number_particle")
-            for t, v in iron_oc.fs.unit.nusselt_number_particle.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-            assert hasattr(iron_oc.fs.unit, "gas_phase_heat_transfer")
-            for t, v in iron_oc.fs.unit.gas_phase_heat_transfer.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-        elif (iron_oc.fs.unit.config.energy_balance_type
-                == EnergyBalanceType.none):
-            assert hasattr(iron_oc.fs.unit, "isothermal_gas_phase")
-            for t, v in iron_oc.fs.unit.isothermal_gas_phase.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-            assert hasattr(iron_oc.fs.unit, "isothermal_solid_phase")
-            for t, v in iron_oc.fs.unit.isothermal_solid_phase.items():
-                assert iscale.get_scaling_factor(v) == 1
-
     @pytest.mark.ui
     @pytest.mark.unit
     def test_report(self, iron_oc):
@@ -490,6 +513,85 @@ class TestIronOC_EnergyBalanceType(object):
     def test_dof(self, iron_oc):
         assert degrees_of_freedom(iron_oc) == 0
 
+    @pytest.fixture(scope="class")
+    def iron_oc_unscaled(self, iron_oc):
+        import copy
+        m = copy.deepcopy(iron_oc)
+
+        return m
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_unscaled(self, iron_oc_unscaled):
+        initialization_tester(
+                iron_oc_unscaled,
+                optarg={'tol': 1e-6},
+                gas_phase_state_args={"flow_mol": 128.20513,
+                                      "temperature": 1183.15,
+                                      "pressure": 2.00E5},
+                solid_phase_state_args={"flow_mass": 591.4,
+                                        "temperature": 1183.15})
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve_unscaled(self, iron_oc_unscaled):
+        results = solver.solve(iron_oc_unscaled)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_scaling(self, iron_oc):
+        MB = iron_oc.fs.unit  # alias to keep test lines short
+        iscale.calculate_scaling_factors(MB)
+
+        assert (pytest.approx(0.01538, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.bed_diameter))
+        assert (pytest.approx(0.003014, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.bed_area))
+        assert (pytest.approx(0.003014, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.gas_phase.area))
+        assert (pytest.approx(0.003014, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.solid_phase.area))
+        assert (pytest.approx(100.0000, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.gas_phase.deltaP))
+        assert (pytest.approx(1000.0000, abs=1e-2) ==
+                iscale.get_scaling_factor(MB.solid_phase.rate_reaction_extent))
+
+        for c in MB.bed_area_eqn.values():
+            assert (pytest.approx(0.0030, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.gas_phase_area.items():
+            assert (pytest.approx(0.0030, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.solid_phase_area.items():
+            assert (pytest.approx(0.0030, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.gas_super_vel.items():
+            assert (pytest.approx(1.0000, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.solid_super_vel.items():
+            assert (pytest.approx(1.0000, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.gas_phase_config_pressure_drop.items():
+            assert (pytest.approx(100.0000, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x, r), c in MB.solid_phase_config_rxn_ext.items():
+            assert (pytest.approx(1000.0000, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x, p, j), c in MB.gas_comp_hetero_rxn.items():
+            assert (pytest.approx(1000.0000, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.isothermal_gas_phase.items():
+            assert (pytest.approx(0.01, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+        for (t, x), c in MB.isothermal_solid_phase.items():
+            assert (pytest.approx(0.01, abs=1e-2) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -575,88 +677,6 @@ class TestIronOC_EnergyBalanceType(object):
              _params.mw_comp['Fe2O3']))
         stoichiometric_ratio = mole_solid_reacted/mole_gas_reacted
         assert (pytest.approx(12, abs=1e-6) == stoichiometric_ratio)
-
-    @pytest.mark.component
-    def test_scaling(self, iron_oc):
-        iscale.calculate_scaling_factors(iron_oc.fs.unit)
-
-        if iron_oc.fs.unit.config.has_pressure_change:
-            assert hasattr(iron_oc.fs.unit, "gas_phase_config_pressure_drop")
-            for t, v in iron_oc.fs.unit.gas_phase_config_pressure_drop.items():
-                assert iscale.get_scaling_factor(v) == 1e2
-
-        if hasattr(iron_oc.fs.unit.gas_phase, "reactions"):
-            assert hasattr(iron_oc.fs.unit, "gas_phase_config_rxn_ext")
-            for t, v in iron_oc.fs.unit.gas_phase_config_rxn_ext.items():
-                assert iscale.get_scaling_factor(v) == 1e3
-
-        if hasattr(iron_oc.fs.unit.solid_phase, "reactions"):
-            assert hasattr(iron_oc.fs.unit, "solid_phase_config_rxn_ext")
-            for t, v in iron_oc.fs.unit.solid_phase_config_rxn_ext.items():
-                assert iscale.get_scaling_factor(v) == 1e3
-
-            assert hasattr(iron_oc.fs.unit, "gas_comp_hetero_rxn")
-            for t, v in iron_oc.fs.unit.gas_comp_hetero_rxn.items():
-                assert iscale.get_scaling_factor(v) == 1e3
-
-        if (iron_oc.fs.unit.config.energy_balance_type
-                != EnergyBalanceType.none):
-            assert hasattr(iron_oc.fs.unit, "gas_solid_htc_eqn")
-            for t, v in iron_oc.fs.unit.gas_solid_htc_eqn.items():
-                assert iscale.get_scaling_factor(v) == 1e-3
-
-        # scaling for other constraints
-        assert hasattr(iron_oc.fs.unit, "bed_area_eqn")
-        for t, v in iron_oc.fs.unit.bed_area_eqn.items():
-            assert iscale.get_scaling_factor(v) == 1
-
-        assert hasattr(iron_oc.fs.unit, "gas_phase_area")
-        for t, v in iron_oc.fs.unit.gas_phase_area.items():
-            assert iscale.get_scaling_factor(v) == 1
-
-        assert hasattr(iron_oc.fs.unit, "solid_phase_area")
-        for t, v in iron_oc.fs.unit.solid_phase_area.items():
-            assert iscale.get_scaling_factor(v) == 1
-
-        assert hasattr(iron_oc.fs.unit, "gas_super_vel")
-        for t, v in iron_oc.fs.unit.gas_super_vel.items():
-            assert iscale.get_scaling_factor(v) == 1
-
-        assert hasattr(iron_oc.fs.unit, "solid_super_vel")
-        for t, v in iron_oc.fs.unit.solid_super_vel.items():
-            assert iscale.get_scaling_factor(v) == 1
-
-        if (iron_oc.fs.unit.config.energy_balance_type
-                != EnergyBalanceType.none):
-            assert hasattr(iron_oc.fs.unit, "solid_phase_heat_transfer")
-            for t, v in iron_oc.fs.unit.solid_phase_heat_transfer.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-            assert hasattr(iron_oc.fs.unit, "reynolds_number_particle")
-            for t, v in iron_oc.fs.unit.reynolds_number_particle.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-            assert hasattr(iron_oc.fs.unit, "prandtl_number")
-            for t, v in iron_oc.fs.unit.prandtl_number.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-            assert hasattr(iron_oc.fs.unit, "nusselt_number_particle")
-            for t, v in iron_oc.fs.unit.nusselt_number_particle.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-            assert hasattr(iron_oc.fs.unit, "gas_phase_heat_transfer")
-            for t, v in iron_oc.fs.unit.gas_phase_heat_transfer.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-        elif (iron_oc.fs.unit.config.energy_balance_type
-                == EnergyBalanceType.none):
-            assert hasattr(iron_oc.fs.unit, "isothermal_gas_phase")
-            for t, v in iron_oc.fs.unit.isothermal_gas_phase.items():
-                assert iscale.get_scaling_factor(v) == 1
-
-            assert hasattr(iron_oc.fs.unit, "isothermal_solid_phase")
-            for t, v in iron_oc.fs.unit.isothermal_solid_phase.items():
-                assert iscale.get_scaling_factor(v) == 1
 
     @pytest.mark.ui
     @pytest.mark.unit
