@@ -12,15 +12,62 @@
 #################################################################################
 import numpy as np
 from math import sqrt
-from idaes.apps.matopt.materials import Atom, Canvas, Design, LinearTiling, PlanarTiling, CubicTiling
-from idaes.apps.matopt.materials.geometry import Shape, Cuboctahedron, Parallelepiped, Rhombohedron, RectPrism, Cube, \
-    Cylinder, CylindricalSector
-from idaes.apps.matopt.materials.lattices import FCCLattice, CubicLattice, PerovskiteLattice, DiamondLattice, \
-    WurtziteLattice
-from idaes.apps.matopt.materials.transform_func import ShiftFunc, ScaleFunc, RotateFunc, ReflectFunc
-from idaes.apps.matopt.opt import Coef, LinearExpr, MatOptModel, SumNeighborSites, SumNeighborBonds, SumSites, SumBonds, \
-    SumSiteTypes, SumBondTypes, SumSitesAndTypes, SumBondsAndTypes, SumConfs, SumSitesAndConfs, LessThan, EqualTo, \
-    GreaterThan, FixedTo, Disallow, PiecewiseLinear, Implies, NegImplies, ImpliesSiteCombination, ImpliesNeighbors
+from idaes.apps.matopt.materials import (
+    Atom,
+    Canvas,
+    Design,
+    LinearTiling,
+    PlanarTiling,
+    CubicTiling,
+)
+from idaes.apps.matopt.materials.geometry import (
+    Shape,
+    Cuboctahedron,
+    Parallelepiped,
+    Rhombohedron,
+    RectPrism,
+    Cube,
+    Cylinder,
+    CylindricalSector,
+)
+from idaes.apps.matopt.materials.lattices import (
+    FCCLattice,
+    CubicLattice,
+    PerovskiteLattice,
+    DiamondLattice,
+    WurtziteLattice,
+)
+from idaes.apps.matopt.materials.transform_func import (
+    ShiftFunc,
+    ScaleFunc,
+    RotateFunc,
+    ReflectFunc,
+)
+from idaes.apps.matopt.opt import (
+    Coef,
+    LinearExpr,
+    MatOptModel,
+    SumNeighborSites,
+    SumNeighborBonds,
+    SumSites,
+    SumBonds,
+    SumSiteTypes,
+    SumBondTypes,
+    SumSitesAndTypes,
+    SumBondsAndTypes,
+    SumConfs,
+    SumSitesAndConfs,
+    LessThan,
+    EqualTo,
+    GreaterThan,
+    FixedTo,
+    Disallow,
+    PiecewiseLinear,
+    Implies,
+    NegImplies,
+    ImpliesSiteCombination,
+    ImpliesNeighbors,
+)
 import pytest
 
 
@@ -50,9 +97,9 @@ def test_construct_PerovskiteLattice():
 @pytest.mark.unit
 def test_construct_DiamondLattice():
     IAD = sqrt(3) / 4
-    lattice = DiamondLattice.alignedWith(IAD, '100')
-    lattice = DiamondLattice.alignedWith(IAD, '110')
-    lattice = DiamondLattice.alignedWith(IAD, '111')
+    lattice = DiamondLattice.alignedWith(IAD, "100")
+    lattice = DiamondLattice.alignedWith(IAD, "110")
+    lattice = DiamondLattice.alignedWith(IAD, "111")
     lattice = DiamondLattice(IAD)
     return lattice
 
@@ -60,7 +107,7 @@ def test_construct_DiamondLattice():
 @pytest.mark.unit
 def test_construct_WurtziteLattice():
     IAD = sqrt(3 / 8)
-    lattice = WurtziteLattice.alignedWith(IAD, '0001')
+    lattice = WurtziteLattice.alignedWith(IAD, "0001")
     lattice = WurtziteLattice(IAD)
     return lattice
 
@@ -69,8 +116,8 @@ def test_construct_WurtziteLattice():
 def test_construct_Atom():
     atom_zero = Atom(39)
     atom_one = Atom(40)
-    atom_two = Atom('Zr')
-    assert (atom_one == atom_two)
+    atom_two = Atom("Zr")
+    assert atom_one == atom_two
     return atom_zero, atom_one
 
 
@@ -106,9 +153,11 @@ def test_construct_Cuboctahedron():
 
 @pytest.mark.unit
 def test_construct_Parallelepiped():
-    shape = Parallelepiped(np.array([1, 0, 0], dtype=float),
-                           np.array([0, 1, 0], dtype=float),
-                           np.array([0, 0, 1], dtype=float))
+    shape = Parallelepiped(
+        np.array([1, 0, 0], dtype=float),
+        np.array([0, 1, 0], dtype=float),
+        np.array([0, 0, 1], dtype=float),
+    )
     return shape
 
 
@@ -138,10 +187,14 @@ def test_construct_Cylinder():
 
 @pytest.mark.unit
 def test_construct_CylindricalSector():
-    shape = CylindricalSector(np.zeros(3, dtype=float), 1.0, 1.0,
-                              np.array([1, 0, 0], dtype=float),
-                              np.array([0, 1, 0], dtype=float),
-                              np.array([0, 0, 1], dtype=float))
+    shape = CylindricalSector(
+        np.zeros(3, dtype=float),
+        1.0,
+        1.0,
+        np.array([1, 0, 0], dtype=float),
+        np.array([0, 1, 0], dtype=float),
+        np.array([0, 0, 1], dtype=float),
+    )
     return shape
 
 
@@ -324,9 +377,7 @@ def test_construct_Disallow():
 @pytest.mark.unit
 def test_construct_PiecewiseLinear():
     m = test_construct_MatOptModel()
-    rule = PiecewiseLinear([x ** 2 for x in range(3)],
-                           [x for x in range(3)],
-                           m.Ci)
+    rule = PiecewiseLinear([x**2 for x in range(3)], [x for x in range(3)], m.Ci)
     return rule
 
 
