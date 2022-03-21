@@ -28,8 +28,8 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 
 from idaes.core import (declare_process_block_class, Component,
-                        Phase, LiquidPhase, VaporPhase, MaterialFlowBasis, Solvent)
-from idaes.core.base.phases import PhaseType as PT
+                        Phase, LiquidPhase, VaporPhase, MaterialFlowBasis,
+                        Solvent, PhaseType as PT)
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.generic_models.properties.core.phase_equil.henry import \
     HenryType

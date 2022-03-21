@@ -27,8 +27,7 @@ from pyomo.environ import ConcreteModel
 from pyomo.environ import units as pyunits
 from pyomo.util.check_units import assert_units_equivalent
 
-from idaes.core import LiquidPhase, VaporPhase, Component
-from idaes.core.base.phases import PhaseType as PT
+from idaes.core import LiquidPhase, VaporPhase, Component, PhaseType as PT
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal

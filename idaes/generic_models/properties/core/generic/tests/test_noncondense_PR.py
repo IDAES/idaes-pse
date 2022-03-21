@@ -26,11 +26,9 @@ from pyomo.environ import (check_optimal_termination,
                            units as pyunits)
 
 # Import IDAES cores
-from idaes.core import LiquidPhase, VaporPhase, Component
+from idaes.core import LiquidPhase, VaporPhase, Component, PhaseType as PT
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
-
-from idaes.core.base.phases import PhaseType as PT
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
