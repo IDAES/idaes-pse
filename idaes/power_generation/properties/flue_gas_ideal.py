@@ -28,6 +28,7 @@ from pyomo.environ import (
     sqrt,
     Var,
     Expression,
+    check_optimal_termination,
     units as pyunits,
 )
 from pyomo.opt import SolverFactory
@@ -50,6 +51,7 @@ from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from idaes.core.util import constants, get_solver
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
 # Import Python libraries
 import idaes.logger as idaeslog
@@ -87,20 +89,12 @@ class FlueGasParameterData(PhysicalParameterBlock):
         """Add contents to the block."""
         super().build()
         self._state_block_class = FlueGasStateBlock
+        _valid_comps = ["N2", "O2", "NO", "CO2", "H2O", "SO2"]
 
-        # Create Component objects
-        if "N2" in self.config.components:
-            self.N2 = Component()
-        if "O2" in self.config.components:
-            self.O2 = Component()
-        if "NO" in self.config.components:
-            self.NO = Component()
-        if "CO2" in self.config.components:
-            self.CO2 = Component()
-        if "H2O" in self.config.components:
-            self.H2O = Component()
-        if "SO2" in self.config.components:
-            self.SO2 = Component()
+        for j in self.config.components:
+            if j not in _valid_comps:
+                raise ConfigurationError(f"Component '{j}' is not supported")
+            self.add_component(j, Component())
 
         # Create Phase object
         self.Vap = VaporPhase()
@@ -355,7 +349,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
                 }.items()
                 if k in self.component_list
             },
-            doc="collision diameter in Angstrom (10e-10 m)",
+            doc="collision diameter",
             units=pyunits.angstrom,
         )
         self.ep_Kappa = Param(
@@ -372,8 +366,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
                 }.items()
                 if k in self.component_list
             },
-            doc="characteristic energy of interaction between pair of "
-            "molecules, K = Boltzmann constant in Kelvin",
+            doc="Boltzmann constant divided by characteristic Lennard-Jones energy",
             units=pyunits.K,
         )
 
@@ -525,9 +518,8 @@ class _FlueGasStateBlock(StateBlock):
         # Check when the state vars are fixed already result in dof 0
         for b in self.values():
             if degrees_of_freedom(b) != 0:
-                raise Exception(
-                    f"{self.name} initializtion error: State vars "
-                    "fixed but degrees of freedom not equal to 0"
+                raise InitializationError(
+                    f"{self.name} State vars fixed but degrees of freedom not 0"
                 )
         # ---------------------------------------------------------------------
         # Solve 1st stage
@@ -563,7 +555,10 @@ class _FlueGasStateBlock(StateBlock):
                 "Initialization Step 2 {}.".format(idaeslog.condition(res))
             )
 
-        init_log.info("Initialisation Complete, {}.".format(idaeslog.condition(res)))
+        if not res == "skipped" and not check_optimal_termination(res):
+            raise InitializationError(f"Solve failed {res}.")
+
+        init_log.info(f"Initialisation Complete, {idaeslog.condition(res)}.")
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
