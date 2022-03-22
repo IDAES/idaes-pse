@@ -949,29 +949,25 @@ class PolynomialRegression:
         """
         This function prints the results of the fitting to the screen.
         """
-        results_df = pd.Series()
+        results_df = pd.Series(dtype='float64')
         counter = 1
         print("\n------------------------------------------------------------")
         print("The final coefficients of the regression terms are: \n")
         print("k               |", beta[0, 0])
-        results_df = results_df.append(pd.Series({"k": beta[0, 0]}))
+        results_df = pd.concat([results_df, pd.Series({"k": beta[0, 0]})], axis=0)
         if self.multinomials == 1:
             for i in range(1, order + 1):
                 for j in range(1, self.number_of_x_vars + 1):
                     print("(x_", j, ")^", i, "     |", beta[counter, 0])
                     col_name = "(x_" + str(j) + ")^" + str(i)
-                    results_df = results_df.append(
-                        pd.Series({col_name: beta[counter, 0]})
-                    )
+                    results_df = pd.concat([results_df, pd.Series({col_name: beta[counter, 0]})], axis=0)
                     counter += 1
             for i in range(1, self.number_of_x_vars + 1):
                 for j in range(1, self.number_of_x_vars + 1):
                     if i > j:
                         print("x_", j, ".x_", i, "     |", beta[counter, 0])
                         col_name = "(x_" + str(j) + ")" + ".(x_" + str(i) + ")"
-                        results_df = results_df.append(
-                            pd.Series({col_name: beta[counter, 0]})
-                        )
+                        results_df = pd.concat([results_df, pd.Series({col_name: beta[counter, 0]})], axis=0)
                         counter += 1
 
         else:
@@ -979,9 +975,7 @@ class PolynomialRegression:
                 for j in range(1, self.number_of_x_vars + 1):
                     print("(x_", j, ")^", i, "     |", beta[counter, 0])
                     col_name = "(x_" + str(j) + ")^" + str(i)
-                    results_df = results_df.append(
-                        pd.Series({col_name: beta[counter, 0]})
-                    )
+                    results_df = pd.concat([results_df, pd.Series({col_name: beta[counter, 0]})], axis=0)
                     counter += 1
 
         return results_df
@@ -1450,7 +1444,7 @@ class PolynomialRegression:
             # Print results to screen
             dataframe_coeffs = self.results_generation(beta_vector, order_best)
 
-            extra_terms_coeffs = pd.Series()
+            extra_terms_coeffs = pd.Series(dtype='float64')
             print(
                 "\nThe coefficients of the extra terms in additional_regression_features are:\n"
             )
@@ -1466,9 +1460,10 @@ class PolynomialRegression:
                     + str(number_additional_features - af + 1)
                     + "]"
                 )
-                extra_terms_coeffs = extra_terms_coeffs.append(
+                extra_terms_coeffs = pd.concat([extra_terms_coeffs,
                     pd.Series({col_name: beta_vector[len(beta_vector) - af, 0]})
-                )
+                 ], axis=0)
+                
 
             # Print errors
             print(

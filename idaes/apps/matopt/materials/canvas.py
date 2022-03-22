@@ -29,6 +29,7 @@ class Canvas(object):
     connections necessary to create a ``Canvas`` object can be obtained from the combination of
     ``Lattice``, ``Shape``, and ``Tiling`` objects.
     """
+
     DBL_TOL = 1e-5
 
     # === STANDARD CONSTRUCTOR
@@ -43,7 +44,7 @@ class Canvas(object):
         self._Points = Points
         self._NeighborhoodIndexes = NeighborhoodIndexes
         self.__DefaultNN = DefaultNN
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     # === CONSTRUCTOR - From PDB File
     @classmethod
@@ -108,9 +109,11 @@ class Canvas(object):
 
     # === CONSTRUCTOR - From Lattice and Shape
     @classmethod
-    def fromLatticeAndShape(cls, Lat, S, Seed=np.array([0, 0, 0], dtype=float), DefaultNN=0):
+    def fromLatticeAndShape(
+        cls, Lat, S, Seed=np.array([0, 0, 0], dtype=float), DefaultNN=0
+    ):
         """Make Canvas by iterating over Lattice points that fit in Shape.
-        
+
         This constructor starts from a seed location and repeatedly adds
         neighbors until there are no more neighbors that lie inside the
         provided Shape object. It is potentially very slow and should only
@@ -128,7 +131,7 @@ class Canvas(object):
         in neighborhood. (Default value = 0)
             0: param 0]:
             dtype: Default value = float))
-            0]: 
+            0]:
 
         Returns:
             Canvas: A new Canvas object.
@@ -153,7 +156,7 @@ class Canvas(object):
     @classmethod
     def fromLatticeAndShapeScan(cls, Lat, argPolyhedron, DefaultNN=0):
         """Make Canvas by iterating over Lattice points that fit in Shape.
-        
+
         This constructor takes advantage of methods in Lattice to
         efficiently scan over sites. This requires the Lattice.Scan
         method to produce a generator object.
@@ -182,9 +185,11 @@ class Canvas(object):
         return result
 
     @classmethod
-    def fromLatticeAndTiling(cls, Lat, T, Seed=np.array([0, 0, 0], dtype=float), DefaultNN=0):
+    def fromLatticeAndTiling(
+        cls, Lat, T, Seed=np.array([0, 0, 0], dtype=float), DefaultNN=0
+    ):
         """Make Canvas by iterating over Lattice points that fit in Tiling.
-        
+
         See documentation for fromLatticeAndShape.
         This constructor additionally makes the resulting Canvas periodic.
 
@@ -199,20 +204,22 @@ class Canvas(object):
         in neighborhood. (Default value = 0)
             0: param 0]:
             dtype: Default value = float))
-            0]: 
+            0]:
 
         Returns:
             Canvas: A new Canvas object.
 
         """
-        result = cls.fromLatticeAndShape(Lat, T.TileShape, Seed=Seed, DefaultNN=DefaultNN)
+        result = cls.fromLatticeAndShape(
+            Lat, T.TileShape, Seed=Seed, DefaultNN=DefaultNN
+        )
         result.makePeriodic(T, Lat.getNeighbors)
         return result
 
     @classmethod
     def fromLatticeAndTilingScan(cls, Lat, T, DefaultNN=0):
         """Make Canvas by iterating over Lattice points that fit in Tiling.
-        
+
         See documentation for fromLatticeAndTiling.
         This constructor additionally makes the resulting Canvas periodic.
 
@@ -251,10 +258,10 @@ class Canvas(object):
             None.
 
         """
-        assert (not self.hasPoint(P))
+        assert not self.hasPoint(P)
         self._Points.append(P)
         self._NeighborhoodIndexes.append([None] * (NNeighbors or self.__DefaultNN))
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     def setNeighbors(self, P1, P2, l=None):
         """Set a (directed) neighbor connection between two points.
@@ -271,12 +278,12 @@ class Canvas(object):
             None.
 
         """
-        assert (self.hasPoint(P1))
-        assert (self.hasPoint(P2))
+        assert self.hasPoint(P1)
+        assert self.hasPoint(P2)
         i = self.getPointIndex(P1)
         j = self.getPointIndex(P2)
         self.setNeighborsIJ(i, j, l=l)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     def setNeighborsIJ(self, i, j, l=None):
         """Set a (directed) neighbor connection between two indices.
@@ -297,7 +304,7 @@ class Canvas(object):
             self._NeighborhoodIndexes[i].append(j)
         else:
             self._NeighborhoodIndexes[i][l] = j
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     def setNeighborLofI(self, PN, l, i, blnSetNoneOtherwise=True):
         """Set a (directed) neighbor connection between a Point and index.
@@ -316,13 +323,13 @@ class Canvas(object):
             None.
 
         """
-        assert (i < len(self._NeighborhoodIndexes))
-        assert (l < len(self._NeighborhoodIndexes[i]))
+        assert i < len(self._NeighborhoodIndexes)
+        assert l < len(self._NeighborhoodIndexes[i])
         if self.hasPoint(PN):
             self._NeighborhoodIndexes[i][l] = self.getPointIndex(PN)
         elif blnSetNoneOtherwise:
             self._NeighborhoodIndexes[i][l] = None
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     def setNeighborsOfI(self, PNs, i):
         """Set a list of points as neighbors to an index.
@@ -338,7 +345,7 @@ class Canvas(object):
         self._NeighborhoodIndexes[i] = [None] * len(PNs)
         for l, P in enumerate(PNs):
             self.setNeighborLofI(P, l, i)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     def setNeighborsFromFunc(self, NeighborsFunc):
         """Set neighbors across the Canvas from a functor.
@@ -354,7 +361,7 @@ class Canvas(object):
         for i, P in enumerate(self.Points):
             PNs = NeighborsFunc(P)
             self.setNeighborsOfI(PNs, i)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     def getNeighborsFromFunc(self, NeighborsFunc, layer=1):
         """Get neighbors across the Canvas from a functor.
@@ -417,7 +424,9 @@ class Canvas(object):
             LatNeighbors = NeighborsFunc(P)
             for l, Index in enumerate(self.NeighborhoodIndexes[i]):
                 if Index is None:
-                    assert (not self.hasPoint(LatNeighbors[l]))  # else, Canvas constructed incorrectly
+                    assert not self.hasPoint(
+                        LatNeighbors[l]
+                    )  # else, Canvas constructed incorrectly
                     for TilingDirection in argTiling.TilingDirections:
                         PtoTry = LatNeighbors[l] + TilingDirection
                         if self.hasPoint(PtoTry):
@@ -497,7 +506,7 @@ class Canvas(object):
         """
         for P in other.Points:
             if blnAssertNotAlreadyInCanvas:
-                assert (not self.hasPoint(P))
+                assert not self.hasPoint(P)
             self.addLocation(P)
 
     # === PROPERTY EVALUATION METHODS
@@ -507,8 +516,10 @@ class Canvas(object):
 
     def __eq__(self, other):
         """Compare strict equality of Canvas data."""
-        return (myPointsEq(self.Points, other.Points, Canvas.DBL_TOL) and
-                self.NeighborhoodIndexes == other.NeighborhoodIndexes)
+        return (
+            myPointsEq(self.Points, other.Points, Canvas.DBL_TOL)
+            and self.NeighborhoodIndexes == other.NeighborhoodIndexes
+        )
 
     def hasPoint(self, P):
         """Identify if point is in Canvas.
@@ -567,8 +578,8 @@ class Canvas(object):
             int: Index for neighbor l of i.
 
         """
-        assert (i < len(self.NeighborhoodIndexes))
-        assert (l < len(self.NeighborhoodIndexes[i]))
+        assert i < len(self.NeighborhoodIndexes)
+        assert l < len(self.NeighborhoodIndexes[i])
         return self.NeighborhoodIndexes[i][l]
 
     def getShell(self, NeighborsFunc):
@@ -587,8 +598,9 @@ class Canvas(object):
         for i, P in enumerate(self.Points):
             Neighs = NeighborsFunc(P)
             for Neigh in Neighs:
-                if (not self.hasPoint(Neigh) and
-                        not ListHasPoint(result, Neigh, Canvas.DBL_TOL)):
+                if not self.hasPoint(Neigh) and not ListHasPoint(
+                    result, Neigh, Canvas.DBL_TOL
+                ):
                     result.append(Neigh)
         return result
 
@@ -625,9 +637,9 @@ class Canvas(object):
     def printPoints(self):
         """Pretty-print Points."""
         for i, P in enumerate(self.Points):
-            print('{}: {}'.format(i, P))
+            print("{}: {}".format(i, P))
 
     def printNeighborhoodIndexes(self, layer=1):
         """Pretty-print NeighborhoodIndexes."""
         for i, Neighborhood in enumerate(self.getNeighborhoodIndexes(layer)):
-            print('{}: {}'.format(i, Neighborhood))
+            print("{}: {}".format(i, Neighborhood))
