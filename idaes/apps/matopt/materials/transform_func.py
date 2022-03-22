@@ -20,6 +20,7 @@ from ..util.util import areEqual
 
 class TransformFunc(object):
     """ """
+
     DBL_TOL = 1e-5
 
     # === PROPERTY EVALUATION METHODS
@@ -28,7 +29,7 @@ class TransformFunc(object):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -40,7 +41,7 @@ class TransformFunc(object):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -51,7 +52,7 @@ class TransformFunc(object):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -64,7 +65,7 @@ class TransformFunc(object):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -92,7 +93,7 @@ class ShiftFunc(TransformFunc):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -103,7 +104,7 @@ class ShiftFunc(TransformFunc):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -124,8 +125,7 @@ class ScaleFunc(TransformFunc):
     def __init__(self, Scale, OriginOfScale=None):
         if isinstance(Scale, np.ndarray):
             self._Scale = Scale
-        elif (isinstance(Scale, float) or
-              isinstance(Scale, int)):
+        elif isinstance(Scale, float) or isinstance(Scale, int):
             self._Scale = np.array([Scale, Scale, Scale])
         self._OriginOfScale = OriginOfScale
 
@@ -134,7 +134,7 @@ class ScaleFunc(TransformFunc):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -149,7 +149,7 @@ class ScaleFunc(TransformFunc):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -194,23 +194,25 @@ class RotateFunc(TransformFunc):
         Args:
             ThetaX: param ThetaY:
             ThetaZ: param OriginOfRotation:  (Default value = None)
-            ThetaY: 
+            ThetaY:
             OriginOfRotation:  (Default value = None)
 
         Returns:
 
         """
-        RotMatX = np.array([[1, 0, 0],
-                            [0, cos(ThetaX), -sin(ThetaX)],
-                            [0, sin(ThetaX), cos(ThetaX)]])
-        RotMatY = np.array([[cos(ThetaY), 0, sin(ThetaY)],
-                            [0, 1, 0],
-                            [-sin(ThetaY), 0, cos(ThetaY)]])
-        RotMatZ = np.array([[cos(ThetaZ), -sin(ThetaZ), 0],
-                            [sin(ThetaZ), cos(ThetaZ), 0],
-                            [0, 0, 1]])
+        RotMatX = np.array(
+            [[1, 0, 0], [0, cos(ThetaX), -sin(ThetaX)], [0, sin(ThetaX), cos(ThetaX)]]
+        )
+        RotMatY = np.array(
+            [[cos(ThetaY), 0, sin(ThetaY)], [0, 1, 0], [-sin(ThetaY), 0, cos(ThetaY)]]
+        )
+        RotMatZ = np.array(
+            [[cos(ThetaZ), -sin(ThetaZ), 0], [sin(ThetaZ), cos(ThetaZ), 0], [0, 0, 1]]
+        )
         # import code; code.interact(local=dict(locals(),**globals()));
-        return cls(np.dot(np.dot(RotMatZ, RotMatY), RotMatX), OriginOfRotation=OriginOfRotation)
+        return cls(
+            np.dot(np.dot(RotMatZ, RotMatY), RotMatX), OriginOfRotation=OriginOfRotation
+        )
 
     @classmethod
     def fromAxisAngle(cls, Axis, Angle, OriginOfRotation=None):
@@ -219,7 +221,7 @@ class RotateFunc(TransformFunc):
         Args:
             Axis: param Angle:
             OriginOfRotation: Default value = None)
-            Angle: 
+            Angle:
 
         Returns:
 
@@ -244,7 +246,7 @@ class RotateFunc(TransformFunc):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -264,7 +266,7 @@ class RotateFunc(TransformFunc):
         """
 
         Args:
-            V: 
+            V:
 
         Returns:
 
@@ -275,7 +277,7 @@ class RotateFunc(TransformFunc):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -290,7 +292,7 @@ class RotateFunc(TransformFunc):
         """
 
         Args:
-            V: 
+            V:
 
         Returns:
 
@@ -319,7 +321,7 @@ class ReflectFunc(TransformFunc):
 
     # === STANDARD CONSTRUCTOR
     def __init__(self, PlaneNorm, PlaneRefPoint):
-        assert (areEqual(np.linalg.norm(PlaneNorm), 1.0, TransformFunc.DBL_TOL))
+        assert areEqual(np.linalg.norm(PlaneNorm), 1.0, TransformFunc.DBL_TOL)
         self._PlaneNorm = PlaneNorm
         self._PlaneRefPoint = PlaneRefPoint
 
@@ -330,8 +332,8 @@ class ReflectFunc(TransformFunc):
 
         Args:
             P0: param P1:
-            P2: 
-            P1: 
+            P2:
+            P1:
 
         Returns:
 
@@ -360,7 +362,7 @@ class ReflectFunc(TransformFunc):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -380,7 +382,7 @@ class ReflectFunc(TransformFunc):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -404,14 +406,14 @@ class CompoundTransformFunc(TransformFunc):
 
     # === STANDARD CONSTRUCTOR
     def __init__(self, args=None):
-        self._TransFs = (args if args is not None else [])
+        self._TransFs = args if args is not None else []
 
     # === PROPERTY EVALUATION METHODS
     def transform(self, P):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -423,7 +425,7 @@ class CompoundTransformFunc(TransformFunc):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -443,5 +445,5 @@ class CompoundTransformFunc(TransformFunc):
         elif isinstance(other, TransformFunc):
             self._TransFs.append(other)
         else:
-            raise ValueError('Decide how to handle this case!')
+            raise ValueError("Decide how to handle this case!")
         return self

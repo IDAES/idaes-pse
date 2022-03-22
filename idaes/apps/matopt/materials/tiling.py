@@ -49,8 +49,8 @@ class Tiling(object):
                 dictionary to store the mapping of tiled points
                 indices from the smaller Design to the larger.
                 (Default value = None)
-            AuxPropMap (dict<tuple<string,string>,dict<int,float>>): 
-                Optional, a mapping of locations to properties. 
+            AuxPropMap (dict<tuple<string,string>,dict<int,float>>):
+                Optional, a mapping of locations to properties.
                 NOTE: It is modified in place, so make a copy before.
                 (Default value = None)
 
@@ -62,7 +62,8 @@ class Tiling(object):
 
 
 class LinearTiling(Tiling, ABC):
-    """ Class to manage linear periodicity. """
+    """Class to manage linear periodicity."""
+
     DBL_TOL = 1e-5
 
     # === STANDARD CONSTRUCTOR
@@ -74,14 +75,18 @@ class LinearTiling(Tiling, ABC):
     # === CONSTRUCTOR - From Parallelepiped
     @classmethod
     def fromParallelepiped(cls, argShape):
-        assert (type(argShape) == Parallelepiped), 'The input shape is not an instance of Parallelepiped.'
+        assert (
+            type(argShape) == Parallelepiped
+        ), "The input shape is not an instance of Parallelepiped."
         TilingDirections_ = [argShape.Vz, -argShape.Vz]
         return cls(TilingDirections_, argShape)
 
     # === CONSTRUCTOR - From Cylinder or CylindricalSector
     @classmethod
     def fromCylindricalShape(cls, argShape):
-        assert (type(argShape) == Cylinder or CylindricalSector), 'The input shape is not an instance of Cylinder or CylindricalSector.'
+        assert (
+            type(argShape) == Cylinder or CylindricalSector
+        ), "The input shape is not an instance of Cylinder or CylindricalSector."
         TilingDirections_ = [argShape.Vh, -argShape.Vh]
         return cls(TilingDirections_, argShape)
 
@@ -106,6 +111,7 @@ class LinearTiling(Tiling, ABC):
 
 class PlanarTiling(Tiling):
     """ """
+
     DBL_TOL = 1e-5
 
     # === STANDARD CONSTRUCTOR
@@ -148,9 +154,11 @@ class PlanarTiling(Tiling):
         """
 
         def _isInsideAndNotOnPosEdge(P, EdgeTol=EdgeTol):
-            return (self.TileShape.isInShape(P) and
-                    self.TileShape.satisfiesFacet(P, 2, -EdgeTol) and
-                    self.TileShape.satisfiesFacet(P, 3, -EdgeTol))
+            return (
+                self.TileShape.isInShape(P)
+                and self.TileShape.satisfiesFacet(P, 2, -EdgeTol)
+                and self.TileShape.satisfiesFacet(P, 3, -EdgeTol)
+            )
 
         if _isInsideAndNotOnPosEdge(P, EdgeTol):
             return True  # Do not transform P, return True
@@ -166,10 +174,12 @@ class PlanarTiling(Tiling):
             P += self.TileShape.Vy
         while np.inner(P - PosCorner, Ny) > -PlanarTiling.DBL_TOL:
             P -= self.TileShape.Vy
-        assert (_isInsideAndNotOnPosEdge(P))
+        assert _isInsideAndNotOnPosEdge(P)
         return True
 
-    def getFractionalCoords(self, P, blnRelativeToCenter=False, blnRoundInside=True, blnPreferZero=True):
+    def getFractionalCoords(
+        self, P, blnRelativeToCenter=False, blnRoundInside=True, blnPreferZero=True
+    ):
         """
 
         Args:
@@ -186,7 +196,9 @@ class PlanarTiling(Tiling):
         #       of that range. Some programs (like AtomEye?) are not robust
         #       enough to handle small negative numbers or values greater than 1
         #       in these cases.
-        Pfrac = self.TileShape.getFractionalCoords(P, blnRelativeToCenter=blnRelativeToCenter)
+        Pfrac = self.TileShape.getFractionalCoords(
+            P, blnRelativeToCenter=blnRelativeToCenter
+        )
         Pfrac -= Pfrac.astype(int)
         if blnRoundInside:
             if blnPreferZero:
@@ -226,8 +238,8 @@ class PlanarTiling(Tiling):
                 dictionary to store the mapping of tiled points
                 indices from the smaller Design to the larger.
                 (Default value = None)
-            AuxPropMap (dict<tuple<string,string>,dict<int,float>>): 
-                Optional, a mapping of locations to properties. 
+            AuxPropMap (dict<tuple<string,string>,dict<int,float>>):
+                Optional, a mapping of locations to properties.
                 NOTE: It is modified in place, so make a copy before.
                 (Default value = None)
 
@@ -283,6 +295,7 @@ class PlanarTiling(Tiling):
 
 class CubicTiling(Tiling):
     """ """
+
     DBL_TOL = 1e-5
 
     # === STANDARD CONSTRUCTOR
@@ -295,10 +308,18 @@ class CubicTiling(Tiling):
         self._TilingDirections.append(-Parallelepiped_.Vy - Parallelepiped_.Vz)
         self._TilingDirections.append(Parallelepiped_.Vx - Parallelepiped_.Vz)
         self._TilingDirections.append(Parallelepiped_.Vy - Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vx - Parallelepiped_.Vy - Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vx + Parallelepiped_.Vy - Parallelepiped_.Vz)
-        self._TilingDirections.append(Parallelepiped_.Vx - Parallelepiped_.Vy - Parallelepiped_.Vz)
-        self._TilingDirections.append(Parallelepiped_.Vx + Parallelepiped_.Vy - Parallelepiped_.Vz)
+        self._TilingDirections.append(
+            -Parallelepiped_.Vx - Parallelepiped_.Vy - Parallelepiped_.Vz
+        )
+        self._TilingDirections.append(
+            -Parallelepiped_.Vx + Parallelepiped_.Vy - Parallelepiped_.Vz
+        )
+        self._TilingDirections.append(
+            Parallelepiped_.Vx - Parallelepiped_.Vy - Parallelepiped_.Vz
+        )
+        self._TilingDirections.append(
+            Parallelepiped_.Vx + Parallelepiped_.Vy - Parallelepiped_.Vz
+        )
         self._TilingDirections.append(-Parallelepiped_.Vx)
         self._TilingDirections.append(-Parallelepiped_.Vy)
         self._TilingDirections.append(Parallelepiped_.Vx)
@@ -312,10 +333,18 @@ class CubicTiling(Tiling):
         self._TilingDirections.append(-Parallelepiped_.Vy + Parallelepiped_.Vz)
         self._TilingDirections.append(Parallelepiped_.Vx + Parallelepiped_.Vz)
         self._TilingDirections.append(Parallelepiped_.Vy + Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vx - Parallelepiped_.Vy + Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vx + Parallelepiped_.Vy + Parallelepiped_.Vz)
-        self._TilingDirections.append(Parallelepiped_.Vx - Parallelepiped_.Vy + Parallelepiped_.Vz)
-        self._TilingDirections.append(Parallelepiped_.Vx + Parallelepiped_.Vy + Parallelepiped_.Vz)
+        self._TilingDirections.append(
+            -Parallelepiped_.Vx - Parallelepiped_.Vy + Parallelepiped_.Vz
+        )
+        self._TilingDirections.append(
+            -Parallelepiped_.Vx + Parallelepiped_.Vy + Parallelepiped_.Vz
+        )
+        self._TilingDirections.append(
+            Parallelepiped_.Vx - Parallelepiped_.Vy + Parallelepiped_.Vz
+        )
+        self._TilingDirections.append(
+            Parallelepiped_.Vx + Parallelepiped_.Vy + Parallelepiped_.Vz
+        )
 
     # === CONSTRUCTOR - From POSCAR file
     @classmethod
@@ -343,10 +372,12 @@ class CubicTiling(Tiling):
         """
 
         def _isInsideAndNotOnPosEdge(P, EdgeTol=EdgeTol):
-            return (self.TileShape.isInShape(P) and
-                    self.TileShape.satisfiesFacet(P, 2, -EdgeTol) and
-                    self.TileShape.satisfiesFacet(P, 3, -EdgeTol) and
-                    self.TileShape.satisfiesFacet(P, 4, -EdgeTol))
+            return (
+                self.TileShape.isInShape(P)
+                and self.TileShape.satisfiesFacet(P, 2, -EdgeTol)
+                and self.TileShape.satisfiesFacet(P, 3, -EdgeTol)
+                and self.TileShape.satisfiesFacet(P, 4, -EdgeTol)
+            )
 
         if _isInsideAndNotOnPosEdge(P):
             return True  # Do not transform P, return True
@@ -367,10 +398,12 @@ class CubicTiling(Tiling):
             P += self.TileShape.Vz
         while np.inner(P - PosCorner, Nz) > -CubicTiling.DBL_TOL:
             P -= self.TileShape.Vz
-        assert (_isInsideAndNotOnPosEdge(P))
+        assert _isInsideAndNotOnPosEdge(P)
         return True
 
-    def getFractionalCoords(self, P, blnRelativeToCenter=False, blnRoundInside=True, blnPreferZero=True):
+    def getFractionalCoords(
+        self, P, blnRelativeToCenter=False, blnRoundInside=True, blnPreferZero=True
+    ):
         """
 
         Args:
@@ -387,7 +420,9 @@ class CubicTiling(Tiling):
         #       of that range. Some programs (like AtomEye?) are not robust
         #       enough to handle small negative numbers or values greater than 1
         #       in these cases.
-        Pfrac = self.TileShape.getFractionalCoords(P, blnRelativeToCenter=blnRelativeToCenter)
+        Pfrac = self.TileShape.getFractionalCoords(
+            P, blnRelativeToCenter=blnRelativeToCenter
+        )
         Pfrac -= Pfrac.astype(int)
         if blnRoundInside:
             if blnPreferZero:
@@ -427,14 +462,14 @@ class CubicTiling(Tiling):
                 dictionary to store the mapping of tiled points
                 indices from the smaller Design to the larger.
                 (Default value = None)
-            AuxPropMap (dict<tuple<string,string>,dict<int,float>>): 
-                Optional, a mapping of locations to properties. 
+            AuxPropMap (dict<tuple<string,string>,dict<int,float>>):
+                Optional, a mapping of locations to properties.
                 NOTE: It is modified in place, so make a copy before.
                 (Default value = None)
 
         Returns:
             (Design): A larger, periodic Design
-        
+
         """
         if isinstance(nTiles, int):
             nTiles = np.array([nTiles] * 3, dtype=int)
