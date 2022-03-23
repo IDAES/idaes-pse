@@ -17,8 +17,14 @@ Author: Andrew Lee
 """
 from pyomo.environ import ConcreteModel, Set
 
-from idaes.core.base.phases import (Phase, LiquidPhase, SolidPhase, VaporPhase,
-                                    PhaseType, AqueousPhase)
+from idaes.core.base.phases import (
+    Phase,
+    LiquidPhase,
+    SolidPhase,
+    VaporPhase,
+    PhaseType,
+    AqueousPhase,
+)
 import pytest
 
 
@@ -26,8 +32,13 @@ import pytest
 def test_PhaseType():
     assert len(PhaseType) == 5
     for i in PhaseType.__members__:
-        assert i in ["undefined", "liquidPhase", "vaporPhase",
-                     "solidPhase", "aqueousPhase"]
+        assert i in [
+            "undefined",
+            "liquidPhase",
+            "vaporPhase",
+            "solidPhase",
+            "aqueousPhase",
+        ]
 
 
 @pytest.mark.unit

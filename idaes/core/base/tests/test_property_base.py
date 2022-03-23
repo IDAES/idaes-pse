@@ -21,10 +21,15 @@ import types
 from pyomo.environ import ConcreteModel, Constraint, Set, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 
-from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
-                        StateBlock, StateBlockData, Phase, Component)
-from idaes.core.util.exceptions import (PropertyPackageError,
-                                        PropertyNotSupportedError)
+from idaes.core import (
+    declare_process_block_class,
+    PhysicalParameterBlock,
+    StateBlock,
+    StateBlockData,
+    Phase,
+    Component,
+)
+from idaes.core.util.exceptions import PropertyPackageError, PropertyNotSupportedError
 from idaes.core.base.property_meta import PropertyClassMetadata
 
 
@@ -70,15 +75,19 @@ def test_get_phase_component_set():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.add_default_units({
-        'time': pyunits.s,
-        'length': pyunits.m,
-        'mass': pyunits.kg,
-        'amount': pyunits.mol,
-        'temperature': pyunits.K})
+    m.meta_object.add_default_units(
+        {
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        }
+    )
 
     def get_metadata(self):
         return m.meta_object
+
     m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.p1 = Phase()
@@ -111,15 +120,19 @@ def test_get_phase_component_set_subset():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.add_default_units({
-        'time': pyunits.s,
-        'length': pyunits.m,
-        'mass': pyunits.kg,
-        'amount': pyunits.mol,
-        'temperature': pyunits.K})
+    m.meta_object.add_default_units(
+        {
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        }
+    )
 
     def get_metadata(self):
         return m.meta_object
+
     m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.p1 = Phase()
@@ -129,9 +142,7 @@ def test_get_phase_component_set_subset():
     m.p.b = Component()
     m.p.c = Component()
 
-    phase_comp = {"p1": ["a", "b", "c"],
-                  "p2": ["a", "b"],
-                  "p3": ["c"]}
+    phase_comp = {"p1": ["a", "b", "c"], "p2": ["a", "b"], "p3": ["c"]}
 
     pc_set = m.p.get_phase_component_set()
 
@@ -150,15 +161,19 @@ def test_get_component():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.add_default_units({
-        'time': pyunits.s,
-        'length': pyunits.m,
-        'mass': pyunits.kg,
-        'amount': pyunits.mol,
-        'temperature': pyunits.K})
+    m.meta_object.add_default_units(
+        {
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        }
+    )
 
     def get_metadata(self):
         return m.meta_object
+
     m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     with pytest.raises(AttributeError):
@@ -171,9 +186,10 @@ def test_get_component():
     m.p.a = object()
 
     with pytest.raises(
-            PropertyPackageError,
-            match="p get_component found an attribute a, but it does not "
-            "appear to be an instance of a Component object."):
+        PropertyPackageError,
+        match="p get_component found an attribute a, but it does not "
+        "appear to be an instance of a Component object.",
+    ):
         m.p.get_component("a")
 
 
@@ -192,9 +208,10 @@ def test_get_phase():
     m.p.a = object()
 
     with pytest.raises(
-            PropertyPackageError,
-            match="p get_phase found an attribute a, but it does not "
-            "appear to be an instance of a Phase object."):
+        PropertyPackageError,
+        match="p get_phase found an attribute a, but it does not "
+        "appear to be an instance of a Phase object.",
+    ):
         m.p.get_phase("a")
 
 
@@ -204,8 +221,8 @@ def test_validate_parameter_block_no_component_list():
     m.p = ParameterBlock()
 
     with pytest.raises(
-            PropertyPackageError,
-            match="Property package p has not defined any Components."):
+        PropertyPackageError, match="Property package p has not defined any Components."
+    ):
         m.p._validate_parameter_block()
 
 
@@ -215,23 +232,27 @@ def test_validate_parameter_block_no_phase_list():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.add_default_units({
-        'time': pyunits.s,
-        'length': pyunits.m,
-        'mass': pyunits.kg,
-        'amount': pyunits.mol,
-        'temperature': pyunits.K})
+    m.meta_object.add_default_units(
+        {
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        }
+    )
 
     def get_metadata(self):
         return m.meta_object
+
     m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.c1 = Component()
     m.p.c2 = Component()
 
     with pytest.raises(
-            PropertyPackageError,
-            match="Property package p has not defined any Phases."):
+        PropertyPackageError, match="Property package p has not defined any Phases."
+    ):
         m.p._validate_parameter_block()
 
 
@@ -255,15 +276,19 @@ def test_validate_parameter_block_invalid_phase_object():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.add_default_units({
-        'time': pyunits.s,
-        'length': pyunits.m,
-        'mass': pyunits.kg,
-        'amount': pyunits.mol,
-        'temperature': pyunits.K})
+    m.meta_object.add_default_units(
+        {
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        }
+    )
 
     def get_metadata(self):
         return m.meta_object
+
     m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.c1 = Component()
@@ -272,10 +297,12 @@ def test_validate_parameter_block_invalid_phase_object():
     m.p.phase_list = Set(initialize=["foo"])
     m.p.foo = object()
 
-    with pytest.raises(TypeError,
-                       match="Property package p has an object foo whose "
-                       "name appears in phase_list but is not an "
-                       "instance of Phase"):
+    with pytest.raises(
+        TypeError,
+        match="Property package p has an object foo whose "
+        "name appears in phase_list but is not an "
+        "instance of Phase",
+    ):
         m.p._validate_parameter_block()
 
 
@@ -347,14 +374,14 @@ def test_StateBlock_config():
     m.p.config.has_phase_equilibrium = True
     m.p.config.has_phase_equilibrium = False
     with pytest.raises(ValueError):
-        m.p.config.has_phase_equilibrium = 'foo'
+        m.p.config.has_phase_equilibrium = "foo"
     with pytest.raises(ValueError):
         m.p.config.has_phase_equilibrium = 10
 
     m.p.config.defined_state = True
     m.p.config.defined_state = False
     with pytest.raises(ValueError):
-        m.p.config.defined_state = 'foo'
+        m.p.config.defined_state = "foo"
     with pytest.raises(ValueError):
         m.p.config.defined_state = 10
 
@@ -403,20 +430,26 @@ class _Parameters(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties({'a': {'method': 'a_method'},
-                            'recursion1': {'method': '_recursion1'},
-                            'recursion2': {'method': '_recursion2'},
-                            'not_callable': {'method': 'test_obj'},
-                            'raise_exception': {'method': '_raise_exception'},
-                            'not_supported': {'method': False},
-                            'does_not_create_component': {
-                                'method': '_does_not_create_component'}})
-        obj.add_default_units({
-            "time": pyunits.s,
-            "mass": pyunits.kg,
-            "length": pyunits.m,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K})
+        obj.add_properties(
+            {
+                "a": {"method": "a_method"},
+                "recursion1": {"method": "_recursion1"},
+                "recursion2": {"method": "_recursion2"},
+                "not_callable": {"method": "test_obj"},
+                "raise_exception": {"method": "_raise_exception"},
+                "not_supported": {"method": False},
+                "does_not_create_component": {"method": "_does_not_create_component"},
+            }
+        )
+        obj.add_default_units(
+            {
+                "time": pyunits.s,
+                "mass": pyunits.kg,
+                "length": pyunits.m,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            }
+        )
 
 
 @declare_process_block_class("StateTest", block_class=StateBlock)
@@ -555,7 +588,7 @@ def test_getattr_raise_exception(m):
 
 
 # TODO : Need a test for cases where method does not create property
-#@pytest.mark.unit
-#def test_getattr_does_not_create_component(m):
+# @pytest.mark.unit
+# def test_getattr_does_not_create_component(m):
 #    with pytest.raises(PropertyPackageError):
 #        m.p.cons = Constraint(expr=m.p.does_not_create_component == 1)

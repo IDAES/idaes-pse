@@ -18,18 +18,24 @@ from pyomo.environ import check_optimal_termination, Reference
 from pyomo.network import Port
 from pyomo.common.config import ConfigValue
 
-from idaes.core.base.process_base import (declare_process_block_class,
-                                          ProcessBlockData,
-                                          useDefault)
+from idaes.core.base.process_base import (
+    declare_process_block_class,
+    ProcessBlockData,
+    useDefault,
+)
 from idaes.core.base.property_base import StateBlock
-from idaes.core.base.control_volume_base import (ControlVolumeBlockData,
-                                                 FlowDirection,
-                                                 MaterialBalanceType)
-from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError,
-                                        PropertyPackageError,
-                                        BalanceTypeNotSupportedError,
-                                        InitializationError)
+from idaes.core.base.control_volume_base import (
+    ControlVolumeBlockData,
+    FlowDirection,
+    MaterialBalanceType,
+)
+from idaes.core.util.exceptions import (
+    BurntToast,
+    ConfigurationError,
+    PropertyPackageError,
+    BalanceTypeNotSupportedError,
+    InitializationError,
+)
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
@@ -40,7 +46,7 @@ from idaes.core.util.config import DefaultBool
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 
-__all__ = ['UnitModelBlockData', 'UnitModelBlock']
+__all__ = ["UnitModelBlockData", "UnitModelBlock"]
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -52,29 +58,38 @@ class UnitModelBlockData(ProcessBlockData):
     This is the class for process unit operations models. These are models that
     would generally appear in a process flowsheet or superstructure.
     """
+
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
-    CONFIG.declare("dynamic", ConfigValue(
-        default=useDefault,
-        domain=DefaultBool,
-        description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic or not,
+    CONFIG.declare(
+        "dynamic",
+        ConfigValue(
+            default=useDefault,
+            domain=DefaultBool,
+            description="Dynamic model flag",
+            doc="""Indicates whether this model will be dynamic or not,
 **default** = useDefault.
 **Valid values:** {
 **useDefault** - get flag from parent (default = False),
 **True** - set as a dynamic model,
-**False** - set as a steady-state model.}"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=useDefault,
-        domain=DefaultBool,
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
+**False** - set as a steady-state model.}""",
+        ),
+    )
+    CONFIG.declare(
+        "has_holdup",
+        ConfigValue(
+            default=useDefault,
+            domain=DefaultBool,
+            description="Holdup construction flag",
+            doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
 **default** - False.
 **Valid values:** {
 **useDefault** - get flag from parent (default = False),
 **True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
+**False** - do not construct holdup terms}""",
+        ),
+    )
 
     def build(self):
         """
@@ -98,13 +113,15 @@ Must be True if dynamic = True,
         # Check for overloading of initialize method
         # TODO: Remove in IDAES v2.0
         if type(self).initialize is not UnitModelBlockData.initialize:
-            _log.warn(f"DEPRECATION: {str(self.__class__)} has overloaded the "
-                      "initialize method. In v2.0, IDAES Will be moving to "
-                      "having a centralized initialize method which calls "
-                      "unit-specific initialize_build methods instead. "
-                      "Model developers should update their models to "
-                      "implement the initialize_build method instead of "
-                      "overloading initialize.")
+            _log.warn(
+                f"DEPRECATION: {str(self.__class__)} has overloaded the "
+                "initialize method. In v2.0, IDAES Will be moving to "
+                "having a centralized initialize method which calls "
+                "unit-specific initialize_build methods instead. "
+                "Model developers should update their models to "
+                "implement the initialize_build method instead of "
+                "overloading initialize."
+            )
 
         # Set up dynamic flag and time domain
         self._setup_dynamics()
@@ -149,19 +166,20 @@ Must be True if dynamic = True,
         """
         # Validate block object
         if not isinstance(block, StateBlock):
-            raise ConfigurationError("{} block object provided to add_port "
-                                     "method is not an instance of a "
-                                     "StateBlock object. IDAES port objects "
-                                     "should only be associated with "
-                                     "StateBlocks.".format(blk.name))
+            raise ConfigurationError(
+                "{} block object provided to add_port "
+                "method is not an instance of a "
+                "StateBlock object. IDAES port objects "
+                "should only be associated with "
+                "StateBlocks.".format(blk.name)
+            )
 
         # Create empty Port
         p = Port(doc=doc)
         setattr(blk, name, p)
 
         # Get dict of Port members and names
-        member_list = block[
-                blk.flowsheet().time.first()].define_port_members()
+        member_list = block[blk.flowsheet().time.first()].define_port_members()
 
         # Create References for port members
         for s in member_list:
@@ -171,7 +189,7 @@ Must be True if dynamic = True,
                 slicer = block[:].component(member_list[s].local_name)[...]
 
             r = Reference(slicer)
-            setattr(blk, "_"+s+"_"+name+"_ref", r)
+            setattr(blk, "_" + s + "_" + name + "_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -202,10 +220,10 @@ Must be True if dynamic = True,
             # Check that name is None
             if name is not None:
                 raise ConfigurationError(
-                        "{} add_inlet_port was called without a block argument"
-                        " but a name argument was provided. Either both "
-                        "a name and a block must be provided or neither."
-                        .format(blk.name))
+                    "{} add_inlet_port was called without a block argument"
+                    " but a name argument was provided. Either both "
+                    "a name and a block must be provided or neither.".format(blk.name)
+                )
             else:
                 name = "inlet"
             # Try for default ControlVolume name
@@ -213,18 +231,19 @@ Must be True if dynamic = True,
                 block = blk.control_volume
             except AttributeError:
                 raise ConfigurationError(
-                        "{} add_inlet_port was called without a block argument"
-                        " but no default ControlVolume exists "
-                        "(control_volume). Please provide block to which the "
-                        "Port should be associated.".format(blk.name))
+                    "{} add_inlet_port was called without a block argument"
+                    " but no default ControlVolume exists "
+                    "(control_volume). Please provide block to which the "
+                    "Port should be associated.".format(blk.name)
+                )
         else:
             # Check that name is not None
             if name is None:
                 raise ConfigurationError(
-                        "{} add_inlet_port was called with a block argument, "
-                        "but a name argument was not provided. Either both "
-                        "a name and a block must be provided or neither."
-                        .format(blk.name))
+                    "{} add_inlet_port was called with a block argument, "
+                    "but a name argument was not provided. Either both "
+                    "a name and a block must be provided or neither.".format(blk.name)
+                )
 
         if doc is None:
             doc = "Inlet Port"
@@ -236,29 +255,29 @@ Must be True if dynamic = True,
         # Get dict of Port members and names
         if isinstance(block, ControlVolumeBlockData):
             try:
-                member_list = (block.properties_in[
-                                    block.flowsheet().time.first()]
-                               .define_port_members())
+                member_list = block.properties_in[
+                    block.flowsheet().time.first()
+                ].define_port_members()
             except AttributeError:
                 try:
-                    member_list = (block.properties[
-                                    block.flowsheet().time.first(), 0]
-                                   .define_port_members())
+                    member_list = block.properties[
+                        block.flowsheet().time.first(), 0
+                    ].define_port_members()
                 except AttributeError:
                     raise PropertyPackageError(
-                            "{} property package does not appear to have "
-                            "implemented a define_port_memebers method. "
-                            "Please contact the developer of the property "
-                            "package.".format(blk.name))
+                        "{} property package does not appear to have "
+                        "implemented a define_port_memebers method. "
+                        "Please contact the developer of the property "
+                        "package.".format(blk.name)
+                    )
         elif isinstance(block, StateBlock):
-            member_list = block[
-                    blk.flowsheet().time.first()].define_port_members()
+            member_list = block[blk.flowsheet().time.first()].define_port_members()
         else:
             raise ConfigurationError(
-                    "{} block provided to add_inlet_port "
-                    "method was not an instance of a "
-                    "ControlVolume or a StateBlock."
-                    .format(blk.name))
+                "{} block provided to add_inlet_port "
+                "method was not an instance of a "
+                "ControlVolume or a StateBlock.".format(blk.name)
+            )
 
         # Create References for port members
         for s in member_list:
@@ -266,7 +285,8 @@ Must be True if dynamic = True,
                 if isinstance(block, ControlVolumeBlockData):
                     try:
                         slicer = block.properties_in[:].component(
-                                        member_list[s].local_name)
+                            member_list[s].local_name
+                        )
                     except AttributeError:
                         if block._flow_direction == FlowDirection.forward:
                             _idx = block.length_domain.first()
@@ -274,26 +294,28 @@ Must be True if dynamic = True,
                             _idx = block.length_domain.last()
                         else:
                             raise BurntToast(
-                                    "{} flow_direction argument received "
-                                    "invalid value. This should never "
-                                    "happen, so please contact the IDAES "
-                                    "developers with this bug."
-                                    .format(blk.name))
-                        slicer = (block.properties[:, _idx]
-                                  .component(member_list[s].local_name))
+                                "{} flow_direction argument received "
+                                "invalid value. This should never "
+                                "happen, so please contact the IDAES "
+                                "developers with this bug.".format(blk.name)
+                            )
+                        slicer = block.properties[:, _idx].component(
+                            member_list[s].local_name
+                        )
                 elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)
                 else:
                     raise ConfigurationError(
-                            "{} block provided to add_inlet_port "
-                            "method was not an instance of a "
-                            "ControlVolume or a StateBlock."
-                            .format(blk.name))
+                        "{} block provided to add_inlet_port "
+                        "method was not an instance of a "
+                        "ControlVolume or a StateBlock.".format(blk.name)
+                    )
             else:
                 if isinstance(block, ControlVolumeBlockData):
                     try:
                         slicer = block.properties_in[:].component(
-                                        member_list[s].local_name)[...]
+                            member_list[s].local_name
+                        )[...]
                     except AttributeError:
                         if block._flow_direction == FlowDirection.forward:
                             _idx = block.length_domain.first()
@@ -301,24 +323,27 @@ Must be True if dynamic = True,
                             _idx = block.length_domain.last()
                         else:
                             raise BurntToast(
-                                    "{} flow_direction argument received "
-                                    "invalid value. This should never "
-                                    "happen, so please contact the IDAES "
-                                    "developers with this bug."
-                                    .format(blk.name))
-                        slicer = (block.properties[:, _idx].component(
-                                    member_list[s].local_name))[...]
+                                "{} flow_direction argument received "
+                                "invalid value. This should never "
+                                "happen, so please contact the IDAES "
+                                "developers with this bug.".format(blk.name)
+                            )
+                        slicer = (
+                            block.properties[:, _idx].component(
+                                member_list[s].local_name
+                            )
+                        )[...]
                 elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)[...]
                 else:
                     raise ConfigurationError(
-                            "{} block provided to add_inlet_port "
-                            "method was not an instance of a "
-                            "ControlVolume or a StateBlock."
-                            .format(blk.name))
+                        "{} block provided to add_inlet_port "
+                        "method was not an instance of a "
+                        "ControlVolume or a StateBlock.".format(blk.name)
+                    )
 
             r = Reference(slicer)
-            setattr(blk, "_"+s+"_"+name+"_ref", r)
+            setattr(blk, "_" + s + "_" + name + "_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -349,10 +374,12 @@ Must be True if dynamic = True,
             # Check that name is None
             if name is not None:
                 raise ConfigurationError(
-                        "{} add_outlet_port was called without a block "
-                        "argument  but a name argument was provided. Either "
-                        "both a name and a block must be provided or neither."
-                        .format(blk.name))
+                    "{} add_outlet_port was called without a block "
+                    "argument  but a name argument was provided. Either "
+                    "both a name and a block must be provided or neither.".format(
+                        blk.name
+                    )
+                )
             else:
                 name = "outlet"
             # Try for default ControlVolume name
@@ -360,18 +387,19 @@ Must be True if dynamic = True,
                 block = blk.control_volume
             except AttributeError:
                 raise ConfigurationError(
-                        "{} add_outlet_port was called without a block "
-                        "argument but no default ControlVolume exists "
-                        "(control_volume). Please provide block to which the "
-                        "Port should be associated.".format(blk.name))
+                    "{} add_outlet_port was called without a block "
+                    "argument but no default ControlVolume exists "
+                    "(control_volume). Please provide block to which the "
+                    "Port should be associated.".format(blk.name)
+                )
         else:
             # Check that name is not None
             if name is None:
                 raise ConfigurationError(
-                        "{} add_outlet_port was called with a block argument, "
-                        "but a name argument was not provided. Either both "
-                        "a name and a block must be provided or neither."
-                        .format(blk.name))
+                    "{} add_outlet_port was called with a block argument, "
+                    "but a name argument was not provided. Either both "
+                    "a name and a block must be provided or neither.".format(blk.name)
+                )
 
         if doc is None:
             doc = "Outlet Port"
@@ -383,29 +411,29 @@ Must be True if dynamic = True,
         # Get dict of Port members and names
         if isinstance(block, ControlVolumeBlockData):
             try:
-                member_list = (block.properties_out[
-                                    block.flowsheet().time.first()]
-                               .define_port_members())
+                member_list = block.properties_out[
+                    block.flowsheet().time.first()
+                ].define_port_members()
             except AttributeError:
                 try:
-                    member_list = (block.properties[
-                                    block.flowsheet().time.first(), 0]
-                                   .define_port_members())
+                    member_list = block.properties[
+                        block.flowsheet().time.first(), 0
+                    ].define_port_members()
                 except AttributeError:
                     raise PropertyPackageError(
-                            "{} property package does not appear to have "
-                            "implemented a define_port_members method. "
-                            "Please contact the developer of the property "
-                            "package.".format(blk.name))
+                        "{} property package does not appear to have "
+                        "implemented a define_port_members method. "
+                        "Please contact the developer of the property "
+                        "package.".format(blk.name)
+                    )
         elif isinstance(block, StateBlock):
-            member_list = block[
-                    blk.flowsheet().time.first()].define_port_members()
+            member_list = block[blk.flowsheet().time.first()].define_port_members()
         else:
             raise ConfigurationError(
-                    "{} block provided to add_inlet_port "
-                    "method was not an instance of a "
-                    "ControlVolume or a StateBlock."
-                    .format(blk.name))
+                "{} block provided to add_inlet_port "
+                "method was not an instance of a "
+                "ControlVolume or a StateBlock.".format(blk.name)
+            )
 
         # Create References for port members
         for s in member_list:
@@ -413,7 +441,8 @@ Must be True if dynamic = True,
                 if isinstance(block, ControlVolumeBlockData):
                     try:
                         slicer = block.properties_out[:].component(
-                                        member_list[s].local_name)
+                            member_list[s].local_name
+                        )
                     except AttributeError:
                         if block._flow_direction == FlowDirection.forward:
                             _idx = block.length_domain.last()
@@ -421,27 +450,29 @@ Must be True if dynamic = True,
                             _idx = block.length_domain.first()
                         else:
                             raise BurntToast(
-                                    "{} flow_direction argument received "
-                                    "invalid value. This should never "
-                                    "happen, so please contact the IDAES "
-                                    "developers with this bug."
-                                    .format(blk.name))
-                        slicer = (block.properties[:, _idx]
-                                  .component(member_list[s].local_name))
+                                "{} flow_direction argument received "
+                                "invalid value. This should never "
+                                "happen, so please contact the IDAES "
+                                "developers with this bug.".format(blk.name)
+                            )
+                        slicer = block.properties[:, _idx].component(
+                            member_list[s].local_name
+                        )
                 elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)
                 else:
                     raise ConfigurationError(
-                            "{} block provided to add_inlet_port "
-                            "method was not an instance of a "
-                            "ControlVolume or a StateBlock."
-                            .format(blk.name))
+                        "{} block provided to add_inlet_port "
+                        "method was not an instance of a "
+                        "ControlVolume or a StateBlock.".format(blk.name)
+                    )
             else:
                 # Need to use slice notation on indexed comenent as well
                 if isinstance(block, ControlVolumeBlockData):
                     try:
                         slicer = block.properties_out[:].component(
-                                        member_list[s].local_name)[...]
+                            member_list[s].local_name
+                        )[...]
                     except AttributeError:
                         if block._flow_direction == FlowDirection.forward:
                             _idx = block.length_domain.last()
@@ -449,24 +480,27 @@ Must be True if dynamic = True,
                             _idx = block.length_domain.first()
                         else:
                             raise BurntToast(
-                                    "{} flow_direction argument received "
-                                    "invalid value. This should never "
-                                    "happen, so please contact the IDAES "
-                                    "developers with this bug."
-                                    .format(blk.name))
-                        slicer = (block.properties[:, _idx].component(
-                                    member_list[s].local_name))[...]
+                                "{} flow_direction argument received "
+                                "invalid value. This should never "
+                                "happen, so please contact the IDAES "
+                                "developers with this bug.".format(blk.name)
+                            )
+                        slicer = (
+                            block.properties[:, _idx].component(
+                                member_list[s].local_name
+                            )
+                        )[...]
                 elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)[...]
                 else:
                     raise ConfigurationError(
-                            "{} block provided to add_inlet_port "
-                            "method was not an instance of a "
-                            "ControlVolume or a StateBlock."
-                            .format(blk.name))
+                        "{} block provided to add_inlet_port "
+                        "method was not an instance of a "
+                        "ControlVolume or a StateBlock.".format(blk.name)
+                    )
 
             r = Reference(slicer)
-            setattr(blk, "_"+s+"_"+name+"_ref", r)
+            setattr(blk, "_" + s + "_" + name + "_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -492,37 +526,39 @@ Must be True if dynamic = True,
         # Confirm that both state blocks stem from the same parameter block
         if not isinstance(state_1, StateBlock):
             raise ConfigurationError(
-                    "{} state_1 argument to add_state_material_balances "
-                    "was not an instance of a State Block.".format(self.name))
+                "{} state_1 argument to add_state_material_balances "
+                "was not an instance of a State Block.".format(self.name)
+            )
 
         if not isinstance(state_2, StateBlock):
             raise ConfigurationError(
-                    "{} state_2 argument to add_state_material_balances "
-                    "was not an instance of a State Block.".format(self.name))
+                "{} state_2 argument to add_state_material_balances "
+                "was not an instance of a State Block.".format(self.name)
+            )
 
         # Check that no constraint with the same name exists
         # We will only support using this method once per Block
         if hasattr(self, "state_material_balances"):
             raise AttributeError(
-                    "{} a set of constraints named state_material_balances "
-                    "already exists in the current UnitModel. To avoid "
-                    "confusion, add_state_material_balances is only supported "
-                    "once per UnitModel.".format(self.name))
+                "{} a set of constraints named state_material_balances "
+                "already exists in the current UnitModel. To avoid "
+                "confusion, add_state_material_balances is only supported "
+                "once per UnitModel.".format(self.name)
+            )
 
         # Get a representative time point for testing
         rep_time = self.flowsheet().time.first()
         if state_1[rep_time].params is not state_2[rep_time].params:
             raise ConfigurationError(
-                    "{} add_state_material_balances method was provided with "
-                    "State Blocks are not linked to the same "
-                    "instance of a Physical Parameter Block. This method "
-                    "only supports linking State Blocks from the same "
-                    "Physical Parameter Block.".format(self.name))
+                "{} add_state_material_balances method was provided with "
+                "State Blocks are not linked to the same "
+                "instance of a Physical Parameter Block. This method "
+                "only supports linking State Blocks from the same "
+                "Physical Parameter Block.".format(self.name)
+            )
 
         if balance_type == MaterialBalanceType.useDefault:
-            balance_type = (
-                state_1[rep_time].default_material_balance_type()
-            )
+            balance_type = state_1[rep_time].default_material_balance_type()
 
         phase_list = state_1.phase_list
         component_list = state_1.component_list
@@ -538,9 +574,9 @@ Must be True if dynamic = True,
                 doc="State material balances",
             )
             def state_material_balances(b, t, p, j):
-                return state_1[t].get_material_flow_terms(
-                    p, j
-                ) == state_2[t].get_material_flow_terms(p, j)
+                return state_1[t].get_material_flow_terms(p, j) == state_2[
+                    t
+                ].get_material_flow_terms(p, j)
 
         elif balance_type == MaterialBalanceType.componentTotal:
 
@@ -552,10 +588,12 @@ Must be True if dynamic = True,
             def state_material_balances(b, t, j):
                 return sum(
                     state_1[t].get_material_flow_terms(p, j)
-                    for p in phase_list if (p, j) in pc_set
+                    for p in phase_list
+                    if (p, j) in pc_set
                 ) == sum(
                     state_2[t].get_material_flow_terms(p, j)
-                    for p in phase_list if (p, j) in pc_set
+                    for p in phase_list
+                    if (p, j) in pc_set
                 )
 
         elif balance_type == MaterialBalanceType.total:
@@ -567,9 +605,7 @@ Must be True if dynamic = True,
             def state_material_balances(b, t):
                 return sum(
                     state_1[t].get_material_flow_terms(p, j) for p, j in pc_set
-                ) == sum(
-                    state_2[t].get_material_flow_terms(p, j) for p, j in pc_set
-                )
+                ) == sum(state_2[t].get_material_flow_terms(p, j) for p, j in pc_set)
 
         elif balance_type == MaterialBalanceType.elementTotal:
             raise BalanceTypeNotSupportedError(
@@ -595,14 +631,15 @@ Must be True if dynamic = True,
         Developers should overload this as appropriate.
         """
         try:
-            return create_stream_table_dataframe({"Inlet": self.inlet,
-                                                  "Outlet": self.outlet},
-                                                 time_point=time_point)
+            return create_stream_table_dataframe(
+                {"Inlet": self.inlet, "Outlet": self.outlet}, time_point=time_point
+            )
         except AttributeError:
             raise ConfigurationError(
-                    f"Unit model {self.name} does not have the standard Port "
-                    f"names (inet and outlet). Please contact the unit model "
-                    f"developer to develop a unit specific stream table.")
+                f"Unit model {self.name} does not have the standard Port "
+                f"names (inet and outlet). Please contact the unit model "
+                f"developer to develop a unit specific stream table."
+            )
 
     def initialize(blk, *args, **kwargs):
         """
@@ -633,8 +670,7 @@ Must be True if dynamic = True,
         # Get the costing block if present
         # TODO: Clean up in IDAES v2.0
         init_order = blk._initialization_order
-        if (hasattr(blk, "costing") and
-                blk.costing not in blk._initialization_order):
+        if hasattr(blk, "costing") and blk.costing not in blk._initialization_order:
             # Fallback for older style costing
             init_order.append(blk.costing)
 
@@ -660,9 +696,10 @@ Must be True if dynamic = True,
         # Return any flags returned by initialize_build
         return flags
 
-    def initialize_build(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                         solver=None, optarg=None):
-        '''
+    def initialize_build(
+        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+    ):
+        """
         This is a general purpose initialization routine for simple unit
         models. This method assumes a single ControlVolume block called
         controlVolume, and first initializes this and then attempts to solve
@@ -684,7 +721,7 @@ Must be True if dynamic = True,
 
         Returns:
             None
-        '''
+        """
         if optarg is None:
             optarg = {}
 
@@ -703,7 +740,7 @@ Must be True if dynamic = True,
             state_args=state_args,
         )
 
-        init_log.info_high('Initialization Step 1 Complete.')
+        init_log.info_high("Initialization Step 1 Complete.")
 
         # ---------------------------------------------------------------------
         # Solve unit
@@ -721,10 +758,10 @@ Must be True if dynamic = True,
         if not check_optimal_termination(results):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
+                f"the output logs for more information."
+            )
 
-        init_log.info('Initialization Complete: {}'
-                      .format(idaeslog.condition(results)))
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
 
         return None
 

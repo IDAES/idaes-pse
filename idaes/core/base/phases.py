@@ -22,8 +22,7 @@ from enum import Enum
 from pyomo.environ import Set
 from pyomo.common.config import ConfigBlock, ConfigValue
 
-from idaes.core.base.process_base import (declare_process_block_class,
-                                          ProcessBlockData)
+from idaes.core.base.process_base import declare_process_block_class, ProcessBlockData
 
 
 # Enumerate recognised Phase types
@@ -39,38 +38,64 @@ class PhaseType(Enum):
 @declare_process_block_class("Phase")
 class PhaseData(ProcessBlockData):
     CONFIG = ConfigBlock()
-    CONFIG.declare("component_list", ConfigValue(
+    CONFIG.declare(
+        "component_list",
+        ConfigValue(
             default=None,
             domain=list,
             description="List of components in phase",
             doc="List of components which are present in phase. This is used "
-            "to construct the phase-component Set for the property package."))
-    CONFIG.declare("equation_of_state", ConfigValue(
+            "to construct the phase-component Set for the property package.",
+        ),
+    )
+    CONFIG.declare(
+        "equation_of_state",
+        ConfigValue(
             default=None,
             description="Equation of state for phase",
             doc="""A valid Python class with the necessary methods for
                 constructing the desired equation of state (or similar
-                model)."""))
-    CONFIG.declare("equation_of_state_options", ConfigValue(
+                model).""",
+        ),
+    )
+    CONFIG.declare(
+        "equation_of_state_options",
+        ConfigValue(
             default=None,
             description="Options for equation of state",
             doc="""A dict or ConfigBlock of options to be used when setting
-                up equation of state for phase."""))
-    CONFIG.declare("parameter_data", ConfigValue(
-        default={},
-        domain=dict,
-        description="Dict containing initialization data for parameters"))
-    CONFIG.declare("_phase_list_exists", ConfigValue(
+                up equation of state for phase.""",
+        ),
+    )
+    CONFIG.declare(
+        "parameter_data",
+        ConfigValue(
+            default={},
+            domain=dict,
+            description="Dict containing initialization data for parameters",
+        ),
+    )
+    CONFIG.declare(
+        "_phase_list_exists",
+        ConfigValue(
             default=False,
             doc="Internal config argument indicating whether phase_list "
-            "needs to be populated."))
+            "needs to be populated.",
+        ),
+    )
 
-    CONFIG.declare("therm_cond_phase", ConfigValue(
-        description="Method to calculate thermal conductivity phase"))
-    CONFIG.declare("surf_tens_phase", ConfigValue(
-        description="Method to calculate surface tension of phase"))
-    CONFIG.declare("visc_d_phase", ConfigValue(
-        description="Method to calculate dynamic viscosity of phase"))
+    CONFIG.declare(
+        "therm_cond_phase",
+        ConfigValue(description="Method to calculate thermal conductivity phase"),
+    )
+    CONFIG.declare(
+        "surf_tens_phase",
+        ConfigValue(description="Method to calculate surface tension of phase"),
+    )
+    CONFIG.declare(
+        "visc_d_phase",
+        ConfigValue(description="Method to calculate dynamic viscosity of phase"),
+    )
 
     def build(self):
         super(PhaseData, self).build()
@@ -117,8 +142,7 @@ class PhaseData(ProcessBlockData):
             phase_list.add(self.local_name)
         except AttributeError:
             # Parent does not have a phase_list yet, so create one
-            parent.phase_list = Set(initialize=[self.local_name],
-                                    ordered=True)
+            parent.phase_list = Set(initialize=[self.local_name], ordered=True)
 
 
 @declare_process_block_class("LiquidPhase", block_class=Phase)

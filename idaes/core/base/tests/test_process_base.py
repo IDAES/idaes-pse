@@ -20,8 +20,7 @@ import pytest
 from pyomo.environ import Block, ConcreteModel
 
 from idaes.core.base.process_base import ProcessBaseBlock
-from idaes.core import (FlowsheetBlockData,
-                        declare_process_block_class)
+from idaes.core import FlowsheetBlockData, declare_process_block_class
 
 
 @declare_process_block_class("Flowsheet")

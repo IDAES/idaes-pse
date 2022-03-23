@@ -24,7 +24,7 @@ from pyomo.common.config import ConfigBlock
 from pyomo.environ import Block
 
 __author__ = "John Eslick"
-__all__ = ['ProcessBlock', 'declare_process_block_class']
+__all__ = ["ProcessBlock", "declare_process_block_class"]
 
 
 def _rule_default(b, *args):
@@ -36,9 +36,9 @@ def _rule_default(b, *args):
     try:
         b.build()
     except Exception:
-        logging.getLogger(__name__).exception(
-            "Failure in build: {}".format(b))
+        logging.getLogger(__name__).exception("Failure in build: {}".format(b))
         raise
+
 
 _process_block_docstring = """
     Args:
@@ -66,6 +66,7 @@ _config_block_keys_docstring = """
             ..
 """
 
+
 def _process_kwargs(o, kwargs):
     kwargs.setdefault("rule", _rule_default)
     o._block_data_config_default = kwargs.pop("default", None)
@@ -81,6 +82,7 @@ class _IndexedProcessBlockMeta(type):
         def __init__(self, *args, **kwargs):
             _process_kwargs(self, kwargs)
             bases[0].__init__(self, *args, **kwargs)
+
         dct["__init__"] = __init__
         dct["__process_block__"] = "indexed"
         # provide function ``base_class_module()`` to get unit module, for visualizer
@@ -96,6 +98,7 @@ class _ScalarProcessBlockMeta(type):
             _process_kwargs(self, kwargs)
             bases[0].__init__(self, component=self)
             bases[1].__init__(self, *args, **kwargs)
+
         dct["__init__"] = __init__
         dct["__process_block__"] = "scalar"
         # provide function ``base_class_module()`` to get unit module, for visualizer
@@ -111,7 +114,9 @@ class ProcessBlock(Block):
     assigned by default that calls the build() method for the contained
     ProcessBlockData objects. The default rule can be overridden, but the new
     rule should always call build() for the ProcessBlockData object.
-    """ + _process_block_docstring.format("", "ProcessBlock")
+    """ + _process_block_docstring.format(
+        "", "ProcessBlock"
+    )
 
     def __new__(cls, *args, **kwds):
         """Create a new indexed or scalar ProcessBlock subclass instance
@@ -128,14 +133,14 @@ class ProcessBlock(Block):
             # that is neither indexed or scalar so you go to the if below and
             # create an index or scalar subclass of cls.
             return super(Block, cls).__new__(cls)
-        if args == (): # no args so make scalar class
+        if args == ():  # no args so make scalar class
             bname = "_Scalar{}".format(cls.__name__)
-            n = _ScalarProcessBlockMeta(bname, (cls._ComponentDataClass, cls),{})
-            return n.__new__(n) #calls this __new__() again with scalar class
-        else: # args so make indexed class
+            n = _ScalarProcessBlockMeta(bname, (cls._ComponentDataClass, cls), {})
+            return n.__new__(n)  # calls this __new__() again with scalar class
+        else:  # args so make indexed class
             bname = "_Indexed{}".format(cls.__name__)
             n = _IndexedProcessBlockMeta(bname, (cls,), {})
-            return n.__new__(n) #calls this __new__() again with indexed class
+            return n.__new__(n)  # calls this __new__() again with indexed class
 
 
 def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
@@ -160,24 +165,33 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         Decorator function
 
     """
+
     def proc_dec(cls):  # Decorator function
         # create a new class called name from block_class
         try:
             cb_doc = cls.CONFIG.generate_documentation(
-                block_start="", block_end="", item_start="%s\n",
-                indent_spacing=4, item_body="%s", item_end="\n", width=66)
+                block_start="",
+                block_end="",
+                item_start="%s\n",
+                indent_spacing=4,
+                item_body="%s",
+                item_end="\n",
+                width=66,
+            )
             cb_doc += "\n"
-            cb_doc = '\n'.join(' '*12 + x for x in cb_doc.splitlines())
+            cb_doc = "\n".join(" " * 12 + x for x in cb_doc.splitlines())
         except:
             cb_doc = ""
         if cb_doc != "":
             cb_doc = _config_block_keys_docstring.format(cb_doc)
         ds = "\n".join([doc, _process_block_docstring.format(cb_doc, name)])
-        c = type(name, (block_class,),
-                {"__module__": cls.__module__,
-                 "_ComponentDataClass": cls,
-                 "__doc__": ds})
+        c = type(
+            name,
+            (block_class,),
+            {"__module__": cls.__module__, "_ComponentDataClass": cls, "__doc__": ds},
+        )
         setattr(sys.modules[cls.__module__], name, c)
 
         return cls
+
     return proc_dec  # return decorator function

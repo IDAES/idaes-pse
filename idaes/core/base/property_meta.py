@@ -52,14 +52,14 @@ from pyomo.core.base.units_container import _PyomoUnit
 from idaes.core.util.exceptions import PropertyPackageError
 import idaes.logger as idaeslog
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>, Andrew Lee'
+__author__ = "Dan Gunter <dkgunter@lbl.gov>, Andrew Lee"
 
 _log = idaeslog.getLogger(__name__)
 
 
 class HasPropertyClassMetadata(object):
-    """Interface for classes that have PropertyClassMetadata.
-    """
+    """Interface for classes that have PropertyClassMetadata."""
+
     _metadata = None
 
     @classmethod
@@ -98,25 +98,26 @@ class HasPropertyClassMetadata(object):
 
 
 class UnitNames(object):
-    """Names for recognized units.
-    """
-    TM = TIME = 'time'
-    LN = LENGTH = 'length'
-    MA = MASS = 'mass'
-    AM = AMOUNT = 'amount'
-    TE = TEMPERATURE = 'temperature'
-    CU = CURRENT = 'current'
-    LI = LUMINOUS_INTENSITY = 'luminous intensity'
+    """Names for recognized units."""
+
+    TM = TIME = "time"
+    LN = LENGTH = "length"
+    MA = MASS = "mass"
+    AM = AMOUNT = "amount"
+    TE = TEMPERATURE = "temperature"
+    CU = CURRENT = "current"
+    LI = LUMINOUS_INTENSITY = "luminous intensity"
 
 
 _base_units = {
-    'time': None,
-    'length': None,
-    'mass': None,
-    'amount': None,
-    'temperature': None,
-    'current': None,
-    'luminous intensity': None}
+    "time": None,
+    "length": None,
+    "mass": None,
+    "amount": None,
+    "temperature": None,
+    "current": None,
+    "luminous intensity": None,
+}
 
 
 class PropertyClassMetadata(object):
@@ -134,6 +135,7 @@ class PropertyClassMetadata(object):
                                         'tentacle_size': 'yards'})
 
     """
+
     #: Alias for class enumerating supported/known unit types
     U = UnitNames
 
@@ -189,7 +191,8 @@ class PropertyClassMetadata(object):
                 continue
             elif not isinstance(u, _PyomoUnit):
                 raise PropertyPackageError(
-                    f"Unrecognized units of measurment for quantity {q} ({u})")
+                    f"Unrecognized units of measurment for quantity {q} ({u})"
+                )
 
     def add_properties(self, p):
         """Add properties to the metadata.
@@ -234,8 +237,7 @@ class PropertyClassMetadata(object):
 
     def get_derived_units(self, units):
         base_units = self.default_units
-        if (isinstance(base_units["mass"], str) or
-                base_units["mass"] is None):
+        if isinstance(base_units["mass"], str) or base_units["mass"] is None:
             # If one entry is not a units object, then none will be
             # Backwards compatability for pre-units property packages
             return None
@@ -252,85 +254,123 @@ class PropertyClassMetadata(object):
                 "temperature": self.default_units["temperature"],
                 "current": self.default_units["current"],
                 "luminous intensity": self.default_units["luminous intensity"],
-                "area": self.default_units["length"]**2,
-                "volume": self.default_units["length"]**3,
-                "flow_mass": (self.default_units["mass"] *
-                              self.default_units["time"]**-1),
-                "flow_mole": (self.default_units["amount"] *
-                              self.default_units["time"]**-1),
-                "flow_vol": (self.default_units["length"]**3 *
-                             self.default_units["time"]**-1),
-                "flux_mass": (self.default_units["mass"] *
-                              self.default_units["time"]**-1 *
-                              self.default_units["length"]**-2),
-                "flux_mole": (self.default_units["amount"] *
-                              self.default_units["time"]**-1 *
-                              self.default_units["length"]**-2),
-                "flux_energy": (self.default_units["mass"] *
-                                self.default_units["time"]**-3),
-                "velocity": (self.default_units["length"] *
-                             self.default_units["time"]**-1),
-                "acceleration": (self.default_units["length"] *
-                                 self.default_units["time"]**-2),
-                "density_mass": (self.default_units["mass"] *
-                                 self.default_units["length"]**-3),
-                "density_mole": (self.default_units["amount"] *
-                                 self.default_units["length"]**-3),
-                "molecular_weight": (self.default_units["mass"] /
-                                     self.default_units["amount"]),
-                "energy": (self.default_units["mass"] *
-                           self.default_units["length"]**2 *
-                           self.default_units["time"]**-2),
-                "energy_mass": (self.default_units["length"]**2 *
-                                self.default_units["time"]**-2),
-                "energy_mole": (self.default_units["mass"] *
-                                self.default_units["length"]**2 *
-                                self.default_units["time"]**-2 *
-                                self.default_units["amount"]**-1),
-                "entropy": (self.default_units["mass"] *
-                            self.default_units["length"]**2 *
-                            self.default_units["time"]**-2 *
-                            self.default_units["temperature"]**-1),
-                "entropy_mass": (self.default_units["length"]**2 *
-                                 self.default_units["time"]**-2 *
-                                 self.default_units["temperature"]**-1),
-                "entropy_mole": (self.default_units["mass"] *
-                                 self.default_units["length"]**2 *
-                                 self.default_units["time"]**-2 *
-                                 self.default_units["temperature"]**-1 *
-                                 self.default_units["amount"]**-1),
-                "power": (self.default_units["mass"] *
-                          self.default_units["length"]**2 *
-                          self.default_units["time"]**-3),
-                "pressure": (self.default_units["mass"] *
-                             self.default_units["length"]**-1 *
-                             self.default_units["time"]**-2),
-                "heat_capacity_mass": (self.default_units["length"]**2 *
-                                       self.default_units["time"]**-2 *
-                                       self.default_units["temperature"]**-1),
-                "heat_capacity_mole": (self.default_units["mass"] *
-                                       self.default_units["length"]**2 *
-                                       self.default_units["time"]**-2 *
-                                       self.default_units["temperature"]**-1 *
-                                       self.default_units["amount"]**-1),
-                "heat_transfer_coefficient":
-                    (self.default_units["mass"] *
-                     self.default_units["time"]**-3 *
-                     self.default_units["temperature"]**-1),
-                "thermal_conductivity":
-                    (self.default_units["mass"] *
-                     self.default_units["length"] *
-                     self.default_units["time"]**-3 *
-                     self.default_units["temperature"]**-1),
-                "gas_constant": (self.default_units["mass"] *
-                                 self.default_units["length"]**2 *
-                                 self.default_units["time"]**-2 *
-                                 self.default_units["temperature"]**-1 *
-                                 self.default_units["amount"]**-1)}
+                "area": self.default_units["length"] ** 2,
+                "volume": self.default_units["length"] ** 3,
+                "flow_mass": (
+                    self.default_units["mass"] * self.default_units["time"] ** -1
+                ),
+                "flow_mole": (
+                    self.default_units["amount"] * self.default_units["time"] ** -1
+                ),
+                "flow_vol": (
+                    self.default_units["length"] ** 3 * self.default_units["time"] ** -1
+                ),
+                "flux_mass": (
+                    self.default_units["mass"]
+                    * self.default_units["time"] ** -1
+                    * self.default_units["length"] ** -2
+                ),
+                "flux_mole": (
+                    self.default_units["amount"]
+                    * self.default_units["time"] ** -1
+                    * self.default_units["length"] ** -2
+                ),
+                "flux_energy": (
+                    self.default_units["mass"] * self.default_units["time"] ** -3
+                ),
+                "velocity": (
+                    self.default_units["length"] * self.default_units["time"] ** -1
+                ),
+                "acceleration": (
+                    self.default_units["length"] * self.default_units["time"] ** -2
+                ),
+                "density_mass": (
+                    self.default_units["mass"] * self.default_units["length"] ** -3
+                ),
+                "density_mole": (
+                    self.default_units["amount"] * self.default_units["length"] ** -3
+                ),
+                "molecular_weight": (
+                    self.default_units["mass"] / self.default_units["amount"]
+                ),
+                "energy": (
+                    self.default_units["mass"]
+                    * self.default_units["length"] ** 2
+                    * self.default_units["time"] ** -2
+                ),
+                "energy_mass": (
+                    self.default_units["length"] ** 2 * self.default_units["time"] ** -2
+                ),
+                "energy_mole": (
+                    self.default_units["mass"]
+                    * self.default_units["length"] ** 2
+                    * self.default_units["time"] ** -2
+                    * self.default_units["amount"] ** -1
+                ),
+                "entropy": (
+                    self.default_units["mass"]
+                    * self.default_units["length"] ** 2
+                    * self.default_units["time"] ** -2
+                    * self.default_units["temperature"] ** -1
+                ),
+                "entropy_mass": (
+                    self.default_units["length"] ** 2
+                    * self.default_units["time"] ** -2
+                    * self.default_units["temperature"] ** -1
+                ),
+                "entropy_mole": (
+                    self.default_units["mass"]
+                    * self.default_units["length"] ** 2
+                    * self.default_units["time"] ** -2
+                    * self.default_units["temperature"] ** -1
+                    * self.default_units["amount"] ** -1
+                ),
+                "power": (
+                    self.default_units["mass"]
+                    * self.default_units["length"] ** 2
+                    * self.default_units["time"] ** -3
+                ),
+                "pressure": (
+                    self.default_units["mass"]
+                    * self.default_units["length"] ** -1
+                    * self.default_units["time"] ** -2
+                ),
+                "heat_capacity_mass": (
+                    self.default_units["length"] ** 2
+                    * self.default_units["time"] ** -2
+                    * self.default_units["temperature"] ** -1
+                ),
+                "heat_capacity_mole": (
+                    self.default_units["mass"]
+                    * self.default_units["length"] ** 2
+                    * self.default_units["time"] ** -2
+                    * self.default_units["temperature"] ** -1
+                    * self.default_units["amount"] ** -1
+                ),
+                "heat_transfer_coefficient": (
+                    self.default_units["mass"]
+                    * self.default_units["time"] ** -3
+                    * self.default_units["temperature"] ** -1
+                ),
+                "thermal_conductivity": (
+                    self.default_units["mass"]
+                    * self.default_units["length"]
+                    * self.default_units["time"] ** -3
+                    * self.default_units["temperature"] ** -1
+                ),
+                "gas_constant": (
+                    self.default_units["mass"]
+                    * self.default_units["length"] ** 2
+                    * self.default_units["time"] ** -2
+                    * self.default_units["temperature"] ** -1
+                    * self.default_units["amount"] ** -1
+                ),
+            }
         except TypeError:
             raise PropertyPackageError(
                 "{} cannot determine derived units, as property package has "
-                "not defined a set of base units.".format(str(self)))
+                "not defined a set of base units.".format(str(self))
+            )
 
 
 class PropertyMetadata(dict):
@@ -344,10 +384,10 @@ class PropertyMetadata(dict):
     def __init__(self, name=None, method=None, units=None):
         if name is None:
             raise TypeError('"name" is required')
-        d = {'name': name, 'method': method}
+        d = {"name": name, "method": method}
         if units is not None:
-            d['units'] = units
+            d["units"] = units
         else:
             # Adding a default "null" unit in case it is not provided by user
-            d['units'] = "-"
+            d["units"] = "-"
         super(PropertyMetadata, self).__init__(d)

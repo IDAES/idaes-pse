@@ -28,21 +28,25 @@ from pyomo.common.config import ConfigBlock
 from enum import Enum
 
 from idaes.core.base.process_block import declare_process_block_class
-from idaes.core.util.exceptions import (ConfigurationError,
-                                        DynamicError,
-                                        PropertyPackageError)
+from idaes.core.util.exceptions import (
+    ConfigurationError,
+    DynamicError,
+    PropertyPackageError,
+)
 from idaes.core.util.tables import stream_table_dataframe_to_string
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_activated_constraints,
-                                              number_activated_blocks)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_activated_constraints,
+    number_activated_blocks,
+)
 
 
 # Some more inforation about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 
-__all__ = ['ProcessBlockData']
+__all__ = ["ProcessBlockData"]
 
 
 useDefault = object()
@@ -71,6 +75,7 @@ class ProcessBlockData(_BlockData):
     Additionally, this class contains a number of methods common to all IDAES
     classes.
     """
+
     CONFIG = ConfigBlock("ProcessBlockData", implicit=False)
 
     def __init__(self, component):
@@ -127,7 +132,7 @@ class ProcessBlockData(_BlockData):
             if parent is None:
                 return None
 
-            if hasattr(parent, 'is_flowsheet') and parent.is_flowsheet():
+            if hasattr(parent, "is_flowsheet") and parent.is_flowsheet():
                 return parent
 
             else:
@@ -164,33 +169,33 @@ class ProcessBlockData(_BlockData):
         Returns :
             None
         """
-        if state == 'steady-state':
-            for obj in self.component_objects((Block, Disjunct),
-                                              descend_into=True):
+        if state == "steady-state":
+            for obj in self.component_objects((Block, Disjunct), descend_into=True):
                 # Try to fix material_accumulation @ first time point
                 try:
-                    obj.material_accumulation[
-                            obj.flowsheet().time.first(), ...].fix(0.0)
+                    obj.material_accumulation[obj.flowsheet().time.first(), ...].fix(
+                        0.0
+                    )
                 except AttributeError:
                     pass
 
                 # Try to fix element_accumulation @ first time point
                 try:
-                    obj.element_accumulation[
-                            obj.flowsheet().time.first(), ...].fix(0.0)
+                    obj.element_accumulation[obj.flowsheet().time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix energy_accumulation @ first time point
                 try:
-                    obj.energy_accumulation[
-                            obj.flowsheet().time.first(), ...].fix(0.0)
+                    obj.energy_accumulation[obj.flowsheet().time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
         else:
-            raise ValueError("Unrecognised value for argument 'state'. "
-                             "Valid values are 'steady-state'.")
+            raise ValueError(
+                "Unrecognised value for argument 'state'. "
+                "Valid values are 'steady-state'."
+            )
 
     def unfix_initial_conditions(self):
         """This method unfixed the initial conditions for dynamic models.
@@ -204,22 +209,19 @@ class ProcessBlockData(_BlockData):
         for obj in self.component_objects(Block, descend_into=True):
             # Try to unfix material_accumulation @ first time point
             try:
-                obj.material_accumulation[
-                        obj.flowsheet().time.first(), ...].unfix()
+                obj.material_accumulation[obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix element_accumulation @ first time point
             try:
-                obj.element_accumulation[
-                        obj.flowsheet().time.first(), ...].unfix()
+                obj.element_accumulation[obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix energy_accumulation @ first time point
             try:
-                obj.energy_accumulation[
-                        obj.flowsheet().time.first(), ...].unfix()
+                obj.energy_accumulation[obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 
@@ -251,76 +253,76 @@ class ProcessBlockData(_BlockData):
 
         # Write output
         max_str_length = 84
-        tab = " "*4
-        ostream.write("\n"+"="*max_str_length+"\n")
+        tab = " " * 4
+        ostream.write("\n" + "=" * max_str_length + "\n")
 
         lead_str = f"{prefix}{model_type} : {self.name}"
         trail_str = f"Time: {time_point}"
-        mid_str = " "*(max_str_length-len(lead_str)-len(trail_str))
-        ostream.write(lead_str+mid_str+trail_str)
+        mid_str = " " * (max_str_length - len(lead_str) - len(trail_str))
+        ostream.write(lead_str + mid_str + trail_str)
 
         if dof:
-            ostream.write("\n"+"="*max_str_length+"\n")
+            ostream.write("\n" + "=" * max_str_length + "\n")
             ostream.write(f"{prefix}{tab}Local Degrees of Freedom: {dof_stat}")
-            ostream.write('\n')
-            ostream.write(f"{prefix}{tab}Total Variables: {nv}{tab}"
-                          f"Activated Constraints: {nc}{tab}"
-                          f"Activated Blocks: {nb}")
+            ostream.write("\n")
+            ostream.write(
+                f"{prefix}{tab}Total Variables: {nv}{tab}"
+                f"Activated Constraints: {nc}{tab}"
+                f"Activated Blocks: {nb}"
+            )
 
         if performance is not None:
             # PYLINT-WHY: pylint has no way of knowing that performance is supposed to be dict-like
             # pylint: disable=unsubscriptable-object
             # PYLINT-TODO: alternatively, have the function return an empty dict and test with `if performance:`
-            ostream.write("\n"+"-"*max_str_length+"\n")
+            ostream.write("\n" + "-" * max_str_length + "\n")
             ostream.write(f"{prefix}{tab}Unit Performance")
-            ostream.write("\n"*2)
+            ostream.write("\n" * 2)
             if "vars" in performance.keys() and len(performance["vars"]) > 0:
                 ostream.write(f"{prefix}{tab}Variables: \n\n")
 
                 tabular_writer(
-                        ostream,
-                        prefix+tab,
-                        ((k, v) for k, v in performance["vars"].items()),
-                        ("Value", "Fixed", "Bounds"),
-                        lambda k, v: [
-                                "{:#.5g}".format(value(v)),
-                                v.fixed,
-                                v.bounds])
+                    ostream,
+                    prefix + tab,
+                    ((k, v) for k, v in performance["vars"].items()),
+                    ("Value", "Fixed", "Bounds"),
+                    lambda k, v: ["{:#.5g}".format(value(v)), v.fixed, v.bounds],
+                )
 
             if "exprs" in performance.keys() and len(performance["exprs"]) > 0:
                 ostream.write("\n")
                 ostream.write(f"{prefix}{tab}Expressions: \n\n")
 
                 tabular_writer(
-                        ostream,
-                        prefix+tab,
-                        ((k, v) for k, v in performance["exprs"].items()),
-                        ("Value",),
-                        lambda k, v: [
-                                "{:#.5g}".format(value(v))])
+                    ostream,
+                    prefix + tab,
+                    ((k, v) for k, v in performance["exprs"].items()),
+                    ("Value",),
+                    lambda k, v: ["{:#.5g}".format(value(v))],
+                )
 
-            if ("params" in performance.keys() and
-                    len(performance["params"]) > 0):
+            if "params" in performance.keys() and len(performance["params"]) > 0:
                 ostream.write("\n")
                 ostream.write(f"{prefix}{tab}Parameters: \n\n")
 
                 tabular_writer(
-                        ostream,
-                        prefix+tab,
-                        ((k, v) for k, v in performance["params"].items()),
-                        ("Value", "Mutable"),
-                        lambda k, v: [value(v),
-                                      not v.is_constant()])
+                    ostream,
+                    prefix + tab,
+                    ((k, v) for k, v in performance["params"].items()),
+                    ("Value", "Mutable"),
+                    lambda k, v: [value(v), not v.is_constant()],
+                )
 
         if stream_table is not None:
-            ostream.write("\n"+"-"*max_str_length+"\n")
+            ostream.write("\n" + "-" * max_str_length + "\n")
             ostream.write(f"{prefix}{tab}Stream Table")
-            ostream.write('\n')
+            ostream.write("\n")
             ostream.write(
-                    textwrap.indent(
-                            stream_table_dataframe_to_string(stream_table),
-                            prefix+tab))
-        ostream.write("\n"+"="*max_str_length+"\n")
+                textwrap.indent(
+                    stream_table_dataframe_to_string(stream_table), prefix + tab
+                )
+            )
+        ostream.write("\n" + "=" * max_str_length + "\n")
 
     def _get_performance_contents(self, time_point):
         return None
@@ -332,7 +334,7 @@ class ProcessBlockData(_BlockData):
         """
         Return the performance contents and stream table
 
-        NOTE: There is the possiblity of a ConfigurationError because 
+        NOTE: There is the possiblity of a ConfigurationError because
         the names of the inlets and outlets of the unit model may not be
         standard. If this occurs then return an empty dataframe
 
@@ -377,11 +379,12 @@ class ProcessBlockData(_BlockData):
             try:
                 parent = self.flowsheet()
             except ConfigurationError:
-                raise DynamicError('{} has no parent flowsheet from which to '
-                                   'get dynamic argument. Please provide a '
-                                   'value for this argument when constructing '
-                                   'the unit.'
-                                   .format(self.name))
+                raise DynamicError(
+                    "{} has no parent flowsheet from which to "
+                    "get dynamic argument. Please provide a "
+                    "value for this argument when constructing "
+                    "the unit.".format(self.name)
+                )
 
         # Check the dynamic flag, and retrieve if necessary
         if self.config.dynamic == useDefault:
@@ -390,20 +393,22 @@ class ProcessBlockData(_BlockData):
                 self.config.dynamic = parent.config.dynamic
             except AttributeError:
                 # No flowsheet, raise exception
-                raise DynamicError('{} parent flowsheet has no dynamic '
-                                   'argument. Please provide a '
-                                   'value for this argument when constructing '
-                                   'the unit.'
-                                   .format(self.name))
+                raise DynamicError(
+                    "{} parent flowsheet has no dynamic "
+                    "argument. Please provide a "
+                    "value for this argument when constructing "
+                    "the unit.".format(self.name)
+                )
 
         # Check for case when dynamic=True, but parent dynamic=False
-        if (self.config.dynamic and not parent.config.dynamic):
-            raise DynamicError('{} trying to declare a dynamic model within '
-                               'a steady-state flowsheet. This is not '
-                               'supported by the IDAES framework. Try '
-                               'creating a dynamic flowsheet instead, and '
-                               'declaring some models as steady-state.'
-                               .format(self.name))
+        if self.config.dynamic and not parent.config.dynamic:
+            raise DynamicError(
+                "{} trying to declare a dynamic model within "
+                "a steady-state flowsheet. This is not "
+                "supported by the IDAES framework. Try "
+                "creating a dynamic flowsheet instead, and "
+                "declaring some models as steady-state.".format(self.name)
+            )
 
         # Set and validate has_holdup argument
         if self.config.has_holdup == useDefault:
@@ -413,9 +418,10 @@ class ProcessBlockData(_BlockData):
             if self.config.dynamic is True:
                 # Dynamic model must have has_holdup = True
                 raise ConfigurationError(
-                            "{} invalid arguments for dynamic and has_holdup. "
-                            "If dynamic = True, has_holdup must also be True "
-                            "(was False)".format(self.name))
+                    "{} invalid arguments for dynamic and has_holdup. "
+                    "If dynamic = True, has_holdup must also be True "
+                    "(was False)".format(self.name)
+                )
 
     def _get_property_package(self):
         """
@@ -444,8 +450,7 @@ class ProcessBlockData(_BlockData):
             # Try to get property_package from parent
             try:
                 if parent.config.property_package in [None, useDefault]:
-                    parent.config.property_package = \
-                        self._get_default_prop_pack()
+                    parent.config.property_package = self._get_default_prop_pack()
 
                 self.config.property_package = parent.config.property_package
             except AttributeError:
@@ -454,8 +459,9 @@ class ProcessBlockData(_BlockData):
         # Check for any flowsheet level build arguments
         for k in self.config.property_package.config.default_arguments:
             if k not in self.config.property_package_args:
-                self.config.property_package_args[k] = \
-                    self.config.property_package.config.default_arguments[k]
+                self.config.property_package_args[
+                    k
+                ] = self.config.property_package.config.default_arguments[k]
 
     def _get_default_prop_pack(self):
         """
@@ -473,12 +479,11 @@ class ProcessBlockData(_BlockData):
         while True:
             if parent is None:
                 raise ConfigurationError(
-                            '{} no property package provided and '
-                            'no default defined by parent flowsheet(s).'
-                            .format(self.name))
+                    "{} no property package provided and "
+                    "no default defined by parent flowsheet(s).".format(self.name)
+                )
             elif parent.config.default_property_package is not None:
-                _log.info('{} Using default property package'
-                          .format(self.name))
+                _log.info("{} Using default property package".format(self.name))
                 return parent.config.default_property_package
 
             parent = parent.flowsheet()
@@ -499,18 +504,22 @@ class ProcessBlockData(_BlockData):
         # Check for phase list(s)
         if not hasattr(self.config.property_package, "phase_list"):
             raise PropertyPackageError(
-                '{} property_package provided does not '
-                'contain a phase_list. '
-                'Please contact the developer of the property package.'
-                .format(self.name))
+                "{} property_package provided does not "
+                "contain a phase_list. "
+                "Please contact the developer of the property package.".format(
+                    self.name
+                )
+            )
 
         # Check for component list(s)
         if not hasattr(self.config.property_package, "component_list"):
             raise PropertyPackageError(
-                '{} property_package provided does not '
-                'contain a component_list. '
-                'Please contact the developer of the property package.'
-                .format(self.name))
+                "{} property_package provided does not "
+                "contain a component_list. "
+                "Please contact the developer of the property package.".format(
+                    self.name
+                )
+            )
 
     def _get_reaction_package(self):
         """
@@ -533,8 +542,9 @@ class ProcessBlockData(_BlockData):
             # Check for any flowsheet level build arguments
             for k in self.config.reaction_package.config.default_arguments:
                 if k not in self.config.reaction_package_args:
-                    self.config.reaction_package_args[k] = \
-                        self.config.reaction_package.config.default_arguments[k]
+                    self.config.reaction_package_args[
+                        k
+                    ] = self.config.reaction_package.config.default_arguments[k]
 
     def calculate_scaling_factors(self):
         # This lets you call super().calculate_scaling_factors() in a unit
