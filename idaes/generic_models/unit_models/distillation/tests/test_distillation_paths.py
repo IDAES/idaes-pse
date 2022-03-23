@@ -21,7 +21,7 @@ def test_import_condenser_from_init(caplog):
     from idaes.generic_models.unit_models.distillation import Condenser
     assert (
         "DEPRECATED: the 'Condenser' class has been moved to"
-        "'idaes.generic_models.unit_models.column_models.condenser.Condenser'"
+        "'idaes.models_extra.column_models.condenser.Condenser'"
         ) in caplog.text.replace('\n', '')
 
 
@@ -30,7 +30,7 @@ def test_import_old_condenser(caplog):
     from idaes.generic_models.unit_models.distillation.condenser import Condenser
     assert (
         "DEPRECATED: the 'Condenser' class has been moved to"
-        "'idaes.generic_models.unit_models.column_models.condenser.Condenser'"
+        "'idaes.models_extra.column_models.condenser.Condenser'"
         ) in caplog.text.replace('\n', '')
 
 
@@ -39,9 +39,8 @@ def test_import_old_condenser_type(caplog):
     from idaes.generic_models.unit_models.distillation.condenser import \
         CondenserType
     assert (
-        "DEPRECATED: the 'CondenserType' class has been moved to "
-        "'idaes.generic_models.unit_models.column_models."
-        "condenser.CondenserType'"
+        "DEPRECATED: the 'CondenserType' class has been moved to"
+        "'idaes.models_extra.column_models.condenser.CondenserType'"
         ) in caplog.text.replace('\n', '')
 
 
@@ -50,8 +49,8 @@ def test_import_old_temperature_spec(caplog):
     from idaes.generic_models.unit_models.distillation.condenser import \
         TemperatureSpec
     assert (
-        "DEPRECATED: the 'TemperatureSpec' class has been moved to "
-        "'idaes.generic_models.unit_models.column_models."
+        "DEPRECATED: the 'TemperatureSpec' class has been moved to"
+        "'idaes.models_extra.column_models."
         "condenser.TemperatureSpec'."
         ) in caplog.text.replace('\n', '')
 
@@ -61,7 +60,7 @@ def test_import_reboiler_from_init(caplog):
     from idaes.generic_models.unit_models.distillation import Reboiler
     assert (
         "DEPRECATED: the 'Reboiler' class has been moved to"
-        "'idaes.generic_models.unit_models.column_models.reboiler.Reboiler'"
+        "'idaes.models_extra.column_models.reboiler.Reboiler'"
         ) in caplog.text.replace('\n', '')
 
 
@@ -70,7 +69,7 @@ def test_import_old_reboiler(caplog):
     from idaes.generic_models.unit_models.distillation.reboiler import Reboiler
     assert (
         "DEPRECATED: the 'Reboiler' class has been moved to"
-        "'idaes.generic_models.unit_models.column_models.reboiler.Reboiler'"
+        "'idaes.models_extra.column_models.reboiler.Reboiler'"
         ) in caplog.text.replace('\n', '')
 
 
@@ -79,7 +78,7 @@ def test_import_tray_from_init(caplog):
     from idaes.generic_models.unit_models.distillation import Tray
     assert (
         "DEPRECATED: the 'Tray' class has been moved to"
-        "'idaes.generic_models.unit_models.column_models.tray.Tray'"
+        "'idaes.models_extra.column_models.tray.Tray'"
         ) in caplog.text.replace('\n', '')
 
 
@@ -88,7 +87,7 @@ def test_import_old_tray(caplog):
     from idaes.generic_models.unit_models.distillation.tray import Tray
     assert (
         "DEPRECATED: the 'Tray' class has been moved to"
-        "'idaes.generic_models.unit_models.column_models.tray.Tray'"
+        "'idaes.models_extra.column_models.tray.Tray'"
         ) in caplog.text.replace('\n', '')
 
 
@@ -96,8 +95,8 @@ def test_import_old_tray(caplog):
 def test_import_tray_column_from_init(caplog):
     from idaes.generic_models.unit_models.distillation import TrayColumn
     assert (
-        "DEPRECATED: the 'TrayColumn' class has been moved to "
-        "'idaes.generic_models.unit_models.column_models."
+        "DEPRECATED: the 'TrayColumn' class has been moved to"
+        "'idaes.models_extra.column_models."
         "tray_column.TrayColumn'") in caplog.text.replace('\n', '')
 
 
@@ -106,6 +105,6 @@ def test_import_old_tray_column(caplog):
     from idaes.generic_models.unit_models.distillation.tray_column import \
         TrayColumn
     assert (
-        "DEPRECATED: the 'TrayColumn' class has been moved to "
-        "'idaes.generic_models.unit_models.column_models."
+        "DEPRECATED: the 'TrayColumn' class has been moved to"
+        "'idaes.models_extra.column_models."
         "tray_column.TrayColumn'") in caplog.text.replace('\n', '')
