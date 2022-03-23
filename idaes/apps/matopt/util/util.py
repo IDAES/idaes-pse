@@ -44,15 +44,21 @@ def myArrayEq(x, y, atol):
     """Determine if two numpy arrays of floating point numbers are equal.
 
     Args:
-    x (numpy.ndarray): a numpy array 
+    x (numpy.ndarray): a numpy array
     y (numpy.ndarray): a numpy array
     atol (float): absolute tolerance for equality
 
     Returns:
     (bool) true if the two arrays are equal
     """
-    return (x[0] - y[0] < atol) and (x[0] - y[0] > -atol) and (x[1] - y[1] < atol) and (x[1] - y[1] > -atol) and (
-            x[2] - y[2] < atol) and (x[2] - y[2] > -atol)
+    return (
+        (x[0] - y[0] < atol)
+        and (x[0] - y[0] > -atol)
+        and (x[1] - y[1] < atol)
+        and (x[1] - y[1] > -atol)
+        and (x[2] - y[2] < atol)
+        and (x[2] - y[2] > -atol)
+    )
 
 
 myPointEq = myArrayEq

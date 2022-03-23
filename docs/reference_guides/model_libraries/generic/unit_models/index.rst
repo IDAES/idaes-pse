@@ -13,6 +13,7 @@ Unit Models
     gibbs_reactor
     heater
     heat_exchanger
+    heat_exchanger_lc
     heat_exchanger_ntu
     heat_exchanger_1D
     mixer

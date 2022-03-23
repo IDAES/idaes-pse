@@ -25,23 +25,31 @@ class CubicLattice(UnitCellLattice):
 
     # === STANDARD CONSTRUCTOR
     def __init__(self, IAD):
-        RefUnitCellShape = Parallelepiped.fromEdgesAndAngles(CubicLattice.RefIAD,
-                                                             CubicLattice.RefIAD,
-                                                             CubicLattice.RefIAD,
-                                                             np.pi / 2, np.pi / 2, np.pi / 2,
-                                                             np.array([0, 0, 0], dtype=float))
+        RefUnitCellShape = Parallelepiped.fromEdgesAndAngles(
+            CubicLattice.RefIAD,
+            CubicLattice.RefIAD,
+            CubicLattice.RefIAD,
+            np.pi / 2,
+            np.pi / 2,
+            np.pi / 2,
+            np.array([0, 0, 0], dtype=float),
+        )
         RefUnitCellTiling = CubicTiling(RefUnitCellShape)
         RefFracPositions = [np.array([0.0, 0.0, 0.0])]
         RefUnitCell = UnitCell(RefUnitCellTiling, RefFracPositions)
         UnitCellLattice.__init__(self, RefUnitCell)
         self._IAD = CubicLattice.RefIAD
         self.applyTransF(ScaleFunc(IAD / CubicLattice.RefIAD))
-        self._NthNeighbors = [[np.array([1.0, 0.0, 0.0]),
-                               np.array([0.0, 1.0, 0.0]),
-                               np.array([0.0, 0.0, 1.0]),
-                               np.array([-1.0, 0.0, 0.0]),
-                               np.array([0.0, -1.0, 0.0]),
-                               np.array([0.0, 0.0, -1.0])]]
+        self._NthNeighbors = [
+            [
+                np.array([1.0, 0.0, 0.0]),
+                np.array([0.0, 1.0, 0.0]),
+                np.array([0.0, 0.0, 1.0]),
+                np.array([-1.0, 0.0, 0.0]),
+                np.array([0.0, -1.0, 0.0]),
+                np.array([0.0, 0.0, -1.0]),
+            ]
+        ]
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
@@ -49,7 +57,9 @@ class CubicLattice(UnitCellLattice):
             if TransF.isIsometric:
                 self._IAD *= TransF.Scale[0]
             else:
-                raise ValueError('CubicLattice applyTransF: Can only scale isometrically')
+                raise ValueError(
+                    "CubicLattice applyTransF: Can only scale isometrically"
+                )
         UnitCellLattice.applyTransF(self, TransF)
 
     # === PROPERTY EVALUATION METHODS
