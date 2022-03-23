@@ -1,4 +1,3 @@
-# coding: utf-8
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
@@ -11,7 +10,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-""" __init__.py for idaes module
-
-Set up logging for the idaes module, and import plugins.
-"""
+from .condenser import Condenser
+from .reboiler import Reboiler
+from .tray import Tray
+from .tray_column import TrayColumn

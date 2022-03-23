@@ -25,8 +25,7 @@ from idaes.core.util import get_solver
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
-from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_solvent \
-    import configuration
+from idaes.models_extra.column_models.properties.MEA_solvent import configuration
 
 
 # -----------------------------------------------------------------------------

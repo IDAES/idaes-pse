@@ -26,8 +26,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
 
-from idaes.power_generation.carbon_capture.mea_solvent_system.properties.MEA_vapor \
-    import flue_gas, wet_co2
+from idaes.models_extra.column_models.properties.MEA_vapor import flue_gas, wet_co2
 
 
 # -----------------------------------------------------------------------------
