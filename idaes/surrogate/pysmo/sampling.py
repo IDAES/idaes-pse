@@ -134,8 +134,8 @@ class SamplingMethods:
         Returns:
             closest_point: a row vector containing the closest point to a in self.x_data
         """
-
-        dist = full_data[:, :-1] - a
+        no_y_vars = self.x_data.shape[1] - full_data.shape[1]
+        dist = full_data[:, :no_y_vars] - a
         l2_norm = np.sqrt(np.sum((dist ** 2), axis=1))
         l2_norm = l2_norm.reshape(l2_norm.shape[0], 1)
         distances = np.append(full_data, l2_norm, 1)
@@ -156,7 +156,7 @@ class SamplingMethods:
             equivalent_points: Array containing the points (in rows) most similar to those in generated_sample_points
         """
 
-        equivalent_points = np.zeros((generated_sample_points.shape[0], generated_sample_points.shape[1] + 1))
+        equivalent_points = np.zeros((generated_sample_points.shape[0], len(self.data_headers) ))
         for i in range(0, generated_sample_points.shape[0]):
             closest_point = self.nearest_neighbour(full_data, generated_sample_points[i, :])
             equivalent_points[i, :] = closest_point
@@ -314,6 +314,109 @@ class SamplingMethods:
         sequence_decimal = sequence_decimal.reshape(sequence_decimal.shape[0], )
         return sequence_decimal
 
+    def selection_columns_preprocessing(self, data_input, xlabels, ylabels):
+        """
+        Pre-processing data for multiple output selection case.
+        
+        Args:
+            data_input:     data supplied by user (dataframe or numpy array)
+            xlabels:        list of input variables
+            ylabels:        list of output variables
+        """
+        self.df_flag = True
+
+        if isinstance(data_input, pd.DataFrame):
+            if xlabels is None:
+                xlabels = []
+            if ylabels is None:
+                ylabels = []
+            set_of_labels = xlabels + ylabels
+
+            if not set_of_labels: 
+                # Empty list assumes one output in final column - all other variables treated as inputs
+                print('No column information provided. All except last column will be considered as x variables.')
+                self.data = data_input.values
+                self.data_headers = data_input.columns.values.tolist()
+                self.x_data = self.data[:, :-1]
+                self.data_headers_xvars = self.data_headers[:-1] # Last column is y
+            elif not set(set_of_labels).issubset(data_input.columns):
+                raise IndexError('Invalid column names in "xlabels" or "ylabels": ', 
+                    [k for k in set_of_labels if k not in data_input.columns])
+            elif not ylabels:
+                # When only xlabels are supplied, assume all non-inputs are outputs
+                self.x_data = data_input.filter(xlabels).values
+                self.data_headers_xvars = xlabels
+                non_x_vars = [k for k in data_input.columns if k not in xlabels]
+                y_data = data_input.filter(non_x_vars).values
+                self.data_headers = self.data_headers_xvars + non_x_vars
+                self.data = np.concatenate((self.x_data, y_data), axis=1)
+            elif not xlabels:
+                # When only ylabels are supplied, assume all non-outputs are inputs
+                xvars = [k for k in data_input.columns if k not in ylabels]
+                self.x_data = data_input.filter(xvars).values
+                self.data_headers_xvars = xvars
+                y_data = data_input.filter(ylabels).values
+                self.data_headers = self.data_headers_xvars + ylabels
+                self.data = np.concatenate((self.x_data, y_data), axis=1)
+            else:
+                # Only provided columns are considered - any column not in xlabels and ylabels is dropped completely.
+                dropped_cols = [k for k in data_input.columns if k not in set_of_labels]
+                if len(dropped_cols) > 0:
+                    warn_str = 'The following columns were dropped: ' + str(dropped_cols) 
+                    warnings.warn(warn_str)
+                self.x_data = data_input.filter(xlabels).values
+                self.data_headers = set_of_labels
+                self.data_headers_xvars = xlabels
+                self.data = data_input.filter(set_of_labels).values
+
+
+        elif isinstance(data_input, np.ndarray):
+            self.df_flag = False 
+
+            if xlabels is None:
+                xlabels = []
+            if ylabels is None:
+                ylabels = []
+            set_of_labels = xlabels + ylabels
+
+            if not set_of_labels: 
+                # Empty list assumes one output in final column
+                print('No column information provided. All except last column will be considered as x variables.')
+                self.data = data_input
+                self.data_headers = [i for i in range(0, data_input.shape[1])]
+                self.x_data = self.data[:, :-1]
+                self.data_headers_xvars = self.data_headers[:-1] # Last column is y
+            elif not set(set_of_labels).issubset(range(0, data_input.shape[1])):
+                raise IndexError('Invalid column names in "xlabels" or "ylabels": ',
+                    [k for k in set_of_labels if k not in range(0, data_input.shape[1])])
+            elif not ylabels:
+                # Assumes all non-inputs are outputs
+                self.x_data = data_input[:, xlabels]
+                self.data_headers_xvars = xlabels
+                non_x_vars = [k for k in range(0, data_input.shape[1]) if k not in xlabels]
+                y_data = data_input[:, non_x_vars]
+                self.data_headers = self.data_headers_xvars + non_x_vars
+                self.data = np.concatenate((self.x_data, y_data), axis=1)
+            elif not xlabels:
+                # Assumes all non-outputs are inputs
+                xvars = [k for k in range(0, data_input.shape[1]) if k not in ylabels]
+                self.x_data = data_input[:, xvars]
+                self.data_headers_xvars = xvars
+                y_data = data_input[:, ylabels]
+                self.data_headers = self.data_headers_xvars + ylabels
+                self.data = np.concatenate((self.x_data, y_data), axis=1)
+            else:
+                # Only provided columns are considered
+                dropped_cols = [k for k in range(0, data_input.shape[1]) if k not in set_of_labels]
+                if len(dropped_cols) > 0:
+                    warn_str = 'The following columns were dropped: ' + str(dropped_cols) 
+                    warnings.warn(warn_str)
+                self.x_data = data_input[:, xlabels]
+                self.data_headers = set_of_labels
+                self.data_headers_xvars = xlabels
+                self.data = data_input[:, set_of_labels]
+
+
 
 class LatinHypercubeSampling(SamplingMethods):
     """
@@ -333,24 +436,30 @@ class LatinHypercubeSampling(SamplingMethods):
 
     """
 
-    def __init__(self, data_input, number_of_samples=None, sampling_type=None):
+    def __init__(self, data_input, number_of_samples=None, sampling_type=None, xlabels=None, ylabels=None):
         """
         Initialization of **LatinHypercubeSampling** class. Two inputs are required.
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list) :  The input data set or range to be sampled.
             
-                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information in this case.
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information in this case.
 
             number_of_samples (int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
+                   
+        Keyword Args:
+            xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
+            ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
 
         Returns:
             **self** function containing the input information
 
         Raises:
             ValueError: The input data (**data_input**) is the wrong type.
+
+            IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
             Exception: When **number_of_samples** is invalid (not an integer, too large, zero, or negative)
 
@@ -371,29 +480,23 @@ class LatinHypercubeSampling(SamplingMethods):
         print('Sampling type: ', self.sampling_type, '\n')
 
         if self.sampling_type == 'selection':
-            if isinstance(data_input, pd.DataFrame):
-                data = data_input.values
-                data_headers = data_input.columns.values.tolist()
-            elif isinstance(data_input, np.ndarray):
-                data = data_input
-                data_headers = []
+            if isinstance(data_input, (pd.DataFrame, np.ndarray)):
+                self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
                 raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
-            self.data = data
-            self.data_headers = data_headers
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
                 print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
                 number_of_samples = 5
-            elif number_of_samples > data.shape[0]:
+            elif number_of_samples > self.data.shape[0]:
                 raise Exception('LHS sample size cannot be greater than number of samples in the input data set')
             elif not isinstance(number_of_samples, int):
                 raise Exception('number_of_samples must be an integer.')
             elif number_of_samples <= 0:
                 raise Exception('number_of_samples must a positive, non-zero integer.')
             self.number_of_samples = number_of_samples
-            self.x_data = self.data[:, :-1]
+
 
         elif self.sampling_type == 'creation':
             if not isinstance(data_input, list):
@@ -507,7 +610,7 @@ class LatinHypercubeSampling(SamplingMethods):
         generated_sample_points = self.random_shuffling(vector_of_points)
         unique_sample_points = self.sample_point_selection(self.data, generated_sample_points, self.sampling_type)
 
-        if len(self.data_headers) > 0:
+        if len(self.data_headers) > 0 and self.df_flag: 
             unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
         return unique_sample_points
 
@@ -533,21 +636,23 @@ class UniformSampling(SamplingMethods):
 
     """
 
-    def __init__(self, data_input, list_of_samples_per_variable, sampling_type=None, edges=None):
+    def __init__(self, data_input, list_of_samples_per_variable, sampling_type=None, xlabels=None, ylabels=None, edges=None):
         """
         Initialization of UniformSampling class. Three inputs are required.
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list) :  The input data set or range to be sampled.
 
-                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information in this case.
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information in this case.
 
             list_of_samples_per_variable (list): The list containing the number of subdivisions for each variable. Each dimension (variable) must be represented by a positive integer variable greater than 1.
             sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
 
         Keyword Args:
-            edges(bool): Boolean variable representing bow the points should be selected. A value of True (default) indicates the points should be equally spaced edge to edge, otherwise they will be in the centres of the bins filling the unit cube
+            xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
+            ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
+            edges (bool): Boolean variable representing how the points should be selected. A value of True (default) indicates the points should be equally spaced edge to edge, otherwise they will be in the centres of the bins filling the unit cube
 
         Returns:
             **self** function containing the input information
@@ -556,6 +661,8 @@ class UniformSampling(SamplingMethods):
             ValueError: The **data_input** is the wrong type
 
             ValueError: When **list_of_samples_per_variable** is of the wrong length, is not a list or contains elements other than integers
+
+            IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
             Exception: When **edges** entry is not Boolean
 
@@ -575,17 +682,10 @@ class UniformSampling(SamplingMethods):
         print('Sampling type: ', self.sampling_type, '\n')
 
         if self.sampling_type == 'selection':
-            if isinstance(data_input, pd.DataFrame):
-                data = data_input.values
-                data_headers = data_input.columns.values.tolist()
-            elif isinstance(data_input, np.ndarray):
-                data = data_input
-                data_headers = []
+            if isinstance(data_input, (pd.DataFrame, np.ndarray)):
+                self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
-                raise ValueError('Pandas dataframe or numpy array required.')
-            self.data = data
-            self.x_data = self.data[:, :-1]
-            self.data_headers = data_headers
+                raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
 
         elif self.sampling_type == 'creation':
             if not isinstance(data_input, list):
@@ -628,7 +728,7 @@ class UniformSampling(SamplingMethods):
         self.dim_vector = list_of_samples_per_variable
         self.number_of_samples = int(np.prod(self.dim_vector))
 
-        if self.sampling_type == 'selection' and self.number_of_samples > data.shape[0]:
+        if self.sampling_type == 'selection' and self.number_of_samples > self.data.shape[0]:
             raise Exception('Sample size cannot be greater than number of samples in the input data set')
 
     def sample_points(self):
@@ -654,7 +754,7 @@ class UniformSampling(SamplingMethods):
         samples_list = list(itertools.product(*points_spread))
         samples_array = np.asarray(samples_list)
         unique_sample_points = self.sample_point_selection(self.data, samples_array, self.sampling_type)
-        if len(self.data_headers) > 0:
+        if len(self.data_headers) > 0 and self.df_flag: 
             unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
         return unique_sample_points
 
@@ -682,7 +782,7 @@ class HaltonSampling(SamplingMethods):
 
     """
 
-    def __init__(self, data_input, number_of_samples=None, sampling_type=None):
+    def __init__(self, data_input, number_of_samples=None, sampling_type=None, xlabels=None, ylabels=None):
         """
 
         Initialization of **HaltonSampling** class. Two inputs are required.
@@ -690,17 +790,23 @@ class HaltonSampling(SamplingMethods):
         Args:
             data_input (NumPy Array, Pandas Dataframe or list) : The input data set or range to be sampled.
             
-                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information  in this case.
-            
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information  in this case.
+
             number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
 
+        Keyword Args:
+            xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
+            ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
+            
         Returns:
             **self** function containing the input information.
 
         Raises:
             ValueError: The **data_input** is the wrong type.
+
+            IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
             
             Exception: When the **number_of_samples** is invalid (not an integer, too large, zero or negative.)
             
@@ -720,29 +826,23 @@ class HaltonSampling(SamplingMethods):
         print('Sampling type: ', self.sampling_type, '\n')
 
         if self.sampling_type == 'selection':
-            if isinstance(data_input, pd.DataFrame):
-                data = data_input.values
-                data_headers = data_input.columns.values.tolist()
-            elif isinstance(data_input, np.ndarray):
-                data = data_input
-                data_headers = []
+            if isinstance(data_input, (pd.DataFrame, np.ndarray)):
+                self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
-                raise ValueError('Pandas dataframe or numpy array required.')
-            self.data = data
-            self.data_headers = data_headers
+                raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
                 print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
                 number_of_samples = 5
-            elif number_of_samples > data.shape[0]:
+            elif number_of_samples > self.data.shape[0]:
                 raise Exception('Sample size cannot be greater than number of samples in the input data set')
             elif not isinstance(number_of_samples, int):
                 raise Exception('number_of_samples must be an integer.')
             elif number_of_samples <= 0:
                 raise Exception('number_of_samples must a positive, non-zero integer.')
             self.number_of_samples = number_of_samples
-            self.x_data = self.data[:, :-1]
+
 
         elif self.sampling_type == 'creation':
             if not isinstance(data_input, list):
@@ -800,7 +900,7 @@ class HaltonSampling(SamplingMethods):
             sample_points[:, i] = self.data_sequencing(self.number_of_samples, prime_list[i])
         # Scale input data, then find data points closest in sample space. Unscale before returning points
         unique_sample_points = self.sample_point_selection(self.data, sample_points, self.sampling_type)
-        if len(self.data_headers) > 0:
+        if len(self.data_headers) > 0 and self.df_flag:
             unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
         return unique_sample_points
 
@@ -828,24 +928,30 @@ class HammersleySampling(SamplingMethods):
 
     """
 
-    def __init__(self, data_input, number_of_samples=None, sampling_type=None):
+    def __init__(self, data_input, number_of_samples=None, sampling_type=None, xlabels=None, ylabels=None):
         """
         Initialization of **HammersleySampling** class. Two inputs are required.
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list): The input data set or range to be sampled.
-
-                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information  in this case.
+    
+               - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
+               - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information  in this case.
 
             number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
+
+        Keyword Args:
+            xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
+            ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
 
             Returns:
                 **self** function containing the input information.
 
             Raises:
                 ValueError: When **data_input** is the wrong type.
+        
+                IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
                 Exception: When the **number_of_samples** is invalid (not an integer, too large, zero, negative)
 
@@ -865,29 +971,24 @@ class HammersleySampling(SamplingMethods):
         print('Sampling type: ', self.sampling_type, '\n')
 
         if self.sampling_type == 'selection':
-            if isinstance(data_input, pd.DataFrame):
-                data = data_input.values
-                data_headers = data_input.columns.values.tolist()
-            elif isinstance(data_input, np.ndarray):
-                data = data_input
-                data_headers = []
+
+            if isinstance(data_input, (pd.DataFrame, np.ndarray)):
+                self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
-                raise ValueError('Pandas dataframe or numpy array required.')
-            self.data = data
-            self.data_headers = data_headers
+                raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
                 print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
                 number_of_samples = 5
-            elif number_of_samples > data.shape[0]:
+            elif number_of_samples > self.data.shape[0]:
                 raise Exception('Sample size cannot be greater than number of samples in the input data set')
             elif not isinstance(number_of_samples, int):
                 raise Exception('number_of_samples must be an integer.')
             elif number_of_samples <= 0:
                 raise Exception('number_of_samples must a positive, non-zero integer.')
             self.number_of_samples = number_of_samples
-            self.x_data = self.data[:, :-1]
+
 
         elif self.sampling_type == 'creation':
             if not isinstance(data_input, list):
@@ -949,7 +1050,7 @@ class HammersleySampling(SamplingMethods):
             sample_points[:, i + 1] = self.data_sequencing(self.number_of_samples, prime_list[i])
 
         unique_sample_points = self.sample_point_selection(self.data, sample_points, self.sampling_type)
-        if len(self.data_headers) > 0:
+        if len(self.data_headers) > 0 and self.df_flag:
             unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
         return unique_sample_points
 
@@ -972,20 +1073,22 @@ class CVTSampling(SamplingMethods):
 
     """
 
-    def __init__(self, data_input, number_of_samples=None, tolerance=None, sampling_type=None):
+    def __init__(self, data_input, number_of_samples=None, tolerance=None, sampling_type=None, xlabels=None, ylabels=None):
         """
         Initialization of CVTSampling class. Two inputs are required, while an optional option to control the solution accuracy may be specified.
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list): The input data set or range to be sampled.
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information  in this case.
 
-                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information  in this case.
 
             number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
 
         Keyword Args:
+            xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
+            ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
             tolerance(float): Maximum allowable Euclidean distance between centres from consectutive iterations of the algorithm. Termination condition for algorithm.
 
                 - The smaller the value of tolerance, the better the solution but the longer the algorithm requires to converge. Default value is :math:`10^{-7}`.
@@ -996,6 +1099,8 @@ class CVTSampling(SamplingMethods):
 
         Raises:
                 ValueError: When **data_input** is the wrong type.
+
+                IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
                 Exception: When the **number_of_samples** is invalid (not an integer, too large, zero, negative)
 
@@ -1019,31 +1124,16 @@ class CVTSampling(SamplingMethods):
         print('Sampling type: ', self.sampling_type, '\n')
 
         if self.sampling_type == 'selection':
-            if isinstance(data_input, pd.DataFrame):
-                data = data_input.values
-                data_headers = data_input.columns.values.tolist()
-            elif isinstance(data_input, np.ndarray):
-                data_headers = []
-                data = data_input
+            if isinstance(data_input, (pd.DataFrame, np.ndarray)):
+                self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
-                raise ValueError('Pandas dataframe or numpy array required.')
-
-            self.data = data
-            self.data_headers = data_headers
-
-            # Make sure x_data is 2D: reshape if necessary
-            x_data = data[:, :-1]
-            if x_data.ndim == 1:
-                x_data = x_data.reshape(len(x_data), 1)
-            self.x_data = x_data
-
-            self.y_data = data[:, -1]
+                raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
                 print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
                 number_of_samples = 5
-            elif number_of_samples > data.shape[0]:
+            elif number_of_samples > self.data.shape[0]:
                 raise Exception('CVT sample size cannot be greater than number of samples in the input data set')
             elif not isinstance(number_of_samples, int):
                 raise Exception('number_of_samples must be an integer.')
@@ -1084,7 +1174,7 @@ class CVTSampling(SamplingMethods):
             if x_data.ndim == 1:
                 x_data = x_data.reshape(len(x_data), 1)
             self.x_data = x_data
-            self.y_data = []
+            # self.y_data = []
 
         if tolerance is None:
             tolerance = 1e-7
@@ -1219,6 +1309,6 @@ class CVTSampling(SamplingMethods):
         sample_points = new_centres
 
         unique_sample_points = self.sample_point_selection(self.data, sample_points, self.sampling_type)
-        if len(self.data_headers) > 0:
+        if len(self.data_headers) > 0 and self.df_flag:
             unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
         return unique_sample_points

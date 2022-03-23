@@ -27,24 +27,36 @@ class PerovskiteLattice(UnitCellLattice):
 
     # === STANDARD CONSTRUCTOR
     def __init__(self, A, B, C):
-        RefUnitCellShape = RectPrism(PerovskiteLattice.RefA,
-                                     PerovskiteLattice.RefB,
-                                     PerovskiteLattice.RefC,
-                                     np.array([0, 0, 0], dtype=float))
+        RefUnitCellShape = RectPrism(
+            PerovskiteLattice.RefA,
+            PerovskiteLattice.RefB,
+            PerovskiteLattice.RefC,
+            np.array([0, 0, 0], dtype=float),
+        )
         RefUnitCellTiling = CubicTiling(RefUnitCellShape)
-        RefFracPositions = [np.array([0.0, 0.0, 0.0]),
-                            np.array([0.5, 0.5, 0.5]),
-                            np.array([0.5, 0.5, 0.0]),
-                            np.array([0.5, 0.0, 0.5]),
-                            np.array([0.0, 0.5, 0.5])]
+        RefFracPositions = [
+            np.array([0.0, 0.0, 0.0]),
+            np.array([0.5, 0.5, 0.5]),
+            np.array([0.5, 0.5, 0.0]),
+            np.array([0.5, 0.0, 0.5]),
+            np.array([0.0, 0.5, 0.5]),
+        ]
         RefUnitCell = UnitCell(RefUnitCellTiling, RefFracPositions)
         UnitCellLattice.__init__(self, RefUnitCell)
         self._A = PerovskiteLattice.RefA
         self._B = PerovskiteLattice.RefB
         self._C = PerovskiteLattice.RefC
-        self.applyTransF(ScaleFunc(np.array([A / PerovskiteLattice.RefA,
-                                             B / PerovskiteLattice.RefB,
-                                             C / PerovskiteLattice.RefC])))
+        self.applyTransF(
+            ScaleFunc(
+                np.array(
+                    [
+                        A / PerovskiteLattice.RefA,
+                        B / PerovskiteLattice.RefB,
+                        C / PerovskiteLattice.RefC,
+                    ]
+                )
+            )
+        )
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
@@ -58,60 +70,76 @@ class PerovskiteLattice(UnitCellLattice):
     # def isOnLattice(self,P):
 
     def areNeighbors(self, P1, P2):
-        raise NotImplementedError('PerovskiteLattice: there is no universal definition of nearest neighbors.')
+        raise NotImplementedError(
+            "PerovskiteLattice: there is no universal definition of nearest neighbors."
+        )
 
     def getNeighbors(self, P, layer=1):
         if layer > 2:
-            raise ValueError('PerovskiteLattice: there is no universal definition of N-th nearest neighbors.')
+            raise ValueError(
+                "PerovskiteLattice: there is no universal definition of N-th nearest neighbors."
+            )
         RefP = self._getConvertToReference(P)
         if self.isASite(P):
             return []
         elif self.isBSite(P):
-            RefNeighs = [np.array([0.5, 0.0, 0.0]),
-                         np.array([0.0, 0.5, 0.0]),
-                         np.array([0.0, 0.0, 0.5]),
-                         np.array([-0.5, 0.0, 0.0]),
-                         np.array([0.0, -0.5, 0.0]),
-                         np.array([0.0, 0.0, -0.5])]
+            RefNeighs = [
+                np.array([0.5, 0.0, 0.0]),
+                np.array([0.0, 0.5, 0.0]),
+                np.array([0.0, 0.0, 0.5]),
+                np.array([-0.5, 0.0, 0.0]),
+                np.array([0.0, -0.5, 0.0]),
+                np.array([0.0, 0.0, -0.5]),
+            ]
         elif self.isOSite(P):
             PointType = self.RefUnitCell.getPointType(self._getConvertToReference(P))
             if PointType == 4:  # i.e., motif aligned with x-axis
-                RefNeighs = [np.array([-0.5, 0.0, 0.0]),
-                             np.array([0.5, 0.0, 0.0]),
-                             np.array([-0.5, 1.0, 0.0]),
-                             np.array([-0.5, 0.0, 1.0]),
-                             np.array([-0.5, -1.0, 0.0]),
-                             np.array([-0.5, 0.0, -1.0]),
-                             np.array([0.5, 1.0, 0.0]),
-                             np.array([0.5, 0.0, 1.0]),
-                             np.array([0.5, -1.0, 0.0]),
-                             np.array([0.5, 0.0, -1.0])]
+                RefNeighs = [
+                    np.array([-0.5, 0.0, 0.0]),
+                    np.array([0.5, 0.0, 0.0]),
+                    np.array([-0.5, 1.0, 0.0]),
+                    np.array([-0.5, 0.0, 1.0]),
+                    np.array([-0.5, -1.0, 0.0]),
+                    np.array([-0.5, 0.0, -1.0]),
+                    np.array([0.5, 1.0, 0.0]),
+                    np.array([0.5, 0.0, 1.0]),
+                    np.array([0.5, -1.0, 0.0]),
+                    np.array([0.5, 0.0, -1.0]),
+                ]
             elif PointType == 3:  # i.e., motif aligned with y-axis
-                RefNeighs = [np.array([0.0, -0.5, 0.0]),
-                             np.array([0.0, 0.5, 0.0]),
-                             np.array([1.0, -0.5, 0.0]),
-                             np.array([0.0, -0.5, 1.0]),
-                             np.array([-1.0, -0.5, 0.0]),
-                             np.array([0.0, -0.5, -1.0]),
-                             np.array([1.0, 0.5, 0.0]),
-                             np.array([0.0, 0.5, 1.0]),
-                             np.array([-1.0, 0.5, 0.0]),
-                             np.array([0.0, 0.5, -1.0])]
+                RefNeighs = [
+                    np.array([0.0, -0.5, 0.0]),
+                    np.array([0.0, 0.5, 0.0]),
+                    np.array([1.0, -0.5, 0.0]),
+                    np.array([0.0, -0.5, 1.0]),
+                    np.array([-1.0, -0.5, 0.0]),
+                    np.array([0.0, -0.5, -1.0]),
+                    np.array([1.0, 0.5, 0.0]),
+                    np.array([0.0, 0.5, 1.0]),
+                    np.array([-1.0, 0.5, 0.0]),
+                    np.array([0.0, 0.5, -1.0]),
+                ]
             elif PointType == 2:  # i.e., motif aligned with z-axis
-                RefNeighs = [np.array([0.0, 0.0, -0.5]),
-                             np.array([0.0, 0.0, 0.5]),
-                             np.array([1.0, 0.0, -0.5]),
-                             np.array([0.0, 1.0, -0.5]),
-                             np.array([-1.0, 0.0, -0.5]),
-                             np.array([0.0, -1.0, -0.5]),
-                             np.array([1.0, 0.0, 0.5]),
-                             np.array([0.0, 1.0, 0.5]),
-                             np.array([-1.0, 0.0, 0.5]),
-                             np.array([0.0, -1.0, 0.5])]
+                RefNeighs = [
+                    np.array([0.0, 0.0, -0.5]),
+                    np.array([0.0, 0.0, 0.5]),
+                    np.array([1.0, 0.0, -0.5]),
+                    np.array([0.0, 1.0, -0.5]),
+                    np.array([-1.0, 0.0, -0.5]),
+                    np.array([0.0, -1.0, -0.5]),
+                    np.array([1.0, 0.0, 0.5]),
+                    np.array([0.0, 1.0, 0.5]),
+                    np.array([-1.0, 0.0, 0.5]),
+                    np.array([0.0, -1.0, 0.5]),
+                ]
             else:
-                raise ValueError('PerovskiteLattice.getNeighbors Should never reach here!')
+                raise ValueError(
+                    "PerovskiteLattice.getNeighbors Should never reach here!"
+                )
         else:
-            raise ValueError('PerovskiteLattice.getNeighbors given point apparently not on lattice')
+            raise ValueError(
+                "PerovskiteLattice.getNeighbors given point apparently not on lattice"
+            )
         result = deepcopy(RefNeighs)
         for NeighP in result:
             NeighP += RefP
@@ -137,7 +165,7 @@ class PerovskiteLattice(UnitCellLattice):
             elif self.isOSite(P):
                 D.setContent(i, OType)
             else:
-                raise ValueError('setDesign can not set site not on lattice')
+                raise ValueError("setDesign can not set site not on lattice")
 
     # === BASIC QUERY METHODS
     @property

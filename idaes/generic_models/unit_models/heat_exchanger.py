@@ -30,6 +30,7 @@ from pyomo.environ import (
     check_optimal_termination
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -45,10 +46,13 @@ from idaes.generic_models.unit_models.heater import (
     _make_heater_control_volume,
 )
 
-import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+
+# TODO: Clean up in IDAES 2.0
+from idaes.generic_models.costing import UnitModelCostingBlock
+import idaes.core.util.unit_costing as costing
 
 _log = idaeslog.getLogger(__name__)
 
@@ -667,6 +671,11 @@ class HeatExchangerData(UnitModelBlockData):
             time_point=time_point,
         )
 
+    @deprecated(
+        "The get_costing method is being deprecated in favor of the new "
+        "FlowsheetCostingBlock tools.",
+        version="TBD",
+    )
     def get_costing(self, module=costing, year=None, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year)
@@ -715,6 +724,8 @@ class HeatExchangerData(UnitModelBlockData):
         for t, c in self.delta_temperature_out_equation.items():
             iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
 
-        if hasattr(self, "costing"):
-            # import costing scaling factors
+        # TODO: Deprecate as part of IDAES 2.0
+        # Check for old-style costing block, and scale if required
+        if (hasattr(self, "costing") and
+                not isinstance(self.costing, UnitModelCostingBlock)):
             costing.calculate_scaling_factors(self.costing)

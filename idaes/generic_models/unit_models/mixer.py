@@ -997,6 +997,24 @@ objects linked to all inlet states and the mixed state,
                     self.mixed_state[t].pressure, default=1, warning=True)
                 iscale.constraint_scaling_transform(c, s)
 
+        if hasattr(self, "minimum_pressure"):
+            for (t, i), v in self.minimum_pressure.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.set_scaling_factor(v, s)
+
+        if hasattr(self, "minimum_pressure_constraint"):
+            for (t, i), c in self.minimum_pressure_constraint.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
+
+        if hasattr(self, "mixture_pressure"):
+            for t, c in self.mixture_pressure.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
+
         if hasattr(self, "material_mixing_equations"):
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, p, j), c in self.material_mixing_equations.items():
