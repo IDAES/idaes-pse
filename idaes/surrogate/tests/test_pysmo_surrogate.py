@@ -23,7 +23,7 @@ from math import sin, cos, log, exp
 from pathlib import Path
 from io import StringIO
 
-from pyomo.environ import Var, Constraint
+from pyomo.environ import ConcreteModel, Var, Constraint
 from pyomo.common.tempfiles import TempfileManager
 
 from idaes.surrogate.pysmo_surrogate_v2 import \
@@ -37,16 +37,184 @@ dirpath = Path(__file__).parent.resolve()
 
 
 # String representation of json output for testing
-jstring = (
-    '{"surrogate": {"z1": " z1 == 3.9999999999925446303450 * x1**2 - '
-    '4.0000000000020765611453 * x2**2 - '
-    '2.0999999999859380039879 * x1**4 + '
-    '4.0000000000043112180492 * x2**4 + '
-    '0.33333333332782633107172 * x1**6 + '
-    '0.99999999999972988273811 * x1*x2"}, '
+
+
+
+jstring_poly_1 = (
+    '{"model_encoding": ' 
+        '{"z1": {"attr": {"regression_data_columns": ["x1", "x2"], ' 
+                         '"multinomials": 1, "additional_term_expressions": [], '
+                         '"optimal_weights_array": [[-75.26111111111476], [-8.815277777775934], [18.81527777777826], [-2.2556956302821618e-13]], '
+                         '"final_polynomial_order": 1, '
+                         '"errors": {"MAE": 3.772981926886132e-13, "MSE": 1.5772926701095834e-25, "R2": 1.0, "Adjusted R2": 1.0},'
+                         ' "extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
+                '"map": {"regression_data_columns": "list", "multinomials": "str", '
+                        '"additional_term_expressions": "list", "optimal_weights_array": "numpy", '
+                        '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}}, '
     '"input_labels": ["x1", "x2"], '
     '"output_labels": ["z1"], '
-    '"input_bounds": {"x1": [0, 5], "x2": [0, 10]}}')
+    '"input_bounds": {"x1": [0, 5], "x2": [0, 10]}, '
+    '"surrogate_type": "poly"}'
+    )
+
+jstring_poly_2 = (
+    '{"model_encoding": ' 
+        '{"z1": {"attr": {"regression_data_columns": ["x1", "x2"], ' 
+                         '"multinomials": 1, "additional_term_expressions": [], '
+                         '"optimal_weights_array": [[-75.26111111111476], [-8.815277777775934], [18.81527777777826], [-2.2556956302821618e-13]], '
+                         '"final_polynomial_order": 1, '
+                         '"errors": {"MAE": 3.772981926886132e-13, "MSE": 1.5772926701095834e-25, "R2": 1.0, "Adjusted R2": 1.0},'
+                         ' "extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
+                '"map": {"regression_data_columns": "list", "multinomials": "str", '
+                        '"additional_term_expressions": "list", "optimal_weights_array": "numpy", '
+                        '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}, '
+        '"z2": {"attr": {"regression_data_columns": ["x1", "x2"], '
+                        '"multinomials": 1, "additional_term_expressions": [], '
+                        '"optimal_weights_array": [[-3.0033074724377813], [0.2491731318906352], [1.7508268681094337], [-6.786238238021269e-15]], '
+                        '"final_polynomial_order": 1, "errors": {"MAE": 1.1901590823981678e-14, "MSE": 1.5225015470765528e-28, "R2": 1.0, "Adjusted R2": 1.0}, '
+                        '"extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
+                '"map": {"regression_data_columns": "list", "multinomials": "str", '
+                        '"additional_term_expressions": "list", "optimal_weights_array": "numpy", '
+                        '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}}, '
+    '"input_labels": ["x1", "x2"], '
+    '"output_labels": ["z1", "z2"], '
+    '"input_bounds": null, '
+    '"surrogate_type": "poly"}'
+    )
+
+jstring_poly_3 = (
+    '{"model_encoding": ' 
+        '{"z1": {"attr": {"regression_data_columns": ["x1", "x2"], ' 
+                         '"multinomials": 0, "additional_term_expressions": ["log(IndexedParam[x1])", "sin(IndexedParam[x2])"], '
+                         '"optimal_weights_array": [[-14.290243902439855], [6.4274390243899795], [3.572560975609962], [1.9753643165643098e-13], [-4.4048098502003086e-14]], '
+                         '"final_polynomial_order": 1, '
+                         '"errors": {"MAE": 1.4210854715202004e-14, "MSE": 2.8188629679897487e-28, "R2": 1.0},'
+                         ' "extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
+                '"map": {"regression_data_columns": "list", "multinomials": "str", '
+                        '"additional_term_expressions": "list", "optimal_weights_array": "numpy", '
+                        '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}, '
+        '"z2": {"attr": {"regression_data_columns": ["x1", "x2"], '
+                        '"multinomials": 0, "additional_term_expressions": ["log(IndexedParam[x1])", "sin(IndexedParam[x2])"], '
+                        '"optimal_weights_array": [[5.704971042443143], [2.4262427606248815], [-0.42624276060821653], [-5.968545102597034e-11], [6.481176706429892e-12]], '
+                        '"final_polynomial_order": 1, "errors": {"MAE": 3.869645344896829e-12, "MSE": 7.189162598662876e-23, "R2": 1.0}, '
+                        '"extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
+                '"map": {"regression_data_columns": "list", "multinomials": "str", '
+                        '"additional_term_expressions": "list", "optimal_weights_array": "numpy", '
+                        '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}}, '
+    '"input_labels": ["x1", "x2"], '
+    '"output_labels": ["z1", "z2"], '
+    '"input_bounds": null, '
+    '"surrogate_type": "poly"}'
+    )
+
+jstring_poly_4 = (
+    '{"model_encoding": ' 
+        '{"z1": {"attr": {"regression_data_columns": ["x1", "x2"], ' 
+                         '"multinomials": 0, "additional_term_expressions": ["IndexedParam[x1]/IndexedParam[x2]"], '
+                         '"optimal_weights_array": [[-110.15000000001504], [-17.53750000000189], [27.537500000006148], [-5.3967136315336006e-11]], '
+                         '"final_polynomial_order": 1, '
+                         '"errors": {"MAE": 1.0317080523236656e-12, "MSE": 2.126880072091303e-24, "R2": 1.0},'
+                         ' "extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
+                '"map": {"regression_data_columns": "list", "multinomials": "str", '
+                        '"additional_term_expressions": "other", "optimal_weights_array": "numpy", '
+                        '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}, '
+        '"z2": {"attr": {"regression_data_columns": ["x1", "x2"], '
+                        '"multinomials": 0, "additional_term_expressions": ["IndexedParam[x1]/IndexedParam[x2]"], '
+                        '"optimal_weights_array": [[-12.523574144487087], [-2.1308935361219556], [4.1308935361216435], [3.6347869158959156e-12]], '
+                        '"final_polynomial_order": 1, "errors": {"MAE": 7.762679388179095e-14, "MSE": 6.506051429719772e-27, "R2": 1.0}, '
+                        '"extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
+                '"map": {"regression_data_columns": "list", "multinomials": "str", '
+                        '"additional_term_expressions": "other", "optimal_weights_array": "numpy", '
+                        '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}}, '
+    '"input_labels": ["x1", "x2"], '
+    '"output_labels": ["z1", "z2"], '
+    '"input_bounds": null, '
+    '"surrogate_type": "poly"}'
+    )
+
+jstring_rbf = (
+    '{"model_encoding": '
+        '{"z1": {"attr": {"x_data_columns": ["x1", "x2"], '
+                        '"x_data": [[0.0, 0.0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1.0, 1.0]], '
+                        '"centres": [[0.0, 0.0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1.0, 1.0]], '
+                        '"basis_function": "gaussian", '
+                        '"weights": [[-69.10791015625], [-319807.1317138672], [959336.2551269531], [-959973.7440185547], [320514.66677856445]], '
+                        '"sigma": 0.05, "regularization_parameter": 0.0, '
+                        '"rmse": 0.0005986693684275349, "R2": 0.9999971327598984, '
+                        '"x_data_min": [[1, 5]], "x_data_max": [[5, 9]], "y_data_min": [10], "y_data_max": [50]}, '
+                '"map": {"x_data_columns": "list", "x_data": "numpy", "centres": "numpy", '
+                        '"basis_function": "str", "weights": "numpy", "sigma": "str", "regularization_parameter": "str", '
+                        '"rmse": "str", "R2": "str", "x_data_min": "numpy", "x_data_max": "numpy", "y_data_min": "numpy", '
+                        '"y_data_max": "numpy"}}, '
+        '"z2": {"attr": {"x_data_columns": ["x1", "x2"], '
+                        '"x_data": [[0.0, 0.0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1.0, 1.0]], '
+                        '"centres": [[0.0, 0.0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1.0, 1.0]], '
+                        '"basis_function": "gaussian", "weights": [[-69.10791015625], [-319807.1317138672], [959336.2551269531], [-959973.7440185547], [320514.66677856445]], '
+                        '"sigma": 0.05, "regularization_parameter": 0.0, '
+                        '"rmse": 0.0005986693684275349, "R2": 0.9999971327598984, '
+                        '"x_data_min": [[1, 5]], "x_data_max": [[5, 9]], "y_data_min": [6], "y_data_max": [14]}, '
+                '"map": {"x_data_columns": "list", "x_data": "numpy", "centres": "numpy", '
+                        '"basis_function": "str", "weights": "numpy", "sigma": "str", "regularization_parameter": "str", '
+                        '"rmse": "str", "R2": "str", "x_data_min": "numpy", "x_data_max": "numpy", "y_data_min": "numpy", '
+                        '"y_data_max": "numpy"}}}, '
+    '"input_labels": ["x1", "x2"], '
+    '"output_labels": ["z1", "z2"], '
+    '"input_bounds": {"x1": [0, 5], "x2": [0, 10]}, '
+    '"surrogate_type": "rbf"}'   
+    )
+
+jstring_krg = (
+    '{"model_encoding": '
+        '{"z1": {"attr": {"x_data_columns": ["x1", "x2"], '
+                        '"x_data": [[1, 5], [2, 6], [3, 7], [4, 8], [5, 9]], "x_data_min": [[1, 5]], "x_data_max": [[5, 9]], '
+                        '"x_data_scaled": [[0.0, 0.0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1.0, 1.0]], '
+                        '"optimal_weights": [0.027452451845611077, 0.0010443446337808024], '
+                        '"optimal_p": 2, "optimal_mean": [[30.00000000077694]], "optimal_variance": [[6503.3113222215325]], '
+                        '"regularization_parameter": 1.000000000001e-06, '
+                        '"optimal_covariance_matrix": [[1.000001, 0.9982205353479938, 0.9929011178300284, 0.9840983398813247, 0.971905407660152], '
+                                                    '[0.9982205353479938, 1.000001, 0.9982205353479938, 0.9929011178300284, 0.9840983398813247], '
+                                                    '[0.9929011178300284, 0.9982205353479938, 1.000001, 0.9982205353479938, 0.9929011178300284], '
+                                                    '[0.9840983398813247, 0.9929011178300284, 0.9982205353479938, 1.000001, 0.9982205353479938], '
+                                                    '[0.971905407660152, 0.9840983398813247, 0.9929011178300284, 0.9982205353479938, 1.000001]], '
+                        '"covariance_matrix_inverse": [[108728.9916945844, -240226.85108007095, 82932.18571364644, 121970.72026795016, -73364.51387189297], '
+                                                    '[-240226.85108202277, 589985.9891969847, -341158.67300272395, -130592.8567227173, 121970.72027126199], '
+                                                    '[82932.18571952915, -341158.67301448685, 516416.75018761755, -341158.6729826693, 82932.18570353556], '
+                                                    '[121970.72026201998, -130592.85670691582, -341158.6729945546, 589985.9891699858, -240226.8510697507], '
+                                                    '[-73364.51386989365, 121970.72026527137, 82932.18570954115, -240226.85107176506, 108728.99169106234]], '
+                        '"optimal_y_mu": [[-20.00000000077694], [-10.00000000077694], [-7.769394017032027e-10], [9.99999999922306], [19.99999999922306]], '
+                        '"training_R2": 0.9999962956016578, "training_rmse": 0.02721910484270722}, '
+                '"map": {"x_data_columns": "list", "x_data": "numpy", "x_data_min": "numpy", "x_data_max": "numpy", '
+                        '"x_data_scaled": "numpy", "optimal_weights": "numpy", "optimal_p": "str", "optimal_mean": "numpy", '
+                        '"optimal_variance": "numpy", "regularization_parameter": "str", "optimal_covariance_matrix": "numpy", '
+                        '"covariance_matrix_inverse": "numpy", "optimal_y_mu": "numpy", "training_R2": "str", "training_rmse": "str"}}, '
+        '"z2": {"attr": {"x_data_columns": ["x1", "x2"], '
+                        '"x_data": [[1, 5], [2, 6], [3, 7], [4, 8], [5, 9]], "x_data_min": [[1, 5]], "x_data_max": [[5, 9]], '
+                        '"x_data_scaled": [[0.0, 0.0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1.0, 1.0]], '
+                        '"optimal_weights": [0.02749666901085125, 0.001000000000000049], '
+                        '"optimal_p": 2, "optimal_mean": [[9.999999999902883]], "optimal_variance": [[260.13320726701056]], '
+                        '"regularization_parameter": 1e-06, '
+                        '"optimal_covariance_matrix": [[1.000001, 0.998220543300601, 0.9929011494709431, 0.9840984104422155, 0.9719055315475238], '
+                                                    '[0.998220543300601, 1.000001, 0.998220543300601, 0.9929011494709431, 0.9840984104422155], '
+                                                    '[0.9929011494709431, 0.998220543300601, 1.000001, 0.998220543300601, 0.9929011494709431], '
+                                                    '[0.9840984104422155, 0.9929011494709431, 0.998220543300601, 1.000001, 0.998220543300601], '
+                                                    '[0.9719055315475238, 0.9840984104422155, 0.9929011494709431, 0.998220543300601, 1.000001]], '
+                        '"covariance_matrix_inverse": [[108729.13455237681, -240227.09704128528, 82932.15558036882, 121970.94143487987, -73364.601633614], '
+                                                    '[-240227.0970392892, 589986.4681472526, -341158.6596781079, -130593.32427863385, 121970.94144222786], '
+                                                    '[82932.15557448889, -341158.6596663887, 516416.7835787105, -341158.659633822, 82932.15555811858], '
+                                                    '[121970.94144067129, -130593.32429416949, -341158.6596220617, 589986.4680877628, -240227.09701875152], '
+                                                    '[-73364.60163552182, 121970.94144804058, 82932.15555219717, -240227.09701673465, 108729.13454474375]], '
+                        '"optimal_y_mu": [[-3.999999999902883], [-1.999999999902883], [9.711698112369049e-11], [2.000000000097117], [4.000000000097117]], '
+                        '"training_R2": 0.9999962956250228, "training_rmse": 0.005443803800474329}, '
+                '"map": {"x_data_columns": "list", "x_data": "numpy", "x_data_min": "numpy", "x_data_max": "numpy", '
+                        '"x_data_scaled": "numpy", "optimal_weights": "numpy", "optimal_p": "str", "optimal_mean": "numpy", '
+                        '"optimal_variance": "numpy", "regularization_parameter": "str", "optimal_covariance_matrix": "numpy", '
+                        '"covariance_matrix_inverse": "numpy", "optimal_y_mu": "numpy", "training_R2": "str", "training_rmse": "str"}}}, '
+    '"input_labels": ["x1", "x2"], '
+    '"output_labels": ["z1", "z2"], '
+    '"input_bounds": {"x1": [0, 5], "x2": [0, 10]}, '
+    '"surrogate_type": "kriging"}'
+    )
+
 
 
 # class TestAlamoTrainer:
@@ -1086,12 +1254,6 @@ class TestPysmoSurrogate():
 
         return pysmo_surr5_rbf, pysmo_surr5_krg
 
-
-
-
-
-
-
     @pytest.mark.unit
     def test_evaluate_unisurrogate_poly(self, pysmo_surr1):
         # Test ``evaluate_surrogate`` for one output with interaction terms
@@ -1393,268 +1555,678 @@ class TestPysmoSurrogate():
         assert str(blk.pysmo_constraint["z2"].body) == (
             "outputs[z2] - (-3978.867791629029*exp(- (0.02749666901085125*((inputs[x1] - 1)/4)**2 + 0.001000000000000049*((inputs[x2] - 5)/4)**2)) + 7632.569074293324*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.25)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.25)**2)) - 3.5124027300266805e-07*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.5)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.5)**2)) - 7632.569073828787*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.75)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.75)**2)) + 3978.8677915156522*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 1.0)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 1.0)**2)) + 9.999999999902883)")       
 
+    @pytest.mark.unit
+    def test_save(self, pysmo_surr1, pysmo_surr2, pysmo_surr3, pysmo_surr4):
+        # Test save for polynomial regression
+        poly_trained, rbf_trained, krg_trained = pysmo_surr2
+        stream2a = StringIO()
+        poly_trained.save(stream2a)
+        assert stream2a.getvalue() == jstring_poly_2
+
+        # Test save for RBF
+        stream2b = StringIO()
+        rbf_trained.save(stream2b)
+        assert stream2b.getvalue() == jstring_rbf
+
+        # Test save with Kriging
+        stream2c = StringIO()
+        krg_trained.save(stream2c)
+        assert stream2c.getvalue() == jstring_krg
+
+        # Test save for case with bounds supplied
+        stream1 = StringIO()
+        pysmo_surr1.save(stream1)
+        assert stream1.getvalue() == jstring_poly_1
+
+        # Test save for PR cases with trig/log user-supplied terms
+        stream3 = StringIO()
+        pysmo_surr3.save(stream3)
+        assert stream3.getvalue() == jstring_poly_3
+
+        # Test save for PR cases with other user-supplied terms 
+        stream4 = StringIO()
+        pysmo_surr4.save(stream4)
+        assert stream4.getvalue() == jstring_poly_4
+
+    @pytest.mark.unit
+    def test_load_poly1(self):
+        # Try for polynomial with single output and bounds
+        m = ConcreteModel()
+        m.inputs = Var(['x1', 'x2'])
+        
+        # Validation data
+        x = [-2, -1.8, -1.6, -1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2, 0,
+             0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+        inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
+
+        pysmo_surr_poly = PysmoSurrogate.load(StringIO(jstring_poly_1))
+        # Assert labels, outputs and bounds
+        assert pysmo_surr_poly._input_labels == ["x1", "x2"]
+        assert pysmo_surr_poly._output_labels == ["z1"]
+        assert pysmo_surr_poly._input_bounds == {"x1": (0, 5), "x2": (0, 10)}
+        assert pysmo_surr_poly._trained.model_type == "poly"
+        assert pysmo_surr_poly._trained.output_labels == ["z1"]
+        assert len(pysmo_surr_poly._trained._data) == 1
+        assert list(pysmo_surr_poly._trained._data) == ["z1"]
+        # Assert that correcte xpression string was returned
+        assert pysmo_surr_poly._trained._data['z1'].expression_str == (
+                    '-75.26111111111476 -8.815277777775934*IndexedParam[x1] + 18.81527777777826*IndexedParam[x2]'
+                    ' -2.2556956302821618e-13*(IndexedParam[x2]*IndexedParam[x1])'
+                    )
+        # Assert that correct model is returned with generate_expression()
+        assert  str(pysmo_surr_poly._trained._data['z1']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
+                    '-75.26111111111476 - 8.815277777775934*inputs[x1] + 18.81527777777826*inputs[x2]'
+                    ' - 2.2556956302821618e-13*(inputs[x2]*inputs[x1])'
+                    )
+        # Assert that returned results will evaluate and return correct results
+        out = pysmo_surr_poly.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                -75.26111111111476 
+                - 8.815277777775934*inputs["x1"][i] 
+                + 18.81527777777826*inputs["x2"][i]
+                - 2.2556956302821618e-13*(inputs["x2"][i]*inputs["x1"][i])
+            )
+
+    @pytest.mark.unit
+    def test_load_poly2(self):
+        # Try for polynomial with multiple outputs and trig functions
+        m = ConcreteModel()
+        m.inputs = Var(['x1', 'x2'])
+        
+        # Validation data
+        x = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+
+        inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
+
+        pysmo_surr_poly = PysmoSurrogate.load(StringIO(jstring_poly_3))
+        # Assert labels, outputs and bounds
+        assert pysmo_surr_poly._input_labels == ["x1", "x2"]
+        assert pysmo_surr_poly._output_labels == ["z1", "z2"]
+        assert pysmo_surr_poly._input_bounds == None
+        assert pysmo_surr_poly._trained.model_type == "poly"
+        assert pysmo_surr_poly._trained.output_labels == ["z1", "z2"]
+        assert len(pysmo_surr_poly._trained._data) == 2
+        assert list(pysmo_surr_poly._trained._data) == ["z1", "z2"]
+        # Assert that correct expression strings were returned for both surrogates
+        assert pysmo_surr_poly._trained._data['z1'].expression_str == (
+                    '-14.290243902439855 + 6.4274390243899795*IndexedParam[x1] + 3.572560975609962*IndexedParam[x2] '
+                    '+ 1.9753643165643098e-13*log(IndexedParam[x1]) -4.4048098502003086e-14*sin(IndexedParam[x2])'
+                    )
+        assert pysmo_surr_poly._trained._data['z2'].expression_str == (
+                    '5.704971042443143 + 2.4262427606248815*IndexedParam[x1] -0.42624276060821653*IndexedParam[x2] '
+                    '-5.968545102597034e-11*log(IndexedParam[x1]) + 6.481176706429892e-12*sin(IndexedParam[x2])'
+                    )
+        # Assert that correct model is returned with generate_expression()
+        assert  str(pysmo_surr_poly._trained._data['z1']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
+                    '-14.290243902439855 + 6.4274390243899795*inputs[x1] + 3.572560975609962*inputs[x2] '
+                    '+ 1.9753643165643098e-13*log(inputs[x1]) - 4.4048098502003086e-14*sin(inputs[x2])'
+                    )
+        assert  str(pysmo_surr_poly._trained._data['z2']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
+                    '5.704971042443143 + 2.4262427606248815*inputs[x1] - 0.42624276060821653*inputs[x2] '
+                    '- 5.968545102597034e-11*log(inputs[x1]) + 6.481176706429892e-12*sin(inputs[x2])'
+                    )
+        # Assert that returned results will evaluate and return correct results
+        out = pysmo_surr_poly.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                -14.290243902439855
+                + 6.4274390243899795*inputs["x1"][i] 
+                + 3.572560975609962*inputs["x2"][i]
+                + 1.9753643165643098e-13*log(inputs["x1"][i]) 
+                - 4.4048098502003086e-14*sin(inputs["x2"][i])
+            )
+            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+                5.704971042443143
+                + 2.4262427606248815*inputs["x1"][i] 
+                - 0.42624276060821653*inputs["x2"][i]
+                - 5.968545102597034e-11*log(inputs["x1"][i]) 
+                + 6.481176706429892e-12*sin(inputs["x2"][i])
+            )
+
+    @pytest.mark.unit
+    def test_load_poly3(self):
+        # Try for polynomial with multiple outputs and other user-defined functions
+        m = ConcreteModel()
+        m.inputs = Var(['x1', 'x2'])
+        
+        # Validation data
+        x = [-2, -1.8, -1.6, -1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2,
+             0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2]
+
+        inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
+
+        pysmo_surr_poly = PysmoSurrogate.load(StringIO(jstring_poly_4))
+        # Assert labels, outputs and bounds
+        assert pysmo_surr_poly._input_labels == ["x1", "x2"]
+        assert pysmo_surr_poly._output_labels == ["z1", "z2"]
+        assert pysmo_surr_poly._input_bounds == None
+        assert pysmo_surr_poly._trained.model_type == "poly"
+        assert pysmo_surr_poly._trained.output_labels == ["z1", "z2"]
+        assert len(pysmo_surr_poly._trained._data) == 2
+        assert list(pysmo_surr_poly._trained._data) == ["z1", "z2"]
+        # Assert that correct expression strings were returned for both surrogates
+        assert pysmo_surr_poly._trained._data['z1'].expression_str == (
+                    '-110.15000000001504 -17.53750000000189*IndexedParam[x1] + 27.537500000006148*IndexedParam[x2] '
+                    '-5.3967136315336006e-11*(IndexedParam[x1]/IndexedParam[x2])'
+                    )
+        assert pysmo_surr_poly._trained._data['z2'].expression_str == (
+                    '-12.523574144487087 -2.1308935361219556*IndexedParam[x1] + 4.1308935361216435*IndexedParam[x2]'
+                    ' + 3.6347869158959156e-12*(IndexedParam[x1]/IndexedParam[x2])'
+                    )
+        # Assert that correct model is returned with generate_expression()
+        assert  str(pysmo_surr_poly._trained._data['z1']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
+                    '-110.15000000001504 - 17.53750000000189*inputs[x1] + 27.537500000006148*inputs[x2] '
+                    '- 5.3967136315336006e-11*(inputs[x1]/inputs[x2])'
+                    )
+        assert  str(pysmo_surr_poly._trained._data['z2']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
+                    '-12.523574144487087 - 2.1308935361219556*inputs[x1] + 4.1308935361216435*inputs[x2] '
+                    '+ 3.6347869158959156e-12*(inputs[x1]/inputs[x2])'
+                    )
+        # Assert that returned results will evaluate and return correct results
+        out = pysmo_surr_poly.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                -110.15000000001504 
+                - 17.53750000000189*inputs["x1"][i] 
+                + 27.537500000006148*inputs["x2"][i]
+                - 5.3967136315336006e-11*(inputs["x1"][i]/inputs["x2"][i])
+            )
+            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+                -12.523574144487087
+                - 2.1308935361219556*inputs["x1"][i] 
+                + 4.1308935361216435*inputs["x2"][i]
+                + 3.6347869158959156e-12*(inputs["x1"][i]/inputs["x2"][i])
+            )
+
+    @pytest.mark.unit
+    def test_load_rbf(self):
+        # Try for polynomial with multiple outputs and other user-defined functions
+        m = ConcreteModel()
+        m.inputs = Var(['x1', 'x2'])
+        
+        # Validation data
+        x = [-2, -1.8, -1.6, -1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2,
+             0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2]
+
+        inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
+
+        pysmo_surr_rbf = PysmoSurrogate.load(StringIO(jstring_rbf))
+        # Assert labels, outputs and bounds
+        assert pysmo_surr_rbf._input_labels == ["x1", "x2"]
+        assert pysmo_surr_rbf._output_labels == ["z1", "z2"]
+        assert pysmo_surr_rbf._input_bounds == {"x1": (0, 5), "x2": (0, 10)}
+        assert pysmo_surr_rbf._trained.model_type == "rbf"
+        assert pysmo_surr_rbf._trained.output_labels == ["z1", "z2"]
+        assert len(pysmo_surr_rbf._trained._data) == 2
+        assert list(pysmo_surr_rbf._trained._data) == ["z1", "z2"]
+        # Assert that correct expression strings were returned for both surrogates
+        assert pysmo_surr_rbf._trained._data['z1'].expression_str == (
+                    '10 + 40*(-69.10791015625*exp(- (0.05*(((IndexedParam[x1] -1)/4)**2 + ((IndexedParam[x2] -5)/4)**2)**0.5)**2) '
+                    '-319807.1317138672*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.25)**2 + ((IndexedParam[x2] -5)/4 -0.25)**2)**0.5)**2) '
+                    '+ 959336.2551269531*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.5)**2 + ((IndexedParam[x2] -5)/4 -0.5)**2)**0.5)**2) '
+                    '-959973.7440185547*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.75)**2 + ((IndexedParam[x2] -5)/4 -0.75)**2)**0.5)**2) '
+                    '+ 320514.66677856445*exp(- (0.05*(((IndexedParam[x1] -1)/4 -1.0)**2 + ((IndexedParam[x2] -5)/4 -1.0)**2)**0.5)**2))'
+                    )
+        assert pysmo_surr_rbf._trained._data['z2'].expression_str == (
+                    '6 + 8*(-69.10791015625*exp(- (0.05*(((IndexedParam[x1] -1)/4)**2 + ((IndexedParam[x2] -5)/4)**2)**0.5)**2) '
+                    '-319807.1317138672*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.25)**2 + ((IndexedParam[x2] -5)/4 -0.25)**2)**0.5)**2) '
+                    '+ 959336.2551269531*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.5)**2 + ((IndexedParam[x2] -5)/4 -0.5)**2)**0.5)**2) '
+                    '-959973.7440185547*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.75)**2 + ((IndexedParam[x2] -5)/4 -0.75)**2)**0.5)**2) '
+                    '+ 320514.66677856445*exp(- (0.05*(((IndexedParam[x1] -1)/4 -1.0)**2 + ((IndexedParam[x2] -5)/4 -1.0)**2)**0.5)**2))'
+                    )
+        # Assert that correct model is returned with generate_expression()
+        assert  str(pysmo_surr_rbf._trained._data['z1']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
+                    '10 + 40*(-69.10791015625*exp(- (0.05*(((inputs[x1] - 1)/4)**2 + ((inputs[x2] - 5)/4)**2)**0.5)**2) '
+                    '- 319807.1317138672*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.25)**2 + ((inputs[x2] - 5)/4 - 0.25)**2)**0.5)**2) '
+                    '+ 959336.2551269531*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.5)**2 + ((inputs[x2] - 5)/4 - 0.5)**2)**0.5)**2) '
+                    '- 959973.7440185547*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.75)**2 + ((inputs[x2] - 5)/4 - 0.75)**2)**0.5)**2) '
+                    '+ 320514.66677856445*exp(- (0.05*(((inputs[x1] - 1)/4 - 1.0)**2 + ((inputs[x2] - 5)/4 - 1.0)**2)**0.5)**2))'
+                    )
+        assert  str(pysmo_surr_rbf._trained._data['z2']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
+                    '6 + 8*(-69.10791015625*exp(- (0.05*(((inputs[x1] - 1)/4)**2 + ((inputs[x2] - 5)/4)**2)**0.5)**2) '
+                    '- 319807.1317138672*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.25)**2 + ((inputs[x2] - 5)/4 - 0.25)**2)**0.5)**2) '
+                    '+ 959336.2551269531*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.5)**2 + ((inputs[x2] - 5)/4 - 0.5)**2)**0.5)**2) '
+                    '- 959973.7440185547*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.75)**2 + ((inputs[x2] - 5)/4 - 0.75)**2)**0.5)**2) '
+                    '+ 320514.66677856445*exp(- (0.05*(((inputs[x1] - 1)/4 - 1.0)**2 + ((inputs[x2] - 5)/4 - 1.0)**2)**0.5)**2))'
+                    )
+        # Assert that returned results will evaluate and return correct results
+        out = pysmo_surr_rbf.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                 (10 + 40*(-69.10791015625*exp(- (0.05*(((inputs['x1'][i] - 1)/4)**2 + ((inputs['x2'][i] - 5)/4)**2)**0.5)**2) 
+                    - 319807.1317138672*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 0.25)**2 + ((inputs['x2'][i] - 5)/4 - 0.25)**2)**0.5)**2) 
+                    + 959336.2551269531*exp(- (0.05*(((inputs['x1'][i]- 1)/4 - 0.5)**2 + ((inputs['x2'][i] - 5)/4 - 0.5)**2)**0.5)**2) 
+                    - 959973.7440185547*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 0.75)**2 + ((inputs['x2'][i] - 5)/4 - 0.75)**2)**0.5)**2) 
+                    + 320514.66677856445*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 1.0)**2 + ((inputs['x2'][i] - 5)/4 - 1.0)**2)**0.5)**2)))
+            )
+            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+                 (6 + 8*(-69.10791015625*exp(- (0.05*(((inputs['x1'][i] - 1)/4)**2 + ((inputs['x2'][i] - 5)/4)**2)**0.5)**2) 
+                    - 319807.1317138672*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 0.25)**2 + ((inputs['x2'][i] - 5)/4 - 0.25)**2)**0.5)**2) 
+                    + 959336.2551269531*exp(- (0.05*(((inputs['x1'][i]- 1)/4 - 0.5)**2 + ((inputs['x2'][i] - 5)/4 - 0.5)**2)**0.5)**2) 
+                    - 959973.7440185547*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 0.75)**2 + ((inputs['x2'][i] - 5)/4 - 0.75)**2)**0.5)**2) 
+                    + 320514.66677856445*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 1.0)**2 + ((inputs['x2'][i] - 5)/4 - 1.0)**2)**0.5)**2)))
+                 )
+
+    @pytest.mark.unit
+    def test_load_krg(self):
+        # Try for polynomial with multiple outputs and other user-defined functions
+        m = ConcreteModel()
+        m.inputs = Var(['x1', 'x2'])
+        
+        # Validation data
+        x = [-2, -1.8, -1.6, -1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2,
+             0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2]
+
+        inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
+
+        pysmo_surr_krg = PysmoSurrogate.load(StringIO(jstring_krg))
+        # Assert labels, outputs and bounds
+        assert pysmo_surr_krg._input_labels == ["x1", "x2"]
+        assert pysmo_surr_krg._output_labels == ["z1", "z2"]
+        assert pysmo_surr_krg._input_bounds == {"x1": (0, 5), "x2": (0, 10)}
+        assert pysmo_surr_krg._trained.model_type == "kriging"
+        assert pysmo_surr_krg._trained.output_labels == ["z1", "z2"]
+        assert len(pysmo_surr_krg._trained._data) == 2
+        assert list(pysmo_surr_krg._trained._data) == ["z1", "z2"]
+        # Assert that correct expression strings were returned for both surrogates
+        print(pysmo_surr_krg._trained._data['z2'].expression_str)
+        assert pysmo_surr_krg._trained._data['z1'].expression_str == (
+                    '30.00000000077694 + ('
+                    '-19894.397849368*exp(- (0.027452451845611077*((IndexedParam[x1] -1)/4)**2 + 0.0010443446337808024*((IndexedParam[x2] -5)/4)**2)) '
+                    '+ 38162.96786869278*exp(- (0.027452451845611077*((IndexedParam[x1] -1)/4 -0.25)**2 + 0.0010443446337808024*((IndexedParam[x2] -5)/4 -0.25)**2)) '
+                    '-1.6681948100955743e-06*exp(- (0.027452451845611077*((IndexedParam[x1] -1)/4 -0.5)**2 + 0.0010443446337808024*((IndexedParam[x2] -5)/4 -0.5)**2)) '
+                    '-38162.96786638197*exp(- (0.027452451845611077*((IndexedParam[x1] -1)/4 -0.75)**2 + 0.0010443446337808024*((IndexedParam[x2] -5)/4 -0.75)**2)) '
+                    '+ 19894.397848724166*exp(- (0.027452451845611077*((IndexedParam[x1] -1)/4 -1.0)**2 + 0.0010443446337808024*((IndexedParam[x2] -5)/4 -1.0)**2)))'
+                    )
+        assert pysmo_surr_krg._trained._data['z2'].expression_str == (
+                    '9.999999999902883 + ('
+                    '-3978.867791629029*exp(- (0.02749666901085125*((IndexedParam[x1] -1)/4)**2 + 0.001000000000000049*((IndexedParam[x2] -5)/4)**2)) '
+                    '+ 7632.569074293324*exp(- (0.02749666901085125*((IndexedParam[x1] -1)/4 -0.25)**2 + 0.001000000000000049*((IndexedParam[x2] -5)/4 -0.25)**2)) '
+                    '-3.5124027300266805e-07*exp(- (0.02749666901085125*((IndexedParam[x1] -1)/4 -0.5)**2 + 0.001000000000000049*((IndexedParam[x2] -5)/4 -0.5)**2)) '
+                    '-7632.569073828787*exp(- (0.02749666901085125*((IndexedParam[x1] -1)/4 -0.75)**2 + 0.001000000000000049*((IndexedParam[x2] -5)/4 -0.75)**2)) '
+                    '+ 3978.8677915156522*exp(- (0.02749666901085125*((IndexedParam[x1] -1)/4 -1.0)**2 + 0.001000000000000049*((IndexedParam[x2] -5)/4 -1.0)**2)))'
+                    )
+        # Assert that correct model is returned with generate_expression()
+        assert  str(pysmo_surr_krg._trained._data['z1']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
+                    '-19894.397849368*exp(- (0.027452451845611077*((inputs[x1] - 1)/4)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4)**2)) '
+                    '+ 38162.96786869278*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.25)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.25)**2)) '
+                    '- 1.6681948100955743e-06*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.5)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.5)**2)) '
+                    '- 38162.96786638197*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.75)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.75)**2)) '
+                    '+ 19894.397848724166*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 1.0)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 1.0)**2)) '
+                    '+ 30.00000000077694'
+                    )
+        assert  str(pysmo_surr_krg._trained._data['z2']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
+                    '-3978.867791629029*exp(- (0.02749666901085125*((inputs[x1] - 1)/4)**2 + 0.001000000000000049*((inputs[x2] - 5)/4)**2)) '
+                    '+ 7632.569074293324*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.25)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.25)**2)) '
+                    '- 3.5124027300266805e-07*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.5)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.5)**2)) '
+                    '- 7632.569073828787*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.75)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.75)**2)) '
+                    '+ 3978.8677915156522*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 1.0)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 1.0)**2)) '
+                    '+ 9.999999999902883'
+                    )
+        # Assert that returned results will evaluate and return correct results
+        out = pysmo_surr_krg.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                -19894.397849368*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4)**2)) 
+                + 38162.96786869278*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 0.25)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 0.25)**2)) 
+                - 1.6681948100955743e-06*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 0.5)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 0.5)**2)) 
+                - 38162.96786638197*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 0.75)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 0.75)**2)) 
+                + 19894.397848724166*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 1.0)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 1.0)**2)) 
+                + 30.00000000077694
+                )
+            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+                 (-3978.867791629029*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4)**2)) 
+                    + 7632.569074293324*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 0.25)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 0.25)**2)) 
+                    - 3.5124027300266805e-07*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 0.5)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 0.5)**2)) 
+                    - 7632.569073828787*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 0.75)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 0.75)**2)) 
+                    + 3978.8677915156522*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 1.0)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 1.0)**2)) 
+                    + 9.999999999902883)
+                )
+
+    @pytest.mark.unit
+    def test_save_load(self, pysmo_surr1):
+        m = ConcreteModel()
+        m.inputs = Var(['x1', 'x2'])
+
+        with TempfileManager as tf:
+            fname = tf.create_tempfile(suffix=".json")
+            pysmo_surr1.save_to_file(fname, overwrite=True)
+
+            assert os.path.isfile(fname)
+
+            with open(fname, "r") as f:
+                js = f.read()
+            f.close()
+
+            pysmo_load = PysmoSurrogate.load_from_file(fname)
+
+        # Check file contents
+        assert js == jstring_poly_1
+
+        # Check loaded object
+        # assert isinstance(alm_load, AlamoSurrogate)
+        assert pysmo_load._input_labels == ["x1", "x2"]
+        assert pysmo_load._output_labels == ["z1"]
+        assert pysmo_load._input_bounds == {"x1": (0, 5), "x2": (0, 10)}
+        assert pysmo_load._trained.model_type == "poly"
+        assert pysmo_load._trained.output_labels == ["z1"]
+        assert len(pysmo_load._trained._data) == 1
+        assert list(pysmo_load._trained._data) == ["z1"]
+        # Assert that correcte xpression string was returned
+        assert pysmo_load._trained._data['z1'].expression_str == (
+                    '-75.26111111111476 -8.815277777775934*IndexedParam[x1] + 18.81527777777826*IndexedParam[x2]'
+                    ' -2.2556956302821618e-13*(IndexedParam[x2]*IndexedParam[x1])'
+                    )
+        # Assert that correct model is returned with generate_expression()
+        assert  str(pysmo_load._trained._data['z1']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
+                    '-75.26111111111476 - 8.815277777775934*inputs[x1] + 18.81527777777826*inputs[x2]'
+                    ' - 2.2556956302821618e-13*(inputs[x2]*inputs[x1])'
+                    )
+
+        # Check for clean up
+        assert not os.path.isfile(fname)
 
 
+@pytest.mark.integration
+class TestRegressionWorkflow():
+    training_data = pd.DataFrame(np.array(
+        [[0.353837234435, 0.99275270941666, 0.762878272854],
+         [0.904978848612, -0.746908518721, 0.387963718723],
+         [0.643706630938, -0.617496599522, -0.0205375902284],
+         [1.29881420688, 0.305594881575, 2.43011137696],
+         [1.35791650867, 0.351045058258, 2.36989368612],
+         [0.938369314089, -0.525167416293, 0.829756159423],
+         [-1.46593541641, 0.383902178482, 1.14054797964],
+         [-0.374378293218, -0.689730440659, -0.219122783909],
+         [0.690326213554, 0.569364994374, 0.982068847698],
+         [-0.961163301329, 0.499471920546, 0.936855365038]]),
+        columns=["x1", "x2", "z1"])
 
-         # z1 :   0.0 : outputs[z1] - (-19894.397849368*exp(- (0.027452451845611077*((inputs[x1] - 1)/4)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4)**2)) + 38162.96786869278*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.25)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.25)**2)) - 1.6681948100955743e-06*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.5)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.5)**2)) - 38162.96786638197*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.75)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.75)**2)) + 19894.397848724166*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 1.0)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 1.0)**2)) + 30.00000000077694) :   0.0 :   True
-         # z2 :   0.0 :         outputs[z2] - (-3978.867791629029*exp(- (0.02749666901085125*((inputs[x1] - 1)/4)**2 + 0.001000000000000049*((inputs[x2] - 5)/4)**2)) + 7632.569074293324*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.25)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.25)**2)) - 3.5124027300266805e-07*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.5)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.5)**2)) - 7632.569073828787*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.75)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.75)**2)) + 3978.8677915156522*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 1.0)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 1.0)**2)) + 9.999999999902883) :   0.0 :   True
+    @pytest.fixture(scope="class")
+    def pysmo_trainer_poly(self):
+        # Test end-to-end workflow with a simple problem.
+        bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        pysmo_trainer_poly = PysmoPolyTrainer(
+            input_labels=["x1", "x2"],
+            output_labels=["z1"],
+            input_bounds=bnds,
+            training_dataframe=TestRegressionWorkflow.training_data)
+        pysmo_trainer_poly.config.maximum_polynomial_order = 6
+        pysmo_trainer_poly.config.multinomials = True
 
+        res = pysmo_trainer_poly.train_surrogate()
 
-    # @pytest.mark.unit
-    # def test_save(self, alm_surr1):
-    #     stream = StringIO()
-    #     alm_surr1.save(stream)
-    #     assert stream.getvalue() == jstring
+        return res
 
-    # @pytest.mark.unit
-    # def test_load(self):
-    #     alm_surr = AlamoSurrogate.load(StringIO(jstring))
+    def test_pysmo_trainer_poly_results(self, pysmo_trainer_poly):
+        assert pysmo_trainer_poly._data is not None
+        assert pysmo_trainer_poly.model_type == "poly"
+        assert pysmo_trainer_poly.num_outputs == 1
+        assert pysmo_trainer_poly.output_labels == ['z1']
+        assert pysmo_trainer_poly.input_labels == ['x1', 'x2']
+        assert len(pysmo_trainer_poly._data)== 1
+        assert pysmo_trainer_poly._data['z1'].metrics == {'RMSE': 0.17763962565794333, 'R2': 0.954382457181239}
+        assert pysmo_trainer_poly._data['z1'].expression_str ==  (
+            '0.641195066906852 + 0.3852609015348556*IndexedParam[x1] + 0.7263340472739608*IndexedParam[x2] '
+            '+ 0.5153194352472136*IndexedParam[x1]**2 -0.8454437056957613*IndexedParam[x2]**2 + '
+            '0.18473239368703404*(IndexedParam[x2]*IndexedParam[x1])'
+            )
 
-    #     assert alm_surr._surrogate_expressions == {
-    #         "z1": ' z1 == 3.9999999999925446303450 * x1**2 - '
-    #         '4.0000000000020765611453 * x2**2 - '
-    #         '2.0999999999859380039879 * x1**4 + '
-    #         '4.0000000000043112180492 * x2**4 + '
-    #         '0.33333333332782633107172 * x1**6 + '
-    #         '0.99999999999972988273811 * x1*x2'}
-    #     assert alm_surr._input_labels == ["x1", "x2"]
-    #     assert alm_surr._output_labels == ["z1"]
-    #     assert alm_surr._input_bounds == {"x1": (0, 5), "x2": (0, 10)}
+    def test_pysmo_trainer_poly_object(self, pysmo_trainer_poly):
+        bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        input_labels=["x1", "x2"]
+        output_labels=["z1"]
+        input_bounds=bnds
+        pysmo_object = PysmoSurrogate(pysmo_trainer_poly, input_labels, output_labels, bnds)
+        assert isinstance(pysmo_object, PysmoSurrogate)
+        assert pysmo_object._input_labels == ["x1", "x2"]
+        assert pysmo_object._output_labels == ["z1"]
+        assert pysmo_object._input_bounds == {
+            "x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
 
-    # @pytest.mark.unit
-    # def test_save_load(self, alm_surr1):
-    #     with TempfileManager as tf:
-    #         fname = tf.create_tempfile(suffix=".json")
-    #         alm_surr1.save_to_file(fname, overwrite=True)
+        # Check populating a block to finish workflow
+        blk = SurrogateBlock(concrete=True)
 
-    #         assert os.path.isfile(fname)
+        blk.build_model(pysmo_object)
 
-    #         with open(fname, "r") as f:
-    #             js = f.read()
-    #         f.close()
+        assert isinstance(blk.inputs, Var)
+        assert blk.inputs["x1"].bounds == (-1.5, 1.5)
+        assert blk.inputs["x2"].bounds == (-1.5, 1.5)
+        assert isinstance(blk.outputs, Var)
+        assert blk.outputs["z1"].bounds == (None, None)
+        assert isinstance(blk.pysmo_constraint, Constraint)
+        assert len(blk.pysmo_constraint) == 1
 
-    #         alm_load = AlamoSurrogate.load_from_file(fname)
+    def test_metrics(self, pysmo_trainer_poly):
+        bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        input_labels=["x1", "x2"]
+        output_labels=["z1"]
+        input_bounds=bnds
+        pysmo_object = PysmoSurrogate(pysmo_trainer_poly, input_labels, output_labels, bnds)
 
-    #     # Check file contents
-    #     assert js == jstring
+        metrics = compute_fit_metrics(pysmo_object, TestRegressionWorkflow.training_data)
 
-    #     # Check loaded object
-    #     assert isinstance(alm_load, AlamoSurrogate)
-    #     assert alm_load._surrogate_expressions == {
-    #         "z1": ' z1 == 3.9999999999925446303450 * x1**2 - '
-    #         '4.0000000000020765611453 * x2**2 - '
-    #         '2.0999999999859380039879 * x1**4 + '
-    #         '4.0000000000043112180492 * x2**4 + '
-    #         '0.33333333332782633107172 * x1**6 + '
-    #         '0.99999999999972988273811 * x1*x2'}
-    #     assert alm_load._input_labels == ["x1", "x2"]
-    #     assert alm_load._output_labels == ["z1"]
-    #     assert alm_load._input_bounds == {"x1": (0, 5), "x2": (0, 10)}
+        assert isinstance(metrics, dict)
 
-    #     # Check for clean up
-    #     assert not os.path.isfile(fname)
-
-    # @pytest.mark.unit
-    # def test_save_no_overwrite(self, alm_surr1):
-    #     with TempfileManager as tf:
-    #         fname = tf.create_tempfile(suffix=".json")
-
-    #         with pytest.raises(FileExistsError):
-    #             alm_surr1.save_to_file(fname)
-
-    #     # Check for clean up
-    #     assert not os.path.isfile(fname)
-
-
-# @pytest.mark.skipif(alamo.executable is None, reason="ALAMO not available")
-# @pytest.mark.integration
-# class TestWorkflow():
-#     training_data = pd.DataFrame(np.array(
-#         [[0.353837234435, 0.99275270941666, 0.762878272854],
-#          [0.904978848612, -0.746908518721, 0.387963718723],
-#          [0.643706630938, -0.617496599522, -0.0205375902284],
-#          [1.29881420688, 0.305594881575, 2.43011137696],
-#          [1.35791650867, 0.351045058258, 2.36989368612],
-#          [0.938369314089, -0.525167416293, 0.829756159423],
-#          [-1.46593541641, 0.383902178482, 1.14054797964],
-#          [-0.374378293218, -0.689730440659, -0.219122783909],
-#          [0.690326213554, 0.569364994374, 0.982068847698],
-#          [-0.961163301329, 0.499471920546, 0.936855365038]]),
-#         columns=["x1", "x2", "z1"])
-
-#     @pytest.fixture(scope="class")
-#     def alamo_trainer(self):
-#         # Test end-to-end workflow with a simple problem.
-#         bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
-#         alamo_trainer = AlamoTrainer(
-#             input_labels=["x1", "x2"],
-#             output_labels=["z1"],
-#             input_bounds=bnds,
-#             training_dataframe=TestWorkflow.training_data)
-
-#         alamo_trainer.config.linfcns = True
-#         alamo_trainer.config.monomialpower = [2, 3, 4, 5, 6]
-#         alamo_trainer.config.multi2power = [1, 2]
-
-#         (alamo_trainer.status,
-#          alamo_trainer.alamo_object,
-#          alamo_trainer.msg) = alamo_trainer.train_surrogate()
-
-#         return alamo_trainer
-
-#     def test_execution(self, alamo_trainer):
-#         # Check execution
-#         assert alamo_trainer.status is True
-#         assert alamo_trainer.msg == " Normal termination"
-
-#         # Check temp file clean up
-#         assert alamo_trainer._temp_context is None
-#         assert not os.path.exists(alamo_trainer._almfile)
-#         assert not os.path.exists(alamo_trainer._trcfile)
-
-#     def test_alamo_results(self, alamo_trainer):
-#         assert alamo_trainer._results is not None
-#         assert alamo_trainer._results['NINPUTS'] == '2'
-#         assert alamo_trainer._results['NOUTPUTS'] == '1'
-#         assert alamo_trainer._results['SSEOLR'] == {'z1': '0.373E-29'}
-#         assert alamo_trainer._results['SSE'] == {'z1': '0.976E-23'}
-#         assert alamo_trainer._results['RMSE'] == {'z1': '0.988E-12'}
-#         assert alamo_trainer._results['R2'] == {'z1': '1.00'}
-#         assert alamo_trainer._results['ModelSize'] == {'z1': '6'}
-#         assert alamo_trainer._results['BIC'] == {'z1': '-539.'}
-#         assert alamo_trainer._results['RIC'] == {'z1': '32.5'}
-#         assert alamo_trainer._results['Cp'] == {'z1': '2.00'}
-#         assert alamo_trainer._results['AICc'] == {'z1': '-513.'}
-#         assert alamo_trainer._results['HQC'] == {'z1': '-543.'}
-#         assert alamo_trainer._results['MSE'] == {'z1': '0.325E-23'}
-#         assert alamo_trainer._results['SSEp'] == {'z1': '0.976E-23'}
-#         assert alamo_trainer._results['MADp'] == {'z1': '0.115E-07'}
-
-#         assert alamo_trainer._results['Model'] == {
-#                 "z1": " z1 == 3.9999999999925432980774 * x1**2 - "
-#                 "4.0000000000020792256805 * x2**2 - "
-#                 "2.0999999999859380039879 * x1**4 + "
-#                 "4.0000000000043085535140 * x2**4 + "
-#                 "0.33333333332782683067208 * x1**6 + "
-#                 "0.99999999999973088193883 * x1*x2"}
-
-#     def test_alamo_object(self, alamo_trainer):
-#         alamo_object = alamo_trainer.alamo_object
-#         assert isinstance(alamo_object, AlamoSurrogate)
-#         assert alamo_object._surrogate_expressions == {
-#             'z1': ' z1 == 3.9999999999925432980774 * x1**2 - '
-#             '4.0000000000020792256805 * x2**2 - '
-#             '2.0999999999859380039879 * x1**4 + '
-#             '4.0000000000043085535140 * x2**4 + '
-#             '0.33333333332782683067208 * x1**6 + '
-#             '0.99999999999973088193883 * x1*x2'}
-#         assert alamo_object._input_labels == ["x1", "x2"]
-#         assert alamo_object._output_labels == ["z1"]
-#         assert alamo_object._input_bounds == {
-#             "x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
-
-#         # Check populating a block to finish workflow
-#         blk = SurrogateBlock(concrete=True)
-
-#         blk.build_model(alamo_object)
-
-#         assert isinstance(blk.inputs, Var)
-#         assert blk.inputs["x1"].bounds == (-1.5, 1.5)
-#         assert blk.inputs["x2"].bounds == (-1.5, 1.5)
-#         assert isinstance(blk.outputs, Var)
-#         assert blk.outputs["z1"].bounds == (None, None)
-#         assert isinstance(blk.alamo_constraint, Constraint)
-#         assert len(blk.alamo_constraint) == 1
-
-#     def test_metrics(self, alamo_trainer):
-#         alamo_object = alamo_trainer.alamo_object
-
-#         metrics = compute_fit_metrics(alamo_object, TestWorkflow.training_data)
-
-#         assert isinstance(metrics, dict)
-
-#         # ALAMO metrics are consistently 10x larger than they should be
-#         assert metrics["z1"]["SSE"] == pytest.approx(
-#             float(alamo_trainer._results["SSE"]["z1"])*0.1, rel=1e-8)
-#         assert metrics["z1"]["R2"] == pytest.approx(
-#             float(alamo_trainer._results["R2"]["z1"]), rel=1e-8)
-#         assert metrics["z1"]["MSE"] == pytest.approx(
-#             float(alamo_trainer._results["RMSE"]["z1"])**2*0.1, rel=1e-8)
-#         assert metrics["z1"]["RMSE"] == pytest.approx(
-#             float(alamo_trainer._results["RMSE"]["z1"])*0.1, rel=1e-8)
+        assert metrics["z1"]["R2"] == pytest.approx(
+            pysmo_trainer_poly._data['z1'].metrics['R2'], rel=1e-8)
+        assert metrics["z1"]["RMSE"] == pytest.approx(
+            pysmo_trainer_poly._data['z1'].metrics['RMSE'], rel=1e-8)
 
 
-# @pytest.mark.skipif(alamo.executable is None, reason="ALAMO not available")
-# @pytest.mark.integration
-# class TestWorkflowValidation():
-#     training_data = pd.DataFrame(np.array(
-#         [[0.353837234435, 0.99275270941666, 0.762878272854],
-#          [0.904978848612, -0.746908518721, 0.387963718723],
-#          [0.643706630938, -0.617496599522, -0.0205375902284],
-#          [1.29881420688, 0.305594881575, 2.43011137696],
-#          [1.35791650867, 0.351045058258, 2.36989368612],
-#          [0.938369314089, -0.525167416293, 0.829756159423],
-#          [-1.46593541641, 0.383902178482, 1.14054797964],
-#          [-0.374378293218, -0.689730440659, -0.219122783909],
-#          [0.690326213554, 0.569364994374, 0.982068847698],
-#          [-0.961163301329, 0.499471920546, 0.936855365038]]),
-#         columns=["x1", "x2", "z1"])
+@pytest.mark.integration
+class TestRBFWorkflow():
+    training_data = pd.DataFrame(np.array(
+        [[0.353837234435, 0.99275270941666, 0.762878272854],
+         [0.904978848612, -0.746908518721, 0.387963718723],
+         [0.643706630938, -0.617496599522, -0.0205375902284],
+         [1.29881420688, 0.305594881575, 2.43011137696],
+         [1.35791650867, 0.351045058258, 2.36989368612],
+         [0.938369314089, -0.525167416293, 0.829756159423],
+         [-1.46593541641, 0.383902178482, 1.14054797964],
+         [-0.374378293218, -0.689730440659, -0.219122783909],
+         [0.690326213554, 0.569364994374, 0.982068847698],
+         [-0.961163301329, 0.499471920546, 0.936855365038]]),
+        columns=["x1", "x2", "z1"])
 
-#     @pytest.fixture(scope="class")
-#     def alamo_trainer(self):
-#         # Test end-to-end workflow with a simple problem.
-#         # Here we will send the training dataset as validation as well,
-#         # to confirm that the mechanics work
-#         bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
-#         alamo_trainer = AlamoTrainer(
-#             input_labels=["x1", "x2"],
-#             output_labels=["z1"],
-#             input_bounds=bnds,
-#             training_dataframe=TestWorkflow.training_data,
-#             validation_dataframe=TestWorkflow.training_data)
+    @pytest.fixture(scope="class")
+    def pysmo_trainer_rbf(self):
+        # Test end-to-end workflow with a simple problem.
+        bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        pysmo_trainer_rbf = PysmoRBFTrainer(
+            input_labels=["x1", "x2"],
+            output_labels=["z1"],
+            input_bounds=bnds,
+            training_dataframe=TestRBFWorkflow.training_data)
+        pysmo_trainer_rbf.config.regularization = False
+        pysmo_trainer_rbf.config.basis_function = 'cubic'
 
-#         alamo_trainer.config.linfcns = True
-#         alamo_trainer.config.monomialpower = [2, 3, 4, 5, 6]
-#         alamo_trainer.config.multi2power = [1, 2]
+        res = pysmo_trainer_rbf.train_surrogate()
 
-#         (alamo_trainer.status,
-#          alamo_trainer.alamo_object,
-#          alamo_trainer.msg) = alamo_trainer.train_surrogate()
+        return res
 
-#         return alamo_trainer
+    def test_pysmo_trainer_rbf_results(self, pysmo_trainer_rbf):
+        assert pysmo_trainer_rbf._data is not None
+        assert pysmo_trainer_rbf.model_type == "rbf"
+        assert pysmo_trainer_rbf.num_outputs == 1
+        assert pysmo_trainer_rbf.output_labels == ['z1']
+        assert pysmo_trainer_rbf.input_labels == ['x1', 'x2']
+        assert len(pysmo_trainer_rbf._data)== 1
+        assert pysmo_trainer_rbf._data['z1'].metrics == {'R2': 1.0, 'RMSE': 1.3090150304463361e-13}
+        assert pysmo_trainer_rbf._data['z1'].expression_str ==  (
+            '-0.219122783909 '
+            '+ 2.6492341608689998*(3.2213488811988267*((((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.6444292049036692)**2 '
+            '+ ((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -1.0)**2)**0.5)**3 '
+            '+ 5.817182959612536*((((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.8396028998421479)**2 '
+            '+ ((IndexedParam[x2] + 0.746908518721)/1.73966122813766)**2)**0.5)**3 '
+            '-15.945749285930624*((((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.7470795577527436)**2 '
+            '+ ((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.07438914951133208)**2)**0.5)**3 '
+            '+ 54.49460475589974*((((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.979070325442675)**2 '
+            '+ ((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.6050048039656115)**2)**0.5)**3 '
+            '-46.36815719042403*((((IndexedParam[x1] + 1.46593541641)/2.82385192508 -1.0)**2 '
+            '+ ((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.631130681778992)**2)**0.5)**3 '
+            '+ 3.317805958622716*((((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.8514273390701553)**2 '
+            '+ ((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.12746223163539602)**2)**0.5)**3 '
+            '+ 0.1283571406868472*((((IndexedParam[x1] + 1.46593541641)/2.82385192508)**2 '
+            '+ ((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.6500177614543688)**2)**0.5)**3 '
+            '+ 3.51023669772935*((((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.38654899483126265)**2 '
+            '+ ((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.03286736356319795)**2)**0.5)**3 '
+            '-8.554153597760044*((((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.7635887741893239)**2 '
+            '+ ((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.7566263429944321)**2)**0.5)**3 '
+            '-0.12716686379803643*((((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.17875303963280575)**2 '
+            '+ ((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.7164500875847383)**2)**0.5)**3)'
+            )
 
-#     def test_execution(self, alamo_trainer):
-#         # Check execution
-#         assert alamo_trainer.status is True
-#         assert alamo_trainer.msg == " Normal termination"
+    def test_pysmo_trainer_poly_object(self, pysmo_trainer_rbf):
+        bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        input_labels=["x1", "x2"]
+        output_labels=["z1"]
+        input_bounds=bnds
+        pysmo_object = PysmoSurrogate(pysmo_trainer_rbf, input_labels, output_labels, bnds)
+        assert isinstance(pysmo_object, PysmoSurrogate)
+        assert pysmo_object._input_labels == ["x1", "x2"]
+        assert pysmo_object._output_labels == ["z1"]
+        assert pysmo_object._input_bounds == {
+            "x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
 
-#         # Check temp file clean up
-#         assert alamo_trainer._temp_context is None
-#         assert not os.path.exists(alamo_trainer._almfile)
-#         assert not os.path.exists(alamo_trainer._trcfile)
+        # Check populating a block to finish workflow
+        blk = SurrogateBlock(concrete=True)
 
-#     def test_alamo_results(self, alamo_trainer):
-#         assert alamo_trainer._results is not None
-#         assert alamo_trainer._results['NINPUTS'] == '2'
-#         assert alamo_trainer._results['NOUTPUTS'] == '1'
-#         assert alamo_trainer._results['SSEOLR'] == {'z1': '0.373E-29'}
-#         assert alamo_trainer._results['SSE'] == {'z1': '0.976E-23'}
-#         assert alamo_trainer._results['RMSE'] == {'z1': '0.988E-12'}
-#         assert alamo_trainer._results['R2'] == {'z1': '1.00'}
-#         assert alamo_trainer._results['ModelSize'] == {'z1': '6'}
-#         assert alamo_trainer._results['BIC'] == {'z1': '-539.'}
-#         assert alamo_trainer._results['RIC'] == {'z1': '32.5'}
-#         assert alamo_trainer._results['Cp'] == {'z1': '2.00'}
-#         assert alamo_trainer._results['AICc'] == {'z1': '-513.'}
-#         assert alamo_trainer._results['HQC'] == {'z1': '-543.'}
-#         assert alamo_trainer._results['MSE'] == {'z1': '0.325E-23'}
-#         assert alamo_trainer._results['SSEp'] == {'z1': '0.976E-23'}
-#         assert alamo_trainer._results['MADp'] == {'z1': '0.115E-07'}
+        blk.build_model(pysmo_object)
 
-#         assert alamo_trainer._results['Model'] == {
-#                 "z1": " z1 == 3.9999999999925432980774 * x1**2 - "
-#                 "4.0000000000020792256805 * x2**2 - "
-#                 "2.0999999999859380039879 * x1**4 + "
-#                 "4.0000000000043085535140 * x2**4 + "
-#                 "0.33333333332782683067208 * x1**6 + "
-#                 "0.99999999999973088193883 * x1*x2"}
+        assert isinstance(blk.inputs, Var)
+        assert blk.inputs["x1"].bounds == (-1.5, 1.5)
+        assert blk.inputs["x2"].bounds == (-1.5, 1.5)
+        assert isinstance(blk.outputs, Var)
+        assert blk.outputs["z1"].bounds == (None, None)
+        assert isinstance(blk.pysmo_constraint, Constraint)
+        assert len(blk.pysmo_constraint) == 1
+
+    def test_metrics(self, pysmo_trainer_rbf):
+        bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        input_labels=["x1", "x2"]
+        output_labels=["z1"]
+        input_bounds=bnds
+        pysmo_object = PysmoSurrogate(pysmo_trainer_rbf, input_labels, output_labels, bnds)
+
+        metrics = compute_fit_metrics(pysmo_object, TestRBFWorkflow.training_data)
+
+        assert isinstance(metrics, dict)
+
+        assert metrics["z1"]["R2"] == pytest.approx(
+            pysmo_trainer_rbf._data['z1'].metrics['R2'], rel=1e-8)
+        assert metrics["z1"]["RMSE"] == pytest.approx(
+            pysmo_trainer_rbf._data['z1'].metrics['RMSE'], rel=1e-8)
+
+
+@pytest.mark.integration
+class TestKrigingWorkflow():
+    training_data = pd.DataFrame(np.array(
+        [[0.353837234435, 0.99275270941666, 0.762878272854],
+         [0.904978848612, -0.746908518721, 0.387963718723],
+         [0.643706630938, -0.617496599522, -0.0205375902284],
+         [1.29881420688, 0.305594881575, 2.43011137696],
+         [1.35791650867, 0.351045058258, 2.36989368612],
+         [0.938369314089, -0.525167416293, 0.829756159423],
+         [-1.46593541641, 0.383902178482, 1.14054797964],
+         [-0.374378293218, -0.689730440659, -0.219122783909],
+         [0.690326213554, 0.569364994374, 0.982068847698],
+         [-0.961163301329, 0.499471920546, 0.936855365038]]),
+        columns=["x1", "x2", "z1"])
+
+    @pytest.fixture(scope="class")
+    def pysmo_trainer_krg(self):
+        # Test end-to-end workflow with a simple problem.
+        bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        pysmo_trainer_krg = PysmoKrigingTrainer(
+            input_labels=["x1", "x2"],
+            output_labels=["z1"],
+            input_bounds=bnds,
+            training_dataframe=TestKrigingWorkflow.training_data)
+        pysmo_trainer_krg.config.regularization = False
+        pysmo_trainer_krg.config.numerical_gradients = False
+
+        np.random.seed(0)
+        res = pysmo_trainer_krg.train_surrogate()
+
+        return res
+
+    def test_pysmo_trainer_krg_results(self, pysmo_trainer_krg):
+        assert pysmo_trainer_krg._data is not None
+        assert pysmo_trainer_krg.model_type == "kriging"
+        assert pysmo_trainer_krg.num_outputs == 1
+        assert pysmo_trainer_krg.output_labels == ['z1']
+        assert pysmo_trainer_krg.input_labels == ['x1', 'x2']
+        assert len(pysmo_trainer_krg._data)== 1
+        assert pysmo_trainer_krg._data['z1'].metrics ==  {'RMSE': 1.4304782162742794e-10, 'R2': 1.0}
+        assert pysmo_trainer_krg._data['z1'].expression_str ==  (
+            '0.8358257611302196 '
+            '+ (-0.08954055733523072*exp(- (58.08344218821157*((IndexedParam[x1] + 1.46593541641)/2.82385192508 '
+            '-0.6444292049036692)**2 + 2.5127958629249143*((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -1.0)**2)) '
+            '-3.0199171166454617*exp(- (58.08344218821157*((IndexedParam[x1] + 1.46593541641)/2.82385192508 '
+            '-0.8396028998421479)**2 + 2.5127958629249143*((IndexedParam[x2] + 0.746908518721)/1.73966122813766)**2)) '
+            '-0.6545469345231597*exp(- (58.08344218821157*((IndexedParam[x1] + 1.46593541641)/2.82385192508 '
+            '-0.7470795577527436)**2 + 2.5127958629249143*((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.07438914951133208)**2)) '
+            '+ 0.5115352069736784*exp(- (58.08344218821157*((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.979070325442675)**2 '
+            '+ 2.5127958629249143*((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.6050048039656115)**2)) '
+            '+ 0.8554355412814669*exp(- (58.08344218821157*((IndexedParam[x1] + 1.46593541641)/2.82385192508 -1.0)**2 '
+            '+ 2.5127958629249143*((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.631130681778992)**2)) '
+            '+ 2.947511393416579*exp(- (58.08344218821157*((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.8514273390701553)**2 '
+            '+ 2.5127958629249143*((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.12746223163539602)**2)) '
+            '+ 0.2920418542598615*exp(- (58.08344218821157*((IndexedParam[x1] + 1.46593541641)/2.82385192508)**2 '
+            '+ 2.5127958629249143*((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.6500177614543688)**2)) '
+            '-1.0565203746434886*exp(- (58.08344218821157*((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.38654899483126265)**2 '
+            '+ 2.5127958629249143*((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.03286736356319795)**2)) '
+            '+ 0.13152612775884828*exp(- (58.08344218821157*((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.7635887741893239)**2 '
+            '+ 2.5127958629249143*((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.7566263429944321)**2)) '
+            '+ 0.082474859456901*exp(- (58.08344218821157*((IndexedParam[x1] + 1.46593541641)/2.82385192508 -0.17875303963280575)**2 '
+            '+ 2.5127958629249143*((IndexedParam[x2] + 0.746908518721)/1.73966122813766 -0.7164500875847383)**2)))'
+            )
+
+    def test_pysmo_trainer_krg_object(self, pysmo_trainer_krg):
+        bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        input_labels=["x1", "x2"]
+        output_labels=["z1"]
+        input_bounds=bnds
+        pysmo_object = PysmoSurrogate(pysmo_trainer_krg, input_labels, output_labels, bnds)
+        assert isinstance(pysmo_object, PysmoSurrogate)
+        assert pysmo_object._input_labels == ["x1", "x2"]
+        assert pysmo_object._output_labels == ["z1"]
+        assert pysmo_object._input_bounds == {
+            "x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+
+        # Check populating a block to finish workflow
+        blk = SurrogateBlock(concrete=True)
+
+        blk.build_model(pysmo_object)
+
+        assert isinstance(blk.inputs, Var)
+        assert blk.inputs["x1"].bounds == (-1.5, 1.5)
+        assert blk.inputs["x2"].bounds == (-1.5, 1.5)
+        assert isinstance(blk.outputs, Var)
+        assert blk.outputs["z1"].bounds == (None, None)
+        assert isinstance(blk.pysmo_constraint, Constraint)
+        assert len(blk.pysmo_constraint) == 1
+
+    def test_metrics(self, pysmo_trainer_krg):
+        bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        input_labels=["x1", "x2"]
+        output_labels=["z1"]
+        input_bounds=bnds
+        pysmo_object = PysmoSurrogate(pysmo_trainer_krg, input_labels, output_labels, bnds)
+
+        metrics = compute_fit_metrics(pysmo_object, TestRBFWorkflow.training_data)
+
+        assert isinstance(metrics, dict)
+
+        assert metrics["z1"]["R2"] == pytest.approx(
+            pysmo_trainer_krg._data['z1'].metrics['R2'], rel=1e-8)
+        assert metrics["z1"]["RMSE"] == pytest.approx(
+            pysmo_trainer_krg._data['z1'].metrics['RMSE'], rel=1e-8)
+

@@ -24,9 +24,9 @@ pysmo_trainer = ps.PysmoPolyTrainer(
     maximum_polynomial_order = 1,
     multinomials=False,
     number_of_crossvalidations=3,
-    extra_features = ['log(x1)'],
-    # extra_features = ['x1 / x2'],
-    # solution_method='pyomo'
+    # extra_features = ['log(x1)', 'sin(x2)'],
+    extra_features = ['x1 / x2'],
+     # solution_method='pyomo'
     )
 
 # Train surrogate
