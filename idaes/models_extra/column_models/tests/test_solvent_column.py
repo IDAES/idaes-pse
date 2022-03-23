@@ -17,415 +17,331 @@ Author: Paul Akula, Anuja Deshpande, Andrew Lee
 import pytest
 
 # Import Pyomo libraries
-from pyomo.environ import ConcreteModel, value, Param, TransformationFactory, \
-    check_optimal_termination, units as pyunits
+from pyomo.environ import \
+    ConcreteModel, value, SolverStatus, TerminationCondition
+from pyomo.util.check_units import assert_units_consistent
 
 # Import IDAES Libraries
+import idaes
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.column_models.solvent_column \
     import PackedColumn
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.models_extra.column_models.properties.MEA_vapor \
-    import flue_gas as vaporconfig_absorber
-from idaes.models_extra.column_models.properties.MEA_vapor \
-    import wet_co2 as vaporconfig_stripper
+    import flue_gas, wet_co2
 from idaes.models_extra.column_models.properties.MEA_solvent \
-    import configuration as liquidconfig
+    import configuration as liquid_config
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
+
 
 
 # -----------------------------------------------------------------------------
 solver = get_solver()
 
 
-class TestColumn(object):
-    """
-    Tests for the column model.
+class TestAbsorberColumn:
 
-    All inputs for state variables are in SI units:
-    -Flowrate: mol/s
-    -Temperature: K
-    -Pressure: Pa
-    """
     @pytest.fixture(scope="class")
-    def model_absorber_steady_state(self):
+    def model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         # Set up property package
-        m.fs.vapor_properties = GenericParameterBlock(default=vaporconfig_absorber)
-        m.fs.liquid_properties = GenericParameterBlock(default=liquidconfig)
-        
-        # Number of finite elements and finite element list in the spatial domain
-        x_nfe = 10
-        x_nfe_list = [i / x_nfe for i in range(x_nfe + 1)]
-        
+        m.fs.vapor_properties = GenericParameterBlock(default=flue_gas)
+        m.fs.liquid_properties = GenericParameterBlock(default=liquid_config)
+
         # Create an instance of the column in the flowsheet
         m.fs.unit = PackedColumn(default={
-            "finite_elements": x_nfe,
-            "length_domain_set": x_nfe_list,
-            "transformation_method": "dae.finite_difference",
-            "vapor_side": {
-                "transformation_scheme": "BACKWARD",
-                "property_package": m.fs.vapor_properties,
-                "has_pressure_change": False},
-            "liquid_side":
-            {
-                "transformation_scheme": "FORWARD",
-                "property_package": m.fs.liquid_properties
-            }})
-            
+            "finite_elements": 10,
+            "has_pressure_change": False,
+            "vapor_phase": {"property_package": m.fs.vapor_properties},
+            "liquid_phase": {"property_package": m.fs.liquid_properties}})
+
         # Fix column design variables
-        m.fs.unit.diameter_column.fix(0.64135)
-        m.fs.unit.length_column.fix(18.15)
-        
-        # Fix operating conditions 
-        for t in m.fs.time:
-            # Flue gas
-            m.fs.unit.vapor_inlet.flow_mol[t].fix(21.48)
-            m.fs.unit.vapor_inlet.temperature[t].fix(317.88)
-            m.fs.unit.vapor_inlet.pressure[t].fix(107650)
-            m.fs.unit.vapor_inlet.mole_frac_comp[t, "CO2"].fix(0.11453)
-            m.fs.unit.vapor_inlet.mole_frac_comp[t, "H2O"].fix(0.08526)
-            m.fs.unit.vapor_inlet.mole_frac_comp[t, "N2"].fix(0.73821)
-            m.fs.unit.vapor_inlet.mole_frac_comp[t, "O2"].fix(0.06200)
-            # Solvent liquid
-            m.fs.unit.liquid_inlet.flow_mol[t].fix(37.55)
-            m.fs.unit.liquid_inlet.temperature[t].fix(319.87)
-            m.fs.unit.liquid_inlet.mole_frac_comp[t, "CO2"].fix(0.00963)
-            m.fs.unit.liquid_inlet.mole_frac_comp[t, "H2O"].fix(0.87435)
-            m.fs.unit.liquid_inlet.mole_frac_comp[t, "MEA"].fix(0.11602)
-            
-        # Fix vapor phase mass transfer coefficient values
-        k_v_values = [[0, 0],[2.837e-05, 3.728e-05],[ 2.862e-05, 3.757e-05],
-                      [ 2.891e-05, 3.788e-05],[ 2.924e-05, 3.825e-05],
-                      [ 2.965e-05, 3.87e-05],[ 3.018e-05, 3.929e-05],
-                      [ 3.092e-05, 4.011e-05],[ 3.195e-05, 4.126e-05],
-                      [ 3.305e-05, 4.251e-05],[ 3.18e-05, 4.121e-05]]
-        
-        for t in m.fs.time:
-            for i,x in enumerate(m.fs.unit.vapor_phase.length_domain):
-                for j,comp in enumerate(['CO2','H2O']):
-                    if x == m.fs.unit.vapor_phase.length_domain.first():
-                        m.fs.unit.k_v[t, x, comp].fix(0.001)
-                    else:
-                        m.fs.unit.k_v[t, x, comp].fix(k_v_values[i][j])
-        
-        # Fix liquid phase mass transfer coefficient values        
-        k_l_values = [9.613e-05, 9.861e-05, 0.0001012, 0.000104, 
-                      0.0001072, 0.0001111, 0.0001159, 0.0001222, 
-                      0.0001294, 0.0001311, 0.001]
-        
-        for t in m.fs.time:
-            for i,x in enumerate(m.fs.unit.liquid_phase.length_domain):
-                for j,comp in enumerate(['CO2']):
-                    if x == m.fs.unit.liquid_phase.length_domain.last():
-                        m.fs.unit.k_l[t, x, comp].fix(0.001)
-                    else:
-                        m.fs.unit.k_l[t, x, comp].fix(k_l_values[i])
-        
-        # Fix vapor phase heat transfer coefficient values
-        h_v_values = [100, 102.3, 103.1, 103.9, 104.9, 106.1, 107.6, 109.7, 
-                      112.6, 115.5, 111.8]
-        for t in m.fs.time:
-            for i,x in enumerate(m.fs.unit.vapor_phase.length_domain):
-                if x == m.fs.unit.vapor_phase.length_domain.first():
-                    m.fs.unit.h_v[t, x].fix(100)
-                else:
-                    m.fs.unit.h_v[t, x].fix(h_v_values[i])
-        
-        # Fix interfacial area values
-        interfacial_area_values = [0, 198.2, 198.5, 198.8, 199.2, 199.6, 
-                                   200.2, 201, 202.2, 203.3, 201.3]
-        
-        for t in m.fs.time:
-            for i,x in enumerate(m.fs.unit.vapor_phase.length_domain):
-                if x == m.fs.unit.vapor_phase.length_domain.first():
-                    m.fs.unit.area_interfacial[t, x].fix(0)
-                else:
-                    m.fs.unit.area_interfacial[t, x].fix(interfacial_area_values[i])
-        
-        # Fix enhancement factor values       
-        enhancement_factor_values = [11.81960366, 13.21436568, 14.8235168,
-                                     16.80737692, 19.43845149, 23.23126553,
-                                     29.47937877, 41.78076923, 74.63068006,
-                                     188.3501144, 10]
-        
-        for t in m.fs.time:
-            for i,x in enumerate(m.fs.unit.liquid_phase.length_domain):
-                if x == m.fs.unit.liquid_phase.length_domain.last():
-                   m.fs.unit.enhancement_factor[t, x].fix(10)
-                else:
-                    m.fs.unit.enhancement_factor[t, x].fix(enhancement_factor_values[i])
-                    
-        return(m)
-    
-    @pytest.mark.build
-    @pytest.mark.unit
-    def test_steady_state_absorber_build(self, model_absorber_steady_state):
+        m.fs.unit.diameter_column.fix(0.65)
+        m.fs.unit.length_column.fix(15)
 
-        assert model_absorber_steady_state.fs.unit.config.dynamic is False
-        assert model_absorber_steady_state.fs.unit.config.liquid_side.transformation_scheme ==\
-            'FORWARD'
-        assert model_absorber_steady_state.fs.unit.config.vapor_side.transformation_scheme == \
-            'BACKWARD'
+        # Fix operating conditions
+        # Flue gas
+        m.fs.unit.vapor_inlet.flow_mol.fix(22)
+        m.fs.unit.vapor_inlet.temperature.fix(318)
+        m.fs.unit.vapor_inlet.pressure.fix(107650)
+        m.fs.unit.vapor_inlet.mole_frac_comp[0, "CO2"].fix(0.12)
+        m.fs.unit.vapor_inlet.mole_frac_comp[0, "H2O"].fix(0.09)
+        m.fs.unit.vapor_inlet.mole_frac_comp[0, "N2"].fix(0.74)
+        m.fs.unit.vapor_inlet.mole_frac_comp[0, "O2"].fix(0.06)
+        # Solvent liquid
+        m.fs.unit.liquid_inlet.flow_mol.fix(37)
+        m.fs.unit.liquid_inlet.temperature.fix(320)
+        m.fs.unit.liquid_inlet.pressure.fix(107650)
+        m.fs.unit.liquid_inlet.mole_frac_comp[0, "CO2"].fix(0.01)
+        m.fs.unit.liquid_inlet.mole_frac_comp[0, "H2O"].fix(0.87)
+        m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.12)
 
-        assert hasattr(model_absorber_steady_state.fs.unit, "vapor_inlet")
-        assert hasattr(model_absorber_steady_state.fs.unit, "vapor_outlet")
-        assert hasattr(model_absorber_steady_state.fs.unit, "liquid_inlet")
-        assert hasattr(model_absorber_steady_state.fs.unit, "liquid_outlet")
-    
+        m.fs.unit.holdup_liq.fix(1e-2)
+        m.fs.unit.mass_transfer_coeff_vap[0, :, "CO2"].fix(3e-7)
+        m.fs.unit.mass_transfer_coeff_vap[0, :, "H2O"].fix(4e-7)
+        m.fs.unit.heat_transfer_coeff.fix(7100)
+        m.fs.unit.area_interfacial.fix(200)
+
+        # Apply scaling
+        iscale.calculate_scaling_factors(m.fs.unit)
+
+        return m
+
     @pytest.mark.unit
-    def test_dof_absorber(self, model_absorber_steady_state):
-        assert degrees_of_freedom(model_absorber_steady_state) == 0
-        
+    def test_build(self, model):
+
+        assert model.fs.unit.config.dynamic is False
+
+        assert hasattr(model.fs.unit, "vapor_inlet")
+        assert hasattr(model.fs.unit, "vapor_outlet")
+        assert hasattr(model.fs.unit, "liquid_inlet")
+        assert hasattr(model.fs.unit, "liquid_outlet")
+
+    @pytest.mark.unit
+    def test_degrees_of_freedom(self, model):
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model)
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_initialize_solve_absorber(self, model_absorber_steady_state):
-        initialization_tester(model_absorber_steady_state)
-    
+    def test_initialize(self, model):
+        initialization_tester(model)
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solve_absorber(self, model_absorber_steady_state):
-        results=solver.solve(model_absorber_steady_state)
-        
+    def test_solve(self, model):
+        results = solver.solve(model)
+
         # Solver status and condition
-        assert check_optimal_termination(results)
-        
+        assert results.solver.status == SolverStatus.ok
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_absorber_conservation(self, model_absorber_steady_state):
-        vap_comp = model_absorber_steady_state.fs.unit.config.vapor_side.property_package.component_list
-        liq_comp = model_absorber_steady_state.fs.unit.config.liquid_side.property_package.component_list
-        equilibrium_comp = vap_comp & liq_comp
-        solvent_comp_list = \
-            model_absorber_steady_state.fs.unit.config.liquid_side.property_package.solvent_set
-        solute_comp_list = model_absorber_steady_state.fs.unit.config.liquid_side.property_package.solute_set
-        
+    def test_solution(self, model):
+        assert pytest.approx(22.1608, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.flow_mol[0])
+        assert pytest.approx(0.0436865, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"])
+        assert pytest.approx(0.162118, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"])
+        assert pytest.approx(0.734630, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "N2"])
+        assert pytest.approx(0.0595646, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "O2"])
+        assert pytest.approx(107650, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.pressure[0])
+        assert pytest.approx(323.031, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.temperature[0])
+
+        assert pytest.approx(37.0592, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.flow_mol[0])
+        assert pytest.approx(0.0550976, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"])
+        assert pytest.approx(0.825094, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"])
+        assert pytest.approx(0.119808, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"])
+        assert pytest.approx(107650, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.pressure[0])
+        assert pytest.approx(335.561, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.temperature[0])
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, model):
+        vap_comp = model.fs.unit.config.vapor_phase.property_package.component_list
+        liq_comp = model.fs.unit.config.liquid_phase.property_package.apparent_species_set
+
         # Mass conservation test
-        
-        vap_in = model_absorber_steady_state.fs.unit.vapor_phase.properties[0, 0]
-        vap_out = model_absorber_steady_state.fs.unit.vapor_phase.properties[0, 1]
-        liq_in = model_absorber_steady_state.fs.unit.liquid_phase.properties[0, 1]
-        liq_out = model_absorber_steady_state.fs.unit.liquid_phase.properties[0, 0]
-        
+        vap_in = model.fs.unit.vapor_phase.properties[0, 0]
+        vap_out = model.fs.unit.vapor_phase.properties[0, 1]
+        liq_in = model.fs.unit.liquid_phase.properties[0, 1]
+        liq_out = model.fs.unit.liquid_phase.properties[0, 0]
+
         # Material conservation
         for j in liq_comp:
-            if j in equilibrium_comp:
+            if j in vap_comp:
                 assert 1e-6 >= abs(value(
                     vap_in.get_material_flow_terms("Vap", j) +
                     liq_in.get_material_flow_terms("Liq", j) -
                     vap_out.get_material_flow_terms("Vap", j) -
                     liq_out.get_material_flow_terms("Liq", j)))
-            elif j in solvent_comp_list:
+            else:
                 assert 1e-6 >= abs(value(
-                liq_in.get_material_flow_terms("Liq", j) -
-                liq_out.get_material_flow_terms("Liq", j)))
-    
+                    liq_in.get_material_flow_terms("Liq", j) -
+                    liq_out.get_material_flow_terms("Liq", j)))
+
         for j in vap_comp:
-            if j not in equilibrium_comp:
+            if j not in liq_comp:
                 assert 1e-6 >= abs(value(
                     vap_in.get_material_flow_terms("Vap", j) -
                     vap_out.get_material_flow_terms("Vap", j)))
-                
+
         # Energy conservation
-        assert 1e-6 >= abs(value(
+        assert 1e-5 >= abs(value(
             vap_in.get_enthalpy_flow_terms("Vap") +
             liq_in.get_enthalpy_flow_terms("Liq") -
             vap_out.get_enthalpy_flow_terms("Vap") -
             liq_out.get_enthalpy_flow_terms("Liq")))
-        
-        
+
+
+class TestStripperColumn:
+
     @pytest.fixture(scope="class")
-    def model_stripper_steady_state(self):
+    def model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         # Set up property package
-        m.fs.vapor_properties = GenericParameterBlock(default=vaporconfig_stripper)
-        m.fs.liquid_properties = GenericParameterBlock(default=liquidconfig)
-        
-        # Number of finite elements and finite element list in the spatial domain
-        x_nfe = 10
-        x_nfe_list = [i / x_nfe for i in range(x_nfe + 1)]
-        
+        m.fs.vapor_properties = GenericParameterBlock(default=wet_co2)
+        m.fs.liquid_properties = GenericParameterBlock(default=liquid_config)
+
         # Create an instance of the column in the flowsheet
         m.fs.unit = PackedColumn(default={
-            "finite_elements": x_nfe,
-            "length_domain_set": x_nfe_list,
-            "transformation_method": "dae.finite_difference",
-            "vapor_side": {
-                "transformation_scheme": "BACKWARD",
-                "property_package": m.fs.vapor_properties,
-                "has_pressure_change": False},
-            "liquid_side":
-            {
-                "transformation_scheme": "FORWARD",
-                "property_package": m.fs.liquid_properties
-            }})
-            
+            "finite_elements": 10,
+            "has_pressure_change": False,
+            "vapor_phase": {"property_package": m.fs.vapor_properties},
+            "liquid_phase": {"property_package": m.fs.liquid_properties}})
+
         # Fix column design variables
         m.fs.unit.diameter_column.fix(0.64135)
         m.fs.unit.length_column.fix(12.1)
-        
-        # Fix operating conditions         
-        for t in m.fs.time:
-            # Flue gas
-            m.fs.unit.vapor_inlet.flow_mol[t].fix(17.496)
-            m.fs.unit.vapor_inlet.temperature[t].fix(396.6)
-            m.fs.unit.vapor_inlet.pressure[t].fix(183430)
-            m.fs.unit.vapor_inlet.mole_frac_comp[t, "CO2"].fix(0.0145)
-            m.fs.unit.vapor_inlet.mole_frac_comp[t, "H2O"].fix(0.9855)
-            # Solvent liquid
-            m.fs.unit.liquid_inlet.flow_mol[t].fix(84.48)
-            m.fs.unit.liquid_inlet.temperature[t].fix(382.15)
-            m.fs.unit.liquid_inlet.mole_frac_comp[t, "CO2"].fix(0.0331)
-            m.fs.unit.liquid_inlet.mole_frac_comp[t, "H2O"].fix(0.8547)
-            m.fs.unit.liquid_inlet.mole_frac_comp[t, "MEA"].fix(0.1122)
-            
-        # Fix vapor phase mass transfer coefficient values
-        k_v_values = [[0, 0],[2.837e-05, 3.728e-05],[ 2.862e-05, 3.757e-05],
-                      [ 2.891e-05, 3.788e-05],[ 2.924e-05, 3.825e-05],
-                      [ 2.965e-05, 3.87e-05],[ 3.018e-05, 3.929e-05],
-                      [ 3.092e-05, 4.011e-05],[ 3.195e-05, 4.126e-05],
-                      [ 3.305e-05, 4.251e-05],[ 3.18e-05, 4.121e-05]]
-        
-        for t in m.fs.time:
-            for i,x in enumerate(m.fs.unit.vapor_phase.length_domain):
-                for j,comp in enumerate(['CO2','H2O']):
-                    if x == m.fs.unit.vapor_phase.length_domain.first():
-                        m.fs.unit.k_v[t, x, comp].fix(0.001)
-                    else:
-                        m.fs.unit.k_v[t, x, comp].fix(k_v_values[i][j])
-        
-        # Fix liquid phase mass transfer coefficient values        
-        k_l_values = [9.613e-05, 9.861e-05, 0.0001012, 0.000104, 
-                      0.0001072, 0.0001111, 0.0001159, 0.0001222, 
-                      0.0001294, 0.0001311, 0.001]
-        
-        for t in m.fs.time:
-            for i,x in enumerate(m.fs.unit.liquid_phase.length_domain):
-                for j,comp in enumerate(['CO2']):
-                    if x == m.fs.unit.liquid_phase.length_domain.last():
-                        m.fs.unit.k_l[t, x, comp].fix(0.001)
-                    else:
-                        m.fs.unit.k_l[t, x, comp].fix(k_l_values[i])
-        
-        # Fix vapor phase heat transfer coefficient values
-        h_v_values = [100, 102.3, 103.1, 103.9, 104.9, 106.1, 107.6, 109.7, 
-                      112.6, 115.5, 111.8]
-        for t in m.fs.time:
-            for i,x in enumerate(m.fs.unit.vapor_phase.length_domain):
-                if x == m.fs.unit.vapor_phase.length_domain.first():
-                    m.fs.unit.h_v[t, x].fix(100)
-                else:
-                    m.fs.unit.h_v[t, x].fix(h_v_values[i])
-        
-        # Fix interfacial area values
-        interfacial_area_values = [0, 198.2, 198.5, 198.8, 199.2, 199.6, 
-                                   200.2, 201, 202.2, 203.3, 201.3]
-        
-        for t in m.fs.time:
-            for i,x in enumerate(m.fs.unit.vapor_phase.length_domain):
-                if x == m.fs.unit.vapor_phase.length_domain.first():
-                    m.fs.unit.area_interfacial[t, x].fix(0)
-                else:
-                    m.fs.unit.area_interfacial[t, x].fix(interfacial_area_values[i])
-        
-        # Fix enhancement factor values       
-        enhancement_factor_values = [11.81960366, 13.21436568, 14.8235168,
-                                     16.80737692, 19.43845149, 23.23126553,
-                                     29.47937877, 41.78076923, 74.63068006,
-                                     188.3501144, 10]
-        
-        for t in m.fs.time:
-            for i,x in enumerate(m.fs.unit.liquid_phase.length_domain):
-                if x == m.fs.unit.liquid_phase.length_domain.last():
-                   m.fs.unit.enhancement_factor[t, x].fix(10)
-                else:
-                    m.fs.unit.enhancement_factor[t, x].fix(enhancement_factor_values[i])
-                    
-        return(m)
-    
-    @pytest.mark.build
-    @pytest.mark.unit
-    def test_steady_state_stripper_build(self, model_stripper_steady_state):
 
-        assert model_stripper_steady_state.fs.unit.config.dynamic is False
-        assert model_stripper_steady_state.fs.unit.config.liquid_side.transformation_scheme ==\
-            'FORWARD'
-        assert model_stripper_steady_state.fs.unit.config.vapor_side.transformation_scheme == \
-            'BACKWARD'
+        # Fix operating conditions
+        # Flue gas
+        m.fs.unit.vapor_inlet.flow_mol.fix(17.496)
+        m.fs.unit.vapor_inlet.temperature.fix(396.6)
+        m.fs.unit.vapor_inlet.pressure.fix(183430)
+        m.fs.unit.vapor_inlet.mole_frac_comp[0, "CO2"].fix(0.0145)
+        m.fs.unit.vapor_inlet.mole_frac_comp[0, "H2O"].fix(0.9855)
+        # Solvent liquid
+        m.fs.unit.liquid_inlet.flow_mol.fix(84.48)
+        m.fs.unit.liquid_inlet.temperature.fix(382.15)
+        m.fs.unit.liquid_inlet.pressure.fix(183430)
+        m.fs.unit.liquid_inlet.mole_frac_comp[0, "CO2"].fix(0.0331)
+        m.fs.unit.liquid_inlet.mole_frac_comp[0, "H2O"].fix(0.8547)
+        m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.1122)
 
-        assert hasattr(model_stripper_steady_state.fs.unit, "vapor_inlet")
-        assert hasattr(model_stripper_steady_state.fs.unit, "vapor_outlet")
-        assert hasattr(model_stripper_steady_state.fs.unit, "liquid_inlet")
-        assert hasattr(model_stripper_steady_state.fs.unit, "liquid_outlet")
-    
+        m.fs.unit.holdup_liq.fix(1e-2)
+        m.fs.unit.mass_transfer_coeff_vap[0, :, "CO2"].fix(3e-5)
+        m.fs.unit.mass_transfer_coeff_vap[0, :, "H2O"].fix(4e-5)
+        m.fs.unit.heat_transfer_coeff.fix(7100)
+        m.fs.unit.area_interfacial.fix(200)
+
+        # Apply scaling
+        iscale.calculate_scaling_factors(m.fs.unit)
+
+        return m
+
     @pytest.mark.unit
-    def test_dof_stripper(self, model_stripper_steady_state):
-        assert degrees_of_freedom(model_stripper_steady_state) == 0
-        
+    def test_build(self, model):
+
+        assert model.fs.unit.config.dynamic is False
+
+        assert hasattr(model.fs.unit, "vapor_inlet")
+        assert hasattr(model.fs.unit, "vapor_outlet")
+        assert hasattr(model.fs.unit, "liquid_inlet")
+        assert hasattr(model.fs.unit, "liquid_outlet")
+
+    @pytest.mark.unit
+    def test_degrees_of_freedom(self, model):
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model)
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_initialize_solve_stripper(self, model_stripper_steady_state):
-        initialization_tester(model_stripper_steady_state)
-     
+    def test_initialize(self, model):
+        initialization_tester(model)
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solve_stripper(self, model_stripper_steady_state):
-        results=solver.solve(model_stripper_steady_state)
-        
+    def test_solve(self, model):
+        results = solver.solve(model)
+
         # Solver status and condition
-        assert check_optimal_termination(results)
-        
+        assert results.solver.status == SolverStatus.ok
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_stripper_conservation(self, model_stripper_steady_state):
-        
-        vap_comp = model_stripper_steady_state.fs.unit.config.vapor_side.property_package.component_list
-        liq_comp = model_stripper_steady_state.fs.unit.config.liquid_side.property_package.component_list
-        equilibrium_comp = vap_comp & liq_comp
-        solvent_comp_list = \
-            model_stripper_steady_state.fs.unit.config.liquid_side.property_package.solvent_set
-        solute_comp_list = model_stripper_steady_state.fs.unit.config.liquid_side.property_package.solute_set
-        
-        # Mass conservation test
-        
-        vap_in = model_stripper_steady_state.fs.unit.vapor_phase.properties[0, 0]
-        vap_out = model_stripper_steady_state.fs.unit.vapor_phase.properties[0, 1]
-        liq_in = model_stripper_steady_state.fs.unit.liquid_phase.properties[0, 1]
-        liq_out = model_stripper_steady_state.fs.unit.liquid_phase.properties[0, 0]
-        
+    def test_solution(self, model):
+        assert pytest.approx(11.6609, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.flow_mol[0])
+        assert pytest.approx(0.125550, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"])
+        assert pytest.approx(0.874450, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"])
+        assert pytest.approx(183430, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.pressure[0])
+        assert pytest.approx(377.736, rel=1e-5) == value(
+            model.fs.unit.vapor_outlet.temperature[0])
+
+        assert pytest.approx(90.3151, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.flow_mol[0])
+        assert pytest.approx(0.0175602, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"])
+        assert pytest.approx(0.877489, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"])
+        assert pytest.approx(0.104951, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"])
+        assert pytest.approx(183430, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.pressure[0])
+        assert pytest.approx(394.030, rel=1e-5) == value(
+            model.fs.unit.liquid_outlet.temperature[0])
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, model):
+        vap_comp = model.fs.unit.config.vapor_phase.property_package.component_list
+        liq_comp = model.fs.unit.config.liquid_phase.property_package.apparent_species_set
+
+        vap_in = model.fs.unit.vapor_phase.properties[0, 0]
+        vap_out = model.fs.unit.vapor_phase.properties[0, 1]
+        liq_in = model.fs.unit.liquid_phase.properties[0, 1]
+        liq_out = model.fs.unit.liquid_phase.properties[0, 0]
+
         # Material conservation
         for j in liq_comp:
-            if j in equilibrium_comp:
+            if j in vap_comp:
                 assert 1e-6 >= abs(value(
                     vap_in.get_material_flow_terms("Vap", j) +
                     liq_in.get_material_flow_terms("Liq", j) -
                     vap_out.get_material_flow_terms("Vap", j) -
                     liq_out.get_material_flow_terms("Liq", j)))
-            elif j in solvent_comp_list:
+            else:
                 assert 1e-6 >= abs(value(
-                liq_in.get_material_flow_terms("Liq", j) -
-                liq_out.get_material_flow_terms("Liq", j)))
-    
+                    liq_in.get_material_flow_terms("Liq", j) -
+                    liq_out.get_material_flow_terms("Liq", j)))
+
         for j in vap_comp:
-            if j not in equilibrium_comp:
+            if j not in liq_comp:
                 assert 1e-6 >= abs(value(
                     vap_in.get_material_flow_terms("Vap", j) -
                     vap_out.get_material_flow_terms("Vap", j)))
-                
+
         # Energy conservation
-        assert 1e-6 >= abs(value(
+        assert 2e-5 >= abs(value(
             vap_in.get_enthalpy_flow_terms("Vap") +
             liq_in.get_enthalpy_flow_terms("Liq") -
             vap_out.get_enthalpy_flow_terms("Vap") -
