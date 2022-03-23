@@ -16,31 +16,34 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Constraint,
-                           Param,
-                           units,
-                           value)
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    Param,
+    units,
+    value,
+)
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import (
-        GenericParameterBlock)
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              number_unused_variables)
+    GenericParameterBlock,
+)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver, scaling as iscale
 
-from idaes.models_extra.column_models.solvent_reboiler import (
-    SolventReboiler)
-from idaes.models_extra.column_models.properties.MEA_solvent \
-    import configuration as aqueous_mea
-from idaes.models_extra.column_models.properties.MEA_vapor \
-    import flue_gas, wet_co2
+from idaes.models_extra.column_models.solvent_reboiler import SolventReboiler
+from idaes.models_extra.column_models.properties.MEA_solvent import (
+    configuration as aqueous_mea,
+)
+from idaes.models_extra.column_models.properties.MEA_vapor import flue_gas, wet_co2
 from idaes.core.util.exceptions import InitializationError
 
 
@@ -59,9 +62,12 @@ class TestAbsorberVaporFlow(object):
         m.fs.liquid_properties = GenericParameterBlock(default=aqueous_mea)
         m.fs.vapor_properties = GenericParameterBlock(default=flue_gas)
 
-        m.fs.unit = SolventReboiler(default={
-            "liquid_property_package": m.fs.liquid_properties,
-            "vapor_property_package": m.fs.vapor_properties})
+        m.fs.unit = SolventReboiler(
+            default={
+                "liquid_property_package": m.fs.liquid_properties,
+                "vapor_property_package": m.fs.vapor_properties,
+            }
+        )
 
         m.fs.unit.inlet.flow_mol[0].fix(83.89)
         m.fs.unit.inlet.temperature[0].fix(392.5)
@@ -122,14 +128,15 @@ class TestAbsorberVaporFlow(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        initialization_tester(model,
-                              liquid_state_args={"pressure": 183700,
-                                                 "temperature": 393.8,
-                                                 "flow_mol": 74.33,
-                                                 "mole_frac_comp": {
-                                                     "CO2": 0.0285,
-                                                     "H2O": 0.8491,
-                                                     "MEA": 0.1224}})
+        initialization_tester(
+            model,
+            liquid_state_args={
+                "pressure": 183700,
+                "temperature": 393.8,
+                "flow_mol": 74.33,
+                "mole_frac_comp": {"CO2": 0.0285, "H2O": 0.8491, "MEA": 0.1224},
+            },
+        )
 
     # @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -144,72 +151,113 @@ class TestAbsorberVaporFlow(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(74.33, rel=1e-5) ==
-                value(model.fs.unit.bottoms.flow_mol[0]))
-        assert (pytest.approx(0.0285221, rel=1e-5) ==
-                value(model.fs.unit.bottoms.mole_frac_comp[0, 'CO2']))
-        assert (pytest.approx(0.122455, rel=1e-5) ==
-                value(model.fs.unit.bottoms.mole_frac_comp[0, 'MEA']))
-        assert (pytest.approx(0.849023, rel=1e-5) ==
-                value(model.fs.unit.bottoms.mole_frac_comp[0, 'H2O']))
-        assert (pytest.approx(183700, rel=1e-5) ==
-                value(model.fs.unit.bottoms.pressure[0]))
-        assert (pytest.approx(393.773, rel=1e-5) ==
-                value(model.fs.unit.bottoms.temperature[0]))
+        assert pytest.approx(74.33, rel=1e-5) == value(
+            model.fs.unit.bottoms.flow_mol[0]
+        )
+        assert pytest.approx(0.0285221, rel=1e-5) == value(
+            model.fs.unit.bottoms.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.122455, rel=1e-5) == value(
+            model.fs.unit.bottoms.mole_frac_comp[0, "MEA"]
+        )
+        assert pytest.approx(0.849023, rel=1e-5) == value(
+            model.fs.unit.bottoms.mole_frac_comp[0, "H2O"]
+        )
+        assert pytest.approx(183700, rel=1e-5) == value(
+            model.fs.unit.bottoms.pressure[0]
+        )
+        assert pytest.approx(393.773, rel=1e-5) == value(
+            model.fs.unit.bottoms.temperature[0]
+        )
 
-        assert (pytest.approx(9.56, rel=1e-5) ==
-                value(model.fs.unit.vapor_reboil.flow_mol[0]))
-        assert (pytest.approx(0.0643063, rel=1e-5) ==
-                value(model.fs.unit.vapor_reboil.mole_frac_comp[0, 'CO2']))
-        assert (pytest.approx(0.935693, rel=1e-5) ==
-                value(model.fs.unit.vapor_reboil.mole_frac_comp[0, 'H2O']))
-        assert (value(model.fs.unit.vapor_reboil.mole_frac_comp[0, 'N2'])
-                <= 1e-8)
-        assert (value(model.fs.unit.vapor_reboil.mole_frac_comp[0, 'O2'])
-                <= 1e-8)
-        assert (pytest.approx(183700, rel=1e-5) ==
-                value(model.fs.unit.vapor_reboil.pressure[0]))
-        assert (pytest.approx(393.773, rel=1e-5) ==
-                value(model.fs.unit.vapor_reboil.temperature[0]))
+        assert pytest.approx(9.56, rel=1e-5) == value(
+            model.fs.unit.vapor_reboil.flow_mol[0]
+        )
+        assert pytest.approx(0.0643063, rel=1e-5) == value(
+            model.fs.unit.vapor_reboil.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.935693, rel=1e-5) == value(
+            model.fs.unit.vapor_reboil.mole_frac_comp[0, "H2O"]
+        )
+        assert value(model.fs.unit.vapor_reboil.mole_frac_comp[0, "N2"]) <= 1e-8
+        assert value(model.fs.unit.vapor_reboil.mole_frac_comp[0, "O2"]) <= 1e-8
+        assert pytest.approx(183700, rel=1e-5) == value(
+            model.fs.unit.vapor_reboil.pressure[0]
+        )
+        assert pytest.approx(393.773, rel=1e-5) == value(
+            model.fs.unit.vapor_reboil.temperature[0]
+        )
 
-        assert (pytest.approx(391220, rel=1e-5) ==
-                value(model.fs.unit.heat_duty[0]))
+        assert pytest.approx(391220, rel=1e-5) == value(model.fs.unit.heat_duty[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
-        assert abs(value(model.fs.unit.inlet.flow_mol[0] -
-                         model.fs.unit.bottoms.flow_mol[0] -
-                         model.fs.unit.vapor_reboil.flow_mol[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    model.fs.unit.inlet.flow_mol[0]
+                    - model.fs.unit.bottoms.flow_mol[0]
+                    - model.fs.unit.vapor_reboil.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
 
-        assert (abs(value(model.fs.unit.inlet.flow_mol[0] *
-                          model.fs.unit.inlet.mole_frac_comp[0, "CO2"] -
-                          model.fs.unit.bottoms.flow_mol[0] *
-                          model.fs.unit.bottoms.mole_frac_comp[0, "CO2"] -
-                          model.fs.unit.vapor_reboil.flow_mol[0] *
-                          model.fs.unit.vapor_reboil.mole_frac_comp[0, "CO2"]))
-                <= 1e-6)
-        assert (abs(value(model.fs.unit.inlet.flow_mol[0] *
-                          model.fs.unit.inlet.mole_frac_comp[0, "H2O"] -
-                          model.fs.unit.bottoms.flow_mol[0] *
-                          model.fs.unit.bottoms.mole_frac_comp[0, "H2O"] -
-                          model.fs.unit.vapor_reboil.flow_mol[0] *
-                          model.fs.unit.vapor_reboil.mole_frac_comp[0, "H2O"]))
-                <= 1e-6)
-        assert (abs(value(model.fs.unit.inlet.flow_mol[0] *
-                          model.fs.unit.inlet.mole_frac_comp[0, "MEA"] -
-                          model.fs.unit.bottoms.flow_mol[0] *
-                          model.fs.unit.bottoms.mole_frac_comp[0, "MEA"]))
-                <= 1e-6)
+        assert (
+            abs(
+                value(
+                    model.fs.unit.inlet.flow_mol[0]
+                    * model.fs.unit.inlet.mole_frac_comp[0, "CO2"]
+                    - model.fs.unit.bottoms.flow_mol[0]
+                    * model.fs.unit.bottoms.mole_frac_comp[0, "CO2"]
+                    - model.fs.unit.vapor_reboil.flow_mol[0]
+                    * model.fs.unit.vapor_reboil.mole_frac_comp[0, "CO2"]
+                )
+            )
+            <= 1e-6
+        )
+        assert (
+            abs(
+                value(
+                    model.fs.unit.inlet.flow_mol[0]
+                    * model.fs.unit.inlet.mole_frac_comp[0, "H2O"]
+                    - model.fs.unit.bottoms.flow_mol[0]
+                    * model.fs.unit.bottoms.mole_frac_comp[0, "H2O"]
+                    - model.fs.unit.vapor_reboil.flow_mol[0]
+                    * model.fs.unit.vapor_reboil.mole_frac_comp[0, "H2O"]
+                )
+            )
+            <= 1e-6
+        )
+        assert (
+            abs(
+                value(
+                    model.fs.unit.inlet.flow_mol[0]
+                    * model.fs.unit.inlet.mole_frac_comp[0, "MEA"]
+                    - model.fs.unit.bottoms.flow_mol[0]
+                    * model.fs.unit.bottoms.mole_frac_comp[0, "MEA"]
+                )
+            )
+            <= 1e-6
+        )
 
-        assert abs(value(
-            model.fs.unit.liquid_phase.properties_in[0]._enthalpy_flow_term[
-                "Liq"] -
-            model.fs.unit.liquid_phase.properties_out[0]._enthalpy_flow_term[
-                "Liq"] -
-            model.fs.unit.vapor_phase[0]._enthalpy_flow_term["Vap"] +
-            model.fs.unit.heat_duty[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    model.fs.unit.liquid_phase.properties_in[0]._enthalpy_flow_term[
+                        "Liq"
+                    ]
+                    - model.fs.unit.liquid_phase.properties_out[0]._enthalpy_flow_term[
+                        "Liq"
+                    ]
+                    - model.fs.unit.vapor_phase[0]._enthalpy_flow_term["Vap"]
+                    + model.fs.unit.heat_duty[0]
+                )
+            )
+            <= 1e-6
+        )
 
 
 # -----------------------------------------------------------------------------
@@ -222,9 +270,12 @@ class TestAbsorberHeatDuty(object):
         m.fs.liquid_properties = GenericParameterBlock(default=aqueous_mea)
         m.fs.vapor_properties = GenericParameterBlock(default=flue_gas)
 
-        m.fs.unit = SolventReboiler(default={
-            "liquid_property_package": m.fs.liquid_properties,
-            "vapor_property_package": m.fs.vapor_properties})
+        m.fs.unit = SolventReboiler(
+            default={
+                "liquid_property_package": m.fs.liquid_properties,
+                "vapor_property_package": m.fs.vapor_properties,
+            }
+        )
 
         m.fs.unit.inlet.flow_mol[0].fix(83.89)
         m.fs.unit.inlet.temperature[0].fix(392.5)
@@ -285,14 +336,15 @@ class TestAbsorberHeatDuty(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        initialization_tester(model,
-                              liquid_state_args={"pressure": 183700,
-                                                 "temperature": 393.8,
-                                                 "flow_mol": 74.33,
-                                                 "mole_frac_comp": {
-                                                     "CO2": 0.0285,
-                                                     "H2O": 0.8491,
-                                                     "MEA": 0.1224}})
+        initialization_tester(
+            model,
+            liquid_state_args={
+                "pressure": 183700,
+                "temperature": 393.8,
+                "flow_mol": 74.33,
+                "mole_frac_comp": {"CO2": 0.0285, "H2O": 0.8491, "MEA": 0.1224},
+            },
+        )
 
     # @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -310,105 +362,189 @@ class TestAbsorberHeatDuty(object):
         model.fs.unit.bottoms.display()
         model.fs.unit.vapor_reboil.display()
 
-        assert (pytest.approx(73.3324, rel=1e-5) ==
-                value(model.fs.unit.bottoms.flow_mol[0]))
-        assert (pytest.approx(0.0284629, rel=1e-5) ==
-                value(model.fs.unit.bottoms.mole_frac_comp[0, 'CO2']))
-        assert (pytest.approx(0.124121, rel=1e-5) ==
-                value(model.fs.unit.bottoms.mole_frac_comp[0, 'MEA']))
-        assert (pytest.approx(0.847416, rel=1e-5) ==
-                value(model.fs.unit.bottoms.mole_frac_comp[0, 'H2O']))
-        assert (pytest.approx(183700, rel=1e-5) ==
-                value(model.fs.unit.bottoms.pressure[0]))
-        assert (pytest.approx(393.934, rel=1e-5) ==
-                value(model.fs.unit.bottoms.temperature[0]))
+        assert pytest.approx(73.3324, rel=1e-5) == value(
+            model.fs.unit.bottoms.flow_mol[0]
+        )
+        assert pytest.approx(0.0284629, rel=1e-5) == value(
+            model.fs.unit.bottoms.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.124121, rel=1e-5) == value(
+            model.fs.unit.bottoms.mole_frac_comp[0, "MEA"]
+        )
+        assert pytest.approx(0.847416, rel=1e-5) == value(
+            model.fs.unit.bottoms.mole_frac_comp[0, "H2O"]
+        )
+        assert pytest.approx(183700, rel=1e-5) == value(
+            model.fs.unit.bottoms.pressure[0]
+        )
+        assert pytest.approx(393.934, rel=1e-5) == value(
+            model.fs.unit.bottoms.temperature[0]
+        )
 
-        assert (pytest.approx(10.5576, rel=1e-5) ==
-                value(model.fs.unit.vapor_reboil.flow_mol[0]))
-        assert (pytest.approx(0.0613360, rel=1e-5) ==
-                value(model.fs.unit.vapor_reboil.mole_frac_comp[0, 'CO2']))
-        assert (pytest.approx(0.938664, rel=1e-5) ==
-                value(model.fs.unit.vapor_reboil.mole_frac_comp[0, 'H2O']))
-        assert (value(model.fs.unit.vapor_reboil.mole_frac_comp[0, 'N2'])
-                <= 1e-8)
-        assert (value(model.fs.unit.vapor_reboil.mole_frac_comp[0, 'O2'])
-                <= 1e-8)
-        assert (pytest.approx(183700, rel=1e-5) ==
-                value(model.fs.unit.vapor_reboil.pressure[0]))
-        assert (pytest.approx(393.934, rel=1e-5) ==
-                value(model.fs.unit.vapor_reboil.temperature[0]))
+        assert pytest.approx(10.5576, rel=1e-5) == value(
+            model.fs.unit.vapor_reboil.flow_mol[0]
+        )
+        assert pytest.approx(0.0613360, rel=1e-5) == value(
+            model.fs.unit.vapor_reboil.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.938664, rel=1e-5) == value(
+            model.fs.unit.vapor_reboil.mole_frac_comp[0, "H2O"]
+        )
+        assert value(model.fs.unit.vapor_reboil.mole_frac_comp[0, "N2"]) <= 1e-8
+        assert value(model.fs.unit.vapor_reboil.mole_frac_comp[0, "O2"]) <= 1e-8
+        assert pytest.approx(183700, rel=1e-5) == value(
+            model.fs.unit.vapor_reboil.pressure[0]
+        )
+        assert pytest.approx(393.934, rel=1e-5) == value(
+            model.fs.unit.vapor_reboil.temperature[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
-        assert abs(value(model.fs.unit.inlet.flow_mol[0] -
-                         model.fs.unit.bottoms.flow_mol[0] -
-                         model.fs.unit.vapor_reboil.flow_mol[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    model.fs.unit.inlet.flow_mol[0]
+                    - model.fs.unit.bottoms.flow_mol[0]
+                    - model.fs.unit.vapor_reboil.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
 
-        assert (abs(value(model.fs.unit.inlet.flow_mol[0] *
-                          model.fs.unit.inlet.mole_frac_comp[0, "CO2"] -
-                          model.fs.unit.bottoms.flow_mol[0] *
-                          model.fs.unit.bottoms.mole_frac_comp[0, "CO2"] -
-                          model.fs.unit.vapor_reboil.flow_mol[0] *
-                          model.fs.unit.vapor_reboil.mole_frac_comp[0, "CO2"]))
-                <= 1e-6)
-        assert (abs(value(model.fs.unit.inlet.flow_mol[0] *
-                          model.fs.unit.inlet.mole_frac_comp[0, "H2O"] -
-                          model.fs.unit.bottoms.flow_mol[0] *
-                          model.fs.unit.bottoms.mole_frac_comp[0, "H2O"] -
-                          model.fs.unit.vapor_reboil.flow_mol[0] *
-                          model.fs.unit.vapor_reboil.mole_frac_comp[0, "H2O"]))
-                <= 1e-6)
-        assert (abs(value(model.fs.unit.inlet.flow_mol[0] *
-                          model.fs.unit.inlet.mole_frac_comp[0, "MEA"] -
-                          model.fs.unit.bottoms.flow_mol[0] *
-                          model.fs.unit.bottoms.mole_frac_comp[0, "MEA"]))
-                <= 1e-6)
+        assert (
+            abs(
+                value(
+                    model.fs.unit.inlet.flow_mol[0]
+                    * model.fs.unit.inlet.mole_frac_comp[0, "CO2"]
+                    - model.fs.unit.bottoms.flow_mol[0]
+                    * model.fs.unit.bottoms.mole_frac_comp[0, "CO2"]
+                    - model.fs.unit.vapor_reboil.flow_mol[0]
+                    * model.fs.unit.vapor_reboil.mole_frac_comp[0, "CO2"]
+                )
+            )
+            <= 1e-6
+        )
+        assert (
+            abs(
+                value(
+                    model.fs.unit.inlet.flow_mol[0]
+                    * model.fs.unit.inlet.mole_frac_comp[0, "H2O"]
+                    - model.fs.unit.bottoms.flow_mol[0]
+                    * model.fs.unit.bottoms.mole_frac_comp[0, "H2O"]
+                    - model.fs.unit.vapor_reboil.flow_mol[0]
+                    * model.fs.unit.vapor_reboil.mole_frac_comp[0, "H2O"]
+                )
+            )
+            <= 1e-6
+        )
+        assert (
+            abs(
+                value(
+                    model.fs.unit.inlet.flow_mol[0]
+                    * model.fs.unit.inlet.mole_frac_comp[0, "MEA"]
+                    - model.fs.unit.bottoms.flow_mol[0]
+                    * model.fs.unit.bottoms.mole_frac_comp[0, "MEA"]
+                )
+            )
+            <= 1e-6
+        )
 
-        assert abs(value(
-            model.fs.unit.liquid_phase.properties_in[0]._enthalpy_flow_term[
-                "Liq"] -
-            model.fs.unit.liquid_phase.properties_out[0]._enthalpy_flow_term[
-                "Liq"] -
-            model.fs.unit.vapor_phase[0]._enthalpy_flow_term["Vap"] +
-            model.fs.unit.heat_duty[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    model.fs.unit.liquid_phase.properties_in[0]._enthalpy_flow_term[
+                        "Liq"
+                    ]
+                    - model.fs.unit.liquid_phase.properties_out[0]._enthalpy_flow_term[
+                        "Liq"
+                    ]
+                    - model.fs.unit.vapor_phase[0]._enthalpy_flow_term["Vap"]
+                    + model.fs.unit.heat_duty[0]
+                )
+            )
+            <= 1e-6
+        )
 
     @pytest.mark.component
     def test_scaling(self, model):
         iscale.set_scaling_factor(
-            model.fs.unit.liquid_phase.properties_out[0].fug_phase_comp[
-                "Liq", "CO2"], 1e-5)
+            model.fs.unit.liquid_phase.properties_out[0].fug_phase_comp["Liq", "CO2"],
+            1e-5,
+        )
         iscale.set_scaling_factor(
-            model.fs.unit.liquid_phase.properties_out[0].fug_phase_comp[
-                "Liq", "H2O"], 1e-3)
+            model.fs.unit.liquid_phase.properties_out[0].fug_phase_comp["Liq", "H2O"],
+            1e-3,
+        )
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.unit_material_balance[0, "CO2"]) == 1
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.unit_material_balance[0, "H2O"]) == 1
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.unit_material_balance[0, "MEA"]) is None
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.unit_material_balance[0, "N2"]) == 1e8
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.unit_material_balance[0, "O2"]) == 1e8
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.unit_material_balance[0, "CO2"]
+            )
+            == 1
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.unit_material_balance[0, "H2O"]
+            )
+            == 1
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.unit_material_balance[0, "MEA"]
+            )
+            is None
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.unit_material_balance[0, "N2"]
+            )
+            == 1e8
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.unit_material_balance[0, "O2"]
+            )
+            == 1e8
+        )
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.unit_phase_equilibrium[0, "CO2"]) == 1e-5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.unit_phase_equilibrium[0, "H2O"]) == 1e-3
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.unit_phase_equilibrium[0, "CO2"]
+            )
+            == 1e-5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.unit_phase_equilibrium[0, "H2O"]
+            )
+            == 1e-3
+        )
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.unit_temperature_equality[0]) == 1e-2
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.unit_temperature_equality[0]
+            )
+            == 1e-2
+        )
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.unit_enthalpy_balance[0]) == 1
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.unit_enthalpy_balance[0]
+            )
+            == 1
+        )
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.unit_pressure_balance[0]) == 1e-5
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.unit_pressure_balance[0]
+            )
+            == 1e-5
+        )
 
     @pytest.mark.component
     def test_initialization_error_dof(self, model):

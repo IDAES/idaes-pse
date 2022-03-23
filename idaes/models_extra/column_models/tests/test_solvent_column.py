@@ -17,26 +17,24 @@ Author: Paul Akula, Anuja Deshpande, Andrew Lee
 import pytest
 
 # Import Pyomo libraries
-from pyomo.environ import \
-    ConcreteModel, value, SolverStatus, TerminationCondition
+from pyomo.environ import ConcreteModel, value, SolverStatus, TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 # Import IDAES Libraries
 import idaes
 from idaes.core import FlowsheetBlock
-from idaes.models_extra.column_models.solvent_column \
-    import PackedColumn
+from idaes.models_extra.column_models.solvent_column import PackedColumn
 from idaes.generic_models.properties.core.generic.generic_property import (
-        GenericParameterBlock)
-from idaes.models_extra.column_models.properties.MEA_vapor \
-    import flue_gas, wet_co2
-from idaes.models_extra.column_models.properties.MEA_solvent \
-    import configuration as liquid_config
+    GenericParameterBlock,
+)
+from idaes.models_extra.column_models.properties.MEA_vapor import flue_gas, wet_co2
+from idaes.models_extra.column_models.properties.MEA_solvent import (
+    configuration as liquid_config,
+)
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver, scaling as iscale
-
 
 
 # -----------------------------------------------------------------------------
@@ -44,7 +42,6 @@ solver = get_solver()
 
 
 class TestAbsorberColumn:
-
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -55,11 +52,14 @@ class TestAbsorberColumn:
         m.fs.liquid_properties = GenericParameterBlock(default=liquid_config)
 
         # Create an instance of the column in the flowsheet
-        m.fs.unit = PackedColumn(default={
-            "finite_elements": 10,
-            "has_pressure_change": False,
-            "vapor_phase": {"property_package": m.fs.vapor_properties},
-            "liquid_phase": {"property_package": m.fs.liquid_properties}})
+        m.fs.unit = PackedColumn(
+            default={
+                "finite_elements": 10,
+                "has_pressure_change": False,
+                "vapor_phase": {"property_package": m.fs.vapor_properties},
+                "liquid_phase": {"property_package": m.fs.liquid_properties},
+            }
+        )
 
         # Fix column design variables
         m.fs.unit.diameter_column.fix(0.65)
@@ -125,46 +125,60 @@ class TestAbsorberColumn:
 
         # Solver status and condition
         assert results.solver.status == SolverStatus.ok
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
+        assert results.solver.termination_condition == TerminationCondition.optimal
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
         assert pytest.approx(22.1608, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.flow_mol[0])
+            model.fs.unit.vapor_outlet.flow_mol[0]
+        )
         assert pytest.approx(0.0436865, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"])
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"]
+        )
         assert pytest.approx(0.162118, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"])
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"]
+        )
         assert pytest.approx(0.734630, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.mole_frac_comp[0, "N2"])
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "N2"]
+        )
         assert pytest.approx(0.0595646, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.mole_frac_comp[0, "O2"])
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "O2"]
+        )
         assert pytest.approx(107650, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.pressure[0])
+            model.fs.unit.vapor_outlet.pressure[0]
+        )
         assert pytest.approx(323.031, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.temperature[0])
+            model.fs.unit.vapor_outlet.temperature[0]
+        )
 
         assert pytest.approx(37.0592, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.flow_mol[0])
+            model.fs.unit.liquid_outlet.flow_mol[0]
+        )
         assert pytest.approx(0.0550976, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"])
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"]
+        )
         assert pytest.approx(0.825094, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"])
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"]
+        )
         assert pytest.approx(0.119808, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"])
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"]
+        )
         assert pytest.approx(107650, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.pressure[0])
+            model.fs.unit.liquid_outlet.pressure[0]
+        )
         assert pytest.approx(335.561, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.temperature[0])
+            model.fs.unit.liquid_outlet.temperature[0]
+        )
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         vap_comp = model.fs.unit.config.vapor_phase.property_package.component_list
-        liq_comp = model.fs.unit.config.liquid_phase.property_package.apparent_species_set
+        liq_comp = (
+            model.fs.unit.config.liquid_phase.property_package.apparent_species_set
+        )
 
         # Mass conservation test
         vap_in = model.fs.unit.vapor_phase.properties[0, 0]
@@ -175,32 +189,43 @@ class TestAbsorberColumn:
         # Material conservation
         for j in liq_comp:
             if j in vap_comp:
-                assert 1e-6 >= abs(value(
-                    vap_in.get_material_flow_terms("Vap", j) +
-                    liq_in.get_material_flow_terms("Liq", j) -
-                    vap_out.get_material_flow_terms("Vap", j) -
-                    liq_out.get_material_flow_terms("Liq", j)))
+                assert 1e-6 >= abs(
+                    value(
+                        vap_in.get_material_flow_terms("Vap", j)
+                        + liq_in.get_material_flow_terms("Liq", j)
+                        - vap_out.get_material_flow_terms("Vap", j)
+                        - liq_out.get_material_flow_terms("Liq", j)
+                    )
+                )
             else:
-                assert 1e-6 >= abs(value(
-                    liq_in.get_material_flow_terms("Liq", j) -
-                    liq_out.get_material_flow_terms("Liq", j)))
+                assert 1e-6 >= abs(
+                    value(
+                        liq_in.get_material_flow_terms("Liq", j)
+                        - liq_out.get_material_flow_terms("Liq", j)
+                    )
+                )
 
         for j in vap_comp:
             if j not in liq_comp:
-                assert 1e-6 >= abs(value(
-                    vap_in.get_material_flow_terms("Vap", j) -
-                    vap_out.get_material_flow_terms("Vap", j)))
+                assert 1e-6 >= abs(
+                    value(
+                        vap_in.get_material_flow_terms("Vap", j)
+                        - vap_out.get_material_flow_terms("Vap", j)
+                    )
+                )
 
         # Energy conservation
-        assert 1e-5 >= abs(value(
-            vap_in.get_enthalpy_flow_terms("Vap") +
-            liq_in.get_enthalpy_flow_terms("Liq") -
-            vap_out.get_enthalpy_flow_terms("Vap") -
-            liq_out.get_enthalpy_flow_terms("Liq")))
+        assert 1e-5 >= abs(
+            value(
+                vap_in.get_enthalpy_flow_terms("Vap")
+                + liq_in.get_enthalpy_flow_terms("Liq")
+                - vap_out.get_enthalpy_flow_terms("Vap")
+                - liq_out.get_enthalpy_flow_terms("Liq")
+            )
+        )
 
 
 class TestStripperColumn:
-
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -211,11 +236,14 @@ class TestStripperColumn:
         m.fs.liquid_properties = GenericParameterBlock(default=liquid_config)
 
         # Create an instance of the column in the flowsheet
-        m.fs.unit = PackedColumn(default={
-            "finite_elements": 10,
-            "has_pressure_change": False,
-            "vapor_phase": {"property_package": m.fs.vapor_properties},
-            "liquid_phase": {"property_package": m.fs.liquid_properties}})
+        m.fs.unit = PackedColumn(
+            default={
+                "finite_elements": 10,
+                "has_pressure_change": False,
+                "vapor_phase": {"property_package": m.fs.vapor_properties},
+                "liquid_phase": {"property_package": m.fs.liquid_properties},
+            }
+        )
 
         # Fix column design variables
         m.fs.unit.diameter_column.fix(0.64135)
@@ -279,42 +307,54 @@ class TestStripperColumn:
 
         # Solver status and condition
         assert results.solver.status == SolverStatus.ok
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
+        assert results.solver.termination_condition == TerminationCondition.optimal
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
         assert pytest.approx(11.6609, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.flow_mol[0])
+            model.fs.unit.vapor_outlet.flow_mol[0]
+        )
         assert pytest.approx(0.125550, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"])
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"]
+        )
         assert pytest.approx(0.874450, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"])
+            model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"]
+        )
         assert pytest.approx(183430, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.pressure[0])
+            model.fs.unit.vapor_outlet.pressure[0]
+        )
         assert pytest.approx(377.736, rel=1e-5) == value(
-            model.fs.unit.vapor_outlet.temperature[0])
+            model.fs.unit.vapor_outlet.temperature[0]
+        )
 
         assert pytest.approx(90.3151, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.flow_mol[0])
+            model.fs.unit.liquid_outlet.flow_mol[0]
+        )
         assert pytest.approx(0.0175602, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"])
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"]
+        )
         assert pytest.approx(0.877489, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"])
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"]
+        )
         assert pytest.approx(0.104951, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"])
+            model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"]
+        )
         assert pytest.approx(183430, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.pressure[0])
+            model.fs.unit.liquid_outlet.pressure[0]
+        )
         assert pytest.approx(394.030, rel=1e-5) == value(
-            model.fs.unit.liquid_outlet.temperature[0])
+            model.fs.unit.liquid_outlet.temperature[0]
+        )
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         vap_comp = model.fs.unit.config.vapor_phase.property_package.component_list
-        liq_comp = model.fs.unit.config.liquid_phase.property_package.apparent_species_set
+        liq_comp = (
+            model.fs.unit.config.liquid_phase.property_package.apparent_species_set
+        )
 
         vap_in = model.fs.unit.vapor_phase.properties[0, 0]
         vap_out = model.fs.unit.vapor_phase.properties[0, 1]
@@ -324,25 +364,37 @@ class TestStripperColumn:
         # Material conservation
         for j in liq_comp:
             if j in vap_comp:
-                assert 1e-6 >= abs(value(
-                    vap_in.get_material_flow_terms("Vap", j) +
-                    liq_in.get_material_flow_terms("Liq", j) -
-                    vap_out.get_material_flow_terms("Vap", j) -
-                    liq_out.get_material_flow_terms("Liq", j)))
+                assert 1e-6 >= abs(
+                    value(
+                        vap_in.get_material_flow_terms("Vap", j)
+                        + liq_in.get_material_flow_terms("Liq", j)
+                        - vap_out.get_material_flow_terms("Vap", j)
+                        - liq_out.get_material_flow_terms("Liq", j)
+                    )
+                )
             else:
-                assert 1e-6 >= abs(value(
-                    liq_in.get_material_flow_terms("Liq", j) -
-                    liq_out.get_material_flow_terms("Liq", j)))
+                assert 1e-6 >= abs(
+                    value(
+                        liq_in.get_material_flow_terms("Liq", j)
+                        - liq_out.get_material_flow_terms("Liq", j)
+                    )
+                )
 
         for j in vap_comp:
             if j not in liq_comp:
-                assert 1e-6 >= abs(value(
-                    vap_in.get_material_flow_terms("Vap", j) -
-                    vap_out.get_material_flow_terms("Vap", j)))
+                assert 1e-6 >= abs(
+                    value(
+                        vap_in.get_material_flow_terms("Vap", j)
+                        - vap_out.get_material_flow_terms("Vap", j)
+                    )
+                )
 
         # Energy conservation
-        assert 2e-5 >= abs(value(
-            vap_in.get_enthalpy_flow_terms("Vap") +
-            liq_in.get_enthalpy_flow_terms("Liq") -
-            vap_out.get_enthalpy_flow_terms("Vap") -
-            liq_out.get_enthalpy_flow_terms("Liq")))
+        assert 2e-5 >= abs(
+            value(
+                vap_in.get_enthalpy_flow_terms("Vap")
+                + liq_in.get_enthalpy_flow_terms("Liq")
+                - vap_out.get_enthalpy_flow_terms("Vap")
+                - liq_out.get_enthalpy_flow_terms("Liq")
+            )
+        )

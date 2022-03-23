@@ -16,23 +16,33 @@ IDAES General Purpose Packed Solvent Column Model.
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Constraint, Expression, Param, Reals, NonNegativeReals, Var,
-    SolverStatus, TerminationCondition, units as pyunits)
+    Constraint,
+    Expression,
+    Param,
+    Reals,
+    NonNegativeReals,
+    Var,
+    SolverStatus,
+    TerminationCondition,
+    units as pyunits,
+)
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool, In
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES Libraries
 from idaes.core.util.constants import Constants
-from idaes.core import (ControlVolume1DBlock,
-                        UnitModelBlockData,
-                        declare_process_block_class,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType,
-                        FlowDirection,
-                        MaterialFlowBasis,
-                        useDefault,
-                        DistributedVars)
+from idaes.core import (
+    ControlVolume1DBlock,
+    UnitModelBlockData,
+    declare_process_block_class,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+    FlowDirection,
+    MaterialFlowBasis,
+    useDefault,
+    DistributedVars,
+)
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -55,78 +65,104 @@ class PackedColumnData(UnitModelBlockData):
 
     CONFIG = ConfigBlock()
     # For now, only support steady-state
-    CONFIG.declare("dynamic", ConfigValue(
-        domain=In([False]),
-        default=False,
-        description="Dynamic model flag - must be False",
-        doc="""Indicates whether this model will be dynamic or not,
-**default** = False. Solvent Columns do not yet support dynamic behavior."""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=useDefault,
-        domain=DefaultBool,
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
+    CONFIG.declare(
+        "dynamic",
+        ConfigValue(
+            domain=In([False]),
+            default=False,
+            description="Dynamic model flag - must be False",
+            doc="""Indicates whether this model will be dynamic or not,
+**default** = False. Solvent Columns do not yet support dynamic behavior.""",
+        ),
+    )
+    CONFIG.declare(
+        "has_holdup",
+        ConfigValue(
+            default=useDefault,
+            domain=DefaultBool,
+            description="Holdup construction flag",
+            doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
 **default** - False.
 **Valid values:** {
 **useDefault** - get flag from parent (default = False),
 **True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
+**False** - do not construct holdup terms}""",
+        ),
+    )
 
     # Configuration template for phase specific  arguments
     _PhaseCONFIG = ConfigBlock()
 
-    CONFIG.declare("finite_elements", ConfigValue(
-        default=20,
-        domain=int,
-        description="Number of finite elements length domain",
-        doc="""Number of finite elements to use when discretizing length
-domain (default=20)"""))
+    CONFIG.declare(
+        "finite_elements",
+        ConfigValue(
+            default=20,
+            domain=int,
+            description="Number of finite elements length domain",
+            doc="""Number of finite elements to use when discretizing length
+domain (default=20)""",
+        ),
+    )
 
-    CONFIG.declare("length_domain_set", ConfigValue(
-        default=[0.0, 1.0],
-        domain=list,
-        description="List of points in length domain",
-        doc="""length_domain_set - (optional) list of point to use to
+    CONFIG.declare(
+        "length_domain_set",
+        ConfigValue(
+            default=[0.0, 1.0],
+            domain=list,
+            description="List of points in length domain",
+            doc="""length_domain_set - (optional) list of point to use to
 initialize a new ContinuousSet if length_domain is not
-provided (default = [0.0, 1.0])"""))
+provided (default = [0.0, 1.0])""",
+        ),
+    )
 
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=Bool,
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
+    CONFIG.declare(
+        "has_pressure_change",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Pressure change term construction flag",
+            doc="""Indicates whether terms for pressure change should be
 constructed, **default** - False.
 **Valid values:** {
 **True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
+**False** - exclude pressure change terms.}""",
+        ),
+    )
 
     # Populate the phase side template to default values
-    _PhaseCONFIG.declare("property_package", ConfigValue(
-        default=None,
-        domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations
+    _PhaseCONFIG.declare(
+        "property_package",
+        ConfigValue(
+            default=None,
+            domain=is_physical_parameter_block,
+            description="Property package to use for control volume",
+            doc="""Property parameter object used to define property calculations
 (default = 'use_parent_value')
 - 'use_parent_value' - get package from parent (default = None)
-- a ParameterBlock object"""))
+- a ParameterBlock object""",
+        ),
+    )
 
-    _PhaseCONFIG.declare("property_package_args", ConfigValue(
-        default={},
-        description="Arguments for constructing vapor property package",
-        doc="""A dict of arguments to be passed to the PropertyBlockData
+    _PhaseCONFIG.declare(
+        "property_package_args",
+        ConfigValue(
+            default={},
+            description="Arguments for constructing vapor property package",
+            doc="""A dict of arguments to be passed to the PropertyBlockData
 and used when constructing these
 (default = 'use_parent_value')
 - 'use_parent_value' - get package from parent (default = None)
 - a dict (see property package for documentation)
-            """))
+            """,
+        ),
+    )
 
     # Create individual config blocks for vapor(gas) and liquid sides
-    CONFIG.declare("vapor_phase",
-                   _PhaseCONFIG(doc="vapor side config arguments"))
+    CONFIG.declare("vapor_phase", _PhaseCONFIG(doc="vapor side config arguments"))
 
-    CONFIG.declare("liquid_phase",
-                   _PhaseCONFIG(doc="liquid side config arguments"))
+    CONFIG.declare("liquid_phase", _PhaseCONFIG(doc="liquid side config arguments"))
 
     # =========================================================================
 
@@ -147,40 +183,44 @@ and used when constructing these
         if self.config.vapor_phase.property_package.phase_list != ["Vap"]:
             raise ConfigurationError(
                 f"{self.name} SolventCondenser model requires that the vapor "
-                f"phase property package have a single phase named 'Vap'")
+                f"phase property package have a single phase named 'Vap'"
+            )
         if self.config.liquid_phase.property_package.phase_list != ["Liq"]:
             raise ConfigurationError(
                 f"{self.name} SolventCondenser model requires that the liquid "
-                f"phase property package have a single phase named 'Liq'")
+                f"phase property package have a single phase named 'Liq'"
+            )
 
         # Check for at least one common component in component lists
-        if not any(j in self.config.vapor_phase.property_package.component_list for
-                   j in self.config.liquid_phase.property_package.component_list):
+        if not any(
+            j in self.config.vapor_phase.property_package.component_list
+            for j in self.config.liquid_phase.property_package.component_list
+        ):
             raise ConfigurationError(
                 f"{self.name} SolventCondenser model requires that the liquid "
                 f"and vapor phase property packages have at least one "
-                f"common component.")
+                f"common component."
+            )
 
         # Geometry
-        self.diameter_column = Var(domain=Reals,
-                                   initialize=0.1,
-                                   units=pyunits.m,
-                                   doc='Column diameter')
+        self.diameter_column = Var(
+            domain=Reals, initialize=0.1, units=pyunits.m, doc="Column diameter"
+        )
 
-        self.area_column = Var(domain=Reals,
-                               initialize=0.5,
-                               units=pyunits.m**2,
-                               doc='Column cross-sectional area')
+        self.area_column = Var(
+            domain=Reals,
+            initialize=0.5,
+            units=pyunits.m**2,
+            doc="Column cross-sectional area",
+        )
 
-        self.length_column = Var(domain=Reals,
-                                 initialize=4.9,
-                                 units=pyunits.m,
-                                 doc='Column length')
+        self.length_column = Var(
+            domain=Reals, initialize=4.9, units=pyunits.m, doc="Column length"
+        )
 
         @self.Constraint(doc="Column cross-sectional area")
         def column_cross_section_area_eqn(blk):
-            return blk.area_column == (
-                Constants.pi * 0.25 * (blk.diameter_column)**2)
+            return blk.area_column == (Constants.pi * 0.25 * (blk.diameter_column) ** 2)
 
         # =====================================================================
         """ Set argument values for vapor and liquid sides"""
@@ -198,39 +238,45 @@ and used when constructing these
         """ Build Control volume 1D for vapor phase and
             populate vapor control volume"""
 
-        self.vapor_phase = ControlVolume1DBlock(default={
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": self.config.finite_elements,
-            "dynamic": self.config.dynamic,
-            "has_holdup": self.config.has_holdup,
-            "area_definition": DistributedVars.variant,
-            "property_package": self.config.vapor_phase.property_package,
-            "property_package_args":
-                self.config.vapor_phase.property_package_args})
+        self.vapor_phase = ControlVolume1DBlock(
+            default={
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": self.config.finite_elements,
+                "dynamic": self.config.dynamic,
+                "has_holdup": self.config.has_holdup,
+                "area_definition": DistributedVars.variant,
+                "property_package": self.config.vapor_phase.property_package,
+                "property_package_args": self.config.vapor_phase.property_package_args,
+            }
+        )
 
         self.vapor_phase.add_geometry(
             flow_direction=set_direction_vapor,
             length_domain_set=self.config.length_domain_set,
-            length_var=self.length_column)
+            length_var=self.length_column,
+        )
 
         self.vapor_phase.add_state_blocks(
-            information_flow=set_direction_vapor,
-            has_phase_equilibrium=False)
+            information_flow=set_direction_vapor, has_phase_equilibrium=False
+        )
 
         self.vapor_phase.add_material_balances(
             balance_type=MaterialBalanceType.componentTotal,
             has_phase_equilibrium=False,
-            has_mass_transfer=True)
+            has_mass_transfer=True,
+        )
 
         self.vapor_phase.add_energy_balances(
             balance_type=EnergyBalanceType.enthalpyTotal,
             has_heat_transfer=True,
-            has_enthalpy_transfer=True)
+            has_enthalpy_transfer=True,
+        )
 
         self.vapor_phase.add_momentum_balances(
             balance_type=MomentumBalanceType.pressureTotal,
-            has_pressure_change=self.config.has_pressure_change)
+            has_pressure_change=self.config.has_pressure_change,
+        )
 
         self.vapor_phase.apply_transformation()
 
@@ -239,35 +285,40 @@ and used when constructing these
             populate liquid control volume
 
         """
-        self.liquid_phase = ControlVolume1DBlock(default={
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "FORWARD",
-            "finite_elements": self.config.finite_elements,
-            "dynamic": self.config.dynamic,
-            "has_holdup": self.config.has_holdup,
-            "area_definition": DistributedVars.variant,
-            "property_package": self.config.liquid_phase.property_package,
-            "property_package_args":
-                self.config.liquid_phase.property_package_args})
+        self.liquid_phase = ControlVolume1DBlock(
+            default={
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": self.config.finite_elements,
+                "dynamic": self.config.dynamic,
+                "has_holdup": self.config.has_holdup,
+                "area_definition": DistributedVars.variant,
+                "property_package": self.config.liquid_phase.property_package,
+                "property_package_args": self.config.liquid_phase.property_package_args,
+            }
+        )
 
         self.liquid_phase.add_geometry(
             flow_direction=set_direction_liquid,
             length_domain_set=self.config.length_domain_set,
-            length_var=self.length_column)
+            length_var=self.length_column,
+        )
 
         self.liquid_phase.add_state_blocks(
-            information_flow=set_direction_liquid,
-            has_phase_equilibrium=False)
+            information_flow=set_direction_liquid, has_phase_equilibrium=False
+        )
 
         self.liquid_phase.add_material_balances(
             balance_type=MaterialBalanceType.componentTotal,
             has_phase_equilibrium=False,
-            has_mass_transfer=True)
+            has_mass_transfer=True,
+        )
 
         self.liquid_phase.add_energy_balances(
             balance_type=EnergyBalanceType.enthalpyTotal,
             has_heat_transfer=True,
-            has_enthalpy_transfer=True)
+            has_enthalpy_transfer=True,
+        )
 
         self.liquid_phase.apply_transformation()
 
@@ -289,20 +340,22 @@ and used when constructing these
 
         # Get units of measurement - liquid phase units will be used as basis
         t_init = self.flowsheet().time.first()
-        if (self.liquid_phase.properties[
-                t_init, 0].get_material_flow_basis() !=
-                self.vapor_phase.properties[
-                    t_init, 0].get_material_flow_basis()):
+        if (
+            self.liquid_phase.properties[t_init, 0].get_material_flow_basis()
+            != self.vapor_phase.properties[t_init, 0].get_material_flow_basis()
+        ):
             raise ConfigurationError(
                 f"{self.name} vapor and liquid property packages must use the "
-                f"same material flow basis.")
+                f"same material flow basis."
+            )
 
-        vunits = self.config.vapor_phase.property_package.get_metadata(
-            ).get_derived_units
-        lunits = self.config.liquid_phase.property_package.get_metadata(
-            ).get_derived_units
-        flow_basis = self.liquid_phase.properties[
-            t_init, 0].get_material_flow_basis()
+        vunits = (
+            self.config.vapor_phase.property_package.get_metadata().get_derived_units
+        )
+        lunits = (
+            self.config.liquid_phase.property_package.get_metadata().get_derived_units
+        )
+        flow_basis = self.liquid_phase.properties[t_init, 0].get_material_flow_basis()
         if flow_basis == MaterialFlowBasis.molar:
             fb = "flow_mole"
         elif flow_basis == MaterialFlowBasis.molar:
@@ -310,81 +363,100 @@ and used when constructing these
         else:
             raise ConfigurationError(
                 f"{self.name} SolventCondenser only supports mass or molar "
-                f"basis for MaterialFlowBasis.")
+                f"basis for MaterialFlowBasis."
+            )
 
         # Hydrodynamics and cacking parameters
-        self.eps_ref = Param(initialize=0.97,
-                             units=pyunits.dimensionless,
-                             mutable=True,
-                             doc="Packing void space m3/m3")
+        self.eps_ref = Param(
+            initialize=0.97,
+            units=pyunits.dimensionless,
+            mutable=True,
+            doc="Packing void space m3/m3",
+        )
 
         self.packing_specific_area = Param(
             initialize=250,
-            units=lunits("length")**2 / lunits("length")**3,
+            units=lunits("length") ** 2 / lunits("length") ** 3,
             mutable=True,
-            doc="Packing specific surface area")
+            doc="Packing specific surface area",
+        )
 
         self.packing_channel_size = Param(
             initialize=0.1,
             units=lunits("length"),
             mutable=True,
-            doc="Packing channel size")
+            doc="Packing channel size",
+        )
 
         self.hydraulic_diameter = Expression(
-            expr=4 * self.eps_ref / self.packing_specific_area,
-            doc="Hydraulic diameter")
+            expr=4 * self.eps_ref / self.packing_specific_area, doc="Hydraulic diameter"
+        )
 
-        self.area_interfacial = Var(self.flowsheet().time,
-                                    self.vapor_phase.length_domain,
-                                    initialize=0.9,
-                                    units=pyunits.dimensionless,
-                                    doc='Specific interfacial area')
+        self.area_interfacial = Var(
+            self.flowsheet().time,
+            self.vapor_phase.length_domain,
+            initialize=0.9,
+            units=pyunits.dimensionless,
+            doc="Specific interfacial area",
+        )
 
         # Liquid and vapor holdups
-        self.holdup_liq = Var(self.flowsheet().time,
-                              self.liquid_phase.length_domain,
-                              initialize=0.001,
-                              units=pyunits.dimensionless,
-                              doc='Volumetric liquid holdup [-]')
+        self.holdup_liq = Var(
+            self.flowsheet().time,
+            self.liquid_phase.length_domain,
+            initialize=0.001,
+            units=pyunits.dimensionless,
+            doc="Volumetric liquid holdup [-]",
+        )
 
         # TODO : Consider making this a Var & Constraint
         def rule_holdup_vap(blk, t, x):
             return blk.eps_ref - blk.holdup_liq[t, x]
 
-        self.holdup_vap = Expression(self.flowsheet().time,
-                                     self.vapor_phase.length_domain,
-                                     rule=rule_holdup_vap,
-                                     doc='Volumetric vapor holdup [-]')
+        self.holdup_vap = Expression(
+            self.flowsheet().time,
+            self.vapor_phase.length_domain,
+            rule=rule_holdup_vap,
+            doc="Volumetric vapor holdup [-]",
+        )
 
         # Area of control volume : vapor side and liquid side
-        @self.Constraint(self.flowsheet().time,
-                         self.vapor_phase.length_domain,
-                         doc="Vapor phase cross-sectional area constraint")
+        @self.Constraint(
+            self.flowsheet().time,
+            self.vapor_phase.length_domain,
+            doc="Vapor phase cross-sectional area constraint",
+        )
         def vapor_phase_area(blk, t, x):
             return blk.vapor_phase.area[t, x] == (
-                blk.area_column * blk.holdup_vap[t, x])
+                blk.area_column * blk.holdup_vap[t, x]
+            )
 
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         doc="Liquid phase cross-sectional area constraint")
+        @self.Constraint(
+            self.flowsheet().time,
+            self.liquid_phase.length_domain,
+            doc="Liquid phase cross-sectional area constraint",
+        )
         def liquid_phase_area(blk, t, x):
             return blk.liquid_phase.area[t, x] == (
-                blk.area_column * blk.holdup_liq[t, x])
+                blk.area_column * blk.holdup_liq[t, x]
+            )
 
         # =====================================================================
         # Add performance equations
         # Pressure equality in phases
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         doc='Mechanical equilibruim constraint')
+        @self.Constraint(
+            self.flowsheet().time,
+            self.liquid_phase.length_domain,
+            doc="Mechanical equilibruim constraint",
+        )
         def mechanical_equilibrium(blk, t, x):
             if x == self.liquid_phase.length_domain.last():
                 return Constraint.Skip
             else:
-                return blk.liquid_phase.properties[t, x].pressure == \
-                    pyunits.convert(
-                        blk.vapor_phase.properties[t, x].pressure,
-                        to_units=lunits("pressure"))
+                return blk.liquid_phase.properties[t, x].pressure == pyunits.convert(
+                    blk.vapor_phase.properties[t, x].pressure,
+                    to_units=lunits("pressure"),
+                )
 
         # ---------------------------------------------------------------------
         # Mass transfer relationships
@@ -392,9 +464,14 @@ and used when constructing these
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             equilibrium_comp,
-            units=(lunits("amount")/lunits("pressure") /
-                   lunits("length")**3/lunits("time")),
-            doc='Vapor phase mass transfer coefficient')
+            units=(
+                lunits("amount")
+                / lunits("pressure")
+                / lunits("length") ** 3
+                / lunits("time")
+            ),
+            doc="Vapor phase mass transfer coefficient",
+        )
 
         # Equilibruim partial pressure of components at interface
         self.pressure_equil = Var(
@@ -404,7 +481,8 @@ and used when constructing these
             domain=NonNegativeReals,
             initialize=500,
             units=lunits("pressure"),
-            doc='Equilibruim pressure of components at interface')
+            doc="Equilibruim pressure of components at interface",
+        )
 
         # Mass transfer constraints
         self.interphase_mass_transfer = Var(
@@ -413,62 +491,75 @@ and used when constructing these
             equilibrium_comp,
             domain=Reals,
             initialize=0.1,
-            units=lunits("amount")/(lunits("time")*lunits("length")),
-            doc='Interphase mass transfer rate')
+            units=lunits("amount") / (lunits("time") * lunits("length")),
+            doc="Interphase mass transfer rate",
+        )
 
         self.liquid_phase_mass_transfer_model()
 
-        @self.Constraint(self.flowsheet().time,
-                         self.vapor_phase.length_domain,
-                         equilibrium_comp,
-                         doc="Interphase mass transfer constraint")
+        @self.Constraint(
+            self.flowsheet().time,
+            self.vapor_phase.length_domain,
+            equilibrium_comp,
+            doc="Interphase mass transfer constraint",
+        )
         def interphase_mass_transfer_eqn(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
                 return Constraint.Skip
             elif j in equilibrium_comp:
                 return blk.interphase_mass_transfer[t, x, j] == (
-                    blk.mass_transfer_coeff_vap[t, x, j] *
-                    blk.area_interfacial[t, x] * blk.area_column *
-                    (blk.vapor_phase.properties[t, x].mole_frac_comp[j] *
-                     pyunits.convert(
-                         blk.vapor_phase.properties[t, x].pressure,
-                         to_units=lunits("pressure")) -
-                     blk.pressure_equil[t, x, j]))
+                    blk.mass_transfer_coeff_vap[t, x, j]
+                    * blk.area_interfacial[t, x]
+                    * blk.area_column
+                    * (
+                        blk.vapor_phase.properties[t, x].mole_frac_comp[j]
+                        * pyunits.convert(
+                            blk.vapor_phase.properties[t, x].pressure,
+                            to_units=lunits("pressure"),
+                        )
+                        - blk.pressure_equil[t, x, j]
+                    )
+                )
             else:
-                return blk.interphase_mass_transfer[t, x, j] == \
-                    0.0
+                return blk.interphase_mass_transfer[t, x, j] == 0.0
 
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         self.liquid_phase.properties.component_list,
-                         doc="Liquid phase mass transfer constraint")
+        @self.Constraint(
+            self.flowsheet().time,
+            self.liquid_phase.length_domain,
+            self.liquid_phase.properties.component_list,
+            doc="Liquid phase mass transfer constraint",
+        )
         def liquid_mass_transfer_eqn(blk, t, x, j):
             if x == self.liquid_phase.length_domain.last():
                 return Constraint.Skip
             elif j in equilibrium_comp:
                 zf = self.vapor_phase.length_domain.next(x)
-                return blk.liquid_phase.mass_transfer_term[t, x, "Liq", j] == \
-                    blk.interphase_mass_transfer[t, zf, j]
+                return (
+                    blk.liquid_phase.mass_transfer_term[t, x, "Liq", j]
+                    == blk.interphase_mass_transfer[t, zf, j]
+                )
             else:
-                return blk.liquid_phase.mass_transfer_term[t, x, "Liq", j] == \
-                    0.0
+                return blk.liquid_phase.mass_transfer_term[t, x, "Liq", j] == 0.0
 
-        @self.Constraint(self.flowsheet().time,
-                         self.vapor_phase.length_domain,
-                         self.vapor_phase.properties.component_list,
-                         doc="Vapor phase mass transfer constraint")
+        @self.Constraint(
+            self.flowsheet().time,
+            self.vapor_phase.length_domain,
+            self.vapor_phase.properties.component_list,
+            doc="Vapor phase mass transfer constraint",
+        )
         def vapor_mass_transfer_eqn(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
                 return Constraint.Skip
             elif j in equilibrium_comp:
-                return pyunits.convert(
-                    blk.vapor_phase.mass_transfer_term[t, x, "Vap", j],
-                    to_units=lunits("amount") /
-                    lunits("time")/lunits("length")) == \
-                    -blk.interphase_mass_transfer[t, x, j]
+                return (
+                    pyunits.convert(
+                        blk.vapor_phase.mass_transfer_term[t, x, "Vap", j],
+                        to_units=lunits("amount") / lunits("time") / lunits("length"),
+                    )
+                    == -blk.interphase_mass_transfer[t, x, j]
+                )
             else:
-                return blk.vapor_phase.mass_transfer_term[t, x, "Vap", j] == \
-                    0.0
+                return blk.vapor_phase.mass_transfer_term[t, x, "Vap", j] == 0.0
 
         # ---------------------------------------------------------------------
         # Heat transfer relationships
@@ -476,13 +567,16 @@ and used when constructing these
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             initialize=100,
-            units=lunits("power")/lunits("temperature")/lunits("length"),
-            doc='Vapor-liquid heat transfer coefficient')
+            units=lunits("power") / lunits("temperature") / lunits("length"),
+            doc="Vapor-liquid heat transfer coefficient",
+        )
 
         # Heat transfer
-        @self.Constraint(self.flowsheet().time,
-                         self.vapor_phase.length_domain,
-                         doc="Heat transfer calculation")
+        @self.Constraint(
+            self.flowsheet().time,
+            self.vapor_phase.length_domain,
+            doc="Heat transfer calculation",
+        )
         def heat_transfer_eqn1(blk, t, x):
             if x == self.vapor_phase.length_domain.first():
                 return Constraint.Skip
@@ -490,16 +584,23 @@ and used when constructing these
                 zb = self.liquid_phase.length_domain.prev(x)
                 return pyunits.convert(
                     blk.vapor_phase.heat[t, x],
-                    to_units=lunits("power")/lunits("length")) == -(
-                    blk.heat_transfer_coeff[t, x] *
-                    (blk.liquid_phase.properties[t, zb].temperature -
-                     pyunits.convert(
-                         blk.vapor_phase.properties[t, x].temperature,
-                         to_units=lunits("temperature"))))
+                    to_units=lunits("power") / lunits("length"),
+                ) == -(
+                    blk.heat_transfer_coeff[t, x]
+                    * (
+                        blk.liquid_phase.properties[t, zb].temperature
+                        - pyunits.convert(
+                            blk.vapor_phase.properties[t, x].temperature,
+                            to_units=lunits("temperature"),
+                        )
+                    )
+                )
 
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         doc="Heat transfer balance")
+        @self.Constraint(
+            self.flowsheet().time,
+            self.liquid_phase.length_domain,
+            doc="Heat transfer balance",
+        )
         def heat_transfer_eqn2(blk, t, x):
             if x == self.liquid_phase.length_domain.last():
                 return Constraint.Skip
@@ -507,34 +608,45 @@ and used when constructing these
                 zf = self.vapor_phase.length_domain.next(x)
                 return blk.liquid_phase.heat[t, x] == -pyunits.convert(
                     blk.vapor_phase.heat[t, zf],
-                    to_units=lunits("power")/lunits("length"))
+                    to_units=lunits("power") / lunits("length"),
+                )
 
-        @self.Constraint(self.flowsheet().time,
-                         self.vapor_phase.length_domain,
-                         doc="Enthalpy transfer calculation")
+        @self.Constraint(
+            self.flowsheet().time,
+            self.vapor_phase.length_domain,
+            doc="Enthalpy transfer calculation",
+        )
         def enthalpy_transfer_eqn1(blk, t, x):
             if x == self.vapor_phase.length_domain.first():
                 return Constraint.Skip
             else:
                 zb = self.liquid_phase.length_domain.prev(x)
                 return blk.vapor_phase.enthalpy_transfer[t, x] == -(
-                    (sum(blk.liquid_phase.properties[
-                        t, zb].enth_mol_phase_comp['Liq', j] *
-                     blk.liquid_phase.mass_transfer_term[t, zb, 'Liq', j]
-                     for j in equilibrium_comp)))
+                    (
+                        sum(
+                            blk.liquid_phase.properties[t, zb].enth_mol_phase_comp[
+                                "Liq", j
+                            ]
+                            * blk.liquid_phase.mass_transfer_term[t, zb, "Liq", j]
+                            for j in equilibrium_comp
+                        )
+                    )
+                )
 
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         doc="Enthalpy transfer equality")
+        @self.Constraint(
+            self.flowsheet().time,
+            self.liquid_phase.length_domain,
+            doc="Enthalpy transfer equality",
+        )
         def enthalpy_transfer_eqn2(blk, t, x):
             if x == self.liquid_phase.length_domain.last():
                 return Constraint.Skip
             else:
                 zf = self.vapor_phase.length_domain.next(x)
-                return blk.liquid_phase.enthalpy_transfer[t, x] == \
-                    -pyunits.convert(
-                        blk.vapor_phase.enthalpy_transfer[t, zf],
-                        to_units=lunits("power")/lunits("length"))
+                return blk.liquid_phase.enthalpy_transfer[t, x] == -pyunits.convert(
+                    blk.vapor_phase.enthalpy_transfer[t, zf],
+                    to_units=lunits("power") / lunits("length"),
+                )
 
     def liquid_phase_mass_transfer_model(self):
         """
@@ -551,18 +663,19 @@ and used when constructing these
         liq_comp = self.config.liquid_phase.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
 
-        @self.Constraint(self.flowsheet().time,
-                         self.vapor_phase.length_domain,
-                         equilibrium_comp,
-                         doc='Equilibrium partial pressure at interface')
+        @self.Constraint(
+            self.flowsheet().time,
+            self.vapor_phase.length_domain,
+            equilibrium_comp,
+            doc="Equilibrium partial pressure at interface",
+        )
         def pressure_at_interface(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
                 return Constraint.Skip
             else:
                 zb = self.liquid_phase.length_domain.prev(x)
                 lprops = blk.liquid_phase.properties[t, zb]
-                return blk.pressure_equil[t, x, j] == (
-                    lprops.fug_phase_comp['Liq', j])
+                return blk.pressure_equil[t, x, j] == (lprops.fug_phase_comp["Liq", j])
 
     # =========================================================================
     # Scaling routine
@@ -574,31 +687,35 @@ and used when constructing these
         for (t, x, j), v in self.pressure_equil.items():
             if iscale.get_scaling_factor(v) is None:
                 sf_pe = iscale.get_scaling_factor(
-                    self.pressure_equil, default=None, warning=True)
+                    self.pressure_equil, default=None, warning=True
+                )
                 if sf_pe is None:
                     sf_pe = iscale.get_scaling_factor(
-                        self.liquid_phase.properties[
-                            t, x].fug_phase_comp["Liq", j],
+                        self.liquid_phase.properties[t, x].fug_phase_comp["Liq", j],
                         default=None,
-                        warning=True)
+                        warning=True,
+                    )
                 if sf_pe is None:
                     sf_pe = iscale.get_scaling_factor(
                         self.liquid_phase.properties[t, x].pressure,
                         default=1,
-                        warning=True)
+                        warning=True,
+                    )
 
                 iscale.set_scaling_factor(v, sf_pe)
 
         for (t, x), v in self.vapor_phase.heat.items():
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(
-                    self.heat_transfer_coeff, default=1e-3, warning=True)
+                    self.heat_transfer_coeff, default=1e-3, warning=True
+                )
                 iscale.set_scaling_factor(v, sf)
 
         for (t, x), v in self.liquid_phase.heat.items():
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(
-                    self.heat_transfer_coeff, default=1e-3, warning=True)
+                    self.heat_transfer_coeff, default=1e-3, warning=True
+                )
                 iscale.set_scaling_factor(v, sf)
 
         # ---------------------------------------------------------------------
@@ -607,32 +724,31 @@ and used when constructing these
             iscale.constraint_scaling_transform(
                 v,
                 iscale.get_scaling_factor(
-                    self.vapor_phase.properties[t, x].pressure,
-                    default=1,
-                    warning=True))
+                    self.vapor_phase.properties[t, x].pressure, default=1, warning=True
+                ),
+            )
 
         for (t, x, j), v in self.pressure_at_interface.items():
             iscale.constraint_scaling_transform(
                 v,
                 iscale.get_scaling_factor(
-                    self.pressure_equil[t, x, j],
-                    default=1,
-                    warning=False))
+                    self.pressure_equil[t, x, j], default=1, warning=False
+                ),
+            )
 
         for (t, x, j), v in self.interphase_mass_transfer_eqn.items():
             iscale.constraint_scaling_transform(
                 v,
                 iscale.get_scaling_factor(
-                    self.interphase_mass_transfer[t, x, j],
-                    default=1,
-                    warning=True))
+                    self.interphase_mass_transfer[t, x, j], default=1, warning=True
+                ),
+            )
 
         for (t, x, j), v in self.liquid_mass_transfer_eqn.items():
             try:
                 sf = iscale.get_scaling_factor(
-                    self.interphase_mass_transfer[t, x, j],
-                    default=1,
-                    warning=False)
+                    self.interphase_mass_transfer[t, x, j], default=1, warning=False
+                )
             except KeyError:
                 # This implies a non-volatile component
                 sf = 1
@@ -641,9 +757,8 @@ and used when constructing these
         for (t, x, j), v in self.vapor_mass_transfer_eqn.items():
             try:
                 sf = iscale.get_scaling_factor(
-                    self.interphase_mass_transfer[t, x, j],
-                    default=1,
-                    warning=False)
+                    self.interphase_mass_transfer[t, x, j], default=1, warning=False
+                )
             except KeyError:
                 # This implies a non-volatile component
                 sf = 1
@@ -653,27 +768,29 @@ and used when constructing these
             iscale.constraint_scaling_transform(
                 v,
                 iscale.get_scaling_factor(
-                    self.vapor_phase.heat[t, x],
-                    default=1,
-                    warning=True))
+                    self.vapor_phase.heat[t, x], default=1, warning=True
+                ),
+            )
 
         for (t, x), v in self.heat_transfer_eqn2.items():
             iscale.constraint_scaling_transform(
                 v,
                 iscale.get_scaling_factor(
-                    self.vapor_phase.heat[t, x],
-                    default=1,
-                    warning=True))
+                    self.vapor_phase.heat[t, x], default=1, warning=True
+                ),
+            )
 
     # =========================================================================
     # Model initialization routine
-    def initialize(blk,
-                   vapor_phase_state_args=None,
-                   liquid_phase_state_args=None,
-                   state_vars_fixed=False,
-                   outlvl=idaeslog.NOTSET,
-                   solver=None,
-                   optarg=None):
+    def initialize(
+        blk,
+        vapor_phase_state_args=None,
+        liquid_phase_state_args=None,
+        state_vars_fixed=False,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+    ):
         """
         Standard Packed Column initialization.
 
@@ -703,7 +820,8 @@ and used when constructing these
             "heat_transfer_eqn1",
             "heat_transfer_eqn2",
             "enthalpy_transfer_eqn1",
-            "enthalpy_transfer_eqn2"]
+            "enthalpy_transfer_eqn2",
+        ]
 
         # ---------------------------------------------------------------------
         # Deactivate unit model level constraints
@@ -737,7 +855,8 @@ and used when constructing these
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            hold_state=True)
+            hold_state=True,
+        )
 
         # Initialize liquid_phase properties block
         lflag = blk.liquid_phase.initialize(
@@ -745,7 +864,8 @@ and used when constructing these
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            hold_state=True)
+            hold_state=True,
+        )
 
         init_log.info("Step 2: Steady-State isothermal mass balance")
 
@@ -754,7 +874,7 @@ and used when constructing these
         init_log.info_high("Step 2: {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
-        init_log.info('Step 3: Interface equilibrium')
+        init_log.info("Step 3: Interface equilibrium")
 
         # Activate interface pressure constraint
         blk.pressure_equil.unfix()
@@ -762,16 +882,15 @@ and used when constructing these
 
         for k in blk.pressure_at_interface:
             calculate_variable_from_constraint(
-                blk.pressure_equil[k],
-                blk.pressure_at_interface[k])
+                blk.pressure_equil[k], blk.pressure_at_interface[k]
+            )
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.info_high(
-            "Step 3 complete: {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Step 3 complete: {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
-        init_log.info('Step 4a: Isothermal absoption')
+        init_log.info("Step 4a: Isothermal absoption")
         init_log.info_high("Calculating mass flux")
 
         # Unfix mass transfer terms
@@ -783,7 +902,7 @@ and used when constructing these
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
 
-        init_log.info('Step 4b: Isothermal chemical absoption')
+        init_log.info("Step 4b: Isothermal chemical absoption")
         init_log.info_high("Adding mass transfer to material balances")
 
         blk.vapor_phase.mass_transfer_term.unfix()
@@ -794,11 +913,10 @@ and used when constructing these
         # Fix this
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.info_high(
-            "Step 4 complete: {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Step 4 complete: {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
-        init_log.info('Step 5: Adiabatic chemical absoption')
+        init_log.info("Step 5: Adiabatic chemical absoption")
         init_log.info_high("Isothermal to Adiabatic ")
 
         # Unfix heat transfer terms
@@ -808,24 +926,28 @@ and used when constructing these
         blk.liquid_phase.enthalpy_transfer.unfix()
 
         # Activate heat transfer equations
-        for c in ["heat_transfer_eqn1",
-                  "heat_transfer_eqn2",
-                  "enthalpy_transfer_eqn1",
-                  "enthalpy_transfer_eqn2"]:
+        for c in [
+            "heat_transfer_eqn1",
+            "heat_transfer_eqn2",
+            "enthalpy_transfer_eqn1",
+            "enthalpy_transfer_eqn2",
+        ]:
             getattr(blk, c).activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
 
-        init_log.info_high(
-            "Step 5 complete: {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Step 5 complete: {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         blk.vapor_phase.release_state(flags=vflag)
         blk.liquid_phase.release_state(flags=lflag)
 
-        if (res.solver.termination_condition != TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok):
+        if (
+            res.solver.termination_condition != TerminationCondition.optimal
+            or res.solver.status != SolverStatus.ok
+        ):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
+                f"the output logs for more information."
+            )

@@ -21,12 +21,16 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.column_models import Tray
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
-from idaes.core.util.model_statistics import degrees_of_freedom, \
-    number_variables, number_total_constraints, number_unused_variables
-from idaes.core.util.testing import \
-    PhysicalParameterTestBlock, initialization_tester
+from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import get_solver
 
 # -----------------------------------------------------------------------------
@@ -41,10 +45,14 @@ def test_config():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = Tray(default={"property_package": m.fs.properties,
-                              "has_liquid_side_draw": True,
-                              "has_heat_transfer": True,
-                              "has_pressure_change": True})
+    m.fs.unit = Tray(
+        default={
+            "property_package": m.fs.properties,
+            "has_liquid_side_draw": True,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+        }
+    )
 
     assert len(m.fs.unit.config) == 9
 
@@ -53,20 +61,23 @@ def test_config():
     assert not m.fs.unit.config.has_vapor_side_draw
 
 
-class TestBTXIdeal():
+class TestBTXIdeal:
     @pytest.fixture(scope="class")
     def btx_ftpz(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase":
-                                                     ('Liq', 'Vap'),
-                                                     "activity_coeff_model":
-                                                     "Ideal"})
-        m.fs.unit = Tray(default={"property_package": m.fs.properties,
-                                  "has_liquid_side_draw": True,
-                                  "has_heat_transfer": True,
-                                  "has_pressure_change": True})
+        m.fs.properties = BTXParameterBlock(
+            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+        )
+        m.fs.unit = Tray(
+            default={
+                "property_package": m.fs.properties,
+                "has_liquid_side_draw": True,
+                "has_heat_transfer": True,
+                "has_pressure_change": True,
+            }
+        )
 
         # Set inputs
         m.fs.unit.liq_in.flow_mol.fix(1)
@@ -93,15 +104,21 @@ class TestBTXIdeal():
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase":
-                                                     ('Liq', 'Vap'),
-                                                     "activity_coeff_model":
-                                                     "Ideal",
-                                                     "state_vars": "FcTP"})
-        m.fs.unit = Tray(default={"property_package": m.fs.properties,
-                                  "has_liquid_side_draw": True,
-                                  "has_heat_transfer": True,
-                                  "has_pressure_change": True})
+        m.fs.properties = BTXParameterBlock(
+            default={
+                "valid_phase": ("Liq", "Vap"),
+                "activity_coeff_model": "Ideal",
+                "state_vars": "FcTP",
+            }
+        )
+        m.fs.unit = Tray(
+            default={
+                "property_package": m.fs.properties,
+                "has_liquid_side_draw": True,
+                "has_heat_transfer": True,
+                "has_pressure_change": True,
+            }
+        )
 
         # Set inputs
         m.fs.unit.liq_in.flow_mol_comp[0, "benzene"].fix(0.5)
@@ -258,71 +275,94 @@ class TestBTXIdeal():
     def test_solution(self, btx_ftpz, btx_fctp):
 
         # liq_out port
-        assert (pytest.approx(0.23168, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_out.flow_mol[0]))
-        assert (pytest.approx(0.33313, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_out.mole_frac_comp[0, "benzene"]))
-        assert (pytest.approx(0.66686, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_out.mole_frac_comp[0, "toluene"]))
-        assert (pytest.approx(370.567, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_out.temperature[0]))
-        assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_out.pressure[0]))
+        assert pytest.approx(0.23168, abs=1e-3) == value(
+            btx_ftpz.fs.unit.liq_out.flow_mol[0]
+        )
+        assert pytest.approx(0.33313, abs=1e-3) == value(
+            btx_ftpz.fs.unit.liq_out.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.66686, abs=1e-3) == value(
+            btx_ftpz.fs.unit.liq_out.mole_frac_comp[0, "toluene"]
+        )
+        assert pytest.approx(370.567, abs=1e-3) == value(
+            btx_ftpz.fs.unit.liq_out.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            btx_ftpz.fs.unit.liq_out.pressure[0]
+        )
 
         # side liq_out port
-        assert (pytest.approx(0.23168, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_side_draw.flow_mol[0]))
-        assert (pytest.approx(0.33313, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_side_draw.mole_frac_comp[
-                    0, "benzene"]))
-        assert (pytest.approx(0.66686, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_side_draw.mole_frac_comp[
-                    0, "toluene"]))
-        assert (pytest.approx(370.567, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_side_draw.temperature[0]))
-        assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_side_draw.pressure[0]))
+        assert pytest.approx(0.23168, abs=1e-3) == value(
+            btx_ftpz.fs.unit.liq_side_draw.flow_mol[0]
+        )
+        assert pytest.approx(0.33313, abs=1e-3) == value(
+            btx_ftpz.fs.unit.liq_side_draw.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.66686, abs=1e-3) == value(
+            btx_ftpz.fs.unit.liq_side_draw.mole_frac_comp[0, "toluene"]
+        )
+        assert pytest.approx(370.567, abs=1e-3) == value(
+            btx_ftpz.fs.unit.liq_side_draw.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            btx_ftpz.fs.unit.liq_side_draw.pressure[0]
+        )
 
         # vap_out port
-        assert (pytest.approx(1.5366, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.vap_out.flow_mol[0]))
-        assert (pytest.approx(0.55031, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.vap_out.mole_frac_comp[0, "benzene"]))
-        assert (pytest.approx(0.44968, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.vap_out.mole_frac_comp[0, "toluene"]))
-        assert (pytest.approx(370.567, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.vap_out.temperature[0]))
-        assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.vap_out.pressure[0]))
+        assert pytest.approx(1.5366, abs=1e-3) == value(
+            btx_ftpz.fs.unit.vap_out.flow_mol[0]
+        )
+        assert pytest.approx(0.55031, abs=1e-3) == value(
+            btx_ftpz.fs.unit.vap_out.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.44968, abs=1e-3) == value(
+            btx_ftpz.fs.unit.vap_out.mole_frac_comp[0, "toluene"]
+        )
+        assert pytest.approx(370.567, abs=1e-3) == value(
+            btx_ftpz.fs.unit.vap_out.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            btx_ftpz.fs.unit.vap_out.pressure[0]
+        )
 
         # liq_out port
-        assert (pytest.approx(0.07717, abs=1e-3) ==
-                value(btx_fctp.fs.unit.liq_out.flow_mol_comp[0, "benzene"]))
-        assert (pytest.approx(0.15449, abs=1e-3) ==
-                value(btx_fctp.fs.unit.liq_out.flow_mol_comp[0, "toluene"]))
-        assert (pytest.approx(370.567, abs=1e-3) ==
-                value(btx_fctp.fs.unit.liq_out.temperature[0]))
-        assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_fctp.fs.unit.liq_out.pressure[0]))
+        assert pytest.approx(0.07717, abs=1e-3) == value(
+            btx_fctp.fs.unit.liq_out.flow_mol_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.15449, abs=1e-3) == value(
+            btx_fctp.fs.unit.liq_out.flow_mol_comp[0, "toluene"]
+        )
+        assert pytest.approx(370.567, abs=1e-3) == value(
+            btx_fctp.fs.unit.liq_out.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            btx_fctp.fs.unit.liq_out.pressure[0]
+        )
 
         # side liq_out port
-        assert (pytest.approx(0.07717, abs=1e-3) ==
-                value(btx_fctp.fs.unit.liq_side_draw.flow_mol_comp[
-                    0, "benzene"]))
-        assert (pytest.approx(0.15449, abs=1e-3) ==
-                value(btx_fctp.fs.unit.liq_side_draw.flow_mol_comp[
-                    0, "toluene"]))
-        assert (pytest.approx(370.567, abs=1e-3) ==
-                value(btx_fctp.fs.unit.liq_side_draw.temperature[0]))
-        assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_fctp.fs.unit.liq_side_draw.pressure[0]))
+        assert pytest.approx(0.07717, abs=1e-3) == value(
+            btx_fctp.fs.unit.liq_side_draw.flow_mol_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.15449, abs=1e-3) == value(
+            btx_fctp.fs.unit.liq_side_draw.flow_mol_comp[0, "toluene"]
+        )
+        assert pytest.approx(370.567, abs=1e-3) == value(
+            btx_fctp.fs.unit.liq_side_draw.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            btx_fctp.fs.unit.liq_side_draw.pressure[0]
+        )
 
         # vap_out port
-        assert (pytest.approx(0.8456, abs=1e-3) ==
-                value(btx_fctp.fs.unit.vap_out.flow_mol_comp[0, "benzene"]))
-        assert (pytest.approx(0.69097, abs=1e-3) ==
-                value(btx_fctp.fs.unit.vap_out.flow_mol_comp[0, "toluene"]))
-        assert (pytest.approx(370.567, abs=1e-3) ==
-                value(btx_fctp.fs.unit.vap_out.temperature[0]))
-        assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_fctp.fs.unit.vap_out.pressure[0]))
+        assert pytest.approx(0.8456, abs=1e-3) == value(
+            btx_fctp.fs.unit.vap_out.flow_mol_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.69097, abs=1e-3) == value(
+            btx_fctp.fs.unit.vap_out.flow_mol_comp[0, "toluene"]
+        )
+        assert pytest.approx(370.567, abs=1e-3) == value(
+            btx_fctp.fs.unit.vap_out.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            btx_fctp.fs.unit.vap_out.pressure[0]
+        )

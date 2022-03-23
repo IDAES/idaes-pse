@@ -17,13 +17,16 @@ import pytest
 from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              fixed_variables_set,
-                                              activated_constraints_set)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    fixed_variables_set,
+    activated_constraints_set,
+)
 from idaes.core.util import get_solver
 
 from idaes.generic_models.properties.core.generic.generic_property import (
-        GenericParameterBlock)
+    GenericParameterBlock,
+)
 
 
 from idaes.models_extra.column_models.properties.MEA_vapor import flue_gas, wet_co2
@@ -41,8 +44,8 @@ class TestFlueGasBlock(object):
         model.params = GenericParameterBlock(default=flue_gas)
 
         model.props = model.params.build_state_block(
-                [1],
-                default={"defined_state": True})
+            [1], default={"defined_state": True}
+        )
 
         model.props[1].calculate_scaling_factors()
 
@@ -71,7 +74,7 @@ class TestFlueGasBlock(object):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        model.props.initialize(optarg={'tol': 1e-6})
+        model.props.initialize(optarg={"tol": 1e-6})
 
         assert degrees_of_freedom(model) == 0
 
@@ -99,22 +102,29 @@ class TestFlueGasBlock(object):
     def test_solution(self, model):
         # Values verified with older model
         assert pytest.approx(30.6689467, rel=1e-8) == value(
-            model.props[1].cp_mol_phase["Vap"])
+            model.props[1].cp_mol_phase["Vap"]
+        )
 
         assert pytest.approx(1.77021548e-05, rel=1e-8) == value(
-            model.props[1].visc_d_phase["Vap"])
+            model.props[1].visc_d_phase["Vap"]
+        )
 
         assert pytest.approx(2.50126426e-2, rel=1e-8) == value(
-            model.props[1].therm_cond_phase["Vap"])
+            model.props[1].therm_cond_phase["Vap"]
+        )
 
         assert pytest.approx(1.75238908e-05, rel=1e-8) == value(
-            model.props[1].diffus_phase_comp["Vap", "CO2"])
+            model.props[1].diffus_phase_comp["Vap", "CO2"]
+        )
         assert pytest.approx(2.64401704e-05, rel=1e-8) == value(
-            model.props[1].diffus_phase_comp["Vap", "H2O"])
+            model.props[1].diffus_phase_comp["Vap", "H2O"]
+        )
         assert pytest.approx(2.06616562e-05, rel=1e-8) == value(
-            model.props[1].diffus_phase_comp["Vap", "N2"])
+            model.props[1].diffus_phase_comp["Vap", "N2"]
+        )
         assert pytest.approx(2.14370167e-05, rel=1e-8) == value(
-            model.props[1].diffus_phase_comp["Vap", "O2"])
+            model.props[1].diffus_phase_comp["Vap", "O2"]
+        )
 
 
 class TestWetCO2Block(object):
@@ -124,8 +134,8 @@ class TestWetCO2Block(object):
         model.params = GenericParameterBlock(default=wet_co2)
 
         model.props = model.params.build_state_block(
-                [1],
-                default={"defined_state": True})
+            [1], default={"defined_state": True}
+        )
 
         model.props[1].calculate_scaling_factors()
 
@@ -152,7 +162,7 @@ class TestWetCO2Block(object):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        model.props.initialize(optarg={'tol': 1e-6})
+        model.props.initialize(optarg={"tol": 1e-6})
 
         assert degrees_of_freedom(model) == 0
 
@@ -180,15 +190,20 @@ class TestWetCO2Block(object):
     def test_solution(self, model):
         # Values verified with older model
         assert pytest.approx(34.3944239, rel=1e-8) == value(
-            model.props[1].cp_mol_phase["Vap"])
+            model.props[1].cp_mol_phase["Vap"]
+        )
 
         assert pytest.approx(1.36007669e-05, rel=1e-8) == value(
-            model.props[1].visc_d_phase["Vap"])
+            model.props[1].visc_d_phase["Vap"]
+        )
 
         assert pytest.approx(2.65105253e-2, rel=1e-8) == value(
-            model.props[1].therm_cond_phase["Vap"])
+            model.props[1].therm_cond_phase["Vap"]
+        )
 
         assert pytest.approx(1.90465038e-05, rel=1e-8) == value(
-            model.props[1].diffus_phase_comp["Vap", "CO2"])
+            model.props[1].diffus_phase_comp["Vap", "CO2"]
+        )
         assert pytest.approx(1.90465038e-05, rel=1e-8) == value(
-            model.props[1].diffus_phase_comp["Vap", "H2O"])
+            model.props[1].diffus_phase_comp["Vap", "H2O"]
+        )

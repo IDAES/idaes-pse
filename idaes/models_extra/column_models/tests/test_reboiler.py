@@ -20,15 +20,23 @@ import pytest
 from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import \
-    FlowsheetBlock, MaterialBalanceType, EnergyBalanceType, MomentumBalanceType
+from idaes.core import (
+    FlowsheetBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+)
 from idaes.models_extra.column_models import Reboiler
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
-from idaes.core.util.model_statistics import degrees_of_freedom, \
-    number_variables, number_total_constraints, number_unused_variables
-from idaes.core.util.testing import \
-    PhysicalParameterTestBlock, initialization_tester
+from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import get_solver
 
 # -----------------------------------------------------------------------------
@@ -48,29 +56,25 @@ def test_config():
     assert len(m.fs.unit.config) == 9
 
     assert not m.fs.unit.config.has_boilup_ratio
-    assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.useDefault
-    assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
+    assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+    assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
     assert hasattr(m.fs.unit, "heat_duty")
 
 
-class TestBTXIdeal():
+class TestBTXIdeal:
     @pytest.fixture(scope="class")
     def btx_ftpz(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase":
-                                                     ('Liq', 'Vap'),
-                                                     "activity_coeff_model":
-                                                     "Ideal"})
+        m.fs.properties = BTXParameterBlock(
+            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+        )
 
         m.fs.unit = Reboiler(
-            default={"property_package": m.fs.properties,
-                     "has_boilup_ratio": True})
+            default={"property_package": m.fs.properties, "has_boilup_ratio": True}
+        )
 
         # Fix the reboiler variables
         m.fs.unit.boilup_ratio.fix(1)
@@ -90,15 +94,17 @@ class TestBTXIdeal():
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase":
-                                                     ('Liq', 'Vap'),
-                                                     "activity_coeff_model":
-                                                     "Ideal",
-                                                     "state_vars": "FcTP"})
+        m.fs.properties = BTXParameterBlock(
+            default={
+                "valid_phase": ("Liq", "Vap"),
+                "activity_coeff_model": "Ideal",
+                "state_vars": "FcTP",
+            }
+        )
 
         m.fs.unit = Reboiler(
-            default={"property_package": m.fs.properties,
-                     "has_boilup_ratio": True})
+            default={"property_package": m.fs.properties, "has_boilup_ratio": True}
+        )
 
         # Fix the reboiler variables
         m.fs.unit.boilup_ratio.fix(1)
@@ -198,78 +204,106 @@ class TestBTXIdeal():
     @pytest.mark.component
     def test_solution(self, btx_ftpz, btx_fctp):
         # Bottoms port
-        assert (pytest.approx(0.5, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.bottoms.flow_mol[0]))
-        assert (pytest.approx(0.3891, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.bottoms.mole_frac_comp[0, "benzene"]))
-        assert (pytest.approx(0.6109, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.bottoms.mole_frac_comp[0, "toluene"]))
-        assert (pytest.approx(368.728, abs=1e-2) ==
-                value(btx_ftpz.fs.unit.bottoms.temperature[0]))
-        assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.bottoms.pressure[0]))
+        assert pytest.approx(0.5, abs=1e-3) == value(
+            btx_ftpz.fs.unit.bottoms.flow_mol[0]
+        )
+        assert pytest.approx(0.3891, abs=1e-3) == value(
+            btx_ftpz.fs.unit.bottoms.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.6109, abs=1e-3) == value(
+            btx_ftpz.fs.unit.bottoms.mole_frac_comp[0, "toluene"]
+        )
+        assert pytest.approx(368.728, abs=1e-2) == value(
+            btx_ftpz.fs.unit.bottoms.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            btx_ftpz.fs.unit.bottoms.pressure[0]
+        )
 
         # Vapor reboil port
-        assert (pytest.approx(0.5, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.vapor_reboil.flow_mol[0]))
-        assert (pytest.approx(0.6108, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.vapor_reboil.mole_frac_comp[
-                    0, "benzene"]))
-        assert (pytest.approx(0.3892, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.vapor_reboil.mole_frac_comp[
-                    0, "toluene"]))
-        assert (pytest.approx(368.728, abs=1e-2) ==
-                value(btx_ftpz.fs.unit.vapor_reboil.temperature[0]))
-        assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.vapor_reboil.pressure[0]))
+        assert pytest.approx(0.5, abs=1e-3) == value(
+            btx_ftpz.fs.unit.vapor_reboil.flow_mol[0]
+        )
+        assert pytest.approx(0.6108, abs=1e-3) == value(
+            btx_ftpz.fs.unit.vapor_reboil.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.3892, abs=1e-3) == value(
+            btx_ftpz.fs.unit.vapor_reboil.mole_frac_comp[0, "toluene"]
+        )
+        assert pytest.approx(368.728, abs=1e-2) == value(
+            btx_ftpz.fs.unit.vapor_reboil.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            btx_ftpz.fs.unit.vapor_reboil.pressure[0]
+        )
 
         # Unit level
-        assert (pytest.approx(16926.5, rel=1e-4) ==
-                value(btx_ftpz.fs.unit.heat_duty[0]))
+        assert pytest.approx(16926.5, rel=1e-4) == value(btx_ftpz.fs.unit.heat_duty[0])
 
         # Reboiler when using FcTP
 
         # Bottoms port
-        assert (pytest.approx(0.19455, abs=1e-3) ==
-                value(btx_fctp.fs.unit.bottoms.flow_mol_comp[0, "benzene"]))
-        assert (pytest.approx(0.30545, abs=1e-3) ==
-                value(btx_fctp.fs.unit.bottoms.flow_mol_comp[0, "toluene"]))
-        assert (pytest.approx(368.728, abs=1e-2) ==
-                value(btx_fctp.fs.unit.bottoms.temperature[0]))
-        assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_fctp.fs.unit.bottoms.pressure[0]))
+        assert pytest.approx(0.19455, abs=1e-3) == value(
+            btx_fctp.fs.unit.bottoms.flow_mol_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.30545, abs=1e-3) == value(
+            btx_fctp.fs.unit.bottoms.flow_mol_comp[0, "toluene"]
+        )
+        assert pytest.approx(368.728, abs=1e-2) == value(
+            btx_fctp.fs.unit.bottoms.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            btx_fctp.fs.unit.bottoms.pressure[0]
+        )
 
         # Vapor reboil port
-        assert (pytest.approx(0.3054, abs=1e-3) ==
-                value(btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[
-                    0, "benzene"]))
-        assert (pytest.approx(0.1946, abs=1e-3) ==
-                value(btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[
-                    0, "toluene"]))
-        assert (pytest.approx(368.728, abs=1e-2) ==
-                value(btx_fctp.fs.unit.vapor_reboil.temperature[0]))
-        assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_fctp.fs.unit.vapor_reboil.pressure[0]))
+        assert pytest.approx(0.3054, abs=1e-3) == value(
+            btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.1946, abs=1e-3) == value(
+            btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[0, "toluene"]
+        )
+        assert pytest.approx(368.728, abs=1e-2) == value(
+            btx_fctp.fs.unit.vapor_reboil.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            btx_fctp.fs.unit.vapor_reboil.pressure[0]
+        )
 
         # Unit level
-        assert (pytest.approx(16926.5, rel=1e-4) ==
-                value(btx_fctp.fs.unit.heat_duty[0]))
+        assert pytest.approx(16926.5, rel=1e-4) == value(btx_fctp.fs.unit.heat_duty[0])
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, btx_ftpz, btx_fctp):
-        assert abs(value(btx_ftpz.fs.unit.inlet.flow_mol[0] -
-                         (btx_ftpz.fs.unit.bottoms.flow_mol[0] +
-                          btx_ftpz.fs.unit.vapor_reboil.flow_mol[0]))) <= 1e-6
+        assert (
+            abs(
+                value(
+                    btx_ftpz.fs.unit.inlet.flow_mol[0]
+                    - (
+                        btx_ftpz.fs.unit.bottoms.flow_mol[0]
+                        + btx_ftpz.fs.unit.vapor_reboil.flow_mol[0]
+                    )
+                )
+            )
+            <= 1e-6
+        )
 
-        assert abs(value(btx_fctp.fs.unit.inlet.flow_mol_comp[0, "benzene"] +
-                         btx_fctp.fs.unit.inlet.flow_mol_comp[0, "toluene"] -
-                         (btx_fctp.fs.unit.bottoms.flow_mol_comp[0, "benzene"] +
-                          btx_fctp.fs.unit.bottoms.flow_mol_comp[0, "toluene"] +
-                          btx_fctp.fs.unit.vapor_reboil.
-                          flow_mol_comp[0, "benzene"] +
-                          btx_fctp.fs.unit.vapor_reboil.
-                          flow_mol_comp[0, "toluene"]))) <= 1e-6
+        assert (
+            abs(
+                value(
+                    btx_fctp.fs.unit.inlet.flow_mol_comp[0, "benzene"]
+                    + btx_fctp.fs.unit.inlet.flow_mol_comp[0, "toluene"]
+                    - (
+                        btx_fctp.fs.unit.bottoms.flow_mol_comp[0, "benzene"]
+                        + btx_fctp.fs.unit.bottoms.flow_mol_comp[0, "toluene"]
+                        + btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[0, "benzene"]
+                        + btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[0, "toluene"]
+                    )
+                )
+            )
+            <= 1e-6
+        )
 
     @pytest.mark.ui
     @pytest.mark.unit
