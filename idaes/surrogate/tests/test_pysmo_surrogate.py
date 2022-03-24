@@ -2098,10 +2098,3 @@ class TestKrigingWorkflow():
 
 
 
-
-
-
-
-# class TestPysmoTrainer():
-
-#     @pytest.fixture
