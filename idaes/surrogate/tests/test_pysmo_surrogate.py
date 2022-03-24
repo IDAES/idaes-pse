@@ -1593,13 +1593,13 @@ class TestPysmoSurrogate():
         # Assert that returned results will evaluate and return correct results
         out = pysmo_surr_poly.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
-            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+            assert pytest.approx(out["z1"][i], rel=1e-6) == (
                 -110.15000000001504 
                 - 17.53750000000189*inputs["x1"][i] 
                 + 27.537500000006148*inputs["x2"][i]
                 - 5.3967136315336006e-11*(inputs["x1"][i]/inputs["x2"][i])
             )
-            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+            assert pytest.approx(out["z2"][i], rel=1e-6) == (
                 -12.523574144487087
                 - 2.1308935361219556*inputs["x1"][i] 
                 + 4.1308935361216435*inputs["x2"][i]
@@ -1661,14 +1661,14 @@ class TestPysmoSurrogate():
         # Assert that returned results will evaluate and return correct results
         out = pysmo_surr_rbf.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
-            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+            assert pytest.approx(out["z1"][i], rel=1e-6) == (
                  (10 + 40*(-69.10791015625*exp(- (0.05*(((inputs['x1'][i] - 1)/4)**2 + ((inputs['x2'][i] - 5)/4)**2)**0.5)**2) 
                     - 319807.1317138672*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 0.25)**2 + ((inputs['x2'][i] - 5)/4 - 0.25)**2)**0.5)**2) 
                     + 959336.2551269531*exp(- (0.05*(((inputs['x1'][i]- 1)/4 - 0.5)**2 + ((inputs['x2'][i] - 5)/4 - 0.5)**2)**0.5)**2) 
                     - 959973.7440185547*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 0.75)**2 + ((inputs['x2'][i] - 5)/4 - 0.75)**2)**0.5)**2) 
                     + 320514.66677856445*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 1.0)**2 + ((inputs['x2'][i] - 5)/4 - 1.0)**2)**0.5)**2)))
             )
-            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+            assert pytest.approx(out["z2"][i], rel=1e-6) == (
                  (6 + 8*(-69.10791015625*exp(- (0.05*(((inputs['x1'][i] - 1)/4)**2 + ((inputs['x2'][i] - 5)/4)**2)**0.5)**2) 
                     - 319807.1317138672*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 0.25)**2 + ((inputs['x2'][i] - 5)/4 - 0.25)**2)**0.5)**2) 
                     + 959336.2551269531*exp(- (0.05*(((inputs['x1'][i]- 1)/4 - 0.5)**2 + ((inputs['x2'][i] - 5)/4 - 0.5)**2)**0.5)**2) 
@@ -1736,7 +1736,7 @@ class TestPysmoSurrogate():
         # Assert that returned results will evaluate and return correct results
         out = pysmo_surr_krg.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
-            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+            assert pytest.approx(out["z1"][i], rel=1e-6) == (
                 -19894.397849368*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4)**2)) 
                 + 38162.96786869278*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 0.25)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 0.25)**2)) 
                 - 1.6681948100955743e-06*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 0.5)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 0.5)**2)) 
@@ -1744,7 +1744,7 @@ class TestPysmoSurrogate():
                 + 19894.397848724166*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 1.0)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 1.0)**2)) 
                 + 30.00000000077694
                 )
-            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+            assert pytest.approx(out["z2"][i], rel=1e-6) == (
                  (-3978.867791629029*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4)**2)) 
                     + 7632.569074293324*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 0.25)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 0.25)**2)) 
                     - 3.5124027300266805e-07*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 0.5)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 0.5)**2)) 
