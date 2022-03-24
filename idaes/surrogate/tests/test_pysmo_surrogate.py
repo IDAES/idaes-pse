@@ -32,7 +32,7 @@ from idaes.surrogate.pysmo import (
     radial_basis_function as rbf,
     kriging as krg)
 
-from idaes.surrogate.pysmo_surrogate_v2 import (PysmoTrainer, PysmoPolyTrainer, 
+from idaes.surrogate.pysmo_surrogate import (PysmoTrainer, PysmoPolyTrainer, 
     PysmoRBFTrainer, PysmoKrigingTrainer, PysmoSurrogate, 
     SurrogateTrainingResult, TrainedSurrogate)
 
