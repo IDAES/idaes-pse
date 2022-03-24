@@ -297,9 +297,13 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                     units=pyunits.dimensionless)
 
         # Set default scaling
+        self.set_default_scaling("flow_mol", 1)
+        self.set_default_scaling("pressure", 1e-2)
+        self.set_default_scaling("temperature", 1e-2)
         for comp in self.component_list:
             self.set_default_scaling("mole_frac_comp", 1e2, index=comp)
-
+        self.set_default_scaling("dens_mol", 1e-3)
+        self.set_default_scaling("enth_mol", 1e-3)
         self.set_default_scaling("visc_d", 1e4)
         self.set_default_scaling("therm_cond", 1e2)
 

@@ -582,6 +582,7 @@ see reaction package for documentation.}"""))
                 units=units_meta_solid('area'))
         self.number_orifice = Var(
                 domain=Reals,
+                initialize=1,
                 doc='Distributor Plate Orifices per Area',
                 units=1/units_meta_solid('area'))
 
@@ -590,17 +591,20 @@ see reaction package for documentation.}"""))
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
+                initialize=1,
                 doc='Gas Superficial Velocity',
                 units=units_meta_gas('velocity'))
         self.velocity_bubble = Var(
                 self.flowsheet().time,
                 self.length_domain, domain=Reals,
+                initialize=1,
                 doc='Bubble Velocity',
                 units=units_meta_gas('velocity'))
         self.velocity_emulsion_gas = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
+                initialize=1,
                 doc='Emulsion Region Superficial Gas Velocity',
                 units=units_meta_gas('velocity'))
         self.velocity_superficial_solid = Var(
@@ -649,24 +653,28 @@ see reaction package for documentation.}"""))
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
+                initialize=1,
                 doc='Bubble Growth Coefficient',
                 units=pyunits.dimensionless)
         self.bubble_diameter_max = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
+                initialize=1,
                 doc='Maximum Theoretical Bubble Diameter',
                 units=units_meta_gas('length'))
         self.velocity_bubble_rise = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
+                initialize=1,
                 doc='Bubble Rise Velocity',
                 units=units_meta_gas('velocity'))
         self.average_gas_density = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
+                initialize=1,
                 doc='average gas density',
                 units=units_meta_gas('density_mole'))
 
@@ -704,18 +712,21 @@ see reaction package for documentation.}"""))
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
+                initialize=1000,
                 doc='Bubble to Emulsion Gas Heat Transfer Coefficient',
                 units=units_meta_gas('power')/units_meta_gas('temperature'))
         self.Hgbulk = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
+                initialize=1000,
                 doc='Gas Phase Bulk Enthalpy Transfer Rate',
                 units=units_meta_gas('power')*units_meta_gas('length')**2)
         self.htc_conv = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
+                initialize=1000,
                 doc='Gas to Solid Energy Convective Heat Transfer Coefficient',
                 units=units_meta_gas('heat_transfer_coefficient'))
 
@@ -724,6 +735,7 @@ see reaction package for documentation.}"""))
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
+                initialize=1000,
                 doc='Gas to Solid Convective Enthalpy Transfer in'
                     'Emulsion Region',
                 units=units_meta_gas('heat_transfer_coefficient'))
@@ -733,6 +745,7 @@ see reaction package for documentation.}"""))
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
+                initialize=1,
                 doc='Reformulation Variable in Bubble'
                     'Diameter Equation [reform var 1]',
                 units=units_meta_gas('length'))
@@ -757,7 +770,7 @@ see reaction package for documentation.}"""))
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
-                initialize=1,
+                initialize=1000,
                 doc='Bubble to Emulsion Gas Heat Transfer'
                     'Coefficient Reformulation Variable [reform var 4]',
                 units=units_meta_gas('heat_transfer_coefficient') *
@@ -785,7 +798,7 @@ see reaction package for documentation.}"""))
                       units=units_meta_gas('velocity'))
         self.Kd.fix()
         self.deltaP_orifice = Var(domain=Reals,
-                                  initialize=3.4E4,
+                                  initialize=3400,
                                   doc='Pressure Drop Across Orifice',
                                   units=pyunits.Pa)
         self.deltaP_orifice.fix()
@@ -1178,7 +1191,7 @@ see reaction package for documentation.}"""))
                              doc="Convective Heat Transfer Coefficient")
             def convective_heat_trans_coeff(b, t, x):
                 # 0.03 (kg/mol)**1.3 is a unitted constant in this correlation
-                # unit containers are moved to the LHS of equation for Pyomo stability
+                # unit containers moved to the LHS of equation for stability
                 reform_var_5_units = (units_meta_gas('amount') /
                                       units_meta_gas('mass'))
                 return (
@@ -1994,7 +2007,7 @@ see reaction package for documentation.}"""))
         init_log.info('Initialize Mass Balances')
         init_log.info_high('initialize mass balances with no reactions')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = opt.solve(blk, tee=slc.tee)
+            results = opt.solve(blk, tee=True)
         if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 4a {}.".format(
@@ -2055,11 +2068,11 @@ see reaction package for documentation.}"""))
                             Constraint, descend_into=False):
                         c.activate()
 
-            blk.bubble.reactions.initialize(outlvl=outlvl,
+            blk.bubble.reactions.initialize(outlvl=idaeslog.DEBUG,
                                             optarg=optarg,
                                             solver=solver)
 
-            blk.gas_emulsion.reactions.initialize(outlvl=outlvl,
+            blk.gas_emulsion.reactions.initialize(outlvl=idaeslog.DEBUG,
                                                   optarg=optarg,
                                                   solver=solver)
 
@@ -2109,7 +2122,7 @@ see reaction package for documentation.}"""))
                             Constraint, descend_into=False):
                         c.activate()
 
-            blk.solid_emulsion.reactions.initialize(outlvl=outlvl,
+            blk.solid_emulsion.reactions.initialize(outlvl=idaeslog.DEBUG,
                                                     optarg=optarg,
                                                     solver=solver)
 
@@ -2117,7 +2130,7 @@ see reaction package for documentation.}"""))
                 solid_phase.reaction_package is not None):
             init_log.info_high('initialize mass balances with reactions')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                results = opt.solve(blk, tee=slc.tee)
+                results = opt.solve(blk, tee=True)
             if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 4b {}.".format(
@@ -2252,75 +2265,812 @@ see reaction package for documentation.}"""))
             init_log.warning('{} Initialization Step 6 Failed.'
                              .format(blk.name))
 
-    def calculate_scaling_factors(self, b, x):
+    def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
+        # local aliases used to shorten object names
+        gas_phase = self.config.gas_phase_config
 
+        # Get units meta data from property packages
+        units_meta_gas = \
+            gas_phase.property_package.get_metadata().get_derived_units
+
+        # scale some variables
+
+        if hasattr(self, "bed_diameter"):
+            if iscale.get_scaling_factor(self.bed_diameter) is None:
+                sf = 1/value(self.bed_diameter)
+                iscale.set_scaling_factor(self.bed_diameter, 1e-1 * sf)
+
+        if hasattr(self, "bed_area"):
+            if iscale.get_scaling_factor(self.bed_area) is None:
+                sf = 1/value(constants.pi*(0.5*self.bed_diameter)**2)
+                iscale.set_scaling_factor(self.bed_area, 1e-1 * sf)
+
+        if hasattr(self, "delta"):
+            for (t, x), v in self.delta.items():
+                if iscale.get_scaling_factor(self.delta) is None:
+                    sf = 1/value(self.delta[t, x])
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "bubble_diameter_max"):
+            for (t, x), v in self.bubble_diameter_max.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = 1/value(self.bed_diameter)
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "Kgbulk_c"):
+            for (t, x, j), v in self.Kgbulk_c.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf1 = iscale.get_scaling_factor(
+                        self.bed_area)
+                    sf2 = iscale.get_scaling_factor(
+                        self.gas_emulsion.properties[t, x].dens_mol)
+                    sf3 = iscale.get_scaling_factor(
+                        self.gas_emulsion.properties[t, x].mole_frac_comp[j])
+                    iscale.set_scaling_factor(v, sf1 * sf2 * sf3)
+
+        if hasattr(self, "_reform_var_1"):
+            for (t, x), v in self._reform_var_1.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = 1/iscale.get_scaling_factor(self.bed_diameter)
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "_reform_var_2"):
+            for (t, x, j), v in self._reform_var_2.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf1 = 1/value(34.2225 * pyunits.convert(
+                         self.gas_emulsion.properties[t, x].diffusion_comp[j],
+                         to_units=units_meta_gas('area') /
+                         units_meta_gas('time')))**0.5
+                    sf2 = 1/value(1/pyunits.convert(
+                        constants.acceleration_gravity,
+                        to_units=units_meta_gas('acceleration')))**0.5
+                    iscale.set_scaling_factor(v, sf1 * sf2)
+
+        if hasattr(self, "_reform_var_3"):
+            for (t, x), v in self._reform_var_3.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = 1/iscale.get_scaling_factor(self.bed_diameter)**0.25
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self.gas_emulsion, "rate_reaction_extent"):
+            for (t, x, r), v in self.gas_emulsion.rate_reaction_extent.items():
+                if iscale.get_scaling_factor(
+                        self.gas_emulsion.rate_reaction_extent) is None:
+                    iscale.set_scaling_factor(
+                        self.gas_emulsion.rate_reaction_extent[t, x, r], 1e3)
+
+        if hasattr(self.solid_emulsion, "rate_reaction_extent"):
+            for (t, x, r), v in (self.solid_emulsion
+                                 .rate_reaction_extent.items()):
+                if iscale.get_scaling_factor(
+                        self.solid_emulsion.rate_reaction_extent) is None:
+                    iscale.set_scaling_factor(
+                        self.solid_emulsion.rate_reaction_extent[t, x, r], 1e3)
+
+        if hasattr(self.bubble, "rate_reaction_extent"):
+            for (t, x, r), v in self.bubble.rate_reaction_extent.items():
+                if iscale.get_scaling_factor(
+                        self.bubble.rate_reaction_extent) is None:
+                    iscale.set_scaling_factor(
+                        self.bubble.rate_reaction_extent[t, x, r], 1e3)
+
+        if self.config.energy_balance_type != EnergyBalanceType.none:
+            if hasattr(self, "Hbe"):
+                for (t, x), v in self.Hbe.items():
+                    if iscale.get_scaling_factor(v) is None:
+                        sf1 = iscale.get_scaling_factor(
+                            self.gas_emulsion.properties[t, x].enth_mol)
+                        sf2 = iscale.get_scaling_factor(
+                            self.gas_emulsion.properties[t, x].dens_mol)
+                        iscale.set_scaling_factor(v, sf1 * sf2)
+
+            if hasattr(self, "Hgbulk"):
+                for (t, x), v in self.Hgbulk.items():
+                    if iscale.get_scaling_factor(v) is None:
+                        sf1 = iscale.get_scaling_factor(
+                            self.gas_emulsion.properties[t, x].enth_mol)
+                        sf2 = iscale.get_scaling_factor(
+                            self.gas_emulsion.properties[t, x].dens_mol)
+                        iscale.set_scaling_factor(v, sf1 * sf2)
+
+            if hasattr(self, "_reform_var_4"):
+                for (t, x), v in self._reform_var_4.items():
+                    if iscale.get_scaling_factor(v) is None:
+                        sf1 = 34.2225
+                        sf2 = 1/iscale.get_scaling_factor(
+                            self.bubble.properties[t, x].therm_cond)
+                        sf3 = iscale.get_scaling_factor(
+                            self.bubble.properties[t, x].enth_mol)
+                        sf4 = iscale.get_scaling_factor(
+                            self.bubble.properties[t, x].dens_mol)
+                        sf5 = 1/value(
+                            pyunits.convert(
+                                constants.acceleration_gravity,
+                                to_units=units_meta_gas('acceleration'))
+                            ** 0.5)
+                        iscale.set_scaling_factor(v, sf1 * sf2 * sf3
+                                                  * sf4 * sf5)
+
+            if hasattr(self, "_reform_var_5"):
+                for (t, x), v in self._reform_var_5.items():
+                    if iscale.get_scaling_factor(v) is None:
+                        sf1 = 1/iscale.get_scaling_factor(
+                            self.gas_emulsion.properties[t, x].visc_d)
+                        sf2 = iscale.get_scaling_factor(
+                            self.gas_emulsion.properties[t, x].dens_mol)
+                        sf3 = 1/value(
+                            pyunits.convert(
+                                self.solid_emulsion.properties[t, x]
+                                ._params.particle_dia,
+                                to_units=units_meta_gas('length')))
+                        iscale.set_scaling_factor(v, sf1 * sf2 * sf3)
+
+            if hasattr(self, "htc_conv"):
+                for (t, x), v in self.htc_conv.items():
+                    if iscale.get_scaling_factor(v) is None:
+                        sf1 = iscale.get_scaling_factor(
+                            self.bubble.properties[t, x].therm_cond)
+                        sf2 = iscale.get_scaling_factor(
+                            self._reform_var_5[t, x])
+                        iscale.set_scaling_factor(v, sf1 * sf2)
+
+            if hasattr(self, "ht_conv"):
+                for (t, x), v in self.ht_conv.items():
+                    if iscale.get_scaling_factor(v) is None:
+                        sf1 = iscale.get_scaling_factor(
+                            self.solid_emulsion.properties[t, x].temperature)
+                        sf2 = iscale.get_scaling_factor(
+                            self.htc_conv[t, x])
+                        iscale.set_scaling_factor(v, sf1 * sf2)
+
+            # Scale heat variables in CV1D
+            for sub_block in [self.bubble, self.gas_emulsion]:
+                for (t, x), v in sub_block.heat.items():
+                    sf1 = iscale.get_scaling_factor(
+                        sub_block.properties[t, x].enth_mol)
+                    sf2 = iscale.get_scaling_factor(
+                        sub_block.properties[t, x].flow_mol)
+                    iscale.set_scaling_factor(v, sf1 * sf2)
+            for (t, x), v in self.solid_emulsion.heat.items():
+                sf1 = iscale.get_scaling_factor(
+                    self.solid_emulsion.properties[t, x].enth_mass)
+                sf2 = iscale.get_scaling_factor(
+                    self.solid_emulsion.properties[t, x].flow_mass)
+                iscale.set_scaling_factor(v, sf1 * sf2)
+
+        # Scale some constraints
         if hasattr(self, "orifice_area"):
-            for t, v in self.orifice_area.items():
-                iscale.set_scaling_factor(v, 1e1)
+            for c in self.orifice_area.values():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bed_area),
+                    overwrite=False
+                )
+
+        if hasattr(self, "bed_area_eqn"):
+            for c in self.bed_area_eqn.values():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bed_area),
+                    overwrite=False
+                )
+
+        if hasattr(self, "bubble_area"):
+            for (t, x), c in self.bubble_area.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bed_area),
+                    overwrite=False
+                )
+
+        if hasattr(self, "gas_emulsion_area"):
+            for (t, x), c in self.gas_emulsion_area.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bed_area),
+                    overwrite=False
+                )
+
+        if hasattr(self, "solid_emulsion_area"):
+            for (t, x), c in self.solid_emulsion_area.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bed_area),
+                    overwrite=False
+                )
+
+        if hasattr(self, "emulsion_vol_frac"):
+            for (t, x), c in self.emulsion_vol_frac.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.delta[t, x]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "average_voidage"):
+            for (t, x), c in self.average_voidage.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.delta[t, x]),
+                    overwrite=False
+                )
 
         if hasattr(self, "bubble_growth_coefficient"):
-            for t, v in self.bubble_growth_coefficient.items():
-                iscale.set_scaling_factor(v, 1e2)
+            for (t, x), c in self.bubble_growth_coefficient.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e2,
+                    iscale.get_scaling_factor(
+                        self.bed_diameter),
+                    overwrite=False
+                )
+
+        if hasattr(self, "bubble_diameter_maximum"):
+            for (t, x), c in self.bubble_diameter_maximum.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # sf = 1e-6,
+                    iscale.get_scaling_factor(
+                        self.bed_diameter)**5,
+                    overwrite=False
+                )
+
+        if hasattr(self, "_reformulation_eqn_1"):
+            for (t, x), c in self._reformulation_eqn_1.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self._reform_var_1[t, x]),
+                    overwrite=False
+                )
 
         if hasattr(self, "bubble_diameter_eqn"):
-            for t, v in self.bubble_diameter_eqn.items():
-                if x == b.length_domain.first():
-                    iscale.set_scaling_factor(v, 1e3)
-                else:
-                    iscale.set_scaling_factor(v, 1e2)
+            for (t, x), c in self.bubble_diameter_eqn.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-1,
+                    iscale.get_scaling_factor(
+                        self.bed_diameter),
+                    overwrite=False
+                )
+
+        if hasattr(self, "ddia_bubbledx_disc_eq"):
+            for (t, x), c in self.ddia_bubbledx_disc_eq.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-2,
+                    iscale.get_scaling_factor(
+                        self.bed_diameter),
+                    overwrite=False
+                )
+
+        if hasattr(self, "bubble_velocity_rise"):
+            for (t, x), c in self.bubble_velocity_rise.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bubble_diameter_max[t, x]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "emulsion_voidage"):
+            for (t, x), c in self.emulsion_voidage.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.delta[t, x]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "bubble_velocity"):
+            for (t, x), c in self.bubble_velocity.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bubble.properties[t, x].flow_mol),
+                    overwrite=False
+                )
+
+        if hasattr(self, "average_gas_density_eqn"):
+            for (t, x), c in self.average_gas_density_eqn.items():
+                sf1 = iscale.get_scaling_factor(
+                    self.gas_emulsion.properties[t, x].flow_mol)
+                sf2 = iscale.get_scaling_factor(
+                    self.gas_emulsion.properties[t, x].dens_mol)
+                iscale.constraint_scaling_transform(
+                    c,
+                    sf1 * sf2,
+                    overwrite=False
+                )
+
+        if hasattr(self, "velocity_gas_superficial"):
+            for (t, x), c in self.velocity_gas_superficial.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion.properties[t, x].flow_mol),
+                    overwrite=False
+                )
+
+        if hasattr(self, "bubble_vol_frac_eqn"):
+            for (t, x), c in self.bubble_vol_frac_eqn.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bubble.properties[t, x].flow_mol),
+                    overwrite=False
+                )
+
+        if hasattr(self, "solid_super_vel"):
+            for (t, x), c in self.solid_super_vel.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-2,
+                    iscale.get_scaling_factor(
+                        self.solid_emulsion.properties[t, x].flow_mass),
+                    overwrite=False
+                )
 
         if hasattr(self, "gas_emulsion_pressure_drop"):
-            for t, v in self.gas_emulsion_pressure_drop.items():
-                iscale.set_scaling_factor(v, 1e-2)
+            for (t, x), c in self.gas_emulsion_pressure_drop.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-5,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion.properties[t, x].pressure),
+                    overwrite=False
+                )
 
         if hasattr(self, "isobaric_gas_emulsion"):
-            for t, v in self.isobaric_gas_emulsion.items():
-                iscale.set_scaling_factor(v, 1e2)
+            for (t, x), c in self.isobaric_gas_emulsion.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-5,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion.properties[t, x].pressure),
+                    overwrite=False
+                )
 
         if hasattr(self, "_reformulation_eqn_2"):
-            for t, v in self._reformulation_eqn_2.items():
-                iscale.set_scaling_factor(v, 1e2)
+            for (t, x, j), c in self._reformulation_eqn_2.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e2,
+                    iscale.get_scaling_factor(
+                        self._reform_var_2[t, x, j]),
+                    overwrite=False
+                )
 
         if hasattr(self, "_reformulation_eqn_3"):
-            for t, v in self._reformulation_eqn_3.items():
-                iscale.set_scaling_factor(v, 1e2)
+            for (t, x), c in self._reformulation_eqn_3.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e0,
+                    iscale.get_scaling_factor(
+                        self._reform_var_3[t, x]),
+                    overwrite=False
+                )
 
-        if hasattr(self, "_reformulation_eqn_5"):
-            for t, v in self._reformulation_eqn_5.items():
-                iscale.set_scaling_factor(v, 1e2)
+        if hasattr(self, "bubble_cloud_mass_trans_coeff"):
+            for (t, x, j), c in self.bubble_cloud_mass_trans_coeff.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self._reform_var_2[t, x, j]),
+                    overwrite=False
+                )
 
-        if hasattr(self, "convective_heat_trans_coeff"):
-            for t, v in self.convective_heat_trans_coeff.items():
-                iscale.set_scaling_factor(v, 1e6)
+        if hasattr(self, "bubble_cloud_bulk_mass_trans"):
+            for (t, x, j), c in self.bubble_cloud_bulk_mass_trans.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-1,
+                    iscale.get_scaling_factor(
+                        self.Kgbulk_c[t, x, j]),
+                    overwrite=False
+                )
 
         if hasattr(self, "bubble_mass_transfer"):
-            for t, v in self.bubble_mass_transfer.items():
-                iscale.set_scaling_factor(v, 1e3)
+            for (t, x, j), c in self.bubble_mass_transfer.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-2,
+                    iscale.get_scaling_factor(
+                        self.Kgbulk_c[t, x, j]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "gas_emulsion_hetero_rxn_term"):
+            for (t, x, j), c in self.gas_emulsion_hetero_rxn_term.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion_hetero_rxn[t, x, j]),
+                    overwrite=False
+                )
 
         if hasattr(self, "gas_emulsion_mass_transfer"):
-            for t, v in self.gas_emulsion_mass_transfer.items():
-                iscale.set_scaling_factor(v, 1e3)
+            for (t, x, j), c in self.gas_emulsion_mass_transfer.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-2,
+                    iscale.get_scaling_factor(
+                        self.Kgbulk_c[t, x, j]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "bubble_rxn_ext_constraint"):
+            for (t, x, r), c in self.bubble_rxn_ext_constraint.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bubble.rate_reaction_extent[t, x, r]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "gas_emulsion_rxn_ext_constraint"):
+            for (t, x, r), c in self.gas_emulsion_rxn_ext_constraint.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion.rate_reaction_extent[t, x, r]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "solid_emulsion_rxn_ext_constraint"):
+            for (t, x, r), c in self.solid_emulsion_rxn_ext_constraint.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.solid_emulsion.rate_reaction_extent[t, x, r]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "gas_emulsion_hetero_rxn_eqn"):
+            for (t, x, j), c in self.gas_emulsion_hetero_rxn_eqn.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.solid_emulsion.rate_reaction_extent[t, x, "R1"]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "bubble_gas_flowrate"):
+            for (t, x), c in self.bubble_gas_flowrate.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-2,
+                    iscale.get_scaling_factor(
+                        self.bubble.properties[t, x].flow_mol),
+                    overwrite=False
+                )
+
+        if hasattr(self, "emulsion_gas_flowrate"):
+            for (t, x), c in self.emulsion_gas_flowrate.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-2,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion.properties[t, x].flow_mol),
+                    overwrite=False
+                )
 
         if hasattr(self, "gas_emulsion_pressure_in"):
-            for t, v in self.gas_emulsion_pressure_in.items():
-                iscale.set_scaling_factor(v, 1e2)
+            for t, c in self.gas_emulsion_pressure_in.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-5,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion.properties[t, 0].pressure),
+                    overwrite=False
+                )
+
+        if hasattr(self, "gas_mole_flow_in"):
+            for t, c in self.gas_mole_flow_in.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion.properties[t, 0].flow_mol),
+                    overwrite=False
+                )
+
+        if hasattr(self, "particle_porosity_in"):
+            for t, c in self.particle_porosity_in.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.delta[t, 0]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "emulsion_gas_velocity_in"):
+            for t, c in self.emulsion_gas_velocity_in.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion.properties[t, 0].flow_mol),
+                    overwrite=False
+                )
 
         if hasattr(self, "bubble_mole_frac_in"):
-            for t, v in self.bubble_mole_frac_in.items():
-                iscale.set_scaling_factor(v, 1e2)
+            for (t, j), c in self.bubble_mole_frac_in.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e2,
+                    iscale.get_scaling_factor(
+                        self.bubble.properties[t, 0].mole_frac_comp[j]),
+                    overwrite=False
+                )
 
         if hasattr(self, "gas_emulsion_mole_frac_in"):
-            for t, v in self.gas_emulsion_mole_frac_in.items():
-                iscale.set_scaling_factor(v, 1e2)
+            for (t, j), c in self.gas_emulsion_mole_frac_in.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e2,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion.properties[t, 0].mole_frac_comp[j]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "solid_emulsion_mass_flow_in"):
+            for t, c in self.solid_emulsion_mass_flow_in.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.solid_emulsion.properties[t, 0].flow_mass),
+                    overwrite=False
+                )
 
         if hasattr(self, "solid_emulsion_mass_frac_in"):
-            for t, v in self.solid_emulsion_mass_frac_in.items():
-                iscale.set_scaling_factor(v, 1e2)
+            for (t, j), c in self.solid_emulsion_mass_frac_in.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e2,
+                    iscale.get_scaling_factor(
+                        self.solid_emulsion.properties[t, 0].mass_frac_comp[j]
+                        ),
+                    overwrite=False
+                )
 
         if hasattr(self, "gas_pressure_out"):
-            for t, v in self.gas_pressure_out.items():
-                iscale.set_scaling_factor(v, 1e2)
+            for t, c in self.gas_pressure_out.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    # 1e-5,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion.properties[t, 1].pressure),
+                    overwrite=False
+                )
+
+        if hasattr(self, "gas_material_balance_out"):
+            for (t, p, j), c in self.gas_material_balance_out.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_emulsion._flow_terms[t, 1, p, j]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "solid_material_balance_out"):
+            for (t, p, j), c in self.solid_material_balance_out.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.solid_emulsion._flow_terms[t, 1, p, j]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "solid_particle_porosity_out"):
+            for t, c in self.solid_particle_porosity_out.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.delta[t, 1]),
+                    overwrite=False
+                )
+
+        if self.config.energy_balance_type != EnergyBalanceType.none:
+            if hasattr(self, "_reformulation_eqn_4"):
+                for (t, x), c in self._reformulation_eqn_4.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        # 1e0,
+                        iscale.get_scaling_factor(
+                            self._reform_var_4[t, x]),
+                        overwrite=False
+                    )
+
+            if hasattr(self, "_reformulation_eqn_5"):
+                for (t, x), c in self._reformulation_eqn_5.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        # 1e0,
+                        iscale.get_scaling_factor(
+                            self._reform_var_5[t, x]),
+                        overwrite=False
+                    )
+
+            if hasattr(self, "bubble_cloud_heat_trans_coeff"):
+                for (t, x), c in self.bubble_cloud_heat_trans_coeff.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.Hbe[t, x]),
+                        overwrite=True
+                    )
+
+            if hasattr(self, "convective_heat_trans_coeff"):
+                for (t, x), c in self.convective_heat_trans_coeff.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.htc_conv[t, x]),
+                        overwrite=True
+                    )
+
+            if hasattr(self, "convective_heat_transfer"):
+                for (t, x), c in self.convective_heat_transfer.items():
+                    if x == self.length_domain.first():
+                        iscale.constraint_scaling_transform(
+                            c,
+                            # 1e-,
+                            iscale.get_scaling_factor(
+                                self.ht_conv[t, x]),
+                            overwrite=True
+                        )
+                    else:
+                        iscale.constraint_scaling_transform(
+                            c,
+                            iscale.get_scaling_factor(
+                                self.ht_conv[t, x]),
+                            overwrite=True
+                        )
+
+            if hasattr(self, "bubble_cloud_bulk_heat_trans"):
+                for (t, x), c in self.bubble_cloud_bulk_heat_trans.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.Hgbulk[t, x]),
+                        overwrite=True
+                    )
+
+            if hasattr(self, "bubble_heat_transfer"):
+                for (t, x), c in self.bubble_heat_transfer.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        # 1e-2,
+                        iscale.get_scaling_factor(
+                            self.bubble.heat[t, x]),
+                        overwrite=True
+                    )
+
+            if hasattr(self, "gas_emulsion_heat_transfer"):
+                for (t, x), c in self.gas_emulsion_heat_transfer.items():
+                    if x == self.length_domain.first():
+                        iscale.constraint_scaling_transform(
+                            c,
+                            # 1e-6,
+                            iscale.get_scaling_factor(
+                                self.gas_emulsion.heat[t, x]),
+                            overwrite=True
+                        )
+                    else:
+                        iscale.constraint_scaling_transform(
+                            c,
+                            # 1e-2,
+                            iscale.get_scaling_factor(
+                                self.gas_emulsion.heat[t, x]),
+                            overwrite=True
+                        )
+
+            if hasattr(self, "solid_emulsion_heat_transfer"):
+                for (t, x), c in self.solid_emulsion_heat_transfer.items():
+                    if x == self.length_domain.first():
+                        iscale.constraint_scaling_transform(
+                            c,
+                            # 1e-6,
+                            iscale.get_scaling_factor(
+                                self.solid_emulsion.heat[t, x]),
+                            overwrite=True
+                        )
+                    else:
+                        iscale.constraint_scaling_transform(
+                            c,
+                            # 1e-2,
+                            iscale.get_scaling_factor(
+                                self.solid_emulsion.heat[t, x]),
+                            overwrite=True
+                        )
+
+            if hasattr(self, "gas_energy_balance_in"):
+                for (t, p), c in self.gas_energy_balance_in.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_emulsion._enthalpy_flow[t, 0, "Vap"]),
+                        overwrite=False)
+
+            if hasattr(self, "gas_emulsion_temperature_in"):
+                for t, c in self.gas_emulsion_temperature_in.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_emulsion.properties[t, 0].temperature),
+                        overwrite=False)
+
+            if hasattr(self, "solid_energy_balance_in"):
+                for t, c in self.solid_energy_balance_in.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.solid_emulsion._enthalpy_flow[t, 1, 'Sol']),
+                        overwrite=False)
+
+            if hasattr(self, "gas_energy_balance_out"):
+                for t, c in self.gas_energy_balance_out.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_emulsion._enthalpy_flow[t, 1, "Vap"]),
+                        overwrite=False)
+
+            if hasattr(self, "solid_energy_balance_out"):
+                for t, c in self.solid_energy_balance_out.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.solid_emulsion._enthalpy_flow[t, 0, 'Sol']),
+                        overwrite=False)
+
+        elif self.config.energy_balance_type == EnergyBalanceType.none:
+            if hasattr(self, "isothermal_solid_emulsion"):
+                for (t, x), c in self.isothermal_solid_emulsion.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.solid_emulsion.properties[t, 0].temperature),
+                        overwrite=False)
+
+            if hasattr(self, "isothermal_gas_emulsion"):
+                for (t, x), c in self.isothermal_gas_emulsion.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_emulsion.properties[t, 0].temperature),
+                        overwrite=False)
+
+            if hasattr(self, "isothermal_bubble"):
+                for (t, x), c in self.isothermal_bubble.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.bubble.properties[t, 0].temperature),
+                        overwrite=False)
+
+            if hasattr(self, "gas_energy_balance_out"):
+                for t, c in self.gas_energy_balance_out.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_emulsion.properties[t, 1].temperature),
+                        overwrite=False)
+
+            if hasattr(self, "solid_energy_balance_out"):
+                for t, c in self.solid_energy_balance_out.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.solid_emulsion.properties[t, 1].temperature),
+                        overwrite=False)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(

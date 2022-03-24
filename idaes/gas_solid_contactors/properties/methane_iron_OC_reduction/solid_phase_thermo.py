@@ -209,9 +209,16 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 doc="Component molar heats of formation [J/mol]",
                 units=pyunits.J/pyunits.mol)
 
-        # Set default scaling for mass fractions
+        # Set default scaling
+        self.set_default_scaling("flow_mass", 1)
+        self.set_default_scaling("pressure", 1e-2)
+        self.set_default_scaling("temperature", 1e-2)
         for comp in self.component_list:
             self.set_default_scaling("mass_frac_comp", 1e2, index=comp)
+        self.set_default_scaling("dens_mass", 1e-3)
+        self.set_default_scaling("enth_mass", 1e-3)
+        self.set_default_scaling("visc_d", 1e4)
+        self.set_default_scaling("therm_cond", 1e2)
 
     # -------------------------------------------------------------------------
         """ Mixed solid properties"""
@@ -679,5 +686,5 @@ class SolidPhaseStateBlockData(StateBlockData):
         if self.is_property_constructed("sum_component_eqn"):
             iscale.constraint_scaling_transform(
                 self.sum_component_eqn,
-                iscale.get_scaling_factor(self.mole_frac_comp['Fe2O3']),
+                iscale.get_scaling_factor(self.mass_frac_comp['Fe2O3']),
                 overwrite=False)
