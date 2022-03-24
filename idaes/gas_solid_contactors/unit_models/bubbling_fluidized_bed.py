@@ -49,7 +49,8 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         FlowDirection)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
-from idaes.core.util.exceptions import (ConfigurationError)
+from idaes.core.util.exceptions import (ConfigurationError,
+                                        InitializationError)
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
@@ -1651,8 +1652,9 @@ see reaction package for documentation.}"""))
     # =========================================================================
     # Model initialization routine
 
-    def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
-                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
+    def initialize_build(blk, gas_phase_state_args=None,
+                         solid_phase_state_args=None,
+                         outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
         Initialization routine for Bubbling Fluidized Bed unit
 
@@ -2262,8 +2264,9 @@ see reaction package for documentation.}"""))
                         idaeslog.condition(results))
                         )
         else:
-            init_log.warning('{} Initialization Step 6 Failed.'
-                             .format(blk.name))
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please "
+                f"check the output logs for more information.")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

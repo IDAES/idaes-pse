@@ -39,6 +39,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               unused_variables_set)
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util.exceptions import InitializationError
 
 from idaes.gas_solid_contactors.unit_models. \
     bubbling_fluidized_bed import BubblingFluidizedBed
@@ -593,6 +594,13 @@ class TestIronOC(object):
     def test_report(self, iron_oc):
         iron_oc.fs.unit.report()
 
+    @pytest.mark.component
+    def test_initialization_error(self, iron_oc):
+        iron_oc.fs.unit.gas_outlet.flow_mol[0].fix(1)
+
+        with pytest.raises(InitializationError):
+            iron_oc.fs.unit.initialize()
+
 
 # -----------------------------------------------------------------------------
 class TestIronOC_EnergyBalanceType(object):
@@ -988,3 +996,10 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.unit
     def test_report(self, iron_oc):
         iron_oc.fs.unit.report()
+
+    @pytest.mark.component
+    def test_initialization_error(self, iron_oc):
+        iron_oc.fs.unit.gas_outlet.flow_mol[0].fix(1)
+
+        with pytest.raises(InitializationError):
+            iron_oc.fs.unit.initialize()
