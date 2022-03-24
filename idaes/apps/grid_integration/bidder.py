@@ -252,7 +252,7 @@ class SelfScheduler(AbstractBidder):
         self._generator = name
 
 
-class Bidder:
+class Bidder(AbstractBidder):
     def __init__(self, bidding_model_object, n_scenario, solver, forecaster):
 
         """
@@ -782,6 +782,14 @@ class Bidder:
         self.bidding_model_object.write_results(
             path=os.path.join(path, "bidding_model_detail.csv")
         )
+
+    @property
+    def generator(self):
+        return self._generator
+
+    @generator.setter
+    def generator(self, name):
+        self._generator = name
 
 
 if __name__ == "__main__":
