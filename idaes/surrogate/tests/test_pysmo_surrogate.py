@@ -23,11 +23,19 @@ from math import sin, cos, log, exp
 from pathlib import Path
 from io import StringIO
 
+import pyomo as pyo
 from pyomo.environ import ConcreteModel, Var, Constraint
 from pyomo.common.tempfiles import TempfileManager
 
-from idaes.surrogate.pysmo_surrogate_v2 import \
-    PysmoTrainer, PysmoPolyTrainer, PysmoRBFTrainer, PysmoKrigingTrainer, PysmoSurrogate
+from idaes.surrogate.pysmo import (
+    polynomial_regression as pr,
+    radial_basis_function as rbf,
+    kriging as krg)
+
+from idaes.surrogate.pysmo_surrogate_v2 import (PysmoTrainer, PysmoPolyTrainer, 
+    PysmoRBFTrainer, PysmoKrigingTrainer, PysmoSurrogate, 
+    SurrogateTrainingResult, TrainedSurrogate)
+
 from idaes.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.surrogate.metrics import compute_fit_metrics
@@ -217,293 +225,864 @@ jstring_krg = (
 
 
 
-# class TestAlamoTrainer:
-#     @pytest.fixture
-#     def alamo_trainer(self):
-#         data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
-#         data = pd.DataFrame(data)
+class TestSurrogateTrainingResult:
 
-#         input_labels = ["x1", "x2"]
-#         output_labels = ["z1"]
-#         bnds = {"x1": (0, 5), "x2": (0, 10)}
+    @pytest.fixture
+    def pysmo_outputs(self):
+        data = {'x1': [1, 2, 3, 4, 5], 'x2': [5, 6, 7, 8, 9], 'z1': [10, 20, 30, 40, 50]}
+        data = pd.DataFrame(data)
 
-#         return AlamoTrainer(input_labels=input_labels,
-#                             output_labels=output_labels,
-#                             input_bounds=bnds,
-#                             training_dataframe=data)
+        init_pr = pr.PolynomialRegression(data, data, maximum_polynomial_order=1, overwrite=True, multinomials=True)
+        vars = init_pr.get_feature_vector()
+        init_pr.training()
 
-#     @pytest.mark.unit
-#     def test_get_files(self, alamo_trainer):
-#         alamo_trainer.config.filename = "foo.alm"
-#         alamo_trainer._get_files()
-#         assert alamo_trainer._almfile == "foo.alm"
-#         assert alamo_trainer._trcfile == "foo.trc"
+        init_rbf = rbf.RadialBasisFunctions(data, basis_function='linear', overwrite=True)
+        init_rbf.get_feature_vector()
+        init_rbf.training()
 
-#     @pytest.mark.unit
-#     def test_get_files_default(self, alamo_trainer):
-#         alamo_trainer._get_files()
+        init_krg = krg.KrigingModel(data, numerical_gradients=True, overwrite=True)
+        init_krg.get_feature_vector()
+        init_krg.training()
 
-#         assert alamo_trainer._almfile is not None
-#         assert os.path.exists(alamo_trainer._almfile)
-#         assert str(alamo_trainer._trcfile).split(".")[0] == str(
-#             alamo_trainer._almfile).split(".")[0]
+        return init_pr, init_rbf, init_krg, vars
 
-#         alamo_trainer._remove_temp_files()
 
-#         # Check that we cleaned-up after ourselves
-#         assert not os.path.exists(alamo_trainer._almfile)
+    @pytest.mark.unit
+    def test_init(self):
+        init_func = SurrogateTrainingResult()
+        assert init_func.metrics == {}
+        assert init_func._model == None
+        assert init_func.expression_str == ""
 
-#     @pytest.mark.unit
-#     def test_get_files_exists(self, alamo_trainer):
-#         alamo_trainer.config.filename = os.path.join(dirpath, "alamotrace.trc")
+    @pytest.mark.unit
+    def test_model(self, pysmo_outputs):
 
-#         with pytest.raises(
-#                 FileExistsError,
-#                 match="alamotrace.trc already exists. Either choose a new "
-#                 "file name or set overwrite_files = True"):
-#             alamo_trainer._get_files()
+        out1, out2, out3, vars = pysmo_outputs
 
-#     @pytest.mark.unit
-#     def test_writer_default(self, alamo_trainer):
-#         stream = io.StringIO()
-#         alamo_trainer._write_alm_to_stream(stream=stream)
+        init_func_poly = SurrogateTrainingResult()
+        init_func_poly.model = out1
+        assert init_func_poly.expression_str == str(out1.generate_expression([vars[i] for i in vars.keys()]))
+        assert init_func_poly._model is not None 
+        assert isinstance(init_func_poly._model, pr.PolynomialRegression)
+        assert init_func_poly._model == out1
 
-#         assert stream.getvalue() == (
-#             "# IDAES Alamopy input file\n"
-#             "NINPUTS 2\n"
-#             "NOUTPUTS 1\n"
-#             "XLABELS x1 x2\n"
-#             "ZLABELS z1\n"
-#             "XMIN 0 0\n"
-#             "XMAX 5 10\n"
-#             "NDATA 4\n\n"
-#             "linfcns 1\n"
-#             "constant 1\n"
-#             "maxtime 1000.0\n"
-#             "numlimitbasis 1\n\n"
-#             "TRACE 1\n\n"
-#             "BEGIN_DATA\n"
-#             "1 5 10\n"
-#             "2 6 20\n"
-#             "3 7 30\n"
-#             "4 8 40\n"
-#             "END_DATA\n")
 
-#     @pytest.mark.unit
-#     def test_writer_reordered(self):
-#         # Test case where training data is out of order and has extra columns
-#         data = {'junk': [100, 200, 300, 400],
-#                 'x1': [1, 2, 3, 4],
-#                 'z1': [10, 20, 30, 40],
-#                 'x2': [5, 6, 7, 8]}
-#         data = pd.DataFrame(data)
+        init_func_rbf = SurrogateTrainingResult()
+        init_func_rbf.model = out2
+        assert init_func_rbf.expression_str == str(out2.generate_expression([vars[i] for i in vars.keys()]))
+        assert init_func_rbf._model is not None 
+        assert isinstance(init_func_rbf._model, rbf.RadialBasisFunctions)
+        assert init_func_rbf._model == out2
 
-#         input_labels = ["x1", "x2"]
-#         output_labels = ["z1"]
-#         bnds = {"x1": (0, 5), "x2": (0, 10)}
 
-#         alamo_trainer = AlamoTrainer(input_labels=input_labels,
-#                                      output_labels=output_labels,
-#                                      input_bounds=bnds,
-#                                      training_dataframe=data)
+        init_func_krg = SurrogateTrainingResult()
+        init_func_krg.model = out3
+        assert init_func_krg.expression_str == str(out3.generate_expression([vars[i] for i in vars.keys()]))
+        assert init_func_krg._model is not None 
+        assert isinstance(init_func_krg._model, krg.KrigingModel)
+        assert init_func_krg._model == out3
 
-#         stream = io.StringIO()
-#         alamo_trainer._write_alm_to_stream(stream=stream)
 
-#         assert stream.getvalue() == (
-#             "# IDAES Alamopy input file\n"
-#             "NINPUTS 2\n"
-#             "NOUTPUTS 1\n"
-#             "XLABELS x1 x2\n"
-#             "ZLABELS z1\n"
-#             "XMIN 0 0\n"
-#             "XMAX 5 10\n"
-#             "NDATA 4\n\n"
-#             "linfcns 1\n"
-#             "constant 1\n"
-#             "maxtime 1000.0\n"
-#             "numlimitbasis 1\n\n"
-#             "TRACE 1\n\n"
-#             "BEGIN_DATA\n"
-#             "1 5 10\n"
-#             "2 6 20\n"
-#             "3 7 30\n"
-#             "4 8 40\n"
-#             "END_DATA\n")
+class TestTrainedSurrogate:
 
-#     @pytest.mark.unit
-#     def test_writer_custom_basis(self, alamo_trainer):
-#         alamo_trainer.config.custom_basis_functions = [
-#             "sin(x1*x2)", "x1*tanh(x2)"]
-#         stream = io.StringIO()
-#         alamo_trainer._write_alm_to_stream(stream=stream)
+        @pytest.fixture
+        def pysmo_outputs(self):
+            data = {'x1': [1, 2, 3, 4, 5], 'x2': [5, 6, 7, 8, 9], 'z1': [10, 20, 30, 40, 50]}
+            data = pd.DataFrame(data)
 
-#         assert stream.getvalue() == (
-#             "# IDAES Alamopy input file\n"
-#             "NINPUTS 2\n"
-#             "NOUTPUTS 1\n"
-#             "XLABELS x1 x2\n"
-#             "ZLABELS z1\n"
-#             "XMIN 0 0\n"
-#             "XMAX 5 10\n"
-#             "NDATA 4\n\n"
-#             "NCUSTOMBAS 2\n"
-#             "linfcns 1\n"
-#             "constant 1\n"
-#             "maxtime 1000.0\n"
-#             "numlimitbasis 1\n\n"
-#             "TRACE 1\n\n"
-#             "BEGIN_DATA\n"
-#             "1 5 10\n"
-#             "2 6 20\n"
-#             "3 7 30\n"
-#             "4 8 40\n"
-#             "END_DATA\n\n"
-#             "BEGIN_CUSTOMBAS\n"
-#             "sin(x1*x2)\n"
-#             "x1*tanh(x2)\n"
-#             "END_CUSTOMBAS\n")
+            init_pr = pr.PolynomialRegression(data, data, maximum_polynomial_order=1, overwrite=True, multinomials=True)
+            vars = init_pr.get_feature_vector()
+            init_pr.training()
 
-#     @pytest.mark.unit
-#     def test_writer_min_max_equal(self, alamo_trainer):
-#         alamo_trainer._input_bounds = {"x1": (0, 5), "x2": (10, 10)}
-#         stream = io.StringIO()
+            init_rbf = rbf.RadialBasisFunctions(data, basis_function='linear', overwrite=True)
+            init_rbf.get_feature_vector()
+            init_rbf.training()
 
-#         with pytest.raises(ConfigurationError,
-#                            match="ALAMO configuration error: upper and lower "
-#                            "bounds on input x2 are equal."):
-#             alamo_trainer._write_alm_to_stream(stream=stream)
+            init_krg = krg.KrigingModel(data, numerical_gradients=True, overwrite=True)
+            init_krg.get_feature_vector()
+            init_krg.training()
 
-#     @pytest.mark.unit
-#     def test_writer_min_max_reversed(self, alamo_trainer):
-#         alamo_trainer._input_bounds = {"x1": (0, 5), "x2": (15, 10)}
-#         stream = io.StringIO()
+            return init_pr, init_rbf, init_krg, vars
 
-#         with pytest.raises(ConfigurationError,
-#                            match="ALAMO configuration error: upper bound is "
-#                            "less than lower bound for input x2."):
-#             alamo_trainer._write_alm_to_stream(stream=stream)
 
-#     @pytest.mark.unit
-#     def test_writer_trace(self, alamo_trainer):
-#         stream = io.StringIO()
-#         alamo_trainer._write_alm_to_stream(
-#             stream=stream, trace_fname="foo.bar")
+        @pytest.mark.unit
+        def test_init(self):
+            init_func = TrainedSurrogate()
+            assert init_func._data == {}
+            assert init_func.model_type == ""
+            assert init_func.num_outputs == 0
+            assert init_func.output_labels == []
+            assert init_func.input_labels == None
+            assert init_func.input_bounds == None
 
-#         assert stream.getvalue() == (
-#             "# IDAES Alamopy input file\n"
-#             "NINPUTS 2\n"
-#             "NOUTPUTS 1\n"
-#             "XLABELS x1 x2\n"
-#             "ZLABELS z1\n"
-#             "XMIN 0 0\n"
-#             "XMAX 5 10\n"
-#             "NDATA 4\n\n"
-#             "linfcns 1\n"
-#             "constant 1\n"
-#             "maxtime 1000.0\n"
-#             "numlimitbasis 1\n\n"
-#             "TRACE 1\n"
-#             "TRACEFNAME foo.bar\n\n"
-#             "BEGIN_DATA\n"
-#             "1 5 10\n"
-#             "2 6 20\n"
-#             "3 7 30\n"
-#             "4 8 40\n"
-#             "END_DATA\n")
+            init_func1 = TrainedSurrogate(model_type='poly')
+            assert init_func1._data == {}
+            assert init_func1.model_type == "poly"
+            assert init_func1.num_outputs == 0
+            assert init_func1.output_labels == []
+            assert init_func1.input_labels == None
+            assert init_func1.input_bounds == None
 
-#     @pytest.mark.unit
-#     def test_writer_validation_data(self):
-#         training_data = {
-#             'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
-#         training_data = pd.DataFrame(training_data)
-#         validation_data = {'x1': [2.5], 'x2': [6.5], 'z1': [25]}
-#         validation_data = pd.DataFrame(validation_data)
-#         input_labels = ["x1", "x2"]
-#         output_labels = ["z1"]
-#         bnds = {"x1": (0, 5), "x2": (0, 10)}
+        @pytest.mark.unit 
+        def test_add_result(self, pysmo_outputs):
+            out1, out2, out3, vars = pysmo_outputs
+            
+            init_func = TrainedSurrogate()
 
-#         alamo_trainer = AlamoTrainer(
-#             input_labels=input_labels,
-#             output_labels=output_labels,
-#             input_bounds=bnds,
-#             training_dataframe=training_data,
-#             validation_dataframe=validation_data)
+            outvar = 'z1'
+            init_func.add_result(outvar, out1)
+            assert init_func.output_labels == ['z1']
+            assert init_func._data[outvar] == out1
 
-#         stream = io.StringIO()
-#         alamo_trainer._write_alm_to_stream(stream=stream)
+            outvar = 'z2'
+            init_func.add_result(outvar, out2)
+            assert init_func.output_labels == ['z1', 'z2']
+            assert init_func._data[outvar] == out2
 
-#         assert stream.getvalue() == (
-#             "# IDAES Alamopy input file\n"
-#             "NINPUTS 2\n"
-#             "NOUTPUTS 1\n"
-#             "XLABELS x1 x2\n"
-#             "ZLABELS z1\n"
-#             "XMIN 0 0\n"
-#             "XMAX 5 10\n"
-#             "NDATA 4\n"
-#             "NVALDATA 1\n\n"
-#             "linfcns 1\n"
-#             "constant 1\n"
-#             "maxtime 1000.0\n"
-#             "numlimitbasis 1\n\n"
-#             "TRACE 1\n\n"
-#             "BEGIN_DATA\n"
-#             "1 5 10\n"
-#             "2 6 20\n"
-#             "3 7 30\n"
-#             "4 8 40\n"
-#             "END_DATA\n"
-#             "\nBEGIN_VALDATA\n"
-#             "2.5 6.5 25\n"
-#             "END_VALDATA\n")
+            outvar = 'z3'
+            init_func.add_result(outvar, out3)
+            assert init_func.output_labels == ['z1', 'z2', 'z3']
+            assert init_func._data[outvar] == out3
 
-#     @pytest.mark.unit
-#     def test_writer_validation_data_reordered(self):
-#         # Test case where validation data is out of order and has extra columns
-#         training_data = {
-#             'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
-#         training_data = pd.DataFrame(training_data)
-#         validation_data = {'junk': [100], 'z1': [25], 'x1': [2.5], 'x2': [6.5]}
-#         validation_data = pd.DataFrame(validation_data)
-#         input_labels = ["x1", "x2"]
-#         output_labels = ["z1"]
-#         bnds = {"x1": (0, 5), "x2": (0, 10)}
 
-#         alamo_trainer = AlamoTrainer(
-#             input_labels=input_labels,
-#             output_labels=output_labels,
-#             input_bounds=bnds,
-#             training_dataframe=training_data,
-#             validation_dataframe=validation_data)
+        @pytest.mark.unit 
+        def test_get_result(self, pysmo_outputs):
+            out1, out2, out3, vars = pysmo_outputs
+            
+            init_func = TrainedSurrogate()
 
-#         stream = io.StringIO()
-#         alamo_trainer._write_alm_to_stream(stream=stream)
+            outvar = 'z1'
+            init_func.add_result(outvar, out1)
+            outvar = 'z2'
+            init_func.add_result(outvar, out2)
+            outvar = 'z3'
+            init_func.add_result(outvar, out3)
 
-#         assert stream.getvalue() == (
-#             "# IDAES Alamopy input file\n"
-#             "NINPUTS 2\n"
-#             "NOUTPUTS 1\n"
-#             "XLABELS x1 x2\n"
-#             "ZLABELS z1\n"
-#             "XMIN 0 0\n"
-#             "XMAX 5 10\n"
-#             "NDATA 4\n"
-#             "NVALDATA 1\n\n"
-#             "linfcns 1\n"
-#             "constant 1\n"
-#             "maxtime 1000.0\n"
-#             "numlimitbasis 1\n\n"
-#             "TRACE 1\n\n"
-#             "BEGIN_DATA\n"
-#             "1 5 10\n"
-#             "2 6 20\n"
-#             "3 7 30\n"
-#             "4 8 40\n"
-#             "END_DATA\n"
-#             "\nBEGIN_VALDATA\n"
-#             "2.5 6.5 25\n"
-#             "END_VALDATA\n")
+            for i in range(len(init_func.output_labels)):
+                assert init_func.get_result(init_func.output_labels[i]) == pysmo_outputs[i] 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # @pytest.fixture
+    # def pysmo_trainers(self):
+    #     data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+    #     data = pd.DataFrame(data)
+
+    #     input_labels = ["x1", "x2"]
+    #     output_labels = ["z1"]
+    #     bnds = {"x1": (0, 5), "x2": (0, 10)}
+
+
+    #     poly_trainer = PysmoPolyTrainer(input_labels=input_labels,
+    #                         output_labels=output_labels,
+    #                         input_bounds=bnds,
+    #                         training_dataframe=data)
+    #     rbf_trainer = PysmoRBFTrainer(input_labels=input_labels,
+    #                         output_labels=output_labels,
+    #                         input_bounds=bnds,
+    #                         training_dataframe=data)
+    #     krg_trainer = PysmoKrigingTrainer(input_labels=input_labels,
+    #                         output_labels=output_labels,
+    #                         input_bounds=bnds,
+    #                         training_dataframe=data)
+    #     return poly_trainer, rbf_trainer, krg_trainer
+
+
+class TestPysmoPolyTrainer():
+
+    @pytest.fixture
+    def pysmo_poly_trainer(self):
+
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+        input_labels = ['x1', 'x2']
+        output_labels = ["z1"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+        poly_trainer = PysmoPolyTrainer(input_labels=input_labels, output_labels=output_labels, input_bounds=bnds, training_dataframe=data)
+        return poly_trainer
+
+    @pytest.mark.unit
+    def test_defaults(self, pysmo_poly_trainer):
+        # Check all defaults
+        assert pysmo_poly_trainer.model_type == 'poly'
+        assert pysmo_poly_trainer.config.maximum_polynomial_order == None
+        assert pysmo_poly_trainer.config.multinomials == False
+        assert pysmo_poly_trainer.config.number_of_crossvalidations == 3
+        assert pysmo_poly_trainer.config.training_split == 0.8
+        assert pysmo_poly_trainer.config.solution_method == None
+        assert pysmo_poly_trainer.config.extra_features == None 
+        assert pysmo_poly_trainer.config.overwrite == True
+
+    @pytest.mark.unit
+    def test_set_polynomial_order_righttype(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.maximum_polynomial_order = 3
+        assert pysmo_poly_trainer.config.maximum_polynomial_order == 3
+
+    @pytest.mark.unit
+    def test_set_polynomial_order_wrongtype(self, pysmo_poly_trainer):
+        with pytest.raises(ValueError,
+                            match = "invalid value for configuration 'maximum_polynomial_order'"
+                            ):
+            pysmo_poly_trainer.config.maximum_polynomial_order = 3.1
+
+    @pytest.mark.unit
+    def test_set_polynomial_order_wrongbounds(self, pysmo_poly_trainer):
+        with pytest.raises(ValueError,
+                            match = "invalid value for configuration 'maximum_polynomial_order'"
+                            ):
+            pysmo_poly_trainer.config.maximum_polynomial_order = 0
+
+
+    @pytest.mark.unit
+    def test_set_number_of_crossvalidations_righttype(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.number_of_crossvalidations = 5
+        assert pysmo_poly_trainer.config.number_of_crossvalidations == 5
+
+    @pytest.mark.unit
+    def test_set_number_of_crossvalidations_wrongtype(self, pysmo_poly_trainer):
+        with pytest.raises(ValueError,
+                            match = "invalid value for configuration 'number_of_crossvalidations'"
+                            ):
+            pysmo_poly_trainer.config.number_of_crossvalidations = 3.1
+
+    @pytest.mark.unit
+    def test_set_number_of_crossvalidations_wrongbounds(self, pysmo_poly_trainer):
+        with pytest.raises(ValueError,
+                            match = "invalid value for configuration 'number_of_crossvalidations'"
+                            ):
+            pysmo_poly_trainer.config.number_of_crossvalidations = 0
+
+
+    @pytest.mark.unit
+    def test_set_training_split_righttype(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.training_split = 0.5
+        assert pysmo_poly_trainer.config.training_split == 0.5
+
+    @pytest.mark.unit
+    def test_set_training_split_wrongbounds(self, pysmo_poly_trainer):
+        with pytest.raises(ValueError,
+                            match = "invalid value for configuration 'training_split'"
+                            ):
+            pysmo_poly_trainer.config.training_split = -0.5
+
+    @pytest.mark.unit
+    def test_set_solution_method_righttype_1(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.solution_method = 'mle'
+        assert pysmo_poly_trainer.config.solution_method == 'mle'
+
+
+    @pytest.mark.unit
+    def test_set_solution_method_righttype_2(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.solution_method = 'pyomo'
+        assert pysmo_poly_trainer.config.solution_method == 'pyomo'
+
+    @pytest.mark.unit
+    def test_set_solution_method_righttype_3(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.solution_method = 'bfgs'
+        assert pysmo_poly_trainer.config.solution_method == 'bfgs'
+
+    @pytest.mark.unit
+    def test_set_solution_method_wrongtype(self, pysmo_poly_trainer):
+        with pytest.raises(ValueError,
+                            match = "invalid value for configuration 'solution_method'"
+                            ):
+            pysmo_poly_trainer.config.solution_method = 'bfgh'
+
+    @pytest.mark.unit
+    def test_set_multinomials_righttype_1(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.multinomials = True
+        assert pysmo_poly_trainer.config.multinomials == True
+
+    @pytest.mark.unit
+    def test_set_multinomials_righttype_2(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.multinomials = False
+        assert pysmo_poly_trainer.config.multinomials == False
+
+    @pytest.mark.unit
+    def test_set_multinomials_righttype_3(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.multinomials = 'False'
+        assert pysmo_poly_trainer.config.multinomials == False
+
+    @pytest.mark.unit
+    def test_set_multinomials_righttype_4(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.multinomials = 'True'
+        assert pysmo_poly_trainer.config.multinomials == True
+
+    @pytest.mark.unit
+    def test_set_multinomials_righttype_5(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.multinomials = 1
+        assert pysmo_poly_trainer.config.multinomials == True
+
+    @pytest.mark.unit
+    def test_set_multinomials_righttype_6(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.multinomials = 0
+        assert pysmo_poly_trainer.config.multinomials == False
+
+    @pytest.mark.unit
+    def test_set_multinomials_wrongtype(self, pysmo_poly_trainer):
+        with pytest.raises(ValueError):
+            pysmo_poly_trainer.config.multinomials = 2
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_1(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.overwrite = True
+        assert pysmo_poly_trainer.config.overwrite == True
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_2(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.overwrite = False
+        assert pysmo_poly_trainer.config.overwrite == False
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_3(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.overwrite = 'False'
+        assert pysmo_poly_trainer.config.overwrite == False
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_4(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.overwrite = 'True'
+        assert pysmo_poly_trainer.config.overwrite == True
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_5(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.overwrite = 1
+        assert pysmo_poly_trainer.config.overwrite == True
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_6(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.overwrite = 0
+        assert pysmo_poly_trainer.config.overwrite == False
+
+    @pytest.mark.unit
+    def test_set_overwrite_wrongtype(self, pysmo_poly_trainer):
+        with pytest.raises(ValueError):
+            pysmo_poly_trainer.config.overwrite = 2
+
+    @pytest.mark.unit
+    def test_set_extra_features_righttype_2(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.extra_features = ['x1 / x2']
+        assert pysmo_poly_trainer.config.extra_features == ['x1 / x2']
+
+
+    @pytest.mark.unit
+    def test_set_extra_features_righttype_2(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.extra_features = ['x1 / x2', 'sin(x1)']
+        assert pysmo_poly_trainer.config.extra_features == ['x1 / x2', 'sin(x1)']
+
+    @pytest.mark.unit
+    def test_set_extra_features_wrongtype(self, pysmo_poly_trainer):
+        with pytest.raises(NameError):
+            pysmo_poly_trainer.config.extra_features = x1/x2
+
+    @pytest.mark.unit
+    def test_set_extra_features_wrongtype(self, pysmo_poly_trainer):
+        with pytest.raises(ValueError):
+            pysmo_poly_trainer.config.extra_features = 10
+
+
+    @pytest.mark.unit
+    def test_create_model_no_extra_features(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.multinomials = 1
+        pysmo_poly_trainer.config.overwrite = True 
+        pysmo_poly_trainer.config.maximum_polynomial_order = 1
+        pysmo_poly_trainer.config.solution_method = 'mle'
+        pysmo_poly_trainer.config.number_of_crossvalidations = 2
+        pysmo_poly_trainer.config.training_split = 0.9
+
+        output_label = 'z5'
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+
+        model = pysmo_poly_trainer._create_model(data, output_label)
+
+        assert model.max_polynomial_order == pysmo_poly_trainer.config.maximum_polynomial_order
+        assert model.overwrite == pysmo_poly_trainer.config.overwrite
+        assert model.multinomials == pysmo_poly_trainer.config.multinomials
+        assert model.solution_method == 'mle'
+        assert model.number_of_crossvalidations == pysmo_poly_trainer.config.number_of_crossvalidations
+        assert model.fraction_training == 0.9
+        assert model.filename == 'pysmo_poly_z5.pickle'
+        assert model.number_of_x_vars == data.shape[1] - 1
+        assert model.additional_term_expressions == []
+        assert model.extra_terms_feature_vector == None
+        np.testing.assert_array_equal(model.original_data, data.values)
+        np.testing.assert_array_equal(model.regression_data, data.values)
+        assert model.regression_data_columns == data.columns.tolist()[:-1]
+        assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
+
+    @pytest.mark.unit
+    def test_create_model_with_extra_features(self, pysmo_poly_trainer):
+        pysmo_poly_trainer.config.multinomials = 0
+        pysmo_poly_trainer.config.overwrite = True 
+        pysmo_poly_trainer.config.maximum_polynomial_order = 2
+        pysmo_poly_trainer.config.solution_method = 'mle'
+        pysmo_poly_trainer.config.number_of_crossvalidations = 2
+        pysmo_poly_trainer.config.training_split = 0.9
+        pysmo_poly_trainer.config.extra_features = ['sin(x1)/cos(x2)', 'log(x1)*sin(x2)', 'x1/x2']
+
+        output_label = 'z1'
+        data = {'x1': [1, 2, 3, 4, 5, 6, 7, 8], 'x2': [5, 6, 7, 8, 9, 10, 11, 12], 'z1': [10, 20, 30, 40, 50, 60, 70, 80]}
+        data = pd.DataFrame(data)
+
+        model = pysmo_poly_trainer._create_model(data, output_label)
+
+        assert model.overwrite == pysmo_poly_trainer.config.overwrite
+        assert model.multinomials == pysmo_poly_trainer.config.multinomials
+        assert model.solution_method == 'mle'
+        assert model.number_of_crossvalidations == pysmo_poly_trainer.config.number_of_crossvalidations
+        assert model.max_polynomial_order == pysmo_poly_trainer.config.maximum_polynomial_order
+        assert model.fraction_training == 0.9
+        assert model.filename == 'pysmo_poly_z1.pickle'
+        assert model.number_of_x_vars == data.shape[1] - 1
+        np.testing.assert_array_equal(model.original_data, data.values)
+        np.testing.assert_array_equal(model.regression_data, data.values)
+        assert model.regression_data_columns == data.columns.tolist()[:-1]
+        assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
+        assert len(model.additional_term_expressions) == 3
+        assert isinstance(model.additional_term_expressions, list)
+        assert isinstance(model.additional_term_expressions[0], pyo.core.expr.numeric_expr.NPV_DivisionExpression) 
+        assert isinstance(model.additional_term_expressions[1], pyo.core.expr.numeric_expr.ProductExpression) 
+        assert isinstance(model.additional_term_expressions[2], pyo.core.expr.numeric_expr.NPV_DivisionExpression) 
+        assert str(model.additional_term_expressions[0]) == 'sin(IndexedParam[x1])/cos(IndexedParam[x2])'
+        assert str(model.additional_term_expressions[1]) == 'log(IndexedParam[x1])*sin(IndexedParam[x2])'
+        assert str(model.additional_term_expressions[2]) == 'IndexedParam[x1]/IndexedParam[x2]'
+        assert model.extra_terms_feature_vector == None
+
+
+class TestPysmoRBFTrainer():
+
+    @pytest.fixture
+    def pysmo_rbf_trainer(self):
+
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+        input_labels = ['x1', 'x2']
+        output_labels = ["z1"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+        rbf_trainer = PysmoRBFTrainer(input_labels=input_labels, output_labels=output_labels, input_bounds=bnds, training_dataframe=data)
+        return rbf_trainer
+
+    @pytest.mark.unit
+    def test_defaults(self, pysmo_rbf_trainer):
+        # Check all defaults
+        assert pysmo_rbf_trainer.model_type == 'None rbf'
+        assert pysmo_rbf_trainer.config.basis_function == None
+        assert pysmo_rbf_trainer.config.regularization == None
+        assert pysmo_rbf_trainer.config.overwrite == True
+        assert pysmo_rbf_trainer.config.solution_method == None
+
+    @pytest.mark.unit
+    def test_set_basis_function_righttype_1(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.basis_function = 'linear'
+        assert pysmo_rbf_trainer.config.basis_function == 'linear'
+
+    @pytest.mark.unit
+    def test_set_basis_function_righttype_2(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.basis_function = 'cubic'
+        assert pysmo_rbf_trainer.config.basis_function == 'cubic'
+
+    @pytest.mark.unit
+    def test_set_basis_function_righttype_3(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.basis_function = 'imq'
+        assert pysmo_rbf_trainer.config.basis_function == 'imq'
+
+    @pytest.mark.unit
+    def test_set_basis_function_righttype_4(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.basis_function = 'mq'
+        assert pysmo_rbf_trainer.config.basis_function == 'mq'
+
+    @pytest.mark.unit
+    def test_set_basis_function_righttype_5(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.basis_function = 'gaussian'
+        assert pysmo_rbf_trainer.config.basis_function == 'gaussian'
+
+    @pytest.mark.unit
+    def test_set_basis_function_righttype_6(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.basis_function = 'spline'
+        assert pysmo_rbf_trainer.config.basis_function == 'spline'
+
+    @pytest.mark.unit
+    def test_set_basis_function_outdomain(self, pysmo_rbf_trainer):
+        with pytest.raises(ValueError,
+                            match = "invalid value for configuration 'basis_function'"
+                            ):
+            pysmo_rbf_trainer.config.basis_function = 'mqimq'
+
+    @pytest.mark.unit
+    def test_set_solution_method_righttype_1(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.solution_method = 'algebraic'
+        assert pysmo_rbf_trainer.config.solution_method == 'algebraic'
+
+    @pytest.mark.unit
+    def test_set_solution_method_righttype_2(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.solution_method = 'pyomo'
+        assert pysmo_rbf_trainer.config.solution_method == 'pyomo'
+
+    @pytest.mark.unit
+    def test_set_solution_method_righttype_3(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.solution_method = 'bfgs'
+        assert pysmo_rbf_trainer.config.solution_method == 'bfgs'
+
+    @pytest.mark.unit
+    def test_set_solution_method_wrongtype(self, pysmo_rbf_trainer):
+        with pytest.raises(ValueError,
+                            match = "invalid value for configuration 'solution_method'"
+                            ):
+            pysmo_rbf_trainer.config.solution_method = 'mle'
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_1(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.overwrite = True
+        assert pysmo_rbf_trainer.config.overwrite == True
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_2(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.overwrite = False
+        assert pysmo_rbf_trainer.config.overwrite == False
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_3(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.overwrite = 'False'
+        assert pysmo_rbf_trainer.config.overwrite == False
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_4(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.overwrite = 'True'
+        assert pysmo_rbf_trainer.config.overwrite == True
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_5(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.overwrite = 1
+        assert pysmo_rbf_trainer.config.overwrite == True
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_6(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.overwrite = 0
+        assert pysmo_rbf_trainer.config.overwrite == False
+
+    @pytest.mark.unit
+    def test_set_overwrite_wrongtype(self, pysmo_rbf_trainer):
+        with pytest.raises(ValueError):
+            pysmo_rbf_trainer.config.overwrite = 2
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_1(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.regularization = True
+        assert pysmo_rbf_trainer.config.regularization == True
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_2(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.regularization = False
+        assert pysmo_rbf_trainer.config.regularization == False
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_3(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.regularization = 'False'
+        assert pysmo_rbf_trainer.config.regularization == False
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_4(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.regularization = 'True'
+        assert pysmo_rbf_trainer.config.regularization == True
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_5(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.regularization = 1
+        assert pysmo_rbf_trainer.config.regularization == True
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_6(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.regularization = 0
+        assert pysmo_rbf_trainer.config.regularization == False
+
+    @pytest.mark.unit
+    def test_set_regularization_wrongtype(self, pysmo_rbf_trainer):
+        with pytest.raises(ValueError):
+            pysmo_rbf_trainer.config.regularization = 2
+
+    # Need to address filename problems
+    @pytest.mark.unit
+    def test_create_model_defaults(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.basis_function = None
+        pysmo_rbf_trainer.config.overwrite = True 
+        pysmo_rbf_trainer.config.regularization = 'True'
+        pysmo_rbf_trainer.config.solution_method = None
+
+        output_label = 'z5'
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+
+        model = pysmo_rbf_trainer._create_model(data, output_label)
+
+        assert model.x_data_columns == ['x1', 'x2']
+        np.testing.assert_array_equal(model.x_data_unscaled, data.values[:, :-1])
+        np.testing.assert_array_equal(model.y_data_unscaled[:, 0], data.values[:, -1])
+        assert model.overwrite == True
+        assert model.basis_function == 'gaussian'
+        assert model.regularization == True 
+        assert model.solution_method == 'algebraic'
+        # assert model.filename == 'pysmo_Nonerbf_z5.pickle'
+        assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
+
+    @pytest.mark.unit
+    def test_create_model_cubic(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.basis_function = 'cubic'
+        pysmo_rbf_trainer.config.overwrite = False 
+        pysmo_rbf_trainer.config.regularization = 'False'
+        pysmo_rbf_trainer.config.solution_method = 'pyomo'
+
+        output_label = 'z5'
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+
+        model = pysmo_rbf_trainer._create_model(data, output_label)
+
+        assert model.x_data_columns == ['x1', 'x2']
+        np.testing.assert_array_equal(model.x_data_unscaled, data.values[:, :-1])
+        np.testing.assert_array_equal(model.y_data_unscaled[:, 0], data.values[:, -1])
+        assert model.overwrite == False
+        assert model.basis_function == 'cubic'
+        assert model.regularization == False
+        assert model.solution_method == 'pyomo'
+        # assert model.filename == 'pysmo_Nonerbf_z5.pickle'
+        assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
+
+    @pytest.mark.unit
+    def test_create_model_imq(self, pysmo_rbf_trainer):
+        pysmo_rbf_trainer.config.basis_function = 'imq'
+        pysmo_rbf_trainer.config.overwrite = False 
+        pysmo_rbf_trainer.config.regularization = True
+        pysmo_rbf_trainer.config.solution_method = 'bfgs'
+
+        output_label = 'z5'
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+
+        model = pysmo_rbf_trainer._create_model(data, output_label)
+
+        assert model.x_data_columns == ['x1', 'x2']
+        np.testing.assert_array_equal(model.x_data_unscaled, data.values[:, :-1])
+        np.testing.assert_array_equal(model.y_data_unscaled[:, 0], data.values[:, -1])
+        assert model.overwrite == False
+        assert model.basis_function == 'imq'
+        assert model.regularization == True 
+        assert model.solution_method == 'bfgs'
+        # assert model.filename == 'pysmo_Nonerbf_z5.pickle'
+        assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
+
+
+class TestPysmoKrigingTrainer():
+
+    @pytest.fixture
+    def pysmo_krg_trainer(self):
+
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+        input_labels = ['x1', 'x2']
+        output_labels = ["z1"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+        krg_trainer = PysmoKrigingTrainer(input_labels=input_labels, output_labels=output_labels, input_bounds=bnds, training_dataframe=data)
+        return krg_trainer
+
+    @pytest.mark.unit
+    def test_defaults(self, pysmo_krg_trainer):
+        # Check all defaults
+        assert pysmo_krg_trainer.model_type == 'kriging'
+        assert pysmo_krg_trainer.config.numerical_gradients == True
+        assert pysmo_krg_trainer.config.regularization == True
+        assert pysmo_krg_trainer.config.overwrite == True
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_1(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.overwrite = True
+        assert pysmo_krg_trainer.config.overwrite == True
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_2(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.overwrite = False
+        assert pysmo_krg_trainer.config.overwrite == False
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_3(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.overwrite = 'False'
+        assert pysmo_krg_trainer.config.overwrite == False
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_4(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.overwrite = 'True'
+        assert pysmo_krg_trainer.config.overwrite == True
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_5(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.overwrite = 1
+        assert pysmo_krg_trainer.config.overwrite == True
+
+    @pytest.mark.unit
+    def test_set_overwrite_righttype_6(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.overwrite = 0
+        assert pysmo_krg_trainer.config.overwrite == False
+
+    @pytest.mark.unit
+    def test_set_overwrite_wrongtype(self, pysmo_krg_trainer):
+        with pytest.raises(ValueError):
+            pysmo_krg_trainer.config.overwrite = 2
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_1(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.regularization = True
+        assert pysmo_krg_trainer.config.regularization == True
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_2(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.regularization = False
+        assert pysmo_krg_trainer.config.regularization == False
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_3(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.regularization = 'False'
+        assert pysmo_krg_trainer.config.regularization == False
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_4(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.regularization = 'True'
+        assert pysmo_krg_trainer.config.regularization == True
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_5(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.regularization = 1
+        assert pysmo_krg_trainer.config.regularization == True
+
+    @pytest.mark.unit
+    def test_set_regularization_righttype_6(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.regularization = 0
+        assert pysmo_krg_trainer.config.regularization == False
+
+    @pytest.mark.unit
+    def test_set_regularization_wrongtype(self, pysmo_krg_trainer):
+        with pytest.raises(ValueError):
+            pysmo_krg_trainer.config.regularization = 2
+
+    @pytest.mark.unit
+    def test_set_numerical_gradients_righttype_1(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.numerical_gradients = True
+        assert pysmo_krg_trainer.config.numerical_gradients == True
+
+    @pytest.mark.unit
+    def test_set_numerical_gradients_righttype_2(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.numerical_gradients = False
+        assert pysmo_krg_trainer.config.numerical_gradients == False
+
+    @pytest.mark.unit
+    def test_set_numerical_gradients_righttype_3(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.numerical_gradients = 'False'
+        assert pysmo_krg_trainer.config.numerical_gradients == False
+
+    @pytest.mark.unit
+    def test_set_numerical_gradients_righttype_4(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.numerical_gradients = 'True'
+        assert pysmo_krg_trainer.config.numerical_gradients == True
+
+    @pytest.mark.unit
+    def test_set_numerical_gradients_righttype_5(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.numerical_gradients = 1
+        assert pysmo_krg_trainer.config.numerical_gradients == True
+
+    @pytest.mark.unit
+    def test_set_numerical_gradients_righttype_6(self, pysmo_krg_trainer):
+        pysmo_krg_trainer.config.numerical_gradients = 0
+        assert pysmo_krg_trainer.config.numerical_gradients == False
+
+    @pytest.mark.unit
+    def test_set_numerical_gradients_wrongtype(self, pysmo_krg_trainer):
+        with pytest.raises(ValueError):
+            pysmo_krg_trainer.config.numerical_gradients = 2
+
+    @pytest.mark.unit
+    def test_create_model_defaults(self, pysmo_krg_trainer):
+        output_label = 'z5'
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+
+        model = pysmo_krg_trainer._create_model(data, output_label)
+
+        assert model.x_data_columns == ['x1', 'x2']
+        np.testing.assert_array_equal(model.x_data, data.values[:, :-1])
+        np.testing.assert_array_equal(model.y_data[:, 0], data.values[:, -1])
+        assert model.overwrite == True
+        assert model.regularization == True 
+        assert model.num_grads == True
+        assert model.filename == 'pysmo_kriging_z5.pickle'
+        assert model.num_vars == data.shape[1] 
+        assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
+
+    @pytest.mark.unit
+    def test_create_model_no_regularization(self, pysmo_krg_trainer):
+        output_label = 'z5'
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+
+        pysmo_krg_trainer.config.regularization = False
+        model = pysmo_krg_trainer._create_model(data, output_label)
+
+        assert model.x_data_columns == ['x1', 'x2']
+        np.testing.assert_array_equal(model.x_data, data.values[:, :-1])
+        np.testing.assert_array_equal(model.y_data[:, 0], data.values[:, -1])
+        assert model.overwrite == True
+        assert model.regularization == False 
+        assert model.num_grads == True
+        assert model.filename == 'pysmo_kriging_z5.pickle'
+        assert model.num_vars == data.shape[1] 
+        assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
+
+    @pytest.mark.unit
+    def test_create_model_no_numerical_grads(self, pysmo_krg_trainer):
+        output_label = 'z5'
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+
+        pysmo_krg_trainer.config.numerical_gradients = 'False'
+        model = pysmo_krg_trainer._create_model(data, output_label)
+
+        assert model.x_data_columns == ['x1', 'x2']
+        np.testing.assert_array_equal(model.x_data, data.values[:, :-1])
+        np.testing.assert_array_equal(model.y_data[:, 0], data.values[:, -1])
+        assert model.overwrite == True
+        assert model.regularization == True 
+        assert model.num_grads == False
+        assert model.filename == 'pysmo_kriging_z5.pickle'
+        assert model.num_vars == data.shape[1] 
+        assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #     @pytest.mark.unit
 #     def test_writer_full_config(self, alamo_trainer):
@@ -1078,6 +1657,40 @@ jstring_krg = (
 #         assert alamo_object._output_labels == ["z1"]
 #         assert alamo_object._input_bounds == {
 #             "x1": (0, 5), "x2": (0, 10)}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class TestPysmoSurrogate():
