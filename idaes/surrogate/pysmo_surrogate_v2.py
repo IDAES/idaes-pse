@@ -158,8 +158,8 @@ class PysmoTrainer(SurrogateTrainer):
             # Log the status
             _log.info(f"Model for output {output_label} trained successfully")
 
-    def _get_output_filename(self, output=""):
-        return f"pysmo_{self.model_type}_{output}.pickle"
+    # def _get_output_filename(self, output=""):
+    #     return f"pysmo_{self.model_type}_{output}.pickle"
 
 
 class PysmoPolyTrainer(PysmoTrainer):
@@ -221,14 +221,6 @@ class PysmoPolyTrainer(PysmoTrainer):
         ),
     )
 
-    CONFIG.declare(
-        "overwrite",
-        ConfigValue(
-            default=True,
-            domain=Bool,
-            description="Flag indicating whether existing files can be overwritten.",
-        )
-    )
 
     def __init__(self, **settings):
         super().__init__(**settings)
@@ -242,8 +234,7 @@ class PysmoPolyTrainer(PysmoTrainer):
             solution_method=self.config.solution_method,
             multinomials=self.config.multinomials,
             number_of_crossvalidations=self.config.number_of_crossvalidations,
-            # fname=self._get_output_filename(output=output_label),
-            overwrite=self.config.overwrite
+            overwrite=True
         )
         variable_headers = model.get_feature_vector()
         if self.config.extra_features is not None:
@@ -306,14 +297,6 @@ class PysmoRBFTrainer(PysmoTrainer):
         ),
     )
 
-    CONFIG.declare(
-        "overwrite",
-        ConfigValue(
-            default=True,
-            domain=Bool,
-            description="Flag indicating whether existing files can be overwritten.",
-        )
-    )
 
     def __init__(self, **settings):
         super().__init__(**settings)
@@ -325,8 +308,7 @@ class PysmoRBFTrainer(PysmoTrainer):
             basis_function=self.config.basis_function,
             solution_method=self.config.solution_method,
             regularization=self.config.regularization,
-            # fname=self._get_output_filename(output=output_label),
-            overwrite = self.config.overwrite
+            overwrite = True
         )
         variable_headers = model.get_feature_vector()
         return model
@@ -364,14 +346,6 @@ class PysmoKrigingTrainer(PysmoTrainer):
         ),
     )
 
-    CONFIG.declare(
-        "overwrite",
-        ConfigValue(
-            default=True,
-            domain=Bool,
-            description="Flag indicating whether existing files can be overwritten.",
-        )
-    )
 
     def __init__(self, **settings):
         super().__init__(**settings)
@@ -382,7 +356,6 @@ class PysmoKrigingTrainer(PysmoTrainer):
             pysmo_input,
             numerical_gradients=self.config.numerical_gradients,
             regularization=self.config.regularization,
-            # fname=self._get_output_filename(output=output_label),
             overwrite=True
         )
         variable_headers = model.get_feature_vector()

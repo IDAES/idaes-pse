@@ -423,7 +423,6 @@ class TestPysmoPolyTrainer():
         assert pysmo_poly_trainer.config.training_split == 0.8
         assert pysmo_poly_trainer.config.solution_method == None
         assert pysmo_poly_trainer.config.extra_features == None 
-        assert pysmo_poly_trainer.config.overwrite == True
 
     @pytest.mark.unit
     def test_set_polynomial_order_righttype(self, pysmo_poly_trainer):
@@ -536,41 +535,6 @@ class TestPysmoPolyTrainer():
             pysmo_poly_trainer.config.multinomials = 2
 
     @pytest.mark.unit
-    def test_set_overwrite_righttype_1(self, pysmo_poly_trainer):
-        pysmo_poly_trainer.config.overwrite = True
-        assert pysmo_poly_trainer.config.overwrite == True
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_2(self, pysmo_poly_trainer):
-        pysmo_poly_trainer.config.overwrite = False
-        assert pysmo_poly_trainer.config.overwrite == False
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_3(self, pysmo_poly_trainer):
-        pysmo_poly_trainer.config.overwrite = 'False'
-        assert pysmo_poly_trainer.config.overwrite == False
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_4(self, pysmo_poly_trainer):
-        pysmo_poly_trainer.config.overwrite = 'True'
-        assert pysmo_poly_trainer.config.overwrite == True
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_5(self, pysmo_poly_trainer):
-        pysmo_poly_trainer.config.overwrite = 1
-        assert pysmo_poly_trainer.config.overwrite == True
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_6(self, pysmo_poly_trainer):
-        pysmo_poly_trainer.config.overwrite = 0
-        assert pysmo_poly_trainer.config.overwrite == False
-
-    @pytest.mark.unit
-    def test_set_overwrite_wrongtype(self, pysmo_poly_trainer):
-        with pytest.raises(ValueError):
-            pysmo_poly_trainer.config.overwrite = 2
-
-    @pytest.mark.unit
     def test_set_extra_features_righttype_2(self, pysmo_poly_trainer):
         pysmo_poly_trainer.config.extra_features = ['x1 / x2']
         assert pysmo_poly_trainer.config.extra_features == ['x1 / x2']
@@ -595,7 +559,6 @@ class TestPysmoPolyTrainer():
     @pytest.mark.unit
     def test_create_model_no_extra_features(self, pysmo_poly_trainer):
         pysmo_poly_trainer.config.multinomials = 1
-        pysmo_poly_trainer.config.overwrite = True 
         pysmo_poly_trainer.config.maximum_polynomial_order = 1
         pysmo_poly_trainer.config.solution_method = 'mle'
         pysmo_poly_trainer.config.number_of_crossvalidations = 2
@@ -608,7 +571,7 @@ class TestPysmoPolyTrainer():
         model = pysmo_poly_trainer._create_model(data, output_label)
 
         assert model.max_polynomial_order == pysmo_poly_trainer.config.maximum_polynomial_order
-        assert model.overwrite == pysmo_poly_trainer.config.overwrite
+        assert model.overwrite == True
         assert model.multinomials == pysmo_poly_trainer.config.multinomials
         assert model.solution_method == 'mle'
         assert model.number_of_crossvalidations == pysmo_poly_trainer.config.number_of_crossvalidations
@@ -625,7 +588,6 @@ class TestPysmoPolyTrainer():
     @pytest.mark.unit
     def test_create_model_with_extra_features(self, pysmo_poly_trainer):
         pysmo_poly_trainer.config.multinomials = 0
-        pysmo_poly_trainer.config.overwrite = True 
         pysmo_poly_trainer.config.maximum_polynomial_order = 2
         pysmo_poly_trainer.config.solution_method = 'mle'
         pysmo_poly_trainer.config.number_of_crossvalidations = 2
@@ -638,7 +600,7 @@ class TestPysmoPolyTrainer():
 
         model = pysmo_poly_trainer._create_model(data, output_label)
 
-        assert model.overwrite == pysmo_poly_trainer.config.overwrite
+        assert model.overwrite == True
         assert model.multinomials == pysmo_poly_trainer.config.multinomials
         assert model.solution_method == 'mle'
         assert model.number_of_crossvalidations == pysmo_poly_trainer.config.number_of_crossvalidations
@@ -680,7 +642,6 @@ class TestPysmoRBFTrainer():
         assert pysmo_rbf_trainer.model_type == 'None rbf'
         assert pysmo_rbf_trainer.config.basis_function == None
         assert pysmo_rbf_trainer.config.regularization == None
-        assert pysmo_rbf_trainer.config.overwrite == True
         assert pysmo_rbf_trainer.config.solution_method == None
 
     @pytest.mark.unit
@@ -743,41 +704,6 @@ class TestPysmoRBFTrainer():
             pysmo_rbf_trainer.config.solution_method = 'mle'
 
     @pytest.mark.unit
-    def test_set_overwrite_righttype_1(self, pysmo_rbf_trainer):
-        pysmo_rbf_trainer.config.overwrite = True
-        assert pysmo_rbf_trainer.config.overwrite == True
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_2(self, pysmo_rbf_trainer):
-        pysmo_rbf_trainer.config.overwrite = False
-        assert pysmo_rbf_trainer.config.overwrite == False
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_3(self, pysmo_rbf_trainer):
-        pysmo_rbf_trainer.config.overwrite = 'False'
-        assert pysmo_rbf_trainer.config.overwrite == False
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_4(self, pysmo_rbf_trainer):
-        pysmo_rbf_trainer.config.overwrite = 'True'
-        assert pysmo_rbf_trainer.config.overwrite == True
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_5(self, pysmo_rbf_trainer):
-        pysmo_rbf_trainer.config.overwrite = 1
-        assert pysmo_rbf_trainer.config.overwrite == True
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_6(self, pysmo_rbf_trainer):
-        pysmo_rbf_trainer.config.overwrite = 0
-        assert pysmo_rbf_trainer.config.overwrite == False
-
-    @pytest.mark.unit
-    def test_set_overwrite_wrongtype(self, pysmo_rbf_trainer):
-        with pytest.raises(ValueError):
-            pysmo_rbf_trainer.config.overwrite = 2
-
-    @pytest.mark.unit
     def test_set_regularization_righttype_1(self, pysmo_rbf_trainer):
         pysmo_rbf_trainer.config.regularization = True
         assert pysmo_rbf_trainer.config.regularization == True
@@ -815,7 +741,6 @@ class TestPysmoRBFTrainer():
     @pytest.mark.unit
     def test_create_model_defaults(self, pysmo_rbf_trainer):
         pysmo_rbf_trainer.config.basis_function = None
-        pysmo_rbf_trainer.config.overwrite = True 
         pysmo_rbf_trainer.config.regularization = 'True'
         pysmo_rbf_trainer.config.solution_method = None
 
@@ -838,7 +763,6 @@ class TestPysmoRBFTrainer():
     @pytest.mark.unit
     def test_create_model_cubic(self, pysmo_rbf_trainer):
         pysmo_rbf_trainer.config.basis_function = 'cubic'
-        pysmo_rbf_trainer.config.overwrite = True
         pysmo_rbf_trainer.config.regularization = 'False'
         pysmo_rbf_trainer.config.solution_method = 'pyomo'
 
@@ -861,7 +785,6 @@ class TestPysmoRBFTrainer():
     @pytest.mark.unit
     def test_create_model_imq(self, pysmo_rbf_trainer):
         pysmo_rbf_trainer.config.basis_function = 'imq'
-        pysmo_rbf_trainer.config.overwrite = False 
         pysmo_rbf_trainer.config.regularization = True
         pysmo_rbf_trainer.config.solution_method = 'bfgs'
 
@@ -874,7 +797,7 @@ class TestPysmoRBFTrainer():
         assert model.x_data_columns == ['x1', 'x2']
         np.testing.assert_array_equal(model.x_data_unscaled, data.values[:, :-1])
         np.testing.assert_array_equal(model.y_data_unscaled[:, 0], data.values[:, -1])
-        assert model.overwrite == False
+        assert model.overwrite == True
         assert model.basis_function == 'imq'
         assert model.regularization == True 
         assert model.solution_method == 'bfgs'
@@ -901,42 +824,6 @@ class TestPysmoKrigingTrainer():
         assert pysmo_krg_trainer.model_type == 'kriging'
         assert pysmo_krg_trainer.config.numerical_gradients == True
         assert pysmo_krg_trainer.config.regularization == True
-        assert pysmo_krg_trainer.config.overwrite == True
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_1(self, pysmo_krg_trainer):
-        pysmo_krg_trainer.config.overwrite = True
-        assert pysmo_krg_trainer.config.overwrite == True
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_2(self, pysmo_krg_trainer):
-        pysmo_krg_trainer.config.overwrite = False
-        assert pysmo_krg_trainer.config.overwrite == False
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_3(self, pysmo_krg_trainer):
-        pysmo_krg_trainer.config.overwrite = 'False'
-        assert pysmo_krg_trainer.config.overwrite == False
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_4(self, pysmo_krg_trainer):
-        pysmo_krg_trainer.config.overwrite = 'True'
-        assert pysmo_krg_trainer.config.overwrite == True
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_5(self, pysmo_krg_trainer):
-        pysmo_krg_trainer.config.overwrite = 1
-        assert pysmo_krg_trainer.config.overwrite == True
-
-    @pytest.mark.unit
-    def test_set_overwrite_righttype_6(self, pysmo_krg_trainer):
-        pysmo_krg_trainer.config.overwrite = 0
-        assert pysmo_krg_trainer.config.overwrite == False
-
-    @pytest.mark.unit
-    def test_set_overwrite_wrongtype(self, pysmo_krg_trainer):
-        with pytest.raises(ValueError):
-            pysmo_krg_trainer.config.overwrite = 2
 
     @pytest.mark.unit
     def test_set_regularization_righttype_1(self, pysmo_krg_trainer):
@@ -1085,7 +972,6 @@ class TestPysmoSurrogate():
             maximum_polynomial_order = 1,
             multinomials=True,
             number_of_crossvalidations=3,
-            overwrite = True
             )
         a1 = pysmo_trainer.train_surrogate()
         pysmo_surr1 = PysmoSurrogate(a1, input_labels, output_labels, bnds)
@@ -1111,7 +997,6 @@ class TestPysmoSurrogate():
             maximum_polynomial_order = 1,
             multinomials=True,
             number_of_crossvalidations=3,
-            overwrite = True
             )
 
         a2_poly = pysmo_trainer.train_surrogate()
@@ -1126,7 +1011,6 @@ class TestPysmoSurrogate():
             validation_dataframe=validation_data,
             basis_function = 'gaussian',
             regularization=False,
-            overwrite = True
             )
         a2_rbf = pysmo_trainer2.train_surrogate()
         pysmo_surr2_rbf = PysmoSurrogate(a2_rbf, input_labels, output_labels, bnds)
@@ -1140,7 +1024,6 @@ class TestPysmoSurrogate():
             validation_dataframe=validation_data,
             regularization = True,
             numerical_gradients = True,
-            overwrite = True
             )
         a2_krg = pysmo_trainer3.train_surrogate()
         pysmo_surr2_krg = PysmoSurrogate(a2_krg, input_labels, output_labels, bnds)
@@ -1168,7 +1051,6 @@ class TestPysmoSurrogate():
             multinomials=False,
             extra_features = ['log(x1)', 'sin(x2)'],
             number_of_crossvalidations=3,
-            overwrite = True
             )
 
         a3 = pysmo_trainer.train_surrogate()
@@ -1196,7 +1078,6 @@ class TestPysmoSurrogate():
             multinomials=False,
             number_of_crossvalidations=3,
             extra_features = ['x1 / x2'],
-            overwrite = True
             )
 
         a2 = pysmo_trainer.train_surrogate()
@@ -1221,7 +1102,6 @@ class TestPysmoSurrogate():
             training_dataframe=training_data,
             validation_dataframe=validation_data,
             basis_function = 'cubic',
-            overwrite = True
             )
         a5_rbf = pysmo_trainer.train_surrogate()
         pysmo_surr5_rbf = PysmoSurrogate(a5_rbf, input_labels, output_labels, bnds)
@@ -1232,7 +1112,6 @@ class TestPysmoSurrogate():
             input_bounds=bnds,
             training_dataframe=training_data,
             validation_dataframe=validation_data,
-            overwrite = True
             )
         a5_krg = pysmo_trainer2.train_surrogate()
         pysmo_surr5_krg = PysmoSurrogate(a5_krg, input_labels, output_labels, bnds)
