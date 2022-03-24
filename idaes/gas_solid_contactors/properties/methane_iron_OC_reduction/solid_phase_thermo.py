@@ -23,6 +23,7 @@ https://webbook.nist.gov/chemistry/ (accessed March 10, 2018).
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
+                           Expression,
                            Param,
                            Reals,
                            value,
@@ -209,15 +210,34 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 doc="Component molar heats of formation [J/mol]",
                 units=pyunits.J/pyunits.mol)
 
-        # Set default scaling
-        self.set_default_scaling("flow_mass", 1)
-        self.set_default_scaling("pressure", 1e-2)
-        self.set_default_scaling("temperature", 1e-2)
-        for comp in self.component_list:
-            self.set_default_scaling("mass_frac_comp", 1e2, index=comp)
-        self.set_default_scaling("enth_mass", 1e-3)
-        self.set_default_scaling("visc_d", 1e4)
-        self.set_default_scaling("therm_cond", 1e2)
+        # # Set default scaling
+        # self.set_default_scaling("flow_mass", 1e-2)
+        # self.set_default_scaling("particle_porosity", 1e2)
+        # self.set_default_scaling("temperature", 1e-2)
+        # for comp in self.component_list:
+        #     self.set_default_scaling("mass_frac_comp", 1e1, index=comp)
+        # self.set_default_scaling("enth_mass", 1e-5)
+        # self.set_default_scaling("dens_mass_particle", 1e-2)
+        # self.set_default_scaling("dens_mass_skeletal", 1e-2)
+
+        # Set default scaling for state variables
+        self.set_default_scaling("flow_mass", 1e-2)
+        self.set_default_scaling("particle_porosity", 1e2)
+        self.set_default_scaling("temperature", 1e-1)
+        self.set_default_scaling("mass_frac_comp", 1e1)
+        self.set_default_scaling("mass_frac_comp", 1e1, index="TiO2")
+        self.set_default_scaling("mass_frac_comp", 1e1, index="Fe2O3")
+        self.set_default_scaling("mass_frac_comp", 1e1, index="Fe3O4")
+        self.set_default_scaling("mass_frac_comp", 1e1, index="FeO")
+        self.set_default_scaling("mass_frac_comp", 1e1, index="Fe")
+
+        # Set default scaling for on demand variables
+        self.set_default_scaling("enth_mass", 1e-8)
+        self.set_default_scaling("enth_mol_comp", 1e-8)
+        self.set_default_scaling("cp_mol_comp", 1e-8)
+        self.set_default_scaling("cp_mass", 1e-8)
+        self.set_default_scaling("dens_mass_particle", 1e-2)
+        self.set_default_scaling("dens_mass_skeletal", 1e-2)
 
     # -------------------------------------------------------------------------
         """ Mixed solid properties"""
@@ -256,7 +276,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # Particle thermal conductivity
         self.therm_cond_sol = Var(
                     domain=Reals,
-                    initialize=12.3e-0,
+                    initialize=12.3,
                     doc='Thermal conductivity of solid particles [J/m.K.s]',
                     units=pyunits.J/pyunits.m/pyunits.K/pyunits.s)
         self.therm_cond_sol.fix()
@@ -313,7 +333,7 @@ class _SolidPhaseStateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
@@ -640,17 +660,57 @@ class SolidPhaseStateBlockData(StateBlockData):
             self.del_component(self.mixture_enthalpy_eqn)
             raise
 
-    def get_material_flow_terms(b, p, j):
-        return b.flow_mass*b.mass_frac_comp[j]
+    def get_material_flow_terms(self, p, j):
+        # return b.flow_mass*b.mass_frac_comp[j]
+        if not self.is_property_constructed("material_flow_terms"):
+            try:
+                def rule_material_flow_terms(b, j):
+                    return b.flow_mass*b.mass_frac_comp[j]
+                self.material_flow_terms = Expression(
+                    self._params.component_list,
+                    rule=rule_material_flow_terms
+                )
+            except AttributeError:
+                self.del_component(self.material_flow_terms)
+        return self.material_flow_terms[j]
 
-    def get_enthalpy_flow_terms(b, p):
-        return b.flow_mass*b.enth_mass
+    def get_enthalpy_flow_terms(self, p):
+        if not self.is_property_constructed("enthalpy_flow_terms"):
+            try:
+                def rule_enthalpy_flow_terms(b):
+                    return self.enth_mass * self.flow_mass
+                self.enthalpy_flow_terms = Expression(
+                    rule=rule_enthalpy_flow_terms
+                )
+            except AttributeError:
+                self.del_component(self.enthalpy_flow_terms)
+        return self.enthalpy_flow_terms
 
-    def get_material_density_terms(b, p, j):
-        return b.dens_mass_particle * b.mass_frac_comp[j]
+    def get_material_density_terms(self, p, j):
+        # return b.dens_mass_particle * b.mass_frac_comp[j]
+        if not self.is_property_constructed("material_density_terms"):
+            try:
+                def rule_material_density_terms(b, j):
+                    return b.dens_mass_particle * b.mass_frac_comp[j]
+                self.material_density_terms = Expression(
+                    self._params.component_list,
+                    rule=rule_material_density_terms
+                )
+            except AttributeError:
+                self.del_component(self.material_density_terms)
+        return self.material_density_terms[j]
 
-    def get_energy_density_terms(b, p):
-        return b.dens_mass_particle * b.enth_mass
+    def get_energy_density_terms(self, p):
+        if not self.is_property_constructed("energy_density_terms"):
+            try:
+                def rule_energy_density_terms(b):
+                    return b.dens_mass_particle * b.enth_mass
+                self.energy_density_terms = Expression(
+                    rule=rule_energy_density_terms
+                )
+            except AttributeError:
+                self.del_component(self.energy_density_terms)
+        return self.energy_density_terms
 
     def define_state_vars(b):
         return {"flow_mass": b.flow_mass,
@@ -673,6 +733,12 @@ class SolidPhaseStateBlockData(StateBlockData):
             _log.error('{} Temperature set above upper bound.'
                        .format(blk.name))
 
+        # Check pressure bounds
+        if value(blk.pressure) < blk.pressure.lb:
+            _log.error('{} Pressure set below lower bound.'.format(blk.name))
+        if value(blk.pressure) > blk.pressure.ub:
+            _log.error('{} Pressure set above upper bound.'.format(blk.name))
+
     def default_material_balance_type(blk):
         return MaterialBalanceType.componentTotal
 
@@ -682,8 +748,72 @@ class SolidPhaseStateBlockData(StateBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
+        if self.is_property_constructed("material_flow_terms"):
+            for i, c in self.material_flow_terms.items():
+                sf1 = iscale.get_scaling_factor(self.mass_frac_comp[i])
+                sf2 = iscale.get_scaling_factor(self.flow_mass)
+                iscale.set_scaling_factor(c, sf1 * sf2)
+
+        if self.is_property_constructed("material_density_terms"):
+            for i, c in self.material_flow_terms.items():
+                sf1 = iscale.get_scaling_factor(self.mass_frac_comp[i])
+                sf2 = iscale.get_scaling_factor(self.dens_mass_particle)
+                iscale.set_scaling_factor(c, sf1 * sf2)
+
+        if self.is_property_constructed("energy_density_terms"):
+            for i, c in self.energy_density_terms.items():
+                sf1 = iscale.get_scaling_factor(self.enth_mass)
+                sf2 = iscale.get_scaling_factor(self.dens_mass_particle)
+                iscale.set_scaling_factor(c, sf1 * sf2)
+
+        if self.is_property_constructed("enthalpy_flow_terms"):
+            for i, c in self.enthalpy_flow_terms.items():
+                sf1 = iscale.get_scaling_factor(self.enth_mass)
+                sf2 = iscale.get_scaling_factor(self.flow_mass)
+                iscale.set_scaling_factor(c, sf1 * sf2)
+
+        # Scale some constraints
         if self.is_property_constructed("sum_component_eqn"):
             iscale.constraint_scaling_transform(
-                self.sum_component_eqn,
-                iscale.get_scaling_factor(self.mass_frac_comp['Fe2O3']),
-                overwrite=False)
+                    self.sum_component_eqn,
+                    1e3,
+                    overwrite=False
+                )
+        if self.is_property_constructed("density_particle_constraint"):
+            iscale.constraint_scaling_transform(
+                self.density_particle_constraint,
+                iscale.get_scaling_factor(self.dens_mass_particle),
+                overwrite=False
+            )
+        if self.is_property_constructed("density_skeletal_constraint"):
+            iscale.constraint_scaling_transform(
+                self.density_skeletal_constraint,
+                iscale.get_scaling_factor(self.dens_mass_skeletal),
+                overwrite=False
+                )
+        if self.is_property_constructed("cp_shomate_eqn"):
+            for i, c in self.cp_shomate_eqn.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(self.cp_mol_comp[i]),
+                    overwrite=False
+                )
+        if self.is_property_constructed("mixture_heat_capacity_eqn"):
+            iscale.constraint_scaling_transform(
+                self.mixture_heat_capacity_eqn,
+                iscale.get_scaling_factor(self.cp_mass),
+                overwrite=False
+            )
+        if self.is_property_constructed("enthalpy_shomate_eqn"):
+            for i, c in self.enthalpy_shomate_eqn.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(self.enth_mol_comp[i]),
+                    overwrite=False
+                )
+        if self.is_property_constructed("mixture_enthalpy_eqn"):
+            iscale.constraint_scaling_transform(
+                self.mixture_enthalpy_eqn,
+                iscale.get_scaling_factor(self.enth_mass),
+                overwrite=False
+                )

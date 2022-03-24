@@ -23,7 +23,7 @@ import time
 from pyomo.environ import ConcreteModel, value
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
 
 # Import IDAES logger
 import idaes.logger as idaeslog
@@ -55,6 +55,7 @@ def main():
 
     m.fs.MB = MBR(default={
         "transformation_method": "dae.collocation",
+        # "finite_elements": 20,
         "gas_phase_config":
             {"property_package": m.fs.gas_properties},
         "solid_phase_config":
@@ -69,7 +70,7 @@ def main():
     # Fix inlet port variables for gas and solid
     m.fs.MB.gas_inlet.flow_mol[0].fix(128.20513)  # mol/s
     m.fs.MB.gas_inlet.temperature[0].fix(298.15)  # K
-    m.fs.MB.gas_inlet.pressure[0].fix(2.00E5)  # Pa = 1E5 bar
+    m.fs.MB.gas_inlet.pressure[0].fix(2.00e5)  # Pa = 1E5 bar
     m.fs.MB.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.02499)
     m.fs.MB.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.00001)
     m.fs.MB.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.975)
@@ -112,7 +113,15 @@ def main():
             'Fe3O4': blk.solid_inlet.mass_frac_comp[0, 'Fe3O4'].value,
             'Al2O3': blk.solid_inlet.mass_frac_comp[0, 'Al2O3'].value}}
 
-    m.fs.MB.initialize(outlvl=idaeslog.INFO,
+    # Apply scaling transformation to the model to reduce ill-conditioning
+    iscale.calculate_scaling_factors(m)
+
+    m.fs.MB.initialize(outlvl=idaeslog.DEBUG,
+                       optarg={
+                           # "tol":1e-5,
+                           "bound_push":1e-15,
+                           "max_iter":100,
+                           "linear_solver":"ma27"},
                        gas_phase_state_args=gas_phase_state_args,
                        solid_phase_state_args=solid_phase_state_args)
 
@@ -136,9 +145,38 @@ def main():
 
     return m
 
+def check_scaling(m):
+    import idaes.core.util.scaling as iscale
+    jac, nlp = iscale.get_jacobian(m, scaled=True)
+    # print("Extreme Jacobian entries:")
+    sourceFile = open('extreme_jacobian.txt', 'w')
+    for i in iscale.extreme_jacobian_entries(jac=jac, nlp=nlp, small=1e-6, large=1e2):
+        print(f"    {i[0]:.2e}, [{i[1]}, {i[2]}]", file=sourceFile)
+    sourceFile.close()
+
+    # print("Unscaled constraints:")
+    sourceFile2 = open('unscaled_constraints.txt', 'w')
+    for c in iscale.unscaled_constraints_generator(m):
+        print(f"    {c}", file=sourceFile2)
+    sourceFile2.close()
+
+    sourceFile3 = open('constraints_with_scale_factor.txt', 'w')
+    # print("Scaled constraints by factor:")
+    for c, s in iscale.constraints_with_scale_factor_generator(m):
+        print(f"    {c}, {s}", file=sourceFile3)
+    sourceFile3.close()
+
+    # print("Badly scaled variables:")
+    sourceFile4 = open('badly_scaled_var.txt', 'w')
+    for v, sv in iscale.badly_scaled_var_generator(m, large=1e2, small=1e-4, zero=1e-12):
+        print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}", file=sourceFile4)
+    sourceFile.close()
+    print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
+
 
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
     m = main()
     stream_table = m.fs.MB._get_stream_table_contents()
     print(stream_table)
+    check_scaling(m)

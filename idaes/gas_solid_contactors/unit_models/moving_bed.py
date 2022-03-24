@@ -571,7 +571,7 @@ see reaction package for documentation.}"""))
                                units=pyunits.dimensionless)
         self.gas_solid_htc = Var(self.flowsheet().time,
                                  self.length_domain,
-                                 domain=Reals, initialize=1.0E3,
+                                 domain=Reals, initialize=1.0,
                                  doc='Gas-solid heat transfer coefficient',
                                  units=units_meta_gas(
                                      'heat_transfer_coefficient'))
@@ -647,17 +647,27 @@ see reaction package for documentation.}"""))
                              self.length_domain,
                              doc="Gas side pressure drop calculation -"
                                  "simplified pressure drop")
+            # def gas_phase_config_pressure_drop(b, t, x):
+            #     #  0.2/s is a unitted constant in the correlation
+            #     return pyunits.convert(
+            #         b.gas_phase.deltaP[t, x],
+            #         to_units=units_meta_solid('pressure') /
+            #         units_meta_solid('length')) == -(0.2/pyunits.s)*(
+            #             b.velocity_superficial_gas[t, x] *
+            #             (pyunits.convert(
+            #                 b.solid_phase.properties[t, x].dens_mass_particle,
+            #                 to_units=units_meta_solid('density_mass')) -
+            #              b.gas_phase.properties[t, x].dens_mass))
             def gas_phase_config_pressure_drop(b, t, x):
                 #  0.2/s is a unitted constant in the correlation
-                return pyunits.convert(
-                    b.gas_phase.deltaP[t, x],
-                    to_units=units_meta_solid('pressure') /
-                    units_meta_solid('length')) == -(0.2/pyunits.s)*(
+                deltaP_units = (units_meta_gas('pressure') /
+                                units_meta_gas('length'))
+                return b.gas_phase.deltaP[t, x] == pyunits.convert(
+                        - (0.2 / pyunits.s) *
                         b.velocity_superficial_gas[t, x] *
-                        (pyunits.convert(
-                            b.solid_phase.properties[t, x].dens_mass_particle,
-                            to_units=units_meta_solid('density_mass')) -
-                         b.gas_phase.properties[t, x].dens_mass))
+                        (b.solid_phase.properties[t, x].dens_mass_particle -
+                         b.gas_phase.properties[t, x].dens_mass),
+                        to_units=deltaP_units)
         elif (self.config.has_pressure_change and
               self.config.pressure_drop_type == "ergun_correlation"):
             # Ergun equation
@@ -665,35 +675,55 @@ see reaction package for documentation.}"""))
                              self.length_domain,
                              doc="Gas side pressure drop calculation -"
                                  "Ergun equation")
+            # def gas_phase_config_pressure_drop(b, t, x):
+            #     #  150/s is a unitted constant in the correlation
+            #     return (-pyunits.convert(
+            #         b.gas_phase.deltaP[t, x],
+            #         to_units=units_meta_solid('pressure') /
+            #         units_meta_solid('length')) ==
+            #             (
+            #             (150/pyunits.s)*(1 - b.bed_voidage) ** 2 *
+            #             b.gas_phase.properties[t, x].visc_d *
+            #             (b.velocity_superficial_gas[t, x] +
+            #              pyunits.convert(b.velocity_superficial_solid[t],
+            #                              to_units=units_meta_solid('velocity'))
+            #              ) /
+            #             (pyunits.convert(b.solid_phase.properties[t, x].
+            #                              _params.particle_dia,
+            #                              to_units=units_meta_solid('length')
+            #                              ) **
+            #              2 * b.bed_voidage ** 3)) +
+            #             (
+            #             1.75*b.gas_phase.properties[t, x].dens_mass *
+            #             (1 - b.bed_voidage) *
+            #             (b.velocity_superficial_gas[t, x] +
+            #              pyunits.convert(b.velocity_superficial_solid[t],
+            #                              to_units=units_meta_solid('velocity'))
+            #              ) ** 2 /
+            #             (pyunits.convert(b.solid_phase.properties[t, x].
+            #              _params.particle_dia,
+            #              to_units=units_meta_solid('length')) *
+            #              b.bed_voidage**3)))
             def gas_phase_config_pressure_drop(b, t, x):
-                #  150/s is a unitted constant in the correlation
-                return (-pyunits.convert(
-                    b.gas_phase.deltaP[t, x],
-                    to_units=units_meta_solid('pressure') /
-                    units_meta_solid('length')) ==
-                        (
-                        (150/pyunits.s)*(1 - b.bed_voidage) ** 2 *
+                deltaP_units = (units_meta_gas('pressure') /
+                                units_meta_gas('length'))
+                return -b.gas_phase.deltaP[t, x] == pyunits.convert((
+                        (150 * pyunits.dimensionless) *
+                        (1 - b.bed_voidage) ** 2 *
                         b.gas_phase.properties[t, x].visc_d *
                         (b.velocity_superficial_gas[t, x] +
-                         pyunits.convert(b.velocity_superficial_solid[t],
-                                         to_units=units_meta_solid('velocity'))
-                         ) /
-                        (pyunits.convert(b.solid_phase.properties[t, x].
-                                         _params.particle_dia,
-                                         to_units=units_meta_solid('length')
-                                         ) **
-                         2 * b.bed_voidage ** 3)) +
+                         b.velocity_superficial_solid[t]) /
+                        (b.solid_phase.properties[t, x].
+                         _params.particle_dia ** 2 * b.bed_voidage ** 3)) +
                         (
-                        1.75*b.gas_phase.properties[t, x].dens_mass *
+                        (1.75 * pyunits.dimensionless) *
+                        b.gas_phase.properties[t, x].dens_mass *
                         (1 - b.bed_voidage) *
                         (b.velocity_superficial_gas[t, x] +
-                         pyunits.convert(b.velocity_superficial_solid[t],
-                                         to_units=units_meta_solid('velocity'))
-                         ) ** 2 /
-                        (pyunits.convert(b.solid_phase.properties[t, x].
-                         _params.particle_dia,
-                         to_units=units_meta_solid('length')) *
-                         b.bed_voidage**3)))
+                         b.velocity_superficial_solid[t]) ** 2 /
+                        (b.solid_phase.properties[t, x]._params.particle_dia *
+                         b.bed_voidage**3)),
+                        to_units=deltaP_units)
             # The above expression has no absolute values - assumes:
             # (velocity_superficial_gas + velocity_superficial_solid) > 0
         else:
@@ -1016,6 +1046,8 @@ see reaction package for documentation.}"""))
             _log.warning('{} Initialization Step 3a Failed.'
                          .format(blk.name))
 
+        # assert False
+
         # Initialize mass balance - with reaction and no pressure drop
         if gas_phase.reaction_package is not None:
             # local aliases used to shorten object names
@@ -1134,9 +1166,6 @@ see reaction package for documentation.}"""))
                     blk.gas_phase.properties[t, x].pressure.unfix()
 
         blk.gas_phase.pressure_balance.activate()
-
-        # Set scaling factors for pressure balance equation
-        blk.gas_phase.scaling_factor_pressure = 1e2
 
         if blk.config.has_pressure_change:
             blk.gas_phase_config_pressure_drop.activate()
@@ -1274,15 +1303,15 @@ see reaction package for documentation.}"""))
                 sf = 1/value(constants.pi*(0.5*self.bed_diameter)**2)
                 iscale.set_scaling_factor(self.bed_area, 1e-1 * sf)
 
-        if hasattr(self.gas_phase, "area"):
-            if iscale.get_scaling_factor(self.gas_phase.area) is None:
-                sf = iscale.get_scaling_factor(self.bed_area)
-                iscale.set_scaling_factor(self.gas_phase.area, sf)
+        # if hasattr(self.gas_phase, "area"):
+        #     if iscale.get_scaling_factor(self.gas_phase.area) is None:
+        #         sf = iscale.get_scaling_factor(self.bed_area)
+        #         iscale.set_scaling_factor(self.gas_phase.area, sf)
 
-        if hasattr(self.solid_phase, "area"):
-            if iscale.get_scaling_factor(self.solid_phase.area) is None:
-                sf = iscale.get_scaling_factor(self.bed_area)
-                iscale.set_scaling_factor(self.solid_phase.area, sf)
+        # if hasattr(self.solid_phase, "area"):
+        #     if iscale.get_scaling_factor(self.solid_phase.area) is None:
+        #         sf = iscale.get_scaling_factor(self.bed_area)
+        #         iscale.set_scaling_factor(self.solid_phase.area, sf)
 
         if hasattr(self.gas_phase, "deltaP"):
             if iscale.get_scaling_factor(self.gas_phase.deltaP) is None:
@@ -1372,7 +1401,7 @@ see reaction package for documentation.}"""))
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(
-                        self.gas_phase.area),
+                        self.bed_area),
                     overwrite=False
                 )
 
@@ -1381,7 +1410,7 @@ see reaction package for documentation.}"""))
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(
-                        self.solid_phase.area),
+                        self.bed_area),
                     overwrite=False
                 )
 
