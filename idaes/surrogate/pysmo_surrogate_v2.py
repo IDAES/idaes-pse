@@ -242,7 +242,7 @@ class PysmoPolyTrainer(PysmoTrainer):
             solution_method=self.config.solution_method,
             multinomials=self.config.multinomials,
             number_of_crossvalidations=self.config.number_of_crossvalidations,
-            fname=self._get_output_filename(output=output_label),
+            # fname=self._get_output_filename(output=output_label),
             overwrite=self.config.overwrite
         )
         variable_headers = model.get_feature_vector()
@@ -325,7 +325,7 @@ class PysmoRBFTrainer(PysmoTrainer):
             basis_function=self.config.basis_function,
             solution_method=self.config.solution_method,
             regularization=self.config.regularization,
-            fname=self._get_output_filename(output=output_label),
+            # fname=self._get_output_filename(output=output_label),
             overwrite = self.config.overwrite
         )
         variable_headers = model.get_feature_vector()
@@ -382,7 +382,7 @@ class PysmoKrigingTrainer(PysmoTrainer):
             pysmo_input,
             numerical_gradients=self.config.numerical_gradients,
             regularization=self.config.regularization,
-            fname=self._get_output_filename(output=output_label),
+            # fname=self._get_output_filename(output=output_label),
             overwrite=True
         )
         variable_headers = model.get_feature_vector()

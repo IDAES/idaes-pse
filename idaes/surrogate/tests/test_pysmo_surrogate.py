@@ -613,7 +613,7 @@ class TestPysmoPolyTrainer():
         assert model.solution_method == 'mle'
         assert model.number_of_crossvalidations == pysmo_poly_trainer.config.number_of_crossvalidations
         assert model.fraction_training == 0.9
-        assert model.filename == 'pysmo_poly_z5.pickle'
+        assert model.filename == 'solution.pickle'
         assert model.number_of_x_vars == data.shape[1] - 1
         assert model.additional_term_expressions == []
         assert model.extra_terms_feature_vector == None
@@ -644,7 +644,7 @@ class TestPysmoPolyTrainer():
         assert model.number_of_crossvalidations == pysmo_poly_trainer.config.number_of_crossvalidations
         assert model.max_polynomial_order == pysmo_poly_trainer.config.maximum_polynomial_order
         assert model.fraction_training == 0.9
-        assert model.filename == 'pysmo_poly_z1.pickle'
+        assert model.filename == 'solution.pickle'
         assert model.number_of_x_vars == data.shape[1] - 1
         np.testing.assert_array_equal(model.original_data, data.values)
         np.testing.assert_array_equal(model.regression_data, data.values)
@@ -812,7 +812,6 @@ class TestPysmoRBFTrainer():
         with pytest.raises(ValueError):
             pysmo_rbf_trainer.config.regularization = 2
 
-    # Need to address filename problems
     @pytest.mark.unit
     def test_create_model_defaults(self, pysmo_rbf_trainer):
         pysmo_rbf_trainer.config.basis_function = None
@@ -839,7 +838,7 @@ class TestPysmoRBFTrainer():
     @pytest.mark.unit
     def test_create_model_cubic(self, pysmo_rbf_trainer):
         pysmo_rbf_trainer.config.basis_function = 'cubic'
-        pysmo_rbf_trainer.config.overwrite = False 
+        pysmo_rbf_trainer.config.overwrite = True
         pysmo_rbf_trainer.config.regularization = 'False'
         pysmo_rbf_trainer.config.solution_method = 'pyomo'
 
@@ -852,11 +851,11 @@ class TestPysmoRBFTrainer():
         assert model.x_data_columns == ['x1', 'x2']
         np.testing.assert_array_equal(model.x_data_unscaled, data.values[:, :-1])
         np.testing.assert_array_equal(model.y_data_unscaled[:, 0], data.values[:, -1])
-        assert model.overwrite == False
+        assert model.overwrite == True
         assert model.basis_function == 'cubic'
         assert model.regularization == False
         assert model.solution_method == 'pyomo'
-        # assert model.filename == 'pysmo_Nonerbf_z5.pickle'
+        assert model.filename == 'solution.pickle'
         assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
 
     @pytest.mark.unit
@@ -1023,7 +1022,7 @@ class TestPysmoKrigingTrainer():
         assert model.overwrite == True
         assert model.regularization == True 
         assert model.num_grads == True
-        assert model.filename == 'pysmo_kriging_z5.pickle'
+        assert model.filename == 'solution.pickle'
         assert model.num_vars == data.shape[1] 
         assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
 
@@ -1042,7 +1041,7 @@ class TestPysmoKrigingTrainer():
         assert model.overwrite == True
         assert model.regularization == False 
         assert model.num_grads == True
-        assert model.filename == 'pysmo_kriging_z5.pickle'
+        assert model.filename == 'solution.pickle'
         assert model.num_vars == data.shape[1] 
         assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
 
@@ -1061,636 +1060,9 @@ class TestPysmoKrigingTrainer():
         assert model.overwrite == True
         assert model.regularization == True 
         assert model.num_grads == False
-        assert model.filename == 'pysmo_kriging_z5.pickle'
+        assert model.filename == 'solution.pickle'
         assert model.num_vars == data.shape[1] 
         assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#     @pytest.mark.unit
-#     def test_writer_full_config(self, alamo_trainer):
-#         alamo_trainer.config.xfactor = [1.2, 1.6]
-#         alamo_trainer.config.xscaling = True
-#         alamo_trainer.config.scalez = True
-
-#         alamo_trainer.config.monomialpower = [0.5, 2]
-#         alamo_trainer.config.multi2power = [1, 2, 3]
-#         alamo_trainer.config.multi3power = [1, 2, 3, 4]
-#         alamo_trainer.config.ratiopower = [1, 2, 3, 4, 5]
-
-#         alamo_trainer.config.constant = True
-#         alamo_trainer.config.linfcns = False
-#         alamo_trainer.config.expfcns = True
-#         alamo_trainer.config.logfcns = False
-#         alamo_trainer.config.sinfcns = True
-#         alamo_trainer.config.cosfcns = False
-#         alamo_trainer.config.grbfcns = True
-#         alamo_trainer.config.rbfparam = 7
-
-#         alamo_trainer.config.modeler = Modelers.AICc
-#         alamo_trainer.config.builder = True
-#         alamo_trainer.config.backstepper = False
-#         alamo_trainer.config.convpen = 42
-#         alamo_trainer.config.screener = Screener.SIS
-#         alamo_trainer.config.ncvf = 4
-#         alamo_trainer.config.sismult = 5
-
-#         alamo_trainer.config.maxiter = -50
-#         alamo_trainer.config.maxtime = 500
-#         alamo_trainer.config.datalimitterms = True
-#         alamo_trainer.config.maxterms = [-1, 2]
-#         alamo_trainer.config.minterms = [2, -1]
-#         alamo_trainer.config.numlimitbasis = False
-#         alamo_trainer.config.exclude = [1, 0]
-#         alamo_trainer.config.ignore = 1
-#         alamo_trainer.config.xisint = [1, 0]
-#         alamo_trainer.config.zisint = 0
-
-#         alamo_trainer.config.tolrelmetric = 8.1
-#         alamo_trainer.config.tolabsmetric = 9.2
-#         alamo_trainer.config.tolmeanerror = 10.3
-#         alamo_trainer.config.tolsse = 11.4
-
-#         alamo_trainer.config.mipoptca = 12.5
-#         alamo_trainer.config.mipoptcr = 13.6
-#         alamo_trainer.config.linearerror = False
-#         alamo_trainer.config.GAMS = "foo"
-#         alamo_trainer.config.GAMSSOLVER = "bar"
-#         alamo_trainer.config.solvemip = False
-#         alamo_trainer.config.print_to_screen = True
-
-#         stream = io.StringIO()
-#         alamo_trainer._write_alm_to_stream(stream=stream)
-
-#         assert stream.getvalue() == (
-#             "# IDAES Alamopy input file\n"
-#             "NINPUTS 2\n"
-#             "NOUTPUTS 1\n"
-#             "XLABELS x1 x2\n"
-#             "ZLABELS z1\n"
-#             "XMIN 0 0\n"
-#             "XMAX 5 10\n"
-#             "NDATA 4\n\n"
-#             "MONO 2\n"
-#             "MULTI2 3\n"
-#             "MULTI3 4\n"
-#             "RATIOS 5\n"
-#             "xfactor 1.2 1.6\n"
-#             "xscaling 1\n"
-#             "scalez 1\n"
-#             "monomialpower 0.5 2\n"
-#             "multi2power 1.0 2.0 3.0\n"
-#             "multi3power 1.0 2.0 3.0 4.0\n"
-#             "ratiopower 1.0 2.0 3.0 4.0 5.0\n"
-#             "expfcns 1\n"
-#             "linfcns 0\n"
-#             "logfcns 0\n"
-#             "sinfcns 1\n"
-#             "cosfcns 0\n"
-#             "constant 1\n"
-#             "grbfcns 1\n"
-#             "rbfparam 7.0\n"
-#             "modeler 3\n"
-#             "builder 1\n"
-#             "backstepper 0\n"
-#             "convpen 42.0\n"
-#             "screener 2\n"
-#             "ncvf 4\n"
-#             "sismult 5\n"
-#             "maxtime 500.0\n"
-#             "maxiter -50\n"
-#             "datalimitterms 1\n"
-#             "maxterms -1 2\n"
-#             "minterms 2 -1\n"
-#             "numlimitbasis 0\n"
-#             "exclude 1 0\n"
-#             "ignore 1\n"
-#             "xisint 1 0\n"
-#             "zisint 0\n"
-#             "tolrelmetric 8.1\n"
-#             "tolabsmetric 9.2\n"
-#             "tolmeanerror 10.3\n"
-#             "tolsse 11.4\n"
-#             "mipoptca 12.5\n"
-#             "mipoptcr 13.6\n"
-#             "linearerror 0\n"
-#             "GAMS foo\n"
-#             "GAMSSOLVER bar\n"
-#             "solvemip 0\n"
-#             "print_to_screen 1\n"
-#             "\nTRACE 1\n\n"
-#             "BEGIN_DATA\n"
-#             "1 5 10\n"
-#             "2 6 20\n"
-#             "3 7 30\n"
-#             "4 8 40\n"
-#             "END_DATA\n")
-
-#     @pytest.mark.component
-#     def test_file_writer(self, alamo_trainer):
-#         alamo_trainer._get_files()
-#         alamo_trainer._write_alm_file()
-
-#         with open(alamo_trainer._almfile, "r") as f:
-#             fcont = f.read()
-#         f.close()
-#         alamo_trainer._remove_temp_files()
-
-#         assert fcont == (
-#             f"# IDAES Alamopy input file\n"
-#             f"NINPUTS 2\n"
-#             f"NOUTPUTS 1\n"
-#             f"XLABELS x1 x2\n"
-#             f"ZLABELS z1\n"
-#             f"XMIN 0 0\n"
-#             f"XMAX 5 10\n"
-#             f"NDATA 4\n\n"
-#             f"linfcns 1\n"
-#             f"constant 1\n"
-#             f"maxtime 1000.0\n"
-#             f"numlimitbasis 1\n\n"
-#             f"TRACE 1\n"
-#             f"TRACEFNAME {alamo_trainer._trcfile}\n\n"
-#             f"BEGIN_DATA\n"
-#             f"1 5 10\n"
-#             f"2 6 20\n"
-#             f"3 7 30\n"
-#             f"4 8 40\n"
-#             f"END_DATA\n")
-
-#         # Check for clean up
-#         assert not os.path.exists(alamo_trainer._almfile)
-
-#     @pytest.mark.unit
-#     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
-#     def test_call_alamo_empty(self, alamo_trainer, caplog):
-#         alamo_trainer._almfile = "test"
-
-#         # To be safe, clear the logger record before test
-#         caplog.clear()
-
-#         alamo_trainer._call_alamo()
-
-#         for record in caplog.records:
-#             assert record.levelname == "WARNING"
-#         assert ("ALAMO executable returned non-zero return code. Check the "
-#                 "ALAMO output for more information.") in caplog.text
-
-#         assert alamo_trainer._temp_context is None
-
-#     @pytest.mark.component
-#     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
-#     def test_call_alamo_w_input(self, alamo_trainer):
-#         cwd = os.getcwd()
-
-#         alamo_trainer._temp_context = TempfileManager.new_context()
-#         alamo_trainer._almfile = os.path.join(dirpath, "alamo_test.alm")
-#         alamo_trainer._wrkdir = dirpath
-
-#         alamo_trainer._temp_context.add_tempfile(
-#             os.path.join(dirpath, "GUI_trace.trc"), exists=False)
-#         alamo_trainer._temp_context.add_tempfile(
-#             os.path.join(dirpath, "alamo_test.lst"), exists=False)
-#         rc, almlog = alamo_trainer._call_alamo()
-#         assert rc == 0
-#         assert "Normal termination" in almlog
-
-#         # Check for clean up
-#         alamo_trainer._temp_context.release(remove=True)
-#         assert not os.path.exists(os.path.join(dirpath, "GUI_trace.trc"))
-#         assert not os.path.exists(os.path.join(dirpath, "alamo_test.lst"))
-#         assert cwd == os.getcwd()
-
-#     @pytest.mark.unit
-#     def test_read_trace_single(self, alamo_trainer):
-#         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-#         trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile)
-
-#         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
-#                         '4.0000000000020765611453 * x2**2 - '
-#                         '2.0999999999859380039879 * x1**4 + '
-#                         '4.0000000000043112180492 * x2**4 + '
-#                         '0.33333333332782633107172 * x1**6 + '
-#                         '0.99999999999972988273811 * x1*x2')}
-
-#         assert trc == {
-#             'filename': 'GUI_camel6.alm',
-#             'NINPUTS': '2',
-#             'NOUTPUTS': '1',
-#             'INITIALPOINTS': '10',
-#             'OUTPUT': {'z1': '1'},
-#             'SET': '0',
-#             'INITIALIZER': '3',
-#             'SAMPLER': '1',
-#             'MODELER': '1',
-#             'BUILDER': '1',
-#             'GREEDYBUILD': 'T',
-#             'BACKSTEPPER': '0',
-#             'GREEDYBACK': 'T',
-#             'REGULARIZER': '0',
-#             'SOLVEMIP': 'F',
-#             'SSEOLR': {'z1': '0.602E-28'},
-#             'SSE': {'z1': '0.976E-23'},
-#             'RMSE': {'z1': '0.988E-12'},
-#             'R2': {'z1': '1.00'},
-#             'ModelSize': {'z1': '6'},
-#             'BIC': {'z1': '-539.'},
-#             'RIC': {'z1': '32.5'},
-#             'Cp': {'z1': '2.00'},
-#             'AICc': {'z1': '-513.'},
-#             'HQC': {'z1': '-543.'},
-#             'MSE': {'z1': '0.325E-23'},
-#             'SSEp': {'z1': '0.976E-23'},
-#             'MADp': {'z1': '0.115E-07'},
-#             'OLRTime': {'z1': '0.46875000E-01'},
-#             'numOLRs': {'z1': '16384'},
-#             'OLRoneCalls': {'z1': '15'},
-#             'OLRoneFails': {'z1': '0'},
-#             'OLRgsiCalls': {'z1': '0'},
-#             'OLRgsiFails': {'z1': '0'},
-#             'OLRdgelCalls': {'z1': '16369'},
-#             'OLRdgelFails': {'z1': '0'},
-#             'OLRclrCalls': {'z1': '0'},
-#             'OLRclrFails': {'z1': '0'},
-#             'OLRgmsCalls': {'z1': '0'},
-#             'OLRgmsFails': {'z1': '0'},
-#             'CLRTime': {'z1': '0.0000000'},
-#             'numCLRs': {'z1': '0'},
-#             'MIPTime': {'z1': '0.0000000'},
-#             'NumMIPs': {'z1': '0'},
-#             'LassoTime': {'z1': '0.0000000'},
-#             'Metric1Lasso': {'z1': '0.17976931+309'},
-#             'Metric2Lasso': {'z1': '0.17976931+309'},
-#             'LassoSuccess': {'z1': 'F'},
-#             'LassoRed': {'z1': '0.0000000'},
-#             'nBasInitAct': {'z1': '15'},
-#             'nBas': {'z1': '15'},
-#             'SimTime': {'z1': '0.0000000'},
-#             'SimData': {'z1': '0'},
-#             'TotData': {'z1': '10'},
-#             'NdataConv': {'z1': '0'},
-#             'OtherTime': {'z1': '0.46875000E-01'},
-#             'NumIters': {'z1': '1'},
-#             'IterConv': {'z1': '0'},
-#             'TimeConv': {'z1': '0.0000000'},
-#             'Step0Time': {'z1': '0.0000000'},
-#             'Step1Time': {'z1': '0.93750000E-01'},
-#             'Step2Time': {'z1': '0.0000000'},
-#             'TotalTime': {'z1': '0.93750000E-01'},
-#             'AlamoStatus': {'z1': '0'},
-#             'AlamoVersion': {'z1': '2021.5.8'},
-#             'Model': mdict}
-
-#     @pytest.mark.unit
-#     def test_read_trace_multi(self, alamo_trainer):
-#         alamo_trainer._output_labels = ["z1", "z2"]
-
-#         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace2.trc")
-#         trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile)
-
-#         mdict = {
-#             'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
-#                    '4.0000000000020765611453 * x2**2 - '
-#                    '2.0999999999859380039879 * x1**4 + '
-#                    '4.0000000000043112180492 * x2**4 + '
-#                    '0.33333333332782633107172 * x1**6 + '
-#                    '0.99999999999972988273811 * x1*x2'),
-#             'z2': (' z2 == 0.72267799849202937756409E-001 * x1 + '
-#                    '0.68451684753912708791823E-001 * x2 + '
-#                    '1.0677896915911471165117 * x1**2 - '
-#                    '0.70576464806224348258468 * x2**2 - '
-#                    '0.40286283566554989543640E-001 * x1**3 + '
-#                    '0.67785668021684807038607E-002 * x2**5 - '
-#                    '0.14017881460354553180281 * x1**6 + '
-#                    '0.77207049441576647286212 * x2**6 + '
-#                    '0.42143309951518070910481 * x1*x2 - '
-#                    '0.41818729807213093907503E-001')}
-
-#         assert trc == {
-#             'filename': 'GUI_camel6_twooutputs.alm',
-#             'NINPUTS': '2',
-#             'NOUTPUTS': '2',
-#             'INITIALPOINTS': '10',
-#             'OUTPUT': {'z1': '1', 'z2': '2'},
-#             'SET': '0',
-#             'INITIALIZER': '3',
-#             'SAMPLER': '1',
-#             'MODELER': '1',
-#             'BUILDER': '1',
-#             'GREEDYBUILD': 'T',
-#             'BACKSTEPPER': '0',
-#             'GREEDYBACK': 'T',
-#             'REGULARIZER': '0',
-#             'SOLVEMIP': 'F',
-#             'SSEOLR': {'z1': '0.602E-28', 'z2': '0.280E-30'},
-#             'SSE': {'z1': '0.976E-23', 'z2': '0.280E-30'},
-#             'RMSE': {'z1': '0.988E-12', 'z2': '0.167E-15'},
-#             'R2': {'z1': '1.00', 'z2': '1.00'},
-#             'ModelSize': {'z1': '6', 'z2': '10'},
-#             'BIC': {'z1': '-539.', 'z2': '-704.'},
-#             'RIC': {'z1': '32.5', 'z2': '54.2'},
-#             'Cp': {'z1': '2.00', 'z2': '10.0'},
-#             'AICc': {'z1': '-513.', 'z2': '-707.'},
-#             'HQC': {'z1': '-543.', 'z2': '-710.'},
-#             'MSE': {'z1': '0.325E-23', 'z2': '0.280E-30'},
-#             'SSEp': {'z1': '0.976E-23', 'z2': '0.280E-30'},
-#             'MADp': {'z1': '0.115E-07', 'z2': '0.118E-11'},
-#             'OLRTime': {'z1': '0.15625000E-01', 'z2': '0.93750000E-01'},
-#             'numOLRs': {'z1': '16384', 'z2': '30827'},
-#             'OLRoneCalls': {'z1': '30', 'z2': '30'},
-#             'OLRoneFails': {'z1': '0', 'z2': '0'},
-#             'OLRgsiCalls': {'z1': '0', 'z2': '0'},
-#             'OLRgsiFails': {'z1': '0', 'z2': '0'},
-#             'OLRdgelCalls': {'z1': '47181', 'z2': '47181'},
-#             'OLRdgelFails': {'z1': '0', 'z2': '0'},
-#             'OLRclrCalls': {'z1': '0', 'z2': '0'},
-#             'OLRclrFails': {'z1': '0', 'z2': '0'},
-#             'OLRgmsCalls': {'z1': '0', 'z2': '0'},
-#             'OLRgmsFails': {'z1': '0', 'z2': '0'},
-#             'CLRTime': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'numCLRs': {'z1': '0', 'z2': '0'},
-#             'MIPTime': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'NumMIPs': {'z1': '0', 'z2': '0'},
-#             'LassoTime': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'Metric1Lasso': {'z1': '0.17976931+309', 'z2': '0.17976931+309'},
-#             'Metric2Lasso': {'z1': '0.17976931+309', 'z2': '0.17976931+309'},
-#             'LassoSuccess': {'z1': 'F', 'z2': 'F'},
-#             'LassoRed': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'nBasInitAct': {'z1': '15', 'z2': '15'},
-#             'nBas': {'z1': '15', 'z2': '15'},
-#             'SimTime': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'SimData': {'z1': '0', 'z2': '0'},
-#             'TotData': {'z1': '10', 'z2': '10'},
-#             'NdataConv': {'z1': '0', 'z2': '0'},
-#             'OtherTime': {'z1': '0.31250000E-01', 'z2': '0.31250000E-01'},
-#             'NumIters': {'z1': '1', 'z2': '1'},
-#             'IterConv': {'z1': '0', 'z2': '0'},
-#             'TimeConv': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'Step0Time': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'Step1Time': {'z1': '0.15625000', 'z2': '0.15625000'},
-#             'Step2Time': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'TotalTime': {'z1': '0.46875000E-01', 'z2': '0.10937500'},
-#             'AlamoStatus': {'z1': '0', 'z2': '0'},
-#             'AlamoVersion': {'z1': '2021.5.8', 'z2': '2021.5.8'},
-#             'Model': mdict}
-
-#     @pytest.mark.unit
-#     def test_read_trace_number_mismatch(self, alamo_trainer):
-#         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace2.trc")
-#         with pytest.raises(RuntimeError,
-#                            match="Mismatch when reading ALAMO trace file. "
-#                            "Expected OUTPUT = 1, found 2."):
-#             alamo_trainer._read_trace_file(alamo_trainer._trcfile)
-
-#     @pytest.mark.unit
-#     def test_read_trace_label_mismatch(self, alamo_trainer):
-#         alamo_trainer._output_labels = ["z1", "z3"]
-
-#         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace2.trc")
-#         with pytest.raises(RuntimeError,
-#                            match="Mismatch when reading ALAMO trace file. "
-#                            "Label of output variable in expression "
-#                            "\(z2\) does not match expected label \(z3\)."):
-#             alamo_trainer._read_trace_file(alamo_trainer._trcfile)
-
-#     @pytest.mark.unit
-#     def test_read_trace_w_validation(self, alamo_trainer):
-#         alamo_trainer._output_labels = ["z1", "z2"]
-
-#         alamo_trainer._trcfile = os.path.join(
-#             dirpath, "alamotrace_w_validation.trc")
-#         trc = alamo_trainer._read_trace_file(
-#             alamo_trainer._trcfile, has_validation_data=True)
-
-#         mdict = {
-#             'z1': (' z1 ==  - 0.99999999999999689137553 * x1 - '
-#                    '0.20616513343350446289142E-015 * x2 + '
-#                    '1.0000000000000002220446 * x1**2 - x2**2 + '
-#                    '0.99999999999999811262086'),
-#             'z2': (' z2 == 1.0000000000000022204460 * x2 - '
-#                    '1.0000000000000002220446 * x1**2 + x2**2 - '
-#                    '0.72986161565720566182285E-016 * x1**3 - '
-#                    '1.0000000000000091038288')}
-
-#         assert trc == {
-#             'filename': 'alamo_error.alm',
-#             'NINPUTS': '2',
-#             'NOUTPUTS': '2',
-#             'INITIALPOINTS': '7',
-#             'OUTPUT': {'z1': '1', 'z2': '2'},
-#             'SET': '0',
-#             'INITIALIZER': '3',
-#             'SAMPLER': '1',
-#             'MODELER': '1',
-#             'BUILDER': '1',
-#             'GREEDYBUILD': 'T',
-#             'BACKSTEPPER': '0',
-#             'GREEDYBACK': 'T',
-#             'REGULARIZER': '0',
-#             'SOLVEMIP': 'F',
-#             'SSEOLR': {'z1': '0.347E-27', 'z2': '0.247E-27'},
-#             'SSE': {'z1': '0.347E-27', 'z2': '0.247E-27'},
-#             'RMSE': {'z1': '0.704E-14', 'z2': '0.594E-14'},
-#             'R2': {'z1': '1.00', 'z2': '1.00'},
-#             'ModelSize': {'z1': '5', 'z2': '5'},
-#             'BIC': {'z1': '-446.', 'z2': '-449.'},
-#             'RIC': {'z1': '20.8', 'z2': '20.8'},
-#             'Cp': {'z1': '3.00', 'z2': '3.00'},
-#             'AICc': {'z1': '-386.', 'z2': '-389.'},
-#             'HQC': {'z1': '-450.', 'z2': '-452.'},
-#             'MSE': {'z1': '0.347E-27', 'z2': '0.247E-27'},
-#             'SSEp': {'z1': '0.347E-27', 'z2': '0.247E-27'},
-#             'MADp': {'z1': '0.888E-13', 'z2': '0.888E-13'},
-#             'OLRTime': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'numOLRs': {'z1': '247', 'z2': '247'},
-#             'OLRoneCalls': {'z1': '16', 'z2': '16'},
-#             'OLRoneFails': {'z1': '0', 'z2': '0'},
-#             'OLRgsiCalls': {'z1': '0', 'z2': '0'},
-#             'OLRgsiFails': {'z1': '0', 'z2': '0'},
-#             'OLRdgelCalls': {'z1': '478', 'z2': '478'},
-#             'OLRdgelFails': {'z1': '0', 'z2': '0'},
-#             'OLRclrCalls': {'z1': '0', 'z2': '0'},
-#             'OLRclrFails': {'z1': '0', 'z2': '0'},
-#             'OLRgmsCalls': {'z1': '0', 'z2': '0'},
-#             'OLRgmsFails': {'z1': '0', 'z2': '0'},
-#             'CLRTime': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'numCLRs': {'z1': '0', 'z2': '0'},
-#             'MIPTime': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'NumMIPs': {'z1': '0', 'z2': '0'},
-#             'LassoTime': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'Metric1Lasso': {'z1': '0.17976931+309', 'z2': '0.17976931+309'},
-#             'Metric2Lasso': {'z1': '0.17976931+309', 'z2': '0.17976931+309'},
-#             'LassoSuccess': {'z1': 'F', 'z2': 'F'},
-#             'LassoRed': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'nBasInitAct': {'z1': '8', 'z2': '8'},
-#             'nBas': {'z1': '8', 'z2': '8'},
-#             'SimTime': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'SimData': {'z1': '0', 'z2': '0'},
-#             'TotData': {'z1': '7', 'z2': '7'},
-#             'NdataConv': {'z1': '0', 'z2': '0'},
-#             'OtherTime': {'z1': '0.18750000', 'z2': '0.18750000'},
-#             'NumIters': {'z1': '1', 'z2': '1'},
-#             'IterConv': {'z1': '0', 'z2': '0'},
-#             'TimeConv': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'Step0Time': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'Step1Time': {'z1': '0.15625000E-01', 'z2': '0.15625000E-01'},
-#             'Step2Time': {'z1': '0.0000000', 'z2': '0.0000000'},
-#             'TotalTime': {'z1': '0.0000000', 'z2': '0.15625000E-01'},
-#             'AlamoStatus': {'z1': '0', 'z2': '0'},
-#             'AlamoVersion': {'z1': '2021.12.28', 'z2': '2021.12.28'},
-#             'Model': mdict}
-
-#     @pytest.mark.unit
-#     def test_populate_results(self, alamo_trainer):
-#         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-#         trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile)
-#         alamo_trainer._populate_results(trc)
-
-#         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
-#                         '4.0000000000020765611453 * x2**2 - '
-#                         '2.0999999999859380039879 * x1**4 + '
-#                         '4.0000000000043112180492 * x2**4 + '
-#                         '0.33333333332782633107172 * x1**6 + '
-#                         '0.99999999999972988273811 * x1*x2')}
-
-#         assert alamo_trainer._results == {
-#             'filename': 'GUI_camel6.alm',
-#             'NINPUTS': '2',
-#             'NOUTPUTS': '1',
-#             'INITIALPOINTS': '10',
-#             'OUTPUT': {'z1': '1'},
-#             'SET': '0',
-#             'INITIALIZER': '3',
-#             'SAMPLER': '1',
-#             'MODELER': '1',
-#             'BUILDER': '1',
-#             'GREEDYBUILD': 'T',
-#             'BACKSTEPPER': '0',
-#             'GREEDYBACK': 'T',
-#             'REGULARIZER': '0',
-#             'SOLVEMIP': 'F',
-#             'SSEOLR': {'z1': '0.602E-28'},
-#             'SSE': {'z1': '0.976E-23'},
-#             'RMSE': {'z1': '0.988E-12'},
-#             'R2': {'z1': '1.00'},
-#             'ModelSize': {'z1': '6'},
-#             'BIC': {'z1': '-539.'},
-#             'RIC': {'z1': '32.5'},
-#             'Cp': {'z1': '2.00'},
-#             'AICc': {'z1': '-513.'},
-#             'HQC': {'z1': '-543.'},
-#             'MSE': {'z1': '0.325E-23'},
-#             'SSEp': {'z1': '0.976E-23'},
-#             'MADp': {'z1': '0.115E-07'},
-#             'OLRTime': {'z1': '0.46875000E-01'},
-#             'numOLRs': {'z1': '16384'},
-#             'OLRoneCalls': {'z1': '15'},
-#             'OLRoneFails': {'z1': '0'},
-#             'OLRgsiCalls': {'z1': '0'},
-#             'OLRgsiFails': {'z1': '0'},
-#             'OLRdgelCalls': {'z1': '16369'},
-#             'OLRdgelFails': {'z1': '0'},
-#             'OLRclrCalls': {'z1': '0'},
-#             'OLRclrFails': {'z1': '0'},
-#             'OLRgmsCalls': {'z1': '0'},
-#             'OLRgmsFails': {'z1': '0'},
-#             'CLRTime': {'z1': '0.0000000'},
-#             'numCLRs': {'z1': '0'},
-#             'MIPTime': {'z1': '0.0000000'},
-#             'NumMIPs': {'z1': '0'},
-#             'LassoTime': {'z1': '0.0000000'},
-#             'Metric1Lasso': {'z1': '0.17976931+309'},
-#             'Metric2Lasso': {'z1': '0.17976931+309'},
-#             'LassoSuccess': {'z1': 'F'},
-#             'LassoRed': {'z1': '0.0000000'},
-#             'nBasInitAct': {'z1': '15'},
-#             'nBas': {'z1': '15'},
-#             'SimTime': {'z1': '0.0000000'},
-#             'SimData': {'z1': '0'},
-#             'TotData': {'z1': '10'},
-#             'NdataConv': {'z1': '0'},
-#             'OtherTime': {'z1': '0.46875000E-01'},
-#             'NumIters': {'z1': '1'},
-#             'IterConv': {'z1': '0'},
-#             'TimeConv': {'z1': '0.0000000'},
-#             'Step0Time': {'z1': '0.0000000'},
-#             'Step1Time': {'z1': '0.93750000E-01'},
-#             'Step2Time': {'z1': '0.0000000'},
-#             'TotalTime': {'z1': '0.93750000E-01'},
-#             'AlamoStatus': {'z1': '0'},
-#             'AlamoVersion': {'z1': '2021.5.8'},
-#             'Model': mdict}
-
-#     @pytest.mark.unit
-#     def test_build_surrogate_object(self, alamo_trainer):
-#         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-#         trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile)
-#         alamo_trainer._populate_results(trc)
-#         alamo_object = alamo_trainer._build_surrogate_object()
-
-#         assert isinstance(alamo_object, AlamoSurrogate)
-#         assert alamo_object._surrogate_expressions == {
-#             'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
-#                    '4.0000000000020765611453 * x2**2 - '
-#                    '2.0999999999859380039879 * x1**4 + '
-#                    '4.0000000000043112180492 * x2**4 + '
-#                    '0.33333333332782633107172 * x1**6 + '
-#                    '0.99999999999972988273811 * x1*x2')}
-#         assert alamo_object._input_labels == ["x1", "x2"]
-#         assert alamo_object._output_labels == ["z1"]
-#         assert alamo_object._input_bounds == {
-#             "x1": (0, 5), "x2": (0, 10)}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class TestPysmoSurrogate():
@@ -2843,3 +2215,14 @@ class TestKrigingWorkflow():
         assert metrics["z1"]["RMSE"] == pytest.approx(
             pysmo_trainer_krg._data['z1'].metrics['RMSE'], rel=1e-8)
 
+
+
+
+
+
+
+
+
+# class TestPysmoTrainer():
+
+#     @pytest.fixture
