@@ -1324,7 +1324,7 @@ arrangement to use for delta T
         blk.side_1.model_check()
         blk.side_2.model_check()
 
-    def initialize(
+    def initialize_build(
         blk,
         state_args_1=None,
         state_args_2=None,
@@ -1490,6 +1490,8 @@ arrangement to use for delta T
         # Since this depends on the process size this is another scaling factor
         # the user should always set.
         sf_a = iscale.get_scaling_factor(self.area, default=1e-4, warning=True)
+
+        iscale.constraint_scaling_transform(self.area_eqn, sf_a)
 
         for t, c in self.v_shell_eqn.items():
             s = iscale.min_scaling_factor(

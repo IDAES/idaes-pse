@@ -58,8 +58,7 @@ class Design(object):
 
         """
         Pts, Atoms = readPointsAndAtomsFromPDB(filename)
-        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
-                   Atoms)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN), Atoms)
 
     # === CONSTRUCTOR - From XYZ
     @classmethod
@@ -76,8 +75,7 @@ class Design(object):
 
         """
         Pts, Atoms = readPointsAndAtomsFromXYZ(filename)
-        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
-                   Atoms)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN), Atoms)
 
     # === CONSTRUCTOR - From CFG
     @classmethod
@@ -94,8 +92,7 @@ class Design(object):
 
         """
         Pts, Atoms = readPointsAndAtomsFromCFG(filename)
-        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
-                   Atoms)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN), Atoms)
 
     # === CONSTRUCTOR - From POSCAR/CONTCAR
     @classmethod
@@ -112,8 +109,7 @@ class Design(object):
 
         """
         Pts, Atoms = readPointsAndAtomsFromPOSCAR(filename)
-        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
-                   Atoms)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN), Atoms)
 
     fromCONTCAR = fromPOSCAR
     """Makes a Design by reading from CONTCAR file.
@@ -209,9 +205,7 @@ class Design(object):
         """Compare strict equality of two Designs."""
         return self.Contents == other.Contents and self.Canvas == other.Canvas
 
-    def isEquivalentTo(self, other,
-                       blnPreserveIndexing=False,
-                       blnIgnoreVoid=True):
+    def isEquivalentTo(self, other, blnPreserveIndexing=False, blnIgnoreVoid=True):
         """Compare equivilancy of two Designs.
 
         Args:
@@ -312,10 +306,24 @@ class Design(object):
             None.
 
         """
-        writeDesignToCFG(self, filename, GS=GS, BBox=BBox, AuxPropMap=AuxPropMap, blnGroupByType=blnGroupByType)
+        writeDesignToCFG(
+            self,
+            filename,
+            GS=GS,
+            BBox=BBox,
+            AuxPropMap=AuxPropMap,
+            blnGroupByType=blnGroupByType,
+        )
 
-    def toPOSCAR(self, filename, CommentLine=None, GS=None, BBox=None,
-                 Elems=None, blnUseDirect=True):
+    def toPOSCAR(
+        self,
+        filename,
+        CommentLine=None,
+        GS=None,
+        BBox=None,
+        Elems=None,
+        blnUseDirect=True,
+    ):
         """Write a Design to CFG file.
 
         Args:
@@ -339,8 +347,15 @@ class Design(object):
             None.
 
         """
-        writeDesignToPOSCAR(self, filename, CommentLine=CommentLine, GS=GS, BBox=BBox,
-                            Elems=Elems, blnUseDirect=blnUseDirect)
+        writeDesignToPOSCAR(
+            self,
+            filename,
+            CommentLine=CommentLine,
+            GS=GS,
+            BBox=BBox,
+            Elems=Elems,
+            blnUseDirect=blnUseDirect,
+        )
 
 
 def loadFromPDBs(filenames, folder=None):
@@ -348,7 +363,7 @@ def loadFromPDBs(filenames, folder=None):
 
     Args:
         filenames (list<str>): List of files to read.
-        folder (str): Optional, folder to prepend to filenames. 
+        folder (str): Optional, folder to prepend to filenames.
             (Default value = None)
 
     Returns:
@@ -368,7 +383,7 @@ def loadFromXYZs(filenames, folder=None):
 
     Args:
         filenames (list<str>): List of files to read.
-        folder (str): Optional, folder to prepend to filenames. 
+        folder (str): Optional, folder to prepend to filenames.
             (Default value = None)
 
     Returns:
@@ -388,7 +403,7 @@ def loadFromCFGs(filenames, folder=None):
 
     Args:
         filenames (list<str>): List of files to read.
-        folder (str): Optional, folder to prepend to filenames. 
+        folder (str): Optional, folder to prepend to filenames.
             (Default value = None)
 
     Returns:

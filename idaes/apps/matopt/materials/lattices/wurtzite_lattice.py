@@ -28,59 +28,81 @@ class WurtziteLattice(UnitCellLattice):
 
     # === STANDARD CONSTRUCTOR
     def __init__(self, IAD):
-        RefUnitCellShape = Parallelepiped(np.array([1, 0, 0], dtype=float),
-                                          np.array([0.5, sqrt(3) / 2, 0], dtype=float),
-                                          np.array([0, 0, sqrt(8) / sqrt(3)], dtype=float),
-                                          BotBackLeftCorner=np.array([0, 0, 0], dtype=float))
+        RefUnitCellShape = Parallelepiped(
+            np.array([1, 0, 0], dtype=float),
+            np.array([0.5, sqrt(3) / 2, 0], dtype=float),
+            np.array([0, 0, sqrt(8) / sqrt(3)], dtype=float),
+            BotBackLeftCorner=np.array([0, 0, 0], dtype=float),
+        )
         RefUnitCellTiling = CubicTiling(RefUnitCellShape)
-        RefFracPositions = [np.array([0.0, 0.0, 0.0]),
-                            np.array([0.5, sqrt(3) / 6.0, 1.0 / sqrt(24)]),
-                            np.array([0.5, sqrt(3) / 6.0, 4.0 / sqrt(24)]),
-                            np.array([0.0, 0.0, 5.0 / sqrt(24)])]
+        RefFracPositions = [
+            np.array([0.0, 0.0, 0.0]),
+            np.array([0.5, sqrt(3) / 6.0, 1.0 / sqrt(24)]),
+            np.array([0.5, sqrt(3) / 6.0, 4.0 / sqrt(24)]),
+            np.array([0.0, 0.0, 5.0 / sqrt(24)]),
+        ]
         RefUnitCell = UnitCell(RefUnitCellTiling, RefFracPositions)
         UnitCellLattice.__init__(self, RefUnitCell)
-        self._IAD = WurtziteLattice.RefIAD  # IAD is set correctly after calling applyTransF
+        self._IAD = (
+            WurtziteLattice.RefIAD
+        )  # IAD is set correctly after calling applyTransF
         self.applyTransF(ScaleFunc(IAD / WurtziteLattice.RefIAD))
-        self._NthNeighbors = [[[np.array([0.0, 0.0, -3 / sqrt(24)]),
-                                np.array([0.0, -sqrt(3) / 3, 1 / sqrt(24)]),
-                                np.array([0.5, sqrt(3) / 6, 1 / sqrt(24)]),
-                                np.array([-0.5, sqrt(3) / 6, 1 / sqrt(24)])],
-                               [np.array([0.0, 0.0, 3 / sqrt(24)]),
-                                np.array([0.0, sqrt(3) / 3, -1 / sqrt(24)]),
-                                np.array([0.5, -sqrt(3) / 6, -1 / sqrt(24)]),
-                                np.array([-0.5, -sqrt(3) / 6, -1 / sqrt(24)])],
-                               [np.array([0.0, 0.0, -3 / sqrt(24)]),
-                                np.array([0.0, sqrt(3) / 3, 1 / sqrt(24)]),
-                                np.array([0.5, -sqrt(3) / 6, 1 / sqrt(24)]),
-                                np.array([-0.5, -sqrt(3) / 6, 1 / sqrt(24)])],
-                               [np.array([0.0, 0.0, 3 / sqrt(24)]),
-                                np.array([0.0, -sqrt(3) / 3, -1 / sqrt(24)]),
-                                np.array([0.5, sqrt(3) / 6, -1 / sqrt(24)]),
-                                np.array([-0.5, sqrt(3) / 6, -1 / sqrt(24)])]]]
+        self._NthNeighbors = [
+            [
+                [
+                    np.array([0.0, 0.0, -3 / sqrt(24)]),
+                    np.array([0.0, -sqrt(3) / 3, 1 / sqrt(24)]),
+                    np.array([0.5, sqrt(3) / 6, 1 / sqrt(24)]),
+                    np.array([-0.5, sqrt(3) / 6, 1 / sqrt(24)]),
+                ],
+                [
+                    np.array([0.0, 0.0, 3 / sqrt(24)]),
+                    np.array([0.0, sqrt(3) / 3, -1 / sqrt(24)]),
+                    np.array([0.5, -sqrt(3) / 6, -1 / sqrt(24)]),
+                    np.array([-0.5, -sqrt(3) / 6, -1 / sqrt(24)]),
+                ],
+                [
+                    np.array([0.0, 0.0, -3 / sqrt(24)]),
+                    np.array([0.0, sqrt(3) / 3, 1 / sqrt(24)]),
+                    np.array([0.5, -sqrt(3) / 6, 1 / sqrt(24)]),
+                    np.array([-0.5, -sqrt(3) / 6, 1 / sqrt(24)]),
+                ],
+                [
+                    np.array([0.0, 0.0, 3 / sqrt(24)]),
+                    np.array([0.0, -sqrt(3) / 3, -1 / sqrt(24)]),
+                    np.array([0.5, sqrt(3) / 6, -1 / sqrt(24)]),
+                    np.array([-0.5, sqrt(3) / 6, -1 / sqrt(24)]),
+                ],
+            ]
+        ]
         self._typeDict = {0: 0, 1: 1, 4: 2, 5: 3}
-        self._relativePositions = {0: np.array([0.0, 0.0, 0.0]),
-                                   1: np.array([0.5, sqrt(3) / 6.0, 1.0 / sqrt(24)]),
-                                   4: np.array([0.5, sqrt(3) / 6.0, 4.0 / sqrt(24)]),
-                                   5: np.array([0.0, 0.0, 5.0 / sqrt(24)])}
+        self._relativePositions = {
+            0: np.array([0.0, 0.0, 0.0]),
+            1: np.array([0.5, sqrt(3) / 6.0, 1.0 / sqrt(24)]),
+            4: np.array([0.5, sqrt(3) / 6.0, 4.0 / sqrt(24)]),
+            5: np.array([0.0, 0.0, 5.0 / sqrt(24)]),
+        }
 
     @classmethod
     def alignedWith(cls, IAD, MI):
-        if MI == '0001':
+        if MI == "0001":
             return cls(IAD)
-        elif MI == '1100':
+        elif MI == "1100":
             result = cls(IAD)
             axis = np.array([1, 0, 0], dtype=float)
             angle = np.pi / 2
             result.applyTransF(RotateFunc.fromAxisAngle(axis, angle))
             return result
-        elif MI == '1120':
+        elif MI == "1120":
             result = cls(IAD)
             axis = np.array([0, 1, 0], dtype=float)
             angle = np.pi / 2
             result.applyTransF(RotateFunc.fromAxisAngle(axis, angle))
             return result
         else:
-            raise ValueError('WurtziteLattice.alignedWith: Input direction is not supported.')
+            raise ValueError(
+                "WurtziteLattice.alignedWith: Input direction is not supported."
+            )
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
@@ -88,7 +110,9 @@ class WurtziteLattice(UnitCellLattice):
             if TransF.isIsometric:
                 self._IAD *= TransF.Scale[0]
             else:
-                raise ValueError('WurtziteLattice.applyTransF: Can only scale isometrically')
+                raise ValueError(
+                    "WurtziteLattice.applyTransF: Can only scale isometrically"
+                )
         UnitCellLattice.applyTransF(self, TransF)
 
     # === AUXILIARY METHODS
@@ -106,7 +130,7 @@ class WurtziteLattice(UnitCellLattice):
         RefP = self._getConvertToReference(P)
         PType = self._getPointType(RefP)
         if PType not in self._typeDict.keys():
-            raise ValueError('WurtziteLattice.getNeighbors Should never reach here!')
+            raise ValueError("WurtziteLattice.getNeighbors Should never reach here!")
         if layer > len(self._NthNeighbors):
             self._calculateNeighbors(layer)
         NBs = deepcopy(self._NthNeighbors[layer - 1][self._typeDict[PType]])
@@ -129,7 +153,9 @@ class WurtziteLattice(UnitCellLattice):
                     PType = self._getPointType(P + self._relativePositions[k])
                     for Q in self._NthNeighbors[0][self._typeDict[PType]]:
                         N = P + Q
-                        if not ListHasPoint(NList[v], N, 0.001 * WurtziteLattice.RefIAD):
+                        if not ListHasPoint(
+                            NList[v], N, 0.001 * WurtziteLattice.RefIAD
+                        ):
                             tmp[v].append(N)
                             NList[v].append(N)
             self._NthNeighbors.append(tmp)
@@ -151,7 +177,7 @@ class WurtziteLattice(UnitCellLattice):
             elif self.isBSite(P):
                 D.setContent(i, BType)
             else:
-                raise ValueError('setDesign can not set site not on lattice')
+                raise ValueError("setDesign can not set site not on lattice")
 
     # === BASIC QUERY METHODS
     @property
@@ -159,31 +185,37 @@ class WurtziteLattice(UnitCellLattice):
         return self._IAD
 
     def getLayerSpacing(self, MI):
-        if MI == '0001':
+        if MI == "0001":
             return self._IAD * 4 / 3
-        elif MI == '1100':
+        elif MI == "1100":
             return self._IAD * sqrt(2)
-        elif MI == '1120':
+        elif MI == "1120":
             return self._IAD * sqrt(8 / 3)
         else:
-            raise NotImplementedError('WurtziteLattice.getLayerSpacing: Input direction is not supported.')
+            raise NotImplementedError(
+                "WurtziteLattice.getLayerSpacing: Input direction is not supported."
+            )
 
     def getShellSpacing(self, MI):
-        if MI == '0001':
+        if MI == "0001":
             return self._IAD * sqrt(2)
-        elif MI == '1100':
+        elif MI == "1100":
             return self._IAD * sqrt(8 / 3)
-        elif MI == '1120':
+        elif MI == "1120":
             return self._IAD * sqrt(8 / 3)
         else:
-            raise NotImplementedError('WurtziteLattice.getShellSpacing: Input direction is not supported.')
+            raise NotImplementedError(
+                "WurtziteLattice.getShellSpacing: Input direction is not supported."
+            )
 
     def getUniqueLayerCount(self, MI):
-        if MI == '0001':
+        if MI == "0001":
             return 2
-        elif MI == '1100':
+        elif MI == "1100":
             return 2
-        elif MI == '1120':
+        elif MI == "1120":
             return 1
         else:
-            raise NotImplementedError('WurtziteLattice.getUniqueLayerCount: Input direction is not supported.')
+            raise NotImplementedError(
+                "WurtziteLattice.getUniqueLayerCount: Input direction is not supported."
+            )

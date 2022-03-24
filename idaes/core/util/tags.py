@@ -721,7 +721,7 @@ def svg_tag(
     # Deal with soon to be depricated input by converting it to new style
     if tags is not None:
         deprecation_warning(
-            "DEPRECATED: svg_tag, the tags, tag_format and "
+            "svg_tag, the tags, tag_format and "
             "tag_format_default arguments are deprecated use tag_group instead.",
             version=1.12,
         )
