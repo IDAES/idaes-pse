@@ -20,14 +20,18 @@ from pyomo.dae.diffvar import DerivativeVar
 from pyomo.core.expr.current import log10
 from pyomo.core.expr.numvalue import value as pyo_value
 
-from idaes.core import declare_process_block_class, StateBlock, UnitModelBlockData
+from idaes.core import (
+    declare_process_block_class,
+    ControlVolume1DBlock,
+    StateBlock,
+    UnitModelBlockData,
+)
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_transformation_method,
     is_transformation_scheme,
 )
 from idaes.core.util.constants import Constants
-from idaes.core.control_volume1d import ControlVolume1DBlock
 
 """
 A simple pipeline unit model. We include a bulk momentum balance and leverage
