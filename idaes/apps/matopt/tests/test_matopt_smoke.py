@@ -12,6 +12,7 @@
 #################################################################################
 import pytest
 
+
 @pytest.mark.unit
 def test_matopt_import():
     import idaes.apps.matopt

@@ -10,7 +10,15 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-__all__ = ['Parallelepiped', 'RectPrism', 'Cube', 'Rhombohedron', 'Cuboctahedron', 'Cylinder', 'CylindricalSector']
+__all__ = [
+    "Parallelepiped",
+    "RectPrism",
+    "Cube",
+    "Rhombohedron",
+    "Cuboctahedron",
+    "Cylinder",
+    "CylindricalSector",
+]
 
 from abc import abstractmethod, ABC
 from copy import deepcopy
@@ -24,34 +32,33 @@ from ..util.util import areEqual
 
 class Shape(object):
     """ """
+
     DBL_TOL = 1e-5
-    DEFAULT_ALIGNMENT = np.array([[1, 0, 0],
-                                  [0, 1, 0],
-                                  [0, 0, 1]], dtype=float)
+    DEFAULT_ALIGNMENT = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=float)
 
     # === STANDARD CONSTRUCTOR
     def __init__(self, Anchor, Alignment=None):
         self._Anchor = Anchor
-        self._Alignment = (Shape.DEFAULT_ALIGNMENT if Alignment is None else Alignment)
+        self._Alignment = Shape.DEFAULT_ALIGNMENT if Alignment is None else Alignment
 
     # === ASSERTION OF CLASS DESIGN
     def isConsistentWithDesign(self):
         """ """
         if self.Anchor is None:
-            print('alpha')
+            print("alpha")
             return False
         if type(self.Alignment) is not np.ndarray:
-            print('A')
+            print("A")
             return False
         if self.Alignment.shape != (3, 3):
-            print('B')
+            print("B")
             return False
         if not areEqual(np.linalg.det(self.Alignment), 1.0, Shape.DBL_TOL):
-            print('C')
+            print("C")
             return False
         for AlignmentAxis in self.Alignment:
             if not areEqual(np.linalg.norm(AlignmentAxis), 1.0, Shape.DBL_TOL):
-                print('D')
+                print("D")
                 return False
         return True
 
@@ -60,28 +67,26 @@ class Shape(object):
         """
 
         Args:
-            TransF: 
+            TransF:
 
         Returns:
 
         """
-        if (type(TransF) is ShiftFunc or
-                type(TransF) is ScaleFunc):
+        if type(TransF) is ShiftFunc or type(TransF) is ScaleFunc:
             TransF.transform(self._Anchor)
-        elif (type(TransF) is RotateFunc or
-              type(TransF) is ReflectFunc):
+        elif type(TransF) is RotateFunc or type(TransF) is ReflectFunc:
             TransF.transform(self._Anchor)
             TransF.transform(self._Alignment)
-            assert (self.isConsistentWithDesign())
+            assert self.isConsistentWithDesign()
         else:
             raise TypeError
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     def shift(self, Shift):
         """
 
         Args:
-            Shift: 
+            Shift:
 
         Returns:
 
@@ -107,8 +112,7 @@ class Shape(object):
             self.applyTransF(Scale)
         elif type(Scale) is np.ndarray:
             self.applyTransF(ScaleFunc(Scale, OriginOfScale))
-        elif (type(Scale) is float or
-              type(Scale) is int):
+        elif type(Scale) is float or type(Scale) is int:
             self.applyTransF(ScaleFunc(np.array([Scale, Scale, Scale], dtype=float)))
         else:
             raise TypeError
@@ -134,7 +138,7 @@ class Shape(object):
         """
 
         Args:
-            Reflection: 
+            Reflection:
 
         Returns:
 
@@ -150,7 +154,7 @@ class Shape(object):
         """
 
         Args:
-            P: 
+            P:
 
         Returns:
 
@@ -186,7 +190,7 @@ class Polyhedron(Shape, ABC):
         self._F = F
         self._FacetNorms = self.__calcFacetNorms()
         self._FacetDirections = self.__calcFacetDirections()
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     # === ASSERTION OF CLASS DESIGN
     def isConsistentWithDesign(self):
@@ -210,8 +214,9 @@ class Polyhedron(Shape, ABC):
     def __calcFacetNorms(self):
         FacetNorms = []
         for Facet in self.F:
-            Norm = np.cross(self.V[Facet[1]] - self.V[Facet[0]],
-                            self.V[Facet[2]] - self.V[Facet[0]])
+            Norm = np.cross(
+                self.V[Facet[1]] - self.V[Facet[0]], self.V[Facet[2]] - self.V[Facet[0]]
+            )
             Norm /= np.linalg.norm(Norm)
             FacetNorms.append(Norm)
         return FacetNorms
@@ -219,7 +224,7 @@ class Polyhedron(Shape, ABC):
     def __calcFacetDirections(self):
         FacetDirections = []
         for Facet in self.F:
-            assert (len(Facet) >= 3)
+            assert len(Facet) >= 3
             FacetDirection = np.array([0, 0, 0], dtype=float)
             for v in Facet:
                 FacetDirection += self.V[v]
@@ -233,7 +238,7 @@ class Polyhedron(Shape, ABC):
         """
 
         Args:
-            TransF: 
+            TransF:
 
         Returns:
 
@@ -256,10 +261,12 @@ class Polyhedron(Shape, ABC):
             for norm in self._FacetNorms:
                 TransF.transformDirection(norm)
         else:
-            raise TypeError('MatOpt does not support this transformation type. Please contact MatOpt developer for '
-                            'potential feature addition.')
+            raise TypeError(
+                "MatOpt does not support this transformation type. Please contact MatOpt developer for "
+                "potential feature addition."
+            )
         Shape.applyTransF(self, TransF)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     # === PROPERTY EVALUATION METHODS
     def isInShape(self, P, tol=Shape.DBL_TOL):
@@ -285,7 +292,7 @@ class Polyhedron(Shape, ABC):
         Args:
             P: param f:
             tol: Default value = Shape.DBL_TOL)
-            f: 
+            f:
 
         Returns:
 
@@ -330,32 +337,36 @@ class Cuboctahedron(Polyhedron, ABC):
     # === STANDARD CONSTRUCTOR
     def __init__(self, R, Center=None):
         self._R = sqrt(2)
-        V = [np.array([1, 0, 1], dtype=float),
-             np.array([0, -1, 1], dtype=float),
-             np.array([-1, 0, 1], dtype=float),
-             np.array([0, 1, 1], dtype=float),
-             np.array([1, 1, 0], dtype=float),
-             np.array([1, -1, 0], dtype=float),
-             np.array([-1, -1, 0], dtype=float),
-             np.array([-1, 1, 0], dtype=float),
-             np.array([1, 0, -1], dtype=float),
-             np.array([0, -1, -1], dtype=float),
-             np.array([-1, 0, -1], dtype=float),
-             np.array([0, 1, -1], dtype=float)]
-        F = [[0, 3, 2, 1],
-             [1, 6, 9, 5],
-             [2, 7, 10, 6],
-             [3, 4, 11, 7],
-             [0, 5, 8, 4],
-             [8, 9, 10, 11],
-             [1, 2, 6],
-             [2, 3, 7],
-             [0, 4, 3],
-             [0, 1, 5],
-             [6, 10, 9],
-             [7, 11, 10],
-             [4, 8, 11],
-             [5, 9, 8]]
+        V = [
+            np.array([1, 0, 1], dtype=float),
+            np.array([0, -1, 1], dtype=float),
+            np.array([-1, 0, 1], dtype=float),
+            np.array([0, 1, 1], dtype=float),
+            np.array([1, 1, 0], dtype=float),
+            np.array([1, -1, 0], dtype=float),
+            np.array([-1, -1, 0], dtype=float),
+            np.array([-1, 1, 0], dtype=float),
+            np.array([1, 0, -1], dtype=float),
+            np.array([0, -1, -1], dtype=float),
+            np.array([-1, 0, -1], dtype=float),
+            np.array([0, 1, -1], dtype=float),
+        ]
+        F = [
+            [0, 3, 2, 1],
+            [1, 6, 9, 5],
+            [2, 7, 10, 6],
+            [3, 4, 11, 7],
+            [0, 5, 8, 4],
+            [8, 9, 10, 11],
+            [1, 2, 6],
+            [2, 3, 7],
+            [0, 4, 3],
+            [0, 1, 5],
+            [6, 10, 9],
+            [7, 11, 10],
+            [4, 8, 11],
+            [5, 9, 8],
+        ]
         Polyhedron.__init__(self, V, F, np.array([0, 0, 0], dtype=float))
         self.scale(R / sqrt(2))
         if Center is not None:
@@ -366,7 +377,7 @@ class Cuboctahedron(Polyhedron, ABC):
         """
 
         Args:
-            TransF: 
+            TransF:
 
         Returns:
 
@@ -375,9 +386,11 @@ class Cuboctahedron(Polyhedron, ABC):
             if TransF.isIsometric:
                 self._R *= TransF.Scale[0]
             else:
-                raise ValueError('Cuboctahedron applyTransF: Can only scale isometrically')
+                raise ValueError(
+                    "Cuboctahedron applyTransF: Can only scale isometrically"
+                )
         Polyhedron.applyTransF(self, TransF)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
 
 class Parallelepiped(Polyhedron, ABC):
@@ -393,20 +406,24 @@ class Parallelepiped(Polyhedron, ABC):
         if BotBackLeftCorner is None:
             BotBackLeftCorner = np.array([0, 0, 0], dtype=float)
 
-        V = [BotBackLeftCorner,
-             BotBackLeftCorner + Vx,
-             BotBackLeftCorner + Vy,
-             BotBackLeftCorner + Vz,
-             BotBackLeftCorner + Vx + Vy,
-             BotBackLeftCorner + Vx + Vz,
-             BotBackLeftCorner + Vy + Vz,
-             BotBackLeftCorner + Vx + Vy + Vz]
-        F = [[0, 1, 5, 3],
-             [0, 3, 6, 2],
-             [2, 6, 7, 4],
-             [1, 4, 7, 5],
-             [3, 5, 7, 6],
-             [0, 2, 4, 1]]
+        V = [
+            BotBackLeftCorner,
+            BotBackLeftCorner + Vx,
+            BotBackLeftCorner + Vy,
+            BotBackLeftCorner + Vz,
+            BotBackLeftCorner + Vx + Vy,
+            BotBackLeftCorner + Vx + Vz,
+            BotBackLeftCorner + Vy + Vz,
+            BotBackLeftCorner + Vx + Vy + Vz,
+        ]
+        F = [
+            [0, 1, 5, 3],
+            [0, 3, 6, 2],
+            [2, 6, 7, 4],
+            [1, 4, 7, 5],
+            [3, 5, 7, 6],
+            [0, 2, 4, 1],
+        ]
         Polyhedron.__init__(self, V, F, Anchor=deepcopy(BotBackLeftCorner))
 
     # === CONSTRUCTOR - From edge lengths and angles
@@ -419,9 +436,9 @@ class Parallelepiped(Polyhedron, ABC):
             C: param alpha:
             beta: param gamma:
             BotBackLeftCorner: Default value = None)
-            B: 
-            alpha: 
-            gamma: 
+            B:
+            alpha:
+            gamma:
 
         Returns:
 
@@ -438,27 +455,27 @@ class Parallelepiped(Polyhedron, ABC):
         """
 
         Args:
-            filename: 
+            filename:
 
         Returns:
 
         """
-        with open(filename, 'r') as infile:
+        with open(filename, "r") as infile:
             CommentLine = infile.readline()
             GSLine = infile.readline().split()
             GS = float(GSLine[0])
             VxLine = infile.readline().split()
-            Vx = GS * np.array([float(VxLine[0]),
-                                float(VxLine[1]),
-                                float(VxLine[2])], dtype=float)
+            Vx = GS * np.array(
+                [float(VxLine[0]), float(VxLine[1]), float(VxLine[2])], dtype=float
+            )
             VyLine = infile.readline().split()
-            Vy = GS * np.array([float(VyLine[0]),
-                                float(VyLine[1]),
-                                float(VyLine[2])], dtype=float)
+            Vy = GS * np.array(
+                [float(VyLine[0]), float(VyLine[1]), float(VyLine[2])], dtype=float
+            )
             VzLine = infile.readline().split()
-            Vz = GS * np.array([float(VzLine[0]),
-                                float(VzLine[1]),
-                                float(VzLine[2])], dtype=float)
+            Vz = GS * np.array(
+                [float(VzLine[0]), float(VzLine[1]), float(VzLine[2])], dtype=float
+            )
         return cls(Vx, Vy, Vz)
 
     # === MANIPULATION METHODS
@@ -466,7 +483,7 @@ class Parallelepiped(Polyhedron, ABC):
         """
 
         Args:
-            TransF: 
+            TransF:
 
         Returns:
 
@@ -476,7 +493,7 @@ class Parallelepiped(Polyhedron, ABC):
             self._Vy *= TransF.Scale[1]
             self._Vz *= TransF.Scale[2]
         Polyhedron.applyTransF(self, TransF)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
         # === PROPERTY EVALUATION METHODS
 
@@ -490,7 +507,7 @@ class Parallelepiped(Polyhedron, ABC):
         Returns:
 
         """
-        FracOrigin = (self.getCenter() if blnRelativeToCenter else self.Anchor)
+        FracOrigin = self.getCenter() if blnRelativeToCenter else self.Anchor
         Omega = self.getVolume()
         fracX = 1.0 / Omega * np.inner(P - FracOrigin, np.cross(self.Vy, self.Vz))
         fracY = 1.0 / Omega * np.inner(P - FracOrigin, np.cross(self.Vz, self.Vx))
@@ -542,9 +559,13 @@ class Rhombohedron(Parallelepiped, ABC):
         self._Alpha = Alpha
         Lx = np.array([L, 0, 0])
         Ly = np.array([L * cos(Alpha), L * sin(Alpha), 0])
-        Lz = np.array([L * cos(Alpha),
-                       L * (cos(Alpha) - cos(Alpha) ** 2) / sin(Alpha),
-                       L * sqrt(1 - 3 * cos(Alpha) ** 2 + 2 * cos(Alpha) ** 3) / sin(Alpha)])
+        Lz = np.array(
+            [
+                L * cos(Alpha),
+                L * (cos(Alpha) - cos(Alpha) ** 2) / sin(Alpha),
+                L * sqrt(1 - 3 * cos(Alpha) ** 2 + 2 * cos(Alpha) ** 3) / sin(Alpha),
+            ]
+        )
         Parallelepiped.__init__(self, Lx, Ly, Lz, BotBackLeftCorner)
 
     # === MANIPULATION METHODS
@@ -552,7 +573,7 @@ class Rhombohedron(Parallelepiped, ABC):
         """
 
         Args:
-            TransF: 
+            TransF:
 
         Returns:
 
@@ -561,9 +582,11 @@ class Rhombohedron(Parallelepiped, ABC):
             if TransF.isIsometric:
                 self._L *= TransF.Scale[0]
             else:
-                raise ValueError('Rhombohedron applyTransF: Can only scale isometrically')
+                raise ValueError(
+                    "Rhombohedron applyTransF: Can only scale isometrically"
+                )
         Polyhedron.applyTransF(self, TransF)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
         # === PROPERTY EVALUATION METHODS
 
@@ -586,11 +609,13 @@ class RectPrism(Parallelepiped, ABC):
         self._Lx = Lx
         self._Ly = Ly
         self._Lz = Lz
-        Parallelepiped.__init__(self,
-                                np.array([Lx, 0, 0], dtype=float),
-                                np.array([0, Ly, 0], dtype=float),
-                                np.array([0, 0, Lz], dtype=float),
-                                BotBackLeftCorner)
+        Parallelepiped.__init__(
+            self,
+            np.array([Lx, 0, 0], dtype=float),
+            np.array([0, Ly, 0], dtype=float),
+            np.array([0, 0, Lz], dtype=float),
+            BotBackLeftCorner,
+        )
 
     # === CONSTRUCTOR - Bounding box of a list of points
     @classmethod
@@ -598,7 +623,7 @@ class RectPrism(Parallelepiped, ABC):
         """
 
         Args:
-            Pts: 
+            Pts:
 
         Returns:
 
@@ -617,7 +642,7 @@ class RectPrism(Parallelepiped, ABC):
         """
 
         Args:
-            TransF: 
+            TransF:
 
         Returns:
 
@@ -627,7 +652,7 @@ class RectPrism(Parallelepiped, ABC):
             self._Ly *= TransF.Scale[1]
             self._Lz *= TransF.Scale[2]
         Parallelepiped.applyTransF(self, TransF)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
         # === BASIC QUERY METHODS
 
@@ -660,7 +685,7 @@ class Cube(RectPrism, ABC):
         """
 
         Args:
-            TransF: 
+            TransF:
 
         Returns:
 
@@ -669,9 +694,9 @@ class Cube(RectPrism, ABC):
             if TransF.isIsometric:
                 self._L *= TransF.Scale[0]
             else:
-                raise ValueError('Cube applyTransF: Can only scale isometrically')
+                raise ValueError("Cube applyTransF: Can only scale isometrically")
         RectPrism.applyTransF(self, TransF)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
         # === BASIC QUERY METHODS
 
@@ -682,14 +707,15 @@ class Cube(RectPrism, ABC):
 
 
 class Cylinder(Shape, ABC):
-    """ Object to create, manipulate and utilize Cylinder shapes. """
+    """Object to create, manipulate and utilize Cylinder shapes."""
+
     # === STANDARD CONSTRUCTOR
-    def __init__(self, Po, R, H, Vh=np.array([0,0,1], dtype=float), Alignment=None):
+    def __init__(self, Po, R, H, Vh=np.array([0, 0, 1], dtype=float), Alignment=None):
         Shape.__init__(self, Po, Alignment)
         self._R = R
         self._H = H
         self._Vh = Vh * self._H / np.linalg.norm(Vh)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     # === ASSERTION OF CLASS DESIGN
     def isConsistentWithDesign(self):
@@ -699,7 +725,7 @@ class Cylinder(Shape, ABC):
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
-        """ Apply the input transform function.
+        """Apply the input transform function.
 
         Args:
             TransF: Transform function.
@@ -710,18 +736,22 @@ class Cylinder(Shape, ABC):
                 self._H *= TransF.Scale[2]
                 TransF.transform(self._Vh)
             else:
-                raise ValueError('The scaling ratio along the radius directions are not consistent')
+                raise ValueError(
+                    "The scaling ratio along the radius directions are not consistent"
+                )
         elif (type(TransF) is RotateFunc) or (type(TransF) is ReflectFunc):
             TransF.transform(self._Vh)
         elif not (type(TransF) is ShiftFunc):
-            raise TypeError('MatOpt does not support this transformation type. Please contact MatOpt developer for '
-                            'potential feature addition.')
+            raise TypeError(
+                "MatOpt does not support this transformation type. Please contact MatOpt developer for "
+                "potential feature addition."
+            )
         Shape.applyTransF(self, TransF)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     # === PROPERTY EVALUATION METHODS
     def isInShape(self, P, tol=Shape.DBL_TOL):
-        """ Check if a point is inside the Cylinder shape within certain tolerance.
+        """Check if a point is inside the Cylinder shape within certain tolerance.
 
         Args:
             P: Input point
@@ -734,7 +764,7 @@ class Cylinder(Shape, ABC):
         projH = np.dot(OP, self.Vh) / self.H
         if (projH > -tol) and (projH < self.H + tol):
             normOP = np.linalg.norm(OP)
-            projR = sqrt(normOP ** 2 - projH ** 2 + tol)
+            projR = sqrt(normOP**2 - projH**2 + tol)
             return projR < self.R + tol
         else:
             return False
@@ -742,30 +772,38 @@ class Cylinder(Shape, ABC):
     __contains__ = isInShape
 
     def getBounds(self):
-        """ Get the bounds of each coordinate in the form of an artificial point."""
-        MinP = np.minimum(np.zeros(3, dtype=float), self.Vh) + self.Anchor - np.ones(3, dtype=float) * self.R
-        MaxP = np.maximum(np.zeros(3, dtype=float), self.Vh) + self.Anchor + np.ones(3, dtype=float) * self.R
+        """Get the bounds of each coordinate in the form of an artificial point."""
+        MinP = (
+            np.minimum(np.zeros(3, dtype=float), self.Vh)
+            + self.Anchor
+            - np.ones(3, dtype=float) * self.R
+        )
+        MaxP = (
+            np.maximum(np.zeros(3, dtype=float), self.Vh)
+            + self.Anchor
+            + np.ones(3, dtype=float) * self.R
+        )
         return MinP, MaxP
 
     # === BASIC QUERY METHODS
     @property
     def R(self):
-        """ Radius. """
+        """Radius."""
         return self._R
 
     @property
     def H(self):
-        """ Height. """
+        """Height."""
         return self._H
 
     @property
     def Vh(self):
-        """ Center axis vector. """
+        """Center axis vector."""
         return self._Vh
 
 
 class CylindricalSector(Shape, ABC):
-    """ Object to create, manipulate and utilize Cylinder shapes. """
+    """Object to create, manipulate and utilize Cylinder shapes."""
 
     # === STANDARD CONSTRUCTOR
     def __init__(self, Po, R, H, Va, Vb, Vh, Alignment=None):
@@ -776,24 +814,35 @@ class CylindricalSector(Shape, ABC):
         self._Va = Va * self._R / np.linalg.norm(Va)
         self._Vb = Vb * self._R / np.linalg.norm(Vb)
         self._Norms = self.setNorms()
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     # === ASSERTION OF CLASS DESIGN
     def isConsistentWithDesign(self):
-        if self.R > 0 and self.H > 0 and len(self.Vh) == 3 and len(self.Va) == 3 and len(self.Vb) == 3 and len(
-                self.Norms) == 3:
-            if areEqual(np.dot(self.Va, self.Vh), 0.0, Shape.DBL_TOL) and \
-                    areEqual(np.dot(self.Vb, self.Vh), 0.0, Shape.DBL_TOL):
+        if (
+            self.R > 0
+            and self.H > 0
+            and len(self.Vh) == 3
+            and len(self.Va) == 3
+            and len(self.Vb) == 3
+            and len(self.Norms) == 3
+        ):
+            if areEqual(np.dot(self.Va, self.Vh), 0.0, Shape.DBL_TOL) and areEqual(
+                np.dot(self.Vb, self.Vh), 0.0, Shape.DBL_TOL
+            ):
                 return Shape.isConsistentWithDesign(self)
         return False
 
     # === AUXILIARY METHODS
     def setNorms(self):
-        return [np.cross(self._Vb, self._Va), np.cross(self._Va, self._Vh), np.cross(self._Vh, self._Vb)]
+        return [
+            np.cross(self._Vb, self._Va),
+            np.cross(self._Va, self._Vh),
+            np.cross(self._Vh, self._Vb),
+        ]
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
-        """ Apply the input transform function.
+        """Apply the input transform function.
 
         Args:
             TransF: Transform function.
@@ -804,21 +853,25 @@ class CylindricalSector(Shape, ABC):
                 self._H *= TransF.Scale[2]
                 TransF.transform(self._Vh)
             else:
-                raise ValueError('The scaling ratio along the radius directions are not consistent')
+                raise ValueError(
+                    "The scaling ratio along the radius directions are not consistent"
+                )
         elif (type(TransF) is RotateFunc) or (type(TransF) is ReflectFunc):
             TransF.transform(self._Va)
             TransF.transform(self._Vb)
             TransF.transform(self._Vh)
             self._Norms = self.setNorms()
         elif not (type(TransF) is ShiftFunc):
-            raise TypeError('MatOpt does not support this transformation type. Please contact MatOpt developer for '
-                            'potential feature addition.')
+            raise TypeError(
+                "MatOpt does not support this transformation type. Please contact MatOpt developer for "
+                "potential feature addition."
+            )
         Shape.applyTransF(self, TransF)
-        assert (self.isConsistentWithDesign())
+        assert self.isConsistentWithDesign()
 
     # === PROPERTY EVALUATION METHODS
     def isInShape(self, P, tol=Shape.DBL_TOL):
-        """ Check if a point is inside the Cylinder shape within certain tolerance.
+        """Check if a point is inside the Cylinder shape within certain tolerance.
 
         Args:
             P: Input point
@@ -835,7 +888,7 @@ class CylindricalSector(Shape, ABC):
             return False
         projH = np.linalg.norm(np.dot(OP, self.Vh)) / self.H
         normP = np.linalg.norm(OP)
-        if sqrt(normP ** 2 - projH ** 2 + tol) > self.R + tol:
+        if sqrt(normP**2 - projH**2 + tol) > self.R + tol:
             return False
         return True
 
@@ -844,30 +897,30 @@ class CylindricalSector(Shape, ABC):
     # === BASIC QUERY METHODS
     @property
     def R(self):
-        """ Radius. """
+        """Radius."""
         return self._R
 
     @property
     def H(self):
-        """ Height. """
+        """Height."""
         return self._H
 
     @property
     def Vh(self):
-        """ Center axis vector. """
+        """Center axis vector."""
         return self._Vh
 
     @property
     def Va(self):
-        """ Left edge vector. """
+        """Left edge vector."""
         return self._Va
 
     @property
     def Vb(self):
-        """ Right edge vector. """
+        """Right edge vector."""
         return self._Vb
 
     @property
     def Norms(self):
-        """ Norms. """
+        """Norms."""
         return self._Norms

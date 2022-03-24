@@ -18,10 +18,10 @@
 #       probably just be incorporated in Design.py and most
 #       of these methods should be behind-the-scenes.
 
-'''
+"""
 import matopt.materials.parsers.CFG
 import matopt.materials.parsers.PDB
 import matopt.materials.parsers.POSCAR
 import matopt.materials.parsers.XYZ
-'''
+"""
 # TODO: Decide if this is necessary

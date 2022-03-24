@@ -19,7 +19,7 @@ import importlib
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "2.5.5"
+default_binary_release = "2.5.6"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -40,7 +40,7 @@ binary_platform_map = {
 # Set of known platforms with available binaries and descriptions of them
 known_binary_platform = {
     "auto":"Auto-select windows, darwin or linux",
-    "windows":"Microsoft Windows (built on verion 1909)",
+    "windows":"Microsoft Windows (built on verion 20H2 with MinGW)",
     "darwin": "OSX (currently not available)",
     "linux": (
             f"Linux (auto select distribution or fall back on "
@@ -62,7 +62,7 @@ known_binary_platform = {
 unsupported_binary_platform = ["darwin"]
 # Set of extra binary packages and platforms where they are available
 extra_binaries = {
-    "petsc": ["centos7", "centos8", "ubuntu1804", "ubuntu2004"],
+    "petsc": ["centos7", "centos8", "ubuntu1804", "ubuntu2004", "windows"],
 }
 
 # Store the original environment variable values so we can revert changes

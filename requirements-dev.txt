@@ -16,8 +16,10 @@ sphinx-argparse
 pytest
 coverage
 pytest-cov
-# @lbianchi-lbl: pinned pylint version after update to 2.9.1 broke previously passing checks
-pylint==2.8.3
+black>=22.1.0
+# @lbianchi-lbl: both pylint and astroid should be tightly pinned; see .pylint/idaes_transform.py for more info
+pylint==2.12.2
+astroid==2.9.3
 flake8
 
 ### other/misc
