@@ -33,12 +33,15 @@ from idaes.core import (
 )
 import idaes.logger as idaeslog
 
-from idaes.core.process_block import declare_process_block_class
-from idaes.core.property_base import StateBlock, StateBlockData
-from idaes.core.phases import VaporPhase
-from idaes.core.components import Component
+from idaes.core import (
+    declare_process_block_class,
+    VaporPhase,
+    Component,
+    MaterialFlowBasis,
+    StateBlock,
+    StateBlockData
+)
 from idaes.core.util.constants import Constants
-from idaes.core.process_base import MaterialFlowBasis
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

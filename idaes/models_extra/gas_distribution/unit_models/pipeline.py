@@ -14,18 +14,17 @@ from pyomo.common.config import ConfigValue
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.var import Var
 from pyomo.core.base.param import Param
-from pyomo.core.base.expression import Expression
 from pyomo.core.base.units_container import units as pyunits
 from pyomo.core.base.reference import Reference
-from pyomo.dae.contset import ContinuousSet
 from pyomo.dae.diffvar import DerivativeVar
-from pyomo.core.expr.current import log10, sqrt
+from pyomo.core.expr.current import log10
 from pyomo.core.expr.numvalue import value as pyo_value
 
-from idaes.core.unit_model import UnitModelBlockData
-from idaes.core.process_block import declare_process_block_class
-from idaes.core.control_volume_base import MaterialBalanceType
-from idaes.core.property_base import StateBlock
+from idaes.core import (
+    declare_process_block_class,
+    StateBlock,
+    UnitModelBlockData
+)
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_transformation_method,

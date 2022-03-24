@@ -15,9 +15,11 @@ from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.var import Var
 from pyomo.core.base.units_container import units as pyunits
 
-from idaes.core.unit_model import UnitModelBlockData
-from idaes.core.process_block import declare_process_block_class
-from idaes.core.control_volume_base import MaterialBalanceType
+from idaes.core import (
+    declare_process_block_class,
+    MaterialBalanceType,
+    UnitModelBlockData,
+)
 from idaes.core.util.config import is_physical_parameter_block
 
 """

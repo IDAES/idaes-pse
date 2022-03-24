@@ -42,11 +42,11 @@ from idaes.core.util.model_statistics import (
     large_residuals_set,
 )
 from idaes.core.util.constants import Constants
-from idaes.gas_distribution.properties.natural_gas import (
+from idaes.models_extra.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )
-from idaes.gas_distribution.unit_models.pipeline import GasPipeline
-from idaes.gas_distribution.unit_models.compressor import (
+from idaes.models_extra.gas_distribution.unit_models.pipeline import GasPipeline
+from idaes.models_extra.gas_distribution.unit_models.compressor import (
     IsothermalCompressor as Compressor,
 )
 

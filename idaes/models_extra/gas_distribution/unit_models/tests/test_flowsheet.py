@@ -42,12 +42,12 @@ from idaes.core.util.model_statistics import (
     large_residuals_set,
 )
 from idaes.core.util.constants import Constants
-from idaes.gas_distribution.properties.natural_gas import (
+from idaes.models_extra.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )
-from idaes.gas_distribution.unit_models.pipeline import GasPipeline
-from idaes.gas_distribution.unit_models.node import PipelineNode
-from idaes.gas_distribution.unit_models.compressor import IsothermalCompressor
+from idaes.models_extra.gas_distribution.unit_models.pipeline import GasPipeline
+from idaes.models_extra.gas_distribution.unit_models.node import PipelineNode
+from idaes.models_extra.gas_distribution.unit_models.compressor import IsothermalCompressor
 
 """
 These tests test construction of some slightly less trivial flowsheets

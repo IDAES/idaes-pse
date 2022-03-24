@@ -13,8 +13,6 @@
 from pyomo.common.config import ConfigValue
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.var import Var
-from pyomo.core.base.param import Param
-from pyomo.core.base.expression import Expression
 from pyomo.core.base.set import Set
 from pyomo.core.base.block import Block
 from pyomo.core.base.units_container import units as pyunits
@@ -22,9 +20,11 @@ from pyomo.core.base.reference import Reference
 from pyomo.network.port import Port
 from pyomo.network.arc import Arc
 
-from idaes.core.unit_model import UnitModelBlockData
-from idaes.core.process_block import declare_process_block_class
-from idaes.core.property_base import StateBlock
+from idaes.core import (
+    declare_process_block_class,
+    StateBlock,
+    UnitModelBlockData
+)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.config import (
     is_physical_parameter_block,
