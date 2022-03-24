@@ -35,11 +35,14 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models_extra.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )
-from idaes.models_extra.gas_distribution.unit_models.compressor import IsothermalCompressor
+from idaes.models_extra.gas_distribution.unit_models.compressor import (
+    IsothermalCompressor,
+)
 
 """
 Test for the simple compressor.
 """
+
 
 @pytest.mark.component
 class TestCompressorValues(unittest.TestCase):
@@ -47,6 +50,7 @@ class TestCompressorValues(unittest.TestCase):
     This class tests whether the compressor correctly computes power
     requirement.
     """
+
     # Here we record predicted values for power requirement calculated
     # from each set of inputs.
     # These values were calculated with a pure-Pyomo simulation of the
@@ -123,22 +127,18 @@ class TestCompressorValues(unittest.TestCase):
         # Preliminary constants and units
         # TODO: Should this nominal density constant live on the model?
         # Probably, even though it's not really necessary.
-        density = 0.72*pyo.units.kg/pyo.units.m**3
-        kghr = pyo.units.kg/pyo.units.hr
+        density = 0.72 * pyo.units.kg / pyo.units.m**3
+        kghr = pyo.units.kg / pyo.units.hr
         K = pyo.units.K
         bar = pyo.units.bar
         mw = m.fs.compressor.inlet_state[t0].mw
-        scmhr = pyo.units.m**3/pyo.units.hr
+        scmhr = pyo.units.m**3 / pyo.units.hr
         kW = pyo.units.kW
 
-        pressure_list = [30.0*bar, 40.0*bar, 50.0*bar, 60.0*bar]
-        boost_pressure_list = [2.0*bar, 5.0*bar, 10.0*bar]
-        flow_list = [30.0e4*scmhr, 40.0e4*scmhr, 50.0e4*scmhr, 60.0e4*scmhr]
-        n_scen = (
-            len(pressure_list)
-            * len(boost_pressure_list)
-            * len(flow_list)
-        )
+        pressure_list = [30.0 * bar, 40.0 * bar, 50.0 * bar, 60.0 * bar]
+        boost_pressure_list = [2.0 * bar, 5.0 * bar, 10.0 * bar]
+        flow_list = [30.0e4 * scmhr, 40.0e4 * scmhr, 50.0e4 * scmhr, 60.0e4 * scmhr]
+        n_scen = len(pressure_list) * len(boost_pressure_list) * len(flow_list)
         j = next(iter(m.fs.properties.component_list))
         inlet_values = {
             "temperature": [],
@@ -153,10 +153,10 @@ class TestCompressorValues(unittest.TestCase):
             "power[%s]" % t0: [],
         }
         for p, dp, f in itertools.product(
-                pressure_list,
-                boost_pressure_list,
-                flow_list,
-                ):
+            pressure_list,
+            boost_pressure_list,
+            flow_list,
+        ):
 
             # Redundant unit conversion, for sanity.
             p_val = pyo.value(pyo.units.convert(p, bar))
@@ -170,15 +170,14 @@ class TestCompressorValues(unittest.TestCase):
             # I would prefer kg/hr...
             # SCM/hr -> kg/hr -> kmol/hr
             f = f * density / mw
-            inlet_values["temperature"].append(293.15*K)
+            inlet_values["temperature"].append(293.15 * K)
             inlet_values["flow_mol"].append(f)
             inlet_values["pressure"].append(p)
             inlet_values["mole_frac_comp[%s]" % j].append(1.0)
             input_values["boost_pressure[%s]" % t0].append(dp)
         state = m.fs.compressor.inlet_state[t0]
         inlet_values = ComponentMap(
-            (state.find_component(key), val)
-            for key, val in inlet_values.items()
+            (state.find_component(key), val) for key, val in inlet_values.items()
         )
         input_values = ComponentMap(
             (m.fs.compressor.find_component(key), val)
@@ -212,8 +211,8 @@ class TestCompressorValues(unittest.TestCase):
                 # between paper and IDAES.
                 for var, val in target.items():
                     val = pyo.value(pyo.units.convert(val, var.get_units()))
-                    #self.assertAlmostEqual(val, var.value, delta=1e2)
-                    #self.assertAlmostEqual(val, var.value, reltol=0.1)
+                    # self.assertAlmostEqual(val, var.value, delta=1e2)
+                    # self.assertAlmostEqual(val, var.value, reltol=0.1)
                     # Forget the relative tolerance argument for
                     # assertAlmostEqual, so using pytest.approx for now...
                     self.assertEqual(val, pytest.approx(var.value, rel=0.1))
@@ -225,7 +224,6 @@ class TestCompressorValues(unittest.TestCase):
 
 @pytest.mark.unit
 class TestSimpleCompressor(unittest.TestCase):
-
     def test_compressor_methane(self):
         """
         Test constructing the compressor with a simple methane
@@ -242,9 +240,9 @@ class TestSimpleCompressor(unittest.TestCase):
         }
         m.fs.compressor = IsothermalCompressor(default=compressor_config)
 
-        m.fs.compressor.inlet_state[0].temperature.fix(300.0*pyo.units.K)
-        m.fs.compressor.inlet_state[0].pressure.fix(20.0*pyo.units.bar)
-        m.fs.compressor.boost_pressure[0].fix(10.0*pyo.units.bar)
+        m.fs.compressor.inlet_state[0].temperature.fix(300.0 * pyo.units.K)
+        m.fs.compressor.inlet_state[0].pressure.fix(20.0 * pyo.units.bar)
+        m.fs.compressor.boost_pressure[0].fix(10.0 * pyo.units.bar)
         m.fs.compressor.inlet_state[0].flow_mol.fix(1000.0)
         # Fix mole_frac as defined_state is True at inlet
         j = next(iter(m.fs.properties.component_list))

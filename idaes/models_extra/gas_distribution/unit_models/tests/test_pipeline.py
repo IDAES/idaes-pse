@@ -58,10 +58,11 @@ from idaes.apps.nmpc.dynamic_data import (
 Test for the simple pipeline model
 """
 
+
 @pytest.mark.component
 class TestSolvePipelineSquare(unittest.TestCase):
-    """
-    """
+    """ """
+
     # These dictionaries map parameters in a steady state pipeline
     # solve to the predicted values for outlet flow rate and pressure.
     # These were obtained by solving a Pyomo DAE implementation of the
@@ -69,62 +70,62 @@ class TestSolvePipelineSquare(unittest.TestCase):
     target_flow_kghr = {
         # flow key is also in units of kg/hr. Should this be in
         # 1e4 SCM/hr, which is what the paper uses?
-        (180000.0, 40.0, 1): 180000.0*pyo.units.kg/pyo.units.hr,
-        (180000.0, 40.0, 2): 180000.0*pyo.units.kg/pyo.units.hr,
-        (180000.0, 40.0, 5): 180000.0*pyo.units.kg/pyo.units.hr,
-        (180000.0, 57.0, 1): 180000.0*pyo.units.kg/pyo.units.hr,
-        (180000.0, 57.0, 2): 180000.0*pyo.units.kg/pyo.units.hr,
-        (180000.0, 57.0, 5): 180000.0*pyo.units.kg/pyo.units.hr,
-        (180000.0, 70.0, 1): 180000.0*pyo.units.kg/pyo.units.hr,
-        (180000.0, 70.0, 2): 180000.0*pyo.units.kg/pyo.units.hr,
-        (180000.0, 70.0, 5): 180000.0*pyo.units.kg/pyo.units.hr,
-        (270000.0, 40.0, 1): 270000.0*pyo.units.kg/pyo.units.hr,
-        (270000.0, 40.0, 2): 270000.0*pyo.units.kg/pyo.units.hr,
-        (270000.0, 40.0, 5): 270000.0*pyo.units.kg/pyo.units.hr,
-        (270000.0, 57.0, 1): 270000.0*pyo.units.kg/pyo.units.hr,
-        (270000.0, 57.0, 2): 270000.0*pyo.units.kg/pyo.units.hr,
-        (270000.0, 57.0, 5): 270000.0*pyo.units.kg/pyo.units.hr,
-        (270000.0, 70.0, 1): 270000.0*pyo.units.kg/pyo.units.hr,
-        (270000.0, 70.0, 2): 270000.0*pyo.units.kg/pyo.units.hr,
-        (270000.0, 70.0, 5): 270000.0*pyo.units.kg/pyo.units.hr,
-        (450000.0, 40.0, 1): 450000.0*pyo.units.kg/pyo.units.hr,
-        (450000.0, 40.0, 2): 450000.0*pyo.units.kg/pyo.units.hr,
-        (450000.0, 40.0, 5): 450000.0*pyo.units.kg/pyo.units.hr,
-        (450000.0, 57.0, 1): 450000.0*pyo.units.kg/pyo.units.hr,
-        (450000.0, 57.0, 2): 450000.0*pyo.units.kg/pyo.units.hr,
-        (450000.0, 57.0, 5): 450000.0*pyo.units.kg/pyo.units.hr,
-        (450000.0, 70.0, 1): 450000.0*pyo.units.kg/pyo.units.hr,
-        (450000.0, 70.0, 2): 450000.0*pyo.units.kg/pyo.units.hr,
-        (450000.0, 70.0, 5): 450000.0*pyo.units.kg/pyo.units.hr,
+        (180000.0, 40.0, 1): 180000.0 * pyo.units.kg / pyo.units.hr,
+        (180000.0, 40.0, 2): 180000.0 * pyo.units.kg / pyo.units.hr,
+        (180000.0, 40.0, 5): 180000.0 * pyo.units.kg / pyo.units.hr,
+        (180000.0, 57.0, 1): 180000.0 * pyo.units.kg / pyo.units.hr,
+        (180000.0, 57.0, 2): 180000.0 * pyo.units.kg / pyo.units.hr,
+        (180000.0, 57.0, 5): 180000.0 * pyo.units.kg / pyo.units.hr,
+        (180000.0, 70.0, 1): 180000.0 * pyo.units.kg / pyo.units.hr,
+        (180000.0, 70.0, 2): 180000.0 * pyo.units.kg / pyo.units.hr,
+        (180000.0, 70.0, 5): 180000.0 * pyo.units.kg / pyo.units.hr,
+        (270000.0, 40.0, 1): 270000.0 * pyo.units.kg / pyo.units.hr,
+        (270000.0, 40.0, 2): 270000.0 * pyo.units.kg / pyo.units.hr,
+        (270000.0, 40.0, 5): 270000.0 * pyo.units.kg / pyo.units.hr,
+        (270000.0, 57.0, 1): 270000.0 * pyo.units.kg / pyo.units.hr,
+        (270000.0, 57.0, 2): 270000.0 * pyo.units.kg / pyo.units.hr,
+        (270000.0, 57.0, 5): 270000.0 * pyo.units.kg / pyo.units.hr,
+        (270000.0, 70.0, 1): 270000.0 * pyo.units.kg / pyo.units.hr,
+        (270000.0, 70.0, 2): 270000.0 * pyo.units.kg / pyo.units.hr,
+        (270000.0, 70.0, 5): 270000.0 * pyo.units.kg / pyo.units.hr,
+        (450000.0, 40.0, 1): 450000.0 * pyo.units.kg / pyo.units.hr,
+        (450000.0, 40.0, 2): 450000.0 * pyo.units.kg / pyo.units.hr,
+        (450000.0, 40.0, 5): 450000.0 * pyo.units.kg / pyo.units.hr,
+        (450000.0, 57.0, 1): 450000.0 * pyo.units.kg / pyo.units.hr,
+        (450000.0, 57.0, 2): 450000.0 * pyo.units.kg / pyo.units.hr,
+        (450000.0, 57.0, 5): 450000.0 * pyo.units.kg / pyo.units.hr,
+        (450000.0, 70.0, 1): 450000.0 * pyo.units.kg / pyo.units.hr,
+        (450000.0, 70.0, 2): 450000.0 * pyo.units.kg / pyo.units.hr,
+        (450000.0, 70.0, 5): 450000.0 * pyo.units.kg / pyo.units.hr,
     }
     target_pressure = {
-        (180000.0, 40.0, 1): 37.00032465199001*pyo.units.bar,
-        (180000.0, 40.0, 2): 36.94189598799329*pyo.units.bar,
-        (180000.0, 40.0, 5): 36.90451650814217*pyo.units.bar,
-        (180000.0, 57.0, 1): 54.89496466806317*pyo.units.bar,
-        (180000.0, 57.0, 2): 54.87516406405006*pyo.units.bar,
-        (180000.0, 57.0, 5): 54.86291547799542*pyo.units.bar,
-        (180000.0, 70.0, 1): 68.28589980113715*pyo.units.bar,
-        (180000.0, 70.0, 2): 68.27527627682545*pyo.units.bar,
-        (180000.0, 70.0, 5): 68.26877313026228*pyo.units.bar,
-        (270000.0, 40.0, 1): 33.25073046697753*pyo.units.bar,
-        (270000.0, 40.0, 2): 32.939794050787654*pyo.units.bar,
-        (270000.0, 40.0, 5): 32.72133469851969*pyo.units.bar,
-        (270000.0, 57.0, 1): 52.26367050314213*pyo.units.bar,
-        (270000.0, 57.0, 2): 52.16101599318696*pyo.units.bar,
-        (270000.0, 57.0, 5): 52.09485138003043*pyo.units.bar,
-        (270000.0, 70.0, 1): 66.1432745525586*pyo.units.bar,
-        (270000.0, 70.0, 2): 66.0886470609479*pyo.units.bar,
-        (270000.0, 70.0, 5): 66.05431808504241*pyo.units.bar,
-        (450000.0, 40.0, 1): 21.252029074937592*pyo.units.bar,
-        (450000.0, 40.0, 2): 18.382847277082647*pyo.units.bar,
-        (450000.0, 40.0, 5): 15.152518801949473*pyo.units.bar,
-        (450000.0, 57.0, 1): 43.8435291753948*pyo.units.bar,
-        (450000.0, 57.0, 2): 42.98530492454757*pyo.units.bar,
-        (450000.0, 57.0, 5): 42.33711761875827*pyo.units.bar,
-        (450000.0, 70.0, 1): 59.286873757107195*pyo.units.bar,
-        (450000.0, 70.0, 2): 58.84301170614686*pyo.units.bar,
-        (450000.0, 70.0, 5): 58.53638005215126*pyo.units.bar,
+        (180000.0, 40.0, 1): 37.00032465199001 * pyo.units.bar,
+        (180000.0, 40.0, 2): 36.94189598799329 * pyo.units.bar,
+        (180000.0, 40.0, 5): 36.90451650814217 * pyo.units.bar,
+        (180000.0, 57.0, 1): 54.89496466806317 * pyo.units.bar,
+        (180000.0, 57.0, 2): 54.87516406405006 * pyo.units.bar,
+        (180000.0, 57.0, 5): 54.86291547799542 * pyo.units.bar,
+        (180000.0, 70.0, 1): 68.28589980113715 * pyo.units.bar,
+        (180000.0, 70.0, 2): 68.27527627682545 * pyo.units.bar,
+        (180000.0, 70.0, 5): 68.26877313026228 * pyo.units.bar,
+        (270000.0, 40.0, 1): 33.25073046697753 * pyo.units.bar,
+        (270000.0, 40.0, 2): 32.939794050787654 * pyo.units.bar,
+        (270000.0, 40.0, 5): 32.72133469851969 * pyo.units.bar,
+        (270000.0, 57.0, 1): 52.26367050314213 * pyo.units.bar,
+        (270000.0, 57.0, 2): 52.16101599318696 * pyo.units.bar,
+        (270000.0, 57.0, 5): 52.09485138003043 * pyo.units.bar,
+        (270000.0, 70.0, 1): 66.1432745525586 * pyo.units.bar,
+        (270000.0, 70.0, 2): 66.0886470609479 * pyo.units.bar,
+        (270000.0, 70.0, 5): 66.05431808504241 * pyo.units.bar,
+        (450000.0, 40.0, 1): 21.252029074937592 * pyo.units.bar,
+        (450000.0, 40.0, 2): 18.382847277082647 * pyo.units.bar,
+        (450000.0, 40.0, 5): 15.152518801949473 * pyo.units.bar,
+        (450000.0, 57.0, 1): 43.8435291753948 * pyo.units.bar,
+        (450000.0, 57.0, 2): 42.98530492454757 * pyo.units.bar,
+        (450000.0, 57.0, 5): 42.33711761875827 * pyo.units.bar,
+        (450000.0, 70.0, 1): 59.286873757107195 * pyo.units.bar,
+        (450000.0, 70.0, 2): 58.84301170614686 * pyo.units.bar,
+        (450000.0, 70.0, 5): 58.53638005215126 * pyo.units.bar,
     }
 
     def test_pipeline_steady_forward_nominal(self):
@@ -149,18 +150,20 @@ class TestSolvePipelineSquare(unittest.TestCase):
         j = next(iter(m.fs.properties.component_list))
         # Fix pipeline degrees of freedom
         # Design variables:
-        pipeline.diameter.fix(0.92*pyo.units.m)
+        pipeline.diameter.fix(0.92 * pyo.units.m)
         # Pipelines in paper are 300 km. This seems long. Is this really
         # the length we're interested in?
-        pipeline.control_volume.length.fix(300.0*pyo.units.km)
+        pipeline.control_volume.length.fix(300.0 * pyo.units.km)
         # Inlet variables:
         x0 = pipeline.control_volume.length_domain.first()
         state = pipeline.control_volume.properties
         state[:, x0].mole_frac_comp[j].fix(1.0)
-        state[:, x0].temperature.fix(293.15*pyo.units.K)
-        state[:, x0].pressure.fix(57.0*pyo.units.bar)
+        state[:, x0].temperature.fix(293.15 * pyo.units.K)
+        state[:, x0].pressure.fix(57.0 * pyo.units.bar)
         pipeline.control_volume.flow_mass[:, x0].fix(
-            3.0e5*pyo.units.kg/pyo.units.hr
+            3.0e5
+            * pyo.units.kg
+            / pyo.units.hr
             # close to 10 * (1e6 SCM) / day, the nominal value in the model
         )
 
@@ -183,14 +186,14 @@ class TestSolvePipelineSquare(unittest.TestCase):
         numbers of spatial finite elements.
         """
         nxfe_list = [1, 2, 5]
-        p_list = [40.0*pyo.units.bar, 57.0*pyo.units.bar, 70.0*pyo.units.bar]
-        h_day = 24.0 * pyo.units.hr/pyo.units.day
+        p_list = [40.0 * pyo.units.bar, 57.0 * pyo.units.bar, 70.0 * pyo.units.bar]
+        h_day = 24.0 * pyo.units.hr / pyo.units.day
         kg_scm = 0.72 * pyo.units.kg / pyo.units.m**3
         f_list = [
             # Units: kg/hr
-            (6.0*1e6)*pyo.units.m**3 / pyo.units.day / h_day * kg_scm,
-            (9.0*1e6)*pyo.units.m**3 / pyo.units.day / h_day * kg_scm,
-            (15.0*1e6)*pyo.units.m**3 / pyo.units.day / h_day * kg_scm,
+            (6.0 * 1e6) * pyo.units.m**3 / pyo.units.day / h_day * kg_scm,
+            (9.0 * 1e6) * pyo.units.m**3 / pyo.units.day / h_day * kg_scm,
+            (15.0 * 1e6) * pyo.units.m**3 / pyo.units.day / h_day * kg_scm,
         ]
         # Iterate over nxfe first, because for each different nxfe, we
         # need to create a new model.
@@ -212,16 +215,16 @@ class TestSolvePipelineSquare(unittest.TestCase):
             j = next(iter(m.fs.properties.component_list))
             # Fix pipeline degrees of freedom
             # Design variables:
-            pipeline.diameter.fix(0.92*pyo.units.m)
+            pipeline.diameter.fix(0.92 * pyo.units.m)
             # Pipelines in paper are 300 km. This seems long. Is this really
             # the length we're interested in?
-            pipeline.control_volume.length.fix(300.0*pyo.units.km)
+            pipeline.control_volume.length.fix(300.0 * pyo.units.km)
             # Inlet variables:
             x0 = pipeline.control_volume.length_domain.first()
             xf = pipeline.control_volume.length_domain.last()
             state = pipeline.control_volume.properties
             state[:, x0].mole_frac_comp[j].fix(1.0)
-            state[:, x0].temperature.fix(293.15*pyo.units.K)
+            state[:, x0].temperature.fix(293.15 * pyo.units.K)
             state[:, x0].pressure.fix()
             pipeline.control_volume.flow_mass[:, x0].fix()
             t0 = m.fs.time.first()
@@ -241,7 +244,7 @@ class TestSolvePipelineSquare(unittest.TestCase):
                 # Maybe I should explicitly convert to desired units here,
                 # for clarity.
                 input_values[inlet_flow].append(f)
-                #p_val = pyo.units.convert(p, pres_var.get_units())
+                # p_val = pyo.units.convert(p, pres_var.get_units())
                 input_values[inlet_pressure].append(p)
                 # Evaluating floating points as keys here may not be safe...
                 target_values[outlet_flow].append(
@@ -282,19 +285,16 @@ class TestSolvePipelineSquare(unittest.TestCase):
                         # Assume var is (or has been scaled to be) in the
                         # same units as the target value.
                         val = pyo.value(val)
-                        self.assertTrue(math.isclose(
-                            val, var.value, rel_tol=1e-2
-                        ))
+                        self.assertTrue(math.isclose(val, var.value, rel_tol=1e-2))
 
 
 @pytest.mark.component
 class TestSolveDynamicPipeline(unittest.TestCase):
-
     def make_steady_model(
-            self,
-            nfe=2,
-            scheme="FORWARD",
-            ):
+        self,
+        nfe=2,
+        scheme="FORWARD",
+    ):
         m = pyo.ConcreteModel()
         default = {"dynamic": False}
         m.fs = idaes.FlowsheetBlock(default=default)
@@ -308,17 +308,17 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         m.fs.pipeline = GasPipeline(default=pipeline_config)
         cv = m.fs.pipeline.control_volume
         # Fix geometry variables
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        cv.length.fix(300.0*pyo.units.km)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        cv.length.fix(300.0 * pyo.units.km)
         return m
 
     def fix_model_inlets(
-            self,
-            model,
-            inlet_flow_mass=3.0e5*pyo.units.kg/pyo.units.hr,
-            inlet_pressure=57.0*pyo.units.bar,
-            inlet_temperature=293.15*pyo.units.K,
-            ):
+        self,
+        model,
+        inlet_flow_mass=3.0e5 * pyo.units.kg / pyo.units.hr,
+        inlet_pressure=57.0 * pyo.units.bar,
+        inlet_temperature=293.15 * pyo.units.K,
+    ):
         cv = model.fs.pipeline.control_volume
         j = next(iter(model.fs.properties.component_list))
         x0 = cv.length_domain.first()
@@ -328,33 +328,27 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         cv.flow_mass[:, x0].fix(inlet_flow_mass)
 
     def get_scalar_data_from_model(
-            self,
-            model,
-            time,
-            scalar_vars=None,
-            dae_vars=None,
-            ):
+        self,
+        model,
+        time,
+        scalar_vars=None,
+        dae_vars=None,
+    ):
         if scalar_vars is None or dae_vars is None:
             scalar_vars, dae_vars = flatten_dae_components(model, time, pyo.Var)
-        return {
-            str(pyo.ComponentUID(var)): var.value
-            for var in scalar_vars
-        }
+        return {str(pyo.ComponentUID(var)): var.value for var in scalar_vars}
 
     def get_data_from_model_at_time(
-            self,
-            model,
-            time,
-            scalar_vars=None,
-            dae_vars=None,
-            t0=0,
-            ):
+        self,
+        model,
+        time,
+        scalar_vars=None,
+        dae_vars=None,
+        t0=0,
+    ):
         if scalar_vars is None or dae_vars is None:
             scalar_vars, dae_vars = flatten_dae_components(model, time, pyo.Var)
-        return {
-            str(pyo.ComponentUID(var.referent)): var[t0].value
-            for var in dae_vars
-        }
+        return {str(pyo.ComponentUID(var.referent)): var[t0].value for var in dae_vars}
 
     def test_sim_inlet_pressure_outlet_flow_nominal(self):
         """
@@ -398,8 +392,8 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         j = next(iter(m.fs.properties.component_list))
 
         # Fix geometry variables
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        cv.length.fix(300.0*pyo.units.km)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        cv.length.fix(300.0 * pyo.units.km)
 
         # Fix dynamic inputs. Now these are inlet pressure and outlet
         # flow rate, as well as inlet mole fraction and temperature.
@@ -441,7 +435,7 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         sample_points = [4.0, 20.0]
         input_name = "fs.pipeline.control_volume.flow_mass[*,1.0]"
         nominal_density = 0.72
-        val = 12.0 * 1e6 / 24 * nominal_density # 12 (1e6 SCM)/day
+        val = 12.0 * 1e6 / 24 * nominal_density  # 12 (1e6 SCM)/day
         input_series_data = (
             sample_points,
             {input_name: [val, val]},
@@ -462,16 +456,53 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         pred_values = (
             list(time),
             {
-                "fs.pipeline.control_volume.flow_mass[*,%s]" % x0: [
-                    3.000e5, 2.999e5, 2.999e5, 2.999e5, 3.000e5, 3.174e5,
-                    3.301e5, 3.389e5, 3.449e5, 3.492e5, 3.523e5, 3.544e5,
-                    3.560e5, 3.571e5, 3.579e5, 3.585e5, 3.589e5, 3.592e5,
-                    3.594e5, 3.595e5, 3.597e5,
+                "fs.pipeline.control_volume.flow_mass[*,%s]"
+                % x0: [
+                    3.000e5,
+                    2.999e5,
+                    2.999e5,
+                    2.999e5,
+                    3.000e5,
+                    3.174e5,
+                    3.301e5,
+                    3.389e5,
+                    3.449e5,
+                    3.492e5,
+                    3.523e5,
+                    3.544e5,
+                    3.560e5,
+                    3.571e5,
+                    3.579e5,
+                    3.585e5,
+                    3.589e5,
+                    3.592e5,
+                    3.594e5,
+                    3.595e5,
+                    3.597e5,
                 ],
-                "fs.pipeline.control_volume.pressure[*,%s]" % xf: [
-                    50.90, 50.90, 50.90, 50.90, 50.90, 49.83, 49.31, 48.95,
-                    48.69, 48.51, 48.38, 48.29, 48.22, 48.17, 48.14, 48.11,
-                    48.10, 48.08, 48.07, 48.07, 48.06,
+                "fs.pipeline.control_volume.pressure[*,%s]"
+                % xf: [
+                    50.90,
+                    50.90,
+                    50.90,
+                    50.90,
+                    50.90,
+                    49.83,
+                    49.31,
+                    48.95,
+                    48.69,
+                    48.51,
+                    48.38,
+                    48.29,
+                    48.22,
+                    48.17,
+                    48.14,
+                    48.11,
+                    48.10,
+                    48.08,
+                    48.07,
+                    48.07,
+                    48.06,
                 ],
             },
         )
@@ -514,13 +545,11 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         m_setpoint = self.make_steady_model(nfe=nxfe)
         self.fix_model_inlets(
             m_setpoint,
-            inlet_flow_mass=5.0e5*pyo.units.kg/pyo.units.hr,
+            inlet_flow_mass=5.0e5 * pyo.units.kg / pyo.units.hr,
         )
         ipopt.solve(m_setpoint, tee=True)
         time_setpoint = m_setpoint.fs.time
-        setpoint_data = self.get_data_from_model_at_time(
-            m_setpoint, time_setpoint
-        )
+        setpoint_data = self.get_data_from_model_at_time(m_setpoint, time_setpoint)
         #
 
         t0 = 0.0
@@ -553,8 +582,8 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         j = next(iter(m.fs.properties.component_list))
 
         # Fix geometry variables
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        cv.length.fix(300.0*pyo.units.km)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        cv.length.fix(300.0 * pyo.units.km)
 
         # Fix "dynamic parameters" in the optimization problem
         cv.properties[:, x0].mole_frac_comp[j].fix()
@@ -589,16 +618,15 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         )
         m.tracking_objective = pyo.Objective(expr=sum(m.tracking_cost.values()))
 
-        sample_period = 2 # hours
+        sample_period = 2  # hours
         n_samples = (int(horizon) - int(t0)) // sample_period
-        sample_points = [
-            t0 + float(sample_period*i) for i in range(n_samples+1)
-        ]
+        sample_points = [t0 + float(sample_period * i) for i in range(n_samples + 1)]
         sample_point_set = set(sample_points)
         piecewise_constant_vars = [pyo.Reference(cv.pressure[:, 0.0])]
         m.piecewise_constant_vars_set = pyo.Set(
             initialize=list(range(len(piecewise_constant_vars)))
         )
+
         def piecewise_constant_rule(m, i, t):
             var = piecewise_constant_vars[i]
             if t in sample_point_set:
@@ -606,13 +634,14 @@ class TestSolveDynamicPipeline(unittest.TestCase):
             else:
                 t_next = time.next(t)
                 return var[t] == var[t_next]
+
         m.piecewise_constant_constraint = pyo.Constraint(
             m.piecewise_constant_vars_set, time, rule=piecewise_constant_rule
         )
         self.assertEqual(
             degrees_of_freedom(m),
             # Pressure has n_samples dof, flow has (len(time)-1) dof
-            n_samples + (len(time)-1),
+            n_samples + (len(time) - 1),
         )
 
         # Initialize the dynamic optimization problem:
@@ -647,48 +676,114 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         # to kg/hr (via the standard density 0.72 kg/m^3).
         pred_tracking_variable_data = [
             [
-                57.00, 58.86, 58.86, 58.71, 58.71, 58.35, 58.35, 58.04,
-                58.04, 57.80, 57.80, 57.63, 57.63, 57.51, 57.51, 57.42,
-                57.42, 57.38, 57.38, 57.35, 57.35,
+                57.00,
+                58.86,
+                58.86,
+                58.71,
+                58.71,
+                58.35,
+                58.35,
+                58.04,
+                58.04,
+                57.80,
+                57.80,
+                57.63,
+                57.63,
+                57.51,
+                57.51,
+                57.42,
+                57.42,
+                57.38,
+                57.38,
+                57.35,
+                57.35,
             ],
             [
-                50.90, 45.89, 43.59, 42.27, 41.50, 40.97, 40.62, 40.31,
-                40.09, 39.88, 39.72, 39.56, 39.45, 39.34, 39.26, 39.18,
-                39.13, 39.08, 39.05, 39.02, 39.01,
+                50.90,
+                45.89,
+                43.59,
+                42.27,
+                41.50,
+                40.97,
+                40.62,
+                40.31,
+                40.09,
+                39.88,
+                39.72,
+                39.56,
+                39.45,
+                39.34,
+                39.26,
+                39.18,
+                39.13,
+                39.08,
+                39.05,
+                39.02,
+                39.01,
             ],
             [
-                3.000e5, 4.693e5, 4.629e5, 4.698e5, 4.850e5, 4.761e5,
-                4.909e5, 4.819e5, 4.936e5, 4.866e5, 4.953e5, 4.903e5,
-                4.966e5, 4.932e5, 4.977e5, 4.955e5, 4.985e5, 4.973e5,
-                4.992e5, 4.986e5, 4.996e5,
+                3.000e5,
+                4.693e5,
+                4.629e5,
+                4.698e5,
+                4.850e5,
+                4.761e5,
+                4.909e5,
+                4.819e5,
+                4.936e5,
+                4.866e5,
+                4.953e5,
+                4.903e5,
+                4.966e5,
+                4.932e5,
+                4.977e5,
+                4.955e5,
+                4.985e5,
+                4.973e5,
+                4.992e5,
+                4.986e5,
+                4.996e5,
             ],
             [
-                3.000e5, 5.550e5, 5.456e5, 5.362e5, 5.294e5, 5.261e5,
-                5.212e5, 5.194e5, 5.158e5, 5.144e5, 5.118e5, 5.107e5,
-                5.087e5, 5.078e5, 5.063e5, 5.056e5, 5.044e5, 5.038e5,
-                5.029e5, 5.022e5, 5.013e5,
+                3.000e5,
+                5.550e5,
+                5.456e5,
+                5.362e5,
+                5.294e5,
+                5.261e5,
+                5.212e5,
+                5.194e5,
+                5.158e5,
+                5.144e5,
+                5.118e5,
+                5.107e5,
+                5.087e5,
+                5.078e5,
+                5.063e5,
+                5.056e5,
+                5.044e5,
+                5.038e5,
+                5.029e5,
+                5.022e5,
+                5.013e5,
             ],
         ]
         pred_values = (
             list(time),
             {
                 str(pyo.ComponentUID(var.referent)): values
-                for var, values in
-                zip(tracking_variables, pred_tracking_variable_data)
+                for var, values in zip(tracking_variables, pred_tracking_variable_data)
             },
         )
 
         actual_values = (
             list(time),
             {
-                str(pyo.ComponentUID(var.referent)):
-                    [var[t].value for t in time]
+                str(pyo.ComponentUID(var.referent)): [var[t].value for t in time]
                 for var in tracking_variables
             },
         )
-        self.assertStructuredAlmostEqual(
-            pred_values, actual_values, reltol=0.02
-        )
+        self.assertStructuredAlmostEqual(pred_values, actual_values, reltol=0.02)
 
 
 @pytest.mark.unit
@@ -696,6 +791,7 @@ class TestConstructPipeline(unittest.TestCase):
     """
     Test for construction of pipeline
     """
+
     def test_geometry(self):
         m = pyo.ConcreteModel()
         default = {
@@ -715,13 +811,14 @@ class TestConstructPipeline(unittest.TestCase):
 
         diameter = m.fs.pipeline.diameter
         diameter_eqn = m.fs.pipeline.diameter_eqn
-        cv.area.fix(5.0*pyo.units.m**2)
+        cv.area.fix(5.0 * pyo.units.m**2)
         calculate_variable_from_constraint(diameter, diameter_eqn)
         self.assertAlmostEqual(
             diameter.value,
-            pyo.value(pyo.units.convert(
-                pyo.sqrt(cv.area/Constants.pi)*2,
-                diameter.get_units())
+            pyo.value(
+                pyo.units.convert(
+                    pyo.sqrt(cv.area / Constants.pi) * 2, diameter.get_units()
+                )
             ),
         )
 
@@ -742,9 +839,7 @@ class TestConstructPipeline(unittest.TestCase):
 
         self.assertTrue(isinstance(cv.momentum_balance, pyo.Constraint))
         self.assertTrue(isinstance(cv.pressure_dx, dae.DerivativeVar))
-        self.assertTrue(
-            isinstance(cv.pressure_dx_disc_eq, pyo.Constraint)
-        )
+        self.assertTrue(isinstance(cv.pressure_dx_disc_eq, pyo.Constraint))
         assert_units_consistent(cv.momentum_balance)
 
         t = m.fs.time.first()
@@ -791,17 +886,19 @@ class TestConstructPipeline(unittest.TestCase):
 
         # Fix pipeline degrees of freedom
         # Design variables:
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        m.fs.pipeline.control_volume.length.fix(300.0*pyo.units.m)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        m.fs.pipeline.control_volume.length.fix(300.0 * pyo.units.m)
         # Inlet variables:
         x0 = m.fs.pipeline.control_volume.length_domain.first()
         xf = m.fs.pipeline.control_volume.length_domain.last()
         state = m.fs.pipeline.control_volume.properties
         state[:, x0].mole_frac_comp[j].fix(1.0)
-        state[:, x0].temperature.fix(300.0*pyo.units.K)
-        state[:, x0].pressure.fix(57.0*pyo.units.bar)
+        state[:, x0].temperature.fix(300.0 * pyo.units.K)
+        state[:, x0].pressure.fix(57.0 * pyo.units.bar)
         cv.flow_mass[:, x0].fix(
-            3.0e5*pyo.units.kg/pyo.units.hr
+            3.0e5
+            * pyo.units.kg
+            / pyo.units.hr
             # close to 10 * (1e6 SCM) / day, the nominal value in the model
         )
 
@@ -864,8 +961,8 @@ class TestConstructPipeline(unittest.TestCase):
         xf = cv.length_domain.last()
 
         # Fix geometry variables
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        cv.length.fix(300.0*pyo.units.km)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        cv.length.fix(300.0 * pyo.units.km)
 
         # Fix dynamic inputs. Here, inlet flow and pressure for all time.
         cv.pressure[:, x0].fix()
@@ -884,7 +981,7 @@ class TestConstructPipeline(unittest.TestCase):
         N, M = igraph.incidence_matrix.shape
         matching = igraph.maximum_matching()
         self.assertEqual(degrees_of_freedom(m), 0)
-        self.assertEqual(N, M) # Sanity check
+        self.assertEqual(N, M)  # Sanity check
         self.assertEqual(len(matching), N)
 
     def test_dynamic_inlet_pressure_outlet_flow(self):
@@ -923,8 +1020,8 @@ class TestConstructPipeline(unittest.TestCase):
         j = next(iter(m.fs.properties.component_list))
 
         # Fix geometry variables
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        cv.length.fix(300.0*pyo.units.km)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        cv.length.fix(300.0 * pyo.units.km)
 
         # Fix dynamic inputs. Now these are inlet pressure and outlet
         # flow rate, as well as inlet mole fraction and temperature.
@@ -945,7 +1042,7 @@ class TestConstructPipeline(unittest.TestCase):
         N, M = igraph.incidence_matrix.shape
         matching = igraph.maximum_matching()
         self.assertEqual(degrees_of_freedom(m), 0)
-        self.assertEqual(N, M) # Sanity check
+        self.assertEqual(N, M)  # Sanity check
         self.assertEqual(len(matching), N)
 
     def test_dynamic_dof_forward_space(self):
@@ -976,15 +1073,15 @@ class TestConstructPipeline(unittest.TestCase):
         disc.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
 
         # Fix geometry variables
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        cv.length.fix(300.0*pyo.units.km)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        cv.length.fix(300.0 * pyo.units.km)
 
         # Inputs are inlet pressure, mole frac, and temperature, and outlet
         # flow rate.
         n_inputs = 4
         # pressure and flow mass are differential except where they are
         # specified by inputs.
-        n_differential = 2*(len(cv.length_domain) - 1)
+        n_differential = 2 * (len(cv.length_domain) - 1)
         pred_dof = n_inputs * len(m.fs.time) + n_differential
         self.assertEqual(degrees_of_freedom(m), pred_dof)
 
@@ -1010,7 +1107,7 @@ class TestConstructPipeline(unittest.TestCase):
         N, M = igraph.incidence_matrix.shape
         matching = igraph.maximum_matching()
         self.assertEqual(degrees_of_freedom(m), 0)
-        self.assertEqual(N, M) # Sanity check
+        self.assertEqual(N, M)  # Sanity check
         self.assertEqual(len(matching), N)
 
     def test_dynamic_dof_backward_space(self):
@@ -1041,15 +1138,15 @@ class TestConstructPipeline(unittest.TestCase):
         disc.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
 
         # Fix geometry variables
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        cv.length.fix(300.0*pyo.units.km)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        cv.length.fix(300.0 * pyo.units.km)
 
         # Inputs are inlet pressure, mole frac, and temperature, and outlet
         # flow rate.
         n_inputs = 4
         # pressure and flow mass are differential except where they are
         # specified by inputs.
-        n_differential = 2*(len(cv.length_domain) - 1)
+        n_differential = 2 * (len(cv.length_domain) - 1)
         pred_dof = n_inputs * len(m.fs.time) + n_differential
         self.assertEqual(degrees_of_freedom(m), pred_dof)
 
@@ -1075,7 +1172,7 @@ class TestConstructPipeline(unittest.TestCase):
         N, M = igraph.incidence_matrix.shape
         matching = igraph.maximum_matching()
         self.assertEqual(degrees_of_freedom(m), 0)
-        self.assertEqual(N, M) # Sanity check
+        self.assertEqual(N, M)  # Sanity check
         self.assertEqual(len(matching), N)
 
     def test_dynamic_dof_radau_space(self):
@@ -1107,15 +1204,15 @@ class TestConstructPipeline(unittest.TestCase):
         disc.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
 
         # Fix geometry variables
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        cv.length.fix(300.0*pyo.units.km)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        cv.length.fix(300.0 * pyo.units.km)
 
         # Inputs are inlet pressure, mole frac, and temperature, and outlet
         # flow rate.
         n_inputs = 4
         # pressure and flow mass are differential except where they are
         # specified by inputs.
-        n_differential = 2*(len(cv.length_domain) - 1)
+        n_differential = 2 * (len(cv.length_domain) - 1)
         pred_dof = n_inputs * len(m.fs.time) + n_differential
         self.assertEqual(degrees_of_freedom(m), pred_dof)
 
@@ -1141,7 +1238,7 @@ class TestConstructPipeline(unittest.TestCase):
         N, M = igraph.incidence_matrix.shape
         matching = igraph.maximum_matching()
         self.assertEqual(degrees_of_freedom(m), 0)
-        self.assertEqual(N, M) # Sanity check
+        self.assertEqual(N, M)  # Sanity check
         self.assertEqual(len(matching), N)
 
     def test_dynamic_dof_legendre_space(self):
@@ -1176,49 +1273,49 @@ class TestConstructPipeline(unittest.TestCase):
         # need to use a Legendre discretization, this test will need to
         # be addressed.
         #
-        #cv = m.fs.pipeline.control_volume
+        # cv = m.fs.pipeline.control_volume
 
-        #disc = pyo.TransformationFactory("dae.finite_difference")
-        #ntfe = 2
-        #disc.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
+        # disc = pyo.TransformationFactory("dae.finite_difference")
+        # ntfe = 2
+        # disc.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
 
         ## Fix geometry variables
-        #m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        #cv.length.fix(300.0*pyo.units.km)
+        # m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
+        # cv.length.fix(300.0*pyo.units.km)
 
         ## Inputs are inlet pressure, mole frac, and temperature, and outlet
         ## flow rate.
-        #n_inputs = 4
+        # n_inputs = 4
         ## pressure and flow mass are differential except where they are
         ## specified by inputs.
-        #n_differential = 2*(len(cv.length_domain) - 1)
-        #pred_dof = n_inputs * len(m.fs.time) + n_differential
-        #self.assertEqual(degrees_of_freedom(m), pred_dof)
+        # n_differential = 2*(len(cv.length_domain) - 1)
+        # pred_dof = n_inputs * len(m.fs.time) + n_differential
+        # self.assertEqual(degrees_of_freedom(m), pred_dof)
 
         ## Fix degrees of freedom.
-        #x0 = cv.length_domain.first()
-        #xf = cv.length_domain.last()
-        #t0 = m.fs.time.first()
+        # x0 = cv.length_domain.first()
+        # xf = cv.length_domain.last()
+        # t0 = m.fs.time.first()
         ## Inputs at every point in time:
-        #cv.pressure[:, x0].fix()
-        #cv.flow_mass[:, xf].fix()
-        #for j in m.fs.properties.component_list:
+        # cv.pressure[:, x0].fix()
+        # cv.flow_mass[:, xf].fix()
+        # for j in m.fs.properties.component_list:
         #    cv.properties[:, x0].mole_frac_comp[j].fix()
-        #cv.properties[:, x0].temperature.fix()
+        # cv.properties[:, x0].temperature.fix()
 
         ## Initial conditions:
-        #for x in cv.length_domain:
+        # for x in cv.length_domain:
         #    if x != x0:
         #        cv.pressure[t0, x].fix()
         #    if x != xf:
         #        cv.flow_mass[t0, x].fix()
 
-        #igraph = IncidenceGraphInterface(m)
-        #N, M = igraph.incidence_matrix.shape
-        #matching = igraph.maximum_matching()
-        #self.assertEqual(degrees_of_freedom(m), 0)
-        #self.assertEqual(N, M) # Sanity check
-        #self.assertEqual(len(matching), N)
+        # igraph = IncidenceGraphInterface(m)
+        # N, M = igraph.incidence_matrix.shape
+        # matching = igraph.maximum_matching()
+        # self.assertEqual(degrees_of_freedom(m), 0)
+        # self.assertEqual(N, M) # Sanity check
+        # self.assertEqual(len(matching), N)
 
 
 if __name__ == "__main__":

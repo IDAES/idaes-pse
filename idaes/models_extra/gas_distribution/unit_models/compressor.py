@@ -58,16 +58,15 @@ class IsothermalCompressorData(UnitModelBlockData):
         self.phase = next(iter(property_package.phase_list))
         if self.phase != "Vap":
             raise ValueError(
-                "%s can only be constructed with a single phase, \"Vap\"."
-                "Got phase %s."
-                % (self.__class__, self.phase)
+                '%s can only be constructed with a single phase, "Vap".'
+                "Got phase %s." % (self.__class__, self.phase)
             )
 
         inlet_config = {"defined_state": True}
         self.inlet_state = property_package.build_state_block(
             time,
             default=inlet_config,
-            )
+        )
         self.outlet_state = property_package.build_state_block(time)
 
         # A little annoying that add_port assumes the state block is indexed
@@ -107,10 +106,10 @@ class IsothermalCompressorData(UnitModelBlockData):
         )
         self.add_pressure_change_equation(self.inlet_state, self.outlet_state)
 
-        # Add compression coefficient 
+        # Add compression coefficient
         self.beta = Var(
             time,
-            initialize=0.28, # Approximately (1.4 - 1.0)/1.4
+            initialize=0.28,  # Approximately (1.4 - 1.0)/1.4
             units=pyunits.dimensionless,
             bounds=(0.0, None),
             doc="Compression coefficient, beta.",
@@ -133,29 +132,32 @@ class IsothermalCompressorData(UnitModelBlockData):
         # temperature is unindexed.
         def isothermal_rule(b, t):
             return state1[t].temperature == state2[t].temperature
+
         self.state_isothermal_eqn = Constraint(time, rule=isothermal_rule)
 
     def add_pressure_change_equation(self, inlet, outlet):
         time = self.flowsheet().time
+
         def pressure_rule(b, t):
             # Here we are using some quantities from the state blocks
             # and some from the unit model, so we must convert units.
-            return (
-                pyunits.convert(inlet[t].pressure, pyunits.bar)
-                + pyunits.convert(self.boost_pressure[t], pyunits.bar)
-                == pyunits.convert(outlet[t].pressure, pyunits.bar)
-            )
+            return pyunits.convert(inlet[t].pressure, pyunits.bar) + pyunits.convert(
+                self.boost_pressure[t], pyunits.bar
+            ) == pyunits.convert(outlet[t].pressure, pyunits.bar)
+
         self.pressure_change_eqn = Constraint(time, rule=pressure_rule)
 
     def add_beta_equation(self, inlet_state):
         time = self.flowsheet().time
         p = next(iter(self.config.property_package.phase_list))
+
         def beta_rule(b, t):
             # We know that we are constructing this property package with a
             # single phase, but we use heat_capacity_ratio_phase nonetheless
             # for compatibility with "generic" property packages.
             gamma = inlet_state[t].heat_capacity_ratio_phase[p]
             return b.beta[t] == (gamma - 1.0) / gamma
+
         self.beta_eqn = Constraint(time, rule=beta_rule)
 
     def add_power_equation(self, inlet_state):
@@ -163,16 +165,25 @@ class IsothermalCompressorData(UnitModelBlockData):
         This is Equation 2.10 in [1]
         """
         time = self.flowsheet().time
+
         def power_rule(b, t):
             cp_mass = inlet_state[t].cp_mol / inlet_state[t].mw
             power_expr = (
                 inlet_state[t].temperature
                 * cp_mass
                 * inlet_state[t].flow_mass
-                * (((pyunits.convert(inlet_state[t].pressure, pyunits.bar)
-                    + pyunits.convert(self.boost_pressure[t], pyunits.bar))
-                    / pyunits.convert(inlet_state[t].pressure, pyunits.bar)
-                )**b.beta[t] - 1.0)
+                * (
+                    (
+                        (
+                            pyunits.convert(inlet_state[t].pressure, pyunits.bar)
+                            + pyunits.convert(self.boost_pressure[t], pyunits.bar)
+                        )
+                        / pyunits.convert(inlet_state[t].pressure, pyunits.bar)
+                    )
+                    ** b.beta[t]
+                    - 1.0
+                )
             )
             return b.power[t] == pyunits.convert(power_expr, pyunits.kW)
+
         self.power_eqn = Constraint(time, rule=power_rule)

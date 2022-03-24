@@ -39,17 +39,18 @@ from idaes.core import (
     Component,
     MaterialFlowBasis,
     StateBlock,
-    StateBlockData
+    StateBlockData,
 )
 from idaes.core.util.constants import Constants
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+
 @declare_process_block_class("NaturalGasParameterBlock")
 class NaturalGasParameterBlockData(PhysicalParameterBlock):
-    """
-    """
+    """ """
+
     def build(self):
         super(NaturalGasParameterBlockData, self).build()
         self._state_block_class = NaturalGasStateBlock
@@ -57,87 +58,90 @@ class NaturalGasParameterBlockData(PhysicalParameterBlock):
 
         self.dens_nominal = Param(
             initialize=0.72,
-            units=pyunits.kg/pyunits.m**3,
+            units=pyunits.kg / pyunits.m**3,
             doc="Density of the gas a standard temperature and pressure",
             # Used to convert mass flow rate between kg/hr and SCM/hr
         )
 
-        nat_gas_data = {"mw": (18.0, pyunits.kg/pyunits.kmol)}
+        nat_gas_data = {"mw": (18.0, pyunits.kg / pyunits.kmol)}
         nat_gas_config = {"parameter_data": nat_gas_data}
         self.natural_gas = Component(default=nat_gas_config)
         ng = self.natural_gas
 
         # Set up dictionaries we will rely on to compute heat capacities.
-        kJkmolK = pyunits.kJ/pyunits.kmol/pyunits.K
-        kJkmolK2 = pyunits.kJ/pyunits.kmol/pyunits.K**2
-        kJkmolK3 = pyunits.kJ/pyunits.kmol/pyunits.K**3
-        kJkmolK4 = pyunits.kJ/pyunits.kmol/pyunits.K**4
-        ng.cp_mol_coef_A = Param(initialize=2.34*18.0, units=kJkmolK)
+        kJkmolK = pyunits.kJ / pyunits.kmol / pyunits.K
+        kJkmolK2 = pyunits.kJ / pyunits.kmol / pyunits.K**2
+        kJkmolK3 = pyunits.kJ / pyunits.kmol / pyunits.K**3
+        kJkmolK4 = pyunits.kJ / pyunits.kmol / pyunits.K**4
+        ng.cp_mol_coef_A = Param(initialize=2.34 * 18.0, units=kJkmolK)
         ng.cp_mol_coef_B = Param(initialize=0.0, units=kJkmolK2)
         ng.cp_mol_coef_C = Param(initialize=0.0, units=kJkmolK3)
         ng.cp_mol_coef_D = Param(initialize=0.0, units=kJkmolK4)
 
-        ng.cv_mol_coef_A = Param(initialize=1.85*18.0, units=kJkmolK)
+        ng.cv_mol_coef_A = Param(initialize=1.85 * 18.0, units=kJkmolK)
         ng.cv_mol_coef_B = Param(initialize=0.0, units=kJkmolK2)
         ng.cv_mol_coef_C = Param(initialize=0.0, units=kJkmolK3)
         ng.cv_mol_coef_D = Param(initialize=0.0, units=kJkmolK4)
 
     @classmethod
     def define_metadata(cls, obj):
-        kghr = pyunits.kg/pyunits.hr
+        kghr = pyunits.kg / pyunits.hr
         nondim = pyunits.dimensionless
-        kgkmolK = pyunits.kg/pyunits.kmol/pyunits.K
-        kmolm3 = pyunits.kmol/pyunits.m**3
-        kgm3 = pyunits.kg/pyunits.m**3
-        mps = pyunits.m/pyunits.s
-        kmolhr = pyunits.kmol/pyunits.hr
-        obj.add_properties({
-            # What do the units in this dict get used for? What if they're
-            # different than the units we define for each variable in the
-            # StateBlockData methods?
-            "flow_mol": {"method": None, "units": kmolhr},
-            "pressure": {"method": None, "units": pyunits.bar},
-            "temperature": {"method": None, "units": pyunits.K},
-            "mole_frac_comp": {"method": None, "units": pyunits.dimensionless},
-            "flow_mol_comp": {"method": "_flow_mol_comp", "units": kmolhr},
-            "mw": {"method": "_mw", "units": pyunits.kg/pyunits.kmol},
-            "flow_mass": {"method": "_flow_mass", "units": kghr},
-            "cp_mol_comp": {"method": "_cp_mol_comp", "units": kgkmolK},
-            "cp_mol": {"method": "_cp_mol", "units": kgkmolK},
-            "cp_mass": {"method": "_cp_mass", "units": kgkmolK},
-            "cv_mol_comp": {"method": "_cv_mol_comp", "units": kgkmolK},
-            "cv_mol": {"method": "_cv_mol", "units": kgkmolK},
-            "cv_mass": {"method": "_cv_mass", "units": kgkmolK},
-            "heat_capacity_ratio": {
-                "method": "_heat_capacity_ratio",
-                "units": nondim,
-            },
-            "heat_capacity_ratio_phase": {
-                "method": "_heat_capacity_ratio_phase",
-                "units": nondim,
-            },
-            "compressibility": {"method": "_compressibility", "units": nondim},
-            "dens_mol": {"method": "_dens_mol", "units": kmolm3},
-            "dens_mol_comp": {"method": "_dens_mol_comp", "units": kmolm3},
-            "dens_mass": {"method": "_dens_mass", "units": kgm3},
-            "speed_of_sound": {"method": "_speed_of_sound", "units": mps},
-        })
+        kgkmolK = pyunits.kg / pyunits.kmol / pyunits.K
+        kmolm3 = pyunits.kmol / pyunits.m**3
+        kgm3 = pyunits.kg / pyunits.m**3
+        mps = pyunits.m / pyunits.s
+        kmolhr = pyunits.kmol / pyunits.hr
+        obj.add_properties(
+            {
+                # What do the units in this dict get used for? What if they're
+                # different than the units we define for each variable in the
+                # StateBlockData methods?
+                "flow_mol": {"method": None, "units": kmolhr},
+                "pressure": {"method": None, "units": pyunits.bar},
+                "temperature": {"method": None, "units": pyunits.K},
+                "mole_frac_comp": {"method": None, "units": pyunits.dimensionless},
+                "flow_mol_comp": {"method": "_flow_mol_comp", "units": kmolhr},
+                "mw": {"method": "_mw", "units": pyunits.kg / pyunits.kmol},
+                "flow_mass": {"method": "_flow_mass", "units": kghr},
+                "cp_mol_comp": {"method": "_cp_mol_comp", "units": kgkmolK},
+                "cp_mol": {"method": "_cp_mol", "units": kgkmolK},
+                "cp_mass": {"method": "_cp_mass", "units": kgkmolK},
+                "cv_mol_comp": {"method": "_cv_mol_comp", "units": kgkmolK},
+                "cv_mol": {"method": "_cv_mol", "units": kgkmolK},
+                "cv_mass": {"method": "_cv_mass", "units": kgkmolK},
+                "heat_capacity_ratio": {
+                    "method": "_heat_capacity_ratio",
+                    "units": nondim,
+                },
+                "heat_capacity_ratio_phase": {
+                    "method": "_heat_capacity_ratio_phase",
+                    "units": nondim,
+                },
+                "compressibility": {"method": "_compressibility", "units": nondim},
+                "dens_mol": {"method": "_dens_mol", "units": kmolm3},
+                "dens_mol_comp": {"method": "_dens_mol_comp", "units": kmolm3},
+                "dens_mass": {"method": "_dens_mass", "units": kgm3},
+                "speed_of_sound": {"method": "_speed_of_sound", "units": mps},
+            }
+        )
         # NOTE: We do not implement enthalpy as we are not yet using this
         # property package with a non-isothermal pipeline.
 
-        obj.add_default_units({
-            "time": pyunits.hr,
-            "length": pyunits.km,
-            "mass": pyunits.kg,
-            "amount": pyunits.kmol,
-            "temperature": pyunits.K,
-
-            # I would like to specify some reasonable units for area,
-            # energy, and pressure, but this is not supported in IDAES.
-            #"area": pyunits.m**2,
-            #"energy": pyunits.kJ,
-            #"pressure": pyunits.bar,
-        })
+        obj.add_default_units(
+            {
+                "time": pyunits.hr,
+                "length": pyunits.km,
+                "mass": pyunits.kg,
+                "amount": pyunits.kmol,
+                "temperature": pyunits.K,
+                # I would like to specify some reasonable units for area,
+                # energy, and pressure, but this is not supported in IDAES.
+                # "area": pyunits.m**2,
+                # "energy": pyunits.kJ,
+                # "pressure": pyunits.bar,
+            }
+        )
 
 
 class NaturalGasStateBlock(StateBlock):
@@ -156,7 +160,6 @@ class NaturalGasStateBlock(StateBlock):
     block_class=NaturalGasStateBlock,
 )
 class NaturalGasStateBlockData(StateBlockData):
-
     def build(self):
         super().build()
 
@@ -164,7 +167,7 @@ class NaturalGasStateBlockData(StateBlockData):
         self.flow_mol = Var(
             initialize=300.0,
             doc="Molar flow rate",
-            units=pyunits.kmol/pyunits.hr,
+            units=pyunits.kmol / pyunits.hr,
         )
         self.pressure = Var(
             initialize=50.0,
@@ -179,7 +182,7 @@ class NaturalGasStateBlockData(StateBlockData):
         component_list = self.config.parameters.component_list
         self.mole_frac_comp = Var(
             component_list,
-            initialize=1.0/len(component_list),
+            initialize=1.0 / len(component_list),
             doc="Component mole fractions within the gas",
             units=pyunits.dimensionless,
         )
@@ -191,17 +194,22 @@ class NaturalGasStateBlockData(StateBlockData):
             # is a state variable, which I would rather not change.
             def sum_component_eq_rule(b):
                 return 1.0 == sum(b.mole_frac_comp[j] for j in component_list)
+
             self.sum_component_eq = Constraint(
                 rule=sum_component_eq_rule,
-                doc=("Enforces that the sum of mole fractions equals one when\n"
-                    "state variables are not already elsewhere defined."),
+                doc=(
+                    "Enforces that the sum of mole fractions equals one when\n"
+                    "state variables are not already elsewhere defined."
+                ),
             )
 
     def _flow_mol_comp(self):
         params = self.config.parameters
         component_list = params.component_list
+
         def flow_mol_comp_rule(b, j):
             return self.flow_mol * self.mole_frac_comp[j]
+
         self.flow_mol_comp = Expression(
             component_list,
             rule=flow_mol_comp_rule,
@@ -214,7 +222,7 @@ class NaturalGasStateBlockData(StateBlockData):
         mole_frac = self.mole_frac_comp
         mw_comp = {j: params.get_component(j).mw for j in component_list}
         self.mw = Expression(
-            expr=sum(mole_frac[j]*mw_comp[j] for j in component_list),
+            expr=sum(mole_frac[j] * mw_comp[j] for j in component_list),
             doc="Average molecular weight of the gas",
         )
 
@@ -232,6 +240,7 @@ class NaturalGasStateBlockData(StateBlockData):
         params = self.config.parameters
         component_list = params.component_list
         comp = {j: params.get_component(j) for j in component_list}
+
         def cp_mol_comp_rule(b, j):
             return (
                 comp[j].cp_mol_coef_A
@@ -239,19 +248,21 @@ class NaturalGasStateBlockData(StateBlockData):
                 + comp[j].cp_mol_coef_C * b.temperature**2
                 + comp[j].cp_mol_coef_D * b.temperature**3
             )
+
         self.cp_mol_comp = Expression(
             component_list,
             rule=cp_mol_comp_rule,
-            doc=("Pure component constant-pressure molar heat capacity "
-                 "of each component"),
+            doc=(
+                "Pure component constant-pressure molar heat capacity "
+                "of each component"
+            ),
         )
 
     def _cp_mol(self):
         component_list = self.config.parameters.component_list
         self.cp_mol = Expression(
             expr=sum(
-                self.mole_frac_comp[j] * self.cp_mol_comp[j]
-                for j in component_list
+                self.mole_frac_comp[j] * self.cp_mol_comp[j] for j in component_list
             ),
             doc="Constant-pressure molar heat capacity of the gas mixture",
         )
@@ -266,6 +277,7 @@ class NaturalGasStateBlockData(StateBlockData):
         params = self.config.parameters
         component_list = params.component_list
         comp = {j: params.get_component(j) for j in component_list}
+
         def cv_mol_comp_rule(b, j):
             return (
                 comp[j].cv_mol_coef_A
@@ -273,19 +285,21 @@ class NaturalGasStateBlockData(StateBlockData):
                 + comp[j].cv_mol_coef_C * b.temperature**2
                 + comp[j].cv_mol_coef_D * b.temperature**3
             )
+
         self.cv_mol_comp = Expression(
             component_list,
             rule=cv_mol_comp_rule,
-            doc=("Pure component constant-volume molar heat capacity "
-                 "of each component"),
+            doc=(
+                "Pure component constant-volume molar heat capacity "
+                "of each component"
+            ),
         )
 
     def _cv_mol(self):
         component_list = self.config.parameters.component_list
         self.cv_mol = Expression(
             expr=sum(
-                self.mole_frac_comp[j] * self.cv_mol_comp[j]
-                for j in component_list
+                self.mole_frac_comp[j] * self.cv_mol_comp[j] for j in component_list
             ),
             doc="Constant-volume molar heat capacity of the gas mixture",
         )
@@ -298,9 +312,11 @@ class NaturalGasStateBlockData(StateBlockData):
 
     def _heat_capacity_ratio(self):
         self.heat_capacity_ratio = Expression(
-            expr=self.cp_mass/self.cv_mass,
-            doc=("Ratio of constant-volume to constant-pressure heat "
-                 "capacities of the gas mixture"),
+            expr=self.cp_mass / self.cv_mass,
+            doc=(
+                "Ratio of constant-volume to constant-pressure heat "
+                "capacities of the gas mixture"
+            ),
         )
 
     def _heat_capacity_ratio_phase(self):
@@ -309,8 +325,10 @@ class NaturalGasStateBlockData(StateBlockData):
         self.heat_capacity_ratio_phase = Expression(
             self.config.parameters.phase_list,
             expr=self.heat_capacity_ratio.expr,
-            doc=("Ratio of constant-volume to constant-pressure heat "
-                 "capacities of the gas mixture"),
+            doc=(
+                "Ratio of constant-volume to constant-pressure heat "
+                "capacities of the gas mixture"
+            ),
         )
 
     def _compressibility(self):
@@ -327,7 +345,7 @@ class NaturalGasStateBlockData(StateBlockData):
         # somebody might want to fix it.
         self.dens_mol = Var(
             initialize=1.0,
-            units=pyunits.kmol/pyunits.m**3,
+            units=pyunits.kmol / pyunits.m**3,
             doc="Molar density of the gas phase",
         )
         pressure = self.pressure
@@ -336,18 +354,22 @@ class NaturalGasStateBlockData(StateBlockData):
         temperature = self.temperature
         dens_mol_expr = pyunits.convert(
             pressure / gas_const / compressibility / temperature,
-            pyunits.kmol/pyunits.m**3,
+            pyunits.kmol / pyunits.m**3,
         )
         self.dens_mol_eq = Constraint(
             expr=self.dens_mol == dens_mol_expr,
-            doc=("Equation used to calculate molar density -- ",
-                 "ideal gas equation with a\ncompressibility factor"),
+            doc=(
+                "Equation used to calculate molar density -- ",
+                "ideal gas equation with a\ncompressibility factor",
+            ),
         )
 
     def _dens_mol_comp(self):
         component_list = self.config.parameters.component_list
+
         def dens_mol_comp_rule(b, j):
             return self.mole_frac_comp[j] * self.dens_mol
+
         self.dens_mol_comp = Expression(
             component_list,
             rule=dens_mol_comp_rule,
@@ -359,12 +381,12 @@ class NaturalGasStateBlockData(StateBlockData):
         # legible.
         self.speed_of_sound = Var(
             initialize=300.0,
-            units=pyunits.m/pyunits.s,
+            units=pyunits.m / pyunits.s,
             doc="Speed of sound in the gas",
         )
         gas_const = pyunits.convert(
             Constants.gas_constant,
-            pyunits.kJ/pyunits.kmol/pyunits.K,
+            pyunits.kJ / pyunits.kmol / pyunits.K,
         )
         speed_of_sound_expr = pyunits.convert(
             sqrt(
@@ -374,7 +396,7 @@ class NaturalGasStateBlockData(StateBlockData):
                 * self.temperature
                 / self.mw
             ),
-            pyunits.m/pyunits.s,
+            pyunits.m / pyunits.s,
         )
         self.speed_of_sound_eq = Constraint(
             expr=self.speed_of_sound == speed_of_sound_expr,
@@ -397,7 +419,7 @@ class NaturalGasStateBlockData(StateBlockData):
         # change the units of area and material_holdup in the control volume.
         return pyunits.convert(
             self.dens_mol_comp[j],
-            pyunits.kmol/pyunits.km**3,
+            pyunits.kmol / pyunits.km**3,
         )
 
     def get_material_flow_basis(self):

@@ -47,7 +47,9 @@ from idaes.models_extra.gas_distribution.properties.natural_gas import (
 )
 from idaes.models_extra.gas_distribution.unit_models.pipeline import GasPipeline
 from idaes.models_extra.gas_distribution.unit_models.node import PipelineNode
-from idaes.models_extra.gas_distribution.unit_models.compressor import IsothermalCompressor
+from idaes.models_extra.gas_distribution.unit_models.compressor import (
+    IsothermalCompressor,
+)
 
 """
 These tests test construction of some slightly less trivial flowsheets
@@ -60,10 +62,10 @@ in the gas_distribution/flowsheets/tests/ directory.
 
 """
 
+
 @pytest.mark.unit
 class TestConstructFlowsheets(unittest.TestCase):
-    """
-    """
+    """ """
 
     def test_four_nodes_linear(self):
         """
@@ -73,7 +75,7 @@ class TestConstructFlowsheets(unittest.TestCase):
         0 (c)-> 1 -> 2 (c)-> 3
                 |            |
                 d            d
-        
+
         """
         m = pyo.ConcreteModel()
         fs_config = {
@@ -134,11 +136,13 @@ class TestConstructFlowsheets(unittest.TestCase):
         # Connect compressors to pipelines
         # Should/could I make this easier?
         pipeline_idx_map = {0: 0, 1: 2}
+
         def compressor_to_pipeline_rule(fs, i):
             return (
                 m.fs.compressor[i].outlet_port,
                 m.fs.pipeline[pipeline_idx_map[i]].inlet_port,
             )
+
         m.fs.compressor_to_pipeline = Arc(
             m.fs.compressor_set, rule=compressor_to_pipeline_rule
         )
@@ -169,15 +173,9 @@ class TestConstructFlowsheets(unittest.TestCase):
         # Dynamic inputs:
         pred_dof = 9 * len(m.fs.time)
         # Initial conditions:
-        pred_dof += (
-            2 * (len(m.fs.pipeline[0].control_volume.length_domain) - 1)
-        )
-        pred_dof += (
-            2 * (len(m.fs.pipeline[1].control_volume.length_domain) - 1)
-        )
-        pred_dof += (
-            2 * (len(m.fs.pipeline[2].control_volume.length_domain) - 1)
-        )
+        pred_dof += 2 * (len(m.fs.pipeline[0].control_volume.length_domain) - 1)
+        pred_dof += 2 * (len(m.fs.pipeline[1].control_volume.length_domain) - 1)
+        pred_dof += 2 * (len(m.fs.pipeline[2].control_volume.length_domain) - 1)
 
         # Make sure we have the expected number of degrees of freedom
         self.assertEqual(degrees_of_freedom(m), pred_dof)
@@ -285,11 +283,13 @@ class TestConstructFlowsheets(unittest.TestCase):
         # Connect compressors to pipelines
         # Should/could I make this easier?
         pipeline_idx_map = {0: 2}
+
         def compressor_to_pipeline_rule(fs, i):
             return (
                 m.fs.compressor[i].outlet_port,
                 m.fs.pipeline[pipeline_idx_map[i]].inlet_port,
             )
+
         m.fs.compressor_to_pipeline = Arc(
             m.fs.compressor_set, rule=compressor_to_pipeline_rule
         )
@@ -317,9 +317,9 @@ class TestConstructFlowsheets(unittest.TestCase):
 
         # Predicted degrees of freedom:
         pred_dof = 7 * len(m.fs.time)
-        pred_dof += 2*(len(m.fs.pipeline[0].control_volume.length_domain) - 1)
-        pred_dof += 2*(len(m.fs.pipeline[1].control_volume.length_domain) - 1)
-        pred_dof += 2*(len(m.fs.pipeline[2].control_volume.length_domain) - 1)
+        pred_dof += 2 * (len(m.fs.pipeline[0].control_volume.length_domain) - 1)
+        pred_dof += 2 * (len(m.fs.pipeline[1].control_volume.length_domain) - 1)
+        pred_dof += 2 * (len(m.fs.pipeline[2].control_volume.length_domain) - 1)
 
         self.assertEqual(degrees_of_freedom(m), pred_dof)
 
@@ -426,11 +426,13 @@ class TestConstructFlowsheets(unittest.TestCase):
         # Connect compressors to pipelines
         # Should/could I make this easier?
         pipeline_idx_map = {0: 1, 1: 2}
+
         def compressor_to_pipeline_rule(fs, i):
             return (
                 m.fs.compressor[i].outlet_port,
                 m.fs.pipeline[pipeline_idx_map[i]].inlet_port,
             )
+
         m.fs.compressor_to_pipeline = Arc(
             m.fs.compressor_set, rule=compressor_to_pipeline_rule
         )
@@ -458,8 +460,8 @@ class TestConstructFlowsheets(unittest.TestCase):
 
         # Predicted degrees of freedom (assuming all pipelines have same length
         # discretization)
-        pred_dof = 7*len(m.fs.time)
-        pred_dof += 6*(len(m.fs.pipeline[0].control_volume.length_domain) - 1)
+        pred_dof = 7 * len(m.fs.time)
+        pred_dof += 6 * (len(m.fs.pipeline[0].control_volume.length_domain) - 1)
         self.assertEqual(degrees_of_freedom(m), pred_dof)
 
         # Fix predicted degrees of freedom:

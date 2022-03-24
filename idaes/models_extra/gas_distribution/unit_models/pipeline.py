@@ -20,11 +20,7 @@ from pyomo.dae.diffvar import DerivativeVar
 from pyomo.core.expr.current import log10
 from pyomo.core.expr.numvalue import value as pyo_value
 
-from idaes.core import (
-    declare_process_block_class,
-    StateBlock,
-    UnitModelBlockData
-)
+from idaes.core import declare_process_block_class, StateBlock, UnitModelBlockData
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_transformation_method,
@@ -66,30 +62,46 @@ class GasPipelineData(UnitModelBlockData):
         "property_package",
         ConfigValue(default=None, domain=is_physical_parameter_block),
     )
-    CONFIG.declare("transformation_method", ConfigValue(
-        default="dae.finite_difference",
-        domain=is_transformation_method,
-        description="DAE transformation method",
-        doc="""Method to use to transform domain. Must be a method recognised
-by the Pyomo TransformationFactory."""))
-    CONFIG.declare("transformation_scheme", ConfigValue(
-        default="FORWARD",
-        domain=is_transformation_scheme,
-        description="DAE transformation scheme",
-        doc="""Scheme to use when transforming domain. See Pyomo
-documentation for supported schemes."""))
-    CONFIG.declare("finite_elements", ConfigValue(
-        default=1,
-        domain=int,
-        description="Number of finite elements",
-        doc="""Number of finite elements to use in transformation (equivalent
-to Pyomo nfe argument)."""))
-    CONFIG.declare("collocation_points", ConfigValue(
-        default=None,
-        domain=int,
-        description="Number of collocation points",
-        doc="""Number of collocation points to use (equivalent to Pyomo ncp
-argument)."""))
+    CONFIG.declare(
+        "transformation_method",
+        ConfigValue(
+            default="dae.finite_difference",
+            domain=is_transformation_method,
+            description="DAE transformation method",
+            doc="""Method to use to transform domain. Must be a method recognised
+by the Pyomo TransformationFactory.""",
+        ),
+    )
+    CONFIG.declare(
+        "transformation_scheme",
+        ConfigValue(
+            default="FORWARD",
+            domain=is_transformation_scheme,
+            description="DAE transformation scheme",
+            doc="""Scheme to use when transforming domain. See Pyomo
+documentation for supported schemes.""",
+        ),
+    )
+    CONFIG.declare(
+        "finite_elements",
+        ConfigValue(
+            default=1,
+            domain=int,
+            description="Number of finite elements",
+            doc="""Number of finite elements to use in transformation (equivalent
+to Pyomo nfe argument).""",
+        ),
+    )
+    CONFIG.declare(
+        "collocation_points",
+        ConfigValue(
+            default=None,
+            domain=int,
+            description="Number of collocation points",
+            doc="""Number of collocation points to use (equivalent to Pyomo ncp
+argument).""",
+        ),
+    )
 
     def build(self):
         super(GasPipelineData, self).build()
@@ -110,9 +122,8 @@ argument)."""))
         self.phase = next(iter(property_package.phase_list))
         if self.phase != "Vap":
             raise ValueError(
-                "%s can only be constructed with a single phase, \"Vap\"."
-                "Got phase %s."
-                % (self.__class__, self.phase)
+                '%s can only be constructed with a single phase, "Vap".'
+                "Got phase %s." % (self.__class__, self.phase)
             )
 
         #
@@ -123,8 +134,7 @@ argument)."""))
         if "pressure" not in property_dict:
             raise ValueError(
                 "Property package supplied to pipeline must have a property "
-                "for 'pressure', which was not found in %s."
-                % type(property_package)
+                "for 'pressure', which was not found in %s." % type(property_package)
             )
 
         #
@@ -218,12 +228,12 @@ argument)."""))
         self.rugosity = Param(
             initialize=rug_value,
             units=rug_units,
-            #doc=TODO,
+            # doc=TODO,
             mutable=True,
         )
 
         diam_mm = pyunits.convert(self.diameter, pyunits.mm)
-        friction_factor_expr = (2*log10(3.7*diam_mm/self.rugosity))**-2
+        friction_factor_expr = (2 * log10(3.7 * diam_mm / self.rugosity)) ** -2
 
         self.friction_factor = Var(
             initialize=pyo_value(friction_factor_expr),
@@ -231,9 +241,9 @@ argument)."""))
             doc="This is fraction factor lambda_l in V. Zavala's paper",
         )
 
-        self.friction_factor_eqn = Constraint(expr=(
-            self.friction_factor == friction_factor_expr
-        ))
+        self.friction_factor_eqn = Constraint(
+            expr=(self.friction_factor == friction_factor_expr)
+        )
 
     def add_diameter(self):
         # We make diameter a variable as it may be more convenient
@@ -246,11 +256,13 @@ argument)."""))
         )
 
         area = self.control_volume.area
+
         def diameter_rule(b):
             return (
-                pyunits.convert(area, diam_units**2) 
+                pyunits.convert(area, diam_units**2)
                 == Constants.pi * self.diameter**2 / 4.0
             )
+
         self.diameter_eqn = Constraint(
             rule=diameter_rule,
             doc="Equation linking control volume area and pipeline diameter",
@@ -261,18 +273,16 @@ argument)."""))
         # an expression. We need variables to construct the DerivativeVar.
         time = self.flowsheet().time
         space = self.control_volume.length_domain
-        kghr = pyunits.kg/pyunits.hr
+        kghr = pyunits.kg / pyunits.hr
         cv = self.control_volume
         cv.flow_mass = Var(
             time, space, units=kghr, doc="Mass flow rate through the pipeline"
         )
         state = cv.properties
+
         def flow_mass_linking_rule(b, t, x):
-            return (
-                b.flow_mass[t, x]
-                - pyunits.convert(state[t, x].flow_mass, kghr)
-                == 0
-            )
+            return b.flow_mass[t, x] - pyunits.convert(state[t, x].flow_mass, kghr) == 0
+
         cv.flow_mass_linking_constraint = Constraint(
             time, space, rule=flow_mass_linking_rule
         )
@@ -290,8 +300,14 @@ argument)."""))
         lam = self.friction_factor
         nu = state.speed_of_sound
         friction_term = (
-            8 * lam * nu**2 / Constants.pi**2 / diameter**5
-            * flow * abs(flow) / pressure
+            8
+            * lam
+            * nu**2
+            / Constants.pi**2
+            / diameter**5
+            * flow
+            * abs(flow)
+            / pressure
         )
         return friction_term
 
@@ -341,6 +357,7 @@ argument)."""))
         # TODO: Units of these equations should probably not
         # be hard-coded. These should be configurable.
         kgm2hr2 = pyunits.kg / pyunits.m**2 / pyunits.hr**2
+
         def momentum_balance_rule(b, t, x):
             # TODO: Should probably avoid having unit conversion calls
             # inside this function, as it will be called for every time/space
@@ -352,13 +369,10 @@ argument)."""))
                 )
             else:
                 accum_expr = 0.0
-            flux_expr = pyunits.convert(
-                cv.pressure_dx[t, x] / cv.length, kgm2hr2
-            )
-            friction_expr = pyunits.convert(
-                self.get_friction_term(t, x), kgm2hr2
-            )
+            flux_expr = pyunits.convert(cv.pressure_dx[t, x] / cv.length, kgm2hr2)
+            friction_expr = pyunits.convert(self.get_friction_term(t, x), kgm2hr2)
             return accum_expr + flux_expr + friction_expr == 0
+
         cv.momentum_balance = Constraint(
             time,
             space,
@@ -370,6 +384,7 @@ argument)."""))
         length = self.control_volume.length_domain
         x0 = length.first()
         state = self.control_volume.properties
+
         def isothermal_rule(b, t, x):
             # NOTE: This constraint makes the pipeline non-templatizable
             # with respect to length. Also, we might want to skip at
@@ -379,6 +394,5 @@ argument)."""))
                 return state[t, x].temperature == state[t, x_prev].temperature
             else:
                 return Constraint.Skip
-        self.state_isothermal_eqn = Constraint(
-            time, length, rule=isothermal_rule
-        )
+
+        self.state_isothermal_eqn = Constraint(time, length, rule=isothermal_rule)

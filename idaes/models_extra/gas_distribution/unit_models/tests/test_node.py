@@ -52,6 +52,7 @@ from idaes.models_extra.gas_distribution.unit_models.node import PipelineNode
 Tests for the PipelineNode unit model
 """
 
+
 @pytest.mark.unit
 class TestConstructNode(unittest.TestCase):
     """
@@ -84,7 +85,7 @@ class TestConstructNode(unittest.TestCase):
         node = m.fs.node
 
         var_set = ComponentSet(node.component_data_objects(pyo.Var))
-        # Three state blocks, four variables each. 
+        # Three state blocks, four variables each.
         self.assertEqual(len(var_set), 12)
 
         igraph = IncidenceGraphInterface(node)
@@ -125,9 +126,7 @@ class TestConstructNode(unittest.TestCase):
             if block is not node.inlets[0]:
                 # Inlet mole fractions are already specified, so we don't have
                 # this equation.
-                self.assertTrue(
-                    isinstance(block.mole_frac_comp_eq, pyo.Constraint)
-                )
+                self.assertTrue(isinstance(block.mole_frac_comp_eq, pyo.Constraint))
                 self.assertIn(block.mole_frac_comp_eq[t0, j], con_set)
 
         self.assertTrue(isinstance(node.flow_balance, pyo.Constraint))
@@ -165,7 +164,7 @@ class TestConstructNode(unittest.TestCase):
         matching = igraph.maximum_matching()
         N, M = len(igraph.constraints), len(igraph.variables)
         self.assertEqual(degrees_of_freedom(m), 0)
-        self.assertEqual(N, M) # Sanity check
+        self.assertEqual(N, M)  # Sanity check
         self.assertEqual(len(matching), N)
 
     def test_pipeline_with_two_nodes(self):
@@ -404,12 +403,8 @@ class TestConstructNode(unittest.TestCase):
         var_set = ComponentSet(igraph.variables)
         for t in time:
             self.assertIn(m.fs.nodes[0].supplies[0].flow_mol[t], var_set)
-            self.assertIn(
-                m.fs.nodes[0].supplies[0].state[t].temperature, var_set
-            )
-            self.assertIn(
-                m.fs.nodes[0].supplies[0].state[t].pressure, var_set
-            )
+            self.assertIn(m.fs.nodes[0].supplies[0].state[t].temperature, var_set)
+            self.assertIn(m.fs.nodes[0].supplies[0].state[t].pressure, var_set)
             self.assertIn(m.fs.nodes[1].demands[0].flow_mol[t], var_set)
 
     def test_dynamic_multiple_inlet_outlet(self):

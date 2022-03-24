@@ -20,11 +20,7 @@ from pyomo.core.base.reference import Reference
 from pyomo.network.port import Port
 from pyomo.network.arc import Arc
 
-from idaes.core import (
-    declare_process_block_class,
-    StateBlock,
-    UnitModelBlockData
-)
+from idaes.core import declare_process_block_class, StateBlock, UnitModelBlockData
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.config import (
     is_physical_parameter_block,
@@ -34,6 +30,7 @@ from idaes.core.util.config import (
 A unit model for a "node" that connects several pipelines,
 possibly with its own supply and demand streams.
 """
+
 
 @declare_process_block_class("PipelineNode")
 class PipelineNodeData(UnitModelBlockData):
@@ -80,9 +77,8 @@ class PipelineNodeData(UnitModelBlockData):
         self.phase = next(iter(property_package.phase_list))
         if self.phase != "Vap":
             raise ValueError(
-                "%s can only be constructed with a single phase, \"Vap\"."
-                "Got phase %s."
-                % (self.__class__, self.phase)
+                '%s can only be constructed with a single phase, "Vap".'
+                "Got phase %s." % (self.__class__, self.phase)
             )
 
         #
@@ -93,8 +89,7 @@ class PipelineNodeData(UnitModelBlockData):
         if "pressure" not in property_dict:
             raise ValueError(
                 "Property package supplied to pipeline must have a property "
-                "for 'pressure', which was not found in %s."
-                % type(property_package)
+                "for 'pressure', which was not found in %s." % type(property_package)
             )
 
         # Build a state block for this node. Note that the flow_mol attribute
@@ -142,19 +137,20 @@ class PipelineNodeData(UnitModelBlockData):
         """
         # Validate block object
         if not isinstance(block, StateBlock):
-            raise ConfigurationError("{} block object provided to add_port "
-                                     "method is not an instance of a "
-                                     "StateBlock object. IDAES port objects "
-                                     "should only be associated with "
-                                     "StateBlocks.".format(self.name))
+            raise ConfigurationError(
+                "{} block object provided to add_port "
+                "method is not an instance of a "
+                "StateBlock object. IDAES port objects "
+                "should only be associated with "
+                "StateBlocks.".format(self.name)
+            )
 
         # Create empty Port
         p = Port(doc=doc)
-        #setattr(blk, name, p)
+        # setattr(blk, name, p)
 
         # Get dict of Port members and names
-        member_list = block[
-                self.flowsheet().time.first()].define_port_members()
+        member_list = block[self.flowsheet().time.first()].define_port_members()
 
         # Create References for port members
         references = []
@@ -165,8 +161,8 @@ class PipelineNodeData(UnitModelBlockData):
                 slicer = block[:].component(member_list[s].local_name)[...]
 
             r = Reference(slicer)
-            #setattr(blk, "_"+s+"_"+name+"_ref", r)
-            ref_name = ("_" + s + "_" + name + "_ref")
+            # setattr(blk, "_"+s+"_"+name+"_ref", r)
+            ref_name = "_" + s + "_" + name + "_ref"
             references.append((ref_name, r))
 
             # Add Reference to Port
@@ -177,21 +173,27 @@ class PipelineNodeData(UnitModelBlockData):
 
     def get_temperature_eq_con(self, state1, state2):
         time = self.flowsheet().time
+
         def temperature_eq_rule(b, t):
             return state1[t].temperature == state2[t].temperature
+
         return Constraint(time, rule=temperature_eq_rule)
 
     def get_pressure_eq_con(self, state1, state2):
         time = self.flowsheet().time
+
         def pressure_eq_rule(b, t):
             return state1[t].pressure == state2[t].pressure
+
         return Constraint(time, rule=pressure_eq_rule)
 
     def get_mole_frac_comp_eq_con(self, state1, state2):
         time = self.flowsheet().time
         comp_list = self.config.property_package.component_list
+
         def mole_frac_comp_eq_rule(b, t, j):
             return state1[t].mole_frac_comp[j] == state2[t].mole_frac_comp[j]
+
         return Constraint(time, comp_list, rule=mole_frac_comp_eq_rule)
 
     def get_port_block_rule(self, outlet=False):
@@ -223,6 +225,7 @@ class PipelineNodeData(UnitModelBlockData):
                 b.mole_frac_comp_eq = self.get_mole_frac_comp_eq_con(
                     self.state, b.state
                 )
+
         return block_rule
 
     def add_inlets(self):
@@ -249,6 +252,7 @@ class PipelineNodeData(UnitModelBlockData):
         time = self.flowsheet().time
         properties = self.config.property_package
         state_config = {"defined_state": True}
+
         def block_rule(b, i):
             # NOTE: Adding a state block here leaves us with temperature
             # and pressure variables that are unused. Strictly, pressure
@@ -267,6 +271,7 @@ class PipelineNodeData(UnitModelBlockData):
             # to that of the node.
             b.isothermal_eq = self.get_temperature_eq_con(self.state, b.state)
             b.isobaric_eq = self.get_pressure_eq_con(self.state, b.state)
+
         return block_rule
 
     def get_demand_block_rule(self):
@@ -279,10 +284,10 @@ class PipelineNodeData(UnitModelBlockData):
         # Should these demand blocks have references to the node's intensive
         # state variables? This would probably be convenient.
         time = self.flowsheet().time
+
         def block_rule(b, i):
-            b.flow_mol = Var(
-                time, initialize=100.0, units=pyunits.kmol/pyunits.hr
-            )
+            b.flow_mol = Var(time, initialize=100.0, units=pyunits.kmol / pyunits.hr)
+
         return block_rule
 
     def add_supplies(self):
@@ -312,13 +317,14 @@ class PipelineNodeData(UnitModelBlockData):
         """
         # Should this be a balance on component flow rates instead?
         time = self.flowsheet().time
+
         def flow_balance_rule(b, t):
-            return (
-                sum(self.supplies[:].flow_mol[t])
-                + sum(self.inlets[:].state[t].flow_mol)
-                == sum(self.demands[:].flow_mol[t])
-                + sum(self.outlets[:].state[t].flow_mol)
+            return sum(self.supplies[:].flow_mol[t]) + sum(
+                self.inlets[:].state[t].flow_mol
+            ) == sum(self.demands[:].flow_mol[t]) + sum(
+                self.outlets[:].state[t].flow_mol
             )
+
         self.flow_balance = Constraint(time, rule=flow_balance_rule)
 
     def add_total_flow_con(self):
@@ -328,12 +334,12 @@ class PipelineNodeData(UnitModelBlockData):
 
         """
         time = self.flowsheet().time
+
         def total_flow_rule(b, t):
-            return (
-                self.state[t].flow_mol
-                == sum(self.supplies[:].flow_mol[t])
-                + sum(self.inlets[:].state[t].flow_mol)
+            return self.state[t].flow_mol == sum(self.supplies[:].flow_mol[t]) + sum(
+                self.inlets[:].state[t].flow_mol
             )
+
         self.total_flow_eq = Constraint(time, rule=total_flow_rule)
 
     def add_component_mixing_con(self):
@@ -345,18 +351,14 @@ class PipelineNodeData(UnitModelBlockData):
         """
         time = self.flowsheet().time
         component_list = self.config.property_package.component_list
+
         def component_mixing_rule(b, t, j):
             return (
-                sum(
-                    self.supplies[i].state[t].flow_mol_comp[j]
-                    for i in self.supply_set
-                )
-                + sum(
-                    self.inlets[i].state[t].flow_mol_comp[j]
-                    for i in self.inlet_set
-                )
+                sum(self.supplies[i].state[t].flow_mol_comp[j] for i in self.supply_set)
+                + sum(self.inlets[i].state[t].flow_mol_comp[j] for i in self.inlet_set)
                 == self.state[t].flow_mol_comp[j]
             )
+
         self.component_mixing_eq = Constraint(
             time, component_list, rule=component_mixing_rule
         )
@@ -376,9 +378,7 @@ class PipelineNodeData(UnitModelBlockData):
         if self.inlets[idx].has_pipeline:
             # Don't want to add two pipelines to the same inlet
             raise RuntimeError()
-        self.inlets[idx].arc = Arc(
-            ports=(pipeline_port, self.inlets[idx].port)
-        )
+        self.inlets[idx].arc = Arc(ports=(pipeline_port, self.inlets[idx].port))
         self.inlets[idx].has_pipeline = True
         self._inlet_pipelines[idx] = pipeline
         self.n_inlet_pipelines += 1
@@ -398,9 +398,7 @@ class PipelineNodeData(UnitModelBlockData):
         if self.outlets[idx].has_pipeline:
             # Don't want to add two pipelines to the same outlet
             raise RuntimeError()
-        self.outlets[idx].arc = Arc(
-            ports=(pipeline_port, self.outlets[idx].port)
-        )
+        self.outlets[idx].arc = Arc(ports=(pipeline_port, self.outlets[idx].port))
         self.outlets[idx].has_pipeline = True
         self._outlet_pipelines[idx] = pipeline
         self.n_outlet_pipelines += 1

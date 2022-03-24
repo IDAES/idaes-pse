@@ -51,7 +51,7 @@ from idaes.models_extra.gas_distribution.unit_models.compressor import (
 )
 
 from idaes.apps.nmpc import (
-    get_tracking_cost_from_constant_setpoint as get_tracking_cost_expression
+    get_tracking_cost_from_constant_setpoint as get_tracking_cost_expression,
 )
 from idaes.apps.nmpc.dynamic_data import (
     load_inputs_into_model,
@@ -62,14 +62,14 @@ from idaes.apps.nmpc.dynamic_data import (
 """
 """
 
+
 @pytest.mark.component
 class TestSolveDynamicPipelineCompressor(unittest.TestCase):
-
     def make_steady_model(
-            self,
-            nfe=2,
-            scheme="FORWARD",
-            ):
+        self,
+        nfe=2,
+        scheme="FORWARD",
+    ):
         m = pyo.ConcreteModel()
         default = {"dynamic": False}
         m.fs = idaes.FlowsheetBlock(default=default)
@@ -87,8 +87,8 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
         compressor = m.fs.compressor
         cv = m.fs.pipeline.control_volume
         # Fix geometry variables
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        cv.length.fix(300.0*pyo.units.km)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        cv.length.fix(300.0 * pyo.units.km)
 
         m._compressor_to_pipeline = Arc(
             ports=(compressor.outlet_port, pipeline.inlet_port),
@@ -98,12 +98,12 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
         return m
 
     def fix_model_inlets(
-            self,
-            model,
-            inlet_flow_mass=3.0e5*pyo.units.kg/pyo.units.hr,
-            inlet_pressure=57.0*pyo.units.bar,
-            inlet_temperature=293.15*pyo.units.K,
-            ):
+        self,
+        model,
+        inlet_flow_mass=3.0e5 * pyo.units.kg / pyo.units.hr,
+        inlet_pressure=57.0 * pyo.units.bar,
+        inlet_temperature=293.15 * pyo.units.K,
+    ):
         cv = model.fs.pipeline.control_volume
         j = next(iter(model.fs.properties.component_list))
         x0 = cv.length_domain.first()
@@ -114,33 +114,27 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
         cv.flow_mass[:, x0].fix(inlet_flow_mass)
 
     def get_scalar_data_from_model(
-            self,
-            model,
-            time,
-            scalar_vars=None,
-            dae_vars=None,
-            ):
+        self,
+        model,
+        time,
+        scalar_vars=None,
+        dae_vars=None,
+    ):
         if scalar_vars is None or dae_vars is None:
             scalar_vars, dae_vars = flatten_dae_components(model, time, pyo.Var)
-        return {
-            str(pyo.ComponentUID(var)): var.value
-            for var in scalar_vars
-        }
+        return {str(pyo.ComponentUID(var)): var.value for var in scalar_vars}
 
     def get_data_from_model_at_time(
-            self,
-            model,
-            time,
-            scalar_vars=None,
-            dae_vars=None,
-            t0=0,
-            ):
+        self,
+        model,
+        time,
+        scalar_vars=None,
+        dae_vars=None,
+        t0=0,
+    ):
         if scalar_vars is None or dae_vars is None:
             scalar_vars, dae_vars = flatten_dae_components(model, time, pyo.Var)
-        return {
-            str(pyo.ComponentUID(var.referent)): var[t0].value
-            for var in dae_vars
-        }
+        return {str(pyo.ComponentUID(var.referent)): var[t0].value for var in dae_vars}
 
     def test_sim(self):
         """
@@ -150,8 +144,8 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
         ipopt = pyo.SolverFactory("ipopt")
 
         m_steady = self.make_steady_model(nfe=nxfe)
-        self.fix_model_inlets(m_steady, inlet_pressure=50.0*pyo.units.bar)
-        m_steady.fs.compressor.boost_pressure[:].fix(7.0*pyo.units.bar)
+        self.fix_model_inlets(m_steady, inlet_pressure=50.0 * pyo.units.bar)
+        m_steady.fs.compressor.boost_pressure[:].fix(7.0 * pyo.units.bar)
         ipopt.solve(m_steady, tee=True)
         time_steady = m_steady.fs.time
         scalar_data = self.get_scalar_data_from_model(m_steady, time_steady)
@@ -194,8 +188,8 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
         j = next(iter(m.fs.properties.component_list))
 
         # Fix geometry variables
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        cv.length.fix(300.0*pyo.units.km)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        cv.length.fix(300.0 * pyo.units.km)
 
         # Fix boost pressure
         compressor.boost_pressure[:].fix()
@@ -245,7 +239,7 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
         sample_points = [4.0, 20.0]
         input_name = "fs.pipeline.control_volume.flow_mass[*,1.0]"
         nominal_density = 0.72
-        val = 12.0 * 1e6 / 24 * nominal_density # 12 (1e6 SCM)/day
+        val = 12.0 * 1e6 / 24 * nominal_density  # 12 (1e6 SCM)/day
         input_series_data = (
             sample_points,
             {input_name: [val, val]},
@@ -266,22 +260,76 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
         pred_values = (
             list(time),
             {
-                "fs.pipeline.control_volume.flow_mass[*,%s]" % x0: [
-                    3.000e5, 2.999e5, 2.999e5, 2.999e5, 3.000e5, 3.174e5,
-                    3.301e5, 3.389e5, 3.449e5, 3.492e5, 3.523e5, 3.544e5,
-                    3.560e5, 3.571e5, 3.579e5, 3.585e5, 3.589e5, 3.592e5,
-                    3.594e5, 3.595e5, 3.597e5,
+                "fs.pipeline.control_volume.flow_mass[*,%s]"
+                % x0: [
+                    3.000e5,
+                    2.999e5,
+                    2.999e5,
+                    2.999e5,
+                    3.000e5,
+                    3.174e5,
+                    3.301e5,
+                    3.389e5,
+                    3.449e5,
+                    3.492e5,
+                    3.523e5,
+                    3.544e5,
+                    3.560e5,
+                    3.571e5,
+                    3.579e5,
+                    3.585e5,
+                    3.589e5,
+                    3.592e5,
+                    3.594e5,
+                    3.595e5,
+                    3.597e5,
                 ],
-                "fs.pipeline.control_volume.pressure[*,%s]" % xf: [
-                    50.90, 50.90, 50.90, 50.90, 50.90, 49.83, 49.31, 48.95,
-                    48.69, 48.51, 48.38, 48.29, 48.22, 48.17, 48.14, 48.11,
-                    48.10, 48.08, 48.07, 48.07, 48.06,
+                "fs.pipeline.control_volume.pressure[*,%s]"
+                % xf: [
+                    50.90,
+                    50.90,
+                    50.90,
+                    50.90,
+                    50.90,
+                    49.83,
+                    49.31,
+                    48.95,
+                    48.69,
+                    48.51,
+                    48.38,
+                    48.29,
+                    48.22,
+                    48.17,
+                    48.14,
+                    48.11,
+                    48.10,
+                    48.08,
+                    48.07,
+                    48.07,
+                    48.06,
                 ],
                 "fs.compressor.power[*]": [
-                    1.590e3, 1.590e3, 1.590e3, 1.590e3, 1.590e3, 1.682e3,
-                    1.750e3, 1.796e3, 1.828e3, 1.851e3, 1.867e3, 1.878e3,
-                    1.887e3, 1.892e3, 1.897e3, 1.900e3, 1.902e3, 1.904e3,
-                    1.905e3, 1.906e3, 1.906e3,
+                    1.590e3,
+                    1.590e3,
+                    1.590e3,
+                    1.590e3,
+                    1.590e3,
+                    1.682e3,
+                    1.750e3,
+                    1.796e3,
+                    1.828e3,
+                    1.851e3,
+                    1.867e3,
+                    1.878e3,
+                    1.887e3,
+                    1.892e3,
+                    1.897e3,
+                    1.900e3,
+                    1.902e3,
+                    1.904e3,
+                    1.905e3,
+                    1.906e3,
+                    1.906e3,
                 ],
             },
         )
@@ -311,8 +359,7 @@ class TestConstructPipelineCompressorFlowsheet(unittest.TestCase):
     """
 
     def test_steady(self):
-        """
-        """
+        """ """
         m = pyo.ConcreteModel()
         default = {
             "dynamic": False,
@@ -343,24 +390,22 @@ class TestConstructPipelineCompressorFlowsheet(unittest.TestCase):
 
         # Fix pipeline degrees of freedom:
         # Design variables:
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        m.fs.pipeline.control_volume.length.fix(300.0*pyo.units.m)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        m.fs.pipeline.control_volume.length.fix(300.0 * pyo.units.m)
 
         # Fix compressor degrees of freedom:
         compressor.boost_pressure[:].fix()
         # Inlet variables:
         state = m.fs.compressor.inlet_state
         state[:].mole_frac_comp[j].fix(1.0)
-        state[:].temperature.fix(300.0*pyo.units.K)
-        state[:].pressure.fix(57.0*pyo.units.bar)
+        state[:].temperature.fix(300.0 * pyo.units.K)
+        state[:].pressure.fix(57.0 * pyo.units.bar)
 
         # With just the pipeline unit model, we've been fixing to
         # 3e5 kg/hr. Need to convert this into kmol/hr
         ng_comp = m.fs.properties.get_component(j)
         # Here I'm assuming that we have a single component
-        state[:].flow_mol.fix(
-            3.0e5*pyo.units.kg/pyo.units.hr / ng_comp.mw
-        )
+        state[:].flow_mol.fix(3.0e5 * pyo.units.kg / pyo.units.hr / ng_comp.mw)
 
         # This test asserts:
         # (a) consistent units
@@ -375,8 +420,7 @@ class TestConstructPipelineCompressorFlowsheet(unittest.TestCase):
         self.assertEqual(len(matching), N)
 
     def test_dynamic(self):
-        """
-        """
+        """ """
         m = pyo.ConcreteModel()
         default = {
             "dynamic": True,
@@ -417,8 +461,8 @@ class TestConstructPipelineCompressorFlowsheet(unittest.TestCase):
         xf = cv.length_domain.last()
 
         # Fix geometry variables
-        m.fs.pipeline.diameter.fix(0.92*pyo.units.m)
-        cv.length.fix(300.0*pyo.units.km)
+        m.fs.pipeline.diameter.fix(0.92 * pyo.units.m)
+        cv.length.fix(300.0 * pyo.units.km)
 
         # Fix boost pressure
         compressor.boost_pressure[:].fix()
@@ -446,7 +490,7 @@ class TestConstructPipelineCompressorFlowsheet(unittest.TestCase):
         N, M = igraph.incidence_matrix.shape
         matching = igraph.maximum_matching()
         self.assertEqual(degrees_of_freedom(m), 0)
-        self.assertEqual(N, M) # Sanity check
+        self.assertEqual(N, M)  # Sanity check
         self.assertEqual(len(matching), N)
 
 
