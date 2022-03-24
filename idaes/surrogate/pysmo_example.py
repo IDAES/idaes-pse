@@ -1,5 +1,5 @@
 # from idaes.surrogate 
-import pysmo_surrogate as ps
+import idaes.surrogate.pysmo_surrogate as ps
 import pandas as pd
 from io import StringIO
 from idaes.surrogate.surrogate_block import SurrogateBlock
