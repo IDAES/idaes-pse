@@ -22,7 +22,7 @@ from pyomo.environ import ConcreteModel, Constraint, Var, units as pyunits
 
 # Import IDAES cores
 from idaes.core import AqueousPhase, VaporPhase
-from idaes.core.components import *
+from idaes.core.base.components import *
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS

@@ -19,8 +19,7 @@ __author__ = "Rusty Gentile, John Eslick, Andrew Lee"
 from pyomo.environ import Var, Param
 from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigValue
-from idaes.core import declare_process_block_class
-from idaes.core.process_base import useDefault
+from idaes.core import declare_process_block_class, useDefault
 from idaes.core.util.config import DefaultBool
 from idaes.core.util.exceptions import ConfigurationError, IdaesError
 from .heat_exchanger import HeatExchangerData
