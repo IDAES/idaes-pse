@@ -91,8 +91,8 @@ def has_declare_block_class_decorator(cls_node, decorator_name="declare_process_
 def get_base_class_node():
     _notify('Getting base class node')
     pb_def = """
-        import idaes.core.process_block.ProcessBlock
-        class ProcessBlock(idaes.core.process_block.ProcessBlock):
+        import idaes.core.base.process_block.ProcessBlock
+        class ProcessBlock(idaes.core.base.process_block.ProcessBlock):
             # creating a stub for the __getitem__() method returning the uninferable object
             # causes pylint to stop further checks on objects returned when calling [] on a derived class
             # see e.g. https://github.com/PyCQA/astroid/blob/main/astroid/brain/brain_numpy_ndarray.py

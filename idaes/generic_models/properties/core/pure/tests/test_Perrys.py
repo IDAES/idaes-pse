@@ -33,7 +33,7 @@ from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.generic_models.properties.core.pure.Perrys import *
 from idaes.core.util.misc import add_object_reference
-from idaes.core.property_meta import PropertyClassMetadata
+from idaes.core.base.property_meta import PropertyClassMetadata
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 

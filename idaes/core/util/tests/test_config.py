@@ -25,7 +25,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         ReactionParameterBlock,
                         useDefault)
-from idaes.core.phases import PhaseType as PT
+from idaes.core.base.phases import PhaseType as PT
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block,
