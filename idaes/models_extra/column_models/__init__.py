@@ -10,13 +10,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-"""
-Deprecation path for renamed Reboiler model.
-"""
-from pyomo.common.deprecation import relocated_module_attribute
-
-
-relocated_module_attribute(
-    'Reboiler',
-    'idaes.models_extra.column_models.reboiler.Reboiler',
-    version='2.0.0.alpha0')
+from .condenser import Condenser
+from .reboiler import Reboiler
+from .tray import Tray
+from .tray_column import TrayColumn
