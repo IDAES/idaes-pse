@@ -38,8 +38,8 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock,
                         MaterialFlowBasis)
-from idaes.core.components import Component, __all_components__
-from idaes.core.phases import \
+from idaes.core.base.components import Component, __all_components__
+from idaes.core.base.phases import \
     Phase, AqueousPhase, LiquidPhase, VaporPhase, __all_phases__
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,

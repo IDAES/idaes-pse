@@ -139,7 +139,7 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
         # Thermal conductivity parameters.
         # Vesovic et al. (1990)
         self.tc_b = Param(
-            RangeSet(0, 8),
+            RangeSet(0, 7),
             initialize={
                 0: 0.4226159,
                 1: 0.6280115,
@@ -154,7 +154,7 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
         )
 
         self.tc_c = Param(
-            RangeSet(1, 6),
+            RangeSet(1, 5),
             initialize={
                 1: 2.387869e-2,
                 2: 4.350794,
@@ -185,7 +185,7 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
         # Viscosity parameters
         # "Fenghour et al. (1998) with critial enhancment Vesovic et al. (1990)
         self.visc_a = Param(
-            RangeSet(0, 5),
+            RangeSet(0, 4),
             initialize={
                 0: 0.235156,
                 1: -0.491266,

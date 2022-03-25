@@ -19,8 +19,8 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 
 from idaes.core import UnitModelBlockData
-from idaes.core.process_base import (declare_process_block_class,
-                                     ProcessBlockData)
+from idaes.core.base.process_base import (declare_process_block_class,
+                                          ProcessBlockData)
 from idaes.core.util.misc import add_object_reference, StrEnum
 from idaes.core.util.exceptions import ConfigurationError
 
