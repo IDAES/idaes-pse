@@ -29,6 +29,7 @@ from pyomo.environ import (Constraint,
                            Param,
                            Reals,
                            value,
+                           log,
                            Var,
                            units as pyunits)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -51,7 +52,6 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables_in_activated_equalities)
 from idaes.core.util.constants import Constants
-from idaes.core.util.math import smooth_max
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver, scaling as iscale
 
@@ -297,34 +297,19 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                     doc="Component diffusion volumes",
                                     units=pyunits.dimensionless)
 
-        # Set default scaling
-        # self.set_default_scaling("flow_mol", 1)
-        # self.set_default_scaling("pressure", 1e-5)
-        # self.set_default_scaling("temperature", 1e-1)
-        # for comp in self.component_list:
-        #     self.set_default_scaling("mole_frac_comp", 1e1, index=comp)
-        # self.set_default_scaling("enth_mol", 1e-5)
-        # self.set_default_scaling("visc_d", 1e4)
-        # self.set_default_scaling("therm_cond", 1e2)
-
         # Set default scaling for state variables
-        self.set_default_scaling("flow_mol", 1e0)
+        self.set_default_scaling("flow_mol", 1e-3)
         self.set_default_scaling("pressure", 1e-5)
-        self.set_default_scaling("temperature", 1e-1)
-        # self.set_default_scaling("flow_mass", 1e-3)
-        self.set_default_scaling("mole_frac_comp", 1)
-        self.set_default_scaling("mole_frac_comp", 1e1, index="CH4")
-        self.set_default_scaling("mole_frac_comp", 1e1, index="CO2")
-        self.set_default_scaling("mole_frac_comp", 1e1, index="H2O")
-        self.set_default_scaling("mole_frac_comp", 1e1, index="CO")
-        self.set_default_scaling("mole_frac_comp", 1e1, index="H2")
+        self.set_default_scaling("temperature", 1e-2)
+        for comp in self.component_list:
+            self.set_default_scaling("mole_frac_comp", 1e1, index=comp)
 
-        # Set defaul scaling for on demand variables
-        self.set_default_scaling("enth_mol", 1e-8)
-        self.set_default_scaling("enth_mol_comp", 1e-8)
-        self.set_default_scaling("cp_mol", 1e-8)
-        self.set_default_scaling("cp_mol_comp", 1e-8)
-        self.set_default_scaling("cp_mass", 1e-8)
+        # Set default scaling for thermophysical and transport properties
+        self.set_default_scaling("enth_mol", 1e-6)
+        self.set_default_scaling("enth_mol_comp", 1e-6)
+        self.set_default_scaling("cp_mol", 1e-6)
+        self.set_default_scaling("cp_mol_comp", 1e-6)
+        self.set_default_scaling("cp_mass", 1e-6)
         self.set_default_scaling("entr_mol", 1e-2)
         self.set_default_scaling("entr_mol_phase", 1e-2)
         self.set_default_scaling("dens_mol", 1)
@@ -358,6 +343,9 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'enth_mol': {'method': '_enth_mol', 'units': 'J/mol'},
                 'enth_mol_comp': {'method': '_enth_mol_comp',
                                   'units': 'J/mol'},
+                'entr_mol': {'method': '_entropy_calc', 'units': 'J/mol.K'},
+                'entr_mol_phase': {'method': '_entropy_calc',
+                                   'units': 'J/mol/K'},
                 'visc_d': {'method': '_visc_d', 'units': 'kg/m.s'},
                 'therm_cond': {'method': '_therm_cond', 'units': 'J/m.K.s'},
                 'diffusion_comp': {'method': '_diffusion_comp',
@@ -561,21 +549,6 @@ class GasPhaseStateBlockData(StateBlockData):
 
         units_meta = self._params.get_metadata().derived_units
 
-
-        # # create units objects to access default & derived units from meta_data
-        # default_units = self._params.get_metadata().default_units
-        # self._params.get_metadata().derived_units  # makes _derived units dict
-        # units_meta = self._params.get_metadata()._derived_units
-
-        # # overwrite base units with custom defaults for energy and pressure
-        # if 'energy' in default_units.keys():
-        #     units_meta['energy'] = default_units['energy']
-        #     units_meta['power'] = default_units['energy']/default_units['time']
-
-        # if 'pressure' in default_units.keys():
-        #     units_meta['pressure'] = default_units['pressure']
-
-
         # Object reference for molecular weight if needed by CV1D
         # Molecular weights
         add_object_reference(self, "mw_comp",
@@ -638,21 +611,6 @@ class GasPhaseStateBlockData(StateBlockData):
                             doc="Molar density or concentration",
                             units=units_meta['amount'] *
                             units_meta['length']**-3)
-
-    #     def ideal_gas(b):
-    #         return (
-    #                 b.dens_mol
-    #                 * Constants.gas_constant  # [=] J/mol/K
-    #                 * b.temperature ==
-    #                 pyunits.convert(b.pressure, to_units=pyunits.Pa))
-    #     try:
-    #         # Try to build constraint
-    #         self.ideal_gas = Constraint(rule=ideal_gas)
-    #     except AttributeError:
-    #         # If constraint fails, clean up so that DAE can try again later
-    #         self.del_component(self.dens_mol)
-    #         self.del_component(self.ideal_gas)
-    #         raise
 
         def ideal_gas(b):
             pressure = pyunits.convert(
@@ -986,6 +944,44 @@ class GasPhaseStateBlockData(StateBlockData):
             self.del_component(self.mixture_enthalpy_eqn)
             raise
 
+    def _entropy_calc(self):
+        self.entr_mol = Var(doc='Specific Entropy [J/mol/K]',
+                            units=pyunits.J/pyunits.mol/pyunits.K)
+        # Specific Entropy
+
+        def rule_entr_phase(b, p):
+            # This property module only has one phase
+            return self.entr_mol
+        self.entr_mol_phase = Expression(
+            self.params.phase_list, rule=rule_entr_phase)
+
+        def entropy_correlation(b):
+            t = pyunits.convert(self.temperature, to_units=pyunits.kK)
+            x = b.mole_frac_comp
+            p = pyunits.convert(
+                b.pressure,
+                to_units=pyunits.Pa)
+            r_gas = pyunits.convert(
+                b._params.gas_const,
+                to_units=pyunits.J/pyunits.mol/pyunits.K)
+            return (
+                (self.entr_mol + r_gas * log(p/1e5)) * b.flow_mol ==
+                sum(b.flow_mol*b.mole_frac_comp[j] * (
+                    self.params.cp_mol_ig_comp_coeff_A[j]*log(t) +
+                    self.params.cp_mol_ig_comp_coeff_B[j]*t +
+                    self.params.cp_mol_ig_comp_coeff_C[j]*t**2 / 2 +
+                    self.params.cp_mol_ig_comp_coeff_D[j]*t**3 / 3 -
+                    self.params.cp_mol_ig_comp_coeff_E[j]/t**2 / 2 +
+                    self.params.cp_mol_ig_comp_coeff_G[j] +
+                    r_gas * log(x[j])) for j in self.params.component_list)
+                )
+
+        try:
+            self.entropy_correlation = Constraint(rule=entropy_correlation)
+        except AttributeError:
+            self.del_component(self.entr_mol_phase)
+            self.del_component(self.entropy_correlation)
+
     def get_material_flow_terms(self, p, j):
         if not self.is_property_constructed("material_flow_terms"):
             try:
@@ -1116,11 +1112,16 @@ class GasPhaseStateBlockData(StateBlockData):
                     overwrite=False
                 )
 
-        if self.is_property_constructed("ideal_gas"):
-            sf1 = iscale.get_scaling_factor(self.temperature)
-            sf2 = iscale.get_scaling_factor(self.dens_mol)
+        if self.is_property_constructed("mw_eqn"):
+            sf = iscale.get_scaling_factor(self.mw)
             iscale.constraint_scaling_transform(
-                self.ideal_gas, 1e-1 * sf1 * sf2,
+                self.mw_eqn, sf,
+                overwrite=False)
+
+        if self.is_property_constructed("ideal_gas"):
+            sf = iscale.get_scaling_factor(self.pressure)
+            iscale.constraint_scaling_transform(
+                self.ideal_gas, sf,
                 overwrite=False)
 
         if self.is_property_constructed("comp_conc_eqn"):
@@ -1182,3 +1183,10 @@ class GasPhaseStateBlockData(StateBlockData):
                     iscale.get_scaling_factor(self.enth_mol),
                     overwrite=False
                 )
+        if self.is_property_constructed("entropy_correlation"):
+            iscale.constraint_scaling_transform(
+                self.entropy_correlation,
+                iscale.get_scaling_factor(self.entr_mol) *
+                iscale.get_scaling_factor(self.flow_mol),
+                overwrite=False
+            )

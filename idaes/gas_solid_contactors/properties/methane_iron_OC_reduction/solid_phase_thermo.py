@@ -210,35 +210,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 doc="Component molar heats of formation [J/mol]",
                 units=pyunits.J/pyunits.mol)
 
-        # # Set default scaling
-        # self.set_default_scaling("flow_mass", 1e-2)
-        # self.set_default_scaling("particle_porosity", 1e2)
-        # self.set_default_scaling("temperature", 1e-2)
-        # for comp in self.component_list:
-        #     self.set_default_scaling("mass_frac_comp", 1e1, index=comp)
-        # self.set_default_scaling("enth_mass", 1e-5)
-        # self.set_default_scaling("dens_mass_particle", 1e-2)
-        # self.set_default_scaling("dens_mass_skeletal", 1e-2)
-
-        # Set default scaling for state variables
-        self.set_default_scaling("flow_mass", 1e-2)
-        self.set_default_scaling("particle_porosity", 1e2)
-        self.set_default_scaling("temperature", 1e-1)
-        self.set_default_scaling("mass_frac_comp", 1e1)
-        self.set_default_scaling("mass_frac_comp", 1e1, index="TiO2")
-        self.set_default_scaling("mass_frac_comp", 1e1, index="Fe2O3")
-        self.set_default_scaling("mass_frac_comp", 1e1, index="Fe3O4")
-        self.set_default_scaling("mass_frac_comp", 1e1, index="FeO")
-        self.set_default_scaling("mass_frac_comp", 1e1, index="Fe")
-
-        # Set default scaling for on demand variables
-        self.set_default_scaling("enth_mass", 1e-8)
-        self.set_default_scaling("enth_mol_comp", 1e-8)
-        self.set_default_scaling("cp_mol_comp", 1e-8)
-        self.set_default_scaling("cp_mass", 1e-8)
-        self.set_default_scaling("dens_mass_particle", 1e-2)
-        self.set_default_scaling("dens_mass_skeletal", 1e-2)
-
     # -------------------------------------------------------------------------
         """ Mixed solid properties"""
         # These are setup as fixed vars to allow for parameter estimation
@@ -280,6 +251,21 @@ class PhysicalParameterData(PhysicalParameterBlock):
                     doc='Thermal conductivity of solid particles [J/m.K.s]',
                     units=pyunits.J/pyunits.m/pyunits.K/pyunits.s)
         self.therm_cond_sol.fix()
+
+        # Set default scaling for state variables
+        self.set_default_scaling("flow_mass", 1e-3)
+        self.set_default_scaling("particle_porosity", 1e2)
+        self.set_default_scaling("temperature", 1e-2)
+        for comp in self.component_list:
+            self.set_default_scaling("mass_frac_comp", 1e1, index=comp)
+
+        # Set default scaling for thermophysical and transport properties
+        self.set_default_scaling("enth_mass", 1e-6)
+        self.set_default_scaling("enth_mol_comp", 1e-6)
+        self.set_default_scaling("cp_mol_comp", 1e-6)
+        self.set_default_scaling("cp_mass", 1e-6)
+        self.set_default_scaling("dens_mass_particle", 1e-2)
+        self.set_default_scaling("dens_mass_skeletal", 1e-2)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -776,7 +762,7 @@ class SolidPhaseStateBlockData(StateBlockData):
         if self.is_property_constructed("sum_component_eqn"):
             iscale.constraint_scaling_transform(
                     self.sum_component_eqn,
-                    1e3,
+                    iscale.get_scaling_factor(self.mass_frac_comp['Fe2O3']),
                     overwrite=False
                 )
         if self.is_property_constructed("density_particle_constraint"):
