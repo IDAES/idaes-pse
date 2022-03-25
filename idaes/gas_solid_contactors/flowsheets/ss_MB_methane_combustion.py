@@ -121,6 +121,7 @@ def main():
     print()
     print("Initialize the model")
     m.fs.MB.initialize(outlvl=idaeslog.INFO,
+                       optarg={'tol': 1e-5},
                        gas_phase_state_args=gas_phase_state_args,
                        solid_phase_state_args=solid_phase_state_args)
 
@@ -130,6 +131,7 @@ def main():
     print("Solve the model")
     # Create a solver
     solver = get_solver()
+    solver.options = {'tol': 1e-5}
     solver.solve(m.fs.MB, tee=True)
 
     t_simulation = time.time()  # Simulation time

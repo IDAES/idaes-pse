@@ -840,7 +840,8 @@ see reaction package for documentation.}"""))
                                         to_units=units_meta_gas('area')))
 
         elif self.config.energy_balance_type == EnergyBalanceType.none:
-            # If energy balance is none fix gas and solid temperatures to inlet
+            # If energy balance is none fix gas and solid temperatures to
+            # solid inlet temperature
             @self.Constraint(
                     self.flowsheet().time,
                     self.length_domain,
@@ -851,7 +852,7 @@ see reaction package for documentation.}"""))
                 else:
                     return (
                             b.gas_phase.properties[t, x].temperature ==
-                            b.gas_inlet.temperature[t])
+                            b.solid_inlet.temperature[t])
 
             @self.Constraint(
                     self.flowsheet().time,
@@ -1280,6 +1281,16 @@ see reaction package for documentation.}"""))
                 sf = 1/value(constants.pi*(0.5*self.bed_diameter)**2)
                 iscale.set_scaling_factor(self.bed_area, 1e-1 * sf)
 
+        if hasattr(self.gas_phase, "area"):
+            if iscale.get_scaling_factor(self.gas_phase.area) is None:
+                sf = iscale.get_scaling_factor(self.bed_area)
+                iscale.set_scaling_factor(self.gas_phase.area, sf)
+
+        if hasattr(self.solid_phase, "area"):
+            if iscale.get_scaling_factor(self.solid_phase.area) is None:
+                sf = iscale.get_scaling_factor(self.bed_area)
+                iscale.set_scaling_factor(self.solid_phase.area, sf)
+
         if self.config.energy_balance_type != EnergyBalanceType.none:
             if hasattr(self, "Re_particle"):
                 for (t, x), v in self.Re_particle.items():
@@ -1316,8 +1327,8 @@ see reaction package for documentation.}"""))
                         iscale.set_scaling_factor(v, 1e-1 * sf)
 
             if hasattr(self, "gas_solid_htc"):
-                for (t, x), v in self.gas_solid_htc.items():
-                    if iscale.get_scaling_factor(v) is None:
+                if iscale.get_scaling_factor(self.gas_solid_htc) is None:
+                    for (t, x), v in self.gas_solid_htc.items():
                         sf1 = iscale.get_scaling_factor(
                             self.Nu_particle[t, x])
                         sf2 = iscale.get_scaling_factor(
