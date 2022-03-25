@@ -1231,9 +1231,15 @@ class _GenericStateBlock(StateBlock):
         # If StateBlock has active constraints (i.e. has bubble and/or dew
         # point calculations), solve the block to converge these
         n_cons = 0
+        dof = 0
         for k in blk:
             n_cons += number_activated_constraints(blk[k])
+            dof += degrees_of_freedom(blk[k])
         if n_cons > 0:
+            if dof > 0:
+                raise InitializationError(
+                    f"{blk.name} Unexpected degrees of freedom during "
+                    f"initialization at bubble and dew point step: {dof}.")
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             init_log.info(
@@ -1325,6 +1331,7 @@ class _GenericStateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         n_cons = 0
+        dof = 0
         skip = False
         for k in blk.keys():
             if (blk[k].params.config.phase_equilibrium_state is not None and
@@ -1334,7 +1341,8 @@ class _GenericStateBlock(StateBlock):
                     if c.local_name in ("total_flow_balance",
                                         "component_flow_balances",
                                         "sum_mole_frac",
-                                        "equilibrium_constraint"):
+                                        "equilibrium_constraint",
+                                        "phase_fraction_constraint"):
                         c.activate()
                     if c.local_name == "log_mole_frac_phase_comp_eqn":
                         c.activate()
@@ -1348,12 +1356,19 @@ class _GenericStateBlock(StateBlock):
                         .phase_equil_initialization(blk[k], pp)
 
             n_cons += number_activated_constraints(blk[k])
+            dof += degrees_of_freedom(blk[k])
             if degrees_of_freedom(blk[k]) < 0:
                 # Skip solve if DoF < 0 - this is probably due to a
                 # phase-component flow state with flash
                 skip = True
 
         if n_cons > 0 and not skip:
+            if dof > 0:
+                from idaes.core.util.model_statistics import variables_in_activated_equalities_set, activated_equalities_set
+                for c in variables_in_activated_equalities_set(blk[
+                raise InitializationError(
+                    f"{blk.name} Unexpected degrees of freedom during "
+                    f"initialization at phase equilibrium step: {dof}.")
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             init_log.info(
@@ -1406,6 +1421,7 @@ class _GenericStateBlock(StateBlock):
                         v.set_value(value(lc))
 
         n_cons = 0
+        dof = 0
         skip = False
         for k in blk:
             if degrees_of_freedom(blk[k]) < 0:
@@ -1413,7 +1429,12 @@ class _GenericStateBlock(StateBlock):
                 # phase-component flow state with flash
                 skip = True
             n_cons += number_activated_constraints(blk[k])
+            dof += degrees_of_freedom(blk[k])
         if n_cons > 0 and not skip:
+            if dof > 0:
+                raise InitializationError(
+                    f"{blk.name} Unexpected degrees of freedom during "
+                    f"initialization at property initialization step: {dof}.")
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             init_log.info("Property initialization: {}.".format(
