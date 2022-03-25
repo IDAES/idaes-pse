@@ -31,7 +31,7 @@ from pyomo.environ import (
     units as pyunits
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from idaes.core.phases import LiquidPhase, VaporPhase
+from idaes.core import LiquidPhase, VaporPhase
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
 from idaes.core.util.math import safe_log

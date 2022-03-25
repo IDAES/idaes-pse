@@ -219,7 +219,7 @@ class FlowsheetSerializer:
 
     def _identify_unit_models(self) -> Dict:
         from idaes.core import UnitModelBlockData  # avoid circular import
-        from idaes.core.property_base import PhysicalParameterBlock, StateBlock
+        from idaes.core.base.property_base import PhysicalParameterBlock, StateBlock
 
         # Create a map of components to their unit type
         components = {}
