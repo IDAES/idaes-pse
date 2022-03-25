@@ -45,11 +45,11 @@ from idaes.generic_models.properties import iapws95
 
 # Import IDAES standard unit model
 import idaes.logger as idaeslog
-from idaes.power_generation.unit_models.drum import Drum
-from idaes.power_generation.unit_models.downcomer import Downcomer
-from idaes.power_generation.unit_models.waterwall_section import \
+from idaes.models_extra.power_generation.unit_models.drum import Drum
+from idaes.models_extra.power_generation.unit_models.downcomer import Downcomer
+from idaes.models_extra.power_generation.unit_models.waterwall_section import \
     WaterwallSection
-from idaes.power_generation.properties.flue_gas_ideal import \
+from idaes.models_extra.power_generation.properties.flue_gas_ideal import \
     FlueGasParameterBlock
 
 # import plotting libraries

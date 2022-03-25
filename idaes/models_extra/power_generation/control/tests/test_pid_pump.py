@@ -15,10 +15,10 @@ import pyomo.environ as pyo
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
-from idaes.power_generation.unit_models.watertank import WaterTank
-from idaes.power_generation.control.pid_controller import PIDController
+from idaes.models_extra.power_generation.unit_models.watertank import WaterTank
+from idaes.models_extra.power_generation.control.pid_controller import PIDController
 import idaes.core.util.scaling as iscale
-from idaes.power_generation.unit_models.helm import (
+from idaes.models_extra.power_generation.unit_models.helm import (
     HelmValve as WaterValve,
     HelmIsentropicCompressor as WaterPump,
 )

@@ -86,9 +86,9 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 from pyomo.network import Arc
 
-from idaes.power_generation.unit_models.helm.phase_separator import \
+from idaes.models_extra.power_generation.unit_models.helm.phase_separator import \
     HelmPhaseSeparator
-from idaes.power_generation.unit_models.helm import (
+from idaes.models_extra.power_generation.unit_models.helm import (
     HelmMixer,
     MomentumMixingType)
 from idaes.core.util.constants import Constants as const

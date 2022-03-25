@@ -23,7 +23,7 @@ from pyomo.network import Arc
 
 # Import IDAES
 from idaes.core.util import copy_port_values as _set_port
-from idaes.power_generation.unit_models.helm import (
+from idaes.models_extra.power_generation.unit_models.helm import (
     HelmTurbineStage as TurbineStage,
     HelmTurbineOutletStage as TurbineOutletStage,
     ValveFunctionType,
@@ -36,11 +36,11 @@ from idaes.power_generation.unit_models.helm import (
     HelmSplitter as Separator,
     HelmNtuCondenser as Condenser
 )
-from idaes.power_generation.unit_models import (
+from idaes.models_extra.power_generation.unit_models import (
     WaterTank,
     FWH0DDynamic as FWH0D,
     )
-from idaes.power_generation.control.pid_controller import PIDController
+from idaes.models_extra.power_generation.control.pid_controller import PIDController
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog

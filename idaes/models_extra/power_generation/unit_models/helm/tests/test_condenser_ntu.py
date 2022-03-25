@@ -16,7 +16,7 @@
 import pytest
 import pyomo.environ as pyo
 import idaes.core
-from idaes.power_generation.unit_models.helm import HelmNtuCondenser
+from idaes.models_extra.power_generation.unit_models.helm import HelmNtuCondenser
 from idaes.generic_models.properties import iapws95
 from idaes.core.util import get_solver
 

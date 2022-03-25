@@ -62,7 +62,7 @@ Default is PI"""))
 
     def __init__(self, *args, **kwargs):
         deprecation_warning(
-            "DEPRECATED: The idaes.power_generation.control.pid_controller.PIDController"
+            "DEPRECATED: The idaes.models_extra.power_generation.control.pid_controller.PIDController"
             " model is deprecated and will be removed. Use"
             " idaes.generic_models.control.PIDController instead.",
             version=1.12,

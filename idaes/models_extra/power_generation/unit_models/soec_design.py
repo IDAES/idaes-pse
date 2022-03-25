@@ -33,7 +33,7 @@ from idaes.core.util.initialization import propagate_state
 import idaes.core.util.scaling as iscale
 import idaes.core.util as iutil
 from idaes.core.util.misc import get_solver
-from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn, EosType
+from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop, get_rxn, EosType
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
 from idaes.core.util import from_json, to_json, StoreSpec
@@ -53,7 +53,7 @@ class SoecDesignData(UnitModelBlockData):
             description="Property package for the oxygen side.",
             doc=(
                 "Property package for the oxygen side, using "
-                "idaes.power_generation.properties.natural_gas_PR is "
+                "idaes.models_extra.power_generation.properties.natural_gas_PR is "
                 "strongly recomended, either Peng-Robinson or Ideal is okay"
             ),
         ),
@@ -65,7 +65,7 @@ class SoecDesignData(UnitModelBlockData):
             description="Property package for the hydrogen side.",
             doc=(
                 "Property package for the hydrogen side, using "
-                "idaes.power_generation.properties.natural_gas_PR is "
+                "idaes.models_extra.power_generation.properties.natural_gas_PR is "
                 "strongly recomended, either Peng-Robinson or Ideal is okay"
             ),
         ),

@@ -22,7 +22,7 @@ import pyomo.environ as pyo
 # Import IDAES core
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.power_generation.unit_models.waterpipe import WaterPipe
+from idaes.models_extra.power_generation.unit_models.waterpipe import WaterPipe
 # Import Unit Model Modules
 from idaes.generic_models.properties import iapws95
 

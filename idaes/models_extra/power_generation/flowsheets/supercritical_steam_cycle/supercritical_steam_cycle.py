@@ -34,14 +34,14 @@ from idaes.core import FlowsheetBlock  # Flowsheet class
 from idaes.core.util import model_serializer as ms  # load/save model state
 from idaes.core.util.misc import svg_tag  # place numbers/text in an SVG
 from idaes.generic_models.properties import iapws95  # steam properties
-from idaes.power_generation.unit_models.helm import (
+from idaes.models_extra.power_generation.unit_models.helm import (
     HelmTurbineMultistage,
     HelmMixer,
     HelmIsentropicCompressor,
     HelmTurbineStage,
     HelmNtuCondenser as Condenser
 )
-from idaes.power_generation.unit_models import FWH0D
+from idaes.models_extra.power_generation.unit_models import FWH0D
 from idaes.generic_models.unit_models import (  # basic IDAES unit models, and enum
     HeatExchanger,
     MomentumMixingType,  # Enum type for mixer pressure calculation selection

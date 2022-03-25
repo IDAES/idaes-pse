@@ -30,7 +30,7 @@ Author: Alex Noring
 
 import pytest
 
-from idaes.power_generation.properties.NGFC.ROM.SOFC_ROM import \
+from idaes.models_extra.power_generation.properties.NGFC.ROM.SOFC_ROM import \
     build_SOFC_ROM, initialize_SOFC_ROM
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,

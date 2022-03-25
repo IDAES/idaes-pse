@@ -29,7 +29,7 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.eos.ceos import \
     cubic_roots_available
 from idaes.core.util.scaling import constraint_scaling_transform
-from idaes.power_generation.properties.natural_gas_PR import get_prop
+from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.generic_models.unit_models import GibbsReactor

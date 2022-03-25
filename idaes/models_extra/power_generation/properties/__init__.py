@@ -10,7 +10,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from idaes.power_generation.properties.flue_gas_ideal import (
+from idaes.models_extra.power_generation.properties.flue_gas_ideal import (
     FlueGasParameterBlock,
     FlueGasStateBlock,
 )

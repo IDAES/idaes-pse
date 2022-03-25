@@ -60,11 +60,11 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties import iapws95
 
 # Import Property Modules
-from idaes.power_generation.properties import FlueGasParameterBlock
+from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 
 # Import Unit Model Modules
 from idaes.generic_models.unit_models import Heater, Mixer
-from idaes.power_generation.unit_models.boiler_heat_exchanger import (
+from idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger import (
     BoilerHeatExchanger, TubeArrangement, DeltaTMethod)
 from idaes.generic_models.unit_models.separator import Separator, \
     SplittingType, EnergySplittingType

@@ -46,8 +46,8 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import Unit Model Modules
 from idaes.generic_models.properties import iapws95
-# from idaes.power_generation.unit_models.drum_1D import Drum1D
-from idaes.power_generation.unit_models.drum1D import Drum1D
+# from idaes.models_extra.power_generation.unit_models.drum_1D import Drum1D
+from idaes.models_extra.power_generation.unit_models.drum1D import Drum1D
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver

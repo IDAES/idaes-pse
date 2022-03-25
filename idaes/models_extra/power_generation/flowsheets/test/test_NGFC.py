@@ -34,7 +34,7 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.common.fileutils import this_file_dir
 
-from idaes.power_generation.flowsheets.NGFC.NGFC_flowsheet import (
+from idaes.models_extra.power_generation.flowsheets.NGFC.NGFC_flowsheet import (
     build_power_island,
     build_reformer,
     set_power_island_inputs,

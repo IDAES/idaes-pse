@@ -31,13 +31,13 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties import iapws95
 
 # import ideal flue gas prop pack
-from idaes.power_generation.properties import (
+from idaes.models_extra.power_generation.properties import (
     FlueGasParameterBlock,
     FlueGasStateBlock,
 )
 
 # Import Power Plant HX Unit Model
-from idaes.power_generation.unit_models.boiler_heat_exchanger import (
+from idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger import (
     BoilerHeatExchanger,
     TubeArrangement,
     DeltaTMethod,

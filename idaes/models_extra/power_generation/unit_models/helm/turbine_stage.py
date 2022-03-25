@@ -24,7 +24,7 @@ __Author__ = "John Eslick"
 from pyomo.environ import Var, units as pyunits
 
 from idaes.core import declare_process_block_class
-from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
+from idaes.models_extra.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale

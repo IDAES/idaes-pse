@@ -20,10 +20,10 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
-from idaes.power_generation.properties import FlueGasParameterBlock
-from idaes.power_generation.control.pid_controller import PIDController
-import idaes.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler_flowsheet as blr
-import idaes.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as stc
+from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
+from idaes.models_extra.power_generation.control.pid_controller import PIDController
+import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler_flowsheet as blr
+import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as stc
 from idaes.core.util.dyn_utils import (
     copy_values_at_time,
     copy_non_time_indexed_values)

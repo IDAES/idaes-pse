@@ -17,7 +17,7 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.fileutils import this_file_dir
-from idaes.power_generation.properties import FlueGasParameterBlock, FlueGasStateBlock
+from idaes.models_extra.power_generation.properties import FlueGasParameterBlock, FlueGasStateBlock
 from idaes.core import FlowsheetBlock
 import csv
 import os

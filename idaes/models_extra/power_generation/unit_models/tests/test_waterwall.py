@@ -36,7 +36,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 # Import Unit Model Modules
 from idaes.generic_models.properties import iapws95
 
-from idaes.power_generation.unit_models.waterwall_section import \
+from idaes.models_extra.power_generation.unit_models.waterwall_section import \
     WaterwallSection
 from idaes.core.util import get_solver
 

@@ -27,16 +27,16 @@ import idaes.logger as idaeslog
 # Import IDAES standard unit model
 from idaes.generic_models.unit_models import Mixer
 from idaes.generic_models.properties import iapws95
-from idaes.power_generation.properties import FlueGasParameterBlock
+from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 
 # Import IDAES power generation unit models
-from idaes.power_generation.unit_models.helm import (
+from idaes.models_extra.power_generation.unit_models.helm import (
     HelmMixer,
     MomentumMixingType,
     HelmSplitter
     )
 
-from idaes.power_generation.unit_models import (
+from idaes.models_extra.power_generation.unit_models import (
     Drum1D,
     HeatExchangerWith3Streams,
     WaterPipe,
@@ -48,7 +48,7 @@ from idaes.power_generation.unit_models import (
     )
 
 # Import boiler fire-side surrogate model as dictionary
-from idaes.power_generation.flowsheets.subcritical_power_plant.generic_surrogate_dict import data_dic
+from idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.generic_surrogate_dict import data_dic
 import idaes.core.util.scaling as iscale
 from idaes.core.util.dyn_utils import copy_values_at_time,\
     copy_non_time_indexed_values

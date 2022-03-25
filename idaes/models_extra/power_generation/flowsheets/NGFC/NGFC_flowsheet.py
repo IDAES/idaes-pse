@@ -72,8 +72,8 @@ from idaes.generic_models.unit_models.pressure_changer import \
 from idaes.generic_models.unit_models.separator import SplittingType
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 
-from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn
-from idaes.power_generation.properties.NGFC.ROM.SOFC_ROM import \
+from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop, get_rxn
+from idaes.models_extra.power_generation.properties.NGFC.ROM.SOFC_ROM import \
     build_SOFC_ROM, initialize_SOFC_ROM
 
 import logging

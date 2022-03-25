@@ -13,7 +13,7 @@
 import pytest
 import pyomo.environ as pyo
 import idaes.core
-from idaes.power_generation.unit_models.helm import HelmSplitter
+from idaes.models_extra.power_generation.unit_models.helm import HelmSplitter
 from idaes.generic_models.properties import iapws95
 
 

@@ -21,9 +21,9 @@ from pyomo.environ import (
     check_optimal_termination, SolverFactory, value)
 from pyomo.util.check_units import assert_units_consistent
 
-import idaes.power_generation.flowsheets.\
+import idaes.models_extra.power_generation.flowsheets.\
     supercritical_power_plant.boiler_subflowsheet_build as blr
-import idaes.power_generation.flowsheets.\
+import idaes.models_extra.power_generation.flowsheets.\
     supercritical_power_plant.SCPC_full_plant as SCPC
 from idaes.core.util.model_statistics import (degrees_of_freedom)
 from idaes.generic_models.properties import iapws95

@@ -88,7 +88,7 @@ _log = idaeslog.getModelLogger(__name__, logging.INFO)
 def import_steam_cycle():
     # build concrete model
     # import steam cycle model and initialize flowsheet
-    import idaes.power_generation.flowsheets.\
+    import idaes.models_extra.power_generation.flowsheets.\
         supercritical_steam_cycle.supercritical_steam_cycle as steam_cycle
     m, solver = steam_cycle.main()
     return m, solver
@@ -106,7 +106,7 @@ def main():
     # from (boiler_subflowsheet_build.py)
     # this step appends all the boiler unit models into our model ("m")
     # model "m" has been created a few lines above
-    import idaes.power_generation.flowsheets.\
+    import idaes.models_extra.power_generation.flowsheets.\
         supercritical_power_plant.boiler_subflowsheet_build as blr
     # import the models (ECON, WW, PrSH, PlSH, FSH, Spliter, Mixer, Reheater)
     # see boiler_subflowhseet_build.py for a beter description

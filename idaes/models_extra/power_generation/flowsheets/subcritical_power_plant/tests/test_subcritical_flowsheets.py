@@ -16,13 +16,13 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.properties import iapws95
 
 
-import idaes.power_generation.flowsheets.subcritical_power_plant.\
+import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.\
     subcritical_power_plant as subcrit_plant
-import idaes.power_generation.flowsheets.subcritical_power_plant.\
+import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.\
     steam_cycle_flowsheet as steam_cycle
-import idaes.power_generation.flowsheets.subcritical_power_plant.\
+import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.\
     subcritical_boiler_flowsheet as blr
-import idaes.power_generation.flowsheets.subcritical_power_plant.\
+import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.\
     subcritical_boiler as recyrc
 import pytest
 

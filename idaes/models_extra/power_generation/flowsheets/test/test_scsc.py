@@ -20,7 +20,7 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle import main
+from idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle import main
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_equalities_generator)
 from idaes.generic_models.properties import iapws95

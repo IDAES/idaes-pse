@@ -47,11 +47,11 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
-from idaes.power_generation.unit_models.helm import \
+from idaes.models_extra.power_generation.unit_models.helm import \
     HelmNtuCondenserData as CondenserData
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
-from idaes.power_generation.unit_models.helm import HelmMixer as Mixer
+from idaes.models_extra.power_generation.unit_models.helm import HelmMixer as Mixer
 from idaes.core.util import get_solver
 from idaes.core.util.initialization import propagate_state
 

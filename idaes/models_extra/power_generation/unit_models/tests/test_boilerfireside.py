@@ -34,9 +34,9 @@ from idaes.generic_models.properties import iapws95
 
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
-from idaes.power_generation.properties import FlueGasParameterBlock
-from idaes.power_generation.unit_models.boiler_fireside import BoilerFireside
-import datadictionary as dat
+from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
+from idaes.models_extra.power_generation.unit_models.boiler_fireside import BoilerFireside
+from idaes.models_extra.power_generation.unit_models.tests.datadictionary import data_dic
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
@@ -60,7 +60,7 @@ def build_unit():
                  "number_of_zones": 12,
                  "has_platen_superheater": True,
                  "has_roof_superheater": True,
-                 "surrogate_dictionary": dat.data_dic})
+                 "surrogate_dictionary": data_dic})
     return m
 
 
@@ -211,7 +211,7 @@ def build_unit_option2():
                  "number_of_zones": 12,
                  "has_platen_superheater": True,
                  "has_roof_superheater": True,
-                 "surrogate_dictionary": dat.data_dic})
+                 "surrogate_dictionary": data_dic})
     return m
 
 

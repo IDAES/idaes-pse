@@ -21,7 +21,7 @@ import pyomo.environ as pyo
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Heater
-from idaes.power_generation.unit_models.helm import HelmTurbineMultistage
+from idaes.models_extra.power_generation.unit_models.helm import HelmTurbineMultistage
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import (
     degrees_of_freedom, activated_equalities_generator)

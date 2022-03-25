@@ -23,7 +23,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.power_generation.costing.power_plant_costing import \
+from idaes.models_extra.power_generation.costing.power_plant_costing import \
     (get_sCO2_unit_cost,
      get_PP_costing,
      get_ASU_cost,

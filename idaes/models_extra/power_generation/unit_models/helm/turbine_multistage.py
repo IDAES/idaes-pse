@@ -24,7 +24,7 @@ from pyomo.network import Arc
 from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList, In
 
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
-from idaes.power_generation.unit_models.helm import (
+from idaes.models_extra.power_generation.unit_models.helm import (
     HelmSplitter,
     HelmMixer,
     MomentumMixingType,
@@ -33,7 +33,7 @@ from idaes.power_generation.unit_models.helm import (
     HelmTurbineOutletStage,
     ValveFunctionType,
 )
-from idaes.power_generation.unit_models.helm import HelmValve as SteamValve
+from idaes.models_extra.power_generation.unit_models.helm import HelmValve as SteamValve
 
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util import from_json, to_json, StoreSpec
