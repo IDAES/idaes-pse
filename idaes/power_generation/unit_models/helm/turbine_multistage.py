@@ -11,12 +11,13 @@
 # license information.
 #################################################################################
 """
-Deprecation path for renamed CO2 compressor model.
+Deprecation path for renamed model.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The CO2 Compression module has been moved to "
-                    "idaes.models_extra.carbon_capture.co2_compressor.py",
+deprecation_warning("The turbine_multistage module has been moved to "
+                    "idaes.models_extra.power_generation.unit_models."
+                    "helm.turbine_multistage",
                     version="2.0.0.alpha0")
 
-from idaes.models_extra.carbon_capture.co2_compressor import *
+from idaes.models_extra.power_generation.unit_models.helm.turbine_multistage import *

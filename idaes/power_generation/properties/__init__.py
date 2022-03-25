@@ -10,13 +10,13 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-"""
-Deprecation path for renamed CO2 compressor model.
-"""
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The CO2 Compression module has been moved to "
-                    "idaes.models_extra.carbon_capture.co2_compressor.py",
+deprecation_warning("The properties package has been moved to "
+                    "idaes.models_extra.power_generation.properties",
                     version="2.0.0.alpha0")
 
-from idaes.models_extra.carbon_capture.co2_compressor import *
+from idaes.models_extra.power_generation.properties.flue_gas_ideal import (
+    FlueGasParameterBlock,
+    FlueGasStateBlock,
+)
