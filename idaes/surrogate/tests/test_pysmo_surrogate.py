@@ -1758,6 +1758,7 @@ class TestPysmoSurrogate():
         m = ConcreteModel()
         m.inputs = Var(['x1', 'x2'])
 
+        # Save and re-load object
         with TempfileManager as tf:
             fname = tf.create_tempfile(suffix=".json")
             pysmo_surr1.save_to_file(fname, overwrite=True)
@@ -1770,11 +1771,7 @@ class TestPysmoSurrogate():
 
             pysmo_load = PysmoSurrogate.load_from_file(fname)
 
-        # Check file contents
-        assert js == jstring_poly_1
-
         # Check loaded object
-        # assert isinstance(alm_load, AlamoSurrogate)
         assert pysmo_load._input_labels == ["x1", "x2"]
         assert pysmo_load._output_labels == ["z1"]
         assert pysmo_load._input_bounds == {"x1": (0, 5), "x2": (0, 10)}
@@ -1782,19 +1779,24 @@ class TestPysmoSurrogate():
         assert pysmo_load._trained.output_labels == ["z1"]
         assert len(pysmo_load._trained._data) == 1
         assert list(pysmo_load._trained._data) == ["z1"]
-        # Assert that correcte xpression string was returned
-        assert pysmo_load._trained._data['z1'].expression_str == (
-                    '-75.26111111111476 -8.815277777775934*IndexedParam[x1] + 18.81527777777826*IndexedParam[x2]'
-                    ' -2.2556956302821618e-13*(IndexedParam[x2]*IndexedParam[x1])'
-                    )
+        # Assert that correct expression string was returned
+        assert pysmo_load._trained._data['z1'].expression_str == pysmo_surr1._trained._data['z1'].expression_str
         # Assert that correct model is returned with generate_expression()
-        assert  str(pysmo_load._trained._data['z1']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
-                    '-75.26111111111476 - 8.815277777775934*inputs[x1] + 18.81527777777826*inputs[x2]'
-                    ' - 2.2556956302821618e-13*(inputs[x2]*inputs[x1])'
-                    )
-
+        assert  str(pysmo_load._trained._data['z1']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) \
+            == str(pysmo_surr1._trained._data['z1']._model.generate_expression([m.inputs['x1'], m.inputs['x2']]))
+        # Test that `'evaluate_surrogate`` returns same results pre and post saving
+        x = [-2, -1.8, -1.6, -1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2, 0,
+             0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+        inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
+        out_presave = pysmo_surr1.evaluate_surrogate(inputs)
+        out_postsave = pysmo_load.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out_presave["z1"][i], rel=1e-8) == out_postsave["z1"][i]
+            
         # Check for clean up
         assert not os.path.isfile(fname)
+
 
 
 @pytest.mark.integration
