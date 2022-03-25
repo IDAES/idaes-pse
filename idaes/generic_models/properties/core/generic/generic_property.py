@@ -1333,9 +1333,13 @@ class _GenericStateBlock(StateBlock):
         n_cons = 0
         dof = 0
         skip = False
+        Tfix = {}  # In enth based state defs, need to also fix T until later 
         for k in blk.keys():
             if (blk[k].params.config.phase_equilibrium_state is not None and
                     (not blk[k].config.defined_state or blk[k].always_flash)):
+                if not blk[k].temperature.fixed:
+                    blk[k].temperature.fix()
+                    Tfix[k] = True
                 for c in blk[k].component_objects(Constraint):
                     # Activate common constraints
                     if c.local_name in ("total_flow_balance",
@@ -1364,8 +1368,6 @@ class _GenericStateBlock(StateBlock):
 
         if n_cons > 0 and not skip:
             if dof > 0:
-                from idaes.core.util.model_statistics import variables_in_activated_equalities_set, activated_equalities_set
-                for c in variables_in_activated_equalities_set(blk[
                 raise InitializationError(
                     f"{blk.name} Unexpected degrees of freedom during "
                     f"initialization at phase equilibrium step: {dof}.")
@@ -1386,6 +1388,8 @@ class _GenericStateBlock(StateBlock):
                         blk[k].params.config
                         .state_definition.do_not_initialize):
                     c.activate()
+            if k in Tfix:
+                blk[k].temperature.unfix()
 
             # Initialize log-form variables
             log_form_vars = [
