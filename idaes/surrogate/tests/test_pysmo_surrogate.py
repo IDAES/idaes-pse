@@ -115,6 +115,31 @@ jstring_poly_3 = (
     '"surrogate_type": "poly"}'
     )
 
+jstring_poly_3x = (
+    '{"model_encoding": ' 
+        '{"z1": {"attr": {"regression_data_columns": ["x1", "x2"], ' 
+                         '"multinomials": 0, "additional_term_expressions": ["log(IndexedParam[x1])", "sin(IndexedParam[x2])"], '
+                         '"optimal_weights_array": [[-2.222222222222226], [9.444444444444455], [0.5555555555555545], [-1.509903313490213e-14], [-7.438494264988549e-15]], '
+                         '"final_polynomial_order": 1, '
+                         '"errors": {"MAE": 1.0954200509634877e-14, "MSE": 2.277178479737987e-28, "R2": 1.0},'
+                         ' "extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
+                '"map": {"regression_data_columns": "list", "multinomials": "str", '
+                        '"additional_term_expressions": "list", "optimal_weights_array": "numpy", '
+                        '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}, '
+        '"z2": {"attr": {"regression_data_columns": ["x1", "x2"], '
+                        '"multinomials": 0, "additional_term_expressions": ["log(IndexedParam[x1])", "sin(IndexedParam[x2])"], '
+                        '"optimal_weights_array": [[-0.0007776457752072252], [1.0019506508342257], [0.9988400677334011], [0.003834079118640865], [-0.004832799497761386]], '
+                        '"final_polynomial_order": 1, "errors": {"MAE": 0.0012996492892622946, "MSE": 2.629054037036227e-06, "R2": 0.9999997749742444}, '
+                        '"extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
+                '"map": {"regression_data_columns": "list", "multinomials": "str", '
+                        '"additional_term_expressions": "list", "optimal_weights_array": "numpy", '
+                        '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}}, '
+    '"input_labels": ["x1", "x2"], '
+    '"output_labels": ["z1", "z2"], '
+    '"input_bounds": null, '
+    '"surrogate_type": "poly"}'
+    )
+
 jstring_poly_4 = (
     '{"model_encoding": ' 
         '{"z1": {"attr": {"regression_data_columns": ["x1", "x2"], ' 
@@ -1033,7 +1058,7 @@ class TestPysmoSurrogate():
 
     @pytest.fixture
     def pysmo_surr3(self):
-        training_data = {'x1': [1, 2, 3, 4, 5, 6], 'x2': [5, 6, 7, 8, 9, 10], 'z1': [10, 20, 30, 40, 50, 60], 'z2': [6, 8, 10, 12, 14, 16]}
+        training_data = {'x1': [1, 2, 3, 4, 5, 6], 'x2': [5, 6, 7, 8, 9, 10], 'z1': [10, 20, 30, 40, 50, 60], 'z2': [6, 8, 10, 12, 14, 16.01]}
         training_data = pd.DataFrame(training_data)
         validation_data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40], 'z2': [6, 8, 10, 12]}#{'x1': [2.5], 'x2': [6.5], 'z1': [25], 'z2': [9]}
         validation_data = pd.DataFrame(validation_data)
@@ -1051,12 +1076,13 @@ class TestPysmoSurrogate():
             multinomials=False,
             extra_features = ['log(x1)', 'sin(x2)'],
             number_of_crossvalidations=3,
+            solution_method = 'mle'
             )
 
         a3 = pysmo_trainer.train_surrogate()
         pysmo_surr3 = PysmoSurrogate(a3, input_labels, output_labels)
 
-        return pysmo_surr3
+        return a3, pysmo_surr3
 
     @pytest.fixture
     def pysmo_surr4(self):
@@ -1209,37 +1235,40 @@ class TestPysmoSurrogate():
         inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
         inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
 
-        out = pysmo_surr3.evaluate_surrogate(inputs)
+        sol, poly_trained = pysmo_surr3
+        out = poly_trained.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
-            assert pytest.approx(out["z1"][i], rel=1e-8) == (
-                -14.290243902439855
-                + 6.4274390243899795*inputs["x1"][i] 
-                + 3.572560975609962*inputs["x2"][i]
-                + 1.9753643165643098e-13*log(inputs["x1"][i]) 
-                - 4.4048098502003086e-14*sin(inputs["x2"][i])
+            assert pytest.approx(out["z1"][i], rel=1e-6) == (
+                sol._data['z1']._model.optimal_weights_array[0,0]
+                + sol._data['z1']._model.optimal_weights_array[1,0]*inputs["x1"][i] 
+                + sol._data['z1']._model.optimal_weights_array[2,0]*inputs["x2"][i]
+                + sol._data['z1']._model.optimal_weights_array[3,0]*log(inputs["x1"][i]) 
+                + sol._data['z1']._model.optimal_weights_array[4,0]*sin(inputs["x2"][i])
             )
-            assert pytest.approx(out["z2"][i], rel=1e-8) == (
-                5.704971042443143
-                + 2.4262427606248815*inputs["x1"][i] 
-                - 0.42624276060821653*inputs["x2"][i]
-                - 5.968545102597034e-11*log(inputs["x1"][i]) 
-                + 6.481176706429892e-12*sin(inputs["x2"][i])
+            assert pytest.approx(out["z2"][i], rel=1e-6) == (
+                sol._data['z2']._model.optimal_weights_array[0,0]
+                + sol._data['z2']._model.optimal_weights_array[1,0]*inputs["x1"][i] 
+                + sol._data['z2']._model.optimal_weights_array[2,0]*inputs["x2"][i]
+                + sol._data['z2']._model.optimal_weights_array[3,0]*log(inputs["x1"][i]) 
+                + sol._data['z2']._model.optimal_weights_array[4,0]*sin(inputs["x2"][i])
             )
 
     @pytest.mark.unit
     def test_populate_block_trigfuncs(self, pysmo_surr3):
         blk = SurrogateBlock(concrete=True)
 
-        blk.build_model(pysmo_surr3)
+        sol, poly_trained = pysmo_surr3
+        blk.build_model(poly_trained)
 
         assert isinstance(blk.inputs, Var)
         assert isinstance(blk.outputs, Var)
         assert isinstance(blk.pysmo_constraint, Constraint)
         assert len(blk.pysmo_constraint) == 2
         assert str(blk.pysmo_constraint["z1"].body) == (
-            "outputs[z1] - (-14.290243902439855 + 6.4274390243899795*inputs[x1] + 3.572560975609962*inputs[x2] + 1.9753643165643098e-13*log(inputs[x1]) - 4.4048098502003086e-14*sin(inputs[x2]))")
+            "outputs[z1] - (-{} + {}*inputs[x1] + {}*inputs[x2] - {}*log(inputs[x1]) - {}*sin(inputs[x2]))".format(abs(sol._data['z1']._model.optimal_weights_array[0,0]), abs(sol._data['z1']._model.optimal_weights_array[1,0]), abs(sol._data['z1']._model.optimal_weights_array[2,0]), abs(sol._data['z1']._model.optimal_weights_array[3,0]), abs(sol._data['z1']._model.optimal_weights_array[4,0]))
+            )
         assert str(blk.pysmo_constraint["z2"].body) == (
-            "outputs[z2] - (5.704971042443143 + 2.4262427606248815*inputs[x1] - 0.42624276060821653*inputs[x2] - 5.968545102597034e-11*log(inputs[x1]) + 6.481176706429892e-12*sin(inputs[x2]))")
+            "outputs[z2] - (-{} + {}*inputs[x1] + {}*inputs[x2] + {}*log(inputs[x1]) - {}*sin(inputs[x2]))").format(abs(sol._data['z2']._model.optimal_weights_array[0,0]), abs(sol._data['z2']._model.optimal_weights_array[1,0]), abs(sol._data['z2']._model.optimal_weights_array[2,0]), abs(sol._data['z2']._model.optimal_weights_array[3,0]), abs(sol._data['z2']._model.optimal_weights_array[4,0]))
 
     @pytest.mark.unit
     def test_evaluate_multisurrogate_poly_userdef(self, pysmo_surr4):
@@ -1333,14 +1362,14 @@ class TestPysmoSurrogate():
         _, _, sol, rbf_trained, _, _ = pysmo_surr2
         out = rbf_trained.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
-            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+            assert pytest.approx(out["z1"][i], rel=1e-6) == (
                  (10 + 40*(sol._data['z1']._model.weights[0,0]*exp(- (0.05*(((inputs['x1'][i] - 1)/4)**2 + ((inputs['x2'][i] - 5)/4)**2)**0.5)**2) 
                     + sol._data['z1']._model.weights[1,0]*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 0.25)**2 + ((inputs['x2'][i] - 5)/4 - 0.25)**2)**0.5)**2) 
                     + sol._data['z1']._model.weights[2,0]*exp(- (0.05*(((inputs['x1'][i]- 1)/4 - 0.5)**2 + ((inputs['x2'][i] - 5)/4 - 0.5)**2)**0.5)**2) 
                     + sol._data['z1']._model.weights[3,0]*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 0.75)**2 + ((inputs['x2'][i] - 5)/4 - 0.75)**2)**0.5)**2) 
                     + sol._data['z1']._model.weights[4,0]*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 1.0)**2 + ((inputs['x2'][i] - 5)/4 - 1.0)**2)**0.5)**2)))
             )
-            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+            assert pytest.approx(out["z2"][i], rel=1e-6) == (
                  (6 + 8*(sol._data['z2']._model.weights[0,0]*exp(- (0.05*(((inputs['x1'][i] - 1)/4)**2 + ((inputs['x2'][i] - 5)/4)**2)**0.5)**2) 
                     + sol._data['z2']._model.weights[1,0]*exp(- (0.05*(((inputs['x1'][i] - 1)/4 - 0.25)**2 + ((inputs['x2'][i] - 5)/4 - 0.25)**2)**0.5)**2) 
                     + sol._data['z2']._model.weights[2,0]*exp(- (0.05*(((inputs['x1'][i]- 1)/4 - 0.5)**2 + ((inputs['x2'][i] - 5)/4 - 0.5)**2)**0.5)**2) 
@@ -1442,8 +1471,9 @@ class TestPysmoSurrogate():
 
         # Test save for PR cases with trig/log user-supplied terms
         stream3 = StringIO()
-        pysmo_surr3.save(stream3)
-        assert stream3.getvalue() == jstring_poly_3
+        _, poly_trained = pysmo_surr3
+        poly_trained.save(stream3)
+        assert stream3.getvalue() == jstring_poly_3x
 
         # Test save for PR cases with other user-supplied terms 
         stream4 = StringIO()
