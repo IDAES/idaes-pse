@@ -706,7 +706,8 @@ if __name__ == "__main__":
     if run_prescient:
 
         options = {
-            "data_directory": "../../../../../../doubleloop/Prescient/downloads/rts_gmlc/deterministic_with_network_scenarios",
+            "data_path": "/home/xgao1/DowlingLab/RTS-GMLC/RTS_Data/SourceData",
+            "input_format": "rts-gmlc",
             "simulate_out_of_sample": True,
             "run_sced_with_persistent_forecast_errors": True,
             "output_directory": "bidding_plugin_test_thermal_generator",
