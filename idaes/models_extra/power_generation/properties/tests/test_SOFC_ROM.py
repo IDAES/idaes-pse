@@ -30,18 +30,19 @@ Author: Alex Noring
 
 import pytest
 
-from idaes.models_extra.power_generation.properties.NGFC.ROM.SOFC_ROM import \
-    build_SOFC_ROM, initialize_SOFC_ROM
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              number_unused_variables)
+from idaes.models_extra.power_generation.properties.NGFC.ROM.SOFC_ROM import (
+    build_SOFC_ROM,
+    initialize_SOFC_ROM,
+)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
 from idaes.core.util import get_solver
 
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Block,
-                           value)
+from pyomo.environ import check_optimal_termination, ConcreteModel, Block, value
 from pyomo.util.check_units import assert_units_consistent
 
 
@@ -67,28 +68,28 @@ class TestSOFCROM(object):
         assert number_unused_variables(m) == 0
         assert_units_consistent(m)
 
-        assert hasattr(m.SOFC, 'ROM_input')
-        assert hasattr(m.SOFC, 'norm_input')
-        assert hasattr(m.SOFC, 'F')
-        assert hasattr(m.SOFC, 'R')
-        assert hasattr(m.SOFC, 'norm_output')
-        assert hasattr(m.SOFC, 'ROM_output')
+        assert hasattr(m.SOFC, "ROM_input")
+        assert hasattr(m.SOFC, "norm_input")
+        assert hasattr(m.SOFC, "F")
+        assert hasattr(m.SOFC, "R")
+        assert hasattr(m.SOFC, "norm_output")
+        assert hasattr(m.SOFC, "ROM_output")
 
-        assert hasattr(m.SOFC, 'current_density')
-        assert hasattr(m.SOFC, 'fuel_temperature')
-        assert hasattr(m.SOFC, 'internal_reforming')
-        assert hasattr(m.SOFC, 'air_temperature')
-        assert hasattr(m.SOFC, 'air_recirculation')
-        assert hasattr(m.SOFC, 'OTC')
-        assert hasattr(m.SOFC, 'fuel_util')
-        assert hasattr(m.SOFC, 'air_util')
-        assert hasattr(m.SOFC, 'pressure')
+        assert hasattr(m.SOFC, "current_density")
+        assert hasattr(m.SOFC, "fuel_temperature")
+        assert hasattr(m.SOFC, "internal_reforming")
+        assert hasattr(m.SOFC, "air_temperature")
+        assert hasattr(m.SOFC, "air_recirculation")
+        assert hasattr(m.SOFC, "OTC")
+        assert hasattr(m.SOFC, "fuel_util")
+        assert hasattr(m.SOFC, "air_util")
+        assert hasattr(m.SOFC, "pressure")
 
-        assert hasattr(m.SOFC, 'anode_outlet_temperature')
-        assert hasattr(m.SOFC, 'cathode_outlet_temperature')
-        assert hasattr(m.SOFC, 'stack_voltage')
-        assert hasattr(m.SOFC, 'max_cell_temperature')
-        assert hasattr(m.SOFC, 'deltaT_cell')
+        assert hasattr(m.SOFC, "anode_outlet_temperature")
+        assert hasattr(m.SOFC, "cathode_outlet_temperature")
+        assert hasattr(m.SOFC, "stack_voltage")
+        assert hasattr(m.SOFC, "max_cell_temperature")
+        assert hasattr(m.SOFC, "deltaT_cell")
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -116,13 +117,10 @@ class TestSOFCROM(object):
 
         assert check_optimal_termination(results)
 
-        assert (pytest.approx(705.5, abs=1e-1) ==
-                value(m.SOFC.anode_outlet_temperature))
-        assert (pytest.approx(726.3, abs=1e-1) ==
-                value(m.SOFC.cathode_outlet_temperature))
-        assert (pytest.approx(0.867, abs=1e-3) ==
-                value(m.SOFC.stack_voltage))
-        assert (pytest.approx(749.1, abs=1e-1) ==
-                value(m.SOFC.max_cell_temperature))
-        assert (pytest.approx(99.9, abs=1e-1) ==
-                value(m.SOFC.deltaT_cell))
+        assert pytest.approx(705.5, abs=1e-1) == value(m.SOFC.anode_outlet_temperature)
+        assert pytest.approx(726.3, abs=1e-1) == value(
+            m.SOFC.cathode_outlet_temperature
+        )
+        assert pytest.approx(0.867, abs=1e-3) == value(m.SOFC.stack_voltage)
+        assert pytest.approx(749.1, abs=1e-1) == value(m.SOFC.max_cell_temperature)
+        assert pytest.approx(99.9, abs=1e-1) == value(m.SOFC.deltaT_cell)

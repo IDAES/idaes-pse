@@ -44,19 +44,21 @@ Dictionary of surrogate models
 # the fire side must be connected with other unit models. This example aims
 # testing the model. Therefore, the following dictionary is a simple example
 # using fixed values for heat flux to the water wall, platen SH, and roof SH.
-data_dic = {1: '2.0e7',  # heat flux to water wall zone 1 from fire side in W
-            2: '1.0e7',  # heat flux to water wall zone 2 from fire side in W
-            3: '1.0e7',  # heat flux to water wall zone 3 from fire side in W
-            4: '1.0e7',  # heat flux to water wall zone 4 from fire side in W
-            5: '1.5e7',  # heat flux to water wall zone 5 from fire side in W
-            6: '1.0e7',  # heat flux to water wall zone 6 from fire side in W
-            7: '1.2e7',  # heat flux to water wall zone 7 from fire side in W
-            8: '3e7',  # heat flux to water wall zone 8 from fire side in W
-            9: '2.5e7',  # heat flux to water wall zone 9 from fire side in W
-            10: '2.0e7',  # heat flux to water wall zone 10 from fire side in W
-            11: '1.8e7',  # heat flux to water wall zone 11 from fire side in W
-            12: '1.0e7',  # heat flux to water wall zone 12 from fire side in W
-            'pl': '5.0e7',  # heat flux to platen sh from fire side in W
-            'roof': '6.5e7',  # heat flux to roof from fire side in W
-            'flyash': '0.0001',  # flyash or unburned carbon mass fraction
-            'NOx': '140'}  # NOx PPM
+data_dic = {
+    1: "2.0e7",  # heat flux to water wall zone 1 from fire side in W
+    2: "1.0e7",  # heat flux to water wall zone 2 from fire side in W
+    3: "1.0e7",  # heat flux to water wall zone 3 from fire side in W
+    4: "1.0e7",  # heat flux to water wall zone 4 from fire side in W
+    5: "1.5e7",  # heat flux to water wall zone 5 from fire side in W
+    6: "1.0e7",  # heat flux to water wall zone 6 from fire side in W
+    7: "1.2e7",  # heat flux to water wall zone 7 from fire side in W
+    8: "3e7",  # heat flux to water wall zone 8 from fire side in W
+    9: "2.5e7",  # heat flux to water wall zone 9 from fire side in W
+    10: "2.0e7",  # heat flux to water wall zone 10 from fire side in W
+    11: "1.8e7",  # heat flux to water wall zone 11 from fire side in W
+    12: "1.0e7",  # heat flux to water wall zone 12 from fire side in W
+    "pl": "5.0e7",  # heat flux to platen sh from fire side in W
+    "roof": "6.5e7",  # heat flux to roof from fire side in W
+    "flyash": "0.0001",  # flyash or unburned carbon mass fraction
+    "NOx": "140",
+}  # NOx PPM

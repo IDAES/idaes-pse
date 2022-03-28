@@ -33,8 +33,8 @@ from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 from idaes.models_extra.power_generation.unit_models.helm import (
     HelmMixer,
     MomentumMixingType,
-    HelmSplitter
-    )
+    HelmSplitter,
+)
 
 from idaes.models_extra.power_generation.unit_models import (
     Drum1D,
@@ -44,14 +44,15 @@ from idaes.models_extra.power_generation.unit_models import (
     Downcomer,
     WaterwallSection,
     BoilerFireside,
-    SteamHeater
-    )
+    SteamHeater,
+)
 
 # Import boiler fire-side surrogate model as dictionary
-from idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.generic_surrogate_dict import data_dic
+from idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.generic_surrogate_dict import (
+    data_dic,
+)
 import idaes.core.util.scaling as iscale
-from idaes.core.util.dyn_utils import copy_values_at_time,\
-    copy_non_time_indexed_values
+from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
 
 import matplotlib.pyplot as plt
 
@@ -74,152 +75,186 @@ def add_unit_models(m):
 
     # Unit model for boiler fire side based on surrogate
     fs.aBoiler = BoilerFireside(
-        default={"dynamic": False,
-                 "property_package": prop_gas,
-                 "calculate_PA_SA_flows": True,
-                 "number_of_zones": 12,
-                 "has_platen_superheater": True,
-                 "has_roof_superheater": True,
-                 "surrogate_dictionary": data_dic})
+        default={
+            "dynamic": False,
+            "property_package": prop_gas,
+            "calculate_PA_SA_flows": True,
+            "number_of_zones": 12,
+            "has_platen_superheater": True,
+            "has_roof_superheater": True,
+            "surrogate_dictionary": data_dic,
+        }
+    )
 
     # Unit model for boiler drum
     fs.aDrum = Drum1D(
-        default={"property_package": prop_water,
-                 "has_holdup": True,
-                 "has_heat_transfer": True,
-                 "has_pressure_change": True,
-                 "finite_elements": 4,
-                 "drum_inner_diameter": 1.8,
-                 "drum_thickness": 0.13})
+        default={
+            "property_package": prop_water,
+            "has_holdup": True,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+            "finite_elements": 4,
+            "drum_inner_diameter": 1.8,
+            "drum_thickness": 0.13,
+        }
+    )
 
     # Unit model for splitter from drum to downcomers and blowdown
     fs.blowdown_split = HelmSplitter(
-        default={"dynamic": False,
-                 "property_package": prop_water,
-                 "outlet_list": ["FW_Downcomer", "FW_Blowdown"]})
+        default={
+            "dynamic": False,
+            "property_package": prop_water,
+            "outlet_list": ["FW_Downcomer", "FW_Blowdown"],
+        }
+    )
 
     # Unit model for downcomer
     fs.aDowncomer = Downcomer(
-        default={"dynamic": False,
-                 "property_package": prop_water,
-                 "has_holdup": True,
-                 "has_heat_transfer": True})
+        default={
+            "dynamic": False,
+            "property_package": prop_water,
+            "has_holdup": True,
+            "has_heat_transfer": True,
+        }
+    )
 
     # Unit models for 12 waterwall sections
     fs.Waterwalls = WaterwallSection(
         fs.ww_zones,
-        default={"has_holdup": True,
-                 "property_package": prop_water,
-                 "has_heat_transfer": True,
-                 "has_pressure_change": True})
+        default={
+            "has_holdup": True,
+            "property_package": prop_water,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+        },
+    )
 
     # Unit model for roof superheater
     fs.aRoof = SteamHeater(
-        default={"dynamic": False,
-                 "property_package": prop_water,
-                 "has_holdup": True,
-                 "has_heat_transfer": True,
-                 "has_pressure_change": True,
-                 "single_side_only": True})
+        default={
+            "dynamic": False,
+            "property_package": prop_water,
+            "has_holdup": True,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+            "single_side_only": True,
+        }
+    )
 
     # Unit model for platen superheater
     fs.aPlaten = SteamHeater(
-        default={"dynamic": False,
-                 "property_package": prop_water,
-                 "has_holdup": True,
-                 "has_heat_transfer": True,
-                 "has_pressure_change": True,
-                 "single_side_only": False})
+        default={
+            "dynamic": False,
+            "property_package": prop_water,
+            "has_holdup": True,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+            "single_side_only": False,
+        }
+    )
 
     # Unit model for 1st reheater
     fs.aRH1 = HeatExchangerCrossFlow2D_Header(
-        default={"tube_side": {"property_package": prop_water,
-                               "has_pressure_change": True},
-                 "shell_side": {"property_package": prop_gas,
-                                "has_pressure_change": True},
-                 "finite_elements": 4,
-                 "flow_type": "counter_current",
-                 "tube_arrangement": "in-line",
-                 "tube_side_water_phase": "Vap",
-                 "has_radiation": True,
-                 "radial_elements": 5,
-                 "tube_inner_diameter": 2.25*0.0254,
-                 "tube_thickness": 0.15*0.0254,
-                 "has_header": False})
+        default={
+            "tube_side": {"property_package": prop_water, "has_pressure_change": True},
+            "shell_side": {"property_package": prop_gas, "has_pressure_change": True},
+            "finite_elements": 4,
+            "flow_type": "counter_current",
+            "tube_arrangement": "in-line",
+            "tube_side_water_phase": "Vap",
+            "has_radiation": True,
+            "radial_elements": 5,
+            "tube_inner_diameter": 2.25 * 0.0254,
+            "tube_thickness": 0.15 * 0.0254,
+            "has_header": False,
+        }
+    )
 
     # Unit model for 2nd reheater
     fs.aRH2 = HeatExchangerCrossFlow2D_Header(
-        default={"tube_side": {"property_package": prop_water,
-                               "has_pressure_change": True},
-                 "shell_side": {"property_package": prop_gas,
-                                "has_pressure_change": True},
-                 "finite_elements": 2,
-                 "flow_type": "counter_current",
-                 "tube_arrangement": "in-line",
-                 "tube_side_water_phase": "Vap",
-                 "has_radiation": True,
-                 "radial_elements": 5,
-                 "tube_inner_diameter": 2.25*0.0254,
-                 "tube_thickness": 0.15*0.0254,
-                 "has_header": False})
+        default={
+            "tube_side": {"property_package": prop_water, "has_pressure_change": True},
+            "shell_side": {"property_package": prop_gas, "has_pressure_change": True},
+            "finite_elements": 2,
+            "flow_type": "counter_current",
+            "tube_arrangement": "in-line",
+            "tube_side_water_phase": "Vap",
+            "has_radiation": True,
+            "radial_elements": 5,
+            "tube_inner_diameter": 2.25 * 0.0254,
+            "tube_thickness": 0.15 * 0.0254,
+            "has_header": False,
+        }
+    )
 
     # Unit model for primary superheater with header
     fs.aPSH = HeatExchangerCrossFlow2D_Header(
-        default={"tube_side": {"property_package": prop_water,
-                               "has_pressure_change": True},
-                 "shell_side": {"property_package": prop_gas,
-                                "has_pressure_change": True},
-                 "finite_elements": 6,
-                 "flow_type": "counter_current",
-                 "tube_arrangement": "in-line",
-                 "tube_side_water_phase": "Vap",
-                 "has_radiation": True,
-                 "radial_elements": 5,
-                 "tube_inner_diameter": 1.5*0.0254,
-                 "tube_thickness": 0.16*0.0254,
-                 "header_radial_elements": 5,
-                 "header_inner_diameter": 12*0.0254,
-                 "header_wall_thickness": 1.35*0.0254})
+        default={
+            "tube_side": {"property_package": prop_water, "has_pressure_change": True},
+            "shell_side": {"property_package": prop_gas, "has_pressure_change": True},
+            "finite_elements": 6,
+            "flow_type": "counter_current",
+            "tube_arrangement": "in-line",
+            "tube_side_water_phase": "Vap",
+            "has_radiation": True,
+            "radial_elements": 5,
+            "tube_inner_diameter": 1.5 * 0.0254,
+            "tube_thickness": 0.16 * 0.0254,
+            "header_radial_elements": 5,
+            "header_inner_diameter": 12 * 0.0254,
+            "header_wall_thickness": 1.35 * 0.0254,
+        }
+    )
 
     # Unit model for economizer
     fs.aECON = HeatExchangerCrossFlow2D_Header(
-        default={"tube_side": {"property_package": prop_water,
-                               "has_pressure_change": True},
-                 "shell_side": {"property_package": prop_gas,
-                                "has_pressure_change": True},
-                 "finite_elements": 5,
-                 "flow_type": "counter_current",
-                 "tube_arrangement": "in-line",
-                 "tube_side_water_phase": "Liq",
-                 "has_radiation": False,
-                 "radial_elements": 5,
-                 "tube_inner_diameter": 1.5*0.0254,
-                 "tube_thickness": 0.15*0.0254,
-                 "has_header": False})
+        default={
+            "tube_side": {"property_package": prop_water, "has_pressure_change": True},
+            "shell_side": {"property_package": prop_gas, "has_pressure_change": True},
+            "finite_elements": 5,
+            "flow_type": "counter_current",
+            "tube_arrangement": "in-line",
+            "tube_side_water_phase": "Liq",
+            "has_radiation": False,
+            "radial_elements": 5,
+            "tube_inner_diameter": 1.5 * 0.0254,
+            "tube_thickness": 0.15 * 0.0254,
+            "has_header": False,
+        }
+    )
 
     # Unit model for water pipe from economizer outlet to drum
     fs.aPipe = WaterPipe(
-        default={"dynamic": False,
-                 "property_package": prop_water,
-                 "has_holdup": True,
-                 "has_heat_transfer": False,
-                 "has_pressure_change": True,
-                 "water_phase": 'Liq',
-                 "contraction_expansion_at_end": 'None'})
+        default={
+            "dynamic": False,
+            "property_package": prop_water,
+            "has_holdup": True,
+            "has_heat_transfer": False,
+            "has_pressure_change": True,
+            "water_phase": "Liq",
+            "contraction_expansion_at_end": "None",
+        }
+    )
 
     # Unit model for a mixer to mix hot primary air with tempering air
     fs.Mixer_PA = Mixer(
-        default={"dynamic": False,
-                 "property_package": prop_gas,
-                 "momentum_mixing_type": MomentumMixingType.equality,
-                 "inlet_list": ["PA_inlet", "TA_inlet"]})
+        default={
+            "dynamic": False,
+            "property_package": prop_gas,
+            "momentum_mixing_type": MomentumMixingType.equality,
+            "inlet_list": ["PA_inlet", "TA_inlet"],
+        }
+    )
 
     # Unit model for attemperator for main steam before platen SH
     fs.Attemp = HelmMixer(
-        default={"dynamic": False,
-                 "property_package": prop_water,
-                 "momentum_mixing_type": MomentumMixingType.equality,
-                 "inlet_list": ["Steam_inlet", "Water_inlet"]})
+        default={
+            "dynamic": False,
+            "property_package": prop_water,
+            "momentum_mixing_type": MomentumMixingType.equality,
+            "inlet_list": ["Steam_inlet", "Water_inlet"],
+        }
+    )
 
     # Unit model for air preheater as three-stream heat exchanger
     # with heat loss to ambient
@@ -227,15 +262,18 @@ def add_unit_models(m):
     # side_2: priamry air
     # side_3: secondry air
     fs.aAPH = HeatExchangerWith3Streams(
-        default={"dynamic": False,
-                 "side_1_property_package": prop_gas,
-                 "side_2_property_package": prop_gas,
-                 "side_3_property_package": prop_gas,
-                 "has_heat_transfer": True,
-                 "has_pressure_change": True,
-                 "has_holdup": False,
-                 "flow_type_side_2": "counter-current",
-                 "flow_type_side_3": "counter-current"})
+        default={
+            "dynamic": False,
+            "side_1_property_package": prop_gas,
+            "side_2_property_package": prop_gas,
+            "side_3_property_package": prop_gas,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+            "has_holdup": False,
+            "flow_type_side_2": "counter-current",
+            "flow_type_side_3": "counter-current",
+        }
+    )
     return m
 
 
@@ -249,50 +287,37 @@ def set_arcs_and_constraints(m):
     prop_gas = m.fs_main.prop_gas
 
     # Declare arcs
-    fs.B001 = Arc(source=fs.aECON.tube_outlet,
-                  destination=fs.aPipe.inlet)
-    fs.B001b = Arc(source=fs.aPipe.outlet,
-                   destination=fs.aDrum.feedwater_inlet)
-    fs.B011 = Arc(source=fs.aDrum.liquid_outlet,
-                  destination=fs.blowdown_split.inlet)
-    fs.B011b = Arc(source=fs.blowdown_split.FW_Downcomer,
-                   destination=fs.aDowncomer.inlet)
-    fs.B007 = Arc(source=fs.aDowncomer.outlet,
-                  destination=fs.Waterwalls[1].inlet)
+    fs.B001 = Arc(source=fs.aECON.tube_outlet, destination=fs.aPipe.inlet)
+    fs.B001b = Arc(source=fs.aPipe.outlet, destination=fs.aDrum.feedwater_inlet)
+    fs.B011 = Arc(source=fs.aDrum.liquid_outlet, destination=fs.blowdown_split.inlet)
+    fs.B011b = Arc(
+        source=fs.blowdown_split.FW_Downcomer, destination=fs.aDowncomer.inlet
+    )
+    fs.B007 = Arc(source=fs.aDowncomer.outlet, destination=fs.Waterwalls[1].inlet)
 
     def ww_arc_rule(b, i):
-        return (b.Waterwalls[i].outlet, b.Waterwalls[i+1].inlet)
+        return (b.Waterwalls[i].outlet, b.Waterwalls[i + 1].inlet)
 
     fs.ww_arcs = Arc(range(1, 12), rule=ww_arc_rule)
 
-    fs.B008 = Arc(source=fs.Waterwalls[12].outlet,
-                  destination=fs.aDrum.water_steam_inlet)
-    fs.B002 = Arc(source=fs.aDrum.steam_outlet,
-                  destination=fs.aRoof.inlet)
-    fs.B003 = Arc(source=fs.aRoof.outlet,
-                  destination=fs.aPSH.tube_inlet)
-    fs.B004 = Arc(source=fs.aPSH.tube_outlet,
-                  destination=fs.Attemp.Steam_inlet)
-    fs.B005 = Arc(source=fs.Attemp.outlet,
-                  destination=fs.aPlaten.inlet)
-    fs.B012 = Arc(source=fs.aRH1.tube_outlet,
-                  destination=fs.aRH2.tube_inlet)
-    fs.PA04 = Arc(source=fs.aAPH.side_2_outlet,
-                  destination=fs.Mixer_PA.PA_inlet)
-    fs.PA05 = Arc(source=fs.Mixer_PA.outlet,
-                  destination=fs.aBoiler.primary_air_inlet)
-    fs.SA03 = Arc(source=fs.aAPH.side_3_outlet,
-                  destination=fs.aBoiler.secondary_air_inlet)
-    fs.FG01 = Arc(source=fs.aBoiler.flue_gas_outlet,
-                  destination=fs.aRH2.shell_inlet)
-    fs.FG02 = Arc(source=fs.aRH2.shell_outlet,
-                  destination=fs.aRH1.shell_inlet)
-    fs.FG03 = Arc(source=fs.aRH1.shell_outlet,
-                  destination=fs.aPSH.shell_inlet)
-    fs.FG04 = Arc(source=fs.aPSH.shell_outlet,
-                  destination=fs.aECON.shell_inlet)
-    fs.FG05 = Arc(source=fs.aECON.shell_outlet,
-                  destination=fs.aAPH.side_1_inlet)
+    fs.B008 = Arc(
+        source=fs.Waterwalls[12].outlet, destination=fs.aDrum.water_steam_inlet
+    )
+    fs.B002 = Arc(source=fs.aDrum.steam_outlet, destination=fs.aRoof.inlet)
+    fs.B003 = Arc(source=fs.aRoof.outlet, destination=fs.aPSH.tube_inlet)
+    fs.B004 = Arc(source=fs.aPSH.tube_outlet, destination=fs.Attemp.Steam_inlet)
+    fs.B005 = Arc(source=fs.Attemp.outlet, destination=fs.aPlaten.inlet)
+    fs.B012 = Arc(source=fs.aRH1.tube_outlet, destination=fs.aRH2.tube_inlet)
+    fs.PA04 = Arc(source=fs.aAPH.side_2_outlet, destination=fs.Mixer_PA.PA_inlet)
+    fs.PA05 = Arc(source=fs.Mixer_PA.outlet, destination=fs.aBoiler.primary_air_inlet)
+    fs.SA03 = Arc(
+        source=fs.aAPH.side_3_outlet, destination=fs.aBoiler.secondary_air_inlet
+    )
+    fs.FG01 = Arc(source=fs.aBoiler.flue_gas_outlet, destination=fs.aRH2.shell_inlet)
+    fs.FG02 = Arc(source=fs.aRH2.shell_outlet, destination=fs.aRH1.shell_inlet)
+    fs.FG03 = Arc(source=fs.aRH1.shell_outlet, destination=fs.aPSH.shell_inlet)
+    fs.FG04 = Arc(source=fs.aPSH.shell_outlet, destination=fs.aECON.shell_inlet)
+    fs.FG05 = Arc(source=fs.aECON.shell_outlet, destination=fs.aAPH.side_1_inlet)
 
     # Expand arcs. This must be called after discretization call
     pyo.TransformationFactory("network.expand_arcs").apply_to(fs)
@@ -302,47 +327,48 @@ def set_arcs_and_constraints(m):
     # Constraint to set boiler zone heat duty equal to waterwall section duty
     @fs.Constraint(fs.time, fs.ww_zones, doc="boiler zone heat duty")
     def zone_heat_loss_eqn(b, t, izone):
-        return 1e-6*b.aBoiler.waterwall_heat[t, izone] == \
-               1e-6*b.Waterwalls[izone].heat_fireside[t]
+        return (
+            1e-6 * b.aBoiler.waterwall_heat[t, izone]
+            == 1e-6 * b.Waterwalls[izone].heat_fireside[t]
+        )
 
     # Constraint to set boiler platen heat duty equal to platen model duty
     @fs.Constraint(fs.time, doc="platen SH heat duty")
     def platen_heat_loss_eqn(b, t):
-        return 1e-6*b.aBoiler.platen_heat[t] == 1e-6*b.aPlaten.heat_fireside[t]
+        return 1e-6 * b.aBoiler.platen_heat[t] == 1e-6 * b.aPlaten.heat_fireside[t]
 
     # Constraint to set boiler roof heat duty equal to roof model duty
     @fs.Constraint(fs.time, doc="roof SH heat duty")
     def roof_heat_loss_eqn(b, t):
-        return 1e-6*b.aBoiler.roof_heat[t] == 1e-6*b.aRoof.heat_fireside[t]
+        return 1e-6 * b.aBoiler.roof_heat[t] == 1e-6 * b.aRoof.heat_fireside[t]
 
     # Constraint to set boiler slag layer wall temperature equal to
     # waterwall section model slag wall temperature
     @fs.Constraint(fs.time, fs.ww_zones, doc="zone wall temperature")
     def zone_wall_temp_eqn(b, t, izone):
-        return b.aBoiler.wall_temperature_waterwall[t, izone] == \
-               b.Waterwalls[izone].temp_slag_boundary[t]
+        return (
+            b.aBoiler.wall_temperature_waterwall[t, izone]
+            == b.Waterwalls[izone].temp_slag_boundary[t]
+        )
 
     # Constraint to set boiler platen slag wall temperature equal to
     # platen superheater slag wall temperature
     @fs.Constraint(fs.time, doc="platen wall temperature")
     def platen_wall_temp_eqn(b, t):
-        return b.aBoiler.wall_temperature_platen[t] == \
-               b.aPlaten.temp_slag_boundary[t]
+        return b.aBoiler.wall_temperature_platen[t] == b.aPlaten.temp_slag_boundary[t]
 
     # Constraint to set boiler roof slag wall temperature equal to
     # roof superheater slag wall temperature
     @fs.Constraint(fs.time, doc="roof wall temperature")
     def roof_wall_temp_eqn(b, t):
-        return b.aBoiler.wall_temperature_roof[t] == \
-               b.aRoof.temp_slag_boundary[t]
+        return b.aBoiler.wall_temperature_roof[t] == b.aRoof.temp_slag_boundary[t]
 
     # Constraint to set RH steam flow as 90% of main steam flow
     # This constraint should be deactivated if this boiler sub-flowsheet
     # is combined with the steam cycle sub-flowsheet to form a full plant model
     @fs.Constraint(fs.time, doc="RH steam flow")
     def flow_mol_steam_rh_eqn(b, t):
-        return b.aRH1.tube_inlet.flow_mol[t] == 0.9\
-               * b.aPlaten.outlet.flow_mol[t]
+        return b.aRH1.tube_inlet.flow_mol[t] == 0.9 * b.aPlaten.outlet.flow_mol[t]
 
     # Constraint to set pressure drop of PA equal to that of SA
     @fs.Constraint(fs.time, doc="Pressure drop of PA and SA of APH")
@@ -353,31 +379,35 @@ def set_arcs_and_constraints(m):
     # the temperature of TA
     @fs.Constraint(fs.time, doc="Same inlet temperature for PA and SA")
     def pa_ta_temperature_identical_eqn(b, t):
-        return b.aAPH.side_2_inlet.temperature[t] == \
-               b.Mixer_PA.TA_inlet.temperature[t]
+        return b.aAPH.side_2_inlet.temperature[t] == b.Mixer_PA.TA_inlet.temperature[t]
 
     # Constraint to set blowdown water flow rate equal to 2% of feed water flow
     @fs.Constraint(fs.time, doc="Blowdown water flow fraction")
     def blowdown_flow_fraction_eqn(b, t):
-        return b.blowdown_split.FW_Blowdown.flow_mol[t] == 0.02\
-               * b.aECON.tube_inlet.flow_mol[t]
+        return (
+            b.blowdown_split.FW_Blowdown.flow_mol[t]
+            == 0.02 * b.aECON.tube_inlet.flow_mol[t]
+        )
 
     # Surrogate model of UA (overall heat transfer coefficient times area)
     # for heat transfer from flue gas to primary air in air preheater
     # as a function of raw coal flow rate, which is related to load
     @fs.Constraint(fs.time, doc="UA for APH of PA")
     def ua_side_2_eqn(b, t):
-        return 1e-4 * b.aAPH.ua_side_2[t] == \
-               1e-4 * (-150.0 * b.aBoiler.flowrate_coal_raw[t]**2
-                       + 9400.0 * b.aBoiler.flowrate_coal_raw[t] + 65000)
+        return 1e-4 * b.aAPH.ua_side_2[t] == 1e-4 * (
+            -150.0 * b.aBoiler.flowrate_coal_raw[t] ** 2
+            + 9400.0 * b.aBoiler.flowrate_coal_raw[t]
+            + 65000
+        )
 
     # Surrogate model of UA (overall heat transfer coefficient times area)
     # for heat transfer from flue gas to secondary air in air preheater
     # as a function of raw coal flow rate, which is related to load
     @fs.Constraint(fs.time, doc="UA for APH of SA")
     def ua_side_3_eqn(b, t):
-        return 1e-5 * b.aAPH.ua_side_3[t] == \
-               1e-5 * (30000*b.aBoiler.flowrate_coal_raw[t] + 100000)
+        return 1e-5 * b.aAPH.ua_side_3[t] == 1e-5 * (
+            30000 * b.aBoiler.flowrate_coal_raw[t] + 100000
+        )
 
     # The follwing three constraints are related to the actual operating
     # curves set by the controllers or by the boiler manufacturers
@@ -387,14 +417,23 @@ def set_arcs_and_constraints(m):
     # This is usually controlled to get a desired mill outlet temperature
     # Currently we don't have a mill model and the controller on the flowsheet
     # Usually more temperatuing air is needed at lower load
-    @fs.Constraint(fs.time, prop_gas.component_list,
-                   doc="Fraction of tempering air as total PA flow")
+    @fs.Constraint(
+        fs.time,
+        prop_gas.component_list,
+        doc="Fraction of tempering air as total PA flow",
+    )
     def fraction_of_ta_in_total_pa_eqn(b, t, j):
-        return b.Mixer_PA.PA_inlet.flow_mol_comp[t, j] == ((
-               b.Mixer_PA.PA_inlet.flow_mol_comp[t, j]
-               + b.Mixer_PA.TA_inlet.flow_mol_comp[t, j])
-               * (0.0003 * b.aBoiler.flowrate_coal_raw[t]**2
-                   - 0.0175 * b.aBoiler.flowrate_coal_raw[t] + 0.5))
+        return b.Mixer_PA.PA_inlet.flow_mol_comp[t, j] == (
+            (
+                b.Mixer_PA.PA_inlet.flow_mol_comp[t, j]
+                + b.Mixer_PA.TA_inlet.flow_mol_comp[t, j]
+            )
+            * (
+                0.0003 * b.aBoiler.flowrate_coal_raw[t] ** 2
+                - 0.0175 * b.aBoiler.flowrate_coal_raw[t]
+                + 0.5
+            )
+        )
 
     # Constraint to set total PA flow to coal flow ratio as a function of
     # raw coal flow rate
@@ -402,8 +441,10 @@ def set_arcs_and_constraints(m):
     @fs.Constraint(fs.time, doc="PA to coal ratio")
     def pa_to_coal_ratio_eqn(b, t):
         return b.aBoiler.ratio_PA2coal[t] == (
-            0.0018 * b.aBoiler.flowrate_coal_raw[t]**2
-            - 0.11*b.aBoiler.flowrate_coal_raw[t] + 3.45)
+            0.0018 * b.aBoiler.flowrate_coal_raw[t] ** 2
+            - 0.11 * b.aBoiler.flowrate_coal_raw[t]
+            + 3.45
+        )
 
     # Constraint to set dry O2 mole percent in flue gas
     # as a function of coal flow rate
@@ -412,36 +453,42 @@ def set_arcs_and_constraints(m):
     @fs.Constraint(fs.time, doc="Steady state dry O2 in flue gas")
     def dry_o2_in_flue_gas_eqn(b, t):
         return b.aBoiler.fluegas_o2_pct_dry[t] == (
-            -0.00075*b.aBoiler.flowrate_coal_raw[t]**3
-            + 0.067*b.aBoiler.flowrate_coal_raw[t]**2
-            - 2.0*b.aBoiler.flowrate_coal_raw[t] + 22.95)
+            -0.00075 * b.aBoiler.flowrate_coal_raw[t] ** 3
+            + 0.067 * b.aBoiler.flowrate_coal_raw[t] ** 2
+            - 2.0 * b.aBoiler.flowrate_coal_raw[t]
+            + 22.95
+        )
 
     # Boiler efficiency based on enthalpy increase of main and RH steams
     @fs.Expression(fs.time, doc="boiler efficiency based on steam")
     def boiler_efficiency_steam(b, t):
-        return (((b.aPlaten.outlet.flow_mol[t]
-                 - b.Attemp.Water_inlet.flow_mol[t])
-                * (b.aPlaten.outlet.enth_mol[t]
-                   - b.aECON.tube_inlet.enth_mol[t])
-                + b.aRH2.tube_outlet.flow_mol[t]
-                * (b.aRH2.tube_outlet.enth_mol[t]
-                   - b.aRH1.tube_inlet.enth_mol[t])
-                + b.Attemp.Water_inlet.flow_mol[t]
-                * (b.aPlaten.outlet.enth_mol[t]
-                   - b.Attemp.Water_inlet.enth_mol[t]))
-                / (b.aBoiler.flowrate_coal_raw[t]
-                   * (1-b.aBoiler.mf_H2O_coal_raw[t])
-                   * b.aBoiler.hhv_coal_dry))
+        return (
+            (b.aPlaten.outlet.flow_mol[t] - b.Attemp.Water_inlet.flow_mol[t])
+            * (b.aPlaten.outlet.enth_mol[t] - b.aECON.tube_inlet.enth_mol[t])
+            + b.aRH2.tube_outlet.flow_mol[t]
+            * (b.aRH2.tube_outlet.enth_mol[t] - b.aRH1.tube_inlet.enth_mol[t])
+            + b.Attemp.Water_inlet.flow_mol[t]
+            * (b.aPlaten.outlet.enth_mol[t] - b.Attemp.Water_inlet.enth_mol[t])
+        ) / (
+            b.aBoiler.flowrate_coal_raw[t]
+            * (1 - b.aBoiler.mf_H2O_coal_raw[t])
+            * b.aBoiler.hhv_coal_dry
+        )
 
     # Boiler efficiency based on heat absorbed
     @fs.Expression(fs.time, doc="boiler efficiency based on heat")
     def boiler_efficiency_heat(b, t):
-        return ((b.aBoiler.heat_total[t] + b.aRH2.total_heat[t]
-                + b.aRH1.total_heat[t] + b.aPSH.total_heat[t]
-                + b.aECON.total_heat[t])
-                / (b.aBoiler.flowrate_coal_raw[t]
-                   * (1-b.aBoiler.mf_H2O_coal_raw[t])
-                   * b.aBoiler.hhv_coal_dry))
+        return (
+            b.aBoiler.heat_total[t]
+            + b.aRH2.total_heat[t]
+            + b.aRH1.total_heat[t]
+            + b.aPSH.total_heat[t]
+            + b.aECON.total_heat[t]
+        ) / (
+            b.aBoiler.flowrate_coal_raw[t]
+            * (1 - b.aBoiler.mf_H2O_coal_raw[t])
+            * b.aBoiler.hhv_coal_dry
+        )
 
     return m
 
@@ -455,12 +502,12 @@ def set_inputs(m):
     # Specify air composition (mole fractions)
     # based on 298.15 K and 0.5 relative humidity
     # It is defined in fire-side boiler model but used for all air inlets
-    fs.aBoiler.mole_frac_air['O2'] = 0.206201
-    fs.aBoiler.mole_frac_air['N2'] = 0.777811
-    fs.aBoiler.mole_frac_air['CO2'] = 0.0003346
-    fs.aBoiler.mole_frac_air['H2O'] = 0.0156532
-    fs.aBoiler.mole_frac_air['SO2'] = 0.0000001
-    fs.aBoiler.mole_frac_air['NO'] = 0.0000001
+    fs.aBoiler.mole_frac_air["O2"] = 0.206201
+    fs.aBoiler.mole_frac_air["N2"] = 0.777811
+    fs.aBoiler.mole_frac_air["CO2"] = 0.0003346
+    fs.aBoiler.mole_frac_air["H2O"] = 0.0156532
+    fs.aBoiler.mole_frac_air["SO2"] = 0.0000001
+    fs.aBoiler.mole_frac_air["NO"] = 0.0000001
 
     # Coal fuel analysis data, always fix in the current model
     fs.aBoiler.mf_C_coal_dry.fix(0.717259)
@@ -469,7 +516,7 @@ def set_inputs(m):
     fs.aBoiler.mf_N_coal_dry.fix(0.0140639)
     fs.aBoiler.mf_S_coal_dry.fix(0.0282403)
     fs.aBoiler.mf_Ash_coal_dry.fix(0.110824)
-    fs.aBoiler.hhv_coal_dry.fix(3.05052e+007)
+    fs.aBoiler.hhv_coal_dry.fix(3.05052e007)
 
     # Assume mill outlet temperature is controlled and fixed
     fs.aBoiler.temperature_coal[:].fix(338.7)
@@ -550,13 +597,13 @@ def set_inputs(m):
     fs.aPlaten.slag_thickness[:].fix(0.001)
     fs.aPlaten.fin_length.fix(0.01)
     fs.aPlaten.tube_length.fix(44)
-    fs.aPlaten.number_tubes.fix(14*18)
+    fs.aPlaten.number_tubes.fix(14 * 18)
     fs.aPlaten.therm_cond_slag.fix(1.3)
 
     # RH1
-    fs.aRH1.pitch_x.fix(4.55*0.0254)
-    fs.aRH1.pitch_y.fix(7.0*0.0254)
-    fs.aRH1.tube_length_seg.fix(350*0.0254)
+    fs.aRH1.pitch_x.fix(4.55 * 0.0254)
+    fs.aRH1.pitch_y.fix(7.0 * 0.0254)
+    fs.aRH1.tube_length_seg.fix(350 * 0.0254)
     fs.aRH1.tube_nseg.fix(4)
     fs.aRH1.tube_ncol.fix(83)
     fs.aRH1.tube_inlet_nrow.fix(3)
@@ -576,9 +623,9 @@ def set_inputs(m):
     fs.aRH1.fcorrection_dp_shell.fix(3.5)
 
     # RH2
-    fs.aRH2.pitch_x.fix(4.55*0.0254)
-    fs.aRH2.pitch_y.fix(14.0*0.0254)
-    fs.aRH2.tube_length_seg.fix(420*0.0254)
+    fs.aRH2.pitch_x.fix(4.55 * 0.0254)
+    fs.aRH2.pitch_y.fix(14.0 * 0.0254)
+    fs.aRH2.tube_length_seg.fix(420 * 0.0254)
     fs.aRH2.tube_nseg.fix(2)
     fs.aRH2.tube_ncol.fix(41)
     fs.aRH2.tube_inlet_nrow.fix(6)
@@ -598,14 +645,14 @@ def set_inputs(m):
     fs.aRH2.fcorrection_dp_shell.fix(3.5)
 
     # PSH
-    fs.aPSH.pitch_x.fix(3.8*0.0254)
-    fs.aPSH.pitch_y.fix(6.5*0.0254)
-    fs.aPSH.tube_length_seg.fix(350*0.0254)
+    fs.aPSH.pitch_x.fix(3.8 * 0.0254)
+    fs.aPSH.pitch_y.fix(6.5 * 0.0254)
+    fs.aPSH.tube_length_seg.fix(350 * 0.0254)
     fs.aPSH.tube_nseg.fix(12)
     fs.aPSH.tube_ncol.fix(90)
     fs.aPSH.tube_inlet_nrow.fix(4)
     fs.aPSH.delta_elevation.fix(5.0)
-    fs.aPSH.therm_cond_wall = 49.0      # Carbon steel SA 209 T1
+    fs.aPSH.therm_cond_wall = 49.0  # Carbon steel SA 209 T1
     fs.aPSH.dens_wall = 7800
     fs.aPSH.cp_wall = 470
     fs.aPSH.Young_modulus = 1.90e5
@@ -622,9 +669,9 @@ def set_inputs(m):
     fs.aPSH.head_insulation_thickness.fix(0.025)
 
     # economizer
-    fs.aECON.pitch_x.fix(3.8*0.0254)
-    fs.aECON.pitch_y.fix(4.25*0.0254)
-    fs.aECON.tube_length_seg.fix(350*0.0254)
+    fs.aECON.pitch_x.fix(3.8 * 0.0254)
+    fs.aECON.pitch_y.fix(4.25 * 0.0254)
+    fs.aECON.tube_length_seg.fix(350 * 0.0254)
     fs.aECON.tube_nseg.fix(18)
     fs.aECON.tube_ncol.fix(138)
     fs.aECON.tube_inlet_nrow.fix(2)
@@ -718,24 +765,24 @@ def initialize(m):
     fs.aDrum.level[:].fix(0.9)
 
     # 12 waterwalls, initial guess, will be calculated by boiler model
-    fs.Waterwalls[1].heat_fireside[:].fix(4.42E+07)
-    fs.Waterwalls[2].heat_fireside[:].fix(5.04E+07)
-    fs.Waterwalls[3].heat_fireside[:].fix(3.43E+07)
-    fs.Waterwalls[4].heat_fireside[:].fix(3.62E+07)
-    fs.Waterwalls[5].heat_fireside[:].fix(3.58E+07)
-    fs.Waterwalls[6].heat_fireside[:].fix(2.88E+07)
-    fs.Waterwalls[7].heat_fireside[:].fix(2.54E+07)
-    fs.Waterwalls[8].heat_fireside[:].fix(2.27E+07)
-    fs.Waterwalls[9].heat_fireside[:].fix(2.04E+07)
-    fs.Waterwalls[10].heat_fireside[:].fix(2.35E+07)
-    fs.Waterwalls[11].heat_fireside[:].fix(1.24E+07)
-    fs.Waterwalls[12].heat_fireside[:].fix(9.06E+06)
+    fs.Waterwalls[1].heat_fireside[:].fix(4.42e07)
+    fs.Waterwalls[2].heat_fireside[:].fix(5.04e07)
+    fs.Waterwalls[3].heat_fireside[:].fix(3.43e07)
+    fs.Waterwalls[4].heat_fireside[:].fix(3.62e07)
+    fs.Waterwalls[5].heat_fireside[:].fix(3.58e07)
+    fs.Waterwalls[6].heat_fireside[:].fix(2.88e07)
+    fs.Waterwalls[7].heat_fireside[:].fix(2.54e07)
+    fs.Waterwalls[8].heat_fireside[:].fix(2.27e07)
+    fs.Waterwalls[9].heat_fireside[:].fix(2.04e07)
+    fs.Waterwalls[10].heat_fireside[:].fix(2.35e07)
+    fs.Waterwalls[11].heat_fireside[:].fix(1.24e07)
+    fs.Waterwalls[12].heat_fireside[:].fix(9.06e06)
 
     # roof superheater, initial guess, unfixed later
-    fs.aRoof.heat_fireside[:].fix(9.92E+06)
+    fs.aRoof.heat_fireside[:].fix(9.92e06)
 
     # platen superheater, initial guess, unfixed later
-    fs.aPlaten.heat_fireside[:].fix(6.69E+07)
+    fs.aPlaten.heat_fireside[:].fix(6.69e07)
 
     # economizer water inlet, will be calculated if connected with steam cycle
     fs.aECON.tube_inlet.flow_mol[:].fix(12000)
@@ -775,23 +822,26 @@ def initialize(m):
     # PA to APH
     flow_mol_pa = 1410
     for i in prop_gas.component_list:
-        fs.aAPH.side_2_inlet.flow_mol_comp[:, i].fix(pyo.value(
-            flow_mol_pa * fs.aBoiler.mole_frac_air[i]))
+        fs.aAPH.side_2_inlet.flow_mol_comp[:, i].fix(
+            pyo.value(flow_mol_pa * fs.aBoiler.mole_frac_air[i])
+        )
     fs.aAPH.side_2_inlet.temperature[:].fix(324.8)
     fs.aAPH.side_2_inlet.pressure[:].fix(102325)
 
     # SA to APH
     flow_mol_sa = 4716
     for i in prop_gas.component_list:
-        fs.aAPH.side_3_inlet.flow_mol_comp[:, i].fix(pyo.value(
-            flow_mol_sa * fs.aBoiler.mole_frac_air[i]))
+        fs.aAPH.side_3_inlet.flow_mol_comp[:, i].fix(
+            pyo.value(flow_mol_sa * fs.aBoiler.mole_frac_air[i])
+        )
     fs.aAPH.side_3_inlet.temperature[:].fix(366.2)
     fs.aAPH.side_3_inlet.pressure[:].fix(102325)
 
     flow_mol_ta = 721
     for i in prop_gas.component_list:
-        fs.Mixer_PA.TA_inlet.flow_mol_comp[:, i].fix(pyo.value(
-            flow_mol_ta * fs.aBoiler.mole_frac_air[i]))
+        fs.Mixer_PA.TA_inlet.flow_mol_comp[:, i].fix(
+            pyo.value(flow_mol_ta * fs.aBoiler.mole_frac_air[i])
+        )
     fs.Mixer_PA.TA_inlet.temperature[:].value = 324.8
     fs.Mixer_PA.TA_inlet.pressure[:].value = 101325
 
@@ -841,9 +891,9 @@ def initialize(m):
         _log.info("Completed zone 1 initialization")
 
     for i in fs.ww_zones:
-        if (i > 1):
+        if i > 1:
             if m.dynamic is False:
-                _set_port(fs.Waterwalls[i].inlet, fs.Waterwalls[i-1].outlet)
+                _set_port(fs.Waterwalls[i].inlet, fs.Waterwalls[i - 1].outlet)
                 fs.Waterwalls[i].initialize(outlvl=outlvl)
                 _log.info("Completed zone {} initialization".format(i))
 
@@ -944,45 +994,46 @@ def initialize(m):
         _log.info("Solving boiler steady-state problem...")
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(fs, tee=slc.tee)
-        _log.info("Solving boiler steady-state problem: {}".
-                  format(idaeslog.condition(res)))
-        _log.info('feed water flow={}'.
-                  format(fs.aECON.tube_inlet.flow_mol[0].value))
-        _log.info('main steam flow={}'.
-                  format(fs.aPlaten.outlet.flow_mol[0].value))
-        _log.info('spray water flow={}'.
-                  format(fs.Attemp.Water_inlet.flow_mol[0].value))
-        _log.info('flowrate_coal_raw={}'.
-                  format(pyo.value(fs.aBoiler.flowrate_coal_raw[0])))
-        _log.info('fraction of moisture in raw coal={}'.
-                  format(pyo.value(fs.aBoiler.mf_H2O_coal_raw[0])))
-        _log.info('flowrate_fluegas={}'.
-                  format(pyo.value(fs.aBoiler.flue_gas[0].flow_mass)))
-        _log.info('tempering air flow={}'.
-                  format(pyo.value(fs.Mixer_PA.TA_inlet_state[0].flow_mass)))
-        _log.info('total PA flow={}'.
-                  format(pyo.value(fs.aBoiler.primary_air[0].flow_mass)))
-        _log.info('SA flow={}'.
-                  format(pyo.value(fs.aBoiler.secondary_air[0].flow_mass)))
-        _log.info('TCA flow={}'.
-                  format(pyo.value(fs.aBoiler.flow_mass_TCA[0])))
-        _log.info('ratio_PA2coal={}'.
-                  format(pyo.value(fs.aBoiler.ratio_PA2coal[0])))
-        _log.info('SR={}'.
-                  format(fs.aBoiler.SR[0].value))
-        _log.info('SR_lf={}'.
-                  format(fs.aBoiler.SR_lf[0].value))
-        _log.info('total ww heat={}'.
-                  format(pyo.value(fs.aBoiler.heat_total_ww[0])))
-        _log.info('total heat={}'.
-                  format(pyo.value(fs.aBoiler.heat_total_ww[0])))
-        _log.info('FEGT={}'.
-                  format(pyo.value(fs.aBoiler.flue_gas_outlet.temperature[0])))
+        _log.info(
+            "Solving boiler steady-state problem: {}".format(idaeslog.condition(res))
+        )
+        _log.info("feed water flow={}".format(fs.aECON.tube_inlet.flow_mol[0].value))
+        _log.info("main steam flow={}".format(fs.aPlaten.outlet.flow_mol[0].value))
+        _log.info("spray water flow={}".format(fs.Attemp.Water_inlet.flow_mol[0].value))
+        _log.info(
+            "flowrate_coal_raw={}".format(pyo.value(fs.aBoiler.flowrate_coal_raw[0]))
+        )
+        _log.info(
+            "fraction of moisture in raw coal={}".format(
+                pyo.value(fs.aBoiler.mf_H2O_coal_raw[0])
+            )
+        )
+        _log.info(
+            "flowrate_fluegas={}".format(pyo.value(fs.aBoiler.flue_gas[0].flow_mass))
+        )
+        _log.info(
+            "tempering air flow={}".format(
+                pyo.value(fs.Mixer_PA.TA_inlet_state[0].flow_mass)
+            )
+        )
+        _log.info(
+            "total PA flow={}".format(pyo.value(fs.aBoiler.primary_air[0].flow_mass))
+        )
+        _log.info("SA flow={}".format(pyo.value(fs.aBoiler.secondary_air[0].flow_mass)))
+        _log.info("TCA flow={}".format(pyo.value(fs.aBoiler.flow_mass_TCA[0])))
+        _log.info("ratio_PA2coal={}".format(pyo.value(fs.aBoiler.ratio_PA2coal[0])))
+        _log.info("SR={}".format(fs.aBoiler.SR[0].value))
+        _log.info("SR_lf={}".format(fs.aBoiler.SR_lf[0].value))
+        _log.info("total ww heat={}".format(pyo.value(fs.aBoiler.heat_total_ww[0])))
+        _log.info("total heat={}".format(pyo.value(fs.aBoiler.heat_total_ww[0])))
+        _log.info(
+            "FEGT={}".format(pyo.value(fs.aBoiler.flue_gas_outlet.temperature[0]))
+        )
     return m
 
 
 def set_scaling_factors(m):
-    """ Set scaling factors for variables and expressions. These are used for
+    """Set scaling factors for variables and expressions. These are used for
     variable scaling and used by the framework to scale constraints.
 
     Args:
@@ -1026,14 +1077,11 @@ def set_scaling_factors(m):
     iscale.set_scaling_factor(fs.aDrum.control_volume.energy_holdup, 1e-10)
     iscale.set_scaling_factor(fs.aDrum.control_volume.material_holdup, 1e-5)
     if m.dynamic:
-        for t, c in fs.aDrum.control_volume.energy_accumulation_disc_eq.items(
-                ):
+        for t, c in fs.aDrum.control_volume.energy_accumulation_disc_eq.items():
             iscale.constraint_scaling_transform(c, 1e-4)
 
-    iscale.set_scaling_factor(fs.aDowncomer.control_volume.energy_holdup,
-                              1e-10)
-    iscale.set_scaling_factor(fs.aDowncomer.control_volume.material_holdup,
-                              1e-5)
+    iscale.set_scaling_factor(fs.aDowncomer.control_volume.energy_holdup, 1e-10)
+    iscale.set_scaling_factor(fs.aDowncomer.control_volume.material_holdup, 1e-5)
     iscale.set_scaling_factor(fs.aRoof.control_volume.energy_holdup, 1e-8)
     iscale.set_scaling_factor(fs.aRoof.control_volume.material_holdup, 1e-6)
     iscale.set_scaling_factor(fs.aPlaten.control_volume.energy_holdup, 1e-8)
@@ -1088,49 +1136,71 @@ def main_steady_state():
     aBoiler = m_ss.fs_main.fs_blr.aBoiler
     outlvl = idaeslog.DEBUG
     _log = idaeslog.getLogger(aBoiler.name, outlvl, tag="flowsheet")
-    _log.debug('PA flow={}'.format(
-          pyo.value(aBoiler.primary_air[0].flow_mass)))
-    _log.debug('SA flow={}'.format(
-          pyo.value(aBoiler.secondary_air[0].flow_mass)))
-    _log.debug('O2 in flue gas{}'.format(
-        pyo.value(aBoiler.fluegas_o2_pct_dry[0])))
-    _log.debug('FEGT={}'.format(
-        pyo.value(aBoiler.flue_gas[0].temperature)))
-    _log.debug('heat_total={}'.format(
-        pyo.value(aBoiler.heat_total[0])))
-    _log.debug('total heat_ww={}'.format(
-        pyo.value(aBoiler.heat_total_ww[0])))
-    _log.debug('UBC={}'.format(pyo.value(aBoiler.ubc_in_flyash[0])))
-    _log.debug('NOx={}'.format(pyo.value(aBoiler.frac_mol_NOx_fluegas[0])))
-    _log.debug('main steam flow={}'.format(
-        pyo.value(m_ss.fs_main.fs_blr.aPlaten.outlet.flow_mol[0])))
-    _log.debug('main steam pressure={}'.format(
-        pyo.value(m_ss.fs_main.fs_blr.aPlaten.outlet.pressure[0])))
-    _log.debug('main steam temperature={}'.format(
-          pyo.value(m_ss.fs_main.fs_blr.aPlaten.control_volume.
-                    properties_out[0].temperature)))
-    _log.debug('RH steam flow={}'.format(
-          pyo.value(m_ss.fs_main.fs_blr.aRH2.tube_outlet.flow_mol[0])))
-    _log.debug('RH steam pressure={}'.format(
-          pyo.value(m_ss.fs_main.fs_blr.aRH2.tube_outlet.pressure[0])))
-    _log.debug('RH steam temperature={}'.format(
-          pyo.value(m_ss.fs_main.fs_blr.aRH2.tube.properties[0, 0].
-                    temperature)))
-    _log.debug('flue gas econ inlet temp={}'.format(
-          pyo.value(m_ss.fs_main.fs_blr.aECON.shell.properties[0, 0].
-                    temperature)))
-    _log.debug('flue gas econ out temp={}'.format(
-          pyo.value(m_ss.fs_main.fs_blr.aECON.shell.properties[0, 1].
-                    temperature)))
-    _log.debug('flue gas aph out temp={}'.format(
-          pyo.value(m_ss.fs_main.fs_blr.aAPH.side_1.properties_out[0].
-                    temperature)))
-    _log.debug('econ out water temp={}'.format(
-          pyo.value(m_ss.fs_main.fs_blr.aECON.tube.properties[0, 0].
-                    temperature)))
-    _log.debug('econ out water sat temp={}'.format(
-          pyo.value(m_ss.fs_main.fs_blr.aECON.tube.properties[0, 0].
-                    temperature_sat)))
+    _log.debug("PA flow={}".format(pyo.value(aBoiler.primary_air[0].flow_mass)))
+    _log.debug("SA flow={}".format(pyo.value(aBoiler.secondary_air[0].flow_mass)))
+    _log.debug("O2 in flue gas{}".format(pyo.value(aBoiler.fluegas_o2_pct_dry[0])))
+    _log.debug("FEGT={}".format(pyo.value(aBoiler.flue_gas[0].temperature)))
+    _log.debug("heat_total={}".format(pyo.value(aBoiler.heat_total[0])))
+    _log.debug("total heat_ww={}".format(pyo.value(aBoiler.heat_total_ww[0])))
+    _log.debug("UBC={}".format(pyo.value(aBoiler.ubc_in_flyash[0])))
+    _log.debug("NOx={}".format(pyo.value(aBoiler.frac_mol_NOx_fluegas[0])))
+    _log.debug(
+        "main steam flow={}".format(
+            pyo.value(m_ss.fs_main.fs_blr.aPlaten.outlet.flow_mol[0])
+        )
+    )
+    _log.debug(
+        "main steam pressure={}".format(
+            pyo.value(m_ss.fs_main.fs_blr.aPlaten.outlet.pressure[0])
+        )
+    )
+    _log.debug(
+        "main steam temperature={}".format(
+            pyo.value(
+                m_ss.fs_main.fs_blr.aPlaten.control_volume.properties_out[0].temperature
+            )
+        )
+    )
+    _log.debug(
+        "RH steam flow={}".format(
+            pyo.value(m_ss.fs_main.fs_blr.aRH2.tube_outlet.flow_mol[0])
+        )
+    )
+    _log.debug(
+        "RH steam pressure={}".format(
+            pyo.value(m_ss.fs_main.fs_blr.aRH2.tube_outlet.pressure[0])
+        )
+    )
+    _log.debug(
+        "RH steam temperature={}".format(
+            pyo.value(m_ss.fs_main.fs_blr.aRH2.tube.properties[0, 0].temperature)
+        )
+    )
+    _log.debug(
+        "flue gas econ inlet temp={}".format(
+            pyo.value(m_ss.fs_main.fs_blr.aECON.shell.properties[0, 0].temperature)
+        )
+    )
+    _log.debug(
+        "flue gas econ out temp={}".format(
+            pyo.value(m_ss.fs_main.fs_blr.aECON.shell.properties[0, 1].temperature)
+        )
+    )
+    _log.debug(
+        "flue gas aph out temp={}".format(
+            pyo.value(m_ss.fs_main.fs_blr.aAPH.side_1.properties_out[0].temperature)
+        )
+    )
+    _log.debug(
+        "econ out water temp={}".format(
+            pyo.value(m_ss.fs_main.fs_blr.aECON.tube.properties[0, 0].temperature)
+        )
+    )
+    _log.debug(
+        "econ out water sat temp={}".format(
+            pyo.value(m_ss.fs_main.fs_blr.aECON.tube.properties[0, 0].temperature_sat)
+        )
+    )
     return m_ss
 
 
@@ -1139,17 +1209,18 @@ def main_dynamic():
     # aBoiler = m_ss.fs_main.fs_blr.aBoiler
     m_dyn = get_model(dynamic=True)
     copy_non_time_indexed_values(
-        m_dyn.fs_main, m_ss.fs_main, copy_fixed=True, outlvl=idaeslog.ERROR)
+        m_dyn.fs_main, m_ss.fs_main, copy_fixed=True, outlvl=idaeslog.ERROR
+    )
     for t in m_dyn.fs_main.time:
         copy_values_at_time(
-            m_dyn.fs_main, m_ss.fs_main, t, 0.0, copy_fixed=True,
-            outlvl=idaeslog.ERROR)
+            m_dyn.fs_main, m_ss.fs_main, t, 0.0, copy_fixed=True, outlvl=idaeslog.ERROR
+        )
 
     solver = get_solver()
 
     dof = degrees_of_freedom(m_dyn.fs_main)
     # solving dynamic model at steady-state
-    print('solving dynamic model at steady-state...')
+    print("solving dynamic model at steady-state...")
     solver.solve(m_dyn.fs_main, tee=True)
 
     # run dynamic model
@@ -1162,9 +1233,9 @@ def get_model(dynamic=True, init=True):
     m.dynamic = dynamic
     m.init_dyn = False
     if m.dynamic:
-        m.fs_main = FlowsheetBlock(default={"dynamic": True,
-                                            "time_set": [0, 60],
-                                            "time_units": pyo.units.s})
+        m.fs_main = FlowsheetBlock(
+            default={"dynamic": True, "time_set": [0, 60], "time_units": pyo.units.s}
+        )
     else:
         m.fs_main = FlowsheetBlock(default={"dynamic": False})
     # Add property packages to flowsheet library
@@ -1173,11 +1244,8 @@ def get_model(dynamic=True, init=True):
     m.fs_main.fs_blr = FlowsheetBlock(default={"time_units": pyo.units.s})
     m = add_unit_models(m)
     if m.dynamic:
-        m.discretizer = pyo.TransformationFactory('dae.finite_difference')
-        m.discretizer.apply_to(m,
-                               nfe=2,
-                               wrt=m.fs_main.time,
-                               scheme="BACKWARD")
+        m.discretizer = pyo.TransformationFactory("dae.finite_difference")
+        m.discretizer.apply_to(m, nfe=2, wrt=m.fs_main.time, scheme="BACKWARD")
     m = set_arcs_and_constraints(m)
     m = set_inputs(m)
     set_scaling_factors(m)
@@ -1195,10 +1263,10 @@ def run_dynamic(m):
     for t in m.fs_main.time:
         if t >= 30:
             fs.aBoiler.flowrate_coal_raw[t].fix(
-                fs.aBoiler.flowrate_coal_raw[0].value*1.025)
+                fs.aBoiler.flowrate_coal_raw[0].value * 1.025
+            )
         else:
-            fs.aBoiler.flowrate_coal_raw[t].fix(
-                fs.aBoiler.flowrate_coal_raw[0].value)
+            fs.aBoiler.flowrate_coal_raw[t].fix(fs.aBoiler.flowrate_coal_raw[0].value)
     df = degrees_of_freedom(m)
     assert df == 0
     solver = get_solver()
@@ -1221,10 +1289,11 @@ def print_dynamic_results(m):
     for t in m.fs_main.time:
         time.append(t)
         coal_flow.append(fs.aBoiler.flowrate_coal_raw[t].value)
-        steam_flow.append(fs.aPlaten.outlet.flow_mol[t].value/1000)
-        steam_temp.append(pyo.value(fs.aPlaten.control_volume.
-                                    properties_out[t].temperature))
-        steam_pres.append(fs.aPlaten.outlet.pressure[t].value/1e6)
+        steam_flow.append(fs.aPlaten.outlet.flow_mol[t].value / 1000)
+        steam_temp.append(
+            pyo.value(fs.aPlaten.control_volume.properties_out[t].temperature)
+        )
+        steam_pres.append(fs.aPlaten.outlet.pressure[t].value / 1e6)
         fegt.append(fs.aBoiler.flue_gas_outlet.temperature[t].value)
         drum_level.append(fs.aDrum.level[t].value)
 

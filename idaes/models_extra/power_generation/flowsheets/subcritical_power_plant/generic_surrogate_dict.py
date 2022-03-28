@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 data_dic = {
-        1: '(74904.4 * b.wall_temperature_waterwall[t, 1] \
+    1: "(74904.4 * b.wall_temperature_waterwall[t, 1] \
             +11301.8 * b.wall_temperature_waterwall[t, 2] \
             +2427.54 * b.wall_temperature_waterwall[t, 3] \
             +2891.35 * b.wall_temperature_waterwall[t, 4] \
@@ -103,8 +103,8 @@ data_dic = {
             -0.00660786 * (b.flowrate_coal_raw[t]*b.secondary_air_inlet.temperature[t])**2 \
             +85.0348 * (b.flowrate_coal_raw[t]*b.ratio_PA2coal[t])**2 \
             +0.102891 * (b.wall_temperature_roof[t]*b.mf_H2O_coal_raw[t])**3 \
-            -7838.06 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**3)',
-        2: '(9402.37 * b.wall_temperature_waterwall[t, 1] \
+            -7838.06 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**3)",
+    2: "(9402.37 * b.wall_temperature_waterwall[t, 1] \
             +63618 * b.wall_temperature_waterwall[t, 2] \
             +2118.88 * b.wall_temperature_waterwall[t, 3] \
             +1821.84 * b.wall_temperature_waterwall[t, 4] \
@@ -193,8 +193,8 @@ data_dic = {
             -0.00723196 * (b.flowrate_coal_raw[t]*b.secondary_air_inlet.temperature[t])**2 \
             +91.9401 * (b.flowrate_coal_raw[t]*b.ratio_PA2coal[t])**2 \
             +0.0961783 * (b.wall_temperature_roof[t]*b.mf_H2O_coal_raw[t])**3 \
-            -8608.57 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**3)',
-        3: '(2825.25 * b.wall_temperature_waterwall[t, 1] \
+            -8608.57 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**3)",
+    3: "(2825.25 * b.wall_temperature_waterwall[t, 1] \
             +3496.16 * b.wall_temperature_waterwall[t, 2] \
             +39611.4 * b.wall_temperature_waterwall[t, 3] \
             +2064.54 * b.wall_temperature_waterwall[t, 4] \
@@ -272,8 +272,8 @@ data_dic = {
             +647.348 * (b.flowrate_coal_raw[t]*b.SR[t])**2 \
             -0.00513905 * (b.flowrate_coal_raw[t]*b.secondary_air_inlet.temperature[t])**2 \
             +57.4901 * (b.flowrate_coal_raw[t]*b.ratio_PA2coal[t])**2 \
-            -5271.02 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**3)',
-        4: '(30998 * b.wall_temperature_waterwall[t, 1] \
+            -5271.02 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**3)",
+    4: "(30998 * b.wall_temperature_waterwall[t, 1] \
             +2457.99 * b.wall_temperature_waterwall[t, 2] \
             +1137.13 * b.wall_temperature_waterwall[t, 3] \
             +19608.1 * b.wall_temperature_waterwall[t, 4] \
@@ -358,8 +358,8 @@ data_dic = {
             +978.377 * (b.flowrate_coal_raw[t]*b.SR[t])**2 \
             -0.00577998 * (b.flowrate_coal_raw[t]*b.secondary_air_inlet.temperature[t])**2 \
             +51.3598 * (b.flowrate_coal_raw[t]*b.ratio_PA2coal[t])**2 \
-            +1.03552e+07 * (b.mf_H2O_coal_raw[t]*b.SR[t])**2)',
-        5: '(1381.36 * b.wall_temperature_waterwall[t, 1] \
+            +1.03552e+07 * (b.mf_H2O_coal_raw[t]*b.SR[t])**2)",
+    5: "(1381.36 * b.wall_temperature_waterwall[t, 1] \
             +2323.67 * b.wall_temperature_waterwall[t, 2] \
             +16.5773 * b.wall_temperature_waterwall[t, 3] \
             +1352.22 * b.wall_temperature_waterwall[t, 4] \
@@ -439,8 +439,8 @@ data_dic = {
             +46556.5 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**2 \
             +1577.66 * (b.flowrate_coal_raw[t]*b.SR[t])**2 \
             -0.00554362 * (b.flowrate_coal_raw[t]*b.secondary_air_inlet.temperature[t])**2 \
-            +43.5639 * (b.flowrate_coal_raw[t]*b.ratio_PA2coal[t])**2)',
-        6: '(23766.1 * b.wall_temperature_waterwall[t, 1] \
+            +43.5639 * (b.flowrate_coal_raw[t]*b.ratio_PA2coal[t])**2)",
+    6: "(23766.1 * b.wall_temperature_waterwall[t, 1] \
             +1109.67 * b.wall_temperature_waterwall[t, 2] \
             -411.801 * b.wall_temperature_waterwall[t, 3] \
             +1277.07 * b.wall_temperature_waterwall[t, 4] \
@@ -516,8 +516,8 @@ data_dic = {
             -2.36557e-06 * (b.wall_temperature_waterwall[t, 7]*b.flowrate_coal_raw[t])**2 \
             +37045.4 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**2 \
             +3479.38 * (b.flowrate_coal_raw[t]*b.SR[t])**2 \
-            -0.00390226 * (b.flowrate_coal_raw[t]*b.secondary_air_inlet.temperature[t])**2)',
-        7: '(353.147 * b.wall_temperature_waterwall[t, 1] \
+            -0.00390226 * (b.flowrate_coal_raw[t]*b.secondary_air_inlet.temperature[t])**2)",
+    7: "(353.147 * b.wall_temperature_waterwall[t, 1] \
             +944.788 * b.wall_temperature_waterwall[t, 2] \
             -715.67 * b.wall_temperature_waterwall[t, 3] \
             -113.773 * b.wall_temperature_waterwall[t, 4] \
@@ -595,8 +595,8 @@ data_dic = {
             +0.00138792 * (b.wall_temperature_waterwall[t, 1]*b.flowrate_coal_raw[t])**2 \
             -0.00105797 * (b.wall_temperature_waterwall[t, 12]*b.flowrate_coal_raw[t])**2 \
             +33941.2 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**2 \
-            +2634.71 * (b.flowrate_coal_raw[t]*b.SR[t])**2)',
-        8: '(30738.3 * b.wall_temperature_waterwall[t, 1] \
+            +2634.71 * (b.flowrate_coal_raw[t]*b.SR[t])**2)",
+    8: "(30738.3 * b.wall_temperature_waterwall[t, 1] \
             +635.315 * b.wall_temperature_waterwall[t, 2] \
             -737.628 * b.wall_temperature_waterwall[t, 3] \
             +613.096 * b.wall_temperature_waterwall[t, 4] \
@@ -677,8 +677,8 @@ data_dic = {
             +28243.5 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**2 \
             -834.918 * (b.flowrate_coal_raw[t]*b.SR[t])**2 \
             -0.00281944 * (b.flowrate_coal_raw[t]*b.secondary_air_inlet.temperature[t])**2 \
-            +23.2033 * (b.flowrate_coal_raw[t]*b.SR[t])**3)',
-        9: '(1554.78 * b.wall_temperature_waterwall[t, 1] \
+            +23.2033 * (b.flowrate_coal_raw[t]*b.SR[t])**3)",
+    9: "(1554.78 * b.wall_temperature_waterwall[t, 1] \
             +292.513 * b.wall_temperature_waterwall[t, 2] \
             -686.842 * b.wall_temperature_waterwall[t, 3] \
             +504.056 * b.wall_temperature_waterwall[t, 4] \
@@ -765,8 +765,8 @@ data_dic = {
             -2.11316e-05 * (b.wall_temperature_waterwall[t, 11]*b.flowrate_coal_raw[t])**2 \
             +23969.4 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**2 \
             -2523.54 * (b.flowrate_coal_raw[t]*b.SR[t])**2 \
-            +31.1715 * (b.flowrate_coal_raw[t]*b.SR[t])**3)',
-        10: '(1837.36 * b.wall_temperature_waterwall[t, 1] \
+            +31.1715 * (b.flowrate_coal_raw[t]*b.SR[t])**3)",
+    10: "(1837.36 * b.wall_temperature_waterwall[t, 1] \
             +729.997 * b.wall_temperature_waterwall[t, 2] \
             -230.755 * b.wall_temperature_waterwall[t, 3] \
             +862.309 * b.wall_temperature_waterwall[t, 4] \
@@ -838,8 +838,8 @@ data_dic = {
             +26897.5 * (b.flowrate_coal_raw[t]*b.mf_H2O_coal_raw[t])**2 \
             -3926.81 * (b.flowrate_coal_raw[t]*b.SR[t])**2 \
             -6.04217e-05 * (b.wall_temperature_waterwall[t, 4]*b.SR[t])**3 \
-            +39.5236 * (b.flowrate_coal_raw[t]*b.SR[t])**3)',
-        11: '(265.482 * b.wall_temperature_waterwall[t, 1] \
+            +39.5236 * (b.flowrate_coal_raw[t]*b.SR[t])**3)",
+    11: "(265.482 * b.wall_temperature_waterwall[t, 1] \
             +24.2531 * b.wall_temperature_waterwall[t, 2] \
             -632.925 * b.wall_temperature_waterwall[t, 3] \
             +114.247 * b.wall_temperature_waterwall[t, 4] \
@@ -934,8 +934,8 @@ data_dic = {
             -0.000797508 * (b.flowrate_coal_raw[t]*b.secondary_air_inlet.temperature[t])**2 \
             +16.1006 * (b.flowrate_coal_raw[t]*b.ratio_PA2coal[t])**2 \
             -0.0417793 * (b.wall_temperature_waterwall[t, 6]*b.mf_H2O_coal_raw[t])**3 \
-            +19.1183 * (b.flowrate_coal_raw[t]*b.SR[t])**3)',
-        12: '(220.386 * b.wall_temperature_waterwall[t, 1] \
+            +19.1183 * (b.flowrate_coal_raw[t]*b.SR[t])**3)",
+    12: "(220.386 * b.wall_temperature_waterwall[t, 1] \
             +67.4508 * b.wall_temperature_waterwall[t, 2] \
             -53.5201 * b.wall_temperature_waterwall[t, 3] \
             +168.186 * b.wall_temperature_waterwall[t, 4] \
@@ -1029,8 +1029,8 @@ data_dic = {
             +3.15989e+06 * (b.mf_H2O_coal_raw[t]*b.SR[t])**2 \
             +1.25506 * (b.SR[t]*b.secondary_air_inlet.temperature[t])**2 \
             -0.000219682 * (b.wall_temperature_waterwall[t, 12]*b.SR_lf[t])**3 \
-            +14.8923 * (b.flowrate_coal_raw[t]*b.SR[t])**3)',
-        'pl': '(411941 * b.wall_temperature_waterwall[t, 1] \
+            +14.8923 * (b.flowrate_coal_raw[t]*b.SR[t])**3)",
+    "pl": "(411941 * b.wall_temperature_waterwall[t, 1] \
             +2599.73 * b.wall_temperature_waterwall[t, 2] \
             -946.452 * b.wall_temperature_waterwall[t, 3] \
             +3366.98 * b.wall_temperature_waterwall[t, 4] \
@@ -1129,8 +1129,8 @@ data_dic = {
             +19.4424 * (b.SR[t]*b.secondary_air_inlet.temperature[t])**2 \
             -0.0016092 * (b.wall_temperature_waterwall[t, 4]*b.SR[t])**3 \
             -0.0295869 * (b.wall_temperature_platen[t]*b.SR[t])**3 \
-            +127.257 * (b.flowrate_coal_raw[t]*b.SR[t])**3)',
-        'roof': '(279.354 * b.wall_temperature_waterwall[t, 1] \
+            +127.257 * (b.flowrate_coal_raw[t]*b.SR[t])**3)",
+    "roof": "(279.354 * b.wall_temperature_waterwall[t, 1] \
             +142.292 * b.wall_temperature_waterwall[t, 2] \
             -82.9421 * b.wall_temperature_waterwall[t, 3] \
             +273.335 * b.wall_temperature_waterwall[t, 4] \
@@ -1223,8 +1223,8 @@ data_dic = {
             +5.86754e+06 * (b.mf_H2O_coal_raw[t]*b.SR[t])**2 \
             +9.71079e+06 * (b.SR[t]*b.SR_lf[t])**2 \
             +2.31621 * (b.SR[t]*b.secondary_air_inlet.temperature[t])**2 \
-            +22.1927 * (b.flowrate_coal_raw[t]*b.SR[t])**3)',
-        'flyash': '(exp(7.78102e-05 * b.wall_temperature_waterwall[t, 1] \
+            +22.1927 * (b.flowrate_coal_raw[t]*b.SR[t])**3)",
+    "flyash": "(exp(7.78102e-05 * b.wall_temperature_waterwall[t, 1] \
             -7.54006e-05 * b.wall_temperature_waterwall[t, 2] \
             -3.89992e-05 * b.wall_temperature_waterwall[t, 3] \
             +0.000219719 * b.wall_temperature_waterwall[t, 4] \
@@ -1281,8 +1281,8 @@ data_dic = {
             +1.80036e-06 * (b.wall_temperature_platen[t]*b.mf_H2O_coal_raw[t])**2 \
             -0.000659596 * (b.flowrate_coal_raw[t]*b.SR[t])**2 \
             +0.00333862 * (b.flowrate_coal_raw[t]*b.SR_lf[t])**2 \
-            +1.22954e-09 * (b.flowrate_coal_raw[t]*b.secondary_air_inlet.temperature[t])**2))',
-        'NOx': '(-0.00436267 * b.wall_temperature_waterwall[t, 1] \
+            +1.22954e-09 * (b.flowrate_coal_raw[t]*b.secondary_air_inlet.temperature[t])**2))",
+    "NOx": "(-0.00436267 * b.wall_temperature_waterwall[t, 1] \
             -0.0254073 * b.wall_temperature_waterwall[t, 2] \
             +0.0510658 * b.wall_temperature_waterwall[t, 3] \
             -0.0639424 * b.wall_temperature_waterwall[t, 4] \
@@ -1329,6 +1329,5 @@ data_dic = {
             +2.61054 * b.SR_lf[t]*b.secondary_air_inlet.temperature[t] \
             -0.000160638 * (b.wall_temperature_waterwall[t, 3]*b.SR_lf[t])**2 \
             -0.161015 * (b.flowrate_coal_raw[t]*b.SR[t])**2 \
-            -2.63321 * (b.flowrate_coal_raw[t]*b.SR_lf[t])**2)'
-            }
-
+            -2.63321 * (b.flowrate_coal_raw[t]*b.SR_lf[t])**2)",
+}

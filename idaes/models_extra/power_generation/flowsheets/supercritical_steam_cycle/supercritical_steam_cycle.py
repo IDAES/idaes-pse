@@ -39,19 +39,24 @@ from idaes.models_extra.power_generation.unit_models.helm import (
     HelmMixer,
     HelmIsentropicCompressor,
     HelmTurbineStage,
-    HelmNtuCondenser as Condenser
+    HelmNtuCondenser as Condenser,
 )
 from idaes.models_extra.power_generation.unit_models import FWH0D
 from idaes.generic_models.unit_models import (  # basic IDAES unit models, and enum
     HeatExchanger,
     MomentumMixingType,  # Enum type for mixer pressure calculation selection
 )
-from idaes.core.util import get_solver, copy_port_values as _set_port  # for model intialization
+from idaes.core.util import (
+    get_solver,
+    copy_port_values as _set_port,
+)  # for model intialization
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
 
 # Callback used to construct heat exchangers with the Underwood approx. for LMTD
-from idaes.generic_models.unit_models.heat_exchanger import delta_temperature_underwood_callback
+from idaes.generic_models.unit_models.heat_exchanger import (
+    delta_temperature_underwood_callback,
+)
 
 # Pressure changer type (e.g. adiabatic, pump, isentropic...)
 from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
@@ -133,8 +138,7 @@ def create_model():
 
     # Create a variable for pressure change in the reheater (assuming
     # reheat_delta_p should be negative).
-    m.fs.turb.reheat_delta_p = pyo.Var(
-        m.fs.time, initialize=0, units=pyo.units.Pa)
+    m.fs.turb.reheat_delta_p = pyo.Var(m.fs.time, initialize=0, units=pyo.units.Pa)
 
     # Add a constraint to calculate the IP section inlet pressure based on the
     # pressure drop in the reheater and the outlet pressure of the HP section.
@@ -147,8 +151,7 @@ def create_model():
 
     # Create a variable for reheat temperature and fix it to the desired reheater
     # outlet temperature
-    m.fs.turb.reheat_out_T = pyo.Var(
-        m.fs.time, initialize=866, units=pyo.units.K)
+    m.fs.turb.reheat_out_T = pyo.Var(m.fs.time, initialize=866, units=pyo.units.K)
 
     # Create a constraint for the IP section inlet temperature.
     @m.fs.turb.Constraint(m.fs.time)
@@ -181,6 +184,7 @@ def create_model():
     @m.fs.condenser_mix.Constraint(m.fs.time)
     def mixer_pressure_constraint(b, t):
         return b.main_state[t].pressure == b.mixed_state[t].pressure
+
     # PYLINT-TODO the name "mixer_pressure_constraint" is reused below to define other constraint functions,
     # causing pylint to report function-redefined errors
     # this likely does not actually cause issues at runtime,
@@ -194,13 +198,17 @@ def create_model():
     # the mixer which contains temperature, pressure, and vapor fraction
     # quantities.
     m.fs.condenser_mix._flow_mol_ref = pyo.Reference(
-        m.fs.condenser_mix.mixed_state[:].flow_mol)
+        m.fs.condenser_mix.mixed_state[:].flow_mol
+    )
     m.fs.condenser_mix._temperature_ref = pyo.Reference(
-        m.fs.condenser_mix.mixed_state[:].temperature)
+        m.fs.condenser_mix.mixed_state[:].temperature
+    )
     m.fs.condenser_mix._pressure_ref = pyo.Reference(
-        m.fs.condenser_mix.mixed_state[:].pressure)
+        m.fs.condenser_mix.mixed_state[:].pressure
+    )
     m.fs.condenser_mix._vapor_frac_ref = pyo.Reference(
-        m.fs.condenser_mix.mixed_state[:].vapor_frac)
+        m.fs.condenser_mix.mixed_state[:].vapor_frac
+    )
 
     m.fs.condenser_mix.outlet_tpx = Port(
         initialize={
@@ -211,15 +219,17 @@ def create_model():
         }
     )
 
-
     # Add NTU condenser model
     m.fs.condenser = Condenser(
-        default={"dynamic": False,
-                 "shell": {"has_pressure_change": False,
-                           "property_package": m.fs.prop_water},
-                 "tube": {"has_pressure_change": False,
-                          "property_package": m.fs.prop_water}
-                 })
+        default={
+            "dynamic": False,
+            "shell": {
+                "has_pressure_change": False,
+                "property_package": m.fs.prop_water,
+            },
+            "tube": {"has_pressure_change": False, "property_package": m.fs.prop_water},
+        }
+    )
 
     # Add the condenser hotwell.  In steady state a mixer will work.  This is
     # where makeup water is added if needed.
@@ -238,7 +248,8 @@ def create_model():
 
     # Condensate pump (Use compressor model, since it is more robust if vapor form)
     m.fs.cond_pump = HelmIsentropicCompressor(
-        default={"property_package": m.fs.prop_water})
+        default={"property_package": m.fs.prop_water}
+    )
     ############################################################################
     #  Add low pressure feedwater heaters                                      #
     ############################################################################
@@ -262,7 +273,8 @@ def create_model():
     )
     # pump for fwh1 condensate, to pump it ahead and mix with feedwater
     m.fs.fwh1_pump = HelmIsentropicCompressor(
-        default={"property_package": m.fs.prop_water})
+        default={"property_package": m.fs.prop_water}
+    )
     # Mix the FWH1 drain back into the feedwater
     m.fs.fwh1_return = HelmMixer(
         default={
@@ -330,11 +342,9 @@ def create_model():
         return b.feedwater_state[t].pressure == b.mixed_state[t].pressure
 
     # Add the boiler feed pump and boiler feed pump turbine
-    m.fs.bfp = HelmIsentropicCompressor(
-        default={"property_package": m.fs.prop_water})
+    m.fs.bfp = HelmIsentropicCompressor(default={"property_package": m.fs.prop_water})
 
-    m.fs.bfpt = HelmTurbineStage(
-        default={"property_package": m.fs.prop_water})
+    m.fs.bfpt = HelmTurbineStage(default={"property_package": m.fs.prop_water})
 
     # The boiler feed pump outlet pressure is the same as the condenser
     @m.fs.Constraint(m.fs.time)
@@ -353,8 +363,8 @@ def create_model():
     def constraint_out_enthalpy(b, t):
         return (
             b.bfpt.control_volume.properties_out[t].enth_mol
-            == b.bfpt.control_volume.properties_out[t].enth_mol_sat_phase["Vap"] -
-            200*pyo.units.J/pyo.units.mol
+            == b.bfpt.control_volume.properties_out[t].enth_mol_sat_phase["Vap"]
+            - 200 * pyo.units.J / pyo.units.mol
         )
 
     # The boiler feed pump power is the same as the power generated by the
@@ -667,7 +677,7 @@ def set_model_input(m):
     m.fs.condenser.area.fix(13000)
     m.fs.condenser.overall_heat_transfer_coefficient.fix(15000)
 
-    m.fs.hotwell.makeup.flow_mol[:].value = 1 # don't fix is calculated
+    m.fs.hotwell.makeup.flow_mol[:].value = 1  # don't fix is calculated
     m.fs.hotwell.makeup.enth_mol.fix(2500)
     m.fs.hotwell.makeup.pressure.fix(101325)
     m.fs.cond_pump.efficiency_isentropic.fix(0.80)
@@ -683,7 +693,7 @@ def set_model_input(m):
     m.fs.fwh1.condense.overall_heat_transfer_coefficient.fix(2000)
     # fwh1 pump
     m.fs.fwh1_pump.efficiency_isentropic.fix(0.80)
-    m.fs.fwh1_pump.deltaP.fix(1.2e6) # need pressure higher than feedwater
+    m.fs.fwh1_pump.deltaP.fix(1.2e6)  # need pressure higher than feedwater
     # fwh2
     m.fs.fwh2.condense.area.fix(150)
     m.fs.fwh2.condense.overall_heat_transfer_coefficient.fix(2000)
@@ -709,8 +719,8 @@ def set_model_input(m):
     #  Deaerator and boiler feed pump (BFP) input                              #
     ############################################################################
     m.fs.bfp.efficiency_isentropic.fix(0.80)
-    m.fs.bfp.outlet.pressure[:].value = main_steam_pressure * 1.1 # guess
-    m.fs.bfpt.efficiency_isentropic.value = 0.80 #don't fix, just initial guess
+    m.fs.bfp.outlet.pressure[:].value = main_steam_pressure * 1.1  # guess
+    m.fs.bfpt.efficiency_isentropic.value = 0.80  # don't fix, just initial guess
     ############################################################################
     #  High-pressure feedwater heater                                          #
     ############################################################################
@@ -739,7 +749,7 @@ def set_model_input(m):
 
 
 def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
-    """ Initialize a mode from create_model(), set model inputs before
+    """Initialize a mode from create_model(), set model inputs before
     initializing.
 
     Args:
@@ -754,7 +764,7 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     init_log = idaeslog.getInitLogger(m.name, outlvl, tag="flowsheet")
     solve_log = idaeslog.getSolveLogger(m.name, outlvl, tag="flowsheet")
 
-    #set scaling factors
+    # set scaling factors
 
     iscale.set_scaling_factor(m.fs.condenser.side_1.heat, 1e-9)
     iscale.set_scaling_factor(m.fs.condenser.side_2.heat, 1e-9)
@@ -781,7 +791,6 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     iscale.set_scaling_factor(m.fs.fwh8.condense.side_2.heat, 1e-7)
 
     iscale.calculate_scaling_factors(m)
-
 
     solver = get_solver()
 
@@ -810,8 +819,7 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     # Put in a rough initial guess for the IP section inlet, since it is
     # disconnected from the HP section for the reheater.
     ip1_pin = 5.35e6
-    ip1_hin = pyo.value(iapws95.htpx(
-        T=866*pyo.units.K, P=ip1_pin*pyo.units.Pa))
+    ip1_hin = pyo.value(iapws95.htpx(T=866 * pyo.units.K, P=ip1_pin * pyo.units.Pa))
     ip1_fin = pyo.value(m.fs.turb.inlet_split.inlet.flow_mol[0])
     m.fs.turb.ip_stages[1].inlet.enth_mol[:].value = ip1_hin
     m.fs.turb.ip_stages[1].inlet.flow_mol[:].value = ip1_fin
@@ -953,8 +961,8 @@ def pfd_result(m, df, svg):
     Returns:
         (str): SVG content.
     """
-    tags = {} # dict of tags and data to insert into SVG
-    for i in df.index: # Create entires for streams
+    tags = {}  # dict of tags and data to insert into SVG
+    for i in df.index:  # Create entires for streams
         tags[i + "_F"] = df.loc[i, "Molar Flow (mol/s)"]
         tags[i + "_T"] = df.loc[i, "T (K)"]
         tags[i + "_P"] = df.loc[i, "P (Pa)"]
@@ -976,7 +984,7 @@ def pfd_result(m, df, svg):
 
 
 def main(initialize_from_file=None, store_initialization=None):
-    """ Create and initalize a model and solver
+    """Create and initalize a model and solver
 
     Args:
         None
@@ -1002,7 +1010,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--initialize_from_file",
         help="File from which to load initialized values. If specified, the "
-             "initialization proceedure will be skipped.",
+        "initialization proceedure will be skipped.",
         default=None,
     )
     parser.add_argument(

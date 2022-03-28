@@ -22,6 +22,7 @@ from idaes.core.util import get_solver
 
 solver = get_solver()
 
+
 @pytest.mark.unit
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_condenser_steady():
@@ -53,11 +54,12 @@ def test_condenser_steady():
     m.fs.unit.area.fix(1000)
     m.fs.unit.overall_heat_transfer_coefficient.fix(500)
 
-    m.fs.unit.initialize(unfix='pressure')
+    m.fs.unit.initialize(unfix="pressure")
     solver.solve(m)
 
-    assert (pyo.value(m.fs.unit.shell_inlet.pressure[0]) ==
-        pytest.approx(14036.3360, rel=1e-2))
+    assert pyo.value(m.fs.unit.shell_inlet.pressure[0]) == pytest.approx(
+        14036.3360, rel=1e-2
+    )
 
 
 @pytest.mark.unit
@@ -65,7 +67,8 @@ def test_condenser_steady():
 def test_condenser_dynamic():
     m = pyo.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock(
-        default={"dynamic": True, "time_set":[0,3], "time_units": pyo.units.s})
+        default={"dynamic": True, "time_set": [0, 3], "time_units": pyo.units.s}
+    )
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = HelmNtuCondenser(
         default={
@@ -81,8 +84,9 @@ def test_condenser_dynamic():
         }
     )
 
-    pyo.TransformationFactory('dae.finite_difference').apply_to(
-        m.fs, nfe=4, wrt=m.fs.time, scheme='BACKWARD')
+    pyo.TransformationFactory("dae.finite_difference").apply_to(
+        m.fs, nfe=4, wrt=m.fs.time, scheme="BACKWARD"
+    )
 
     m.fs.unit.shell_inlet.flow_mol.fix(100)
     m.fs.unit.shell_inlet.pressure[:] = 9000
@@ -95,9 +99,10 @@ def test_condenser_dynamic():
     m.fs.unit.area.fix(1000)
     m.fs.unit.overall_heat_transfer_coefficient.fix(500)
 
-    m.fs.unit.initialize(unfix='pressure')
+    m.fs.unit.initialize(unfix="pressure")
     solver.solve(m)
 
     for t in m.fs.unit.shell_inlet.pressure:
-        assert (pyo.value(m.fs.unit.shell_inlet.pressure[t]) ==
-            pytest.approx(14036.3360, rel=1e-2))
+        assert pyo.value(m.fs.unit.shell_inlet.pressure[t]) == pytest.approx(
+            14036.3360, rel=1e-2
+        )

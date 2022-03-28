@@ -23,15 +23,12 @@ def test_splitter():
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = HelmSplitter(
-        default={
-            "property_package": m.fs.properties,
-            "outlet_list": ["o1", "o2", "o3"]
-        }
+        default={"property_package": m.fs.properties, "outlet_list": ["o1", "o2", "o3"]}
     )
 
-    Fin = 1e4 # mol/s
-    hin = 4000 # J/mol
-    Pin = 101325 # Pa
+    Fin = 1e4  # mol/s
+    hin = 4000  # J/mol
+    Pin = 101325  # Pa
 
     m.fs.unit.inlet.flow_mol[0].fix(Fin)
     m.fs.unit.inlet.enth_mol[0].fix(hin)
@@ -41,9 +38,9 @@ def test_splitter():
 
     m.fs.unit.initialize()
 
-    assert pyo.value(m.fs.unit.o1.flow_mol[0]) == pytest.approx(1e4*0.5, rel=1e-7)
-    assert pyo.value(m.fs.unit.o2.flow_mol[0]) == pytest.approx(1e4*0.3, rel=1e-7)
-    assert pyo.value(m.fs.unit.o3.flow_mol[0]) == pytest.approx(1e4*0.2, rel=1e-7)
+    assert pyo.value(m.fs.unit.o1.flow_mol[0]) == pytest.approx(1e4 * 0.5, rel=1e-7)
+    assert pyo.value(m.fs.unit.o2.flow_mol[0]) == pytest.approx(1e4 * 0.3, rel=1e-7)
+    assert pyo.value(m.fs.unit.o3.flow_mol[0]) == pytest.approx(1e4 * 0.2, rel=1e-7)
     assert pyo.value(m.fs.unit.o1.pressure[0]) == pytest.approx(101325, rel=1e-7)
     assert pyo.value(m.fs.unit.o2.pressure[0]) == pytest.approx(101325, rel=1e-7)
     assert pyo.value(m.fs.unit.o3.pressure[0]) == pytest.approx(101325, rel=1e-7)

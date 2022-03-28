@@ -21,7 +21,9 @@ __Author__ = "John Eslick"
 
 from pyomo.environ import Var, sqrt, value, SolverFactory, units as pyunits
 from idaes.core import declare_process_block_class
-from idaes.models_extra.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
+from idaes.models_extra.power_generation.unit_models.helm.turbine import (
+    HelmIsentropicTurbineData,
+)
 from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -44,26 +46,20 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
             self.flowsheet().time,
             initialize=1.053 / 3600.0,
             doc="Turbine flow coefficient [kg*C^0.5/Pa/s]",
-            units=pyunits.kg*pyunits.K**0.5/pyunits.Pa/pyunits.s
+            units=pyunits.kg * pyunits.K**0.5 / pyunits.Pa / pyunits.s,
         )
-        self.blade_reaction = Var(
-            initialize=0.9,
-            doc="Blade reaction parameter"
-        )
+        self.blade_reaction = Var(initialize=0.9, doc="Blade reaction parameter")
         self.blade_velocity = Var(
             initialize=110.0,
             doc="Design blade velocity [m/s]",
-            units=pyunits.m/pyunits.s
+            units=pyunits.m / pyunits.s,
         )
         self.eff_nozzle = Var(
             initialize=0.95,
             bounds=(0.0, 1.0),
             doc="Nozzel efficiency (typically 0.90 to 0.95)",
         )
-        self.efficiency_mech = Var(
-            initialize=1.0,
-            doc="Turbine mechanical efficiency"
-        )
+        self.efficiency_mech = Var(initialize=1.0, doc="Turbine mechanical efficiency")
 
         self.eff_nozzle.fix()
         self.blade_reaction.fix()
@@ -83,7 +79,9 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
             # b.delta_enth_isentropic[t] = -(hin - hiesn), the mw converts
             # enthalpy to a mass basis
             return 1.414 * sqrt(
-                (b.blade_reaction - 1)*b.delta_enth_isentropic[t]*self.eff_nozzle
+                (b.blade_reaction - 1)
+                * b.delta_enth_isentropic[t]
+                * self.eff_nozzle
                 / b.control_volume.properties_in[t].mw
             )
 
@@ -91,10 +89,9 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         def efficiency_isentropic_expr(b, t):
             Vr = b.blade_velocity / b.steam_entering_velocity[t]
             R = b.blade_reaction
-            return 2*Vr*((sqrt(1 - R) - Vr) + sqrt((sqrt(1 - R) - Vr)**2 + R))
+            return 2 * Vr * ((sqrt(1 - R) - Vr) + sqrt((sqrt(1 - R) - Vr) ** 2 + R))
 
-        @self.Constraint(
-            self.flowsheet().time, doc="Equation: Turbine inlet flow")
+        @self.Constraint(self.flowsheet().time, doc="Equation: Turbine inlet flow")
         def inlet_flow_constraint(b, t):
             # Some local vars to make the equation more readable
             g = b.control_volume.properties_in[t].heat_capacity_ratio
@@ -105,9 +102,13 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
             Pin = b.control_volume.properties_in[t].pressure
             Pratio = b.ratioP[t]
 
-            return flow ** 2 * mw ** 2 * Tin == (
-                cf ** 2 * Pin ** 2 * g / (g - 1)
-                    * (Pratio ** (2.0 / g) - Pratio ** ((g + 1) / g)))
+            return flow**2 * mw**2 * Tin == (
+                cf**2
+                * Pin**2
+                * g
+                / (g - 1)
+                * (Pratio ** (2.0 / g) - Pratio ** ((g + 1) / g))
+            )
 
         @self.Constraint(self.flowsheet().time, doc="Equation: Efficiency")
         def efficiency_correlation(b, t):
@@ -120,7 +121,6 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         @self.Expression(self.flowsheet().time, doc="Shaft power [J/s]")
         def power_shaft(b, t):
             return b.power_thermo[t] * b.efficiency_mech
-
 
     def initialize_build(
         self,
@@ -180,9 +180,17 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
                 Pin = self.control_volume.properties_in[t].pressure
                 Pratio = self.ratioP[t]
                 self.flow_coeff[t].value = value(
-                    flow * mw * sqrt(
-                        Tin/(g/(g - 1) *(Pratio**(2.0/g) - Pratio**((g + 1)/g)))
-                    )/Pin
+                    flow
+                    * mw
+                    * sqrt(
+                        Tin
+                        / (
+                            g
+                            / (g - 1)
+                            * (Pratio ** (2.0 / g) - Pratio ** ((g + 1) / g))
+                        )
+                    )
+                    / Pin
                 )
 
         # Create solver
@@ -190,8 +198,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
-        init_log.info("Initialization Complete: {}".format(
-            idaeslog.condition(res)))
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
         # reload original spec
         if calculate_cf:
             cf = {}
@@ -208,6 +215,8 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         for t, c in self.inlet_flow_constraint.items():
-            s = iscale.get_scaling_factor(
-                self.control_volume.properties_in[t].flow_mol)**2
+            s = (
+                iscale.get_scaling_factor(self.control_volume.properties_in[t].flow_mol)
+                ** 2
+            )
             iscale.constraint_scaling_transform(c, s, overwrite=False)

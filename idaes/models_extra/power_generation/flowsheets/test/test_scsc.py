@@ -20,9 +20,13 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle import main
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              activated_equalities_generator)
+from idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle import (
+    main,
+)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    activated_equalities_generator,
+)
 from idaes.generic_models.properties import iapws95
 
 
@@ -36,15 +40,15 @@ def model():
 
 def gross_power_mw(model):
     # pyo.value(m.fs.turb.power[0]) is the power consumed in Watts
-    return -pyo.value(model.fs.turb.power[0])/1e6
+    return -pyo.value(model.fs.turb.power[0]) / 1e6
 
 
 @pytest.mark.integration
 def test_init(model):
     # check that the model solved properly and has 0 degrees of freedom
-    assert(degrees_of_freedom(model) == 0)
+    assert degrees_of_freedom(model) == 0
     for c in activated_equalities_generator(model):
-        assert(abs(c.body() - c.lower) < 5e-4)
+        assert abs(c.body() - c.lower) < 5e-4
 
 
 # @pytest.mark.integration

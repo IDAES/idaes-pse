@@ -34,12 +34,12 @@ from idaes.models_extra.power_generation.unit_models.helm import (
     HelmValve as WaterValve,
     HelmIsentropicCompressor as WaterPump,
     HelmSplitter as Separator,
-    HelmNtuCondenser as Condenser
+    HelmNtuCondenser as Condenser,
 )
 from idaes.models_extra.power_generation.unit_models import (
     WaterTank,
     FWH0DDynamic as FWH0D,
-    )
+)
 from idaes.models_extra.power_generation.control.pid_controller import PIDController
 
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -48,8 +48,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties import iapws95
-from idaes.core.util.dyn_utils import copy_values_at_time,\
-    copy_non_time_indexed_values
+from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
 
 __author__ = "J. Ma, M. Zamarripa, J. Eslick"
 
@@ -62,14 +61,10 @@ def add_unit_models(m):
     # Custom valve function for throttle valve
     def throttle_valve_function(blk):
         blk.Cv.fix(1)
-        a = blk.vfa = pyo.Var(initialize=2.8904E-02,
-                              doc="Valve function parameter a")
-        b = blk.vfb = pyo.Var(initialize=3.3497E-02,
-                              doc="Valve function parameter b")
-        c = blk.vfc = pyo.Var(initialize=1.4514E-02,
-                              doc="Valve function parameter c")
-        d = blk.vfd = pyo.Var(initialize=1.4533E-03,
-                              doc="Valve function parameter d")
+        a = blk.vfa = pyo.Var(initialize=2.8904e-02, doc="Valve function parameter a")
+        b = blk.vfb = pyo.Var(initialize=3.3497e-02, doc="Valve function parameter b")
+        c = blk.vfc = pyo.Var(initialize=1.4514e-02, doc="Valve function parameter c")
+        d = blk.vfd = pyo.Var(initialize=1.4533e-03, doc="Valve function parameter d")
         a.fix()
         b.fix()
         c.fix()
@@ -78,58 +73,60 @@ def add_unit_models(m):
 
         @blk.Expression(m.fs_main.time)
         def valve_function(bd, t):
-            return a*o[t]**3 - b*o[t]**2 + c*o[t] - d
+            return a * o[t] ** 3 - b * o[t] ** 2 + c * o[t] - d
 
     # Unit model for multistage turbine including throttle valve
     fs.turb = TurbineMultistage(
-        default={"dynamic": False,
-                 "property_package": prop_water,
-                 "num_parallel_inlet_stages": 1,
-                 "throttle_valve_function": ValveFunctionType.custom,
-                 "throttle_valve_function_callback": throttle_valve_function,
-                 "num_hp": 14,
-                 "num_ip": 9,
-                 "num_lp": 5,
-                 "hp_split_locations": [14],
-                 "ip_split_locations": [6, 9],
-                 "lp_split_locations": [2, 4, 5],
-                 "hp_disconnect": [14],  # 14 is last hp stage
-                 "hp_split_num_outlets": {14: 2},
-                 "ip_split_num_outlets": {9: 3}
-                 })
+        default={
+            "dynamic": False,
+            "property_package": prop_water,
+            "num_parallel_inlet_stages": 1,
+            "throttle_valve_function": ValveFunctionType.custom,
+            "throttle_valve_function_callback": throttle_valve_function,
+            "num_hp": 14,
+            "num_ip": 9,
+            "num_lp": 5,
+            "hp_split_locations": [14],
+            "ip_split_locations": [6, 9],
+            "lp_split_locations": [2, 4, 5],
+            "hp_disconnect": [14],  # 14 is last hp stage
+            "hp_split_num_outlets": {14: 2},
+            "ip_split_num_outlets": {9: 3},
+        }
+    )
 
     # Unit model for regulating valve of BFPT (boiler feed pump turbine)
     fs.bfp_turb_valve = SteamValve(
-        default={"dynamic": False,
-                 "property_package": prop_water})
+        default={"dynamic": False, "property_package": prop_water}
+    )
 
     # Unit model for main stage of BFPT
     fs.bfp_turb = TurbineStage(
-        default={"dynamic": False,
-                 "property_package": prop_water})
+        default={"dynamic": False, "property_package": prop_water}
+    )
 
     # Unit model for outlet stage of BFPT
     fs.bfp_turb_os = TurbineOutletStage(
-        default={"dynamic": False,
-                 "property_package": prop_water})
+        default={"dynamic": False, "property_package": prop_water}
+    )
 
     # Unit model for main condenser
     fs.condenser = Condenser(
-        default={"dynamic": False,
-                 "shell": {"has_pressure_change": False,
-                           "property_package": prop_water},
-                 "tube": {"has_pressure_change": False,
-                          "property_package": prop_water}
-                 })
+        default={
+            "dynamic": False,
+            "shell": {"has_pressure_change": False, "property_package": prop_water},
+            "tube": {"has_pressure_change": False, "property_package": prop_water},
+        }
+    )
 
     # Unit model for auxiliary condenser
     fs.aux_condenser = Condenser(
-        default={"dynamic": False,
-                 "shell": {"has_pressure_change": False,
-                           "property_package": prop_water},
-                 "tube": {"has_pressure_change": False,
-                          "property_package": prop_water}
-                 })
+        default={
+            "dynamic": False,
+            "shell": {"has_pressure_change": False, "property_package": prop_water},
+            "tube": {"has_pressure_change": False, "property_package": prop_water},
+        }
+    )
 
     # Unit model for condenser hotwell (hotwell tank modeled separately)
     # Modeled as a mixer of makeup, main, and auxiliary condenser water streams
@@ -138,95 +135,129 @@ def add_unit_models(m):
     # We impose the constraints to let the mixed pressure equal to
     # the main condenser pressure and makeup water pressure
     fs.condenser_hotwell = Mixer(
-        default={"dynamic": False,
-                 "momentum_mixing_type": MomentumMixingType.none,
-                 "inlet_list": ["main_condensate", "makeup", "aux_condensate"],
-                 "property_package": prop_water})
+        default={
+            "dynamic": False,
+            "momentum_mixing_type": MomentumMixingType.none,
+            "inlet_list": ["main_condensate", "makeup", "aux_condensate"],
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for water control valve between makeup tank and hotwell
     fs.makeup_valve = WaterValve(
-        default={"dynamic": False,
-                 "has_holdup": False,
-                 "phase": "Liq",
-                 "property_package": prop_water})
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "phase": "Liq",
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for hotwell tank with holdup for dynamic model
     # Modeled as a simple tank with constant cross section area and tank level
     fs.hotwell_tank = WaterTank(
-        default={"tank_type": "simple_tank",
-                 "has_holdup": True,
-                 "property_package": prop_water})
+        default={
+            "tank_type": "simple_tank",
+            "has_holdup": True,
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for condensate pump
-    fs.cond_pump = WaterPump(
-        default={"dynamic": False,
-                 "property_package": prop_water})
+    fs.cond_pump = WaterPump(default={"dynamic": False, "property_package": prop_water})
 
     # Unit model for water control valve after hotwell tank
     # Used to control deaerator level
     fs.cond_valve = WaterValve(
-        default={"dynamic": False,
-                 "has_holdup": False,
-                 "phase": "Liq",
-                 "property_package": prop_water})
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "phase": "Liq",
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for feed water heater 1
     fs.fwh1 = FWH0D(
-        default={"has_desuperheat": False,
-                 "has_drain_cooling": False,
-                 "has_drain_mixer": True,
-                 "condense": {"tube": {"has_pressure_change": True},
-                              "shell": {"has_pressure_change": True},
-                              "has_holdup": True},
-                 "property_package": prop_water})
+        default={
+            "has_desuperheat": False,
+            "has_drain_cooling": False,
+            "has_drain_mixer": True,
+            "condense": {
+                "tube": {"has_pressure_change": True},
+                "shell": {"has_pressure_change": True},
+                "has_holdup": True,
+            },
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for drain pump of FWH1
     fs.fwh1_drain_pump = WaterPump(
-        default={"dynamic": False,
-                 "property_package": prop_water})
+        default={"dynamic": False, "property_package": prop_water}
+    )
 
     # Unit model for mixer of FWH1 drain and condensate
     fs.fwh1_drain_return = Mixer(
-        default={"dynamic": False,
-                 "inlet_list": ["feedwater", "fwh1_drain"],
-                 "property_package": prop_water,
-                 "momentum_mixing_type": MomentumMixingType.equality})
+        default={
+            "dynamic": False,
+            "inlet_list": ["feedwater", "fwh1_drain"],
+            "property_package": prop_water,
+            "momentum_mixing_type": MomentumMixingType.equality,
+        }
+    )
 
     # Unit model for feed water heater 2
     fs.fwh2 = FWH0D(
-        default={"has_desuperheat": False,
-                 "has_drain_cooling": True,
-                 "has_drain_mixer": True,
-                 "condense": {"tube": {"has_pressure_change": True},
-                              "shell": {"has_pressure_change": True},
-                              "has_holdup": True},
-                 "cooling": {"dynamic": False, "has_holdup": False},
-                 "property_package": prop_water})
+        default={
+            "has_desuperheat": False,
+            "has_drain_cooling": True,
+            "has_drain_mixer": True,
+            "condense": {
+                "tube": {"has_pressure_change": True},
+                "shell": {"has_pressure_change": True},
+                "has_holdup": True,
+            },
+            "cooling": {"dynamic": False, "has_holdup": False},
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for water control valve between drain of fwh2 and fwh1
     fs.fwh2_valve = WaterValve(
-        default={"dynamic": False,
-                 "has_holdup": False,
-                 "phase": "Liq",
-                 "property_package": prop_water})
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "phase": "Liq",
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for feed water heater 3
     fs.fwh3 = FWH0D(
-        default={"has_desuperheat": False,
-                 "has_drain_cooling": True,
-                 "has_drain_mixer": False,
-                 "condense": {"tube": {"has_pressure_change": True},
-                              "shell": {"has_pressure_change": True},
-                              "has_holdup": True},
-                 "cooling": {"dynamic": False, "has_holdup": False},
-                 "property_package": prop_water})
+        default={
+            "has_desuperheat": False,
+            "has_drain_cooling": True,
+            "has_drain_mixer": False,
+            "condense": {
+                "tube": {"has_pressure_change": True},
+                "shell": {"has_pressure_change": True},
+                "has_holdup": True,
+            },
+            "cooling": {"dynamic": False, "has_holdup": False},
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for control valve between drain of fwh3 and fwh2
     fs.fwh3_valve = WaterValve(
-        default={"dynamic": False,
-                 "has_holdup": False,
-                 "phase": "Liq",
-                 "property_package": prop_water})
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "phase": "Liq",
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for deaerator also known as fwh4
     # Modeled as mixer to mix extracted steam with condensate and drain
@@ -234,78 +265,102 @@ def add_unit_models(m):
     # Using MomentumMixingType.equality for momentum_mixing_type
     # deaerator tank modeled separately for holdup in dyyamic model
     fs.fwh4_deair = Mixer(
-        default={"dynamic": False,
-                 "momentum_mixing_type": MomentumMixingType.equality,
-                 "inlet_list": ["steam", "drain", "feedwater"],
-                 "property_package": prop_water})
+        default={
+            "dynamic": False,
+            "momentum_mixing_type": MomentumMixingType.equality,
+            "inlet_list": ["steam", "drain", "feedwater"],
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for deaerator water tank
     # Modeled as a horizontal cylindrical tank
     fs.da_tank = WaterTank(
-        default={"tank_type": "horizontal_cylindrical_tank",
-                 "has_holdup": True,
-                 "property_package": prop_water})
+        default={
+            "tank_type": "horizontal_cylindrical_tank",
+            "has_holdup": True,
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for electrical feedwater booster pump
-    fs.booster = WaterPump(
-        default={"dynamic": False,
-                 "property_package": prop_water})
+    fs.booster = WaterPump(default={"dynamic": False, "property_package": prop_water})
 
     # Unit model for main boiler feed water pump driven by steam turbine
-    fs.bfp = WaterPump(
-        default={"dynamic": False,
-                 "property_package": prop_water})
+    fs.bfp = WaterPump(default={"dynamic": False, "property_package": prop_water})
 
     # Unit model for splitter for spray water stream for main attemperator
     fs.split_attemp = Separator(
-        default={"dynamic": False,
-                 "property_package": prop_water,
-                 "outlet_list": ["FeedWater", "Spray"]})
+        default={
+            "dynamic": False,
+            "property_package": prop_water,
+            "outlet_list": ["FeedWater", "Spray"],
+        }
+    )
 
     # Unit model for attemperator spray control valve
     fs.spray_valve = WaterValve(
-        default={"dynamic": False,
-                 "has_holdup": False,
-                 "phase": "Liq",
-                 "property_package": prop_water})
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "phase": "Liq",
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for feed water heater 5
     fs.fwh5 = FWH0D(
-        default={"has_desuperheat": True,
-                 "has_drain_cooling": True,
-                 "has_drain_mixer": True,
-                 "condense": {"tube": {"has_pressure_change": True},
-                              "shell": {"has_pressure_change": True},
-                              "has_holdup": True},
-                 "desuperheat": {"dynamic": False},
-                 "cooling": {"dynamic": False, "has_holdup": False},
-                 "property_package": prop_water})
+        default={
+            "has_desuperheat": True,
+            "has_drain_cooling": True,
+            "has_drain_mixer": True,
+            "condense": {
+                "tube": {"has_pressure_change": True},
+                "shell": {"has_pressure_change": True},
+                "has_holdup": True,
+            },
+            "desuperheat": {"dynamic": False},
+            "cooling": {"dynamic": False, "has_holdup": False},
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for water control valve drain of fwh5 and deaerator
     fs.fwh5_valve = WaterValve(
-        default={"dynamic": False,
-                 "has_holdup": False,
-                 "phase": "Liq",
-                 "property_package": prop_water})
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "phase": "Liq",
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for feed water heater 6
     fs.fwh6 = FWH0D(
-        default={"has_desuperheat": True,
-                 "has_drain_cooling": True,
-                 "has_drain_mixer": False,
-                 "condense": {"tube": {"has_pressure_change": True},
-                              "shell": {"has_pressure_change": True},
-                              "has_holdup": True},
-                 "desuperheat": {"dynamic": False},
-                 "cooling": {"dynamic": False, "has_holdup": False},
-                 "property_package": prop_water})
+        default={
+            "has_desuperheat": True,
+            "has_drain_cooling": True,
+            "has_drain_mixer": False,
+            "condense": {
+                "tube": {"has_pressure_change": True},
+                "shell": {"has_pressure_change": True},
+                "has_holdup": True,
+            },
+            "desuperheat": {"dynamic": False},
+            "cooling": {"dynamic": False, "has_holdup": False},
+            "property_package": prop_water,
+        }
+    )
 
     # Unit model for water control valve between drain of fwh6 and fwh5
     fs.fwh6_valve = WaterValve(
-        default={"dynamic": False,
-                 "has_holdup": False,
-                 "phase": "Liq",
-                 "property_package": prop_water})
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "phase": "Liq",
+            "property_package": prop_water,
+        }
+    )
 
     # Important process variables, declared and used in PID controllers
     # Variable for main steam temperature
@@ -314,80 +369,95 @@ def add_unit_models(m):
     # Constraint to calculate main steam temperature
     @fs.Constraint(fs.time)
     def temperature_main_steam_eqn(b, t):
-        return b.temperature_main_steam[t] == b.turb.\
-            throttle_valve[1].control_volume.properties_in[t].temperature
+        return (
+            b.temperature_main_steam[t]
+            == b.turb.throttle_valve[1].control_volume.properties_in[t].temperature
+        )
 
     # Variable for gross power output in MW
-    fs.power_output = pyo.Var(fs.time,
-                              initialize=300,
-                              doc='gross power output in MW')
+    fs.power_output = pyo.Var(fs.time, initialize=300, doc="gross power output in MW")
 
     # Constraint to calculate gross power output
     @fs.Constraint(fs.time)
     def power_output_eqn(b, t):
-        return b.power_output[t] == -b.turb.power[t]/1e6
+        return b.power_output[t] == -b.turb.power[t] / 1e6
 
     if m.dynamic is True:
         # Add PID controllers if the flowsheet model is a dynamic model
         # PI controller to control level of fwh2
         fs.fwh2_ctrl = PIDController(
-            default={"pv": fs.fwh2.condense.level,
-                     "mv": fs.fwh2_valve.valve_opening,
-                     "type": 'PI'})
+            default={
+                "pv": fs.fwh2.condense.level,
+                "mv": fs.fwh2_valve.valve_opening,
+                "type": "PI",
+            }
+        )
 
         # PI controller to control level of fwh3
         fs.fwh3_ctrl = PIDController(
-            default={"pv": fs.fwh3.condense.level,
-                     "mv": fs.fwh3_valve.valve_opening,
-                     "type": 'PI'})
+            default={
+                "pv": fs.fwh3.condense.level,
+                "mv": fs.fwh3_valve.valve_opening,
+                "type": "PI",
+            }
+        )
 
         # PI controller to control level of fwh5
         fs.fwh5_ctrl = PIDController(
-            default={"pv": fs.fwh5.condense.level,
-                     "mv": fs.fwh5_valve.valve_opening,
-                     "type": 'PI'})
+            default={
+                "pv": fs.fwh5.condense.level,
+                "mv": fs.fwh5_valve.valve_opening,
+                "type": "PI",
+            }
+        )
 
         # PI controller to control level of fwh6
         fs.fwh6_ctrl = PIDController(
-            default={"pv": fs.fwh6.condense.level,
-                     "mv": fs.fwh6_valve.valve_opening,
-                     "type": 'PI'})
+            default={
+                "pv": fs.fwh6.condense.level,
+                "mv": fs.fwh6_valve.valve_opening,
+                "type": "PI",
+            }
+        )
 
         # PI controller to control level of deaerator tank
         fs.da_ctrl = PIDController(
-            default={"pv": fs.da_tank.tank_level,
-                     "mv": fs.cond_valve.valve_opening,
-                     "type": 'PI'})
+            default={
+                "pv": fs.da_tank.tank_level,
+                "mv": fs.cond_valve.valve_opening,
+                "type": "PI",
+            }
+        )
 
         # PI controller to control level of hotwell tank
         fs.makeup_ctrl = PIDController(
-            default={"pv": fs.hotwell_tank.tank_level,
-                     "mv": fs.makeup_valve.valve_opening,
-                     "type": 'PI',
-                     "bounded_output": True})
+            default={
+                "pv": fs.hotwell_tank.tank_level,
+                "mv": fs.makeup_valve.valve_opening,
+                "type": "PI",
+                "bounded_output": True,
+            }
+        )
 
         # PID controller to control main steam temperature
         fs.spray_ctrl = PIDController(
-            default={"pv": fs.temperature_main_steam,
-                     "mv": fs.spray_valve.valve_opening,
-                     "type": 'PID',
-                     "bounded_output": True})
+            default={
+                "pv": fs.temperature_main_steam,
+                "mv": fs.spray_valve.valve_opening,
+                "type": "PID",
+                "bounded_output": True,
+            }
+        )
 
     return m
 
 
 def set_arcs_and_constraints(m):
-    """ Add arcs to connect streams on steam cycle sub-flowsheet """
+    """Add arcs to connect streams on steam cycle sub-flowsheet"""
     fs = m.fs_main.fs_stc
-    fs.S017 = Arc(
-        source=fs.turb.outlet_stage.outlet, destination=fs.condenser.inlet_1
-    )
-    fs.S053 = Arc(
-        source=fs.bfp_turb.outlet, destination=fs.bfp_turb_os.inlet
-    )
-    fs.S046 = Arc(
-        source=fs.bfp_turb_os.outlet, destination=fs.aux_condenser.inlet_1
-    )
+    fs.S017 = Arc(source=fs.turb.outlet_stage.outlet, destination=fs.condenser.inlet_1)
+    fs.S053 = Arc(source=fs.bfp_turb.outlet, destination=fs.bfp_turb_os.inlet)
+    fs.S046 = Arc(source=fs.bfp_turb_os.outlet, destination=fs.aux_condenser.inlet_1)
     fs.S022 = Arc(
         source=fs.condenser.outlet_1,
         destination=fs.condenser_hotwell.main_condensate,
@@ -401,114 +471,59 @@ def set_arcs_and_constraints(m):
         destination=fs.condenser_hotwell.makeup,
     )
     fs.S031a = Arc(
-        source=fs.fwh1.condense.outlet_2,
-        destination=fs.fwh1_drain_return.feedwater
+        source=fs.fwh1.condense.outlet_2, destination=fs.fwh1_drain_return.feedwater
     )
     fs.S030 = Arc(
-        source=fs.fwh1.condense.outlet_1,
-        destination=fs.fwh1_drain_pump.inlet
+        source=fs.fwh1.condense.outlet_1, destination=fs.fwh1_drain_pump.inlet
     )
     fs.S045 = Arc(
-        source=fs.fwh1_drain_pump.outlet,
-        destination=fs.fwh1_drain_return.fwh1_drain
+        source=fs.fwh1_drain_pump.outlet, destination=fs.fwh1_drain_return.fwh1_drain
     )
-    fs.S024 = Arc(
-        source=fs.condenser_hotwell.outlet, destination=fs.hotwell_tank.inlet
-    )
-    fs.S025 = Arc(
-        source=fs.hotwell_tank.outlet, destination=fs.cond_pump.inlet
-    )
+    fs.S024 = Arc(source=fs.condenser_hotwell.outlet, destination=fs.hotwell_tank.inlet)
+    fs.S025 = Arc(source=fs.hotwell_tank.outlet, destination=fs.cond_pump.inlet)
     fs.S016 = Arc(
-        source=fs.turb.lp_split[5].outlet_2,
-        destination=fs.fwh1.drain_mix.steam
+        source=fs.turb.lp_split[5].outlet_2, destination=fs.fwh1.drain_mix.steam
     )
-    fs.S032 = Arc(
-        source=fs.fwh2.cooling.outlet_1, destination=fs.fwh2_valve.inlet
-    )
-    fs.S032b = Arc(
-        source=fs.fwh2_valve.outlet, destination=fs.fwh1.drain_mix.drain
-    )
-    fs.S026 = Arc(
-        source=fs.cond_pump.outlet, destination=fs.cond_valve.inlet
-    )
-    fs.S029 = Arc(
-        source=fs.cond_valve.outlet, destination=fs.fwh1.condense.inlet_2
-    )
+    fs.S032 = Arc(source=fs.fwh2.cooling.outlet_1, destination=fs.fwh2_valve.inlet)
+    fs.S032b = Arc(source=fs.fwh2_valve.outlet, destination=fs.fwh1.drain_mix.drain)
+    fs.S026 = Arc(source=fs.cond_pump.outlet, destination=fs.cond_valve.inlet)
+    fs.S029 = Arc(source=fs.cond_valve.outlet, destination=fs.fwh1.condense.inlet_2)
     fs.S031b = Arc(
-        source=fs.fwh1_drain_return.outlet,
-        destination=fs.fwh2.cooling.inlet_2
+        source=fs.fwh1_drain_return.outlet, destination=fs.fwh2.cooling.inlet_2
     )
     fs.S015 = Arc(
-        source=fs.turb.lp_split[4].outlet_2,
-        destination=fs.fwh2.drain_mix.steam
+        source=fs.turb.lp_split[4].outlet_2, destination=fs.fwh2.drain_mix.steam
     )
-    fs.S034 = Arc(
-        source=fs.fwh3.cooling.outlet_1, destination=fs.fwh3_valve.inlet
-    )
-    fs.S034b = Arc(
-        source=fs.fwh3_valve.outlet, destination=fs.fwh2.drain_mix.drain
-    )
-    fs.S033 = Arc(
-        source=fs.fwh2.condense.outlet_2, destination=fs.fwh3.cooling.inlet_2
-    )
+    fs.S034 = Arc(source=fs.fwh3.cooling.outlet_1, destination=fs.fwh3_valve.inlet)
+    fs.S034b = Arc(source=fs.fwh3_valve.outlet, destination=fs.fwh2.drain_mix.drain)
+    fs.S033 = Arc(source=fs.fwh2.condense.outlet_2, destination=fs.fwh3.cooling.inlet_2)
     fs.S014 = Arc(
-        source=fs.turb.lp_split[2].outlet_2,
-        destination=fs.fwh3.condense.inlet_1
+        source=fs.turb.lp_split[2].outlet_2, destination=fs.fwh3.condense.inlet_1
     )
-    fs.S035 = Arc(
-        source=fs.fwh3.condense.outlet_2, destination=fs.fwh4_deair.feedwater
-    )
-    fs.S043 = Arc(
-        source=fs.turb.ip_split[9].outlet_2, destination=fs.fwh4_deair.steam
-    )
+    fs.S035 = Arc(source=fs.fwh3.condense.outlet_2, destination=fs.fwh4_deair.feedwater)
+    fs.S043 = Arc(source=fs.turb.ip_split[9].outlet_2, destination=fs.fwh4_deair.steam)
     fs.S011 = Arc(
-        source=fs.turb.ip_split[9].outlet_3,
-        destination=fs.bfp_turb_valve.inlet
+        source=fs.turb.ip_split[9].outlet_3, destination=fs.bfp_turb_valve.inlet
     )
-    fs.S052 = Arc(
-        source=fs.bfp_turb_valve.outlet, destination=fs.bfp_turb.inlet
-    )
-    fs.S036 = Arc(
-        source=fs.fwh4_deair.outlet, destination=fs.da_tank.inlet
-    )
-    fs.S036b = Arc(
-        source=fs.da_tank.outlet, destination=fs.booster.inlet
-    )
-    fs.S038 = Arc(
-        source=fs.booster.outlet, destination=fs.bfp.inlet
-    )
-    fs.S037 = Arc(
-        source=fs.bfp.outlet, destination=fs.split_attemp.inlet
-    )
-    fs.S054 = Arc(
-        source=fs.split_attemp.Spray, destination=fs.spray_valve.inlet
-    )
-    fs.S039 = Arc(
-        source=fs.fwh5.cooling.outlet_1, destination=fs.fwh5_valve.inlet
-    )
-    fs.S039b = Arc(
-        source=fs.fwh5_valve.outlet, destination=fs.fwh4_deair.drain
-    )
-    fs.S051 = Arc(
-        source=fs.split_attemp.FeedWater, destination=fs.fwh5.cooling.inlet_2
-    )
+    fs.S052 = Arc(source=fs.bfp_turb_valve.outlet, destination=fs.bfp_turb.inlet)
+    fs.S036 = Arc(source=fs.fwh4_deair.outlet, destination=fs.da_tank.inlet)
+    fs.S036b = Arc(source=fs.da_tank.outlet, destination=fs.booster.inlet)
+    fs.S038 = Arc(source=fs.booster.outlet, destination=fs.bfp.inlet)
+    fs.S037 = Arc(source=fs.bfp.outlet, destination=fs.split_attemp.inlet)
+    fs.S054 = Arc(source=fs.split_attemp.Spray, destination=fs.spray_valve.inlet)
+    fs.S039 = Arc(source=fs.fwh5.cooling.outlet_1, destination=fs.fwh5_valve.inlet)
+    fs.S039b = Arc(source=fs.fwh5_valve.outlet, destination=fs.fwh4_deair.drain)
+    fs.S051 = Arc(source=fs.split_attemp.FeedWater, destination=fs.fwh5.cooling.inlet_2)
     fs.S010 = Arc(
-        source=fs.turb.ip_split[6].outlet_2,
-        destination=fs.fwh5.desuperheat.inlet_1
+        source=fs.turb.ip_split[6].outlet_2, destination=fs.fwh5.desuperheat.inlet_1
     )
-    fs.S041 = Arc(
-        source=fs.fwh6.cooling.outlet_1, destination=fs.fwh6_valve.inlet
-    )
-    fs.S041b = Arc(
-        source=fs.fwh6_valve.outlet, destination=fs.fwh5.drain_mix.drain
-    )
+    fs.S041 = Arc(source=fs.fwh6.cooling.outlet_1, destination=fs.fwh6_valve.inlet)
+    fs.S041b = Arc(source=fs.fwh6_valve.outlet, destination=fs.fwh5.drain_mix.drain)
     fs.S040 = Arc(
-        source=fs.fwh5.desuperheat.outlet_2,
-        destination=fs.fwh6.cooling.inlet_2
+        source=fs.fwh5.desuperheat.outlet_2, destination=fs.fwh6.cooling.inlet_2
     )
     fs.S006 = Arc(
-        source=fs.turb.hp_split[14].outlet_2,
-        destination=fs.fwh6.desuperheat.inlet_1
+        source=fs.turb.hp_split[14].outlet_2, destination=fs.fwh6.desuperheat.inlet_1
     )
     # Call Pyomo function to apply above arc connections
     pyo.TransformationFactory("network.expand_arcs").apply_to(fs)
@@ -519,15 +534,16 @@ def set_arcs_and_constraints(m):
     # Note that there are to unit models for BFPT including an outlet stage
     @fs.Constraint(fs.time)
     def constraint_bfp_power(b, t):
-        return 0 == (1e-6*fs.bfp.control_volume.work[t]
-                     + 1e-6*fs.bfp_turb.control_volume.work[t]
-                     + 1e-6*fs.bfp_turb_os.control_volume.work[t])
+        return 0 == (
+            1e-6 * fs.bfp.control_volume.work[t]
+            + 1e-6 * fs.bfp_turb.control_volume.work[t]
+            + 1e-6 * fs.bfp_turb_os.control_volume.work[t]
+        )
 
     # Constraint to set IP inlet steam flow equal to HP outlet steam flow
     @fs.turb.Constraint(fs.time)
     def constraint_reheat_flow(b, t):
-        return b.ip_stages[1].inlet.flow_mol[t] == \
-            b.hp_split[14].outlet_1.flow_mol[t]
+        return b.ip_stages[1].inlet.flow_mol[t] == b.hp_split[14].outlet_1.flow_mol[t]
 
     # The mixer for the condenser hotwell is declared with 3 inlet streams
     # with mometum mixing type set to MomentumMixingType.none
@@ -539,15 +555,19 @@ def set_arcs_and_constraints(m):
     # the pressure of main condenser in this model
     @fs.Constraint(fs.time)
     def makeup_water_pressure_constraint(b, t):
-        return b.condenser_hotwell.makeup_state[t].pressure*1e-4 == \
-            b.condenser_hotwell.aux_condensate_state[t].pressure*1e-4
+        return (
+            b.condenser_hotwell.makeup_state[t].pressure * 1e-4
+            == b.condenser_hotwell.aux_condensate_state[t].pressure * 1e-4
+        )
 
     # Constrait to set the mixed state pressure equal to the pressure of
     # auxiliary condenser
     @fs.condenser_hotwell.Constraint(fs.time)
     def mixer_pressure_constraint(b, t):
-        return b.aux_condensate_state[t].pressure*1e-4 == \
-            b.mixed_state[t].pressure*1e-4
+        return (
+            b.aux_condensate_state[t].pressure * 1e-4
+            == b.mixed_state[t].pressure * 1e-4
+        )
 
     # Constraint to set deaerator tank outlet enthalpy equal to
     # saturation enthalpy at inlet - 100 (sligtly sub-cooled)
@@ -556,9 +576,9 @@ def set_arcs_and_constraints(m):
     # ramping down, which will causes convergence issue if the flash happens
     @fs.Constraint(fs.time)
     def da_outlet_enthalpy_constraint(b, t):
-        return 1e-3*b.da_tank.outlet.enth_mol[t] == 1e-3*(
-            b.da_tank.control_volume.properties_in[t].
-            enth_mol_sat_phase["Liq"] - 100)
+        return 1e-3 * b.da_tank.outlet.enth_mol[t] == 1e-3 * (
+            b.da_tank.control_volume.properties_in[t].enth_mol_sat_phase["Liq"] - 100
+        )
 
     # Constraints to set the pressures of the two inlets (extracte steam
     # and drain from upper stream feed water heater) equal since the
@@ -567,8 +587,10 @@ def set_arcs_and_constraints(m):
     # Constraint for feed water heater 1
     @fs.Constraint(fs.time)
     def fwh1_drain_mixer_pressure_eqn(b, t):
-        return b.fwh1.drain_mix.drain.pressure[t]*1e-4 == \
-            b.fwh1.drain_mix.steam.pressure[t]*1e-4
+        return (
+            b.fwh1.drain_mix.drain.pressure[t] * 1e-4
+            == b.fwh1.drain_mix.steam.pressure[t] * 1e-4
+        )
 
     # Constraints to set the pressures of the two inlets (extracte steam
     # and drain from upper stream feed water heater) equal since the
@@ -577,8 +599,10 @@ def set_arcs_and_constraints(m):
     # Constraint for feed water heater 2
     @fs.Constraint(fs.time)
     def fwh2_drain_mixer_pressure_eqn(b, t):
-        return b.fwh2.drain_mix.drain.pressure[t]*1e-4 == \
-            b.fwh2.drain_mix.steam.pressure[t]*1e-4
+        return (
+            b.fwh2.drain_mix.drain.pressure[t] * 1e-4
+            == b.fwh2.drain_mix.steam.pressure[t] * 1e-4
+        )
 
     # Constraints to set the pressures of the two inlets (extracte steam
     # and drain from upper stream feed water heater) equal since the
@@ -587,24 +611,32 @@ def set_arcs_and_constraints(m):
     # Constraint for feed water heater 5
     @fs.Constraint(fs.time)
     def fwh5_drain_mixer_pressure_eqn(b, t):
-        return b.fwh5.drain_mix.drain.pressure[t]*1e-5 == \
-            b.fwh5.drain_mix.steam.pressure[t]*1e-5
+        return (
+            b.fwh5.drain_mix.drain.pressure[t] * 1e-5
+            == b.fwh5.drain_mix.steam.pressure[t] * 1e-5
+        )
 
     # Add a custom constraint for condensate pump using the pump curve,
     # the relationship between flow rate and pressure increase
     @fs.cond_pump.Constraint(fs.time)
     def cond_pump_curve_constraint(b, t):
-        return 1e-5*b.deltaP[t] == 1e-5*(
-            -5.08e-7*b.inlet.flow_mol[t]**3 + 4.09e-3*b.inlet.flow_mol[t]**2
-            - 56.6*b.inlet.flow_mol[t] + 2e6)
+        return 1e-5 * b.deltaP[t] == 1e-5 * (
+            -5.08e-7 * b.inlet.flow_mol[t] ** 3
+            + 4.09e-3 * b.inlet.flow_mol[t] ** 2
+            - 56.6 * b.inlet.flow_mol[t]
+            + 2e6
+        )
 
     # Add a custom constraint for the booster pump using the pump curve,
     # the relationship between flow rate and pressure increase
     @fs.booster.Constraint(fs.time)
     def booster_pump_curve_constraint(b, t):
-        return 1e-5*b.deltaP[t] == 1e-5*(
-            -2.36e-7*b.inlet.flow_mol[t]**3 + 3.15e-3*b.inlet.flow_mol[t]**2
-            - 34.1*b.inlet.flow_mol[t] + 1.1e6)
+        return 1e-5 * b.deltaP[t] == 1e-5 * (
+            -2.36e-7 * b.inlet.flow_mol[t] ** 3
+            + 3.15e-3 * b.inlet.flow_mol[t] ** 2
+            - 34.1 * b.inlet.flow_mol[t]
+            + 1.1e6
+        )
 
     # Constraint to set water flow to economizer slightly higher than
     # steam flow in such that there is makeup flow needed to offset blowdown
@@ -612,8 +644,10 @@ def set_arcs_and_constraints(m):
     # is combined with the boiler system sub-flowsheet
     @fs.Constraint(fs.time)
     def fw_flow_constraint(b, t):
-        return 1e-3*b.da_tank.outlet.flow_mol[t] == \
-            1e-3*b.turb.inlet_split.inlet.flow_mol[t]*1.02
+        return (
+            1e-3 * b.da_tank.outlet.flow_mol[t]
+            == 1e-3 * b.turb.inlet_split.inlet.flow_mol[t] * 1.02
+        )
 
     # The following expressions are used to calculate drain cooler
     # approach temperature (DCA)
@@ -713,7 +747,7 @@ def set_inputs(m):
     fs.turb.ip_stages[1].inlet.enth_mol[:].fix(hin)
     fs.turb.ip_stages[1].inlet.pressure[:].fix(pin)
     # Reheating steam flow is 90% of main steam flow as initial guess
-    fs.turb.ip_stages[1].inlet.flow_mol[:].value = 11000*0.9
+    fs.turb.ip_stages[1].inlet.flow_mol[:].value = 11000 * 0.9
 
     # Fix split fractions for steam extraction initialization
     # They will be unfixed after initialization
@@ -960,7 +994,7 @@ def _add_heat_transfer_correlation(fs):
 
 
 def initialize(m):
-    """ Initialize unit operation models on the sub-flowsheet """
+    """Initialize unit operation models on the sub-flowsheet"""
     fs = m.fs_main.fs_stc
     start_time = time.time()
     outlvl = idaeslog.INFO_LOW
@@ -989,7 +1023,8 @@ def initialize(m):
             outlvl=outlvl,
             optarg=solver.options,
             calculate_outlet_cf=False,
-            calculate_inlet_cf=False)
+            calculate_inlet_cf=False,
+        )
 
     # Initialize control valve of BFPT
     _set_port(fs.bfp_turb_valve.inlet, fs.turb.ip_split[9].outlet_3)
@@ -1005,20 +1040,21 @@ def initialize(m):
     _set_port(fs.bfp_turb_os.inlet, fs.bfp_turb.outlet)
     fs.bfp_turb_os.control_volume.properties_out[:].pressure.fix(6000)
     if m.dynamic is False:
-        fs.bfp_turb_os.initialize(calculate_cf=False, outlvl=outlvl,
-                                  optarg=solver.options)
+        fs.bfp_turb_os.initialize(
+            calculate_cf=False, outlvl=outlvl, optarg=solver.options
+        )
     fs.bfp_turb_os.control_volume.properties_out[:].pressure.unfix()
 
     # Initialize main condenser
     _set_port(fs.condenser.inlet_1, fs.turb.outlet_stage.outlet)
     fs.turb.outlet_stage.control_volume.properties_out[:].pressure.unfix()
     if m.dynamic is False:
-        fs.condenser.initialize(unfix='pressure')
+        fs.condenser.initialize(unfix="pressure")
 
     # Initialize auxiliary condenser
     _set_port(fs.aux_condenser.inlet_1, fs.bfp_turb_os.outlet)
     if m.dynamic is False:
-        fs.aux_condenser.initialize(unfix='pressure')
+        fs.aux_condenser.initialize(unfix="pressure")
 
     # Initialize makeup valve
     if m.dynamic is False:
@@ -1057,8 +1093,9 @@ def initialize(m):
 
     # Set some initial inlet values and initialize fwh1
     fs.fwh1.drain_mix.drain.flow_mol[:] = 1000
-    fs.fwh1.drain_mix.drain.pressure[:] = \
+    fs.fwh1.drain_mix.drain.pressure[:] = (
         fs.turb.lp_split[5].outlet_2.pressure[t0].value
+    )
     fs.fwh1.drain_mix.drain.enth_mol[:] = 6117
     _set_port(fs.fwh1.condense.inlet_2, fs.cond_valve.outlet)
     _set_port(fs.fwh1.drain_mix.steam, fs.turb.lp_split[5].outlet_2)
@@ -1085,8 +1122,9 @@ def initialize(m):
 
     # Set some initial inlet values and initialize fwh2
     fs.fwh2.drain_mix.drain.flow_mol[:] = 685
-    fs.fwh2.drain_mix.drain.pressure[:] = \
+    fs.fwh2.drain_mix.drain.pressure[:] = (
         fs.turb.lp_split[4].outlet_2.pressure[t0].value
+    )
     fs.fwh2.drain_mix.drain.enth_mol[:] = 9100
     _set_port(fs.fwh2.cooling.inlet_2, fs.fwh1.condense.outlet_2)
     _set_port(fs.fwh2.drain_mix.steam, fs.turb.lp_split[4].outlet_2)
@@ -1097,8 +1135,9 @@ def initialize(m):
     _set_port(fs.fwh2_valve.inlet, fs.fwh2.cooling.outlet_1)
     if m.dynamic is False:
         # use a lower flow rate to avoid too low exit pressure
-        fs.fwh2_valve.inlet.flow_mol[:].value = \
-            fs.fwh2_valve.inlet.flow_mol[t0].value*0.75
+        fs.fwh2_valve.inlet.flow_mol[:].value = (
+            fs.fwh2_valve.inlet.flow_mol[t0].value * 0.75
+        )
         fs.fwh2_valve.Cv.fix()
         fs.fwh2_valve.initialize(outlvl=outlvl, optarg=solver.options)
         fs.fwh2_valve.Cv.unfix()
@@ -1248,236 +1287,433 @@ def initialize(m):
         # finally solve the sub-flowsheet
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(fs, tee=slc.tee)
-            _log.info("Solving bounded problem: {}".format(
-                idaeslog.condition(res)))
-            _log.info("Steam cycle initialized in {:.1f}s".format(
-                time.time() - start_time))
+            _log.info("Solving bounded problem: {}".format(idaeslog.condition(res)))
+            _log.info(
+                "Steam cycle initialized in {:.1f}s".format(time.time() - start_time)
+            )
 
-        _log.info('main steam temp={}'.format(
-            pyo.value(fs.turb.throttle_valve[1].control_volume.
-                      properties_in[0].temperature)))
-        _log.info('main steam enth={}'.format(
-            pyo.value(fs.turb.inlet_split.inlet.enth_mol[0])))
-        _log.info('main steam flow_mol={}'.format(
-            pyo.value(fs.turb.inlet_split.inlet.flow_mol[0])))
-        _log.info('main steam pressure={}'.format(
-            pyo.value(fs.turb.inlet_split.inlet.pressure[0])))
-        _log.info('bfp turb steam flow={}'.format(
-            pyo.value(fs.bfp_turb.inlet.flow_mol[0])))
-        _log.info('FW pressure={}'.format(
-            pyo.value(fs.bfp.outlet.pressure[0])))
-        _log.info('HP stage 1 inlet enth_mol={}'.format(
-            pyo.value(fs.turb.hp_stages[1].inlet.enth_mol[0])))
-        _log.info('HP stage 1 inlet flow_mol={}'.format(
-            pyo.value(fs.turb.hp_stages[1].inlet.flow_mol[0])))
-        _log.info('HP stage 1 inlet pressure={}'.format(
-            pyo.value(fs.turb.hp_stages[1].inlet.pressure[0])))
-        _log.info('IP stage 1 inlet enth_mol={}'.format(
-            pyo.value(fs.turb.ip_stages[1].inlet.enth_mol[0])))
-        _log.info('IP stage 1 inlet flow_mol={}'.format(
-            pyo.value(fs.turb.ip_stages[1].inlet.flow_mol[0])))
-        _log.info('IP stage 1 inlet pressure={}'.format(
-            pyo.value(fs.turb.ip_stages[1].inlet.pressure[0])))
-        _log.info('Outlet stage enth_mol={}'.format(
-            pyo.value(fs.turb.outlet_stage.outlet.enth_mol[0])))
-        _log.info('Outlet stage flow_mol={}'.format(
-            pyo.value(fs.turb.outlet_stage.outlet.flow_mol[0])))
-        _log.info('Outlet stage pressure={}'.format(
-            pyo.value(fs.turb.outlet_stage.outlet.pressure[0])))
-        _log.info('Power output of main turbine={}'.format(
-            pyo.value(fs.power_output[0])))
-        _log.info('Power output of bfp turbine={}'.format(
-            -1e-6 * pyo.value(fs.bfp_turb.control_volume.work[0]
-                              + fs.bfp_turb_os.control_volume.work[0])))
-        _log.info('FWH6 outlet enth_mol={}'.format(
-            pyo.value(fs.fwh6.desuperheat.outlet_2.enth_mol[0])))
-        _log.info('FWH6 outlet flow_mol={}'.format
-                  (pyo.value(fs.fwh6.desuperheat.outlet_2.flow_mol[0])))
-        _log.info('FWH6 outlet pressure={}'.format(
-            pyo.value(fs.fwh6.desuperheat.outlet_2.pressure[0])))
-        _log.info('Outlet stage ratioP={}'.format(
-            pyo.value(fs.turb.outlet_stage.ratioP[0])))
-        _log.info('Outlet stage inlet P={}'.format(
-            pyo.value(fs.turb.outlet_stage.inlet.pressure[0])))
-        _log.info('Outlet stage outlet P={}'.format(
-            pyo.value(fs.turb.outlet_stage.outlet.pressure[0])))
-        _log.info('bfp turbine out T={}'.format(
-            pyo.value(fs.bfp_turb.control_volume.properties_out[0].
-                      temperature)))
-        _log.info('bfp turbine out P={}'.format(
-            pyo.value(fs.bfp_turb.control_volume.properties_out[0].pressure)))
-        _log.info('bfp turbine out H={}'.format(
-            pyo.value(fs.bfp_turb.control_volume.properties_out[0].enth_mol)))
-        _log.info('bfp turbine out flow={}'.format(
-            pyo.value(fs.bfp_turb.control_volume.properties_out[0].flow_mol)))
-        _log.info('ip_split9 fraction to DA={}'.format(
-            pyo.value(fs.turb.ip_split[9].split_fraction[0, 'outlet_2'])))
-        _log.info('ip_split9 fraction to bfpt={}'.format(
-            pyo.value(fs.turb.ip_split[9].split_fraction[0, 'outlet_3'])))
-        _log.info('booster outlet pres={}'.format(
-            fs.booster.outlet.pressure[0].value))
-        _log.info('booster inlet temp={}'.format(
-            pyo.value(fs.booster.control_volume.properties_in[0].temperature)))
-        _log.info('booster inlet sat temp={}'.format(
-            pyo.value(fs.booster.control_volume.
-                      properties_in[0].temperature_sat)))
+        _log.info(
+            "main steam temp={}".format(
+                pyo.value(
+                    fs.turb.throttle_valve[1]
+                    .control_volume.properties_in[0]
+                    .temperature
+                )
+            )
+        )
+        _log.info(
+            "main steam enth={}".format(
+                pyo.value(fs.turb.inlet_split.inlet.enth_mol[0])
+            )
+        )
+        _log.info(
+            "main steam flow_mol={}".format(
+                pyo.value(fs.turb.inlet_split.inlet.flow_mol[0])
+            )
+        )
+        _log.info(
+            "main steam pressure={}".format(
+                pyo.value(fs.turb.inlet_split.inlet.pressure[0])
+            )
+        )
+        _log.info(
+            "bfp turb steam flow={}".format(pyo.value(fs.bfp_turb.inlet.flow_mol[0]))
+        )
+        _log.info("FW pressure={}".format(pyo.value(fs.bfp.outlet.pressure[0])))
+        _log.info(
+            "HP stage 1 inlet enth_mol={}".format(
+                pyo.value(fs.turb.hp_stages[1].inlet.enth_mol[0])
+            )
+        )
+        _log.info(
+            "HP stage 1 inlet flow_mol={}".format(
+                pyo.value(fs.turb.hp_stages[1].inlet.flow_mol[0])
+            )
+        )
+        _log.info(
+            "HP stage 1 inlet pressure={}".format(
+                pyo.value(fs.turb.hp_stages[1].inlet.pressure[0])
+            )
+        )
+        _log.info(
+            "IP stage 1 inlet enth_mol={}".format(
+                pyo.value(fs.turb.ip_stages[1].inlet.enth_mol[0])
+            )
+        )
+        _log.info(
+            "IP stage 1 inlet flow_mol={}".format(
+                pyo.value(fs.turb.ip_stages[1].inlet.flow_mol[0])
+            )
+        )
+        _log.info(
+            "IP stage 1 inlet pressure={}".format(
+                pyo.value(fs.turb.ip_stages[1].inlet.pressure[0])
+            )
+        )
+        _log.info(
+            "Outlet stage enth_mol={}".format(
+                pyo.value(fs.turb.outlet_stage.outlet.enth_mol[0])
+            )
+        )
+        _log.info(
+            "Outlet stage flow_mol={}".format(
+                pyo.value(fs.turb.outlet_stage.outlet.flow_mol[0])
+            )
+        )
+        _log.info(
+            "Outlet stage pressure={}".format(
+                pyo.value(fs.turb.outlet_stage.outlet.pressure[0])
+            )
+        )
+        _log.info(
+            "Power output of main turbine={}".format(pyo.value(fs.power_output[0]))
+        )
+        _log.info(
+            "Power output of bfp turbine={}".format(
+                -1e-6
+                * pyo.value(
+                    fs.bfp_turb.control_volume.work[0]
+                    + fs.bfp_turb_os.control_volume.work[0]
+                )
+            )
+        )
+        _log.info(
+            "FWH6 outlet enth_mol={}".format(
+                pyo.value(fs.fwh6.desuperheat.outlet_2.enth_mol[0])
+            )
+        )
+        _log.info(
+            "FWH6 outlet flow_mol={}".format(
+                pyo.value(fs.fwh6.desuperheat.outlet_2.flow_mol[0])
+            )
+        )
+        _log.info(
+            "FWH6 outlet pressure={}".format(
+                pyo.value(fs.fwh6.desuperheat.outlet_2.pressure[0])
+            )
+        )
+        _log.info(
+            "Outlet stage ratioP={}".format(pyo.value(fs.turb.outlet_stage.ratioP[0]))
+        )
+        _log.info(
+            "Outlet stage inlet P={}".format(
+                pyo.value(fs.turb.outlet_stage.inlet.pressure[0])
+            )
+        )
+        _log.info(
+            "Outlet stage outlet P={}".format(
+                pyo.value(fs.turb.outlet_stage.outlet.pressure[0])
+            )
+        )
+        _log.info(
+            "bfp turbine out T={}".format(
+                pyo.value(fs.bfp_turb.control_volume.properties_out[0].temperature)
+            )
+        )
+        _log.info(
+            "bfp turbine out P={}".format(
+                pyo.value(fs.bfp_turb.control_volume.properties_out[0].pressure)
+            )
+        )
+        _log.info(
+            "bfp turbine out H={}".format(
+                pyo.value(fs.bfp_turb.control_volume.properties_out[0].enth_mol)
+            )
+        )
+        _log.info(
+            "bfp turbine out flow={}".format(
+                pyo.value(fs.bfp_turb.control_volume.properties_out[0].flow_mol)
+            )
+        )
+        _log.info(
+            "ip_split9 fraction to DA={}".format(
+                pyo.value(fs.turb.ip_split[9].split_fraction[0, "outlet_2"])
+            )
+        )
+        _log.info(
+            "ip_split9 fraction to bfpt={}".format(
+                pyo.value(fs.turb.ip_split[9].split_fraction[0, "outlet_3"])
+            )
+        )
+        _log.info("booster outlet pres={}".format(fs.booster.outlet.pressure[0].value))
+        _log.info(
+            "booster inlet temp={}".format(
+                pyo.value(fs.booster.control_volume.properties_in[0].temperature)
+            )
+        )
+        _log.info(
+            "booster inlet sat temp={}".format(
+                pyo.value(fs.booster.control_volume.properties_in[0].temperature_sat)
+            )
+        )
         # check pressure at mixer inlets
-        _log.info('hotwell main inlet pressure={}'.format(
-            fs.condenser_hotwell.main_condensate.pressure[0].value))
-        _log.info('hotwell aux inlet pressure={}'.format(
-            fs.condenser_hotwell.aux_condensate.pressure[0].value))
-        _log.info('hotwell makeup inlet pressure={}'.format(
-            fs.condenser_hotwell.makeup.pressure[0].value))
-        _log.info('drain return feedwater inlet pressure={}'.format(
-            fs.fwh1_drain_return.feedwater.pressure[0].value))
-        _log.info('drain return drain inlet pressure={}'.format(
-            fs.fwh1_drain_return.fwh1_drain.pressure[0].value))
-        _log.info('DA feedwater inlet pressure={}'.format(
-            fs.fwh4_deair.feedwater.pressure[0].value))
-        _log.info('DA drain inlet pressure={}'.format(
-            fs.fwh4_deair.drain.pressure[0].value))
-        _log.info('DA steam inlet pressure={}'.format(
-            fs.fwh4_deair.steam.pressure[0].value))
-        _log.info('DA outlet pressure={}'.format(
-            fs.fwh4_deair.outlet.pressure[0].value))
-        _log.info('fwh2 drain pressure before valve={}'.format(
-            fs.fwh2_valve.inlet.pressure[0].value))
-        _log.info('fwh2 drain pressure after valve={}'.format(
-            fs.fwh2_valve.outlet.pressure[0].value))
-        _log.info('fwh1 shell pressure ={}'.format(
-            fs.fwh1.drain_mix.steam.pressure[0].value))
-        _log.info('fwh3 drain pressure before valve={}'.format(
-            fs.fwh3_valve.inlet.pressure[0].value))
-        _log.info('fwh3 drain pressure after valve={}'.format(
-            fs.fwh3_valve.outlet.pressure[0].value))
-        _log.info('fwh2 shell pressure ={}'.format(
-            fs.fwh2.drain_mix.steam.pressure[0].value))
-        _log.info('fwh5 drain pressure before valve={}'.format(
-            fs.fwh5_valve.inlet.pressure[0].value))
-        _log.info('fwh5 drain pressure after valve={}'.format(
-            fs.fwh5_valve.outlet.pressure[0].value))
-        _log.info('fwh6 drain pressure before valve={}'.format(
-            fs.fwh6_valve.inlet.pressure[0].value))
-        _log.info('fwh6 drain pressure after valve={}'.format(
-            fs.fwh6_valve.outlet.pressure[0].value))
-        _log.info('fwh5 shell pressure ={}'.format(
-            fs.fwh5.drain_mix.steam.pressure[0].value))
-        _log.info('Cv fwh2={}'.format(fs.fwh2_valve.Cv.value))
-        _log.info('Cv fwh3={}'.format(fs.fwh3_valve.Cv.value))
-        _log.info('Cv fwh5={}'.format(fs.fwh5_valve.Cv.value))
-        _log.info('Cv fwh6={}'.format(fs.fwh6_valve.Cv.value))
-        _log.info('Cv cond valve={}'.format(fs.cond_valve.Cv.value))
-        _log.info('Cv makeup valve={}'.format(fs.makeup_valve.Cv.value))
-        _log.info('Cv spray valve={}'.format(fs.spray_valve.Cv.value))
-        _log.info('Cv bfp turb valve={}'.format(fs.bfp_turb_valve.Cv.value))
-        _log.info('Cv throttle valve={}'.format(
-            fs.turb.throttle_valve[1].Cv.value))
-        _log.info('valve opening fwh2={}'.format(
-            fs.fwh2_valve.valve_opening[0].value))
-        _log.info('valve opening fwh3={}'.format(
-            fs.fwh3_valve.valve_opening[0].value))
-        _log.info('valve opening fwh5={}'.format(
-            fs.fwh5_valve.valve_opening[0].value))
-        _log.info('valve opening fwh6={}'.format(
-            fs.fwh6_valve.valve_opening[0].value))
-        _log.info('valve opening cond={}'.format(
-            fs.cond_valve.valve_opening[0].value))
-        _log.info('valve opening makeup={}'.format(
-            fs.makeup_valve.valve_opening[0].value))
-        _log.info('valve opening spray={}'.format(
-            fs.spray_valve.valve_opening[0].value))
-        _log.info('valve opening bfp turb={}'.format(
-            fs.bfp_turb_valve.valve_opening[0].value))
-        _log.info('valve opening throttle={}'.format(
-            fs.turb.throttle_valve[1].valve_opening[0].value))
-        _log.info('fwh2 level={}'.format(fs.fwh2.condense.level[0].value))
-        _log.info('fwh3 level={}'.format(fs.fwh3.condense.level[0].value))
-        _log.info('fwh5 level={}'.format(fs.fwh5.condense.level[0].value))
-        _log.info('fwh6 level={}'.format(fs.fwh6.condense.level[0].value))
-        _log.info('hotwell level={}'.format(
-            fs.hotwell_tank.tank_level[0].value))
-        _log.info('da level={}'.format(fs.da_tank.tank_level[0].value))
-        _log.info('cond_pump deltaP={}'.format(fs.cond_pump.deltaP[0].value))
-        _log.info('cond_pump work={}'.format(
-            pyo.value(fs.cond_pump.work_mechanical[0])))
-        _log.info('cond_valve deltaP={}'.format(
-            fs.cond_valve.deltaP[0].value))
-        _log.info('makeup flow={}'.format(
-            fs.makeup_valve.outlet.flow_mol[0].value))
-        _log.info('spray flow={}'.format(
-            fs.spray_valve.outlet.flow_mol[0].value))
-        _log.info('spray split fraction={}'.format(
-            fs.split_attemp.split_fraction[0, "Spray"].value))
-        _log.info('outlet stage inlet temp={}'.format(
-            pyo.value(fs.turb.outlet_stage.control_volume.
-                      properties_in[0].temperature)))
-        _log.info('outlet stage inlet pres={}'.format(
-            pyo.value(fs.turb.outlet_stage.control_volume.
-                      properties_in[0].pressure)))
-        _log.info('outlet stage inlet flow_mol={}'.format(
-            pyo.value(fs.turb.outlet_stage.control_volume.
-                      properties_in[0].flow_mol)))
-        _log.info('outlet stage outlet flow_vol={}'.format(
-            pyo.value(fs.turb.outlet_stage.control_volume.
-                      properties_out[0].flow_vol)))
-        _log.info('outlet stage inlet vapor frac={}'.format(
-            pyo.value(fs.turb.outlet_stage.control_volume.
-                      properties_in[0].vapor_frac)))
-        _log.info('outlet state outlet vapor frac={}'.format(
-            pyo.value(fs.turb.outlet_stage.control_volume.
-                      properties_out[0].vapor_frac)))
-        _log.info('outlet stage efficiency={}'.format(
-            pyo.value(fs.turb.outlet_stage.efficiency_isentropic[0])))
-        _log.info('inlet stage efficiency={}'.format(
-            pyo.value(fs.turb.inlet_stage[1].efficiency_isentropic[0])))
-        _log.info('HP stage 1 efficiency={}'.format(
-            pyo.value(fs.turb.hp_stages[1].efficiency_isentropic[0])))
-        _log.info('IP stage 1 efficiency={}'.format(
-            pyo.value(fs.turb.ip_stages[1].efficiency_isentropic[0])))
-        _log.info('LP stage 1 efficiency={}'.format(
-            pyo.value(fs.turb.lp_stages[1].efficiency_isentropic[0])))
-        _log.info('Tel outlet stage={}'.format(
-            pyo.value(fs.turb.outlet_stage.tel[0])))
-        _log.info('delta_h ={}'.format(
-            pyo.value(fs.turb.outlet_stage.delta_enth_isentropic[0])))
-        _log.info('outlet stage power ={}'.format(
-            -1e-6 * pyo.value(fs.turb.outlet_stage.power_shaft[0])))
-        _log.info('inlet stage pressure ratio={}'.format(
-            pyo.value(fs.turb.inlet_stage[1].ratioP[0])))
-        _log.info('bfp turb valve inlet pressure={}'.format(
-            fs.bfp_turb_valve.inlet.pressure[0].value))
-        _log.info('bfp turb inlet pressure={}'.format(
-            fs.bfp_turb.inlet.pressure[0].value))
-        _log.info('bfp turb outlet flow={}'.format
-                  (fs.bfp_turb.outlet.flow_mol[0].value))
-        _log.info('bfp turb outlet enth={}'.format(
-            fs.bfp_turb.outlet.enth_mol[0].value))
-        _log.info('bfp turb outlet pres={}'.format(
-            fs.bfp_turb.outlet.pressure[0].value))
-        _log.info('bfp turb work={}'.format(
-            -1e-6*fs.bfp_turb.control_volume.work[0].value))
-        _log.info('bfp turb efficiency={}'.format(
-            fs.bfp_turb.efficiency_isentropic[0].value))
-        _log.info('bfp turb os outlet flow={}'.format(
-            fs.bfp_turb_os.outlet.flow_mol[0].value))
-        _log.info('bfp turb os outlet enth={}'.format(
-            fs.bfp_turb_os.outlet.enth_mol[0].value))
-        _log.info('bfp turb os outlet pres={}'.format(
-            fs.bfp_turb_os.outlet.pressure[0].value))
-        _log.info('bfp turb os outlet vapor frac={}'.format(
-            pyo.value(fs.bfp_turb_os.control_volume.
-                      properties_out[0].vapor_frac)))
-        _log.info('bfp turb os work={}'.format(
-            -1e-6*fs.bfp_turb_os.control_volume.work[0].value))
-        _log.info('bfp turb os efficiency={}'.format(
-            fs.bfp_turb_os.efficiency_isentropic[0].value))
-        _log.info('Tel turb os ={}'.format(
-            pyo.value(fs.bfp_turb_os.tel[0])))
-        _log.info('bfp turb os flow coef={}'.format(
-            fs.bfp_turb_os.flow_coeff.value))
-        _log.info('bfp turb os out vol flow={}'.format(
-            pyo.value(fs.bfp_turb_os.control_volume.
-                      properties_out[0].flow_vol)))
+        _log.info(
+            "hotwell main inlet pressure={}".format(
+                fs.condenser_hotwell.main_condensate.pressure[0].value
+            )
+        )
+        _log.info(
+            "hotwell aux inlet pressure={}".format(
+                fs.condenser_hotwell.aux_condensate.pressure[0].value
+            )
+        )
+        _log.info(
+            "hotwell makeup inlet pressure={}".format(
+                fs.condenser_hotwell.makeup.pressure[0].value
+            )
+        )
+        _log.info(
+            "drain return feedwater inlet pressure={}".format(
+                fs.fwh1_drain_return.feedwater.pressure[0].value
+            )
+        )
+        _log.info(
+            "drain return drain inlet pressure={}".format(
+                fs.fwh1_drain_return.fwh1_drain.pressure[0].value
+            )
+        )
+        _log.info(
+            "DA feedwater inlet pressure={}".format(
+                fs.fwh4_deair.feedwater.pressure[0].value
+            )
+        )
+        _log.info(
+            "DA drain inlet pressure={}".format(fs.fwh4_deair.drain.pressure[0].value)
+        )
+        _log.info(
+            "DA steam inlet pressure={}".format(fs.fwh4_deair.steam.pressure[0].value)
+        )
+        _log.info(
+            "DA outlet pressure={}".format(fs.fwh4_deair.outlet.pressure[0].value)
+        )
+        _log.info(
+            "fwh2 drain pressure before valve={}".format(
+                fs.fwh2_valve.inlet.pressure[0].value
+            )
+        )
+        _log.info(
+            "fwh2 drain pressure after valve={}".format(
+                fs.fwh2_valve.outlet.pressure[0].value
+            )
+        )
+        _log.info(
+            "fwh1 shell pressure ={}".format(fs.fwh1.drain_mix.steam.pressure[0].value)
+        )
+        _log.info(
+            "fwh3 drain pressure before valve={}".format(
+                fs.fwh3_valve.inlet.pressure[0].value
+            )
+        )
+        _log.info(
+            "fwh3 drain pressure after valve={}".format(
+                fs.fwh3_valve.outlet.pressure[0].value
+            )
+        )
+        _log.info(
+            "fwh2 shell pressure ={}".format(fs.fwh2.drain_mix.steam.pressure[0].value)
+        )
+        _log.info(
+            "fwh5 drain pressure before valve={}".format(
+                fs.fwh5_valve.inlet.pressure[0].value
+            )
+        )
+        _log.info(
+            "fwh5 drain pressure after valve={}".format(
+                fs.fwh5_valve.outlet.pressure[0].value
+            )
+        )
+        _log.info(
+            "fwh6 drain pressure before valve={}".format(
+                fs.fwh6_valve.inlet.pressure[0].value
+            )
+        )
+        _log.info(
+            "fwh6 drain pressure after valve={}".format(
+                fs.fwh6_valve.outlet.pressure[0].value
+            )
+        )
+        _log.info(
+            "fwh5 shell pressure ={}".format(fs.fwh5.drain_mix.steam.pressure[0].value)
+        )
+        _log.info("Cv fwh2={}".format(fs.fwh2_valve.Cv.value))
+        _log.info("Cv fwh3={}".format(fs.fwh3_valve.Cv.value))
+        _log.info("Cv fwh5={}".format(fs.fwh5_valve.Cv.value))
+        _log.info("Cv fwh6={}".format(fs.fwh6_valve.Cv.value))
+        _log.info("Cv cond valve={}".format(fs.cond_valve.Cv.value))
+        _log.info("Cv makeup valve={}".format(fs.makeup_valve.Cv.value))
+        _log.info("Cv spray valve={}".format(fs.spray_valve.Cv.value))
+        _log.info("Cv bfp turb valve={}".format(fs.bfp_turb_valve.Cv.value))
+        _log.info("Cv throttle valve={}".format(fs.turb.throttle_valve[1].Cv.value))
+        _log.info("valve opening fwh2={}".format(fs.fwh2_valve.valve_opening[0].value))
+        _log.info("valve opening fwh3={}".format(fs.fwh3_valve.valve_opening[0].value))
+        _log.info("valve opening fwh5={}".format(fs.fwh5_valve.valve_opening[0].value))
+        _log.info("valve opening fwh6={}".format(fs.fwh6_valve.valve_opening[0].value))
+        _log.info("valve opening cond={}".format(fs.cond_valve.valve_opening[0].value))
+        _log.info(
+            "valve opening makeup={}".format(fs.makeup_valve.valve_opening[0].value)
+        )
+        _log.info(
+            "valve opening spray={}".format(fs.spray_valve.valve_opening[0].value)
+        )
+        _log.info(
+            "valve opening bfp turb={}".format(fs.bfp_turb_valve.valve_opening[0].value)
+        )
+        _log.info(
+            "valve opening throttle={}".format(
+                fs.turb.throttle_valve[1].valve_opening[0].value
+            )
+        )
+        _log.info("fwh2 level={}".format(fs.fwh2.condense.level[0].value))
+        _log.info("fwh3 level={}".format(fs.fwh3.condense.level[0].value))
+        _log.info("fwh5 level={}".format(fs.fwh5.condense.level[0].value))
+        _log.info("fwh6 level={}".format(fs.fwh6.condense.level[0].value))
+        _log.info("hotwell level={}".format(fs.hotwell_tank.tank_level[0].value))
+        _log.info("da level={}".format(fs.da_tank.tank_level[0].value))
+        _log.info("cond_pump deltaP={}".format(fs.cond_pump.deltaP[0].value))
+        _log.info(
+            "cond_pump work={}".format(pyo.value(fs.cond_pump.work_mechanical[0]))
+        )
+        _log.info("cond_valve deltaP={}".format(fs.cond_valve.deltaP[0].value))
+        _log.info("makeup flow={}".format(fs.makeup_valve.outlet.flow_mol[0].value))
+        _log.info("spray flow={}".format(fs.spray_valve.outlet.flow_mol[0].value))
+        _log.info(
+            "spray split fraction={}".format(
+                fs.split_attemp.split_fraction[0, "Spray"].value
+            )
+        )
+        _log.info(
+            "outlet stage inlet temp={}".format(
+                pyo.value(
+                    fs.turb.outlet_stage.control_volume.properties_in[0].temperature
+                )
+            )
+        )
+        _log.info(
+            "outlet stage inlet pres={}".format(
+                pyo.value(fs.turb.outlet_stage.control_volume.properties_in[0].pressure)
+            )
+        )
+        _log.info(
+            "outlet stage inlet flow_mol={}".format(
+                pyo.value(fs.turb.outlet_stage.control_volume.properties_in[0].flow_mol)
+            )
+        )
+        _log.info(
+            "outlet stage outlet flow_vol={}".format(
+                pyo.value(
+                    fs.turb.outlet_stage.control_volume.properties_out[0].flow_vol
+                )
+            )
+        )
+        _log.info(
+            "outlet stage inlet vapor frac={}".format(
+                pyo.value(
+                    fs.turb.outlet_stage.control_volume.properties_in[0].vapor_frac
+                )
+            )
+        )
+        _log.info(
+            "outlet state outlet vapor frac={}".format(
+                pyo.value(
+                    fs.turb.outlet_stage.control_volume.properties_out[0].vapor_frac
+                )
+            )
+        )
+        _log.info(
+            "outlet stage efficiency={}".format(
+                pyo.value(fs.turb.outlet_stage.efficiency_isentropic[0])
+            )
+        )
+        _log.info(
+            "inlet stage efficiency={}".format(
+                pyo.value(fs.turb.inlet_stage[1].efficiency_isentropic[0])
+            )
+        )
+        _log.info(
+            "HP stage 1 efficiency={}".format(
+                pyo.value(fs.turb.hp_stages[1].efficiency_isentropic[0])
+            )
+        )
+        _log.info(
+            "IP stage 1 efficiency={}".format(
+                pyo.value(fs.turb.ip_stages[1].efficiency_isentropic[0])
+            )
+        )
+        _log.info(
+            "LP stage 1 efficiency={}".format(
+                pyo.value(fs.turb.lp_stages[1].efficiency_isentropic[0])
+            )
+        )
+        _log.info("Tel outlet stage={}".format(pyo.value(fs.turb.outlet_stage.tel[0])))
+        _log.info(
+            "delta_h ={}".format(
+                pyo.value(fs.turb.outlet_stage.delta_enth_isentropic[0])
+            )
+        )
+        _log.info(
+            "outlet stage power ={}".format(
+                -1e-6 * pyo.value(fs.turb.outlet_stage.power_shaft[0])
+            )
+        )
+        _log.info(
+            "inlet stage pressure ratio={}".format(
+                pyo.value(fs.turb.inlet_stage[1].ratioP[0])
+            )
+        )
+        _log.info(
+            "bfp turb valve inlet pressure={}".format(
+                fs.bfp_turb_valve.inlet.pressure[0].value
+            )
+        )
+        _log.info(
+            "bfp turb inlet pressure={}".format(fs.bfp_turb.inlet.pressure[0].value)
+        )
+        _log.info(
+            "bfp turb outlet flow={}".format(fs.bfp_turb.outlet.flow_mol[0].value)
+        )
+        _log.info(
+            "bfp turb outlet enth={}".format(fs.bfp_turb.outlet.enth_mol[0].value)
+        )
+        _log.info(
+            "bfp turb outlet pres={}".format(fs.bfp_turb.outlet.pressure[0].value)
+        )
+        _log.info(
+            "bfp turb work={}".format(-1e-6 * fs.bfp_turb.control_volume.work[0].value)
+        )
+        _log.info(
+            "bfp turb efficiency={}".format(fs.bfp_turb.efficiency_isentropic[0].value)
+        )
+        _log.info(
+            "bfp turb os outlet flow={}".format(fs.bfp_turb_os.outlet.flow_mol[0].value)
+        )
+        _log.info(
+            "bfp turb os outlet enth={}".format(fs.bfp_turb_os.outlet.enth_mol[0].value)
+        )
+        _log.info(
+            "bfp turb os outlet pres={}".format(fs.bfp_turb_os.outlet.pressure[0].value)
+        )
+        _log.info(
+            "bfp turb os outlet vapor frac={}".format(
+                pyo.value(fs.bfp_turb_os.control_volume.properties_out[0].vapor_frac)
+            )
+        )
+        _log.info(
+            "bfp turb os work={}".format(
+                -1e-6 * fs.bfp_turb_os.control_volume.work[0].value
+            )
+        )
+        _log.info(
+            "bfp turb os efficiency={}".format(
+                fs.bfp_turb_os.efficiency_isentropic[0].value
+            )
+        )
+        _log.info("Tel turb os ={}".format(pyo.value(fs.bfp_turb_os.tel[0])))
+        _log.info("bfp turb os flow coef={}".format(fs.bfp_turb_os.flow_coeff.value))
+        _log.info(
+            "bfp turb os out vol flow={}".format(
+                pyo.value(fs.bfp_turb_os.control_volume.properties_out[0].flow_vol)
+            )
+        )
 
         # Since the constraint to calculate flow rate based on valve opening
         # and pressure drop is based on the square of flow rate and opening,
@@ -1548,13 +1784,13 @@ def _add_u_eq(blk, uex=0.8):
     @blk.Constraint(ti)
     def U_eq(b, t):
         return (
-            b.overall_heat_transfer_coefficient[t] ==
-            b.U0[t]*(b.tube.properties_in[t].flow_mol/b.f0[t])**b.uex[t]
+            b.overall_heat_transfer_coefficient[t]
+            == b.U0[t] * (b.tube.properties_in[t].flow_mol / b.f0[t]) ** b.uex[t]
         )
 
 
 def set_scaling_factors(m):
-    """ Set scaling factors for variables and expressions. These are used for
+    """Set scaling factors for variables and expressions. These are used for
     variable scaling and used by the framework to scale constraints.
 
     Args:
@@ -1573,10 +1809,8 @@ def set_scaling_factors(m):
     iscale.set_scaling_factor(fs.aux_condenser.side_1.heat, 1e-7)
     iscale.set_scaling_factor(fs.aux_condenser.side_2.heat, 1e-7)
 
-    iscale.set_scaling_factor(fs.hotwell_tank.control_volume.energy_holdup,
-                              1e-9)
-    iscale.set_scaling_factor(fs.hotwell_tank.control_volume.material_holdup,
-                              1e-6)
+    iscale.set_scaling_factor(fs.hotwell_tank.control_volume.energy_holdup, 1e-9)
+    iscale.set_scaling_factor(fs.hotwell_tank.control_volume.material_holdup, 1e-6)
 
     iscale.set_scaling_factor(fs.fwh1.condense.side_1.material_holdup, 1e-4)
     iscale.set_scaling_factor(fs.fwh1.condense.side_1.energy_holdup, 1e-8)
@@ -1619,19 +1853,26 @@ def set_scaling_factors(m):
     # scaling factor for control valves
     for t in m.fs_main.time:
         iscale.set_scaling_factor(
-            fs.spray_valve.control_volume.properties_in[t].flow_mol, 0.05)
+            fs.spray_valve.control_volume.properties_in[t].flow_mol, 0.05
+        )
         iscale.set_scaling_factor(
-            fs.makeup_valve.control_volume.properties_in[t].flow_mol, 0.01)
+            fs.makeup_valve.control_volume.properties_in[t].flow_mol, 0.01
+        )
         iscale.set_scaling_factor(
-            fs.fwh2_valve.control_volume.properties_in[t].flow_mol, 0.001)
+            fs.fwh2_valve.control_volume.properties_in[t].flow_mol, 0.001
+        )
         iscale.set_scaling_factor(
-            fs.fwh3_valve.control_volume.properties_in[t].flow_mol, 0.001)
+            fs.fwh3_valve.control_volume.properties_in[t].flow_mol, 0.001
+        )
         iscale.set_scaling_factor(
-            fs.fwh5_valve.control_volume.properties_in[t].flow_mol, 0.001)
+            fs.fwh5_valve.control_volume.properties_in[t].flow_mol, 0.001
+        )
         iscale.set_scaling_factor(
-            fs.fwh6_valve.control_volume.properties_in[t].flow_mol, 0.001)
+            fs.fwh6_valve.control_volume.properties_in[t].flow_mol, 0.001
+        )
         iscale.set_scaling_factor(
-            fs.bfp_turb_valve.control_volume.properties_in[t].flow_mol, 0.01)
+            fs.bfp_turb_valve.control_volume.properties_in[t].flow_mol, 0.01
+        )
 
     # Calculate calculated scaling factors
     iscale.calculate_scaling_factors(m)
@@ -1642,9 +1883,9 @@ def main_steady_state():
     solver = get_solver()
 
     dof = degrees_of_freedom(m_ss)
-    print('dof of full model', dof)
+    print("dof of full model", dof)
     # solving dynamic model at steady-state
-    print('solving dynamic model at steady-state...')
+    print("solving dynamic model at steady-state...")
     solver.solve(m_ss, tee=True)
     return m_ss
 
@@ -1652,32 +1893,42 @@ def main_steady_state():
 def main_dynamic():
     m_ss = get_model(dynamic=False)
     m_dyn = get_model(dynamic=True)
-    copy_non_time_indexed_values(m_dyn.fs_main, m_ss.fs_main,
-                                 copy_fixed=True,
-                                 outlvl=idaeslog.ERROR)
+    copy_non_time_indexed_values(
+        m_dyn.fs_main, m_ss.fs_main, copy_fixed=True, outlvl=idaeslog.ERROR
+    )
     for t in m_dyn.fs_main.time:
-        copy_values_at_time(m_dyn.fs_main, m_ss.fs_main, t, 0.0,
-                            copy_fixed=True, outlvl=idaeslog.ERROR)
+        copy_values_at_time(
+            m_dyn.fs_main, m_ss.fs_main, t, 0.0, copy_fixed=True, outlvl=idaeslog.ERROR
+        )
     t0 = 0
     # estimate integral error for the PI controller
-    m_dyn.fs_main.fs_stc.fwh2_ctrl.mv_ref.value = m_dyn.fs_main.fs_stc.\
-        fwh2_valve.valve_opening[t0].value
-    m_dyn.fs_main.fs_stc.fwh3_ctrl.mv_ref.value =\
+    m_dyn.fs_main.fs_stc.fwh2_ctrl.mv_ref.value = (
+        m_dyn.fs_main.fs_stc.fwh2_valve.valve_opening[t0].value
+    )
+    m_dyn.fs_main.fs_stc.fwh3_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.fwh3_valve.valve_opening[t0].value
-    m_dyn.fs_main.fs_stc.fwh5_ctrl.mv_ref.value =\
+    )
+    m_dyn.fs_main.fs_stc.fwh5_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.fwh5_valve.valve_opening[t0].value
-    m_dyn.fs_main.fs_stc.fwh6_ctrl.mv_ref.value =\
+    )
+    m_dyn.fs_main.fs_stc.fwh6_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.fwh6_valve.valve_opening[t0].value
-    m_dyn.fs_main.fs_stc.makeup_ctrl.mv_ref.value =\
+    )
+    m_dyn.fs_main.fs_stc.makeup_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.makeup_valve.valve_opening[t0].value
-    m_dyn.fs_main.fs_stc.da_ctrl.mv_ref.value =\
+    )
+    m_dyn.fs_main.fs_stc.da_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.cond_valve.valve_opening[t0].value
-    m_dyn.fs_main.fs_stc.spray_ctrl.mv_ref.value =\
+    )
+    m_dyn.fs_main.fs_stc.spray_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.spray_valve.valve_opening[t0].value
+    )
     m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error_ref[t0])
-    m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error[:].value =\
-        pyo.value(m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error_ref[t0])
+        m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error_ref[t0]
+    )
+    m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error[:].value = pyo.value(
+        m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error_ref[t0]
+    )
 
     m_dyn.fs_main.fs_stc.fwh2.condense.level[0].fix()
     m_dyn.fs_main.fs_stc.fwh3.condense.level[0].fix()
@@ -1693,131 +1944,245 @@ def main_dynamic():
     outlvl = idaeslog.DEBUG
     _log = idaeslog.getLogger(m_dyn.name, outlvl, tag="flowsheet")
     dof = degrees_of_freedom(m_dyn.fs_main)
-    _log.debug('dof full model={}'.format(dof))
+    _log.debug("dof full model={}".format(dof))
     # solving dynamic model at steady-state
-    print('solving dynamic model at steady-state...')
+    print("solving dynamic model at steady-state...")
     solver.solve(m_dyn.fs_main, tee=True)
 
-    _log.debug('main steam enth={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.enth_mol[0])))
-    _log.debug('main steam flow_mol={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[0])))
-    _log.debug('main steam pressure={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.pressure[0])))
-    _log.debug('throttle_valve Cv={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.throttle_valve[1].Cv)))
-    _log.debug('throttle_valve opening={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.throttle_valve[1].
-                  valve_opening[0])))
-    _log.debug('HP stage 1 inlet enth_mol={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.hp_stages[1].inlet.enth_mol[0])))
-    _log.debug('HP stage 1 inlet flow_mol={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.hp_stages[1].inlet.flow_mol[0])))
-    _log.debug('HP stage 1 inlet pressure={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.hp_stages[1].inlet.pressure[0])))
-    _log.debug('IP stage 1 inlet enth_mol={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.enth_mol[0])))
-    _log.debug('IP stage 1 inlet flow_mol={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.flow_mol[0])))
-    _log.debug('IP stage 1 inlet pressure={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[0])))
-    _log.debug('Outlet stage enth_mol={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.outlet_stage.outlet.enth_mol[0])))
-    _log.debug('Outlet stage flow_mol={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.outlet_stage.outlet.flow_mol[0])))
-    _log.debug('Outlet stage pressure={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.turb.outlet_stage.outlet.pressure[0])))
-    _log.debug('Power output of main turbine={}'.format(
-        pyo.value(m_dyn.fs_main.fs_stc.power_output[0])))
-    _log.debug('Power output of bfp turbine={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.bfp_turb.control_volume.work[0]
-                    + m_dyn.fs_main.fs_stc.bfp_turb_os.control_volume.work[0])
-          * (-1e-6)))
-    _log.debug('FWH6 outlet enth_mol={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.fwh6.desuperheat.outlet_2.
-                    enth_mol[0])))
-    _log.debug('FWH6 outlet flow_mol={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.fwh6.desuperheat.outlet_2.
-                    flow_mol[0])))
-    _log.debug('FWH6 outlet pressure={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.fwh6.desuperheat.outlet_2.
-                    pressure[0])))
-    _log.debug('water makeup flow={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.condenser_hotwell.makeup.
-                    flow_mol[0])))
-    _log.debug('spray flow={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.spray_valve.outlet.flow_mol[0])))
-    _log.debug('Cv fwh2={}'.format(m_dyn.fs_main.fs_stc.fwh2_valve.Cv.value))
-    _log.debug('Cv fwh3={}'.format(m_dyn.fs_main.fs_stc.fwh3_valve.Cv.value))
-    _log.debug('Cv fwh5={}'.format(m_dyn.fs_main.fs_stc.fwh5_valve.Cv.value))
-    _log.debug('Cv fwh6={}'.format(m_dyn.fs_main.fs_stc.fwh6_valve.Cv.value))
-    _log.debug('Cv cond_valve={}'.format(
-        m_dyn.fs_main.fs_stc.cond_valve.Cv.value))
-    _log.debug('Cv makeup_valve={}'.format(
-        m_dyn.fs_main.fs_stc.makeup_valve.Cv.value))
-    _log.debug('Cv spray_valve={}'.format(
-        m_dyn.fs_main.fs_stc.spray_valve.Cv.value))
-    _log.debug('valve opening fwh2={}'.format(
-          m_dyn.fs_main.fs_stc.fwh2_valve.valve_opening[0].value))
-    _log.debug('valve opening fwh3={}'.format(
-          m_dyn.fs_main.fs_stc.fwh3_valve.valve_opening[0].value))
-    _log.debug('valve opening fwh5={}'.format(
-          m_dyn.fs_main.fs_stc.fwh5_valve.valve_opening[0].value))
-    _log.debug('valve opening fwh6={}'.format(
-          m_dyn.fs_main.fs_stc.fwh6_valve.valve_opening[0].value))
-    _log.debug('valve opening cond_valve={}'.format(
-          m_dyn.fs_main.fs_stc.cond_valve.valve_opening[0].value))
-    _log.debug('valve opening makeup_valve={}'.format(
-          m_dyn.fs_main.fs_stc.makeup_valve.valve_opening[0].value))
-    _log.debug('valve opening spray={}'.format(
-          m_dyn.fs_main.fs_stc.spray_valve.valve_opening[0].value))
-    _log.debug('fwh2 level={}'.format(
-        m_dyn.fs_main.fs_stc.fwh2.condense.level[0].value))
-    _log.debug('fwh3 level={}'.format(
-        m_dyn.fs_main.fs_stc.fwh3.condense.level[0].value))
-    _log.debug('fwh5 level={}'.format(
-        m_dyn.fs_main.fs_stc.fwh5.condense.level[0].value))
-    _log.debug('fwh6 level={}'.format(
-        m_dyn.fs_main.fs_stc.fwh6.condense.level[0].value))
-    _log.debug('hotwell tank level={}'.format(
-          m_dyn.fs_main.fs_stc.hotwell_tank.tank_level[0].value))
-    _log.debug('da tank level={}'.format(
-        m_dyn.fs_main.fs_stc.da_tank.tank_level[0].value))
-    _log.debug('makeup flow={}'.format(
-          m_dyn.fs_main.fs_stc.makeup_valve.outlet.flow_mol[0].value))
-    _log.debug('spray flow={}'.format(
-          m_dyn.fs_main.fs_stc.spray_valve.outlet.flow_mol[0].value))
-    _log.debug('split_attemp fraction={}'.format(
-          m_dyn.fs_main.fs_stc.split_attemp.split_fraction[0, "Spray"].value))
+    _log.debug(
+        "main steam enth={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.enth_mol[0])
+        )
+    )
+    _log.debug(
+        "main steam flow_mol={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[0])
+        )
+    )
+    _log.debug(
+        "main steam pressure={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.pressure[0])
+        )
+    )
+    _log.debug(
+        "throttle_valve Cv={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.throttle_valve[1].Cv)
+        )
+    )
+    _log.debug(
+        "throttle_valve opening={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.throttle_valve[1].valve_opening[0])
+        )
+    )
+    _log.debug(
+        "HP stage 1 inlet enth_mol={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.hp_stages[1].inlet.enth_mol[0])
+        )
+    )
+    _log.debug(
+        "HP stage 1 inlet flow_mol={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.hp_stages[1].inlet.flow_mol[0])
+        )
+    )
+    _log.debug(
+        "HP stage 1 inlet pressure={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.hp_stages[1].inlet.pressure[0])
+        )
+    )
+    _log.debug(
+        "IP stage 1 inlet enth_mol={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.enth_mol[0])
+        )
+    )
+    _log.debug(
+        "IP stage 1 inlet flow_mol={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.flow_mol[0])
+        )
+    )
+    _log.debug(
+        "IP stage 1 inlet pressure={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[0])
+        )
+    )
+    _log.debug(
+        "Outlet stage enth_mol={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.outlet_stage.outlet.enth_mol[0])
+        )
+    )
+    _log.debug(
+        "Outlet stage flow_mol={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.outlet_stage.outlet.flow_mol[0])
+        )
+    )
+    _log.debug(
+        "Outlet stage pressure={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.outlet_stage.outlet.pressure[0])
+        )
+    )
+    _log.debug(
+        "Power output of main turbine={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.power_output[0])
+        )
+    )
+    _log.debug(
+        "Power output of bfp turbine={}".format(
+            pyo.value(
+                m_dyn.fs_main.fs_stc.bfp_turb.control_volume.work[0]
+                + m_dyn.fs_main.fs_stc.bfp_turb_os.control_volume.work[0]
+            )
+            * (-1e-6)
+        )
+    )
+    _log.debug(
+        "FWH6 outlet enth_mol={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.fwh6.desuperheat.outlet_2.enth_mol[0])
+        )
+    )
+    _log.debug(
+        "FWH6 outlet flow_mol={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.fwh6.desuperheat.outlet_2.flow_mol[0])
+        )
+    )
+    _log.debug(
+        "FWH6 outlet pressure={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.fwh6.desuperheat.outlet_2.pressure[0])
+        )
+    )
+    _log.debug(
+        "water makeup flow={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.condenser_hotwell.makeup.flow_mol[0])
+        )
+    )
+    _log.debug(
+        "spray flow={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.spray_valve.outlet.flow_mol[0])
+        )
+    )
+    _log.debug("Cv fwh2={}".format(m_dyn.fs_main.fs_stc.fwh2_valve.Cv.value))
+    _log.debug("Cv fwh3={}".format(m_dyn.fs_main.fs_stc.fwh3_valve.Cv.value))
+    _log.debug("Cv fwh5={}".format(m_dyn.fs_main.fs_stc.fwh5_valve.Cv.value))
+    _log.debug("Cv fwh6={}".format(m_dyn.fs_main.fs_stc.fwh6_valve.Cv.value))
+    _log.debug("Cv cond_valve={}".format(m_dyn.fs_main.fs_stc.cond_valve.Cv.value))
+    _log.debug("Cv makeup_valve={}".format(m_dyn.fs_main.fs_stc.makeup_valve.Cv.value))
+    _log.debug("Cv spray_valve={}".format(m_dyn.fs_main.fs_stc.spray_valve.Cv.value))
+    _log.debug(
+        "valve opening fwh2={}".format(
+            m_dyn.fs_main.fs_stc.fwh2_valve.valve_opening[0].value
+        )
+    )
+    _log.debug(
+        "valve opening fwh3={}".format(
+            m_dyn.fs_main.fs_stc.fwh3_valve.valve_opening[0].value
+        )
+    )
+    _log.debug(
+        "valve opening fwh5={}".format(
+            m_dyn.fs_main.fs_stc.fwh5_valve.valve_opening[0].value
+        )
+    )
+    _log.debug(
+        "valve opening fwh6={}".format(
+            m_dyn.fs_main.fs_stc.fwh6_valve.valve_opening[0].value
+        )
+    )
+    _log.debug(
+        "valve opening cond_valve={}".format(
+            m_dyn.fs_main.fs_stc.cond_valve.valve_opening[0].value
+        )
+    )
+    _log.debug(
+        "valve opening makeup_valve={}".format(
+            m_dyn.fs_main.fs_stc.makeup_valve.valve_opening[0].value
+        )
+    )
+    _log.debug(
+        "valve opening spray={}".format(
+            m_dyn.fs_main.fs_stc.spray_valve.valve_opening[0].value
+        )
+    )
+    _log.debug(
+        "fwh2 level={}".format(m_dyn.fs_main.fs_stc.fwh2.condense.level[0].value)
+    )
+    _log.debug(
+        "fwh3 level={}".format(m_dyn.fs_main.fs_stc.fwh3.condense.level[0].value)
+    )
+    _log.debug(
+        "fwh5 level={}".format(m_dyn.fs_main.fs_stc.fwh5.condense.level[0].value)
+    )
+    _log.debug(
+        "fwh6 level={}".format(m_dyn.fs_main.fs_stc.fwh6.condense.level[0].value)
+    )
+    _log.debug(
+        "hotwell tank level={}".format(
+            m_dyn.fs_main.fs_stc.hotwell_tank.tank_level[0].value
+        )
+    )
+    _log.debug(
+        "da tank level={}".format(m_dyn.fs_main.fs_stc.da_tank.tank_level[0].value)
+    )
+    _log.debug(
+        "makeup flow={}".format(
+            m_dyn.fs_main.fs_stc.makeup_valve.outlet.flow_mol[0].value
+        )
+    )
+    _log.debug(
+        "spray flow={}".format(
+            m_dyn.fs_main.fs_stc.spray_valve.outlet.flow_mol[0].value
+        )
+    )
+    _log.debug(
+        "split_attemp fraction={}".format(
+            m_dyn.fs_main.fs_stc.split_attemp.split_fraction[0, "Spray"].value
+        )
+    )
 
     # impose step change for dynamic model
     for t in m_dyn.fs_main.time:
         if t >= 30:
             m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[t].fix(
-                m_dyn.fs_main.fs_stc.turb.ip_stages[1].
-                inlet.pressure[0].value*1.05)
+                m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[0].value * 1.05
+            )
         else:
             m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[t].fix(
-                m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[0].value)
+                m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[0].value
+            )
     dof = degrees_of_freedom(m_dyn.fs_main)
-    _log.debug('dof of full model={}'.format(dof))
+    _log.debug("dof of full model={}".format(dof))
     # solving dynamic model
-    _log.debug('solving dynamic model...')
+    _log.debug("solving dynamic model...")
     solver.solve(m_dyn.fs_main, tee=True)
-    _log.debug('Power output of main turbine={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.power_output[60])))
-    _log.debug('Power output of bfp turbine={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.bfp_turb.control_volume.work[60]
-                    + m_dyn.fs_main.fs_stc.bfp_turb_os.control_volume.work[60])
-          * (-1e-6)))
-    _log.debug('main steam enth={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.enth_mol[60])))
-    _log.debug('main steam flow_mol={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[60])))
-    _log.debug('main steam pressure={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.pressure[60])))
-    _log.debug('fw pressure={}'.format(
-          pyo.value(m_dyn.fs_main.fs_stc.bfp.outlet.pressure[60])))
+    _log.debug(
+        "Power output of main turbine={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.power_output[60])
+        )
+    )
+    _log.debug(
+        "Power output of bfp turbine={}".format(
+            pyo.value(
+                m_dyn.fs_main.fs_stc.bfp_turb.control_volume.work[60]
+                + m_dyn.fs_main.fs_stc.bfp_turb_os.control_volume.work[60]
+            )
+            * (-1e-6)
+        )
+    )
+    _log.debug(
+        "main steam enth={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.enth_mol[60])
+        )
+    )
+    _log.debug(
+        "main steam flow_mol={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[60])
+        )
+    )
+    _log.debug(
+        "main steam pressure={}".format(
+            pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.pressure[60])
+        )
+    )
+    _log.debug(
+        "fw pressure={}".format(pyo.value(m_dyn.fs_main.fs_stc.bfp.outlet.pressure[60]))
+    )
 
     # prepare for plots
     time = []
@@ -1827,14 +2192,10 @@ def main_dynamic():
     cond_valve_open = []
     for t in m_dyn.fs_main.time:
         time.append(t)
-        pres_ip.append(
-            m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[t].value)
-        power_gross.append(
-            pyo.value(m_dyn.fs_main.fs_stc.power_output[t]))
-        da_level.append(
-            m_dyn.fs_main.fs_stc.da_tank.tank_level[t].value)
-        cond_valve_open.append(
-            m_dyn.fs_main.fs_stc.cond_valve.valve_opening[t].value)
+        pres_ip.append(m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[t].value)
+        power_gross.append(pyo.value(m_dyn.fs_main.fs_stc.power_output[t]))
+        da_level.append(m_dyn.fs_main.fs_stc.da_tank.tank_level[t].value)
+        cond_valve_open.append(m_dyn.fs_main.fs_stc.cond_valve.valve_opening[t].value)
 
     # plot the dynamic solution
     plt.figure(1)
@@ -1872,9 +2233,9 @@ def get_model(dynamic=True):
     m = pyo.ConcreteModel()
     m.dynamic = dynamic
     if m.dynamic:
-        m.fs_main = FlowsheetBlock(default={"dynamic": True,
-                                            "time_set": [0, 60],
-                                            "time_units": pyo.units.s})
+        m.fs_main = FlowsheetBlock(
+            default={"dynamic": True, "time_set": [0, 60], "time_units": pyo.units.s}
+        )
     else:
         m.fs_main = FlowsheetBlock(default={"dynamic": False})
     # Add property packages to flowsheet library
@@ -1882,11 +2243,8 @@ def get_model(dynamic=True):
     m.fs_main.fs_stc = FlowsheetBlock(default={"time_units": pyo.units.s})
     m = add_unit_models(m)
     if m.dynamic:
-        m.discretizer = pyo.TransformationFactory('dae.finite_difference')
-        m.discretizer.apply_to(m,
-                               nfe=2,
-                               wrt=m.fs_main.time,
-                               scheme="BACKWARD")
+        m.discretizer = pyo.TransformationFactory("dae.finite_difference")
+        m.discretizer.apply_to(m, nfe=2, wrt=m.fs_main.time, scheme="BACKWARD")
     m = set_arcs_and_constraints(m)
     m = set_inputs(m)
     set_scaling_factors(m)

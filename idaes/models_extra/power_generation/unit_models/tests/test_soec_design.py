@@ -20,7 +20,10 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 )
 import idaes.core.util.scaling as iscale
 from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
-from idaes.models_extra.power_generation.unit_models.soec_design import SoecDesign, EosType
+from idaes.models_extra.power_generation.unit_models.soec_design import (
+    SoecDesign,
+    EosType,
+)
 import pytest
 
 

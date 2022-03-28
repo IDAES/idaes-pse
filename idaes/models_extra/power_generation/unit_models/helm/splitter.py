@@ -53,6 +53,7 @@ class HelmSplitterData(UnitModelBlockData):
     dynamic mode this uses a pseudo-steady-state model.
 
     """
+
     CONFIG = ConfigBlock()
     CONFIG.declare(
         "dynamic",
@@ -60,7 +61,7 @@ class HelmSplitterData(UnitModelBlockData):
             domain=In([False]),
             default=False,
             description="Dynamic model flag - must be False",
-        )
+        ),
     )
     CONFIG.declare(
         "has_holdup",
@@ -147,8 +148,8 @@ from 1 to num_outlets).}""",
         self.split_fraction = Var(
             time,
             self.outlet_list,
-            initialize=1.0/len(self.outlet_list),
-            doc="Split fractions for outlet streams"
+            initialize=1.0 / len(self.outlet_list),
+            doc="Split fractions for outlet streams",
         )
 
         @self.Constraint(time, doc="Splt constraint")
@@ -169,8 +170,7 @@ from 1 to num_outlets).}""",
         def flow_eqn(b, t, o):
             o_block = getattr(self, "{}_state".format(o))
             sf = self.split_fraction[t, o]
-            return self.mixed_state[t].flow_mol*sf == o_block[t].flow_mol
-
+            return self.mixed_state[t].flow_mol * sf == o_block[t].flow_mol
 
     def add_inlet_state_and_port(self):
         tmp_dict = dict(**self.config.property_package_args)
@@ -181,7 +181,6 @@ from 1 to num_outlets).}""",
             default=tmp_dict,
         )
         self.add_port(name="inlet", block=self.mixed_state, doc="Inlet Port")
-
 
     def create_outlet_list(self):
         """
@@ -202,7 +201,7 @@ from 1 to num_outlets).}""",
                     "note that it is only necessry to provide one of "
                     "these arguments.".format(self.name)
                 )
-        elif (config.outlet_list is None and config.num_outlets is None):
+        elif config.outlet_list is None and config.num_outlets is None:
             # If no arguments provided for outlets, default to num_outlets = 2
             config.num_outlets = 2
 
@@ -290,8 +289,8 @@ from 1 to num_outlets).}""",
                 if self.outlet_blocks[o][t].flow_mol.fixed:
                     self.split_fraction[t, o].fix(
                         value(
-                            self.mixed_state[t].flow_mol /
-                            self.outlet_blocks[o][t].flow_mol
+                            self.mixed_state[t].flow_mol
+                            / self.outlet_blocks[o][t].flow_mol
                         )
                     )
 

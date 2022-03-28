@@ -24,7 +24,9 @@ __Author__ = "John Eslick"
 from pyomo.environ import Var, units as pyunits
 
 from idaes.core import declare_process_block_class
-from idaes.models_extra.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
+from idaes.models_extra.power_generation.unit_models.helm.turbine import (
+    HelmIsentropicTurbineData,
+)
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
@@ -44,10 +46,9 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
         self.efficiency_mech = Var(initialize=1.0, doc="Turbine mechanical efficiency")
         self.efficiency_mech.fix()
         time_set = self.flowsheet().time
-        self.shaft_speed = Var(time_set,
-                               doc="Shaft speed [1/s]",
-                               initialize=60.0,
-                               units=pyunits.s**-1)
+        self.shaft_speed = Var(
+            time_set, doc="Shaft speed [1/s]", initialize=60.0, units=pyunits.s**-1
+        )
         self.shaft_speed.fix()
 
         @self.Expression(time_set, doc="Specific speed [dimensionless]")
@@ -56,7 +57,7 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
             v = b.control_volume.properties_out[t].flow_vol  # m3/s
             his_rate = b.work_isentropic[t]  # J/s
             m = b.control_volume.properties_out[t].flow_mass  # kg/s
-            return s * v ** 0.5 * (his_rate / m) ** (-0.75)  # dimensionless
+            return s * v**0.5 * (his_rate / m) ** (-0.75)  # dimensionless
 
         @self.Expression(time_set, doc="Thermodynamic power [J/s]")
         def power_thermo(b, t):

@@ -29,6 +29,7 @@ For a detailed description see Jupyter Notebook
 authors: Boiler Subsystem Team (J. Ma, M. Zamarripa)
 """
 import os
+
 # Import Pyomo libraries
 import pyomo.environ as pyo
 from pyomo.network import Arc
@@ -47,10 +48,12 @@ from idaes.generic_models.properties import iapws95
 import idaes.logger as idaeslog
 from idaes.models_extra.power_generation.unit_models.drum import Drum
 from idaes.models_extra.power_generation.unit_models.downcomer import Downcomer
-from idaes.models_extra.power_generation.unit_models.waterwall_section import \
-    WaterwallSection
-from idaes.models_extra.power_generation.properties.flue_gas_ideal import \
-    FlueGasParameterBlock
+from idaes.models_extra.power_generation.unit_models.waterwall_section import (
+    WaterwallSection,
+)
+from idaes.models_extra.power_generation.properties.flue_gas_ideal import (
+    FlueGasParameterBlock,
+)
 
 # import plotting libraries
 import matplotlib.pyplot as plt
@@ -59,7 +62,7 @@ _log = idaeslog.getModelLogger(__name__)
 
 
 def main(m=None):
-    """ Create concrete model, make the flowsheet object, fix some variables,
+    """Create concrete model, make the flowsheet object, fix some variables,
     and solve the problem.
     if m concrete model already exists this function only builds the unit
     models, fixes the inputs, and initializes the units.
@@ -122,13 +125,13 @@ def create_model(m):
     def arc_rule(b, i):
         return {
             "source": m.fs.Waterwalls[i].outlet,
-            "destination": m.fs.Waterwalls[i + 1].inlet
+            "destination": m.fs.Waterwalls[i + 1].inlet,
         }
+
     m.arc = Arc(pyo.RangeSet(9), rule=arc_rule)
 
     m.fs.stream_ww14 = Arc(
-        source=m.fs.Waterwalls[10].outlet, destination=m.fs.drum.
-        water_steam_inlet
+        source=m.fs.Waterwalls[10].outlet, destination=m.fs.drum.water_steam_inlet
     )
     # pyomo arcs expand constraints for inlet = outlet ports
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
@@ -214,13 +217,17 @@ def initialize(
         m.fs.Waterwalls[9].heat_fireside[:].fix(2.1)
         m.fs.Waterwalls[10].heat_fireside[:].fix(2.0e7)
 
-        state_args_water_steam = {'flow_mol': 199470.7831,  # mol/s
-                                  'pressure': 10903981.9107,  # Pa
-                                  'enth_mol': 26585.3483}  # j/mol
+        state_args_water_steam = {
+            "flow_mol": 199470.7831,  # mol/s
+            "pressure": 10903981.9107,  # Pa
+            "enth_mol": 26585.3483,
+        }  # j/mol
 
-        state_args_feedwater = {'flow_mol': 4630.6098,  # mol/s
-                                'pressure': 10903981.9107,  # Pa
-                                'enth_mol': 22723.907}  # j/mol
+        state_args_feedwater = {
+            "flow_mol": 4630.6098,  # mol/s
+            "pressure": 10903981.9107,  # Pa
+            "enth_mol": 22723.907,
+        }  # j/mol
 
         m.fs.drum.initialize(
             outlvl=outlvl,
@@ -228,12 +235,9 @@ def initialize(
             state_args_water_steam=state_args_water_steam,
             state_args_feedwater=state_args_feedwater,
         )
-        m.fs.downcomer.inlet.flow_mol[:].fix(m.fs.drum.liquid_outlet.
-                                             flow_mol[0].value)
-        m.fs.downcomer.inlet.pressure[:].fix(m.fs.drum.liquid_outlet.
-                                             pressure[0].value)
-        m.fs.downcomer.inlet.enth_mol[:].fix(m.fs.drum.liquid_outlet.
-                                             enth_mol[0].value)
+        m.fs.downcomer.inlet.flow_mol[:].fix(m.fs.drum.liquid_outlet.flow_mol[0].value)
+        m.fs.downcomer.inlet.pressure[:].fix(m.fs.drum.liquid_outlet.pressure[0].value)
+        m.fs.downcomer.inlet.enth_mol[:].fix(m.fs.drum.liquid_outlet.enth_mol[0].value)
 
         m.fs.downcomer.initialize(
             state_args={
@@ -245,12 +249,15 @@ def initialize(
             optarg=solver.options,
         )
 
-        m.fs.Waterwalls[1].inlet.flow_mol[:].fix(m.fs.downcomer.outlet.
-                                                 flow_mol[0].value)
-        m.fs.Waterwalls[1].inlet.pressure[:].fix(m.fs.downcomer.outlet.
-                                                 pressure[0].value)
-        m.fs.Waterwalls[1].inlet.enth_mol[:].fix(m.fs.downcomer.outlet.
-                                                 enth_mol[0].value)
+        m.fs.Waterwalls[1].inlet.flow_mol[:].fix(
+            m.fs.downcomer.outlet.flow_mol[0].value
+        )
+        m.fs.Waterwalls[1].inlet.pressure[:].fix(
+            m.fs.downcomer.outlet.pressure[0].value
+        )
+        m.fs.Waterwalls[1].inlet.enth_mol[:].fix(
+            m.fs.downcomer.outlet.enth_mol[0].value
+        )
         m.fs.Waterwalls[1].initialize(
             state_args={
                 "flow_mol": m.fs.Waterwalls[1].inlet.flow_mol[0].value,
@@ -273,12 +280,9 @@ def initialize(
             )
             m.fs.Waterwalls[i].initialize(
                 state_args={
-                    "flow_mol": m.fs.Waterwalls[i - 1].outlet.flow_mol[0].
-                    value,
-                    "pressure": m.fs.Waterwalls[i - 1].outlet.pressure[0].
-                    value,
-                    "enth_mol": m.fs.Waterwalls[i - 1].outlet.enth_mol[0].
-                    value,
+                    "flow_mol": m.fs.Waterwalls[i - 1].outlet.flow_mol[0].value,
+                    "pressure": m.fs.Waterwalls[i - 1].outlet.pressure[0].value,
+                    "enth_mol": m.fs.Waterwalls[i - 1].outlet.enth_mol[0].value,
                 },
                 outlvl=6,
                 optarg=solver.options,
@@ -291,7 +295,7 @@ def initialize(
         m.fs.downcomer.inlet.flow_mol[:].unfix()
         m.fs.downcomer.inlet.pressure[:].unfix()
         m.fs.downcomer.inlet.enth_mol[:].unfix()
-        print('solving full-space problem')
+        print("solving full-space problem")
         for i in m.fs.ww_zones:
             m.fs.Waterwalls[i].inlet.flow_mol[:].unfix()
             m.fs.Waterwalls[i].inlet.pressure[:].unfix()
@@ -301,22 +305,19 @@ def initialize(
         if df != 0:
             raise ValueError("Check degrees of freedom: {}".format(df))
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            print('solving full-space problem')
+            print("solving full-space problem")
             res = solver.solve(m, tee=slc.tee)
-        init_log.info_low("Initialization Complete: {}".format(idaeslog.
-                                                               condition(res)))
+        init_log.info_low("Initialization Complete: {}".format(idaeslog.condition(res)))
         ms.to_json(m, fname="subcritical_boiler_init.json.gz")
     else:
-        print('\n\nInitializing from json file')
+        print("\n\nInitializing from json file")
         ms.from_json(m, fname="subcritical_boiler_init.json.gz")
     return m
 
 
 def run_sensitivity():
     m = main()
-    optarg = {
-            "tol": 1e-6,
-            "max_iter": 40}
+    optarg = {"tol": 1e-6, "max_iter": 40}
 
     m.fs.drum.feedwater_inlet.flow_mol[:].fix()
     m.fs.drum.feedwater_inlet.pressure[:].unfix()
@@ -331,22 +332,22 @@ def run_sensitivity():
     results = solver.solve(m, tee=True)
     print(results)
 
-    print('\nDrum feedwater inlet')
+    print("\nDrum feedwater inlet")
     m.fs.drum.feedwater_inlet.display()
-    print('\nWaterWall Outlet')
+    print("\nWaterWall Outlet")
     m.fs.drum.water_steam_inlet.display()
     m.fs.Waterwalls[10].outlet.display()
-    print('\ndrum flash inlet')
+    print("\ndrum flash inlet")
     m.fs.drum.flash.inlet.display()
-    print('\ndrum liquid outlet')
+    print("\ndrum liquid outlet")
     m.fs.drum.liquid_outlet.display()
-    print('\ndowncomer inlet')
+    print("\ndowncomer inlet")
     m.fs.downcomer.inlet.display()
-    print('\ndowncomer outlet')
+    print("\ndowncomer outlet")
     m.fs.downcomer.outlet.display()
-    print('\nwaterwall inlet')
+    print("\nwaterwall inlet")
     m.fs.Waterwalls[1].inlet.display()
-    print('\n vapor fraction zone 10')
+    print("\n vapor fraction zone 10")
     m.fs.Waterwalls[10].control_volume.properties_out[0].vapor_frac.display()
 
     # Since heat transfer indirectly calculates the recirculation flowrate
@@ -358,44 +359,64 @@ def run_sensitivity():
     # and the steam outlet
     vap_frac = []
     flow = []
-    flow_it = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7,
-               1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4,
-               2.5, 2.6, 2.7, 2.8, 2.9, 3.0]
+    flow_it = [
+        1.1,
+        1.2,
+        1.3,
+        1.4,
+        1.5,
+        1.6,
+        1.7,
+        1.8,
+        1.9,
+        2.0,
+        2.1,
+        2.2,
+        2.3,
+        2.4,
+        2.5,
+        2.6,
+        2.7,
+        2.8,
+        2.9,
+        3.0,
+    ]
     count = 0
     for i in flow_it:
-        count = count+1
-        m.fs.Waterwalls[1].heat_fireside[:].fix(2.3e7*i)
-        m.fs.Waterwalls[2].heat_fireside[:].fix(1.5e7*i)
-        m.fs.Waterwalls[3].heat_fireside[:].fix(6.8e6*i)
-        m.fs.Waterwalls[4].heat_fireside[:].fix(1.2e7*i)
-        m.fs.Waterwalls[5].heat_fireside[:].fix(1.2e7*i)
-        m.fs.Waterwalls[6].heat_fireside[:].fix(1.2e7*i)
-        m.fs.Waterwalls[7].heat_fireside[:].fix(1.0e7*i)
-        m.fs.Waterwalls[8].heat_fireside[:].fix(9.9e6*i)
-        m.fs.Waterwalls[9].heat_fireside[:].fix(2.1e7*i)
-        m.fs.Waterwalls[10].heat_fireside[:].fix(2.0e7*i)
+        count = count + 1
+        m.fs.Waterwalls[1].heat_fireside[:].fix(2.3e7 * i)
+        m.fs.Waterwalls[2].heat_fireside[:].fix(1.5e7 * i)
+        m.fs.Waterwalls[3].heat_fireside[:].fix(6.8e6 * i)
+        m.fs.Waterwalls[4].heat_fireside[:].fix(1.2e7 * i)
+        m.fs.Waterwalls[5].heat_fireside[:].fix(1.2e7 * i)
+        m.fs.Waterwalls[6].heat_fireside[:].fix(1.2e7 * i)
+        m.fs.Waterwalls[7].heat_fireside[:].fix(1.0e7 * i)
+        m.fs.Waterwalls[8].heat_fireside[:].fix(9.9e6 * i)
+        m.fs.Waterwalls[9].heat_fireside[:].fix(2.1e7 * i)
+        m.fs.Waterwalls[10].heat_fireside[:].fix(2.0e7 * i)
         m.fs.drum.feedwater_inlet.flow_mol[:].unfix()
         m.fs.drum.feedwater_inlet.pressure[:].fix()
         m.fs.drum.feedwater_inlet.enth_mol[:].fix()
         results = solver.solve(m, tee=False)
-        vap_frac.append(pyo.value(m.fs.Waterwalls[10].control_volume.
-                                  properties_out[0].vapor_frac))
+        vap_frac.append(
+            pyo.value(m.fs.Waterwalls[10].control_volume.properties_out[0].vapor_frac)
+        )
         flow.append(pyo.value(m.fs.drum.feedwater_inlet.flow_mol[0]))
 
         if pyo.check_optimal_termination(results):
-            print('iter '+str(count)+ ' = EXIT- Optimal Solution Found.')
+            print("iter " + str(count) + " = EXIT- Optimal Solution Found.")
         else:
-            print('iter '+str(count) + ' = infeasible')
+            print("iter " + str(count) + " = infeasible")
 
     x = []
     for i in flow_it:
-        x.append((i-1)*100)
+        x.append((i - 1) * 100)
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    ax.plot(x, flow, label=str('feedwater (steam) flowrate'))
+    ax.plot(x, flow, label=str("feedwater (steam) flowrate"))
     plt.legend()
-    ax.set_xlabel('heat duty - % increment')
-    ax.set_ylabel('Flowrate mol/s')
+    ax.set_xlabel("heat duty - % increment")
+    ax.set_ylabel("Flowrate mol/s")
     plt.show()
     return m

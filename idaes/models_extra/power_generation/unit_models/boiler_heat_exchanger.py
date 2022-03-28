@@ -511,7 +511,7 @@ arrangement to use for delta T
         # Total flow area on tube side
         @self.Expression(doc="Total flow area on tube side")
         def area_flow_tube(b):
-            return 0.25 * c.pi * b.tube_di ** 2.0 * b.tube_ncol * b.nrow_inlet
+            return 0.25 * c.pi * b.tube_di**2.0 * b.tube_ncol * b.nrow_inlet
 
         # Total flow area on shell side
         @self.Expression(doc="Total flow area on shell side")
@@ -549,7 +549,7 @@ arrangement to use for delta T
                 return b.volumne_side_1 == (
                     0.25
                     * c.pi
-                    * b.tube_di ** 2.0
+                    * b.tube_di**2.0
                     * b.tube_length
                     * b.tube_ncol
                     * b.tube_nrow
@@ -564,7 +564,7 @@ arrangement to use for delta T
                     == b.tube_ncol * b.pitch_y * b.tube_length * b.tube_nrow * b.pitch_x
                     - 0.25
                     * c.pi
-                    * b.do_tube ** 2.0
+                    * b.do_tube**2.0
                     * b.tube_length
                     * b.tube_ncol
                     * b.tube_nrow
@@ -611,7 +611,7 @@ arrangement to use for delta T
             within=NonNegativeReals,
             mutable=True,
             doc="Fouling resistance on tube side",
-            units=pyunits.K * pyunits.m ** 2 * pyunits.W ** -1,
+            units=pyunits.K * pyunits.m**2 * pyunits.W**-1,
         )
 
         # Heat transfer resistance due to the fouling on shell side
@@ -620,7 +620,7 @@ arrangement to use for delta T
             within=NonNegativeReals,
             mutable=True,
             doc="Fouling resistance on tube side",
-            units=pyunits.K * pyunits.m ** 2 * pyunits.W ** -1,
+            units=pyunits.K * pyunits.m**2 * pyunits.W**-1,
         )
 
         # Correction factor for overall heat transfer coefficient
@@ -682,7 +682,7 @@ arrangement to use for delta T
                 self.flowsheet().time,
                 initialize=100.0,
                 doc="Shell convective heat transfer coefficient due to radiation",
-                units=pyunits.W / pyunits.m ** 2 / pyunits.K,
+                units=pyunits.W / pyunits.m**2 / pyunits.K,
             )
 
         # Tube side convective heat transfer coefficient
@@ -690,7 +690,7 @@ arrangement to use for delta T
             self.flowsheet().time,
             initialize=100.0,
             doc="Tube side convective heat transfer coefficient",
-            units=pyunits.W / pyunits.m ** 2 / pyunits.K,
+            units=pyunits.W / pyunits.m**2 / pyunits.K,
         )
 
         # Shell side convective heat transfer coefficient due to convection
@@ -698,7 +698,7 @@ arrangement to use for delta T
             self.flowsheet().time,
             initialize=100.0,
             doc="Shell side convective heat transfer coefficient due to convection",
-            units=pyunits.W / pyunits.m ** 2 / pyunits.K,
+            units=pyunits.W / pyunits.m**2 / pyunits.K,
         )
 
         # Total shell side convective heat transfer coefficient
@@ -707,14 +707,14 @@ arrangement to use for delta T
             self.flowsheet().time,
             initialize=150.0,
             doc="Total shell side convective heat transfer coefficient",
-            units=pyunits.W / pyunits.m ** 2 / pyunits.K,
+            units=pyunits.W / pyunits.m**2 / pyunits.K,
         )
 
         # Heat conduction resistance of tube wall
         self.rcond_wall = Var(
             initialize=1.0,
             doc="Heat conduction resistance of wall",
-            units=pyunits.m ** 2 * pyunits.K / pyunits.W,
+            units=pyunits.m**2 * pyunits.K / pyunits.W,
         )
 
         if self.config.has_radiation is True:
@@ -758,7 +758,7 @@ arrangement to use for delta T
                     + 0.17674928397780117345084e-001 * log(X5)
                     - 0.12541139396423576016226e-001 * exp(X2)
                     - 0.90251708836308952577099 * exp(X4)
-                    + 0.32447078857791738538963e-002 * X2 ** 2
+                    + 0.32447078857791738538963e-002 * X2**2
                     - 0.31332075610864829615706e-004 * X1 * X2
                     - 0.54639645449809960433102e-009 * X1 * X3
                     - 0.19721467902854980460033e-003 * X1 * X5
@@ -813,7 +813,7 @@ arrangement to use for delta T
                     + 0.17674928397780117345084e-001 * log(X5)
                     - 0.12541139396423576016226e-001 * exp(X2)
                     - 0.90251708836308952577099 * exp(X4)
-                    + 0.32447078857791738538963e-002 * X2 ** 2
+                    + 0.32447078857791738538963e-002 * X2**2
                     - 0.31332075610864829615706e-004 * X1 * X2
                     - 0.54639645449809960433102e-009 * X1 * X3
                     - 0.19721467902854980460033e-003 * X1 * X5
@@ -868,7 +868,7 @@ arrangement to use for delta T
                     + 0.17674928397780117345084e-001 * log(X5)
                     - 0.12541139396423576016226e-001 * exp(X2)
                     - 0.90251708836308952577099 * exp(X4)
-                    + 0.32447078857791738538963e-002 * X2 ** 2
+                    + 0.32447078857791738538963e-002 * X2**2
                     - 0.31332075610864829615706e-004 * X1 * X2
                     - 0.54639645449809960433102e-009 * X1 * X3
                     - 0.19721467902854980460033e-003 * X1 * X5

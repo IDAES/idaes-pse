@@ -288,19 +288,19 @@ class FlueGasParameterData(PhysicalParameterBlock):
             self.component_list,
             initialize=cp_mol_ig_comp_coeff_parameter_C,
             doc="Constants for spec. heat capacity for ideal gas",
-            units=pyunits.J / pyunits.mol / pyunits.K / pyunits.kK ** 2,
+            units=pyunits.J / pyunits.mol / pyunits.K / pyunits.kK**2,
         )
         self.cp_mol_ig_comp_coeff_D = Param(
             self.component_list,
             initialize=cp_mol_ig_comp_coeff_parameter_D,
             doc="Constants for spec. heat capacity for ideal gas",
-            units=pyunits.J / pyunits.mol / pyunits.K / pyunits.kK ** 3,
+            units=pyunits.J / pyunits.mol / pyunits.K / pyunits.kK**3,
         )
         self.cp_mol_ig_comp_coeff_E = Param(
             self.component_list,
             initialize=cp_mol_ig_comp_coeff_parameter_E,
             doc="Constants for spec. heat capacity for ideal gas",
-            units=pyunits.J / pyunits.mol / pyunits.K * pyunits.kK ** 2,
+            units=pyunits.J / pyunits.mol / pyunits.K * pyunits.kK**2,
         )
         self.cp_mol_ig_comp_coeff_F = Param(
             self.component_list,
@@ -325,12 +325,12 @@ class FlueGasParameterData(PhysicalParameterBlock):
         self.ce_param = Param(
             initialize=2.6693e-5,
             units=(
-                pyunits.g ** 0.5
-                * pyunits.mol ** 0.5
-                * pyunits.angstrom ** 2
-                * pyunits.K ** -0.5
-                * pyunits.cm ** -1
-                * pyunits.s ** -1
+                pyunits.g**0.5
+                * pyunits.mol**0.5
+                * pyunits.angstrom**2
+                * pyunits.K**-0.5
+                * pyunits.cm**-1
+                * pyunits.s**-1
             ),
             doc="Parameter for the Chapman-Enskog viscosity correlation",
         )
@@ -702,9 +702,9 @@ class FlueGasStateBlockData(StateBlockData):
                         * (
                             self.params.cp_mol_ig_comp_coeff_A[j]
                             + self.params.cp_mol_ig_comp_coeff_B[j] * t
-                            + self.params.cp_mol_ig_comp_coeff_C[j] * t ** 2
-                            + self.params.cp_mol_ig_comp_coeff_D[j] * t ** 3
-                            + self.params.cp_mol_ig_comp_coeff_E[j] / t ** 2
+                            + self.params.cp_mol_ig_comp_coeff_C[j] * t**2
+                            + self.params.cp_mol_ig_comp_coeff_D[j] * t**3
+                            + self.params.cp_mol_ig_comp_coeff_E[j] / t**2
                         )
                         for j in self.params.component_list
                     )
@@ -732,9 +732,9 @@ class FlueGasStateBlockData(StateBlockData):
                 self.flow_mol_comp[j]
                 * pyunits.convert(
                     self.params.cp_mol_ig_comp_coeff_A[j] * t
-                    + self.params.cp_mol_ig_comp_coeff_B[j] * t ** 2 / 2
-                    + self.params.cp_mol_ig_comp_coeff_C[j] * t ** 3 / 3
-                    + self.params.cp_mol_ig_comp_coeff_D[j] * t ** 4 / 4
+                    + self.params.cp_mol_ig_comp_coeff_B[j] * t**2 / 2
+                    + self.params.cp_mol_ig_comp_coeff_C[j] * t**3 / 3
+                    + self.params.cp_mol_ig_comp_coeff_D[j] * t**4 / 4
                     - self.params.cp_mol_ig_comp_coeff_E[j] / t
                     + self.params.cp_mol_ig_comp_coeff_F[j],
                     to_units=pyunits.J / pyunits.mol,
@@ -776,9 +776,9 @@ class FlueGasStateBlockData(StateBlockData):
                 * (
                     self.params.cp_mol_ig_comp_coeff_A[j] * log(t)
                     + self.params.cp_mol_ig_comp_coeff_B[j] * t
-                    + self.params.cp_mol_ig_comp_coeff_C[j] * t ** 2 / 2
-                    + self.params.cp_mol_ig_comp_coeff_D[j] * t ** 3 / 3
-                    - self.params.cp_mol_ig_comp_coeff_E[j] / t ** 2 / 2
+                    + self.params.cp_mol_ig_comp_coeff_C[j] * t**2 / 2
+                    + self.params.cp_mol_ig_comp_coeff_D[j] * t**3 / 3
+                    - self.params.cp_mol_ig_comp_coeff_E[j] / t**2 / 2
                     + self.params.cp_mol_ig_comp_coeff_G[j]
                     + r_gas * log(x[j])
                 )
@@ -827,9 +827,9 @@ class FlueGasStateBlockData(StateBlockData):
                             (
                                 b.params.cp_mol_ig_comp_coeff_A[c]
                                 + b.params.cp_mol_ig_comp_coeff_B[c] * t
-                                + b.params.cp_mol_ig_comp_coeff_C[c] * t ** 2
-                                + b.params.cp_mol_ig_comp_coeff_D[c] * t ** 3
-                                + b.params.cp_mol_ig_comp_coeff_E[c] / t ** 2
+                                + b.params.cp_mol_ig_comp_coeff_C[c] * t**2
+                                + b.params.cp_mol_ig_comp_coeff_D[c] * t**3
+                                + b.params.cp_mol_ig_comp_coeff_E[c] / t**2
                             )
                             / b.params.mw_comp[c]
                         )

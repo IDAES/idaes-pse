@@ -28,6 +28,7 @@ main assumptions:
 Created on Nov 04 2020 by J. Ma, M. Zamarripa, D. Caballero
 """
 import pytest
+
 # Import Pyomo libraries
 import pyomo.environ as pyo
 
@@ -41,6 +42,7 @@ from idaes.models_extra.power_generation.unit_models.watertank import WaterTank
 
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
+
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
@@ -54,15 +56,19 @@ def build_watertank_simple():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # Add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = WaterTank(default={"property_package": m.fs.prop_water,
-                                   "has_holdup": False,
-                                   "has_heat_transfer": True,
-                                   "has_pressure_change": True})
+    m.fs.unit = WaterTank(
+        default={
+            "property_package": m.fs.prop_water,
+            "has_holdup": False,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+        }
+    )
 
     # fix inputs for simple tank
     m.fs.unit.tank_cross_sect_area.fix(1.14)  # tank cross sectional area
-    m.fs.unit.tank_level[:].fix(0.6)          # tank level
-    m.fs.unit.heat_duty[:].fix(0.0)           # assume no heat loss
+    m.fs.unit.tank_level[:].fix(0.6)  # tank level
+    m.fs.unit.heat_duty[:].fix(0.0)  # assume no heat loss
     return m
 
 
@@ -74,17 +80,21 @@ def build_watertank_rect():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # Add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = WaterTank(default={"tank_type": "rectangular_tank",
-                                   "property_package": m.fs.prop_water,
-                                   "has_holdup": False,
-                                   "has_heat_transfer": True,
-                                   "has_pressure_change": True})
+    m.fs.unit = WaterTank(
+        default={
+            "tank_type": "rectangular_tank",
+            "property_package": m.fs.prop_water,
+            "has_holdup": False,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+        }
+    )
 
     # fix inputs for horizontal cylindrical tank
-    m.fs.unit.tank_width.fix(0.5)      # tank width
-    m.fs.unit.tank_length.fix(1.2)     # tank length
-    m.fs.unit.tank_level[:].fix(0.6)   # tank level
-    m.fs.unit.heat_duty[:].fix(0.0)    # assume no heat loss
+    m.fs.unit.tank_width.fix(0.5)  # tank width
+    m.fs.unit.tank_length.fix(1.2)  # tank length
+    m.fs.unit.tank_level[:].fix(0.6)  # tank level
+    m.fs.unit.heat_duty[:].fix(0.0)  # assume no heat loss
     return m
 
 
@@ -96,16 +106,20 @@ def build_watertank_vert_cylin():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # Add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = WaterTank(default={"tank_type": "vertical_cylindrical_tank",
-                                   "property_package": m.fs.prop_water,
-                                   "has_holdup": False,
-                                   "has_heat_transfer": True,
-                                   "has_pressure_change": True})
+    m.fs.unit = WaterTank(
+        default={
+            "tank_type": "vertical_cylindrical_tank",
+            "property_package": m.fs.prop_water,
+            "has_holdup": False,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+        }
+    )
 
     # fix inputs for horizontal cylindrical tank
-    m.fs.unit.tank_diameter.fix(1.2)   # tank diameter
-    m.fs.unit.tank_level[:].fix(0.6)   # tank level
-    m.fs.unit.heat_duty[:].fix(0.0)    # assume no heat loss
+    m.fs.unit.tank_diameter.fix(1.2)  # tank diameter
+    m.fs.unit.tank_level[:].fix(0.6)  # tank level
+    m.fs.unit.heat_duty[:].fix(0.0)  # assume no heat loss
     return m
 
 
@@ -117,25 +131,37 @@ def build_watertank_hori_cylin():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # Add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = WaterTank(default={"tank_type": "horizontal_cylindrical_tank",
-                                   "property_package": m.fs.prop_water,
-                                   "has_holdup": False,
-                                   "has_heat_transfer": True,
-                                   "has_pressure_change": True})
+    m.fs.unit = WaterTank(
+        default={
+            "tank_type": "horizontal_cylindrical_tank",
+            "property_package": m.fs.prop_water,
+            "has_holdup": False,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+        }
+    )
 
     # fix inputs for horizontal cylindrical tank
-    m.fs.unit.tank_diameter.fix(1.2)     # tank diameter
-    m.fs.unit.tank_length.fix(15.3256)   # tank length
-    m.fs.unit.tank_level[:].fix(0.6)     # tank level
-    m.fs.unit.heat_duty[:].fix(0.0)      # assume no heat loss
+    m.fs.unit.tank_diameter.fix(1.2)  # tank diameter
+    m.fs.unit.tank_length.fix(15.3256)  # tank length
+    m.fs.unit.tank_level[:].fix(0.6)  # tank level
+    m.fs.unit.heat_duty[:].fix(0.0)  # assume no heat loss
     return m
 
 
 @pytest.fixture(scope="module")
-def tank_models(build_watertank_simple, build_watertank_rect,
-                build_watertank_vert_cylin, build_watertank_hori_cylin):
-    return [build_watertank_simple, build_watertank_rect,
-            build_watertank_vert_cylin, build_watertank_hori_cylin]
+def tank_models(
+    build_watertank_simple,
+    build_watertank_rect,
+    build_watertank_vert_cylin,
+    build_watertank_hori_cylin,
+):
+    return [
+        build_watertank_simple,
+        build_watertank_rect,
+        build_watertank_vert_cylin,
+        build_watertank_hori_cylin,
+    ]
 
 
 @pytest.mark.unit
@@ -152,19 +178,20 @@ def test_basic_build(tank_models):
         assert m.fs.unit.config.property_package is m.fs.prop_water
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_initialize_watertank(tank_models):
-    state_args_feedwater = {'flow_mol': 83193/3600*1000,  # mol/s
-                            'pressure': 12024201.99,  # Pa
-                            'enth_mol': 22723.907}  # J/mol
+    state_args_feedwater = {
+        "flow_mol": 83193 / 3600 * 1000,  # mol/s
+        "pressure": 12024201.99,  # Pa
+        "enth_mol": 22723.907,
+    }  # J/mol
     for i in tank_models:
         initialization_tester(i, dof=3, state_args=state_args_feedwater)
 
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
+
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_run_watertank(tank_models):
@@ -172,9 +199,7 @@ def test_run_watertank(tank_models):
     #                  horizontal cylindrical]
     volume_values = [0.684, 0.36, 0.679, 8.666]
 
-    optarg = {"tol": 1e-7,
-              "linear_solver": "ma27",
-              "max_iter": 40}
+    optarg = {"tol": 1e-7, "linear_solver": "ma27", "max_iter": 40}
 
     solver.options = optarg
 
@@ -193,22 +218,20 @@ def test_run_watertank(tank_models):
         # Check for optimal solution
         assert pyo.check_optimal_termination(results)
         assert degrees_of_freedom(m) == 0
-        assert (pytest.approx(0.6, abs=1e-3) ==
-                pyo.value(m.fs.unit.tank_level[0]))
+        assert pytest.approx(0.6, abs=1e-3) == pyo.value(m.fs.unit.tank_level[0])
         # mass balance
-        assert (pytest.approx(0, abs=1e-3) ==
-                pyo.value(m.fs.unit.inlet.flow_mol[0]
-                          - m.fs.unit.outlet.flow_mol[0]))
+        assert pytest.approx(0, abs=1e-3) == pyo.value(
+            m.fs.unit.inlet.flow_mol[0] - m.fs.unit.outlet.flow_mol[0]
+        )
         # energy balance
-        assert (pytest.approx(0, abs=1e-3) ==
-                pyo.value(m.fs.unit.inlet.flow_mol[0]
-                          * m.fs.unit.inlet.enth_mol[0]
-                          - m.fs.unit.outlet.flow_mol[0]
-                          * m.fs.unit.outlet.enth_mol[0]))
+        assert pytest.approx(0, abs=1e-3) == pyo.value(
+            m.fs.unit.inlet.flow_mol[0] * m.fs.unit.inlet.enth_mol[0]
+            - m.fs.unit.outlet.flow_mol[0] * m.fs.unit.outlet.enth_mol[0]
+        )
         # pressure drop
-        assert (pytest.approx(4410.081, abs=1e-3) ==
-                pyo.value(m.fs.unit.deltaP[0]))
+        assert pytest.approx(4410.081, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
 
         # volume
-        assert (pytest.approx(volume_values[tank_models.index(i)],
-                              abs=1e-3) == pyo.value(m.fs.unit.volume[0]))
+        assert pytest.approx(
+            volume_values[tank_models.index(i)], abs=1e-3
+        ) == pyo.value(m.fs.unit.volume[0])

@@ -24,7 +24,9 @@ from idaes.generic_models.unit_models import Heater
 from idaes.models_extra.power_generation.unit_models.helm import HelmTurbineMultistage
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom, activated_equalities_generator)
+    degrees_of_freedom,
+    activated_equalities_generator,
+)
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 
@@ -38,23 +40,28 @@ def build_turbine_for_run_test():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     # roughly based on NETL baseline studies
-    m.fs.turb = HelmTurbineMultistage(default={
-        "property_package": m.fs.properties,
-        "num_hp": 7,
-        "num_ip": 14,
-        "num_lp": 11,
-        "hp_split_locations": [4,7],
-        "ip_split_locations": [5, 14],
-        "lp_split_locations": [4,7,9,11],
-        "hp_disconnect": [7],
-        "ip_split_num_outlets": {14:3}})
+    m.fs.turb = HelmTurbineMultistage(
+        default={
+            "property_package": m.fs.properties,
+            "num_hp": 7,
+            "num_ip": 14,
+            "num_lp": 11,
+            "hp_split_locations": [4, 7],
+            "ip_split_locations": [5, 14],
+            "lp_split_locations": [4, 7, 9, 11],
+            "hp_disconnect": [7],
+            "ip_split_num_outlets": {14: 3},
+        }
+    )
 
     # Add reheater
     m.fs.reheat = Heater(default={"property_package": m.fs.properties})
-    m.fs.hp_to_reheat = Arc(source=m.fs.turb.hp_split[7].outlet_1,
-                            destination=m.fs.reheat.inlet)
-    m.fs.reheat_to_ip = Arc(source=m.fs.reheat.outlet,
-                            destination=m.fs.turb.ip_stages[1].inlet)
+    m.fs.hp_to_reheat = Arc(
+        source=m.fs.turb.hp_split[7].outlet_1, destination=m.fs.reheat.inlet
+    )
+    m.fs.reheat_to_ip = Arc(
+        source=m.fs.reheat.outlet, destination=m.fs.turb.ip_stages[1].inlet
+    )
     return m
 
 
@@ -66,15 +73,15 @@ def test_initialize():
 
     # Set the inlet of the turbine
     p = 2.4233e7
-    hin = pyo.value(iapws95.htpx(T=880*pyo.units.K, P=p*pyo.units.Pa))
+    hin = pyo.value(iapws95.htpx(T=880 * pyo.units.K, P=p * pyo.units.Pa))
     m.fs.turb.inlet_split.inlet.enth_mol[0].fix(hin)
     m.fs.turb.inlet_split.inlet.flow_mol[0].fix(26000)
     m.fs.turb.inlet_split.inlet.pressure[0].fix(p)
 
     # Set the inlet of the ip section, which is disconnected
     # here to insert reheater
-    p = 7.802e+06
-    hin = pyo.value(iapws95.htpx(T=880*pyo.units.K, P=p*pyo.units.Pa))
+    p = 7.802e06
+    hin = pyo.value(iapws95.htpx(T=880 * pyo.units.K, P=p * pyo.units.Pa))
     m.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
     m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
     m.fs.turb.ip_stages[1].inlet.pressure[0].value = p
@@ -89,15 +96,15 @@ def test_initialize():
         s.ratioP[:] = 0.82
         s.efficiency_isentropic[:] = 0.9
 
-    turb.hp_split[4].split_fraction[0,"outlet_2"].fix(0.03)
-    turb.hp_split[7].split_fraction[0,"outlet_2"].fix(0.03)
-    turb.ip_split[5].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.ip_split[14].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.ip_split[14].split_fraction[0,"outlet_3"].fix(0.15)
-    turb.lp_split[4].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.lp_split[7].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.lp_split[9].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.lp_split[11].split_fraction[0,"outlet_2"].fix(0.04)
+    turb.hp_split[4].split_fraction[0, "outlet_2"].fix(0.03)
+    turb.hp_split[7].split_fraction[0, "outlet_2"].fix(0.03)
+    turb.ip_split[5].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.ip_split[14].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.ip_split[14].split_fraction[0, "outlet_3"].fix(0.15)
+    turb.lp_split[4].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.lp_split[7].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.lp_split[9].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.lp_split[11].split_fraction[0, "outlet_2"].fix(0.04)
 
     # Congiure with reheater for a full test
     turb.ip_stages[1].inlet.fix()
@@ -111,25 +118,29 @@ def test_initialize():
     turb.initialize(outlvl=1)
     turb.ip_stages[1].inlet.unfix()
 
-
     for t in m.fs.time:
-        m.fs.reheat.inlet.flow_mol[t].value = \
-            pyo.value(turb.hp_split[7].outlet_1_state[t].flow_mol)
-        m.fs.reheat.inlet.enth_mol[t].value = \
-            pyo.value(turb.hp_split[7].outlet_1_state[t].enth_mol)
-        m.fs.reheat.inlet.pressure[t].value = \
-            pyo.value(turb.hp_split[7].outlet_1_state[t].pressure)
+        m.fs.reheat.inlet.flow_mol[t].value = pyo.value(
+            turb.hp_split[7].outlet_1_state[t].flow_mol
+        )
+        m.fs.reheat.inlet.enth_mol[t].value = pyo.value(
+            turb.hp_split[7].outlet_1_state[t].enth_mol
+        )
+        m.fs.reheat.inlet.pressure[t].value = pyo.value(
+            turb.hp_split[7].outlet_1_state[t].pressure
+        )
     m.fs.reheat.initialize(outlvl=4)
+
     def reheat_T_rule(b, t):
         return m.fs.reheat.control_volume.properties_out[t].temperature == 880
+
     m.fs.reheat.temperature_out_equation = pyo.Constraint(
-            m.fs.reheat.flowsheet().time,
-            rule=reheat_T_rule)
+        m.fs.reheat.flowsheet().time, rule=reheat_T_rule
+    )
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
     m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
 
-    assert degrees_of_freedom(m)==0
+    assert degrees_of_freedom(m) == 0
     solver.solve(m, tee=True)
 
     eq_cons = activated_equalities_generator(m)
@@ -147,17 +158,17 @@ def test_initialize_calc_cf():
 
     # Set the inlet of the turbine
     p = 2.4233e7
-    hin = pyo.value(iapws95.htpx(T=880*pyo.units.K, P=p*pyo.units.Pa))
+    hin = pyo.value(iapws95.htpx(T=880 * pyo.units.K, P=p * pyo.units.Pa))
     m.fs.turb.inlet_split.inlet.enth_mol[0].fix(hin)
     m.fs.turb.inlet_split.inlet.flow_mol[0].fix(26000)
     m.fs.turb.inlet_split.inlet.pressure[0].fix(p)
 
     # Set the inlet of the ip section, which is disconnected
     # here to insert reheater
-    p = 7.802e+06
-    hin = pyo.value(iapws95.htpx(T=880*pyo.units.K, P=p*pyo.units.Pa))
+    p = 7.802e06
+    hin = pyo.value(iapws95.htpx(T=880 * pyo.units.K, P=p * pyo.units.Pa))
     m.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
-    #m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
+    # m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
     m.fs.turb.ip_stages[1].inlet.pressure[0].value = p
 
     for i, s in turb.hp_stages.items():
@@ -170,15 +181,15 @@ def test_initialize_calc_cf():
         s.ratioP[:] = 0.82
         s.efficiency_isentropic[:] = 0.9
 
-    turb.hp_split[4].split_fraction[0,"outlet_2"].fix(0.03)
-    turb.hp_split[7].split_fraction[0,"outlet_2"].fix(0.03)
-    turb.ip_split[5].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.ip_split[14].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.ip_split[14].split_fraction[0,"outlet_3"].fix(0.15)
-    turb.lp_split[4].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.lp_split[7].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.lp_split[9].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.lp_split[11].split_fraction[0,"outlet_2"].fix(0.04)
+    turb.hp_split[4].split_fraction[0, "outlet_2"].fix(0.03)
+    turb.hp_split[7].split_fraction[0, "outlet_2"].fix(0.03)
+    turb.ip_split[5].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.ip_split[14].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.ip_split[14].split_fraction[0, "outlet_3"].fix(0.15)
+    turb.lp_split[4].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.lp_split[7].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.lp_split[9].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.lp_split[11].split_fraction[0, "outlet_2"].fix(0.04)
 
     # Congiure with reheater for a full test
     turb.ip_stages[1].inlet.fix()
@@ -193,23 +204,28 @@ def test_initialize_calc_cf():
     turb.ip_stages[1].inlet.unfix()
 
     for t in m.fs.time:
-        m.fs.reheat.inlet.flow_mol[t].value = \
-            pyo.value(turb.hp_split[7].outlet_1_state[t].flow_mol)
-        m.fs.reheat.inlet.enth_mol[t].value = \
-            pyo.value(turb.hp_split[7].outlet_1_state[t].enth_mol)
-        m.fs.reheat.inlet.pressure[t].value = \
-            pyo.value(turb.hp_split[7].outlet_1_state[t].pressure)
+        m.fs.reheat.inlet.flow_mol[t].value = pyo.value(
+            turb.hp_split[7].outlet_1_state[t].flow_mol
+        )
+        m.fs.reheat.inlet.enth_mol[t].value = pyo.value(
+            turb.hp_split[7].outlet_1_state[t].enth_mol
+        )
+        m.fs.reheat.inlet.pressure[t].value = pyo.value(
+            turb.hp_split[7].outlet_1_state[t].pressure
+        )
     m.fs.reheat.initialize(outlvl=4)
+
     def reheat_T_rule(b, t):
         return m.fs.reheat.control_volume.properties_out[t].temperature == 880
+
     m.fs.reheat.temperature_out_equation = pyo.Constraint(
-            m.fs.reheat.flowsheet().time,
-            rule=reheat_T_rule)
+        m.fs.reheat.flowsheet().time, rule=reheat_T_rule
+    )
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
     m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
 
-    assert degrees_of_freedom(m)==0
+    assert degrees_of_freedom(m) == 0
     solver.solve(m, tee=True)
 
     eq_cons = activated_equalities_generator(m)

@@ -20,10 +20,13 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.\
-    subcritical_boiler import main
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              activated_equalities_generator)
+from idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler import (
+    main,
+)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    activated_equalities_generator,
+)
 from idaes.generic_models.properties import iapws95
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
@@ -58,30 +61,28 @@ def test_basic_build(model):
 @pytest.mark.component
 def test_init(model):
     # check that the model solved properly and has 0 degrees of freedom
-    assert(degrees_of_freedom(model) == 0)
+    assert degrees_of_freedom(model) == 0
 
     model.fs.drum.feedwater_inlet.flow_mol[:].fix()
     model.fs.drum.feedwater_inlet.pressure[:].unfix()
     model.fs.drum.feedwater_inlet.enth_mol[:].fix()
-    optarg = {
-            "tol": 1e-6,
-            "max_iter": 20}
+    optarg = {"tol": 1e-6, "max_iter": 20}
     solver.options = optarg
     # set scaling parameters
     for i in model.fs.ww_zones:
-        iscale.set_scaling_factor(
-            model.fs.Waterwalls[i].heat_flux_conv[0], 1e-5)
+        iscale.set_scaling_factor(model.fs.Waterwalls[i].heat_flux_conv[0], 1e-5)
     iscale.calculate_scaling_factors(model)
     results = solver.solve(model, tee=True)
     assert pyo.check_optimal_termination(results)
 
-    assert (pyo.value(model.fs.downcomer.deltaP[0]) > 0)
+    assert pyo.value(model.fs.downcomer.deltaP[0]) > 0
 
-    assert (pytest.approx(0, abs=1e-3) ==
-            pyo.value(model.fs.Waterwalls[10].control_volume.
-                      properties_out[0].flow_mol - model.fs.Waterwalls[1].
-                      control_volume.properties_in[0].flow_mol))
+    assert pytest.approx(0, abs=1e-3) == pyo.value(
+        model.fs.Waterwalls[10].control_volume.properties_out[0].flow_mol
+        - model.fs.Waterwalls[1].control_volume.properties_in[0].flow_mol
+    )
 
-    assert (pyo.value(model.fs.drum.feedwater_inlet.flow_mol[0]
-                      - model.fs.drum.steam_outlet.flow_mol[0]) ==
-            pytest.approx(0, abs=1e-3))
+    assert pyo.value(
+        model.fs.drum.feedwater_inlet.flow_mol[0]
+        - model.fs.drum.steam_outlet.flow_mol[0]
+    ) == pytest.approx(0, abs=1e-3)

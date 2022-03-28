@@ -95,7 +95,7 @@ see property package for documentation.}""",
             default=4,
             domain=int,
             description="Number of parallel inlet stages to simulate partial arc "
-                        "admission.  Default=4",
+            "admission.  Default=4",
         ),
     )
     config.declare(
@@ -119,9 +119,9 @@ ValveFunctionType.custom}""",
         ConfigValue(
             default=None,
             description="A callback to add a custom valve function to the "
-                "throttle valves or None.  If a callback is provided, it should "
-                "take the valve block data as an argument and add a "
-                "valve_function expressions to it. Default=None",
+            "throttle valves or None.  If a callback is provided, it should "
+            "take the valve block data as an argument and add a "
+            "valve_function expressions to it. Default=None",
         ),
     )
     config.declare(
@@ -158,8 +158,8 @@ ValveFunctionType.custom}""",
             domain=int,
             description="Locations of splitters in HP section",
             doc="A list of index locations of splitters in the HP section. The "
-                "indexes indicate after which stage to include splitters.  0 is "
-                "between the inlet stage and the first regular HP stage.",
+            "indexes indicate after which stage to include splitters.  0 is "
+            "between the inlet stage and the first regular HP stage.",
         ),
     )
     config.declare(
@@ -169,7 +169,7 @@ ValveFunctionType.custom}""",
             domain=int,
             description="Locations of splitters in IP section",
             doc="A list of index locations of splitters in the IP section. The "
-                "indexes indicate after which stage to include splitters.",
+            "indexes indicate after which stage to include splitters.",
         ),
     )
     config.declare(
@@ -179,7 +179,7 @@ ValveFunctionType.custom}""",
             domain=int,
             description="Locations of splitter in LP section",
             doc="A list of index locations of splitters in the LP section. The "
-                "indexes indicate after which stage to include splitters.",
+            "indexes indicate after which stage to include splitters.",
         ),
     )
     config.declare(
@@ -189,8 +189,8 @@ ValveFunctionType.custom}""",
             domain=int,
             description="HP Turbine stages to not connect to next with an arc.",
             doc="HP Turbine stages to not connect to next with an arc. This is "
-                "usually used to insert additional units between stages on a "
-                "flowsheet, such as a reheater",
+            "usually used to insert additional units between stages on a "
+            "flowsheet, such as a reheater",
         ),
     )
     config.declare(
@@ -263,8 +263,9 @@ class HelmTurbineMultistageData(UnitModelBlockData):
 
         thrtl_cfg = unit_cfg.copy()
         thrtl_cfg["valve_function"] = self.config.throttle_valve_function
-        thrtl_cfg["valve_function_callback"] = \
-            self.config.throttle_valve_function_callback
+        thrtl_cfg[
+            "valve_function_callback"
+        ] = self.config.throttle_valve_function_callback
 
         # Adding unit models
         # ------------------------
@@ -309,25 +310,19 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         # put in splitters for turbine steam extractions
         if config.hp_split_locations:
             self.hp_split = HelmSplitter(
-                config.hp_split_locations,
-                default=s_sfg_default,
-                initialize=hp_splt_cfg
+                config.hp_split_locations, default=s_sfg_default, initialize=hp_splt_cfg
             )
         else:
             self.hp_split = {}
         if config.ip_split_locations:
             self.ip_split = HelmSplitter(
-                config.ip_split_locations,
-                default=s_sfg_default,
-                initialize=ip_splt_cfg
+                config.ip_split_locations, default=s_sfg_default, initialize=ip_splt_cfg
             )
         else:
             self.ip_split = {}
         if config.lp_split_locations:
             self.lp_split = HelmSplitter(
-                config.lp_split_locations,
-                default=s_sfg_default,
-                initialize=lp_splt_cfg
+                config.lp_split_locations, default=s_sfg_default, initialize=lp_splt_cfg
             )
         else:
             self.lp_split = {}
@@ -340,16 +335,19 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 "source": getattr(self.inlet_split, "outlet_{}".format(i)),
                 "destination": self.throttle_valve[i].inlet,
             }
+
         def _valve_to_rule(b, i):
             return {
                 "source": self.throttle_valve[i].outlet,
                 "destination": self.inlet_stage[i].inlet,
             }
+
         def _inlet_to_rule(b, i):
             return {
                 "source": self.inlet_stage[i].outlet,
                 "destination": getattr(self.inlet_mix, "inlet_{}".format(i)),
             }
+
         self.stream_throttle_inlet = Arc(inlet_idx, rule=_split_to_rule)
         self.stream_throttle_outlet = Arc(inlet_idx, rule=_valve_to_rule)
         self.stream_inlet_mix_inlet = Arc(inlet_idx, rule=_inlet_to_rule)
@@ -401,17 +399,17 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             """
 
             def _rule(b, i, j):
-                if i in splitters and j == 1: # stage to splitter
+                if i in splitters and j == 1:  # stage to splitter
                     return {
                         "source": turbines[i].outlet,
                         "destination": splitters[i].inlet,
                     }
-                elif j == 2: # splitter to next stage
+                elif j == 2:  # splitter to next stage
                     return {
                         "source": splitters[i].outlet_1,
                         "destination": turbines[i + 1].inlet,
                     }
-                else: # no splitter, stage to next stage
+                else:  # no splitter, stage to next stage
                     return {
                         "source": turbines[i].outlet,
                         "destination": turbines[i + 1].inlet,
@@ -446,11 +444,14 @@ class HelmTurbineMultistageData(UnitModelBlockData):
 
         # Create connections internal to each turbine section (hp, ip, and lp)
         self.hp_stream = Arc(
-            self.hp_stream_idx, rule=_arc_rule(self.hp_stages, self.hp_split))
+            self.hp_stream_idx, rule=_arc_rule(self.hp_stages, self.hp_split)
+        )
         self.ip_stream = Arc(
-            self.ip_stream_idx, rule=_arc_rule(self.ip_stages, self.ip_split))
+            self.ip_stream_idx, rule=_arc_rule(self.ip_stages, self.ip_split)
+        )
         self.lp_stream = Arc(
-            self.lp_stream_idx, rule=_arc_rule(self.lp_stages, self.lp_split))
+            self.lp_stream_idx, rule=_arc_rule(self.lp_stages, self.lp_split)
+        )
 
         # Connect hp section to ip section unless its a disconnect location
         last_hp = config.num_hp
@@ -498,26 +499,27 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             self.flowsheet().time,
             initialize=-1e8,
             doc="total turbine power",
-            units=pyo.units.W
+            units=pyo.units.W,
         )
+
         @self.Constraint(self.flowsheet().time)
         def power_eqn(b, t):
-            return (b.power[t] ==
-                b.outlet_stage.control_volume.work[t]*b.outlet_stage.efficiency_mech
-                + sum(
-                    b.inlet_stage[i].control_volume.work[t]*b.inlet_stage[i].efficiency_mech
-                    for i in b.inlet_stage)
-                + sum(
-                    b.hp_stages[i].control_volume.work[t]*b.hp_stages[i].efficiency_mech
-                    for i in b.hp_stages)
-                + sum(
-                    b.ip_stages[i].control_volume.work[t]*b.ip_stages[i].efficiency_mech
-                    for i in b.ip_stages)
-                + sum(
-                    b.lp_stages[i].control_volume.work[t]*b.lp_stages[i].efficiency_mech
-                    for i in b.lp_stages)
+            return b.power[t] == b.outlet_stage.control_volume.work[
+                t
+            ] * b.outlet_stage.efficiency_mech + sum(
+                b.inlet_stage[i].control_volume.work[t]
+                * b.inlet_stage[i].efficiency_mech
+                for i in b.inlet_stage
+            ) + sum(
+                b.hp_stages[i].control_volume.work[t] * b.hp_stages[i].efficiency_mech
+                for i in b.hp_stages
+            ) + sum(
+                b.ip_stages[i].control_volume.work[t] * b.ip_stages[i].efficiency_mech
+                for i in b.ip_stages
+            ) + sum(
+                b.lp_stages[i].control_volume.work[t] * b.lp_stages[i].efficiency_mech
+                for i in b.lp_stages
             )
-
 
         # Connect lp section to outlet stage, not allowing outlet stage to be
         # disconnected
@@ -557,8 +559,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         """
         cfg = copy.copy(unit_cfg)
         cfg.update(
-            num_inlets=ni,
-            momentum_mixing_type=MomentumMixingType.minimize_and_equality
+            num_inlets=ni, momentum_mixing_type=MomentumMixingType.minimize_and_equality
         )
         return cfg
 
@@ -586,7 +587,6 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         for i in self.inlet_stage:
             self.inlet_stage[i].flow_coeff.fix(value)
 
-
     def _init_section(
         self,
         stages,
@@ -599,8 +599,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         copy_disconneted_flow,
         copy_disconneted_pressure,
     ):
-        """ Reuse the initializtion for HP, IP and, LP sections.
-        """
+        """Reuse the initializtion for HP, IP and, LP sections."""
         if 0 in splits:
             propagate_state(splits[0].inlet, prev_port)
             splits[0].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
@@ -623,7 +622,6 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 prev_port = splits[i].outlet_1
         return prev_port
 
-
     def turbine_outlet_cf_fix(self, value):
         """
         Fix the inlet turbine stage flow coefficient.  These are
@@ -644,7 +642,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         copy_disconneted_flow=True,
         copy_disconneted_pressure=True,
         calculate_outlet_cf=False,
-        calculate_inlet_cf=False
+        calculate_inlet_cf=False,
     ):
         """
         Initialize
@@ -683,16 +681,15 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         flow_guess = self.inlet_split.inlet.flow_mol[0].value
 
         for it_count in range(flow_iterate):
-            self.inlet_split.initialize(
-                outlvl=outlvl, solver=solver, optarg=optarg)
+            self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
             # Initialize valves
             for i in self.inlet_stage_idx:
                 u = self.throttle_valve[i]
-                propagate_state(u.inlet, getattr(
-                    self.inlet_split, "outlet_{}".format(i)))
-                u.initialize(
-                    outlvl=outlvl, solver=solver, optarg=optarg)
+                propagate_state(
+                    u.inlet, getattr(self.inlet_split, "outlet_{}".format(i))
+                )
+                u.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
             # Initialize turbine
             for i in self.inlet_stage_idx:
@@ -702,7 +699,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                     outlvl=outlvl,
                     solver=solver,
                     optarg=optarg,
-                    calculate_cf=calculate_inlet_cf
+                    calculate_cf=calculate_inlet_cf,
                 )
 
             # Initialize Mixer
@@ -713,8 +710,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                     self.inlet_stage[i].outlet,
                 )
                 getattr(self.inlet_mix, "inlet_{}".format(i)).fix()
-            self.inlet_mix.initialize(
-                outlvl=outlvl, solver=solver, optarg=optarg)
+            self.inlet_mix.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
             for i in self.inlet_stage_idx:
                 getattr(self.inlet_mix, "inlet_{}".format(i)).unfix()
             self.inlet_mix.use_equal_pressure_constraint()
@@ -763,37 +759,40 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 outlvl=outlvl,
                 solver=solver,
                 optarg=optarg,
-                calculate_cf=calculate_outlet_cf
+                calculate_cf=calculate_outlet_cf,
             )
             if calculate_outlet_cf:
                 break
             if it_count < flow_iterate - 1:
                 for t in self.inlet_split.inlet.flow_mol:
-                    self.inlet_split.inlet.flow_mol[t].value = \
-                        self.outlet_stage.inlet.flow_mol[t].value
+                    self.inlet_split.inlet.flow_mol[
+                        t
+                    ].value = self.outlet_stage.inlet.flow_mol[t].value
 
                     for s in self.hp_split.values():
                         for i, o in enumerate(s.outlet_list):
                             if i == 0:
                                 continue
                             o = getattr(s, o)
-                            self.inlet_split.inlet.flow_mol[t].value += \
-                                o.flow_mol[t].value
+                            self.inlet_split.inlet.flow_mol[t].value += o.flow_mol[
+                                t
+                            ].value
                     for s in self.ip_split.values():
                         for i, o in enumerate(s.outlet_list):
                             if i == 0:
                                 continue
                             o = getattr(s, o)
-                            self.inlet_split.inlet.flow_mol[t].value += \
-                                o.flow_mol[t].value
+                            self.inlet_split.inlet.flow_mol[t].value += o.flow_mol[
+                                t
+                            ].value
                     for s in self.lp_split.values():
                         for i, o in enumerate(s.outlet_list):
                             if i == 0:
                                 continue
                             o = getattr(s, o)
-                            self.inlet_split.inlet.flow_mol[t].value += \
-                                o.flow_mol[t].value
-
+                            self.inlet_split.inlet.flow_mol[t].value += o.flow_mol[
+                                t
+                            ].value
 
         if calculate_inlet_cf:
             # cf was probably fixed, so will have to set the value agian here
@@ -801,7 +800,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             icf = {}
             for i in self.inlet_stage:
                 for t in self.inlet_stage[i].flow_coeff:
-                    icf[i,t] = pyo.value(self.inlet_stage[i].flow_coeff[t])
+                    icf[i, t] = pyo.value(self.inlet_stage[i].flow_coeff[t])
         if calculate_outlet_cf:
             ocf = pyo.value(self.outlet_stage.flow_coeff)
 
@@ -812,10 +811,9 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             # if you ask for it to be calculated.
             for t in self.inlet_stage[i].flow_coeff:
                 for i in self.inlet_stage:
-                    self.inlet_stage[i].flow_coeff[t] = icf[i,t]
+                    self.inlet_stage[i].flow_coeff[t] = icf[i, t]
         if calculate_outlet_cf:
             self.outlet_stage.flow_coeff = ocf
-
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -828,7 +826,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
 
         for t, c in self.power_eqn.items():
             power_scale = iscale.get_scaling_factor(
-                self.power[t], default=1, warning=True)
+                self.power[t], default=1, warning=True
+            )
             # Set power equation scale factor
-            iscale.constraint_scaling_transform(
-                c, power_scale, overwrite=False)
+            iscale.constraint_scaling_transform(c, power_scale, overwrite=False)

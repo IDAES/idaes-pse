@@ -21,7 +21,9 @@ __Author__ = "John Eslick"
 
 from pyomo.common.config import In
 from pyomo.environ import Var, sqrt, SolverFactory, value, Param, units as pyunits
-from idaes.models_extra.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
+from idaes.models_extra.power_generation.unit_models.helm.turbine import (
+    HelmIsentropicTurbineData,
+)
 from idaes.core import declare_process_block_class
 from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -45,13 +47,15 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         super().build()
 
         self.flow_coeff = Var(
-            initialize=0.0333, doc="Turbine flow coefficient [kg*C^0.5/s/Pa]",
-            units=pyunits.kg*pyunits.K**0.5/pyunits.s/pyunits.Pa
+            initialize=0.0333,
+            doc="Turbine flow coefficient [kg*C^0.5/s/Pa]",
+            units=pyunits.kg * pyunits.K**0.5 / pyunits.s / pyunits.Pa,
         )
         self.eff_dry = Var(initialize=0.87, doc="Turbine dry isentropic efficiency")
         self.design_exhaust_flow_vol = Var(
-            initialize=6000.0, doc="Design exit volumetirc flowrate [m^3/s]",
-            units=pyunits.m**3/pyunits.s
+            initialize=6000.0,
+            doc="Design exit volumetirc flowrate [m^3/s]",
+            units=pyunits.m**3 / pyunits.s,
         )
         self.efficiency_mech = Var(initialize=1.0, doc="Turbine mechanical efficiency")
         self.efficiency_isentropic.unfix()
@@ -60,51 +64,57 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         self.flow_coeff.fix()
         self.efficiency_mech.fix()
 
-
         self.tel_c0 = Var(
-            initialize=0.0064*1e6,
-            units=pyunits.J/pyunits.mol,
+            initialize=0.0064 * 1e6,
+            units=pyunits.J / pyunits.mol,
             doc="c0 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
-                " of exhaust volumetric flow to design exhaust volumetric flow)")
+            " of exhaust volumetric flow to design exhaust volumetric flow)",
+        )
         self.tel_c1 = Var(
-            initialize=-0.0328*1e6,
-            units=pyunits.J/pyunits.mol,
+            initialize=-0.0328 * 1e6,
+            units=pyunits.J / pyunits.mol,
             doc="c1 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
-                " of exhaust volumetric flow to design exhaust volumetric flow)")
+            " of exhaust volumetric flow to design exhaust volumetric flow)",
+        )
         self.tel_c2 = Var(
-            initialize=0.0638*1e6,
-            units=pyunits.J/pyunits.mol,
+            initialize=0.0638 * 1e6,
+            units=pyunits.J / pyunits.mol,
             doc="c2 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
-                " of exhaust volumetric flow to design exhaust volumetric flow)")
+            " of exhaust volumetric flow to design exhaust volumetric flow)",
+        )
         self.tel_c3 = Var(
-            initialize=-0.0542*1e6,
-            units=pyunits.J/pyunits.mol,
+            initialize=-0.0542 * 1e6,
+            units=pyunits.J / pyunits.mol,
             doc="c3 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
-                " of exhaust volumetric flow to design exhaust volumetric flow)")
+            " of exhaust volumetric flow to design exhaust volumetric flow)",
+        )
         self.tel_c4 = Var(
-            initialize=0.022*1e6,
-            units=pyunits.J/pyunits.mol,
+            initialize=0.022 * 1e6,
+            units=pyunits.J / pyunits.mol,
             doc="c4 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
-                " of exhaust volumetric flow to design exhaust volumetric flow)")
+            " of exhaust volumetric flow to design exhaust volumetric flow)",
+        )
         self.tel_c5 = Var(
-            initialize=-0.0035*1e6,
-            units=pyunits.J/pyunits.mol,
+            initialize=-0.0035 * 1e6,
+            units=pyunits.J / pyunits.mol,
             doc="c5 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
-                " of exhaust volumetric flow to design exhaust volumetric flow)")
+            " of exhaust volumetric flow to design exhaust volumetric flow)",
+        )
         self.tel_c0.fix()
         self.tel_c1.fix()
         self.tel_c2.fix()
         self.tel_c3.fix()
         self.tel_c4.fix()
         self.tel_c5.fix()
+
         @self.Expression(self.flowsheet().time, doc="Total exhaust loss curve")
         def tel(b, t):
             f = b.control_volume.properties_out[t].flow_vol / b.design_exhaust_flow_vol
             return (
-                + self.tel_c5 * f ** 5
-                + self.tel_c4 * f ** 4
-                + self.tel_c3 * f ** 3
-                + self.tel_c2 * f ** 2
+                +self.tel_c5 * f**5
+                + self.tel_c4 * f**4
+                + self.tel_c3 * f**3
+                + self.tel_c2 * f**2
                 + self.tel_c1 * f
                 + self.tel_c0
             )
@@ -118,8 +128,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
             Pr = b.ratioP[t]
             cf = b.flow_coeff
 
-            return flow ** 2 * mw ** 2 * (Tin) == (
-                cf ** 2 * Pin ** 2 * (1 - Pr ** 2))
+            return flow**2 * mw**2 * (Tin) == (cf**2 * Pin**2 * (1 - Pr**2))
 
         @self.Constraint(self.flowsheet().time, doc="Efficiency correlation")
         def efficiency_correlation(b, t):
@@ -166,10 +175,8 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         #   the values of free vars
         for t in self.flowsheet().time:
             if self.outlet.pressure[t].fixed:
-                self.ratioP[t] = value(
-                    self.outlet.pressure[t]/self.inlet.pressure[t])
-                self.deltaP[t] = value(
-                    self.outlet.pressure[t] - self.inlet.pressure[t])
+                self.ratioP[t] = value(self.outlet.pressure[t] / self.inlet.pressure[t])
+                self.deltaP[t] = value(self.outlet.pressure[t] - self.inlet.pressure[t])
 
         # Deactivate special constraints
         self.stodola_equation.deactivate()
@@ -190,7 +197,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
             if not calculate_cf:
                 cf = self.flow_coeff
                 self.inlet.flow_mol[t].fix(
-                    value(cf * Pin * sqrt(1 - Pr ** 2) / mw / sqrt(Tin))
+                    value(cf * Pin * sqrt(1 - Pr**2) / mw / sqrt(Tin))
                 )
 
         super().initialize_build(outlvl=outlvl, solver=solver, optarg=optarg)
@@ -208,8 +215,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
             Tin = self.control_volume.properties_in[0].temperature
             Pin = self.control_volume.properties_in[0].pressure
             Pr = self.ratioP[0]
-            self.flow_coeff.value = value(
-                flow * mw * sqrt(Tin/(1 - Pr ** 2))/Pin)
+            self.flow_coeff.value = value(flow * mw * sqrt(Tin / (1 - Pr**2)) / Pin)
 
         else:
             self.inlet.flow_mol.unfix()
@@ -223,8 +229,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
         init_log.info(
-            "Initialization Complete (Outlet Stage): {}".format(
-                idaeslog.condition(res))
+            "Initialization Complete (Outlet Stage): {}".format(idaeslog.condition(res))
         )
 
         # reload original spec
@@ -239,8 +244,12 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         for t, c in self.stodola_equation.items():
-            s = iscale.get_scaling_factor(
-                self.control_volume.properties_in[t].flow_mol,
-                default=1,
-                warning=True)**2
+            s = (
+                iscale.get_scaling_factor(
+                    self.control_volume.properties_in[t].flow_mol,
+                    default=1,
+                    warning=True,
+                )
+                ** 2
+            )
             iscale.constraint_scaling_transform(c, s, overwrite=False)

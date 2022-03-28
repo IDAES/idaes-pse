@@ -20,6 +20,7 @@ Main assumptions:
 Created on Aug 27, 2020 by Boiler Team (J. Ma, M. Zamarripa)
 """
 import pytest
+
 # Import Pyomo libraries
 import pyomo.environ as pyo
 from pyomo.util.check_units import assert_units_consistent
@@ -75,8 +76,7 @@ def test_units(build_downcomer):
     assert_units_consistent(build_downcomer)
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_initialize_unit(build_downcomer):
@@ -91,14 +91,11 @@ def test_initialize_unit(build_downcomer):
     m.fs.unit.inlet.flow_mol.fix(49552.8)
     m.fs.unit.inlet.pressure.fix(12025072.9)
 
-    state_args = {'flow_mol': 49552.8,
-                  'pressure': 12025072.9,
-                  'enth_mol': 24944.7}
+    state_args = {"flow_mol": 49552.8, "pressure": 12025072.9, "enth_mol": 24944.7}
     initialization_tester(build_downcomer, dof=0, state_args=state_args)
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_solve_unit(build_downcomer):
@@ -114,18 +111,24 @@ def test_solve_unit(build_downcomer):
     assert pyo.check_optimal_termination(results)
 
     # check material balance
-    assert (pytest.approx(pyo.value(m.fs.unit.control_volume.properties_in[0].
-                                    flow_mol - m.fs.unit.control_volume.
-                                    properties_out[0].flow_mol),
-                          abs=1e-3) == 0)
+    assert (
+        pytest.approx(
+            pyo.value(
+                m.fs.unit.control_volume.properties_in[0].flow_mol
+                - m.fs.unit.control_volume.properties_out[0].flow_mol
+            ),
+            abs=1e-3,
+        )
+        == 0
+    )
 
     # pressure drop
-    assert (pytest.approx(273583.120306, abs=1e-3) == pyo.value(m.fs.unit.
-                                                                deltaP[0]))
+    assert pytest.approx(273583.120306, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
     # check energy balance
-    assert (pytest.approx(pyo.value(m.fs.unit.control_volume.properties_in[0].
-                                    enth_mol), abs=1e-3)
-            == pyo.value(m.fs.unit.control_volume.properties_out[0].enth_mol))
+    assert pytest.approx(
+        pyo.value(m.fs.unit.control_volume.properties_in[0].enth_mol), abs=1e-3
+    ) == pyo.value(m.fs.unit.control_volume.properties_out[0].enth_mol)
 
-    assert (pytest.approx(580.83299, abs=1e-3) ==
-            pyo.value(m.fs.unit.control_volume.properties_out[0].temperature))
+    assert pytest.approx(580.83299, abs=1e-3) == pyo.value(
+        m.fs.unit.control_volume.properties_out[0].temperature
+    )

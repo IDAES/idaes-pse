@@ -17,7 +17,10 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.fileutils import this_file_dir
-from idaes.models_extra.power_generation.properties import FlueGasParameterBlock, FlueGasStateBlock
+from idaes.models_extra.power_generation.properties import (
+    FlueGasParameterBlock,
+    FlueGasStateBlock,
+)
 from idaes.core import FlowsheetBlock
 import csv
 import os
@@ -33,36 +36,36 @@ def read_data(fname, params):
     dfile = os.path.join(this_file_dir(), fname)
     # the data format is data[component][temperature][property]
     data = {
-        "N2":{},
-        "O2":{},
+        "N2": {},
+        "O2": {},
         "H2O": {},
-        "CO2":{},
-        "NO":{},
-        "SO2":{},
+        "CO2": {},
+        "NO": {},
+        "SO2": {},
     }
 
-    with open(dfile, 'r') as csvfile:
-        dat = csv.reader(csvfile, delimiter='\t')
+    with open(dfile, "r") as csvfile:
+        dat = csv.reader(csvfile, delimiter="\t")
         for i in range(7):
-            next(dat) # skip header
+            next(dat)  # skip header
         for row in dat:
             data[row[4]][int(row[0])] = {}
             d = data[row[4]][int(row[0])]
             d["Cp"] = float(row[1])
             d["S"] = float(row[2])
-            H = pyo.value(params.cp_mol_ig_comp_coeff_H[(row[4])]*1000)
-            d["H"] = float(row[3]) + H # H = enthalpy of formation
-            d["comp"] = {row[4]:1.0}
+            H = pyo.value(params.cp_mol_ig_comp_coeff_H[(row[4])] * 1000)
+            d["H"] = float(row[3]) + H  # H = enthalpy of formation
+            d["comp"] = {row[4]: 1.0}
 
     # Add a mixture to test
     data["mix1"] = {}
     for T in data["N2"]:
         data["mix1"][T] = {}
         d = data["mix1"][T]
-        comp = {"N2":0.2, "O2":0.2, "H2O":0.2, "CO2":0.2, "NO":0.1, "SO2":0.1}
-        d["Cp"] = sum(data[i][T]["Cp"]*comp[i] for i in comp)
-        d["H"] = sum(data[i][T]["H"]*comp[i] for i in comp)
-        d["S"] = sum((data[i][T]["S"] + 8.314*log(comp[i]))*comp[i] for i in comp)
+        comp = {"N2": 0.2, "O2": 0.2, "H2O": 0.2, "CO2": 0.2, "NO": 0.1, "SO2": 0.1}
+        d["Cp"] = sum(data[i][T]["Cp"] * comp[i] for i in comp)
+        d["H"] = sum(data[i][T]["H"] * comp[i] for i in comp)
+        d["S"] = sum((data[i][T]["S"] + 8.314 * log(comp[i])) * comp[i] for i in comp)
         d["comp"] = comp
     return data
 
@@ -73,8 +76,8 @@ def test_thermo():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = FlueGasParameterBlock()
-    m.fs.state = FlueGasStateBlock(default={"parameters":m.fs.params})
-    m.fs.state.pressure.fix(1e5) #ideal gas properties are pressure independent
+    m.fs.state = FlueGasStateBlock(default={"parameters": m.fs.params})
+    m.fs.state.pressure.fix(1e5)  # ideal gas properties are pressure independent
 
     assert_units_consistent(m)
 
@@ -107,9 +110,12 @@ def test_thermo():
             m.fs.state.initialize()
             solver.solve(m)
             assert data[i][T]["H"] == pytest.approx(
-                pyo.value(m.fs.state.enth_mol), rel=1e-2)
+                pyo.value(m.fs.state.enth_mol), rel=1e-2
+            )
             assert data[i][T]["Cp"] == pytest.approx(
-                pyo.value(m.fs.state.cp_mol), rel=1e-2)
+                pyo.value(m.fs.state.cp_mol), rel=1e-2
+            )
             if test_entropy:
                 assert data[i][T]["S"] == pytest.approx(
-                    pyo.value(m.fs.state.entr_mol), rel=1e-2)
+                    pyo.value(m.fs.state.entr_mol), rel=1e-2
+                )

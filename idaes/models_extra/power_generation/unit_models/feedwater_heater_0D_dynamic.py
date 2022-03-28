@@ -27,13 +27,7 @@ are two models included here.
 
 __author__ = "John Eslick, Jinliang Ma"
 from pyomo.common.config import ConfigValue, In, ConfigBlock, Bool
-from pyomo.environ import (
-    TransformationFactory,
-    Var,
-    value,
-    asin,
-    cos
-    )
+from pyomo.environ import TransformationFactory, Var, value, asin, cos
 from pyomo.network import Arc
 
 from idaes.core import (
@@ -47,8 +41,9 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
-from idaes.models_extra.power_generation.unit_models.helm import \
-    HelmNtuCondenserData as CondenserData
+from idaes.models_extra.power_generation.unit_models.helm import (
+    HelmNtuCondenserData as CondenserData,
+)
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
 from idaes.models_extra.power_generation.unit_models.helm import HelmMixer as Mixer
@@ -131,12 +126,10 @@ def _set_prop_pack(hxcfg, fwhcfg):
     # the tube and shell names it will override this.
     if hxcfg.hot_side_config.property_package == useDefault:
         hxcfg.hot_side_config.property_package = fwhcfg.property_package
-        hxcfg.hot_side_config.property_package_args = fwhcfg.\
-            property_package_args
+        hxcfg.hot_side_config.property_package_args = fwhcfg.property_package_args
     if hxcfg.cold_side_config.property_package == useDefault:
         hxcfg.cold_side_config.property_package = fwhcfg.property_package
-        hxcfg.cold_side_config.property_package_args = fwhcfg.\
-            property_package_args
+        hxcfg.cold_side_config.property_package_args = fwhcfg.property_package_args
 
 
 @declare_process_block_class(
@@ -149,45 +142,50 @@ of shell is a saturated liquid.""",
 class FWHCondensing0DData(CondenserData):
     def build(self):
         super().build()
-        self.vol_frac_shell = Var(initialize=0.7,
-                                  doc="Volume fraction of shell side fluid")
-        self.heater_diameter = Var(initialize=1,
-                                   doc="Inside diameter of FWH tank")
-        self.cond_sect_length = Var(initialize=10,
-                                    doc="Length of condensing section")
-        self.level = Var(self.flowsheet().time,
-                         initialize=1,
-                         doc="Water level in condensing section")
+        self.vol_frac_shell = Var(
+            initialize=0.7, doc="Volume fraction of shell side fluid"
+        )
+        self.heater_diameter = Var(initialize=1, doc="Inside diameter of FWH tank")
+        self.cond_sect_length = Var(initialize=10, doc="Length of condensing section")
+        self.level = Var(
+            self.flowsheet().time, initialize=1, doc="Water level in condensing section"
+        )
 
         # Radius of feed water heater tank
         @self.Expression(doc="Radius of feed water heater tank")
         def heater_radius(b):
-            return b.heater_diameter/2
+            return b.heater_diameter / 2
 
         # Expressure for the angle from the tank cylinder center to
         # the circumference point at water level between -pi/2 and pi/2
-        @self.Expression(self.flowsheet().time,
-                         doc="Angle of water level")
+        @self.Expression(self.flowsheet().time, doc="Angle of water level")
         def alpha(b, t):
-            return asin((b.level[t]-b.heater_radius)/b.heater_radius)
+            return asin((b.level[t] - b.heater_radius) / b.heater_radius)
 
         # Constraint to calculate the shell side liquid volume
-        @self.Constraint(self.flowsheet().time,
-                         doc="Calculate the volume of "
-                         "shell side based on water level")
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Calculate the volume of " "shell side based on water level",
+        )
         def shell_volume_eqn(b, t):
-            return b.shell.volume[t] == ((
-                (b.alpha[t]+0.5*const.pi)*b.heater_radius**2
-                + b.heater_radius*cos(b.alpha[t])
-                * (b.level[t]-b.heater_radius))
-                * b.cond_sect_length*b.vol_frac_shell)
+            return b.shell.volume[t] == (
+                (
+                    (b.alpha[t] + 0.5 * const.pi) * b.heater_radius**2
+                    + b.heater_radius * cos(b.alpha[t]) * (b.level[t] - b.heater_radius)
+                )
+                * b.cond_sect_length
+                * b.vol_frac_shell
+            )
 
         # Total pressure change equation
-        @self.Constraint(self.flowsheet().time,
-                         doc="Pressure drop")
+        @self.Constraint(self.flowsheet().time, doc="Pressure drop")
         def pressure_change_total_eqn(b, t):
-            return b.shell.deltaP[t] == const.acceleration_gravity*b.level[t]\
+            return (
+                b.shell.deltaP[t]
+                == const.acceleration_gravity
+                * b.level[t]
                 * b.shell.properties_out[t].dens_mass_phase["Liq"]
+            )
 
     def initialize_build(self, *args, **kwargs):
         """
@@ -263,11 +261,12 @@ class FWH0DDynamicData(UnitModelBlockData):
 
         # Add a mixer to add the drain stream from another feedwater heater
         if config.has_drain_mixer:
-            mix_cfg = {"dynamic": False,
-                       "inlet_list": ["steam", "drain"],
-                       "property_package": config.property_package,
-                       "momentum_mixing_type": MomentumMixingType.none,
-                       }
+            mix_cfg = {
+                "dynamic": False,
+                "inlet_list": ["steam", "drain"],
+                "property_package": config.property_package,
+                "momentum_mixing_type": MomentumMixingType.none,
+            }
             self.drain_mix = Mixer(default=mix_cfg)
 
             @self.drain_mix.Constraint(self.drain_mix.flowsheet().time)
@@ -293,17 +292,14 @@ class FWH0DDynamicData(UnitModelBlockData):
             self.desuperheat.area.value = 10
             if config.has_drain_mixer:
                 self.SDS = Arc(
-                    source=self.desuperheat.outlet_1,
-                    destination=self.drain_mix.steam
+                    source=self.desuperheat.outlet_1, destination=self.drain_mix.steam
                 )
             else:
                 self.SDS = Arc(
-                    source=self.desuperheat.outlet_1,
-                    destination=self.condense.inlet_1
+                    source=self.desuperheat.outlet_1, destination=self.condense.inlet_1
                 )
             self.FW2 = Arc(
-                source=self.condense.outlet_2,
-                destination=self.desuperheat.inlet_2
+                source=self.condense.outlet_2, destination=self.desuperheat.inlet_2
             )
 
         # Add a drain cooling section after the condensing section
@@ -430,9 +426,7 @@ class FWH0DDynamicData(UnitModelBlockData):
         init_log.info(
             "Steam Flow = {}".format(value(self.condense.inlet_1.flow_mol[0]))
         )
-        init_log.info(
-            "Initialization Complete: {}".format(idaeslog.condition(res))
-        )
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         from_json(self, sd=istate, wts=sp)
 
@@ -440,10 +434,12 @@ class FWH0DDynamicData(UnitModelBlockData):
         if hasattr(self, "mixer_pressure_constraint"):
             for t, c in self.mixer_pressure_constraint.items():
                 sf = iscale.get_scaling_factor(
-                    self.steam_state[t].pressure, default=1, warning=True)
+                    self.steam_state[t].pressure, default=1, warning=True
+                )
                 iscale.constraint_scaling_transform(c, sf, overwrite=False)
         if hasattr(self, "pressure_change_total_eqn"):
             for t, c in self.pressure_change_total_eqn.items():
                 sf = iscale.get_scaling_factor(
-                    self.steam_state[t].pressure, default=1, warning=True)
+                    self.steam_state[t].pressure, default=1, warning=True
+                )
                 iscale.constraint_scaling_transform(c, sf, overwrite=False)

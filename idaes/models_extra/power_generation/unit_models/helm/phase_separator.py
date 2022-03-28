@@ -21,9 +21,7 @@ Created: August 21 2020
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (declare_process_block_class,
-                        UnitModelBlockData,
-                        useDefault)
+from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -36,41 +34,58 @@ __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa, A. Lee)"
 @declare_process_block_class("HelmPhaseSeparator")
 class WaterFlashData(UnitModelBlockData):
     """
-Simplified Flash Unit Model Class, only for IAPWS with mixed state
+    Simplified Flash Unit Model Class, only for IAPWS with mixed state
     """
+
     CONFIG = ConfigBlock()
-    CONFIG.declare("dynamic", ConfigValue(
-        default=False,
-        domain=In([False]),
-        description="Dynamic model flag",
-        doc="""Indicates whether the model is dynamic"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([False]),
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
+    CONFIG.declare(
+        "dynamic",
+        ConfigValue(
+            default=False,
+            domain=In([False]),
+            description="Dynamic model flag",
+            doc="""Indicates whether the model is dynamic""",
+        ),
+    )
+    CONFIG.declare(
+        "has_holdup",
+        ConfigValue(
+            default=False,
+            domain=In([False]),
+            description="Holdup construction flag",
+            doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
 **default** - False.
 **Valid values:** {
 **True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
-    CONFIG.declare("property_package", ConfigValue(
-        default=useDefault,
-        domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations,
+**False** - do not construct holdup terms}""",
+        ),
+    )
+    CONFIG.declare(
+        "property_package",
+        ConfigValue(
+            default=useDefault,
+            domain=is_physical_parameter_block,
+            description="Property package to use for control volume",
+            doc="""Property parameter object used to define property calculations,
 **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
-**PropertyParameterObject** - a PropertyParameterBlock object.}"""))
-    CONFIG.declare("property_package_args", ConfigBlock(
-        implicit=True,
-        description="Arguments to use for constructing property packages",
-        doc="""A ConfigBlock with arguments to be passed to a property block(s)
+**PropertyParameterObject** - a PropertyParameterBlock object.}""",
+        ),
+    )
+    CONFIG.declare(
+        "property_package_args",
+        ConfigBlock(
+            implicit=True,
+            description="Arguments to use for constructing property packages",
+            doc="""A ConfigBlock with arguments to be passed to a property block(s)
 and used when constructing these,
 **default** - None.
 **Valid values:** {
-see property package for documentation.}"""))
+see property package for documentation.}""",
+        ),
+    )
 
     def build(self):
         """
@@ -83,61 +98,67 @@ see property package for documentation.}"""))
         super(WaterFlashData, self).build()
 
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            default=self.config.property_package_args)
+            self.flowsheet().time, default=self.config.property_package_args
+        )
 
         self.add_port("inlet", self.mixed_state)
 
         self.vap_state = self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            default=self.config.property_package_args)
+            self.flowsheet().time, default=self.config.property_package_args
+        )
 
         self.liq_state = self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            default=self.config.property_package_args)
+            self.flowsheet().time, default=self.config.property_package_args
+        )
 
         self.add_port("vap_outlet", self.vap_state)
         self.add_port("liq_outlet", self.liq_state)
         # vapor outlet state
         @self.Constraint(self.flowsheet().time)
         def vap_material_balance(b, t):
-            return 1e-4*b.mixed_state[t].flow_mol*b.mixed_state[t].vapor_frac == \
-                b.vap_state[t].flow_mol*1e-4
+            return (
+                1e-4 * b.mixed_state[t].flow_mol * b.mixed_state[t].vapor_frac
+                == b.vap_state[t].flow_mol * 1e-4
+            )
 
         @self.Constraint(self.flowsheet().time)
         def vap_enthalpy_balance(b, t):
-            return b.mixed_state[t].enth_mol_phase["Vap"]*1e-4 == \
-                b.vap_state[t].enth_mol*1e-4
+            return (
+                b.mixed_state[t].enth_mol_phase["Vap"] * 1e-4
+                == b.vap_state[t].enth_mol * 1e-4
+            )
 
         @self.Constraint(self.flowsheet().time)
         def vap_pressure_balance(b, t):
-            return b.mixed_state[t].pressure*1e-6 == \
-                b.vap_state[t].pressure*1e-6
+            return b.mixed_state[t].pressure * 1e-6 == b.vap_state[t].pressure * 1e-6
 
         # liquid outlet state
         @self.Constraint(self.flowsheet().time)
         def liq_material_balance(b, t):
-            return 1e-4*b.mixed_state[t].flow_mol*(1 - b.mixed_state[t].vapor_frac)\
-                == b.liq_state[t].flow_mol*1e-4
+            return (
+                1e-4 * b.mixed_state[t].flow_mol * (1 - b.mixed_state[t].vapor_frac)
+                == b.liq_state[t].flow_mol * 1e-4
+            )
 
         @self.Constraint(self.flowsheet().time)
         def liq_enthalpy_balance(b, t):
-            return 1e-4*b.mixed_state[t].enth_mol_phase["Liq"] == \
-                b.liq_state[t].enth_mol*1e-4
+            return (
+                1e-4 * b.mixed_state[t].enth_mol_phase["Liq"]
+                == b.liq_state[t].enth_mol * 1e-4
+            )
 
         @self.Constraint(self.flowsheet().time)
         def liq_pressure_balance(b, t):
-            return b.mixed_state[t].pressure*1e-6 == \
-                b.liq_state[t].pressure*1e-6
+            return b.mixed_state[t].pressure * 1e-6 == b.liq_state[t].pressure * 1e-6
 
     def initialize_build(
         blk,
         state_args_water_steam=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg=None
+        optarg=None,
     ):
-        '''
+        """
         Drum initialization routine.
 
         Keyword Arguments:
@@ -154,28 +175,25 @@ see property package for documentation.}"""))
 
         Returns:
             None
-        '''
+        """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
 
         init_log.info_low("Starting initialization...")
         # fix FeedWater Inlet
-        flags_fw = fix_state_vars(blk.mixed_state,
-                                  state_args_water_steam)
+        flags_fw = fix_state_vars(blk.mixed_state, state_args_water_steam)
         blk.mixed_state.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
         # initialize outlet states
         for t in blk.flowsheet().time:
-            blk.vap_state[t].flow_mol = value(blk.mixed_state[t].
-                                              flow_mol*blk.mixed_state[t].
-                                              vapor_frac)
-            blk.vap_state[t].enth_mol = value(blk.mixed_state[t].
-                                              enth_mol_phase["Vap"])
+            blk.vap_state[t].flow_mol = value(
+                blk.mixed_state[t].flow_mol * blk.mixed_state[t].vapor_frac
+            )
+            blk.vap_state[t].enth_mol = value(blk.mixed_state[t].enth_mol_phase["Vap"])
             blk.vap_state[t].pressure = value(blk.mixed_state[t].pressure)
             blk.vap_state[t].vapor_frac = 1
-            blk.liq_state[t].flow_mol = value(blk.mixed_state[t].flow_mol
-                                              * (1 - blk.mixed_state[t].
-                                                 vapor_frac))
-            blk.liq_state[t].enth_mol = value(blk.mixed_state[t].
-                                              enth_mol_phase["Liq"])
+            blk.liq_state[t].flow_mol = value(
+                blk.mixed_state[t].flow_mol * (1 - blk.mixed_state[t].vapor_frac)
+            )
+            blk.liq_state[t].enth_mol = value(blk.mixed_state[t].enth_mol_phase["Liq"])
             blk.liq_state[t].pressure = value(blk.mixed_state[t].pressure)
             blk.liq_state[t].vapor_frac = 0
         # unfix variables

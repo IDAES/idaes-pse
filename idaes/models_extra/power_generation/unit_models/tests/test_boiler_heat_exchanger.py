@@ -223,12 +223,11 @@ def test_deprecated_prop_pack(caplog):
     assert n_warn == 2
     assert n_depreacted == 2
     assert isinstance(
-        m.fs.unit.config.hot_side_config.property_package,
-        FlueGasParameterBlock
+        m.fs.unit.config.hot_side_config.property_package, FlueGasParameterBlock
     )
     assert isinstance(
         m.fs.unit.config.cold_side_config.property_package,
-        iapws95.Iapws95ParameterBlock
+        iapws95.Iapws95ParameterBlock,
     )
 
 
@@ -339,7 +338,6 @@ def th(
     assert value(m.fs.unit.side_2.properties_out[0].temperature) == pytest.approx(
         tout_2, abs=0.5
     )
-
 
 
 def tu(delta_temperature_callback=delta_temperature_underwood_tune_callback):

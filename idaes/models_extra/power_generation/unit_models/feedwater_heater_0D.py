@@ -37,8 +37,7 @@ from idaes.core import (
     MaterialBalanceType,
 )
 from idaes.generic_models.unit_models.heat_exchanger import HeatExchangerData
-from idaes.generic_models.unit_models import (
-    Mixer, MomentumMixingType, HeatExchanger)
+from idaes.generic_models.unit_models import Mixer, MomentumMixingType, HeatExchanger
 from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
@@ -135,12 +134,10 @@ def _set_prop_pack(hxcfg, fwhcfg):
     # will override this.  I think this behavior is fine, and what we'd want.
     if hxcfg.hot_side_config.property_package == useDefault:
         hxcfg.hot_side_config.property_package = fwhcfg.property_package
-        hxcfg.hot_side_config.property_package_args = \
-            fwhcfg.property_package_args
+        hxcfg.hot_side_config.property_package_args = fwhcfg.property_package_args
     if hxcfg.cold_side_config.property_package == useDefault:
         hxcfg.cold_side_config.property_package = fwhcfg.property_package
-        hxcfg.cold_side_config.property_package_args = \
-            fwhcfg.property_package_args
+        hxcfg.cold_side_config.property_package_args = fwhcfg.property_package_args
 
 
 @declare_process_block_class(
@@ -154,9 +151,11 @@ class FWHCondensing0DData(HeatExchangerData):
     def build(self):
         super().build()
         units_meta = self.shell.config.property_package.get_metadata()
-        self.enth_sub = Var(self.flowsheet().time,
-                            initialize=0,
-                            units=units_meta.get_derived_units("energy_mole"))
+        self.enth_sub = Var(
+            self.flowsheet().time,
+            initialize=0,
+            units=units_meta.get_derived_units("energy_mole"),
+        )
         self.enth_sub.fix()
 
         @self.Constraint(
@@ -269,17 +268,14 @@ class FWH0DData(UnitModelBlockData):
             self.desuperheat.area.value = 10
             if config.has_drain_mixer:
                 self.SDS = Arc(
-                    source=self.desuperheat.outlet_1,
-                    destination=self.drain_mix.steam
+                    source=self.desuperheat.outlet_1, destination=self.drain_mix.steam
                 )
             else:
                 self.SDS = Arc(
-                    source=self.desuperheat.outlet_1,
-                    destination=self.condense.inlet_1
+                    source=self.desuperheat.outlet_1, destination=self.condense.inlet_1
                 )
             self.FW2 = Arc(
-                source=self.condense.outlet_2,
-                destination=self.desuperheat.inlet_2
+                source=self.condense.outlet_2, destination=self.desuperheat.inlet_2
             )
 
         # Add a drain cooling section after the condensing section
@@ -384,8 +380,6 @@ class FWH0DData(UnitModelBlockData):
         init_log.info(
             "Steam Flow = {}".format(value(self.condense.inlet_1.flow_mol[0]))
         )
-        init_log.info(
-            "Initialization Complete: {}".format(idaeslog.condition(res))
-        )
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         from_json(self, sd=istate, wts=sp)

@@ -34,19 +34,19 @@ from pyomo.common.fileutils import this_file_dir
 directory = this_file_dir()
 
 
-''' The costing exponents dictionary contains information from the QGESS on
+""" The costing exponents dictionary contains information from the QGESS on
 capital cost scaling methodology (DOE/NETL-2019/1784). Specifically it includes
 scaling exponents, valid ranges for the scaled parameter, and units for those
 ranges. It is important to note the units only apply to the ranges and are not
 neccessarily the units that the reference parameter value will be given in.
 This dictionary is nested with the following structure:
-    tech type --> account --> property name --> property value'''
+    tech type --> account --> property name --> property value"""
 
-with open(os.path.join(directory, "BB_costing_exponents.json"), 'r') as file:
+with open(os.path.join(directory, "BB_costing_exponents.json"), "r") as file:
     BB_costing_exponents = json.load(file)
 
 
-'''
+"""
 The costing params dictionary contains information from the BBR4 COE
 spreadsheet. It includes the total plant cost (TPC), reference parameter value,
 and units for that value.
@@ -56,10 +56,10 @@ parameters, these accounts have been divided into two separate accounts
 following
 the naming convention x.x.a and x.x.b.
 This dictionary is nested with the following structure:
-tech type --> CCS --> account --> property name --> property values'''
-with open(os.path.join(directory,"BB_costing_parameters.json"), 'r') as file:
+tech type --> CCS --> account --> property name --> property values"""
+with open(os.path.join(directory, "BB_costing_parameters.json"), "r") as file:
     BB_costing_params = json.load(file)
 
 
-with open(os.path.join(directory, "sCO2_costing_parameters.json"), 'r') as file:
+with open(os.path.join(directory, "sCO2_costing_parameters.json"), "r") as file:
     sCO2_costing_params = json.load(file)

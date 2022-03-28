@@ -75,8 +75,9 @@ from pyomo.network import Arc
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Callback used to construct heat exchangers with the Underwood LMTD approx.
-from idaes.generic_models.unit_models.heat_exchanger \
-    import delta_temperature_underwood_callback
+from idaes.generic_models.unit_models.heat_exchanger import (
+    delta_temperature_underwood_callback,
+)
 
 # Pressure changer type (e.g. adiabatic, pump, isentropic...)
 from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
@@ -88,8 +89,8 @@ _log = idaeslog.getModelLogger(__name__, logging.INFO)
 def import_steam_cycle():
     # build concrete model
     # import steam cycle model and initialize flowsheet
-    import idaes.models_extra.power_generation.flowsheets.\
-        supercritical_steam_cycle.supercritical_steam_cycle as steam_cycle
+    import idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle as steam_cycle
+
     m, solver = steam_cycle.main()
     return m, solver
 
@@ -106,8 +107,8 @@ def main():
     # from (boiler_subflowsheet_build.py)
     # this step appends all the boiler unit models into our model ("m")
     # model "m" has been created a few lines above
-    import idaes.models_extra.power_generation.flowsheets.\
-        supercritical_power_plant.boiler_subflowsheet_build as blr
+    import idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
+
     # import the models (ECON, WW, PrSH, PlSH, FSH, Spliter, Mixer, Reheater)
     # see boiler_subflowhseet_build.py for a beter description
     blr.build_boiler(m.fs)
@@ -117,7 +118,7 @@ def main():
     # in the same model/concrete object ("m"), however they are disconnected.
     # Here we want to solve them at the same time
     # this is a square problem (i.e. degrees of freedom = 0)
-    print('solving square problem disconnected')
+    print("solving square problem disconnected")
     results = solver.solve(m, tee=True)
 
     # at this point we want to connect the units in both flowsheets
@@ -126,13 +127,12 @@ def main():
     # Reheater inlet (steam) = HP split 7 outlet (last stage of HP turbine)
     # IP inlet = Reheater outlet steam7
     blr.unfix_inlets(m)
-    print('unfix inlet conditions, degreeso of freedom = '
-          + str(degrees_of_freedom(m)))
+    print("unfix inlet conditions, degreeso of freedom = " + str(degrees_of_freedom(m)))
     # user can save the initialization to a json file (uncomment next line)
-#    MS.to_json(m, fname = 'SCPC_full.json')
-#   later user can use the json file to initialize the model
-#   if this is the case comment out previous MS.to_json and uncomment next line
-#    MS.from_json(m, fname = 'SCPC_full.json')
+    #    MS.to_json(m, fname = 'SCPC_full.json')
+    #   later user can use the json file to initialize the model
+    #   if this is the case comment out previous MS.to_json and uncomment next line
+    #    MS.from_json(m, fname = 'SCPC_full.json')
 
     # deactivate constraints linking the FWH8 to HP turbine
     m.fs.boiler_pressure_drop.deactivate()
@@ -143,19 +143,21 @@ def main():
     m.fs.turb.inlet_split.inlet.enth_mol.unfix()
     m.fs.turb.inlet_split.inlet.pressure.unfix()
     # user can fix the boiler feed water pump pressure (uncomenting next line)
-#    m.fs.bfp.outlet.pressure[:].fix(26922222.222))
+    #    m.fs.bfp.outlet.pressure[:].fix(26922222.222))
 
-    m.fs.FHWtoECON = Arc(source=m.fs.fwh8.desuperheat.outlet_2,
-                         destination=m.fs.ECON.side_1_inlet)
+    m.fs.FHWtoECON = Arc(
+        source=m.fs.fwh8.desuperheat.outlet_2, destination=m.fs.ECON.side_1_inlet
+    )
 
-    m.fs.Att2HP = Arc(source=m.fs.ATMP1.outlet,
-                      destination=m.fs.turb.inlet_split.inlet)
+    m.fs.Att2HP = Arc(source=m.fs.ATMP1.outlet, destination=m.fs.turb.inlet_split.inlet)
 
-    m.fs.HPout2RH = Arc(source=m.fs.turb.hp_split[7].outlet_1,
-                        destination=m.fs.RH.side_1_inlet)
+    m.fs.HPout2RH = Arc(
+        source=m.fs.turb.hp_split[7].outlet_1, destination=m.fs.RH.side_1_inlet
+    )
 
-    m.fs.RHtoIP = Arc(source=m.fs.RH.side_1_outlet,
-                      destination=m.fs.turb.ip_stages[1].inlet)
+    m.fs.RHtoIP = Arc(
+        source=m.fs.RH.side_1_outlet, destination=m.fs.turb.ip_stages[1].inlet
+    )
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -186,15 +188,15 @@ def main():
     m.fs.ATMP1.outlet.enth_mol[0].fix(62710.01)
     m.fs.PlSH.heat_duty[:].unfix()  # fix(5.5e7)
     #    m.fs.ATMP1.SprayWater.flow_mol[0].unfix()
-    print('connecting flowsheets, degrees of freedom = '
-          + str(degrees_of_freedom(m)))
-    print('solving full plant model')
-    solver.options = {"tol": 1e-6,
-                      "linear_solver": "ma27",
-                      "max_iter": 40,
-                      }
+    print("connecting flowsheets, degrees of freedom = " + str(degrees_of_freedom(m)))
+    print("solving full plant model")
+    solver.options = {
+        "tol": 1e-6,
+        "linear_solver": "ma27",
+        "max_iter": 40,
+    }
     # square problems tend to work better without bounds
-    strip_bounds = pyo.TransformationFactory('contrib.strip_var_bounds')
+    strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
     strip_bounds.apply_to(m, reversible=True)
     # this is the final solve with both flowsheets connected
     results = solver.solve(m, tee=True)

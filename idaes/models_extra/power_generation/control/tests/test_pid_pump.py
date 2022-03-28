@@ -24,16 +24,14 @@ from idaes.models_extra.power_generation.unit_models.helm import (
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.properties import iapws95
-from idaes.core.util.dyn_utils import (
-    copy_values_at_time,
-    copy_non_time_indexed_values)
+from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
 from idaes.core.util import get_solver
 
 import pytest
 
 
 def set_scaling_factors(m):
-    """ Set scaling factors for variables and expressions. These are used for
+    """Set scaling factors for variables and expressions. These are used for
     variable scaling and used by the framework to scale constraints.
 
     Args:
@@ -43,19 +41,17 @@ def set_scaling_factors(m):
         None
     """
     # Set scaling factors for boiler system
-    iscale.set_scaling_factor(
-        m.fs.tank.control_volume.energy_holdup, 1e-10)
-    iscale.set_scaling_factor(
-        m.fs.tank.control_volume.material_holdup, 1e-6)
+    iscale.set_scaling_factor(m.fs.tank.control_volume.energy_holdup, 1e-10)
+    iscale.set_scaling_factor(m.fs.tank.control_volume.material_holdup, 1e-6)
     if m.dynamic:
-        for t, c in m.fs.tank.control_volume\
-                .energy_accumulation_disc_eq.items():
+        for t, c in m.fs.tank.control_volume.energy_accumulation_disc_eq.items():
             iscale.constraint_scaling_transform(c, 1e-6)
 
     # scaling factor for control valves
     for t in m.fs.time:
         iscale.set_scaling_factor(
-            m.fs.valve.control_volume.properties_in[t].flow_mol, 0.001)
+            m.fs.valve.control_volume.properties_in[t].flow_mol, 0.001
+        )
 
     # Calculate calculated scaling factors
     iscale.calculate_scaling_factors(m)
@@ -81,9 +77,13 @@ def get_model(dynamic=False):
     m = pyo.ConcreteModel(name="Testing PID controller model")
     if dynamic:
         m.dynamic = True
-        m.fs = FlowsheetBlock(default={"dynamic": True,
-                                       "time_set": [0, 50, 1000],
-                                       "time_units": pyo.units.s})
+        m.fs = FlowsheetBlock(
+            default={
+                "dynamic": True,
+                "time_set": [0, 50, 1000],
+                "time_units": pyo.units.s,
+            }
+        )
     else:
         m.dynamic = False
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -99,30 +99,34 @@ def get_model(dynamic=False):
 
     # water tank
     m.fs.tank = WaterTank(
-        default={"tank_type": "simple_tank",
-                 "has_holdup": True,
-                 "property_package": m.fs.prop_water,
-                 }
+        default={
+            "tank_type": "simple_tank",
+            "has_holdup": True,
+            "property_package": m.fs.prop_water,
+        }
     )
 
     m.fs.valve = WaterValve(
-        default={"dynamic": False,
-                 "has_holdup": False,
-                 "phase": "Liq",
-                 "property_package": m.fs.prop_water})
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "phase": "Liq",
+            "property_package": m.fs.prop_water,
+        }
+    )
 
     if dynamic:
-        m.fs.controller = PIDController(default={"pv": m.fs.tank.tank_level,
-                                                 "mv": m.fs.valve.
-                                                 valve_opening,
-                                                 "type": 'PI',
-                                                 "bounded_output": False})
+        m.fs.controller = PIDController(
+            default={
+                "pv": m.fs.tank.tank_level,
+                "mv": m.fs.valve.valve_opening,
+                "type": "PI",
+                "bounded_output": False,
+            }
+        )
 
-        m.discretizer = pyo.TransformationFactory('dae.finite_difference')
-        m.discretizer.apply_to(m,
-                               nfe=20,
-                               wrt=m.fs.time,
-                               scheme="BACKWARD")
+        m.discretizer = pyo.TransformationFactory("dae.finite_difference")
+        m.discretizer.apply_to(m, nfe=20, wrt=m.fs.time, scheme="BACKWARD")
 
         m.fs.controller.gain_p.fix(-1e-1)
         m.fs.controller.gain_i.fix(-1e-2)
@@ -130,11 +134,9 @@ def get_model(dynamic=False):
         m.fs.controller.mv_ref.fix(0.5)
         m.fs.controller.integral_of_error[0].fix(0)
 
-    m.fs.pump_to_tank = Arc(source=m.fs.pump.outlet,
-                            destination=m.fs.tank.inlet)
-    m.fs.tank_to_valve = Arc(source=m.fs.tank.outlet,
-                             destination=m.fs.valve.inlet)
-    pyo.TransformationFactory('network.expand_arcs').apply_to(m.fs)
+    m.fs.pump_to_tank = Arc(source=m.fs.pump.outlet, destination=m.fs.tank.inlet)
+    m.fs.tank_to_valve = Arc(source=m.fs.tank.outlet, destination=m.fs.valve.inlet)
+    pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
 
     m.fs.pump.efficiency_isentropic.fix(0.8)
     m.fs.pump.deltaP.fix(5e4)
@@ -190,8 +192,7 @@ def run_dynamic(m):
     # add step change
     for t in m.fs.time:
         if t >= 50:
-            m.fs.pump.inlet.flow_mol[t].fix(m.fs.pump.inlet.
-                                            flow_mol[0].value*1.2)
+            m.fs.pump.inlet.flow_mol[t].fix(m.fs.pump.inlet.flow_mol[0].value * 1.2)
         else:
             m.fs.pump.inlet.flow_mol[t].fix(m.fs.pump.inlet.flow_mol[0].value)
     solver.solve(m, tee=True)
@@ -202,21 +203,18 @@ def run_dynamic(m):
 @pytest.mark.integration
 def test_pid():
     m = main()
-    assert 0.5000 == pytest.approx(
-        pyo.value(m.fs.valve.valve_opening[0.0]), abs=1e-3)
+    assert 0.5000 == pytest.approx(pyo.value(m.fs.valve.valve_opening[0.0]), abs=1e-3)
     assert 0.6156 == pytest.approx(
-        pyo.value(m.fs.valve.valve_opening[406.25]), abs=1e-3)
-    assert 0.60268 == pytest.approx(
-        pyo.value(m.fs.valve.valve_opening[1000]), abs=1e-3)
-    assert 5 == pytest.approx(
-        pyo.value(m.fs.tank.tank_level[0.0]), abs=1e-3)
-    assert 4.9762 == pytest.approx(
-        pyo.value(m.fs.tank.tank_level[406.25]), abs=1e-3)
-    assert 4.99923 == pytest.approx(
-        pyo.value(m.fs.tank.tank_level[1000]), abs=1e-3)
-    assert 7000.0 == pytest.approx(
-        pyo.value(m.fs.tank.outlet.flow_mol[0.0]), abs=1e-3)
+        pyo.value(m.fs.valve.valve_opening[406.25]), abs=1e-3
+    )
+    assert 0.60268 == pytest.approx(pyo.value(m.fs.valve.valve_opening[1000]), abs=1e-3)
+    assert 5 == pytest.approx(pyo.value(m.fs.tank.tank_level[0.0]), abs=1e-3)
+    assert 4.9762 == pytest.approx(pyo.value(m.fs.tank.tank_level[406.25]), abs=1e-3)
+    assert 4.99923 == pytest.approx(pyo.value(m.fs.tank.tank_level[1000]), abs=1e-3)
+    assert 7000.0 == pytest.approx(pyo.value(m.fs.tank.outlet.flow_mol[0.0]), abs=1e-3)
     assert 8598.66642 == pytest.approx(
-        pyo.value(m.fs.tank.outlet.flow_mol[406.25]), abs=1e-3)
+        pyo.value(m.fs.tank.outlet.flow_mol[406.25]), abs=1e-3
+    )
     assert 8436.87597 == pytest.approx(
-        pyo.value(m.fs.tank.outlet.flow_mol[1000]), abs=1e-3)
+        pyo.value(m.fs.tank.outlet.flow_mol[1000]), abs=1e-3
+    )

@@ -23,8 +23,9 @@ from idaes.core import FlowsheetBlock
 from idaes.models_extra.power_generation.unit_models.helm import HelmTurbineStage
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import (
-        degrees_of_freedom,
-        activated_equalities_generator)
+    degrees_of_freedom,
+    activated_equalities_generator,
+)
 from idaes.core.util import get_solver
 
 # Set up solver
@@ -45,9 +46,9 @@ def build_turbine_dyn():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": True})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.turb = HelmTurbineStage(default={
-        "dynamic": False,
-        "property_package": m.fs.properties})
+    m.fs.turb = HelmTurbineStage(
+        default={"dynamic": False, "property_package": m.fs.properties}
+    )
     return m
 
 
@@ -71,8 +72,8 @@ def test_initialize(build_turbine):
 
     eq_cons = activated_equalities_generator(m)
     for c in eq_cons:
-        assert(abs(c.body() - c.lower) < 1e-4)
-    assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
+        assert abs(c.body() - c.lower) < 1e-4
+    assert degrees_of_freedom(m) == 3  # inlet was't fixed and still shouldn't be
 
 
 @pytest.mark.unit

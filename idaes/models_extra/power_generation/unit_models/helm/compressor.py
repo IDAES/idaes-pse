@@ -17,7 +17,7 @@ from idaes.models_extra.power_generation.unit_models.balance import BalanceBlock
 from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.generic_models.properties.helmholtz.helmholtz as hltz
 from idaes.generic_models.properties.helmholtz.helmholtz import (
-    HelmholtzThermoExpressions as ThermoExpr
+    HelmholtzThermoExpressions as ThermoExpr,
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -30,11 +30,16 @@ def _assert_properties(pb):
     try:
         assert isinstance(pb, hltz.HelmholtzParameterBlockData)
         assert pb.config.phase_presentation in {
-            hltz.PhaseType.MIX, hltz.PhaseType.L, hltz.PhaseType.G}
+            hltz.PhaseType.MIX,
+            hltz.PhaseType.L,
+            hltz.PhaseType.G,
+        }
         assert pb.config.state_vars == hltz.StateVars.PH
     except AssertionError:
-        _log.error("helm.HelmIsentropicCompressor requires a Helmholtz EOS with "
-                   "a single or mixed phase and pressure-enthalpy state vars.")
+        _log.error(
+            "helm.HelmIsentropicCompressor requires a Helmholtz EOS with "
+            "a single or mixed phase and pressure-enthalpy state vars."
+        )
         raise
 
 
@@ -77,14 +82,13 @@ class HelmIsentropicCompressorData(BalanceBlockData):
     CONFIG.get("has_heat_transfer")._default = False
     CONFIG.get("has_heat_transfer")._domain = In([False])
 
-
     def build(self):
         """
         Add model equations to the unit model.  This is called by a default block
         construnction rule when the unit model is created.
         """
-        super().build() # Basic unit model build/read config
-        config = self.config # shorter config pointer
+        super().build()  # Basic unit model build/read config
+        config = self.config  # shorter config pointer
 
         # The thermodynamic expression writer object, te, writes expressions
         # including external function calls to calculate thermodynamic quantities
@@ -93,16 +97,14 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
         eff = self.efficiency_isentropic = pyo.Var(
-            self.flowsheet().time,
-            initialize=0.9,
-            doc="Isentropic efficiency"
+            self.flowsheet().time, initialize=0.9, doc="Isentropic efficiency"
         )
         eff.fix()
 
         pratio = self.ratioP = pyo.Var(
             self.flowsheet().time,
             initialize=1.5,
-            doc="Ratio of outlet to inlet pressure"
+            doc="Ratio of outlet to inlet pressure",
         )
 
         # Some shorter refernces to property blocks
@@ -110,41 +112,35 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         properties_out = self.control_volume.properties_out
 
         @self.Expression(
-            self.flowsheet().time,
-            doc="isentropic outlet enthalpy expression"
+            self.flowsheet().time, doc="isentropic outlet enthalpy expression"
         )
         def h_is(b, t):
             return te.h(s=properties_in[t].entr_mol, p=properties_out[t].pressure)
 
-        @self.Expression(
-            self.flowsheet().time,
-            doc="isentropic work expression"
-        )
+        @self.Expression(self.flowsheet().time, doc="isentropic work expression")
         def work_isentropic(b, t):
-            return properties_in[t].flow_mol*(
-                properties_in[t].enth_mol - self.h_is[t])
+            return properties_in[t].flow_mol * (
+                properties_in[t].enth_mol - self.h_is[t]
+            )
 
-        @self.Expression(
-            self.flowsheet().time,
-            doc="outlet enthalpy expression"
-        )
-        def h_o(b, t): # Early access to the outlet enthalpy and work
-            return properties_in[t].enth_mol + (self.h_is[t] -
-                properties_in[t].enth_mol)/eff[t]
+        @self.Expression(self.flowsheet().time, doc="outlet enthalpy expression")
+        def h_o(b, t):  # Early access to the outlet enthalpy and work
+            return (
+                properties_in[t].enth_mol
+                + (self.h_is[t] - properties_in[t].enth_mol) / eff[t]
+            )
 
         @self.Constraint(self.flowsheet().time)
-        def eq_work(b, t): # Work from energy balance
+        def eq_work(b, t):  # Work from energy balance
             return properties_out[t].enth_mol == self.h_o[t]
 
         @self.Constraint(self.flowsheet().time)
         def eq_pressure_ratio(b, t):
-            return (pratio[t]*properties_in[t].pressure ==
-                properties_out[t].pressure)
+            return pratio[t] * properties_in[t].pressure == properties_out[t].pressure
 
         @self.Expression(self.flowsheet().time)
         def work_mechanical(b, t):
             return b.control_volume.work[t]
-
 
     def initialize_build(
         self,
@@ -171,11 +167,12 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         for t in self.flowsheet().time:
             if self.outlet.pressure[t].fixed:
                 self.ratioP[t] = pyo.value(
-                    self.outlet.pressure[t]/self.inlet.pressure[t])
+                    self.outlet.pressure[t] / self.inlet.pressure[t]
+                )
             elif self.control_volume.deltaP[t].fixed:
                 self.ratioP[t] = pyo.value(
-                    (self.control_volume.deltaP[t] + self.inlet.pressure[t])/
-                    self.inlet.pressure[t]
+                    (self.control_volume.deltaP[t] + self.inlet.pressure[t])
+                    / self.inlet.pressure[t]
                 )
         # Fix the variables we base the initializtion on and free the rest.
         # This requires good values to be provided for pressure, efficency,
@@ -186,14 +183,12 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         self.deltaP.unfix()
         self.efficiency_isentropic.fix()
         for t in self.flowsheet().time:
-            self.outlet.pressure[t] = pyo.value(
-                self.inlet.pressure[t]*self.ratioP[t])
-            self.deltaP[t] = pyo.value(
-                self.outlet.pressure[t] - self.inlet.pressure[t])
+            self.outlet.pressure[t] = pyo.value(self.inlet.pressure[t] * self.ratioP[t])
+            self.deltaP[t] = pyo.value(self.outlet.pressure[t] - self.inlet.pressure[t])
             self.outlet.enth_mol[t] = pyo.value(self.h_o[t])
             self.control_volume.work[t] = pyo.value(
-                self.inlet.flow_mol[t]*self.inlet.enth_mol[t] -
-                self.outlet.flow_mol[t]*self.outlet.enth_mol[t]
+                self.inlet.flow_mol[t] * self.inlet.enth_mol[t]
+                - self.outlet.flow_mol[t] * self.outlet.enth_mol[t]
             )
             self.outlet.flow_mol[t] = pyo.value(self.inlet.flow_mol[t])
         # Solve the model (should be already solved from above)
@@ -205,10 +200,8 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         super().calculate_scaling_factors()
 
         for t, c in self.eq_pressure_ratio.items():
-            s = iscale.get_scaling_factor(
-                self.control_volume.properties_in[t].pressure)
+            s = iscale.get_scaling_factor(self.control_volume.properties_in[t].pressure)
             iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.eq_work.items():
-            s = iscale.get_scaling_factor(
-                self.control_volume.work[t])
+            s = iscale.get_scaling_factor(self.control_volume.work[t])
             iscale.constraint_scaling_transform(c, s, overwrite=False)

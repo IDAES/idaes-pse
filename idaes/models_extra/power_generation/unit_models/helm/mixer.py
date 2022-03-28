@@ -13,12 +13,7 @@
 """
 General purpose mixer block for IDAES models
 """
-from pyomo.environ import (
-    Param,
-    PositiveReals,
-    SolverFactory,
-    value
-)
+from pyomo.environ import Param, PositiveReals, SolverFactory, value
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 
 from idaes.core import (
@@ -26,9 +21,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.util.config import (
-    is_physical_parameter_block
-)
+from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 
 from idaes.core.util.math import smooth_min
@@ -150,7 +143,6 @@ between flow and pressure driven simulations.}""",
         ),
     )
 
-
     def build(self):
         """
         General build method for MixerData. This method calls a number
@@ -187,11 +179,10 @@ between flow and pressure driven simulations.}""",
 
         @self.Constraint(self.flowsheet().time)
         def energy_balance(b, t):
-            return self.mixed_state[t].enth_mol*self.mixed_state[t].flow_mol == \
-                sum(self.inlet_blocks[i][t].enth_mol
-                    * self.inlet_blocks[i][t].flow_mol
-                    for i in self.inlet_list
-                )
+            return self.mixed_state[t].enth_mol * self.mixed_state[t].flow_mol == sum(
+                self.inlet_blocks[i][t].enth_mol * self.inlet_blocks[i][t].flow_mol
+                for i in self.inlet_list
+            )
 
         mmx_type = self.config.momentum_mixing_type
         if mmx_type == MomentumMixingType.minimize:
@@ -205,7 +196,6 @@ between flow and pressure driven simulations.}""",
 
         self.add_port_objects()
 
-
     def create_inlet_list(self):
         """
         Create list of inlet stream names based on config arguments.
@@ -213,8 +203,7 @@ between flow and pressure driven simulations.}""",
         Returns:
             list of strings
         """
-        if (self.config.inlet_list is not None and
-                self.config.num_inlets is not None):
+        if self.config.inlet_list is not None and self.config.num_inlets is not None:
             # If both arguments provided and not consistent, raise Exception
             if len(self.config.inlet_list) != self.config.num_inlets:
                 raise ConfigurationError(
@@ -265,7 +254,6 @@ between flow and pressure driven simulations.}""",
             setattr(self, "{}_state".format(i), i_obj)
             self.inlet_blocks[i] = i_obj
 
-
     def add_mixed_state_block(self):
         """
         Constructs StateBlock to represent mixed stream.
@@ -284,7 +272,6 @@ between flow and pressure driven simulations.}""",
         )
         return self.mixed_state
 
-
     def add_pressure_minimization_equations(self):
         """
         Add pressure minimization equations. This is done by sequential
@@ -297,7 +284,7 @@ between flow and pressure driven simulations.}""",
             initialize=1e-3,
             domain=PositiveReals,
             doc="Smoothing term for minimum inlet pressure",
-            units=units_meta.get_derived_units("pressure")
+            units=units_meta.get_derived_units("pressure"),
         )
 
         # Calculate minimum inlet pressure
@@ -316,13 +303,11 @@ between flow and pressure driven simulations.}""",
                 return smooth_min(this_p, prev_p, self.eps_pressure)
 
         # Set inlet pressure to minimum pressure
-        @self.Constraint(
-            self.flowsheet().time, doc="Link pressure to control volume")
+        @self.Constraint(self.flowsheet().time, doc="Link pressure to control volume")
         def minimum_pressure_constraint(b, t):
             return self.mixed_state[t].pressure == (
                 self.minimum_pressure[t, self.inlet_list[-1]]
             )
-
 
     def add_pressure_equality_equations(self):
         """
@@ -354,15 +339,13 @@ between flow and pressure driven simulations.}""",
             self.add_port(name=p, block=self.inlet_blocks[p], doc="Inlet Port")
         self.add_port(name="outlet", block=self.mixed_state, doc="Outlet Port")
 
-
     def use_minimum_inlet_pressure_constraint(self):
         """Activate the mixer pressure = mimimum inlet pressure constraint and
         deactivate the mixer pressure and all inlet pressures are equal
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
         """
-        if (self.config.momentum_mixing_type !=
-                MomentumMixingType.minimize_and_equality):
+        if self.config.momentum_mixing_type != MomentumMixingType.minimize_and_equality:
             _log.warning(
                 """use_minimum_inlet_pressure_constraint() can only be used
                 when momentum_mixing_type ==
@@ -378,8 +361,7 @@ between flow and pressure driven simulations.}""",
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
         """
-        if (self.config.momentum_mixing_type !=
-                MomentumMixingType.minimize_and_equality):
+        if self.config.momentum_mixing_type != MomentumMixingType.minimize_and_equality:
             _log.warning(
                 """use_equal_pressure_constraint() can only be used when
                 momentum_mixing_type ==
@@ -424,12 +406,14 @@ between flow and pressure driven simulations.}""",
 
         for t, v in self.outlet.pressure.items():
             if not v.fixed:
-                v.value = min([value(
-                    self.inlet_blocks[i][t].pressure) for i in self.inlet_blocks])
+                v.value = min(
+                    [value(self.inlet_blocks[i][t].pressure) for i in self.inlet_blocks]
+                )
         self.outlet.unfix()
 
-        if (hasattr(self, "pressure_equality_constraints") and
-            self.pressure_equality_constraints.active
+        if (
+            hasattr(self, "pressure_equality_constraints")
+            and self.pressure_equality_constraints.active
         ):
             # If using the equal pressure constraint fix the outlet and free
             # the inlet pressures, this is typical for pressure driven flow

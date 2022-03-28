@@ -23,8 +23,9 @@ from idaes.core import FlowsheetBlock
 from idaes.models_extra.power_generation.unit_models.helm import HelmTurbineOutletStage
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import (
-        degrees_of_freedom,
-        activated_equalities_generator)
+    degrees_of_freedom,
+    activated_equalities_generator,
+)
 from idaes.core.util import get_solver
 
 # Set up solver
@@ -45,10 +46,11 @@ def build_turbine_dyn():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyunits.s})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.turb = HelmTurbineOutletStage(default={
-        "dynamic": False,
-        "property_package": m.fs.properties})
+    m.fs.turb = HelmTurbineOutletStage(
+        default={"dynamic": False, "property_package": m.fs.properties}
+    )
     return m
+
 
 @pytest.mark.unit
 def test_basic_build(build_turbine):
@@ -70,8 +72,8 @@ def test_initialize(build_turbine):
 
     eq_cons = activated_equalities_generator(m)
     for c in eq_cons:
-        assert(abs(c.body() - c.lower) < 1e-4)
-    assert(degrees_of_freedom(m)==2) # inlet was't fixed and still shouldn't be
+        assert abs(c.body() - c.lower) < 1e-4
+    assert degrees_of_freedom(m) == 2  # inlet was't fixed and still shouldn't be
 
 
 @pytest.mark.component
@@ -95,15 +97,15 @@ def test_initialize_calc_cf(build_turbine):
 
     solver.solve(m)
     assert m.fs.turb.inlet.flow_mol[0].value == pytest.approx(15000)
-    assert degrees_of_freedom(m)==0
+    assert degrees_of_freedom(m) == 0
 
 
 @pytest.mark.component
 def test_initialize_calc_cf_dyn(build_turbine_dyn):
     """Initialize a turbine model"""
     m = build_turbine_dyn
-    discretizer = TransformationFactory('dae.finite_difference')
-    discretizer.apply_to(m, nfe=4, wrt=m.fs.time, scheme='BACKWARD')
+    discretizer = TransformationFactory("dae.finite_difference")
+    discretizer.apply_to(m, nfe=4, wrt=m.fs.time, scheme="BACKWARD")
     # set inlet
     m.fs.turb.inlet.enth_mol.fix(47115)
     for t in m.fs.turb.inlet.flow_mol:
@@ -112,14 +114,14 @@ def test_initialize_calc_cf_dyn(build_turbine_dyn):
     m.fs.turb.outlet.pressure.fix(4e4)
     m.fs.turb.flow_coeff.fix()
 
-    assert degrees_of_freedom(m)==0
+    assert degrees_of_freedom(m) == 0
     m.fs.turb.initialize(calculate_cf=True)
     eq_cons = activated_equalities_generator(m)
     for c in eq_cons:
         assert abs(c.body() - c.lower) < 1e-4
     solver.solve(m)
     assert m.fs.turb.inlet.flow_mol[0].value == pytest.approx(15000)
-    assert degrees_of_freedom(m)==0
+    assert degrees_of_freedom(m) == 0
 
 
 @pytest.mark.unit

@@ -20,6 +20,7 @@ from idaes.models_extra.power_generation.unit_models import FWH0DDynamic
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
+
 prop_available = iapws95.iapws95_available()
 
 # Set up solver
@@ -31,23 +32,31 @@ def build_unit():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={
-        "dynamic": True,
-        "time_set": [0, 60],
-        "time_units": pyo.units.s,
-        "default_property_package": iapws95.Iapws95ParameterBlock()})
+    m.fs = FlowsheetBlock(
+        default={
+            "dynamic": True,
+            "time_set": [0, 60],
+            "time_units": pyo.units.s,
+            "default_property_package": iapws95.Iapws95ParameterBlock(),
+        }
+    )
     m.fs.properties = m.fs.config.default_property_package
-    m.fs.unit = FWH0DDynamic(default={
-        "has_desuperheat": True,
-        "has_drain_cooling": True,
-        "has_drain_mixer": True,
-        "condense": {"tube": {"has_pressure_change": True},
-                     "shell": {"has_pressure_change": True},
-                     "has_holdup": True},
-        "desuperheat": {"dynamic": False},
-        "cooling": {"dynamic": False, "has_holdup": False},
-        "property_package": m.fs.properties})
-    m.discretizer = pyo.TransformationFactory('dae.finite_difference')
+    m.fs.unit = FWH0DDynamic(
+        default={
+            "has_desuperheat": True,
+            "has_drain_cooling": True,
+            "has_drain_mixer": True,
+            "condense": {
+                "tube": {"has_pressure_change": True},
+                "shell": {"has_pressure_change": True},
+                "has_holdup": True,
+            },
+            "desuperheat": {"dynamic": False},
+            "cooling": {"dynamic": False, "has_holdup": False},
+            "property_package": m.fs.properties,
+        }
+    )
+    m.discretizer = pyo.TransformationFactory("dae.finite_difference")
     m.discretizer.apply_to(m, nfe=2, wrt=m.fs.time, scheme="BACKWARD")
     m.fs.unit.set_initial_condition()
     m.fs.unit.desuperheat.inlet_1.flow_mol.fix(100)
@@ -90,8 +99,7 @@ def test_basic_build(build_unit):
     assert m.fs.unit.config.property_package is m.fs.properties
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_initialize_unit(build_unit):
@@ -113,22 +121,22 @@ def test_fwh_model(build_unit):
     # need to initialize because integration test do not run sequentially
     m.fs.unit.initialize()
     solver.options = {
-            "tol": 1e-7,
-            "linear_solver": "ma27",
-            "max_iter": 50,
+        "tol": 1e-7,
+        "linear_solver": "ma27",
+        "max_iter": 50,
     }
     # initial drain flow rate
     drain_flow0 = m.fs.unit.cooling.outlet_1.flow_mol[0].value
-    assert(pytest.approx(67.20607, abs=1e-2) ==
-           pyo.value(m.fs.unit.cooling.outlet_1.flow_mol[0]))
+    assert pytest.approx(67.20607, abs=1e-2) == pyo.value(
+        m.fs.unit.cooling.outlet_1.flow_mol[0]
+    )
 
     # change drain flow rate to increase water level
     for t in m.fs.time:
         if t >= 30:
-            m.fs.unit.cooling.outlet_1.flow_mol[t].fix(drain_flow0*0.95)
+            m.fs.unit.cooling.outlet_1.flow_mol[t].fix(drain_flow0 * 0.95)
     m.fs.unit.condense.level.unfix()
     m.fs.unit.condense.level[0].fix()
     solver.solve(m, tee=True)
-    assert(degrees_of_freedom(m) == 0)
-    assert(pytest.approx(0.2759, abs=1e-2) ==
-           pyo.value(m.fs.unit.condense.level[60]))
+    assert degrees_of_freedom(m) == 0
+    assert pytest.approx(0.2759, abs=1e-2) == pyo.value(m.fs.unit.condense.level[60])

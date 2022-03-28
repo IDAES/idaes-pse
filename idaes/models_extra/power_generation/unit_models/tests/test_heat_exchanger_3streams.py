@@ -17,21 +17,20 @@ Author: Miguel Zamarripa
 """
 import pytest
 
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           value,
-                           Param)
+from pyomo.environ import check_optimal_termination, ConcreteModel, value, Param
 from idaes.core import FlowsheetBlock
+
 # import ideal flue gas prop pack
 from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     initialization_tester)
+from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import get_solver
-from idaes.models_extra.power_generation.unit_models.heat_exchanger_3streams import \
-    HeatExchangerWith3Streams
+from idaes.models_extra.power_generation.unit_models.heat_exchanger_3streams import (
+    HeatExchangerWith3Streams,
+)
 import idaes.core.util.scaling as iscale
+
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
@@ -93,23 +92,23 @@ def test_initialize_unit(build_unit):
         },
         doc="mole fraction of air species",
     )
-    m.fs.unit.side_1_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*8.69/100)
-    m.fs.unit.side_1_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*14.49/100)
-    m.fs.unit.side_1_inlet.flow_mol_comp[0, "N2"].fix(FGrate*74.34/100)
-    m.fs.unit.side_1_inlet.flow_mol_comp[0, "O2"].fix(FGrate*2.47/100)
-    m.fs.unit.side_1_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.0006)
-    m.fs.unit.side_1_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.002)
+    m.fs.unit.side_1_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
+    m.fs.unit.side_1_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
+    m.fs.unit.side_1_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
+    m.fs.unit.side_1_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
+    m.fs.unit.side_1_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
+    m.fs.unit.side_1_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
     m.fs.unit.side_1_inlet.temperature[0].fix(650.335)
     m.fs.unit.side_1_inlet.pressure[0].fix(100145)
 
     for i in m.fs.prop_fluegas.component_list:
         m.fs.unit.side_2_inlet.flow_mol_comp[0, i].fix(
-                FGrate * 0.6 * m.fs.mole_frac_air[i]
-            )
+            FGrate * 0.6 * m.fs.mole_frac_air[i]
+        )
     for i in m.fs.prop_fluegas.component_list:
         m.fs.unit.side_3_inlet.flow_mol_comp[0, i].fix(
-                FGrate * 0.4 * m.fs.mole_frac_air[i]
-            )
+            FGrate * 0.4 * m.fs.mole_frac_air[i]
+        )
     m.fs.unit.side_2_inlet.temperature[0].fix(324.15)
     m.fs.unit.side_2_inlet.pressure[0].fix(100145)
     m.fs.unit.side_3_inlet.temperature[0].fix(373.15)
@@ -132,42 +131,43 @@ def test_initialize_unit(build_unit):
 @pytest.mark.component
 def test_run_unit(build_unit):
     m = build_unit
-    optarg = {"tol": 1e-7,
-              "max_iter": 40}
+    optarg = {"tol": 1e-7, "max_iter": 40}
     solver.options = optarg
     # solve model
     results = solver.solve(m, tee=True)
     # Check for optimal solution
     assert check_optimal_termination(results)
     assert degrees_of_freedom(m) == 0
-    assert (pytest.approx(434.650, abs=1e-3) ==
-            value(m.fs.unit.side_1_outlet.temperature[0]))
-    assert (pytest.approx(522.135, abs=1e-3) ==
-            value(m.fs.unit.side_2_outlet.temperature[0]))
-    assert (pytest.approx(642.115, abs=1e-3) ==
-            value(m.fs.unit.side_3_outlet.temperature[0]))
+    assert pytest.approx(434.650, abs=1e-3) == value(
+        m.fs.unit.side_1_outlet.temperature[0]
+    )
+    assert pytest.approx(522.135, abs=1e-3) == value(
+        m.fs.unit.side_2_outlet.temperature[0]
+    )
+    assert pytest.approx(642.115, abs=1e-3) == value(
+        m.fs.unit.side_3_outlet.temperature[0]
+    )
     # energy balance
-    assert (pytest.approx(0, abs=1e-3) ==
-            value(m.fs.unit.side_1.properties_in[0].flow_mol
-                  * m.fs.unit.side_1.properties_in[0].enth_mol
-                  - m.fs.unit.side_1.properties_out[0].flow_mol
-                  * m.fs.unit.side_1.properties_out[0].enth_mol
-                  + m.fs.unit.heat_duty_side_1[0])
-            )
-    assert (pytest.approx(0, abs=1e-3) ==
-            value(+ m.fs.unit.side_2.properties_in[0].flow_mol
-                  * m.fs.unit.side_2.properties_in[0].enth_mol
-                  - m.fs.unit.side_2.properties_out[0].flow_mol
-                  * m.fs.unit.side_2.properties_out[0].enth_mol
-                  + m.fs.unit.heat_duty_side_2[0])
-            )
-    assert (pytest.approx(0, abs=1e-3) ==
-            value(+ m.fs.unit.side_3.properties_in[0].flow_mol
-                  * m.fs.unit.side_3.properties_in[0].enth_mol
-                  - m.fs.unit.side_3.properties_out[0].flow_mol
-                  * m.fs.unit.side_3.properties_out[0].enth_mol
-                  + m.fs.unit.heat_duty_side_3[0])
-            )
+    assert pytest.approx(0, abs=1e-3) == value(
+        m.fs.unit.side_1.properties_in[0].flow_mol
+        * m.fs.unit.side_1.properties_in[0].enth_mol
+        - m.fs.unit.side_1.properties_out[0].flow_mol
+        * m.fs.unit.side_1.properties_out[0].enth_mol
+        + m.fs.unit.heat_duty_side_1[0]
+    )
+    assert pytest.approx(0, abs=1e-3) == value(
+        +m.fs.unit.side_2.properties_in[0].flow_mol
+        * m.fs.unit.side_2.properties_in[0].enth_mol
+        - m.fs.unit.side_2.properties_out[0].flow_mol
+        * m.fs.unit.side_2.properties_out[0].enth_mol
+        + m.fs.unit.heat_duty_side_2[0]
+    )
+    assert pytest.approx(0, abs=1e-3) == value(
+        +m.fs.unit.side_3.properties_in[0].flow_mol
+        * m.fs.unit.side_3.properties_in[0].enth_mol
+        - m.fs.unit.side_3.properties_out[0].flow_mol
+        * m.fs.unit.side_3.properties_out[0].enth_mol
+        + m.fs.unit.heat_duty_side_3[0]
+    )
     # pressure drop
-    assert (pytest.approx(-1000.0, abs=1e-3) ==
-            value(m.fs.unit.deltaP_side_1[0]))
+    assert pytest.approx(-1000.0, abs=1e-3) == value(m.fs.unit.deltaP_side_1[0])

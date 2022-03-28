@@ -22,6 +22,7 @@ and roof superheater, model main equations:
 Created on Aug 27, 2020 by Boiler Team (J. Ma, M. Zamarripa)
 """
 import pytest
+
 # Import Pyomo libraries
 import pyomo.environ as pyo
 
@@ -48,14 +49,16 @@ def build_unit():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = SteamHeater(default={
-        "dynamic": False,
-        "property_package": m.fs.properties,
-        "has_holdup": True,
-        "has_heat_transfer": True,
-        "has_pressure_change": True,
-        "single_side_only": True}
-        )
+    m.fs.unit = SteamHeater(
+        default={
+            "dynamic": False,
+            "property_package": m.fs.properties,
+            "has_holdup": True,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+            "single_side_only": True,
+        }
+    )
     return m
 
 
@@ -72,8 +75,7 @@ def test_basic_build(build_unit):
     assert m.fs.unit.config.property_package is m.fs.properties
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_initialize_unit(build_unit):
@@ -89,20 +91,17 @@ def test_initialize_unit(build_unit):
     m.fs.unit.therm_cond_slag.fix(1.3)
     m.fs.unit.control_volume.scaling_factor_holdup_energy = 1e-8
     m.fs.unit.heat_fireside[:].fix(5.5e7)  # initial guess
-    hpl = iapws95.htpx(798.15*pyo.units.K, 24790249.01*pyo.units.Pa)
+    hpl = iapws95.htpx(798.15 * pyo.units.K, 24790249.01 * pyo.units.Pa)
     m.fs.unit.inlet[:].flow_mol.fix(24194.177)
     m.fs.unit.inlet[:].enth_mol.fix(hpl)
     m.fs.unit.inlet[:].pressure.fix(24790249.01)
 
-    state_args = {'flow_mol': 24194.177,
-                  'pressure': 24790249.01,
-                  'enth_mol': hpl}
+    state_args = {"flow_mol": 24194.177, "pressure": 24790249.01, "enth_mol": hpl}
 
     initialization_tester(build_unit, dof=0, state_args=state_args)
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_solve_unit(build_unit):
@@ -118,19 +117,31 @@ def test_solve_unit(build_unit):
     assert pyo.check_optimal_termination(results)
 
     # check material balance
-    assert (pytest.approx(pyo.value(m.fs.unit.control_volume.properties_in[0].
-                                    flow_mol - m.fs.unit.control_volume.
-                                    properties_out[0].flow_mol),
-                          abs=1e-3) == 0)
+    assert (
+        pytest.approx(
+            pyo.value(
+                m.fs.unit.control_volume.properties_in[0].flow_mol
+                - m.fs.unit.control_volume.properties_out[0].flow_mol
+            ),
+            abs=1e-3,
+        )
+        == 0
+    )
 
     # pressure drop
-    assert (pytest.approx(-282158.4020, abs=1e-3) == pyo.value(m.fs.unit.
-                                                                deltaP[0]))
+    assert pytest.approx(-282158.4020, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
     # check energy balance
-    assert (pytest.approx(
-        pyo.value(m.fs.unit.control_volume.properties_in[0].enth_mol
-                  - m.fs.unit.control_volume.properties_out[0].enth_mol),
-        abs=1e-3) == -2273.2742)
+    assert (
+        pytest.approx(
+            pyo.value(
+                m.fs.unit.control_volume.properties_in[0].enth_mol
+                - m.fs.unit.control_volume.properties_out[0].enth_mol
+            ),
+            abs=1e-3,
+        )
+        == -2273.2742
+    )
 
-    assert (pytest.approx(835.7582, abs=1e-3) ==
-            pyo.value(m.fs.unit.control_volume.properties_out[0].temperature))
+    assert pytest.approx(835.7582, abs=1e-3) == pyo.value(
+        m.fs.unit.control_volume.properties_out[0].temperature
+    )

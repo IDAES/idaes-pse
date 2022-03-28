@@ -17,7 +17,7 @@ from idaes.models_extra.power_generation.unit_models.balance import BalanceBlock
 from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.generic_models.properties.helmholtz.helmholtz as hltz
 from idaes.generic_models.properties.helmholtz.helmholtz import (
-    HelmholtzThermoExpressions as ThermoExpr
+    HelmholtzThermoExpressions as ThermoExpr,
 )
 import idaes.core.util.scaling as iscale
 
@@ -31,11 +31,16 @@ def _assert_properties(pb):
     try:
         assert isinstance(pb, hltz.HelmholtzParameterBlockData)
         assert pb.config.phase_presentation in {
-            hltz.PhaseType.MIX, hltz.PhaseType.L, hltz.PhaseType.G}
+            hltz.PhaseType.MIX,
+            hltz.PhaseType.L,
+            hltz.PhaseType.G,
+        }
         assert pb.config.state_vars == hltz.StateVars.PH
     except AssertionError:
-        _log.error("helm.HelmPump requires a Helmholtz EOS with "
-                   "a single or mixed phase and pressure-enthalpy state vars.")
+        _log.error(
+            "helm.HelmPump requires a Helmholtz EOS with "
+            "a single or mixed phase and pressure-enthalpy state vars."
+        )
         raise
 
 
@@ -78,14 +83,13 @@ class HelmPumpData(BalanceBlockData):
     CONFIG.get("has_heat_transfer")._default = False
     CONFIG.get("has_heat_transfer")._domain = In([False])
 
-
     def build(self):
         """
         Add model equations to the unit model.  This is called by a default block
         construnction rule when the unit model is created.
         """
-        super().build() # Basic unit model build/read config
-        config = self.config # shorter config pointer
+        super().build()  # Basic unit model build/read config
+        config = self.config  # shorter config pointer
 
         # The thermodynamic expression writer object, te, writes expressions
         # including external function calls to calculate thermodynamic quantities
@@ -94,45 +98,35 @@ class HelmPumpData(BalanceBlockData):
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
         eff = self.efficiency_pump = pyo.Var(
-            self.flowsheet().time,
-            initialize=0.9,
-            doc="Pump efficiency"
+            self.flowsheet().time, initialize=0.9, doc="Pump efficiency"
         )
         self.efficiency_isentropic = pyo.Reference(self.efficiency_pump[:])
 
         pratio = self.ratioP = pyo.Var(
             self.flowsheet().time,
             initialize=0.7,
-            doc="Ratio of outlet to inlet pressure"
+            doc="Ratio of outlet to inlet pressure",
         )
 
         # Some shorter refernces to property blocks
         properties_in = self.control_volume.properties_in
         properties_out = self.control_volume.properties_out
 
-        @self.Expression(
-            self.flowsheet().time,
-            doc="Thermodynamic work"
-        )
+        @self.Expression(self.flowsheet().time, doc="Thermodynamic work")
         def work_fluid(b, t):
-            return properties_out[t].flow_vol*(self.deltaP[t])
+            return properties_out[t].flow_vol * (self.deltaP[t])
 
-        @self.Expression(
-            self.flowsheet().time,
-            doc="Work required to drive the pump."
-        )
-        def shaft_work(b, t): # Early access to the outlet enthalpy and work
-            return self.work_fluid[t]/eff[t]
+        @self.Expression(self.flowsheet().time, doc="Work required to drive the pump.")
+        def shaft_work(b, t):  # Early access to the outlet enthalpy and work
+            return self.work_fluid[t] / eff[t]
 
         @self.Constraint(self.flowsheet().time)
-        def eq_work(b, t): # outlet enthalpy coens from energy balance
+        def eq_work(b, t):  # outlet enthalpy coens from energy balance
             return self.control_volume.work[t] == self.shaft_work[t]
 
         @self.Constraint(self.flowsheet().time)
         def eq_pressure_ratio(b, t):
-            return (pratio[t]*properties_in[t].pressure ==
-                properties_out[t].pressure)
-
+            return pratio[t] * properties_in[t].pressure == properties_out[t].pressure
 
     def initialize_build(
         self,
@@ -159,11 +153,12 @@ class HelmPumpData(BalanceBlockData):
         for t in self.flowsheet().time:
             if self.outlet.pressure[t].fixed:
                 self.ratioP[t] = pyo.value(
-                    self.outlet.pressure[t]/self.inlet.pressure[t])
+                    self.outlet.pressure[t] / self.inlet.pressure[t]
+                )
             elif self.control_volume.deltaP[t].fixed:
                 self.ratioP[t] = pyo.value(
-                    (self.control_volume.deltaP[t] + self.inlet.pressure[t])/
-                    self.inlet.pressure[t]
+                    (self.control_volume.deltaP[t] + self.inlet.pressure[t])
+                    / self.inlet.pressure[t]
                 )
         # Fix the variables we base the initializtion on and free the rest.
         # This requires good values to be provided for pressure, efficency,
@@ -174,13 +169,10 @@ class HelmPumpData(BalanceBlockData):
         self.deltaP.unfix()
         self.efficiency_pump.fix()
         for t in self.flowsheet().time:
-            self.outlet.pressure[t] = pyo.value(
-                self.inlet.pressure[t]*self.ratioP[t])
-            self.deltaP[t] = pyo.value(
-                self.outlet.pressure[t] - self.inlet.pressure[t])
+            self.outlet.pressure[t] = pyo.value(self.inlet.pressure[t] * self.ratioP[t])
+            self.deltaP[t] = pyo.value(self.outlet.pressure[t] - self.inlet.pressure[t])
             self.outlet.enth_mol[t] = pyo.value(
-                self.inlet.enth_mol[t] +
-                self.shaft_work[t]/self.inlet.flow_mol[t]
+                self.inlet.enth_mol[t] + self.shaft_work[t] / self.inlet.flow_mol[t]
             )
             self.control_volume.work[t] = pyo.value(self.shaft_work[t])
             self.outlet.flow_mol[t] = pyo.value(self.inlet.flow_mol[t])
@@ -193,10 +185,8 @@ class HelmPumpData(BalanceBlockData):
         super().calculate_scaling_factors()
 
         for t, c in self.eq_pressure_ratio.items():
-            s = iscale.get_scaling_factor(
-                self.control_volume.properties_in[t].pressure)
+            s = iscale.get_scaling_factor(self.control_volume.properties_in[t].pressure)
             iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.eq_work.items():
-            s = iscale.get_scaling_factor(
-                self.control_volume.work[t])
+            s = iscale.get_scaling_factor(self.control_volume.work[t])
             iscale.constraint_scaling_transform(c, s, overwrite=False)

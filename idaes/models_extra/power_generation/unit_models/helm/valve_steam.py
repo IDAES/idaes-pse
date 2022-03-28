@@ -17,7 +17,7 @@ from idaes.models_extra.power_generation.unit_models.balance import BalanceBlock
 from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.generic_models.properties.helmholtz.helmholtz as hltz
 from idaes.generic_models.properties.helmholtz.helmholtz import (
-    HelmholtzThermoExpressions as ThermoExpr
+    HelmholtzThermoExpressions as ThermoExpr,
 )
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -40,11 +40,16 @@ def _assert_properties(pb):
     try:
         assert isinstance(pb, hltz.HelmholtzParameterBlockData)
         assert pb.config.phase_presentation in {
-            hltz.PhaseType.MIX, hltz.PhaseType.L, hltz.PhaseType.G}
+            hltz.PhaseType.MIX,
+            hltz.PhaseType.L,
+            hltz.PhaseType.G,
+        }
         assert pb.config.state_vars == hltz.StateVars.PH
     except AssertionError:
-        _log.error("helm.HelmIsentropicTurbine requires a Helmholtz EOS with "
-                   "a single or mixed phase and pressure-enthalpy state vars.")
+        _log.error(
+            "helm.HelmIsentropicTurbine requires a Helmholtz EOS with "
+            "a single or mixed phase and pressure-enthalpy state vars."
+        )
         raise
 
 
@@ -63,6 +68,7 @@ def _quick_open_callback(blk):
 def _equal_percentage_callback(blk):
     blk.alpha = pyo.Var(initialize=1, doc="Valve function parameter")
     blk.alpha.fix()
+
     @blk.Expression(blk.flowsheet().time)
     def valve_function(b, t):
         return b.alpha ** (b.valve_opening[t] - 1)
@@ -76,7 +82,7 @@ def _liquid_pressure_flow_rule(b, t):
     Pi = b.control_volume.properties_in[t].pressure
     F = b.control_volume.properties_in[t].flow_mol
     fun = b.valve_function[t]
-    return F ** 2 == b.Cv ** 2 * (Pi - Po) * fun ** 2
+    return F**2 == b.Cv**2 * (Pi - Po) * fun**2
 
 
 def _vapor_pressure_flow_rule(b, t):
@@ -87,7 +93,7 @@ def _vapor_pressure_flow_rule(b, t):
     Pi = b.control_volume.properties_in[t].pressure
     F = b.control_volume.properties_in[t].flow_mol
     fun = b.valve_function[t]
-    return F ** 2 == b.Cv ** 2 * (Pi ** 2 - Po ** 2) * fun ** 2
+    return F**2 == b.Cv**2 * (Pi**2 - Po**2) * fun**2
 
 
 @declare_process_block_class("HelmValve")
@@ -149,7 +155,7 @@ ValveFunctionType.custom}""",
         ConfigValue(
             default=None,
             description="This is a callback that adds a valve function.  The "
-                "callback function takes the valve bock data argument.",
+            "callback function takes the valve bock data argument.",
         ),
     )
     CONFIG.declare(
@@ -166,8 +172,8 @@ ValveFunctionType.custom}""",
         Add model equations to the unit model.  This is called by a default block
         construnction rule when the unit model is created.
         """
-        super().build() # Basic unit model build/read config
-        config = self.config # shorter config pointer
+        super().build()  # Basic unit model build/read config
+        config = self.config  # shorter config pointer
 
         # The thermodynamic expression writer object, te, writes expressions
         # including external function calls to calculate thermodynamic quantities
@@ -182,19 +188,20 @@ ValveFunctionType.custom}""",
         )
         self.Cv = pyo.Var(
             initialize=0.1,
-            doc="Valve flow coefficent, for vapor "
-            "[mol/s/Pa] for liquid [mol/s/Pa]",
-            units=pyo.units.mol/pyo.units.s/pyo.units.Pa
+            doc="Valve flow coefficent, for vapor " "[mol/s/Pa] for liquid [mol/s/Pa]",
+            units=pyo.units.mol / pyo.units.s / pyo.units.Pa,
         )
-        #self.Cv.fix()
+        # self.Cv.fix()
 
         # set up the valve function rule.  I'm not sure these matter too much
         # for us, but the options are easy enough to provide.
         vfcb = self.config.valve_function_callback
         vfselect = self.config.valve_function
         if vfselect is not ValveFunctionType.custom and vfcb is not None:
-            _log.warning(f"A valve function callback was provided but the valve "
-                "function type is not custom.")
+            _log.warning(
+                f"A valve function callback was provided but the valve "
+                "function type is not custom."
+            )
 
         if vfselect == ValveFunctionType.linear:
             _linear_callback(self)
@@ -204,8 +211,7 @@ ValveFunctionType.custom}""",
             _equal_percentage_callback(self)
         else:
             if vfcb is None:
-                raise ConfigurationError(
-                    "No custom valve function callback provided")
+                raise ConfigurationError("No custom valve function callback provided")
             vfcb(self)
 
         if self.config.phase == "Liq":
@@ -213,10 +219,7 @@ ValveFunctionType.custom}""",
         else:
             rule = _vapor_pressure_flow_rule
 
-        self.pressure_flow_equation = pyo.Constraint(
-            self.flowsheet().time, rule=rule
-        )
-
+        self.pressure_flow_equation = pyo.Constraint(self.flowsheet().time, rule=rule)
 
     def _get_performance_contents(self, time_point=0):
         """This returns a dictionary of quntities to be used in IDAES unit model
@@ -252,13 +255,15 @@ ValveFunctionType.custom}""",
         # Check for alternate pressure specs
         for t in self.flowsheet().time:
             if self.outlet.pressure[t].fixed:
-                self.deltaP[t].fix(pyo.value(
-                    self.outlet.pressure[t] - self.inlet.pressure[t]))
+                self.deltaP[t].fix(
+                    pyo.value(self.outlet.pressure[t] - self.inlet.pressure[t])
+                )
                 self.outlet.pressure[t].unfix()
             elif self.deltaP[t].fixed:
                 # No outlet pressure specified guess a small pressure drop
                 self.outlet.pressure[t] = pyo.value(
-                    self.inlet.pressure[t] + self.deltaP[t])
+                    self.inlet.pressure[t] + self.deltaP[t]
+                )
 
         self.inlet.fix()
         self.outlet.unfix()
@@ -267,9 +272,7 @@ ValveFunctionType.custom}""",
                 self.Cv.unfix()
             elif calculate_opening:
                 self.valve_opening.unfix()
-            elif (
-                v.fixed and self.pressure_flow_equation.active
-            ):
+            elif v.fixed and self.pressure_flow_equation.active:
                 self.inlet.flow_mol[t].unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -279,12 +282,10 @@ ValveFunctionType.custom}""",
 
         from_json(self, sd=istate, wts=sp)
 
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
         for t, c in self.pressure_flow_equation.items():
-            s = iscale.get_scaling_factor(
-                self.control_volume.properties_in[t].flow_mol)
-            s = s ** 2
+            s = iscale.get_scaling_factor(self.control_volume.properties_in[t].flow_mol)
+            s = s**2
             iscale.constraint_scaling_transform(c, s, overwrite=False)

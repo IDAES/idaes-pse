@@ -17,15 +17,12 @@ Make sure the supercritical steam cycle example solves.
 __author__ = "Miguel Zamarripa"
 
 import pytest
-from pyomo.environ import (
-    check_optimal_termination, SolverFactory, value)
+from pyomo.environ import check_optimal_termination, SolverFactory, value
 from pyomo.util.check_units import assert_units_consistent
 
-import idaes.models_extra.power_generation.flowsheets.\
-    supercritical_power_plant.boiler_subflowsheet_build as blr
-import idaes.models_extra.power_generation.flowsheets.\
-    supercritical_power_plant.SCPC_full_plant as SCPC
-from idaes.core.util.model_statistics import (degrees_of_freedom)
+import idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
+import idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.SCPC_full_plant as SCPC
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.properties import iapws95
 
 
@@ -44,7 +41,7 @@ def test_init(boiler):
     blr.initialize(boiler)
     blr.unfix_inlets(boiler)
     # check that the model solved properly and has 0 degrees of freedom
-    assert(degrees_of_freedom(boiler) == 0)
+    assert degrees_of_freedom(boiler) == 0
 
 
 @pytest.mark.integration
@@ -59,8 +56,9 @@ def test_boiler(boiler):
     boiler.fs.ATMP1.SprayWater.flow_mol[0].unfix()
     result = boiler.solver.solve(boiler, tee=False)
     assert check_optimal_termination(result)
-    assert value(boiler.fs.ECON.side_1.properties_out[0].temperature) == \
-        pytest.approx(521.009, 1)
+    assert value(boiler.fs.ECON.side_1.properties_out[0].temperature) == pytest.approx(
+        521.009, 1
+    )
 
 
 @pytest.mark.integration

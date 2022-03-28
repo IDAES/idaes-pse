@@ -28,15 +28,21 @@ solver = get_solver()
 @pytest.mark.unit
 def test_fwh_model():
     model = pyo.ConcreteModel()
-    model.fs = FlowsheetBlock(default={
-        "dynamic": False,
-        "default_property_package": iapws95.Iapws95ParameterBlock()})
+    model.fs = FlowsheetBlock(
+        default={
+            "dynamic": False,
+            "default_property_package": iapws95.Iapws95ParameterBlock(),
+        }
+    )
     model.fs.properties = model.fs.config.default_property_package
-    model.fs.fwh = FWH0D(default={
-        "has_desuperheat": True,
-        "has_drain_cooling": True,
-        "has_drain_mixer": True,
-        "property_package": model.fs.properties})
+    model.fs.fwh = FWH0D(
+        default={
+            "has_desuperheat": True,
+            "has_drain_cooling": True,
+            "has_drain_mixer": True,
+            "property_package": model.fs.properties,
+        }
+    )
 
     model.fs.fwh.desuperheat.inlet_1.flow_mol.fix(100)
     model.fs.fwh.desuperheat.inlet_1.flow_mol.unfix()
@@ -56,22 +62,27 @@ def test_fwh_model():
     model.fs.fwh.cooling.overall_heat_transfer_coefficient.fix(10)
     model.fs.fwh.initialize(optarg={"max_iter": 50})
 
-    assert(degrees_of_freedom(model) == 0)
-    assert(abs(pyo.value(model.fs.fwh.desuperheat.inlet_1.flow_mol[0]) -
-               98.335) < 0.01)
+    assert degrees_of_freedom(model) == 0
+    assert abs(pyo.value(model.fs.fwh.desuperheat.inlet_1.flow_mol[0]) - 98.335) < 0.01
 
 
 @pytest.mark.integration
 def test_fwh_units():
     model = pyo.ConcreteModel()
-    model.fs = FlowsheetBlock(default={
-        "dynamic": False,
-        "default_property_package": iapws95.Iapws95ParameterBlock()})
+    model.fs = FlowsheetBlock(
+        default={
+            "dynamic": False,
+            "default_property_package": iapws95.Iapws95ParameterBlock(),
+        }
+    )
     model.fs.properties = model.fs.config.default_property_package
-    model.fs.fwh = FWH0D(default={
-        "has_desuperheat": True,
-        "has_drain_cooling": True,
-        "has_drain_mixer": True,
-        "property_package": model.fs.properties})
+    model.fs.fwh = FWH0D(
+        default={
+            "has_desuperheat": True,
+            "has_drain_cooling": True,
+            "has_drain_mixer": True,
+            "property_package": model.fs.properties,
+        }
+    )
 
     assert_units_consistent(model)
