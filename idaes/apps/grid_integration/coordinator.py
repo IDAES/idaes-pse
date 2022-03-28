@@ -327,31 +327,14 @@ class DoubleLoopCoordinator:
 
         tracking_horizon = len(self.projection_tracker.time_set)
 
-        market_signals = self._assemble_project_tracking_signal(
-            options=options,
+        market_signals = self._assemble_sced_tracking_market_signals(
             gen_name=gen_name,
-            current_ruc_dispatch_dicts=current_ruc_dispatch_dicts,
             hour=hour,
+            sced_dispatch=None,
             tracking_horizon=tracking_horizon,
+            current_ruc_dispatch_dicts=current_ruc_dispatch_dicts,
+            next_ruc_dispatch_dicts=None,
         )
-        return market_signals
-
-    @staticmethod
-    def _assemble_project_tracking_signal(
-        options, gen_name, current_ruc_dispatch_dicts, hour, tracking_horizon
-    ):
-
-        market_signals = []
-        # append corresponding RUC dispatch
-        for t in range(hour, hour + tracking_horizon):
-            dispatch = 0
-            for current_ruc_dispatch in current_ruc_dispatch_dicts:
-                if t >= options.ruc_horizon - 1:
-                    dispatch += current_ruc_dispatch.get((gen_name, options.ruc_horizon - 1), 0)
-                else:
-                    dispatch += current_ruc_dispatch.get((gen_name, t), 0)
-            market_signals.append(dispatch)
-
         return market_signals
 
     def project_tracking_trajectory(self, options, simulator, ruc_hour):
@@ -453,7 +436,7 @@ class DoubleLoopCoordinator:
 
             # solve rolling horizon to get the trajectory
             full_projected_trajectory = self.project_tracking_trajectory(
-                options, simulator, ruc_hour
+                options, simulator, options.ruc_execution_hour
             )
             # update the bidding model
             self.bidder.update_model(**full_projected_trajectory)
@@ -619,23 +602,54 @@ class DoubleLoopCoordinator:
         current_ruc_dispatch_dicts,
         next_ruc_dispatch_dicts=None,
     ):
+        def get_signals(gen_name, t, ruc_dispatch_dicts, market_signals):
 
+            dispatch = None
+            for ruc_dispatch in ruc_dispatch_dicts:
+                dispatch = ruc_dispatch.get((gen_name, t), None)
+                if dispatch is not None:
+                    break
+
+            if dispatch is None and len(market_signals) > 0:
+                dispatch = market_signals[-1]
+            elif dispatch is None:
+                raise ValueError(
+                    f"No SCED/RUC signal has been found for generator {gen_name} at hour {t}. No previous signal is available for repeating."
+                )
+
+            return dispatch
+
+        market_signals = []
         # append the sced dispatch
-        market_signals = [sced_dispatch[0]]
+        if sced_dispatch is None:
+            dispatch = get_signals(
+                gen_name, hour, current_ruc_dispatch_dicts, market_signals
+            )
+        else:
+            dispatch = sced_dispatch[0]
+        market_signals.append(dispatch)
 
         # append corresponding RUC dispatch
         for t in range(hour + 1, hour + tracking_horizon):
+
+            # next ruc is available: fetch the signal from next ruc
             if t > 23 and next_ruc_dispatch_dicts:
                 t = t % 24
-                dispatch = 0
-                for next_ruc_dispatch in next_ruc_dispatch_dicts:
-                    dispatch += next_ruc_dispatch.get((gen_name, t), 0)
-            # elif t > 23 and next_ruc_dispatch_dicts is None:
-            #     dispatch = sced_dispatch[t - hour]
+                dispatch = get_signals(
+                    gen_name, t, next_ruc_dispatch_dicts, market_signals
+                )
+
+            # next ruc is not available: try to fetch the signal from the current ruc
+            elif t > 23 and next_ruc_dispatch_dicts is None:
+                dispatch = get_signals(
+                    gen_name, t, current_ruc_dispatch_dicts, market_signals
+                )
+
+            # fetch from the current ruc
             else:
-                dispatch = 0
-                for current_ruc_dispatch in current_ruc_dispatch_dicts:
-                    dispatch += current_ruc_dispatch.get((gen_name, t), 0)
+                dispatch = get_signals(
+                    gen_name, t, current_ruc_dispatch_dicts, market_signals
+                )
             market_signals.append(dispatch)
 
         return market_signals
