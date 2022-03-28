@@ -1511,25 +1511,21 @@ class TestPysmoSurrogate():
     #                 + 9.999999999902883)
     #             )
 
-    # @pytest.mark.unit
-    # def test_populate_block_multisurrogate_kriging(self, pysmo_surr2):
-    #     # Test ``populate_block`` for kriging with two inputs/outputs
-    #     blk = SurrogateBlock(concrete=True)
+    @pytest.mark.unit
+    def test_populate_block_multisurrogate_kriging(self, pysmo_surr2):
+        # Test ``populate_block`` for kriging with two inputs/outputs
+        blk = SurrogateBlock(concrete=True)
 
-    #     _, _, _, _, _, krg_trained = pysmo_surr2
-    #     blk.build_model(krg_trained)
-    #     blk.display()
+        _, _, _, _, _, krg_trained = pysmo_surr2
+        blk.build_model(krg_trained)
+        blk.display()
 
-    #     assert isinstance(blk.inputs, Var)
-    #     assert blk.inputs["x1"].bounds == (0, 5)
-    #     assert isinstance(blk.outputs, Var)
-    #     assert blk.outputs["z1"].bounds == (None, None)
-    #     assert isinstance(blk.pysmo_constraint, Constraint)
-    #     assert len(blk.pysmo_constraint) == 2
-    #     assert str(blk.pysmo_constraint["z1"].body) == (
-    #         "outputs[z1] - (-19894.397849368*exp(- (0.027452451845611077*((inputs[x1] - 1)/4)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4)**2)) + 38162.96786869278*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.25)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.25)**2)) - 1.6681948100955743e-06*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.5)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.5)**2)) - 38162.96786638197*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.75)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.75)**2)) + 19894.397848724166*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 1.0)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 1.0)**2)) + 30.00000000077694)")
-    #     assert str(blk.pysmo_constraint["z2"].body) == (
-    #         "outputs[z2] - (-3978.867791629029*exp(- (0.02749666901085125*((inputs[x1] - 1)/4)**2 + 0.001000000000000049*((inputs[x2] - 5)/4)**2)) + 7632.569074293324*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.25)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.25)**2)) - 3.5124027300266805e-07*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.5)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.5)**2)) - 7632.569073828787*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.75)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.75)**2)) + 3978.8677915156522*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 1.0)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 1.0)**2)) + 9.999999999902883)")  
+        assert isinstance(blk.inputs, Var)
+        assert blk.inputs["x1"].bounds == (0, 5)
+        assert isinstance(blk.outputs, Var)
+        assert blk.outputs["z1"].bounds == (None, None)
+        assert isinstance(blk.pysmo_constraint, Constraint)
+        assert len(blk.pysmo_constraint) == 2
 
     # @pytest.mark.unit
     # def test_save(self, pysmo_surr1, pysmo_surr2, pysmo_surr3, pysmo_surr4):
