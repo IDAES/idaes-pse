@@ -1146,6 +1146,34 @@ class TestPysmoSurrogate():
 
         return a6, pysmo_surr6
 
+    @pytest.fixture
+    def pysmo_surr7(self):
+        training_data = {'x1': [1, 2, 3, 4, 5], 'x2': [5, 6, 7, 8, 9], 'z1': [10, 20, 30, 40, 50], 'z2': [6, 8, 10, 12, 14]}
+        training_data = pd.DataFrame(training_data)
+        validation_data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40], 'z2': [6, 8, 10, 12]}#{'x1': [2.5], 'x2': [6.5], 'z1': [25], 'z2': [9]}
+        validation_data = pd.DataFrame(validation_data)
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1", "z2"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+
+        np.random.seed(0)
+        pysmo_trainer7 = PysmoKrigingTrainer(
+            input_labels=input_labels,
+            output_labels=output_labels,
+            input_bounds=bnds,
+            training_dataframe=training_data,
+            validation_dataframe=validation_data,
+            regularization = True,
+            numerical_gradients = False,
+            )
+        a7_krg = pysmo_trainer7.train_surrogate()
+        pysmo_surr7_krg = PysmoSurrogate(a7_krg, input_labels, output_labels, bnds)
+
+
+        return a7_krg, pysmo_surr7_krg
+
+
+
     @pytest.mark.unit
     def test_evaluate_unisurrogate_poly(self, pysmo_surr1):
         # Test ``evaluate_surrogate`` for one output with interaction terms
@@ -1179,7 +1207,6 @@ class TestPysmoSurrogate():
         assert blk.outputs["z1"].bounds == (None, None)
         assert isinstance(blk.pysmo_constraint, Constraint)
         assert len(blk.pysmo_constraint) == 1
-        print(str(blk.pysmo_constraint["z1"].body))
         assert str(blk.pysmo_constraint["z1"].body) == (
             "outputs[z1] - (-75.26111111111476 - 8.815277777775934*inputs[x1] + 18.81527777777826*inputs[x2] - 2.2556956302821618e-13*(inputs[x2]*inputs[x1]))")
 
@@ -1474,32 +1501,63 @@ class TestPysmoSurrogate():
     #             )
 
     @pytest.mark.unit
-    def test_evaluate_multisurrogate_kriging(self, pysmo_surr2):
+    def test_evaluate_multisurrogate_kriging(self, pysmo_surr7):
         # Test ``evaluate_surrogate`` for kriging with two inputs/outputs
-        x = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+        x = [1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
 
-        inputs = np.array([np.tile(x, len(x)), np.repeat([i+4 for i in x], len(x))])
+        inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
         inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
 
-        _, _, _, _, _, krg_trained = pysmo_surr2
+        _, krg_trained = pysmo_surr7
         out = krg_trained.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
-            assert pytest.approx(out["z1"][i], rel=1e-4) == (
-                -19894.397849368*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4)**2)) 
-                + 38162.96786869278*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 0.25)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 0.25)**2)) 
-                - 1.6681948100955743e-06*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 0.5)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 0.5)**2)) 
-                - 38162.96786638197*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 0.75)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 0.75)**2)) 
-                + 19894.397848724166*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 1.0)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 1.0)**2)) 
-                + 30.00000000077694
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                -19894.298006220106*exp(- (0.00855949913361903*((inputs['x1'][i] - 1)/4)**2 + 0.01993708123550796*((inputs['x2'][i] - 5)/4)**2)) 
+                + 38162.760187356274*exp(- (0.00855949913361903*((inputs['x1'][i] - 1)/4 - 0.25)**2 + 0.01993708123550796*((inputs['x2'][i] - 5)/4 - 0.25)**2)) 
+                + 2.7107643851194874e-06*exp(- (0.00855949913361903*((inputs['x1'][i] - 1)/4 - 0.5)**2 + 0.01993708123550796*((inputs['x2'][i] - 5)/4 - 0.5)**2)) 
+                - 38162.760190997564*exp(- (0.00855949913361903*((inputs['x1'][i] - 1)/4 - 0.75)**2 + 0.01993708123550796*((inputs['x2'][i] - 5)/4 - 0.75)**2)) 
+                + 19894.298007150468*exp(- (0.00855949913361903*((inputs['x1'][i] - 1)/4 - 1.0)**2 + 0.01993708123550796*((inputs['x2'][i] - 5)/4 - 1.0)**2)) 
+                + 29.99999999951441
                 )
-            assert pytest.approx(out["z2"][i], rel=1e-4) == (
-                 (-3978.867791629029*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4)**2)) 
-                    + 7632.569074293324*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 0.25)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 0.25)**2)) 
-                    - 3.5124027300266805e-07*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 0.5)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 0.5)**2)) 
-                    - 7632.569073828787*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 0.75)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 0.75)**2)) 
-                    + 3978.8677915156522*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 1.0)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 1.0)**2)) 
-                    + 9.999999999902883)
+            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+                 (-3978.8707515592105*exp(- (0.018532803585143847*((inputs['x1'][i] - 1)/4)**2 + 0.00996389745654312*((inputs['x2'][i] - 5)/4)**2)) 
+                    + 7632.575230911374*exp(- (0.018532803585143847*((inputs['x1'][i] - 1)/4 - 0.25)**2 + 0.00996389745654312*((inputs['x2'][i] - 5)/4 - 0.25)**2)) 
+                    + 2.2927997633814812e-07*exp(- (0.018532803585143847*((inputs['x1'][i] - 1)/4 - 0.5)**2 + 0.00996389745654312*((inputs['x2'][i] - 5)/4 - 0.5)**2)) 
+                    - 7632.575231220224*exp(- (0.018532803585143847*((inputs['x1'][i] - 1)/4 - 0.75)**2 + 0.00996389745654312*((inputs['x2'][i] - 5)/4 - 0.75)**2)) 
+                    + 3978.8707516386057*exp(- (0.018532803585143847*((inputs['x1'][i] - 1)/4 - 1.0)**2 + 0.00996389745654312*((inputs['x2'][i] - 5)/4 - 1.0)**2)) 
+                    + 10.0)
                 )
+
+
+
+
+    # @pytest.mark.unit
+    # def test_evaluate_multisurrogate_kriging(self, pysmo_surr2):
+    #     # Test ``evaluate_surrogate`` for kriging with two inputs/outputs
+    #     x = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+
+    #     inputs = np.array([np.tile(x, len(x)), np.repeat([i+4 for i in x], len(x))])
+    #     inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
+
+    #     _, _, _, _, _, krg_trained = pysmo_surr2
+    #     out = krg_trained.evaluate_surrogate(inputs)
+    #     for i in range(inputs.shape[0]):
+    #         assert pytest.approx(out["z1"][i], rel=1e-4) == (
+    #             -19894.397849368*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4)**2)) 
+    #             + 38162.96786869278*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 0.25)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 0.25)**2)) 
+    #             - 1.6681948100955743e-06*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 0.5)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 0.5)**2)) 
+    #             - 38162.96786638197*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 0.75)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 0.75)**2)) 
+    #             + 19894.397848724166*exp(- (0.027452451845611077*((inputs['x1'][i] - 1)/4 - 1.0)**2 + 0.0010443446337808024*((inputs['x2'][i] - 5)/4 - 1.0)**2)) 
+    #             + 30.00000000077694
+    #             )
+    #         assert pytest.approx(out["z2"][i], rel=1e-4) == (
+    #              (-3978.867791629029*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4)**2)) 
+    #                 + 7632.569074293324*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 0.25)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 0.25)**2)) 
+    #                 - 3.5124027300266805e-07*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 0.5)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 0.5)**2)) 
+    #                 - 7632.569073828787*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 0.75)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 0.75)**2)) 
+    #                 + 3978.8677915156522*exp(- (0.02749666901085125*((inputs['x1'][i] - 1)/4 - 1.0)**2 + 0.001000000000000049*((inputs['x2'][i] - 5)/4 - 1.0)**2)) 
+    #                 + 9.999999999902883)
+    #             )
 
     @pytest.mark.unit
     def test_populate_block_multisurrogate_kriging(self, pysmo_surr2):
