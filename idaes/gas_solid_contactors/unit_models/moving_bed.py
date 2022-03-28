@@ -670,7 +670,6 @@ see reaction package for documentation.}"""))
                              doc="Gas side pressure drop calculation -"
                                  "Ergun equation")
             def gas_phase_config_pressure_drop(b, t, x):
-                #  150/s is a unitted constant in the correlation
                 return (-pyunits.convert(
                     b.gas_phase.deltaP[t, x],
                     to_units=units_meta_solid('pressure') /
