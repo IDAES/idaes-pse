@@ -1,8 +1,11 @@
 import pyomo.environ as pyo
 import pandas as pd
 import numpy as np
+from collections import deque
 
-from multiperiod_rankine_cycle import create_multiperiod_rankine_model
+from idaes.apps.grid_integration.examples.multiperiod_rankine.multiperiod_rankine_cycle import (
+    create_multiperiod_rankine_model,
+)
 
 
 class MultiPeriodRankine:
@@ -211,5 +214,4 @@ class MultiPeriodRankine:
 
     @property
     def pmin(self):
-        # return self.generator_data['PMin MW']
         return self.p_lower
