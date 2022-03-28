@@ -15,6 +15,7 @@ Pytest for Compression Model
 
 """
 import pytest
+
 # Import Pyomo libraries
 import pyomo.environ as pyo
 from pyomo.util.check_units import assert_units_consistent
@@ -26,8 +27,11 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import Unit Model Modules
 import idaes.generic_models.properties.swco2 as swco2
-from idaes.models_extra.carbon_capture.co2_compressor \
-      import (CompressionStage, VaneDiffuserType, ImpellerType)
+from idaes.models_extra.carbon_capture.co2_compressor import (
+    CompressionStage,
+    VaneDiffuserType,
+    ImpellerType,
+)
 
 from idaes.core.util.testing import get_default_solver, initialization_tester
 
@@ -42,20 +46,23 @@ def build_unit():
     m = pyo.ConcreteModel()
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties_co2 = swco2.SWCO2ParameterBlock(default={
-                "phase_presentation": swco2.PhaseType.G
-            })
+    m.fs.properties_co2 = swco2.SWCO2ParameterBlock(
+        default={"phase_presentation": swco2.PhaseType.G}
+    )
     m.fs.unit = CompressionStage(
-        default={"property_package": m.fs.properties_co2,
-                 "impeller_type": ImpellerType.open_impeller,
-                 "vane_diffuser_type": VaneDiffuserType.vane_diffuser})
+        default={
+            "property_package": m.fs.properties_co2,
+            "impeller_type": ImpellerType.open_impeller,
+            "vane_diffuser_type": VaneDiffuserType.vane_diffuser,
+        }
+    )
 
     # Set the compressor inlet conditions and an initial flow guess
     p = 1.0951 * 1e5  # Pa
     t = 40.0113 + 273.15  # K #
     fin = 1159.44  # mol/s #
 
-    hin_co2 = swco2.htpx(T=t*pyo.units.K, P=p*pyo.units.Pa)
+    hin_co2 = swco2.htpx(T=t * pyo.units.K, P=p * pyo.units.Pa)
 
     m.fs.unit.inlet.flow_mol[:].fix(fin)
     m.fs.unit.inlet.enth_mol[:].fix(hin_co2)
@@ -63,7 +70,7 @@ def build_unit():
 
     # inlet specifications
     m.fs.unit.U2.fix(315.3)
-    m.fs.unit.outlet.pressure[:].fix(2.53161*1e5)
+    m.fs.unit.outlet.pressure[:].fix(2.53161 * 1e5)
 
     # fix compressor specification
     m.fs.unit.r2.fix(0.67654)
@@ -100,9 +107,7 @@ def test_initialize(build_unit):
 def test_run(build_unit):
     m = build_unit
 
-    optarg = {"tol": 1e-7,
-              "linear_solver": "ma27",
-              "max_iter": 50}
+    optarg = {"tol": 1e-7, "linear_solver": "ma27", "max_iter": 50}
     solver.options = optarg
     # solve model
     results = solver.solve(m, tee=True)
@@ -111,17 +116,14 @@ def test_run(build_unit):
     assert degrees_of_freedom(m) == 0
 
     # energy balance
-    assert (pytest.approx(0, abs=1e-3) ==
-            pyo.value(m.fs.unit.inlet.flow_mol[0]
-                      * m.fs.unit.inlet.enth_mol[0]
-                      - m.fs.unit.outlet.flow_mol[0]
-                      * m.fs.unit.outlet.enth_mol[0]
-                      + m.fs.unit.work_mechanical[0]))
+    assert pytest.approx(0, abs=1e-3) == pyo.value(
+        m.fs.unit.inlet.flow_mol[0] * m.fs.unit.inlet.enth_mol[0]
+        - m.fs.unit.outlet.flow_mol[0] * m.fs.unit.outlet.enth_mol[0]
+        + m.fs.unit.work_mechanical[0]
+    )
     # pressure change
-    assert (pytest.approx(143651.0, abs=0.1) ==
-            pyo.value(m.fs.unit.deltaP[0]))
+    assert pytest.approx(143651.0, abs=0.1) == pyo.value(m.fs.unit.deltaP[0])
     # mass balance
-    assert (pytest.approx(0, abs=1e-2) ==
-            pyo.value(m.fs.unit.inlet.flow_mol[0]
-                      - m.fs.unit.outlet.flow_mol[0]
-                      ))
+    assert pytest.approx(0, abs=1e-2) == pyo.value(
+        m.fs.unit.inlet.flow_mol[0] - m.fs.unit.outlet.flow_mol[0]
+    )
