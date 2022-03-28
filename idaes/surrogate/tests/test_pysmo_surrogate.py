@@ -1058,27 +1058,6 @@ class TestPysmoSurrogate():
 
     @pytest.fixture
     def pysmo_surr3(self):
-        # training_data = {'x1': [1, 2, 3, 4, 5, 6], 'x2': [5, 6, 7, 8, 9, 10], 'z1': [10, 20, 30, 40, 50, 60], 'z2': [6, 8, 10, 12, 14, 16.01]}
-        # training_data = pd.DataFrame(training_data)
-        # validation_data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40], 'z2': [6, 8, 10, 12]}#{'x1': [2.5], 'x2': [6.5], 'z1': [25], 'z2': [9]}
-        # validation_data = pd.DataFrame(validation_data)
-        # input_labels = ["x1", "x2"]
-        # output_labels = ["z1", "z2"]
-        # bnds = {"x1": (0, 10), "x2": (0, 10)}
-
-        # pysmo_trainer = PysmoPolyTrainer(
-        #     input_labels=input_labels,
-        #     output_labels=output_labels,
-        #     input_bounds=bnds,
-        #     training_dataframe=training_data,
-        #     validation_dataframe=validation_data,
-        #     maximum_polynomial_order = 1,
-        #     multinomials=False,
-        #     extra_features = ['log(x1)', 'sin(x2)'],
-        #     number_of_crossvalidations=3,
-        #     solution_method = 'mle'
-        #     )
-
         x1 = [1, 2, 3, 4, 5, 6]
         x2 = [5, 6, 7, 8, 9, 10]
         z1 = [3.5 * x1[i] + 2.5 * x2[i] - 1.5 * (sin(x1[i]) + cos(x2[i])) for i in range(len(x1))]
@@ -1171,6 +1150,40 @@ class TestPysmoSurrogate():
 
         return a5_rbf, pysmo_surr5_rbf, a5_krg, pysmo_surr5_krg
 
+    @pytest.fixture
+    def pysmo_surr6(self):
+        x1 = [1, 2, 3, 4, 5, 6]
+        x2 = [5, 6, 7, 8, 9, 10]
+        z1 = [3.5 * x1[i] + 2.5 * x2[i] - 1.5 * (exp(x1[i]/x2[i])) for i in range(len(x1))]
+        z2 = [3.5 * x1[i] - 2.5 * x2[i] + 0.5 * (exp(x1[i]/x2[i])) for i in range(len(x1))]
+        x = {'x1': x1, 'x2': x2, 'z1': z1, 'z2': z2}
+        training_data = pd.DataFrame(x, columns={'x1', 'x2', 'z1', 'z2'})
+
+        # training_data = pd.DataFrame(x, columns={'x1', 'x2', 'z1', 'z2'})
+        validation_data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40], 'z2': [6, 8, 10, 12]}#{'x1': [2.5], 'x2': [6.5], 'z1': [25], 'z2': [9]}
+        validation_data = pd.DataFrame(validation_data)
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1", "z2"]
+        bnds = {"x1": (0, 10), "x2": (0, 10)}
+
+        pysmo_trainer = PysmoPolyTrainer(
+            input_labels=input_labels,
+            output_labels=output_labels,
+            input_bounds=bnds,
+            training_dataframe=training_data,
+            validation_dataframe=validation_data,
+            maximum_polynomial_order = 1,
+            multinomials=False,
+            extra_features = ['exp(x1/x2)'],
+            number_of_crossvalidations=10,
+            solution_method = 'mle'
+            )
+
+        a6 = pysmo_trainer.train_surrogate()
+        pysmo_surr6 = PysmoSurrogate(a6, input_labels, output_labels)
+
+        return a6, pysmo_surr6
+
     @pytest.mark.unit
     def test_evaluate_unisurrogate_poly(self, pysmo_surr1):
         # Test ``evaluate_surrogate`` for one output with interaction terms
@@ -1255,8 +1268,8 @@ class TestPysmoSurrogate():
             "outputs[z2] - (-3.0033074724377813 + 0.2491731318906352*inputs[x1] + 1.7508268681094337*inputs[x2] - 6.786238238021269e-15*(inputs[x2]*inputs[x1]))")
 
     @pytest.mark.unit
-    def test_evaluate_multisurrogate_poly_trigfuncs(self, pysmo_surr3):
-        # Test ``evaluate_surrogate`` for multiple output polynomials with trig and log terms
+    def test_evaluate_multisurrogate_poly_trigfuncs1(self, pysmo_surr3):
+        # Test ``evaluate_surrogate`` for multiple output polynomials with trig terms
         x = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
 
         inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
@@ -1281,7 +1294,7 @@ class TestPysmoSurrogate():
             )
 
     @pytest.mark.unit
-    def test_populate_block_trigfuncs(self, pysmo_surr3):
+    def test_populate_block_trigfuncs1(self, pysmo_surr3):
         blk = SurrogateBlock(concrete=True)
 
         sol, poly_trained = pysmo_surr3
@@ -1296,6 +1309,50 @@ class TestPysmoSurrogate():
             )
         assert str(blk.pysmo_constraint["z2"].body) == (
             "outputs[z2] - (-{} + {}*inputs[x1] - {}*inputs[x2] + {}*sin(inputs[x1]) + {}*cos(inputs[x2]))").format(abs(sol._data['z2']._model.optimal_weights_array[0,0]), abs(sol._data['z2']._model.optimal_weights_array[1,0]), abs(sol._data['z2']._model.optimal_weights_array[2,0]), abs(sol._data['z2']._model.optimal_weights_array[3,0]), abs(sol._data['z2']._model.optimal_weights_array[4,0]))
+
+
+
+    @pytest.mark.unit
+    def test_evaluate_multisurrogate_poly_trigfuncs2(self, pysmo_surr6):
+        # Test ``evaluate_surrogate`` for multiple output polynomials with log terms
+        x = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+
+        inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
+
+        sol, poly_trained = pysmo_surr6
+        out = poly_trained.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-6) == (
+                sol._data['z1']._model.optimal_weights_array[0,0]
+                + sol._data['z1']._model.optimal_weights_array[1,0]*inputs["x1"][i] 
+                + sol._data['z1']._model.optimal_weights_array[2,0]*inputs["x2"][i]
+                + sol._data['z1']._model.optimal_weights_array[3,0]*exp(inputs["x1"][i]/inputs["x2"][i]) 
+            )
+            assert pytest.approx(out["z2"][i], rel=1e-6) == (
+                sol._data['z2']._model.optimal_weights_array[0,0]
+                + sol._data['z2']._model.optimal_weights_array[1,0]*inputs["x1"][i] 
+                + sol._data['z2']._model.optimal_weights_array[2,0]*inputs["x2"][i]
+                + sol._data['z2']._model.optimal_weights_array[3,0]*exp(inputs["x1"][i]/inputs["x2"][i]) 
+            )
+
+    @pytest.mark.unit
+    def test_populate_block_trigfuncs2(self, pysmo_surr6):
+        blk = SurrogateBlock(concrete=True)
+
+        sol, poly_trained = pysmo_surr6
+        blk.build_model(poly_trained)
+
+        assert isinstance(blk.inputs, Var)
+        assert isinstance(blk.outputs, Var)
+        assert isinstance(blk.pysmo_constraint, Constraint)
+        assert len(blk.pysmo_constraint) == 2
+        assert str(blk.pysmo_constraint["z1"].body) == (
+            "outputs[z1] - (-{} + {}*inputs[x1] + {}*inputs[x2] - {}*exp(inputs[x1]/inputs[x2]))".format(abs(sol._data['z1']._model.optimal_weights_array[0,0]), abs(sol._data['z1']._model.optimal_weights_array[1,0]), abs(sol._data['z1']._model.optimal_weights_array[2,0]), abs(sol._data['z1']._model.optimal_weights_array[3,0]))
+            )
+        assert str(blk.pysmo_constraint["z2"].body) == (
+            "outputs[z2] - (-{} + {}*inputs[x1] - {}*inputs[x2] + {}*exp(inputs[x1]/inputs[x2]))".format(abs(sol._data['z2']._model.optimal_weights_array[0,0]), abs(sol._data['z2']._model.optimal_weights_array[1,0]), abs(sol._data['z2']._model.optimal_weights_array[2,0]), abs(sol._data['z2']._model.optimal_weights_array[3,0]))
+            )
 
     @pytest.mark.unit
     def test_evaluate_multisurrogate_poly_userdef(self, pysmo_surr4):
