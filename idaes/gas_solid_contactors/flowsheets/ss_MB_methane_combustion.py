@@ -131,8 +131,7 @@ def main():
     print("Solve the model")
     # Create a solver
     solver = get_solver()
-    solver.options = {'tol': 1e-5}
-    solver.solve(m.fs.MB, tee=True)
+    solver.solve(m.fs.MB, tee=True, options={'tol': 1e-5})
 
     t_simulation = time.time()  # Simulation time
 
