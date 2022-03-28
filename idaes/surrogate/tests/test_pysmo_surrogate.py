@@ -387,44 +387,6 @@ class TestTrainedSurrogate:
                 assert init_func.get_result(init_func.output_labels[i]) == pysmo_outputs[i] 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # @pytest.fixture
-    # def pysmo_trainers(self):
-    #     data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
-    #     data = pd.DataFrame(data)
-
-    #     input_labels = ["x1", "x2"]
-    #     output_labels = ["z1"]
-    #     bnds = {"x1": (0, 5), "x2": (0, 10)}
-
-
-    #     poly_trainer = PysmoPolyTrainer(input_labels=input_labels,
-    #                         output_labels=output_labels,
-    #                         input_bounds=bnds,
-    #                         training_dataframe=data)
-    #     rbf_trainer = PysmoRBFTrainer(input_labels=input_labels,
-    #                         output_labels=output_labels,
-    #                         input_bounds=bnds,
-    #                         training_dataframe=data)
-    #     krg_trainer = PysmoKrigingTrainer(input_labels=input_labels,
-    #                         output_labels=output_labels,
-    #                         input_bounds=bnds,
-    #                         training_dataframe=data)
-    #     return poly_trainer, rbf_trainer, krg_trainer
-
-
 class TestPysmoPolyTrainer():
 
     @pytest.fixture
@@ -1835,41 +1797,72 @@ class TestPysmoSurrogate():
         assert pysmo_surr_krg._trained.output_labels == ["z1", "z2"]
         assert len(pysmo_surr_krg._trained._data) == 2
         assert list(pysmo_surr_krg._trained._data) == ["z1", "z2"]
-        # Assert that correct expression strings were returned for both surrogates
-        print(pysmo_surr_krg._trained._data['z2'].expression_str)
-        assert pysmo_surr_krg._trained._data['z1'].expression_str == (
-                    '30.00000000077694 + ('
-                    '-19894.397849368*exp(- (0.027452451845611077*((IndexedParam[x1] -1)/4)**2 + 0.0010443446337808024*((IndexedParam[x2] -5)/4)**2)) '
-                    '+ 38162.96786869278*exp(- (0.027452451845611077*((IndexedParam[x1] -1)/4 -0.25)**2 + 0.0010443446337808024*((IndexedParam[x2] -5)/4 -0.25)**2)) '
-                    '-1.6681948100955743e-06*exp(- (0.027452451845611077*((IndexedParam[x1] -1)/4 -0.5)**2 + 0.0010443446337808024*((IndexedParam[x2] -5)/4 -0.5)**2)) '
-                    '-38162.96786638197*exp(- (0.027452451845611077*((IndexedParam[x1] -1)/4 -0.75)**2 + 0.0010443446337808024*((IndexedParam[x2] -5)/4 -0.75)**2)) '
-                    '+ 19894.397848724166*exp(- (0.027452451845611077*((IndexedParam[x1] -1)/4 -1.0)**2 + 0.0010443446337808024*((IndexedParam[x2] -5)/4 -1.0)**2)))'
-                    )
-        assert pysmo_surr_krg._trained._data['z2'].expression_str == (
-                    '9.999999999902883 + ('
-                    '-3978.867791629029*exp(- (0.02749666901085125*((IndexedParam[x1] -1)/4)**2 + 0.001000000000000049*((IndexedParam[x2] -5)/4)**2)) '
-                    '+ 7632.569074293324*exp(- (0.02749666901085125*((IndexedParam[x1] -1)/4 -0.25)**2 + 0.001000000000000049*((IndexedParam[x2] -5)/4 -0.25)**2)) '
-                    '-3.5124027300266805e-07*exp(- (0.02749666901085125*((IndexedParam[x1] -1)/4 -0.5)**2 + 0.001000000000000049*((IndexedParam[x2] -5)/4 -0.5)**2)) '
-                    '-7632.569073828787*exp(- (0.02749666901085125*((IndexedParam[x1] -1)/4 -0.75)**2 + 0.001000000000000049*((IndexedParam[x2] -5)/4 -0.75)**2)) '
-                    '+ 3978.8677915156522*exp(- (0.02749666901085125*((IndexedParam[x1] -1)/4 -1.0)**2 + 0.001000000000000049*((IndexedParam[x2] -5)/4 -1.0)**2)))'
-                    )
-        # Assert that correct model is returned with generate_expression()
-        assert  str(pysmo_surr_krg._trained._data['z1']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
-                    '-19894.397849368*exp(- (0.027452451845611077*((inputs[x1] - 1)/4)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4)**2)) '
-                    '+ 38162.96786869278*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.25)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.25)**2)) '
-                    '- 1.6681948100955743e-06*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.5)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.5)**2)) '
-                    '- 38162.96786638197*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 0.75)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 0.75)**2)) '
-                    '+ 19894.397848724166*exp(- (0.027452451845611077*((inputs[x1] - 1)/4 - 1.0)**2 + 0.0010443446337808024*((inputs[x2] - 5)/4 - 1.0)**2)) '
-                    '+ 30.00000000077694'
-                    )
-        assert  str(pysmo_surr_krg._trained._data['z2']._model.generate_expression([m.inputs['x1'], m.inputs['x2']])) == (
-                    '-3978.867791629029*exp(- (0.02749666901085125*((inputs[x1] - 1)/4)**2 + 0.001000000000000049*((inputs[x2] - 5)/4)**2)) '
-                    '+ 7632.569074293324*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.25)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.25)**2)) '
-                    '- 3.5124027300266805e-07*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.5)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.5)**2)) '
-                    '- 7632.569073828787*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 0.75)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 0.75)**2)) '
-                    '+ 3978.8677915156522*exp(- (0.02749666901085125*((inputs[x1] - 1)/4 - 1.0)**2 + 0.001000000000000049*((inputs[x2] - 5)/4 - 1.0)**2)) '
-                    '+ 9.999999999902883'
-                    )
+        # Assert that correct arrays are loaded for 'z1'
+        assert pysmo_surr_krg._trained._data['z1']._model.optimal_mean == np.array([[30.00000000077694]])
+        assert pysmo_surr_krg._trained._data['z1']._model.optimal_variance == np.array([[6503.3113222215325]])
+        assert pysmo_surr_krg._trained._data['z1']._model.regularization_parameter == 1.000000000001e-06      
+        np.testing.assert_array_equal(pysmo_surr_krg._trained._data['z1']._model.optimal_covariance_matrix, 
+            np.array(
+                [[1.000001, 0.9982205353479938, 0.9929011178300284, 0.9840983398813247, 0.971905407660152], 
+                [0.9982205353479938, 1.000001, 0.9982205353479938, 0.9929011178300284, 0.9840983398813247], 
+                [0.9929011178300284, 0.9982205353479938, 1.000001, 0.9982205353479938, 0.9929011178300284], 
+                [0.9840983398813247, 0.9929011178300284, 0.9982205353479938, 1.000001, 0.9982205353479938], 
+                [0.971905407660152, 0.9840983398813247, 0.9929011178300284, 0.9982205353479938, 1.000001]]
+                )
+            )
+        np.testing.assert_array_equal(pysmo_surr_krg._trained._data['z1']._model.covariance_matrix_inverse,
+            np.array(
+                [[108728.9916945844, -240226.85108007095, 82932.18571364644, 121970.72026795016, -73364.51387189297], 
+                [-240226.85108202277, 589985.9891969847, -341158.67300272395, -130592.8567227173, 121970.72027126199], 
+                [82932.18571952915, -341158.67301448685, 516416.75018761755, -341158.6729826693, 82932.18570353556], 
+                [121970.72026201998, -130592.85670691582, -341158.6729945546, 589985.9891699858, -240226.8510697507], 
+                [-73364.51386989365, 121970.72026527137, 82932.18570954115, -240226.85107176506, 108728.99169106234]]
+                )
+            )
+        np.testing.assert_array_equal(pysmo_surr_krg._trained._data['z1']._model.optimal_y_mu, 
+            np.array(
+                [[-20.00000000077694], [-10.00000000077694], [-7.769394017032027e-10], [9.99999999922306], [19.99999999922306]]
+                )
+            )
+        np.testing.assert_array_equal(pysmo_surr_krg._trained._data['z1']._model.optimal_weights,
+            np.array(
+                [0.027452451845611077, 0.0010443446337808024]
+                )
+            )        
+
+        # Assert that correct arrays are loaded for 'z2'
+        assert pysmo_surr_krg._trained._data['z2']._model.optimal_mean == np.array([[9.999999999902883]])
+        assert pysmo_surr_krg._trained._data['z2']._model.optimal_variance == np.array([[260.13320726701056]])
+        assert pysmo_surr_krg._trained._data['z2']._model.regularization_parameter == 1e-06      
+        np.testing.assert_array_equal(pysmo_surr_krg._trained._data['z2']._model.optimal_covariance_matrix, 
+            np.array(
+                [[1.000001, 0.998220543300601, 0.9929011494709431, 0.9840984104422155, 0.9719055315475238],
+                [0.998220543300601, 1.000001, 0.998220543300601, 0.9929011494709431, 0.9840984104422155], 
+                [0.9929011494709431, 0.998220543300601, 1.000001, 0.998220543300601, 0.9929011494709431], 
+                [0.9840984104422155, 0.9929011494709431, 0.998220543300601, 1.000001, 0.998220543300601], 
+                [0.9719055315475238, 0.9840984104422155, 0.9929011494709431, 0.998220543300601, 1.000001]]
+                )
+            )
+        np.testing.assert_array_equal(pysmo_surr_krg._trained._data['z2']._model.covariance_matrix_inverse,
+            np.array(
+                [[108729.13455237681, -240227.09704128528, 82932.15558036882, 121970.94143487987, -73364.601633614], 
+                [-240227.0970392892, 589986.4681472526, -341158.6596781079, -130593.32427863385, 121970.94144222786], 
+                [82932.15557448889, -341158.6596663887, 516416.7835787105, -341158.659633822, 82932.15555811858], 
+                [121970.94144067129, -130593.32429416949, -341158.6596220617, 589986.4680877628, -240227.09701875152], 
+                [-73364.60163552182, 121970.94144804058, 82932.15555219717, -240227.09701673465, 108729.13454474375]]
+                )
+            )
+        np.testing.assert_array_equal(pysmo_surr_krg._trained._data['z2']._model.optimal_y_mu, 
+            np.array(
+                [[-3.999999999902883], [-1.999999999902883], [9.711698112369049e-11], [2.000000000097117], [4.000000000097117]]
+                )
+            )
+        np.testing.assert_array_equal(pysmo_surr_krg._trained._data['z2']._model.optimal_weights,
+            np.array(
+                [0.02749666901085125, 0.001000000000000049]
+                )
+            )            
+
         # Assert that returned results will evaluate and return correct results
         out = pysmo_surr_krg.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
