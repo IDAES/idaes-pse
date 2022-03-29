@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for Alampy SurrogateModelTrainer
+Tests for PySMO's family of SurrogateTrainer (PysmoPolyTrainer, PysmoRBFTrainer and PysmoKrigingTrainer)
 """
 import pytest
 import numpy as np
@@ -20,7 +20,6 @@ import io
 import os
 from math import sin, cos, log, exp
 
-# from pyomo.environ import sin, cos, log, exp
 from pathlib import Path
 from io import StringIO
 import re
