@@ -116,7 +116,7 @@ variables of the hot and cold sides should also be fixed.
   from idaes.generic_models.unit_models import HeatExchangerLumpedCapacitance, HeatExchangerFlowPattern
   from idaes.generic_models.unit_models.heat_exchanger import delta_temperature_lmtd_callback
   from idaes.generic_models.properties import swco2
-  from idaes.power_generation.properties import FlueGasParameterBlock
+  from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
   from idaes.core.util.plot import plot_grid_dynamic
   
   m = pe.ConcreteModel()
