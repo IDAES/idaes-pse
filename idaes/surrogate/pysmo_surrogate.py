@@ -132,6 +132,7 @@ class PysmoTrainer(SurrogateTrainer):
     ) -> Union[pr.PolynomialRegression, rbf.RadialBasisFunctions, krg.KrigingModel]:
         """Subclasses must override this and make it return a PySMO model."""
         pass
+        return
 
     def _get_metrics(self, model) -> Dict:
         """Subclasses should override this to return a dict of metrics for the model."""
@@ -621,7 +622,7 @@ class TrainedSurrogateDecoder(TSEBase):
         try:
             model_decoder = getattr(cls, f"_decode_{base_type}_model")
         except AttributeError:
-            raise JSONDecodeError(f"No decoder found for model type '{base_type}'")
+            raise JSONDecodeError(f"No decoder found for model type '{base_type}'", doc="", pos=0,)
         # decode model
         _log.info(f"Decode surrogate. type={model_type}")
         trained = TrainedSurrogate(model_type)

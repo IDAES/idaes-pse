@@ -116,32 +116,6 @@ jstring_poly_3 = (
     '"surrogate_type": "poly"}'
     )
 
-jstring_poly_3x = (
-    '{"model_encoding": ' 
-        '{"z1": {"attr": {"regression_data_columns": ["x1", "x2"], ' 
-                         '"multinomials": 0, "additional_term_expressions": ["sin(IndexedParam[x1])", "cos(IndexedParam[x2])"], '
-                         '"optimal_weights_array": [[-0.2222222222222241], [3.444444444444456], [2.555555555555548], [-1.4999999999999876], [-1.5000000000000187]], '
-                         '"final_polynomial_order": 1, '
-                         '"errors": {"MAE": 2.0724163126336254e-14, "MSE": 6.079488042903264e-28, "R2": 1.0},'
-                         ' "extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
-                '"map": {"regression_data_columns": "list", "multinomials": "str", '
-                        '"additional_term_expressions": "list", "optimal_weights_array": "numpy", '
-                        '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}, '
-        '"z2": {"attr": {"regression_data_columns": ["x1", "x2"], '
-                        '"multinomials": 0, "additional_term_expressions": ["sin(IndexedParam[x1])", "cos(IndexedParam[x2])"], '
-                        '"optimal_weights_array": [[-1.3333333333333357], [3.166666666666671], [-2.1666666666666687], [0.49999999999999734], [0.5000000000000051]], '
-                        '"final_polynomial_order": 1, "errors": {"MAE": 2.3684757858670005e-15, "MSE": 1.5514264469346564e-29, "R2": 1.0}, '
-                        '"extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
-                '"map": {"regression_data_columns": "list", "multinomials": "str", '
-                        '"additional_term_expressions": "list", "optimal_weights_array": "numpy", '
-                        '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}}, '
-    '"input_labels": ["x1", "x2"], '
-    '"output_labels": ["z1", "z2"], '
-    '"input_bounds": null, '
-    '"surrogate_type": "poly"}'
-    )
-
-
 jstring_poly_4 = (
     '{"model_encoding": ' 
         '{"z1": {"attr": {"regression_data_columns": ["x1", "x2"], ' 
@@ -1493,33 +1467,17 @@ class TestPysmoSurrogate():
 
     @pytest.mark.unit
     def test_save(self, pysmo_surr1, pysmo_surr2, pysmo_surr3, pysmo_surr4):
-        # Test save for polynomial regression
+        # Test save for polynomial regression - most complicated to save
         _, poly_trained, _, rbf_trained, _, krg_trained = pysmo_surr2
         stream2a = StringIO()
         poly_trained.save(stream2a)
         assert re.sub('errors.*?}', "", jstring_poly_2) == re.sub('errors.*?}', "", stream2a.getvalue())
 
-    #     # Test save for RBF
-    #     stream2b = StringIO()
-    #     rbf_trained.save(stream2b)
-    #     assert stream2b.getvalue() == jstring_rbf
-
-    #     # Test save with Kriging
-    #     stream2c = StringIO()
-    #     krg_trained.save(stream2c)
-    #     assert stream2c.getvalue() == jstring_krg
-
         # Test save for case with bounds supplied
         stream1 = StringIO()
         pysmo_surr1.save(stream1)
         assert re.sub('errors.*?}', "", jstring_poly_1) == re.sub('errors.*?}', "", stream1.getvalue())
-
-        # Test save for PR cases with trig/log user-supplied terms
-        stream3 = StringIO()
-        _, poly_trained = pysmo_surr3
-        poly_trained.save(stream3)
-        assert re.sub('errors.*?}', "", jstring_poly_3x) == re.sub('errors.*?}', "", stream3.getvalue())
-
+        
         # Test save for PR cases with other user-supplied terms 
         stream4 = StringIO()
         pysmo_surr4.save(stream4)
