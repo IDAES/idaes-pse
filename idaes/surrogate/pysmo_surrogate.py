@@ -166,9 +166,6 @@ class PysmoTrainer(SurrogateTrainer):
             # Log the status
             _log.info(f"Model for output {output_label} trained successfully")
 
-    # def _get_output_filename(self, output=""):
-    #     return f"pysmo_{self.model_type}_{output}.pickle"
-
 
 class PysmoPolyTrainer(PysmoTrainer):
     """Train a polynomial model."""
@@ -354,7 +351,6 @@ class PysmoKrigingTrainer(PysmoTrainer):
 
     def __init__(self, **settings):
         super().__init__(**settings)
-        # self._result = None
 
     def _create_model(self, pysmo_input, output_label):
         model = krg.KrigingModel(
