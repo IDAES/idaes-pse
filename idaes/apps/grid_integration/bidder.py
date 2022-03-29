@@ -36,6 +36,80 @@ class AbstractBidder(ABC):
     def generator(self):
         return "AbstractGenerator"
 
+    def _check_inputs(self):
+
+        """
+        Check if the inputs to construct the tracker is valid. If not raise errors.
+        """
+
+        self._check_bidding_model_object()
+        self._check_n_scenario()
+        self._check_solver()
+
+    def _check_bidding_model_object(self):
+
+        """
+        Check if tracking model object has the necessary methods and attributes.
+        """
+
+        method_list = ["populate_model", "update_model"]
+        attr_list = ["power_output", "total_cost", "generator", "pmin", "default_bids"]
+        msg = "Tracking model object does not have a "
+
+        for m in method_list:
+            obtained_m = getattr(self.bidding_model_object, m, None)
+            if obtained_m is None:
+                raise AttributeError(
+                    msg
+                    + m
+                    + "() method. "
+                    + "The bidder object needs the users to "
+                    + "implement this method in their model object."
+                )
+
+        for attr in attr_list:
+            obtained_attr = getattr(self.bidding_model_object, attr, None)
+            if obtained_attr is None:
+                raise AttributeError(
+                    msg
+                    + attr
+                    + " property. "
+                    + "The bidder object needs the users to "
+                    + "specify this property in their model object."
+                )
+
+    def _check_n_scenario(self):
+
+        """
+        Check if the number of LMP scenarios is an integer and greater than 0.
+        """
+
+        # check if it is an integer
+        if not isinstance(self.n_scenario, int):
+            raise TypeError(
+                "The number of LMP scenarios should be an integer, "
+                + "but a {} was given.".format(type(self.n_scenario).__name__)
+            )
+
+        if self.n_scenario <= 0:
+            raise ValueError(
+                "The number of LMP scenarios should be greater than zero, "
+                + "but {} was given.".format(self.n_scenario)
+            )
+
+    def _check_solver(self):
+
+        """
+        Check if provides solver is a valid Pyomo solver object.
+        """
+
+        if not isinstance(self.solver, OptSolver):
+            raise TypeError(
+                "The provided solver {} is not a valid Pyomo solver.".format(
+                    self.solver
+                )
+            )
+
 
 class AbstractBidderTestBidder(AbstractBidder):
     def __init__(self, generator_name):
@@ -385,80 +459,6 @@ class Bidder(AbstractBidder):
 
         # declare a list to store results
         self.bids_result_list = []
-
-    def _check_inputs(self):
-
-        """
-        Check if the inputs to construct the tracker is valid. If not raise errors.
-        """
-
-        self._check_bidding_model_object()
-        self._check_n_scenario()
-        self._check_solver()
-
-    def _check_bidding_model_object(self):
-
-        """
-        Check if tracking model object has the necessary methods and attributes.
-        """
-
-        method_list = ["populate_model", "update_model"]
-        attr_list = ["power_output", "total_cost", "generator", "pmin", "default_bids"]
-        msg = "Tracking model object does not have a "
-
-        for m in method_list:
-            obtained_m = getattr(self.bidding_model_object, m, None)
-            if obtained_m is None:
-                raise AttributeError(
-                    msg
-                    + m
-                    + "() method. "
-                    + "The bidder object needs the users to "
-                    + "implement this method in their model object."
-                )
-
-        for attr in attr_list:
-            obtained_attr = getattr(self.bidding_model_object, attr, None)
-            if obtained_attr is None:
-                raise AttributeError(
-                    msg
-                    + attr
-                    + " property. "
-                    + "The bidder object needs the users to "
-                    + "specify this property in their model object."
-                )
-
-    def _check_n_scenario(self):
-
-        """
-        Check if the number of LMP scenarios is an integer and greater than 0.
-        """
-
-        # check if it is an integer
-        if not isinstance(self.n_scenario, int):
-            raise TypeError(
-                "The number of LMP scenarios should be an integer, "
-                + "but a {} was given.".format(type(self.n_scenario).__name__)
-            )
-
-        if self.n_scenario <= 0:
-            raise ValueError(
-                "The number of LMP scenarios should be greater than zero, "
-                + "but {} was given.".format(self.n_scenario)
-            )
-
-    def _check_solver(self):
-
-        """
-        Check if provides solver is a valid Pyomo solver object.
-        """
-
-        if not isinstance(self.solver, OptSolver):
-            raise TypeError(
-                "The provided solver {} is not a valid Pyomo solver.".format(
-                    self.solver
-                )
-            )
 
     def _save_power_outputs(self):
 
