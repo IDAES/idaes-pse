@@ -111,34 +111,6 @@ class AbstractBidder(ABC):
             )
 
 
-class AbstractBidderTestBidder(AbstractBidder):
-    def __init__(self, generator_name):
-        self.generator = generator_name
-
-    def compute_bids(self):
-        print("computing bids")
-
-    def record_bids(self):
-        print("recording bids")
-
-    def write_results(self):
-        print("writing results")
-
-    def update_model(self):
-        print("updating the model")
-
-    def formulate_bidding_problem(self):
-        print("formulating bidding problem")
-
-    @property
-    def generator(self):
-        return self._generator
-
-    @generator.setter
-    def generator(self, name):
-        self._generator = name
-
-
 class SelfScheduler(AbstractBidder):
 
     """
@@ -872,14 +844,3 @@ class Bidder(AbstractBidder):
     @generator.setter
     def generator(self, name):
         self._generator = name
-
-
-if __name__ == "__main__":
-
-    abstract_bidder_test_bidder = AbstractBidderTestBidder(
-        generator_name="awesome_generator"
-    )
-    abstract_bidder_test_bidder.compute_bids()
-    abstract_bidder_test_bidder.write_results()
-    abstract_bidder_test_bidder.update_model()
-    print(abstract_bidder_test_bidder.generator)
