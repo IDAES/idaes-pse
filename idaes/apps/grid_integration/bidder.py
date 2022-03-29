@@ -61,10 +61,7 @@ class AbstractBidder(ABC):
             if obtained_m is None:
                 raise AttributeError(
                     msg
-                    + m
-                    + "() method. "
-                    + "The bidder object needs the users to "
-                    + "implement this method in their model object."
+                    + f"{m}() method. The bidder object needs the users to implement this method in their model object."
                 )
 
         for attr in attr_list:
@@ -72,10 +69,7 @@ class AbstractBidder(ABC):
             if obtained_attr is None:
                 raise AttributeError(
                     msg
-                    + attr
-                    + " property. "
-                    + "The bidder object needs the users to "
-                    + "specify this property in their model object."
+                    + f"{attr} property. The bidder object needs the users to specify this property in their model object."
                 )
 
     def _check_n_scenario(self):
@@ -87,14 +81,12 @@ class AbstractBidder(ABC):
         # check if it is an integer
         if not isinstance(self.n_scenario, int):
             raise TypeError(
-                "The number of LMP scenarios should be an integer, "
-                + "but a {} was given.".format(type(self.n_scenario).__name__)
+                f"The number of LMP scenarios should be an integer, but a {type(self.n_scenario).__name__} was given."
             )
 
         if self.n_scenario <= 0:
             raise ValueError(
-                "The number of LMP scenarios should be greater than zero, "
-                + "but {} was given.".format(self.n_scenario)
+                f"The number of LMP scenarios should be greater than zero, but {self.n_scenario} was given."
             )
 
     def _check_solver(self):
@@ -105,9 +97,7 @@ class AbstractBidder(ABC):
 
         if not isinstance(self.solver, OptSolver):
             raise TypeError(
-                "The provided solver {} is not a valid Pyomo solver.".format(
-                    self.solver
-                )
+                f"The provided solver {self.solver} is not a valid Pyomo solver."
             )
 
 
