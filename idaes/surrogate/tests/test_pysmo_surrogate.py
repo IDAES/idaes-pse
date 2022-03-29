@@ -119,18 +119,18 @@ jstring_poly_3 = (
 jstring_poly_3x = (
     '{"model_encoding": ' 
         '{"z1": {"attr": {"regression_data_columns": ["x1", "x2"], ' 
-                         '"multinomials": 0, "additional_term_expressions": ["log(IndexedParam[x1])", "sin(IndexedParam[x2])"], '
-                         '"optimal_weights_array": [[-2.222222222222226], [9.444444444444455], [0.5555555555555545], [-1.509903313490213e-14], [-7.438494264988549e-15]], '
+                         '"multinomials": 0, "additional_term_expressions": ["sin(IndexedParam[x1])", "cos(IndexedParam[x2])"], '
+                         '"optimal_weights_array": [[-0.2222222222222241], [3.444444444444456], [2.555555555555548], [-1.4999999999999876], [-1.5000000000000187]], '
                          '"final_polynomial_order": 1, '
-                         '"errors": {"MAE": 1.0954200509634877e-14, "MSE": 2.277178479737987e-28, "R2": 1.0},'
+                         '"errors": {"MAE": 2.0724163126336254e-14, "MSE": 6.079488042903264e-28, "R2": 1.0},'
                          ' "extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
                 '"map": {"regression_data_columns": "list", "multinomials": "str", '
                         '"additional_term_expressions": "list", "optimal_weights_array": "numpy", '
                         '"final_polynomial_order": "str", "errors": "str", "extra_terms_feature_vector": "other"}}, '
         '"z2": {"attr": {"regression_data_columns": ["x1", "x2"], '
-                        '"multinomials": 0, "additional_term_expressions": ["log(IndexedParam[x1])", "sin(IndexedParam[x2])"], '
-                        '"optimal_weights_array": [[-0.0007776457752072252], [1.0019506508342257], [0.9988400677334011], [0.003834079118640865], [-0.004832799497761386]], '
-                        '"final_polynomial_order": 1, "errors": {"MAE": 0.0012996492892622946, "MSE": 2.629054037036227e-06, "R2": 0.9999997749742444}, '
+                        '"multinomials": 0, "additional_term_expressions": ["sin(IndexedParam[x1])", "cos(IndexedParam[x2])"], '
+                        '"optimal_weights_array": [[-1.3333333333333357], [3.166666666666671], [-2.1666666666666687], [0.49999999999999734], [0.5000000000000051]], '
+                        '"final_polynomial_order": 1, "errors": {"MAE": 2.3684757858670005e-15, "MSE": 1.5514264469346564e-29, "R2": 1.0}, '
                         '"extra_terms_feature_vector": ["IndexedParam[x1]", "IndexedParam[x2]"]}, '
                 '"map": {"regression_data_columns": "list", "multinomials": "str", '
                         '"additional_term_expressions": "list", "optimal_weights_array": "numpy", '
@@ -140,6 +140,7 @@ jstring_poly_3x = (
     '"input_bounds": null, '
     '"surrogate_type": "poly"}'
     )
+
 
 jstring_poly_4 = (
     '{"model_encoding": ' 
@@ -1513,11 +1514,11 @@ class TestPysmoSurrogate():
         pysmo_surr1.save(stream1)
         assert re.sub('errors.*?}', "", jstring_poly_1) == re.sub('errors.*?}', "", stream1.getvalue())
 
-    #     # Test save for PR cases with trig/log user-supplied terms
-    #     stream3 = StringIO()
-    #     _, poly_trained = pysmo_surr3
-    #     poly_trained.save(stream3)
-    #     assert stream3.getvalue() == jstring_poly_3x
+        # Test save for PR cases with trig/log user-supplied terms
+        stream3 = StringIO()
+        _, poly_trained = pysmo_surr3
+        poly_trained.save(stream3)
+        assert re.sub('errors.*?}', "", jstring_poly_3x) == re.sub('errors.*?}', "", stream3.getvalue())
 
         # Test save for PR cases with other user-supplied terms 
         stream4 = StringIO()
