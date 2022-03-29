@@ -7,6 +7,11 @@ from abc import ABC, abstractmethod, abstractproperty
 
 
 class AbstractBidder(ABC):
+
+    """
+    The abstract class for all the bidder and self-schedulers.
+    """
+
     @abstractmethod
     def update_model(self, *args, **kwargs):
         pass
@@ -61,6 +66,11 @@ class AbstractBidderTestBidder(AbstractBidder):
 
 
 class SelfScheduler(AbstractBidder):
+
+    """
+    Wrap a model object to self schedule into the market using stochastic programming.
+    """
+
     def __init__(self, bidding_model_object, n_scenario, horizon, solver, forecaster):
         self.bidding_model_object = bidding_model_object
         self.n_scenario = n_scenario
@@ -160,6 +170,20 @@ class SelfScheduler(AbstractBidder):
 
     def compute_bids(self, date, hour=None, **kwargs):
 
+        """
+        Solve the model to self-schedule into the markets. After solving, record
+        the schedule from the solve.
+
+        Arguments:
+
+            date: current simulation date
+
+            hour: current simulation hour
+
+        Returns:
+            None
+        """
+
         price_forecasts = self.forecaster.forecast(date=date, hour=hour, **kwargs)
 
         # update the price forecasts
@@ -196,6 +220,22 @@ class SelfScheduler(AbstractBidder):
 
     def _record_bids(self, bids, date, hour):
 
+        """
+        This function records the bids (schedule) we computed for the given date into a
+        DataFrame.
+
+        Arguments:
+            bids: the obtained bids (schedule) for this date.
+
+            date: the date we bid into
+
+            hour: the hour we bid into
+
+        Returns:
+            None
+
+        """
+
         df_list = []
         for g in bids:
             for t, power in enumerate(bids[g]):
@@ -218,6 +258,22 @@ class SelfScheduler(AbstractBidder):
 
     def record_bids(self, bids, date, hour):
 
+        """
+        This function records the bids (schedule) and the details in the
+        underlying bidding model.
+
+        Arguments:
+            bids: the obtained bids for this date.
+
+            date: the date we bid into
+
+            hour: the hour we bid into
+
+        Returns:
+            None
+
+        """
+
         # record bids
         self._record_bids(bids, date, hour)
 
@@ -230,6 +286,17 @@ class SelfScheduler(AbstractBidder):
         return
 
     def write_results(self, path):
+
+        """
+        This methods writes the saved operation stats into an csv file.
+
+        Arguments:
+            path: the path to write the results.
+
+        Return:
+            None
+        """
+
         print("")
         print("Saving bidding results to disk...")
         pd.concat(self.bids_result_list).to_csv(
@@ -240,6 +307,18 @@ class SelfScheduler(AbstractBidder):
         )
 
     def update_model(self, **kwargs):
+
+        """
+        Update the flowsheets in all the price scenario blocks to advance time
+        step.
+
+        Arguments:
+            kwargs: necessary profiles to update the underlying model. {stat_name: [...]}
+
+        Returns:
+            None
+        """
+
         for i in self.model.SCENARIOS:
             self.bidding_model_object.update_model(b=self.model.fs[i], **kwargs)
 
@@ -253,6 +332,11 @@ class SelfScheduler(AbstractBidder):
 
 
 class Bidder(AbstractBidder):
+
+    """
+    Wrap a model object to bid into the market using stochastic programming.
+    """
+
     def __init__(self, bidding_model_object, n_scenario, solver, forecaster):
 
         """
@@ -508,7 +592,6 @@ class Bidder(AbstractBidder):
         from the solve.
 
         Arguments:
-            price_forecasts: price forecasts needed to solve the bidding problem. {LMP scenario: [forecast timeseries] }
 
             date: current simulation date
 
@@ -673,7 +756,6 @@ class Bidder(AbstractBidder):
             idx += 1
 
         # check whether the marginal costs are sorted <=> convex
-        # Jordan note: this needs to use a tolerance.
         idx = 0
         while idx < len(marginal_cost) - 1:
             if round(marginal_cost[idx], 8) > round(marginal_cost[idx + 1], 8):
