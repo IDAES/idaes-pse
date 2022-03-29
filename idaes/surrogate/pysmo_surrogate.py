@@ -68,13 +68,19 @@ class SurrogateTrainingResult:
         errors related to that operation. If so, the new value is *not* set.
         """
         # variable_names = list(value.get_feature_vector().values())
-        if hasattr(value, 'regression_data_columns'):
-            extra_terms_feature_vector = list(value.feature_list[i] for i in value.regression_data_columns)
+        if hasattr(value, "regression_data_columns"):
+            extra_terms_feature_vector = list(
+                value.feature_list[i] for i in value.regression_data_columns
+            )
         else:
-            extra_terms_feature_vector = list(value.feature_list[i] for i in value.x_data_columns)
+            extra_terms_feature_vector = list(
+                value.feature_list[i] for i in value.x_data_columns
+            )
 
         # extra_terms_feature_vector = list(value.feature_list[i] for i in value.regression_data_columns)
-        self.expression_str = str(value.generate_expression(list(extra_terms_feature_vector)))
+        self.expression_str = str(
+            value.generate_expression(list(extra_terms_feature_vector))
+        )
         self._model = value
 
 
@@ -102,6 +108,7 @@ class TrainedSurrogate:
         for k in self.output_labels:
             print(k, ":", self._data[k].expression_str)
 
+
 # Surrogate trainer classes
 # -------------------------
 
@@ -122,7 +129,7 @@ class PysmoTrainer(SurrogateTrainer):
     def train_surrogate(self) -> TrainedSurrogate:
         self._trained.num_outputs = len(self._output_labels)
         self._trained.input_labels = self._input_labels
-        if hasattr(self, '_input_bounds'):
+        if hasattr(self, "_input_bounds"):
             self._trained.input_bounds = self._input_bounds
         self._training_main_loop()
         return self._trained
@@ -222,7 +229,6 @@ class PysmoPolyTrainer(PysmoTrainer):
         ),
     )
 
-
     def __init__(self, **settings):
         super().__init__(**settings)
 
@@ -235,7 +241,7 @@ class PysmoPolyTrainer(PysmoTrainer):
             solution_method=self.config.solution_method,
             multinomials=self.config.multinomials,
             number_of_crossvalidations=self.config.number_of_crossvalidations,
-            overwrite=True
+            overwrite=True,
         )
         variable_headers = model.get_feature_vector()
         if self.config.extra_features is not None:
@@ -298,7 +304,6 @@ class PysmoRBFTrainer(PysmoTrainer):
         ),
     )
 
-
     def __init__(self, **settings):
         super().__init__(**settings)
         self.model_type = f"{self.config.basis_function} {self.base_model_type}"
@@ -309,7 +314,7 @@ class PysmoRBFTrainer(PysmoTrainer):
             basis_function=self.config.basis_function,
             solution_method=self.config.solution_method,
             regularization=self.config.regularization,
-            overwrite = True
+            overwrite=True,
         )
         variable_headers = model.get_feature_vector()
         return model
@@ -347,17 +352,16 @@ class PysmoKrigingTrainer(PysmoTrainer):
         ),
     )
 
-
     def __init__(self, **settings):
         super().__init__(**settings)
         # self._result = None
 
     def _create_model(self, pysmo_input, output_label):
-        model =  krg.KrigingModel(
+        model = krg.KrigingModel(
             pysmo_input,
             numerical_gradients=self.config.numerical_gradients,
             regularization=self.config.regularization,
-            overwrite=True
+            overwrite=True,
         )
         variable_headers = model.get_feature_vector()
         return model
@@ -489,6 +493,7 @@ class TSEBase:
     MODEL_ATTR_KEY = "attr"
     MODEL_MAP_KEY = "map"
     MODEL_METRICS_KEY = "errors"
+
 
 class TrainedSurrogateEncoder(JSONEncoder, TSEBase):
     # Attributes to encode
@@ -622,12 +627,20 @@ class TrainedSurrogateDecoder(TSEBase):
         try:
             model_decoder = getattr(cls, f"_decode_{base_type}_model")
         except AttributeError:
-            raise JSONDecodeError(f"No decoder found for model type '{base_type}'", doc="", pos=0,)
+            raise JSONDecodeError(
+                f"No decoder found for model type '{base_type}'",
+                doc="",
+                pos=0,
+            )
         # decode model
         _log.info(f"Decode surrogate. type={model_type}")
         trained = TrainedSurrogate(model_type)
         for output_label, model_data in model_json.items():
-            surr_mod = model_decoder(model_type, model_data[cls.MODEL_ATTR_KEY], model_data[cls.MODEL_MAP_KEY])
+            surr_mod = model_decoder(
+                model_type,
+                model_data[cls.MODEL_ATTR_KEY],
+                model_data[cls.MODEL_MAP_KEY],
+            )
             result = SurrogateTrainingResult()
             result.model = surr_mod
             # result.metrics = model_data[cls.MODEL_ATTR_KEY][cls.MODEL_METRICS_KEY]
@@ -639,10 +652,14 @@ class TrainedSurrogateDecoder(TSEBase):
     @classmethod
     def _decode_poly_model(cls, type_, attr, mapping):
         # Construct model with minimal arguments necessary
-        columns = ['x', 'y'] # attr["regression_data_columns"]
-        orig_data = pd.DataFrame({c: list(range(10)) for c in columns}) # cls.pd_decode(attr["original_data"])
-        regr_data = pd.DataFrame({c: list(range(10)) for c in columns}) # cls.pd_decode(attr["regression_data"])
-        max_order = 1 # int(attr["final_polynomial_order"])
+        columns = ["x", "y"]  # attr["regression_data_columns"]
+        orig_data = pd.DataFrame(
+            {c: list(range(10)) for c in columns}
+        )  # cls.pd_decode(attr["original_data"])
+        regr_data = pd.DataFrame(
+            {c: list(range(10)) for c in columns}
+        )  # cls.pd_decode(attr["regression_data"])
+        max_order = 1  # int(attr["final_polynomial_order"])
         _log.debug(f"Reconstructing PolynomialRegression surrogate.")
         model = pr.PolynomialRegression(orig_data, regr_data, max_order)
         # Set model attributes from saved attributes
@@ -677,7 +694,6 @@ class TrainedSurrogateDecoder(TSEBase):
             if jk not in attr.keys() and jk != "feature_list":
                 delattr(model, jk)
 
-
         # Done: return new model
         return model
 
@@ -698,7 +714,7 @@ class TrainedSurrogateDecoder(TSEBase):
     @classmethod
     def _decode_rbf_model(cls, type_, attr, mapping):
         # Construct model with minimal arguments necessary
-        columns = ['x', 'y']
+        columns = ["x", "y"]
         XY_data = pd.DataFrame({c: list(range(10)) for c in columns})
         model = rbf.RadialBasisFunctions(XY_data)  # XXX
         # Set model attributes from saved attributes
@@ -719,7 +735,7 @@ class TrainedSurrogateDecoder(TSEBase):
     @classmethod
     def _decode_kriging_model(cls, type_, attr, mapping):
         # Construct model with minimal arguments necessary
-        columns = ['x', 'y']
+        columns = ["x", "y"]
         XY_data = pd.DataFrame({c: list(range(10)) for c in columns})
         model = krg.KrigingModel(XY_data)
         # Set model attributes from saved attributes
@@ -738,6 +754,7 @@ class TrainedSurrogateDecoder(TSEBase):
         # Done: return new model
         return model
 
+
 # Helper methods for decoding Pandas and Numpy
 
 
@@ -753,7 +770,4 @@ def null_decode(v):
     return v
 
 
-decoders = {
-    "numpy": numpy_decode,
-    "pandas": pd_decode
-}
+decoders = {"numpy": numpy_decode, "pandas": pd_decode}
