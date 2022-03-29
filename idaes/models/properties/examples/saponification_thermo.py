@@ -16,25 +16,29 @@ Assumes dilute solutions with properties of H2O.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import (Constraint,
-                           NonNegativeReals,
-                           Param,
-                           PositiveReals,
-                           Reals,
-                           units,
-                           value,
-                           Var)
+from pyomo.environ import (
+    Constraint,
+    NonNegativeReals,
+    Param,
+    PositiveReals,
+    Reals,
+    units,
+    value,
+    Var,
+)
 
 # Import IDAES cores
-from idaes.core import (declare_process_block_class,
-                        MaterialFlowBasis,
-                        PhysicalParameterBlock,
-                        StateBlockData,
-                        StateBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        LiquidPhase,
-                        Component)
+from idaes.core import (
+    declare_process_block_class,
+    MaterialFlowBasis,
+    PhysicalParameterBlock,
+    StateBlockData,
+    StateBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    LiquidPhase,
+    Component,
+)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
@@ -58,9 +62,9 @@ class PhysicalParameterData(PhysicalParameterBlock):
     """
 
     def build(self):
-        '''
+        """
         Callable method for Block construction.
-        '''
+        """
         super(PhysicalParameterData, self).build()
 
         self._state_block_class = SaponificationStateBlock
@@ -76,42 +80,57 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.Ethanol = Component()
 
         # Heat capacity of water
-        self.cp_mol = Param(mutable=False,
-                            initialize=75.327,
-                            doc="Molar heat capacity of water [J/mol.K]",
-                            units=units.J/units.mol/units.K)
+        self.cp_mol = Param(
+            mutable=False,
+            initialize=75.327,
+            doc="Molar heat capacity of water [J/mol.K]",
+            units=units.J / units.mol / units.K,
+        )
 
         # Density of water
-        self.dens_mol = Param(mutable=False,
-                              initialize=55388.0,
-                              doc="Molar density of water [mol/m^3]",
-                              units=units.mol/units.m**3)
+        self.dens_mol = Param(
+            mutable=False,
+            initialize=55388.0,
+            doc="Molar density of water [mol/m^3]",
+            units=units.mol / units.m**3,
+        )
 
         # Thermodynamic reference state
-        self.pressure_ref = Param(within=PositiveReals,
-                                  mutable=True,
-                                  default=101325.0,
-                                  doc='Reference pressure [Pa]',
-                                  units=units.Pa)
-        self.temperature_ref = Param(within=PositiveReals,
-                                     mutable=True,
-                                     default=298.15,
-                                     doc='Reference temperature [K]',
-                                     units=units.K)
+        self.pressure_ref = Param(
+            within=PositiveReals,
+            mutable=True,
+            default=101325.0,
+            doc="Reference pressure [Pa]",
+            units=units.Pa,
+        )
+        self.temperature_ref = Param(
+            within=PositiveReals,
+            mutable=True,
+            default=298.15,
+            doc="Reference temperature [K]",
+            units=units.K,
+        )
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties({
-                'flow_vol': {'method': None, 'units': 'm^3/s'},
-                'pressure': {'method': None, 'units': 'Pa'},
-                'temperature': {'method': None, 'units': 'K'},
-                'conc_mol_comp': {'method': None, 'units': 'mol/m^3'},
-                'dens_mol': {'method': None, 'units': 'mol/m^3'}})
-        obj.add_default_units({'time': units.s,
-                               'length': units.m,
-                               'mass': units.kg,
-                               'amount': units.mol,
-                               'temperature': units.K})
+        obj.add_properties(
+            {
+                "flow_vol": {"method": None, "units": "m^3/s"},
+                "pressure": {"method": None, "units": "Pa"},
+                "temperature": {"method": None, "units": "K"},
+                "conc_mol_comp": {"method": None, "units": "mol/m^3"},
+                "dens_mol": {"method": None, "units": "mol/m^3"},
+            }
+        )
+        obj.add_default_units(
+            {
+                "time": units.s,
+                "length": units.m,
+                "mass": units.kg,
+                "amount": units.mol,
+                "temperature": units.K,
+            }
+        )
 
 
 class _StateBlock(StateBlock):
@@ -119,10 +138,17 @@ class _StateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
-    def initialize(blk, state_args=None, state_vars_fixed=False,
-                   hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
-        '''
+
+    def initialize(
+        blk,
+        state_args=None,
+        state_vars_fixed=False,
+        hold_state=False,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+    ):
+        """
         Initialization routine for property package.
 
         Keyword Arguments:
@@ -165,7 +191,7 @@ class _StateBlock(StateBlock):
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
-        '''
+        """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
@@ -183,9 +209,11 @@ class _StateBlock(StateBlock):
             # Check when the state vars are fixed already result in dof 0
             for k in blk.keys():
                 if degrees_of_freedom(blk[k]) != 0:
-                    raise Exception("State vars fixed but degrees of freedom "
-                                    "for state block is not zero during "
-                                    "initialization.")
+                    raise Exception(
+                        "State vars fixed but degrees of freedom "
+                        "for state block is not zero during "
+                        "initialization."
+                    )
 
         if state_vars_fixed is False:
             if hold_state is True:
@@ -193,10 +221,10 @@ class _StateBlock(StateBlock):
             else:
                 blk.release_state(flags)
 
-        init_log.info('Initialization Complete.')
+        init_log.info("Initialization Complete.")
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
-        '''
+        """
         Method to relase state variables fixed during initialization.
 
         Keyword Arguments:
@@ -205,7 +233,7 @@ class _StateBlock(StateBlock):
                     unfixed. This dict is returned by initialize if
                     hold_state=True.
             outlvl : sets output level of of logging
-        '''
+        """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
 
         # Reactivate conc_water_eqn
@@ -217,11 +245,10 @@ class _StateBlock(StateBlock):
             return
         # Unfix state variables
         revert_state_vars(blk, flags)
-        init_log.info('State Released.')
+        init_log.info("State Released.")
 
 
-@declare_process_block_class("SaponificationStateBlock",
-                             block_class=_StateBlock)
+@declare_process_block_class("SaponificationStateBlock", block_class=_StateBlock)
 class SaponificationStateBlockData(StateBlockData):
     """
     An example property package for properties for saponification of ethyl
@@ -235,44 +262,59 @@ class SaponificationStateBlockData(StateBlockData):
         super(SaponificationStateBlockData, self).build()
 
         # Create state variables
-        self.flow_vol = Var(initialize=1.0,
-                            domain=NonNegativeReals,
-                            doc='Total volumentric flowrate [m^3/s]',
-                            units=units.m**3/units.s)
-        self.pressure = Var(domain=Reals,
-                            initialize=101325.0,
-                            bounds=(1e3, 1e6),
-                            doc='State pressure [Pa]',
-                            units=units.Pa)
-        self.temperature = Var(domain=Reals,
-                               initialize=298.15,
-                               bounds=(298.15, 323.15),
-                               doc='State temperature [K]',
-                               units=units.K)
-        self.conc_mol_comp = Var(self.params.component_list,
-                                 domain=NonNegativeReals,
-                                 initialize=100.0,
-                                 doc='Component molar concentrations '
-                                     '[mol/m^3]',
-                                 units=units.mol/units.m**3)
+        self.flow_vol = Var(
+            initialize=1.0,
+            domain=NonNegativeReals,
+            doc="Total volumentric flowrate [m^3/s]",
+            units=units.m**3 / units.s,
+        )
+        self.pressure = Var(
+            domain=Reals,
+            initialize=101325.0,
+            bounds=(1e3, 1e6),
+            doc="State pressure [Pa]",
+            units=units.Pa,
+        )
+        self.temperature = Var(
+            domain=Reals,
+            initialize=298.15,
+            bounds=(298.15, 323.15),
+            doc="State temperature [K]",
+            units=units.K,
+        )
+        self.conc_mol_comp = Var(
+            self.params.component_list,
+            domain=NonNegativeReals,
+            initialize=100.0,
+            doc="Component molar concentrations " "[mol/m^3]",
+            units=units.mol / units.m**3,
+        )
 
         if self.config.defined_state is False:
-            self.conc_water_eqn = Constraint(expr=self.conc_mol_comp["H2O"] ==
-                                             self.params.dens_mol)
+            self.conc_water_eqn = Constraint(
+                expr=self.conc_mol_comp["H2O"] == self.params.dens_mol
+            )
 
     def get_material_flow_terms(b, p, j):
-        return b.flow_vol*b.conc_mol_comp[j]
+        return b.flow_vol * b.conc_mol_comp[j]
 
     def get_enthalpy_flow_terms(b, p):
-        return (b.flow_vol*b.params.dens_mol*b.params.cp_mol *
-                (b.temperature - b.params.temperature_ref))
+        return (
+            b.flow_vol
+            * b.params.dens_mol
+            * b.params.cp_mol
+            * (b.temperature - b.params.temperature_ref)
+        )
 
     def get_material_density_terms(b, p, j):
         return b.conc_mol_comp[j]
 
     def get_energy_density_terms(b, p):
-        return b.params.dens_mol*b.params.cp_mol*(
-                b.temperature - b.params.temperature_ref)
+        return (
+            b.params.dens_mol
+            * b.params.cp_mol
+            * (b.temperature - b.params.temperature_ref)
+        )
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentPhase
@@ -281,16 +323,20 @@ class SaponificationStateBlockData(StateBlockData):
         return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(b):
-        return {"flow_vol": b.flow_vol,
-                "conc_mol_comp": b.conc_mol_comp,
-                "temperature": b.temperature,
-                "pressure": b.pressure}
+        return {
+            "flow_vol": b.flow_vol,
+            "conc_mol_comp": b.conc_mol_comp,
+            "temperature": b.temperature,
+            "pressure": b.pressure,
+        }
 
     def define_display_vars(b):
-        return {"Volumetric Flowrate": b.flow_vol,
-                "Molar Concentration": b.conc_mol_comp,
-                "Temperature": b.temperature,
-                "Pressure": b.pressure}
+        return {
+            "Volumetric Flowrate": b.flow_vol,
+            "Molar Concentration": b.conc_mol_comp,
+            "Temperature": b.temperature,
+            "Pressure": b.pressure,
+        }
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
@@ -301,14 +347,12 @@ class SaponificationStateBlockData(StateBlockData):
         """
         # Check temperature bounds
         if value(blk.temperature) < blk.temperature.lb:
-            _log.error('{} Temperature set below lower bound.'
-                       .format(blk.name))
+            _log.error("{} Temperature set below lower bound.".format(blk.name))
         if value(blk.temperature) > blk.temperature.ub:
-            _log.error('{} Temperature set above upper bound.'
-                       .format(blk.name))
+            _log.error("{} Temperature set above upper bound.".format(blk.name))
 
         # Check pressure bounds
         if value(blk.pressure) < blk.pressure.lb:
-            _log.error('{} Pressure set below lower bound.'.format(blk.name))
+            _log.error("{} Pressure set below lower bound.".format(blk.name))
         if value(blk.pressure) > blk.pressure.ub:
-            _log.error('{} Pressure set above upper bound.'.format(blk.name))
+            _log.error("{} Pressure set above upper bound.".format(blk.name))

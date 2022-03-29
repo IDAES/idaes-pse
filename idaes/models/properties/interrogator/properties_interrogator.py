@@ -22,18 +22,20 @@ from pyomo.environ import Set, Var, units as pyunits
 from pyomo.common.config import ConfigValue
 
 # Import IDAES cores
-from idaes.core import (declare_process_block_class,
-                        MaterialFlowBasis,
-                        PhysicalParameterBlock,
-                        StateBlockData,
-                        StateBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        UnitModelBlockData,
-                        Phase,
-                        LiquidPhase,
-                        VaporPhase,
-                        Component)
+from idaes.core import (
+    declare_process_block_class,
+    MaterialFlowBasis,
+    PhysicalParameterBlock,
+    StateBlockData,
+    StateBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    UnitModelBlockData,
+    Phase,
+    LiquidPhase,
+    VaporPhase,
+    Component,
+)
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -53,20 +55,28 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
     This class contains the methods and attributes for recording and displaying
     the properties requried by the flowsheet.
     """
+
     CONFIG = PhysicalParameterBlock.CONFIG()
 
-    CONFIG.declare("phase_list", ConfigValue(
-        domain=dict,
-        description="User defined phase list. Dict with form {name: Type}"))
-    CONFIG.declare("component_list", ConfigValue(
-        domain=dict,
-        description="User defined component list. Dict with form {name: Type}"
-        ))
+    CONFIG.declare(
+        "phase_list",
+        ConfigValue(
+            domain=dict,
+            description="User defined phase list. Dict with form {name: Type}",
+        ),
+    )
+    CONFIG.declare(
+        "component_list",
+        ConfigValue(
+            domain=dict,
+            description="User defined component list. Dict with form {name: Type}",
+        ),
+    )
 
     def build(self):
-        '''
+        """
         Callable method for Block construction.
-        '''
+        """
         super(PropertyInterrogatorData, self).build()
 
         self._state_block_class = InterrogatorStateBlock
@@ -82,7 +92,8 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
                 elif not isclass(t) or not issubclass(t, Phase):
                     raise ConfigurationError(
                         f"{self.name} invalid phase type {t} (for phase {p})."
-                        f" Type must be a subclass of Phase.")
+                        f" Type must be a subclass of Phase."
+                    )
                 self.add_component(p, t())
 
         # Component objects
@@ -97,7 +108,8 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
                     raise ConfigurationError(
                         f"{self.name} invalid component type {t} (for "
                         f"component {j}). Type must be a subclass of "
-                        f"Component.")
+                        f"Component."
+                    )
                 self.add_component(j, t())
 
         # Set up dict to record property calls
@@ -106,8 +118,7 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
         # Dummy phase equilibrium definition so we can handle flash cases
         self.phase_equilibrium_idx = Set(initialize=[1])
 
-        self.phase_equilibrium_list = \
-            {1: ["A", ("Vap", "Liq")]}
+        self.phase_equilibrium_list = {1: ["A", ("Vap", "Liq")]}
 
     def list_required_properties(self):
         """
@@ -136,9 +147,10 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
             return self.required_properties[prop]
         except KeyError:
             raise KeyError(
-                    "Property {} does not appear in required_properties. "
-                    "Please check the spelling of the property that you are "
-                    "interested in.".format(prop))
+                "Property {} does not appear in required_properties. "
+                "Please check the spelling of the property that you are "
+                "interested in.".format(prop)
+            )
 
     def list_properties_required_by_model(self, model):
         """
@@ -162,8 +174,9 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
 
         if len(prop_list) < 1:
             raise ValueError(
-                    "Model {} does not appear in the flowsheet. Please check "
-                    "the spelling of the model provided.")
+                "Model {} does not appear in the flowsheet. Please check "
+                "the spelling of the model provided."
+            )
         else:
             return prop_list
 
@@ -184,23 +197,29 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
 
         # Write header
         max_str_length = 74
-        tab = " "*4
-        ostream.write("\n"+"="*max_str_length+"\n")
-        ostream.write("Property Interrogator Summary"+"\n")
+        tab = " " * 4
+        ostream.write("\n" + "=" * max_str_length + "\n")
+        ostream.write("Property Interrogator Summary" + "\n")
         ostream.write(
-                "\n" +
-                "The Flowsheet requires the following properties " +
-                "(times required):" +
-                "\n"+"\n")
+            "\n"
+            + "The Flowsheet requires the following properties "
+            + "(times required):"
+            + "\n"
+            + "\n"
+        )
         for k, v in self.required_properties.items():
             lead_str = tab + k
             trail_str = str(len(v))
-            mid_str = " "*(max_str_length-len(lead_str)-len(trail_str))
-            ostream.write(lead_str+mid_str+trail_str+"\n")
+            mid_str = " " * (max_str_length - len(lead_str) - len(trail_str))
+            ostream.write(lead_str + mid_str + trail_str + "\n")
         ostream.write(
-                "\n" +
-                "Note: User constraints may require additional properties " +
-                "which are not" + "\n" + "reported here." + "\n")
+            "\n"
+            + "Note: User constraints may require additional properties "
+            + "which are not"
+            + "\n"
+            + "reported here."
+            + "\n"
+        )
 
     def print_models_requiring_property(self, prop, ostream=None):
         """
@@ -218,14 +237,15 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
         if ostream is None:
             ostream = sys.stdout
 
-        tab = " "*4
+        tab = " " * 4
 
         ostream.write("\n")
-        ostream.write(f"The following models in the Flowsheet "
-                      f"require {prop}:"+"\n")
+        ostream.write(
+            f"The following models in the Flowsheet " f"require {prop}:" + "\n"
+        )
 
         for m in self.required_properties[prop]:
-            ostream.write(tab+m+"\n")
+            ostream.write(tab + m + "\n")
 
     def print_properties_required_by_model(self, model, ostream=None):
         """
@@ -246,22 +266,27 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
         if ostream is None:
             ostream = sys.stdout
 
-        tab = " "*4
+        tab = " " * 4
 
         ostream.write("\n")
-        ostream.write(f"The following properties are required by model "
-                      f"{model}:"+"\n")
+        ostream.write(
+            f"The following properties are required by model " f"{model}:" + "\n"
+        )
 
         for m in self.list_properties_required_by_model(model):
-            ostream.write(tab+m+"\n")
+            ostream.write(tab + m + "\n")
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': pyunits.s,
-                               'length': pyunits.m,
-                               'mass': pyunits.kg,
-                               'amount': pyunits.mol,
-                               'temperature': pyunits.K})
+        obj.add_default_units(
+            {
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            }
+        )
 
 
 class _InterrogatorStateBlock(StateBlock):
@@ -269,20 +294,23 @@ class _InterrogatorStateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
     def initialize(blk, *args, **kwargs):
-        '''
+        """
         Dummy initialization routine, This will raise an TypeError if a user
         tries to initialize a model using the Interrogator Property Package
         and tell them that the model cannot be solved.
-        '''
+        """
         raise TypeError(
-                "Models constructed using the Property Interrogator package "
-                "cannot be used to solve a flowsheet. Please rebuild your "
-                "flowsheet using a valid property package.")
+            "Models constructed using the Property Interrogator package "
+            "cannot be used to solve a flowsheet. Please rebuild your "
+            "flowsheet using a valid property package."
+        )
 
 
-@declare_process_block_class("InterrogatorStateBlock",
-                             block_class=_InterrogatorStateBlock)
+@declare_process_block_class(
+    "InterrogatorStateBlock", block_class=_InterrogatorStateBlock
+)
 class InterrogatorStateBlockData(StateBlockData):
     """
     A dummy state block for interrogating flowsheets and recording physical
@@ -297,14 +325,11 @@ class InterrogatorStateBlockData(StateBlockData):
 
         # Add dummy vars for building Ports and returning expressions
         self._dummy_var = Var(initialize=1)
-        self._dummy_var_phase = Var(self.params.phase_list,
-                                    initialize=1)
-        self._dummy_var_comp = Var(self.params.component_list,
-                                   initialize=1)
+        self._dummy_var_phase = Var(self.params.phase_list, initialize=1)
+        self._dummy_var_comp = Var(self.params.component_list, initialize=1)
         self._dummy_var_phase_comp = Var(
-                self.params.phase_list,
-                self.params.component_list,
-                initialize=1)
+            self.params.phase_list, self.params.component_list, initialize=1
+        )
 
     # Define standard methods and log calls before returning dummy variable
     def get_material_flow_terms(self, p, j):
@@ -335,8 +360,9 @@ class InterrogatorStateBlockData(StateBlockData):
 
     def define_display_vars(b):
         raise TypeError(
-                "Models constructed using the Property Interrogator package "
-                "should not be used for report methods.")
+            "Models constructed using the Property Interrogator package "
+            "should not be used for report methods."
+        )
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar

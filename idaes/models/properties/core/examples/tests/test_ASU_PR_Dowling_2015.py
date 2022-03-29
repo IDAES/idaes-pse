@@ -14,37 +14,39 @@
 Author: Andrew Lee, Alejandro Garciadiego
 """
 import pytest
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Set,
-                           value,
-                           Var,
-                           units as pyunits)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Set,
+    value,
+    Var,
+    units as pyunits,
+)
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.unittest import assertStructuredAlmostEqual
 
 from idaes.core import Component
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              fixed_variables_set,
-                                              activated_constraints_set)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    fixed_variables_set,
+    activated_constraints_set,
+)
 from idaes.core.util import get_solver
 
-from idaes.models.properties.core.generic.generic_property import (
-        GenericParameterBlock)
+from idaes.models.properties.core.generic.generic_property import GenericParameterBlock
 
 from idaes.models.properties.core.state_definitions import FTPx
 from idaes.models.properties.core.phase_equil import SmoothVLE
 
-from idaes.models.properties.core.examples.ASU_PR \
-    import configuration_Dowling_2015
+from idaes.models.properties.core.examples.ASU_PR import configuration_Dowling_2015
 
-from idaes.models.properties.tests.test_harness import \
-    PropertyTestHarness
+from idaes.models.properties.tests.test_harness import PropertyTestHarness
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
 
 def _as_quantity(x):
     unit = pyunits.get_units(x)
@@ -71,8 +73,7 @@ class TestParamBlock(object):
     @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(
-            default=configuration_Dowling_2015)
+        model.params = GenericParameterBlock(default=configuration_Dowling_2015)
 
         assert isinstance(model.params.phase_list, Set)
         assert len(model.params.phase_list) == 2
@@ -84,30 +85,36 @@ class TestParamBlock(object):
         assert isinstance(model.params.component_list, Set)
         assert len(model.params.component_list) == 3
         for i in model.params.component_list:
-            assert i in ['nitrogen',
-                         'argon',
-                         'oxygen']
+            assert i in ["nitrogen", "argon", "oxygen"]
             assert isinstance(model.params.get_component(i), Component)
 
         assert isinstance(model.params._phase_component_set, Set)
         assert len(model.params._phase_component_set) == 6
         for i in model.params._phase_component_set:
             assert i in [
-                ("Liq", "nitrogen"), ("Liq", "argon"), ("Liq", "oxygen"),
-                ("Vap", "nitrogen"), ("Vap", "argon"), ("Vap", "oxygen")]
+                ("Liq", "nitrogen"),
+                ("Liq", "argon"),
+                ("Liq", "oxygen"),
+                ("Vap", "nitrogen"),
+                ("Vap", "argon"),
+                ("Vap", "oxygen"),
+            ]
 
         assert model.params.config.state_definition == FTPx
 
         assertStructuredAlmostEqual(
             model.params.config.state_bounds,
-            { "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
-              "temperature": (10, 300, 350, pyunits.K),
-              "pressure": (5e4, 1e5, 1e7, pyunits.Pa) },
+            {
+                "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),
+                "temperature": (10, 300, 350, pyunits.K),
+                "pressure": (5e4, 1e5, 1e7, pyunits.Pa),
+            },
             item_callback=_as_quantity,
         )
 
         assert model.params.config.phase_equilibrium_state == {
-            ("Vap", "Liq"): SmoothVLE}
+            ("Vap", "Liq"): SmoothVLE
+        }
 
         assert isinstance(model.params.phase_equilibrium_idx, Set)
         assert len(model.params.phase_equilibrium_idx) == 3
@@ -117,20 +124,21 @@ class TestParamBlock(object):
         assert model.params.phase_equilibrium_list == {
             "PE1": {"nitrogen": ("Vap", "Liq")},
             "PE2": {"argon": ("Vap", "Liq")},
-            "PE3": {"oxygen": ("Vap", "Liq")}}
+            "PE3": {"oxygen": ("Vap", "Liq")},
+        }
 
         assert model.params.pressure_ref.value == 101325
         assert model.params.temperature_ref.value == 298.15
 
-        assert model.params.nitrogen.mw.value == 28.0135E-3
+        assert model.params.nitrogen.mw.value == 28.0135e-3
         assert model.params.nitrogen.pressure_crit.value == 33.943875e5
         assert model.params.nitrogen.temperature_crit.value == 126.2
 
-        assert model.params.argon.mw.value == 39.948E-3
+        assert model.params.argon.mw.value == 39.948e-3
         assert model.params.argon.pressure_crit.value == 48.737325e5
         assert model.params.argon.temperature_crit.value == 150.86
 
-        assert model.params.oxygen.mw.value == 31.999E-3
+        assert model.params.oxygen.mw.value == 31.999e-3
         assert model.params.oxygen.pressure_crit.value == 50.45985e5
         assert model.params.oxygen.temperature_crit.value == 154.58
 
@@ -144,8 +152,8 @@ class TestStateBlock(object):
         model.params = GenericParameterBlock(default=configuration_Dowling_2015)
 
         model.props = model.params.build_state_block(
-                [1],
-                default={"defined_state": True})
+            [1], default={"defined_state": True}
+        )
 
         return model
 
@@ -170,7 +178,7 @@ class TestStateBlock(object):
         assert isinstance(model.props[1].mole_frac_comp, Var)
         assert len(model.props[1].mole_frac_comp) == 3
         for i in model.props[1].mole_frac_comp:
-            assert value(model.props[1].mole_frac_comp[i]) == 1/3
+            assert value(model.props[1].mole_frac_comp[i]) == 1 / 3
 
         assert_units_consistent(model)
 
@@ -180,10 +188,7 @@ class TestStateBlock(object):
 
         assert len(sv) == 4
         for i in sv:
-            assert i in ["flow_mol",
-                         "mole_frac_comp",
-                         "temperature",
-                         "pressure"]
+            assert i in ["flow_mol", "mole_frac_comp", "temperature", "pressure"]
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
@@ -191,10 +196,7 @@ class TestStateBlock(object):
 
         assert len(sv) == 4
         for i in sv:
-            assert i in ["flow_mol",
-                         "mole_frac_comp",
-                         "temperature",
-                         "pressure"]
+            assert i in ["flow_mol", "mole_frac_comp", "temperature", "pressure"]
 
     @pytest.mark.unit
     def test_define_display_vars(self, model):
@@ -202,10 +204,12 @@ class TestStateBlock(object):
 
         assert len(sv) == 4
         for i in sv:
-            assert i in ["Total Molar Flowrate",
-                         "Total Mole Fraction",
-                         "Temperature",
-                         "Pressure"]
+            assert i in [
+                "Total Molar Flowrate",
+                "Total Mole Fraction",
+                "Temperature",
+                "Pressure",
+            ]
 
     @pytest.mark.component
     def test_initialize(self, model):
@@ -222,7 +226,7 @@ class TestStateBlock(object):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        model.props.initialize(optarg={'tol': 1e-6})
+        model.props.initialize(optarg={"tol": 1e-6})
 
         assert degrees_of_freedom(model) == 0
 
@@ -247,14 +251,16 @@ class TestStateBlock(object):
     @pytest.mark.component
     def test_solution(self, model):
         # Check phase equilibrium results
-        assert model.props[1].mole_frac_phase_comp["Liq", "nitrogen"].value == \
-            pytest.approx(0.9663, abs=1e-3)
-        assert model.props[1].mole_frac_phase_comp["Vap", "nitrogen"].value == \
-            pytest.approx(0.9890, abs=1e-3)
-        assert model.props[1].phase_frac["Vap"].value == \
-            pytest.approx(0.703, abs=1e-3)
-        assert value(model.props[1].enth_mol_phase["Vap"]) == \
-            pytest.approx(-6567, abs=1e1)
+        assert model.props[1].mole_frac_phase_comp[
+            "Liq", "nitrogen"
+        ].value == pytest.approx(0.9663, abs=1e-3)
+        assert model.props[1].mole_frac_phase_comp[
+            "Vap", "nitrogen"
+        ].value == pytest.approx(0.9890, abs=1e-3)
+        assert model.props[1].phase_frac["Vap"].value == pytest.approx(0.703, abs=1e-3)
+        assert value(model.props[1].enth_mol_phase["Vap"]) == pytest.approx(
+            -6567, abs=1e1
+        )
 
     @pytest.mark.unit
     def test_report(self, model):
@@ -274,7 +280,7 @@ class TestStateBlock(object):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        model.props.initialize(optarg={'tol': 1e-6})
+        model.props.initialize(optarg={"tol": 1e-6})
 
         assert degrees_of_freedom(model) == 0
 
@@ -283,13 +289,13 @@ class TestStateBlock(object):
         # Check for optimal solution
         assert check_optimal_termination(results)
 
-
-        assert model.props[1].mole_frac_phase_comp["Vap", "nitrogen"].value == \
-            pytest.approx(0.7800, abs=1e-3)
-        assert model.props[1].phase_frac["Vap"].value == \
-            pytest.approx(1.0, abs=1e-3)
-        assert value(model.props[1].enth_mol_phase["Vap"]) == \
-            pytest.approx(25.7, abs=1e1)
+        assert model.props[1].mole_frac_phase_comp[
+            "Vap", "nitrogen"
+        ].value == pytest.approx(0.7800, abs=1e-3)
+        assert model.props[1].phase_frac["Vap"].value == pytest.approx(1.0, abs=1e-3)
+        assert value(model.props[1].enth_mol_phase["Vap"]) == pytest.approx(
+            25.7, abs=1e1
+        )
 
     @pytest.mark.component
     def test_SFIL3(self, model):
@@ -305,7 +311,7 @@ class TestStateBlock(object):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        model.props.initialize(optarg={'tol': 1e-6})
+        model.props.initialize(optarg={"tol": 1e-6})
 
         assert degrees_of_freedom(model) == 0
 
@@ -314,10 +320,10 @@ class TestStateBlock(object):
         # Check for optimal solution
         assert check_optimal_termination(results)
 
-
-        assert model.props[1].mole_frac_phase_comp["Liq", "nitrogen"].value == \
-            pytest.approx(0.6653, abs=1e-3)
-        assert model.props[1].phase_frac["Vap"].value == \
-            pytest.approx(0.0, abs=1e-3)
-        assert value(model.props[1].enth_mol_phase["Liq"]) == \
-            pytest.approx(-11662.4, abs=1e1)
+        assert model.props[1].mole_frac_phase_comp[
+            "Liq", "nitrogen"
+        ].value == pytest.approx(0.6653, abs=1e-3)
+        assert model.props[1].phase_frac["Vap"].value == pytest.approx(0.0, abs=1e-3)
+        assert value(model.props[1].enth_mol_phase["Liq"]) == pytest.approx(
+            -11662.4, abs=1e1
+        )

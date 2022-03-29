@@ -15,6 +15,7 @@ Generic template for a translator block.
 """
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.config import is_physical_parameter_block
@@ -153,8 +154,7 @@ see property package for documentation.}""",
         super(TranslatorData, self).build()
 
         # Check construction argumnet consistency
-        if (self.config.outlet_state_defined and
-                self.config.has_phase_equilibrium):
+        if self.config.outlet_state_defined and self.config.has_phase_equilibrium:
             raise ConfigurationError(
                 "{} cannot calcuate phase equilibrium (has_phase_equilibrium "
                 "= True) when outlet state is set to be fully defined ("
@@ -183,12 +183,8 @@ see property package for documentation.}""",
         )
 
         # Add outlet port
-        self.add_port(name="inlet",
-                      block=self.properties_in,
-                      doc="Inlet Port")
-        self.add_port(name="outlet",
-                      block=self.properties_out,
-                      doc="Outlet Port")
+        self.add_port(name="inlet", block=self.properties_in, doc="Inlet Port")
+        self.add_port(name="outlet", block=self.properties_out, doc="Outlet Port")
 
     def initialize_build(
         blk,
@@ -245,12 +241,13 @@ see property package for documentation.}""",
             with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
 
-            init_log.info("Initialization Complete {}."
-                          .format(idaeslog.condition(res)))
+            init_log.info("Initialization Complete {}.".format(idaeslog.condition(res)))
         else:
-            init_log.warning("Initialization incomplete. Degrees of freedom "
-                             "were not zero. Please provide sufficient number "
-                             "of constraints linking the state variables "
-                             "between the two state blocks.")
+            init_log.warning(
+                "Initialization incomplete. Degrees of freedom "
+                "were not zero. Please provide sufficient number "
+                "of constraints linking the state variables "
+                "between the two state blocks."
+            )
 
         blk.properties_in.release_state(flags=flags, outlvl=outlvl)

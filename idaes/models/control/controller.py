@@ -152,12 +152,15 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
         time_units = self.flowsheet().time_units
         time_0 = time_set.first()
 
-        #Type Check
+        # Type Check
         if not issubclass(self.process_var[time_0].ctype, (pyo.Var, pyo.Expression)):
-            raise TypeError(f"process_var must reference a Var or Expression not {self.process_var[time_0].ctype}")
+            raise TypeError(
+                f"process_var must reference a Var or Expression not {self.process_var[time_0].ctype}"
+            )
         if not issubclass(self.process_var[time_0].ctype, pyo.Var):
-            raise TypeError(f"manipulated_var must reference a Var not {self.process_var[time_0].ctype}")
-
+            raise TypeError(
+                f"manipulated_var must reference a Var not {self.process_var[time_0].ctype}"
+            )
 
         # Get the appropriate units for various contoller varaibles
         mv_units = pyo.units.get_units(self.manipulated_var[time_0])
@@ -267,7 +270,11 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
                         if self.config.type == ControllerType.PI:
                             return (
                                 self.integral_of_error[t]
-                                == (b.manipulated_var[t] - b.mv_ref[t] - b.gain_p[t] * b.error[t])
+                                == (
+                                    b.manipulated_var[t]
+                                    - b.mv_ref[t]
+                                    - b.gain_p[t] * b.error[t]
+                                )
                                 / b.gain_i[t]
                             )
                         return (

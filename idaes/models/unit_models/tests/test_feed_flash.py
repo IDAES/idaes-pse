@@ -20,16 +20,18 @@ from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models.feed_flash import FeedFlash, FlashType
 from idaes.models.properties import iapws95
-from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
-                                              number_unused_variables)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     initialization_tester)
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    fixed_variables_set,
+    activated_constraints_set,
+    number_unused_variables,
+)
+from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import get_solver
 from pyomo.util.check_units import assert_units_consistent
 
@@ -54,8 +56,7 @@ def test_config():
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
-    assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.useDefault
+    assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
     assert m.fs.unit.config.flash_type == FlashType.isothermal
     assert m.fs.unit.config.property_package is m.fs.properties
 
@@ -67,10 +68,9 @@ class TestBTXIdeal(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase":
-                                                     ('Liq', 'Vap'),
-                                                     "activity_coeff_model":
-                                                     "Ideal"})
+        m.fs.properties = BTXParameterBlock(
+            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+        )
 
         m.fs.unit = FeedFlash(default={"property_package": m.fs.properties})
 
@@ -130,15 +130,14 @@ class TestBTXIdeal(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert (pytest.approx(101325.0, abs=1e3) ==
-                value(btx.fs.unit.outlet.pressure[0]))
-        assert (pytest.approx(368.00, abs=1e-0) ==
-                value(btx.fs.unit.outlet.temperature[0]))
-        assert (pytest.approx(1.0, abs=1e-2) ==
-                value(btx.fs.unit.outlet.flow_mol[0]))
-        assert (pytest.approx(0.396, abs=1e-3) ==
-                value(btx.fs.unit.control_volume.
-                      properties_out[0].flow_mol_phase["Vap"]))
+        assert pytest.approx(101325.0, abs=1e3) == value(btx.fs.unit.outlet.pressure[0])
+        assert pytest.approx(368.00, abs=1e-0) == value(
+            btx.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(1.0, abs=1e-2) == value(btx.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(0.396, abs=1e-3) == value(
+            btx.fs.unit.control_volume.properties_out[0].flow_mol_phase["Vap"]
+        )
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -148,19 +147,23 @@ class TestBTXIdeal(object):
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = iapws95.Iapws95ParameterBlock(default={
-                "phase_presentation": iapws95.PhaseType.LG})
+        m.fs.properties = iapws95.Iapws95ParameterBlock(
+            default={"phase_presentation": iapws95.PhaseType.LG}
+        )
 
-        m.fs.unit = FeedFlash(default={"property_package": m.fs.properties,
-                                       "flash_type": FlashType.isenthalpic})
+        m.fs.unit = FeedFlash(
+            default={
+                "property_package": m.fs.properties,
+                "flash_type": FlashType.isenthalpic,
+            }
+        )
 
         m.fs.unit.flow_mol.fix(100)
         m.fs.unit.enth_mol.fix(24000)
@@ -213,17 +216,18 @@ class TestIAPWS(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iapws):
-        assert (pytest.approx(101325.0, abs=1e3) ==
-                value(iapws.fs.unit.outlet.pressure[0]))
-        assert (pytest.approx(24000, abs=1e3) ==
-                value(iapws.fs.unit.outlet.enth_mol[0]))
-        assert (pytest.approx(100.0, abs=1e-2) ==
-                value(iapws.fs.unit.outlet.flow_mol[0]))
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            iapws.fs.unit.outlet.pressure[0]
+        )
+        assert pytest.approx(24000, abs=1e3) == value(iapws.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(100.0, abs=1e-2) == value(iapws.fs.unit.outlet.flow_mol[0])
 
-        assert (pytest.approx(373.12, abs=1e-2) == value(
-            iapws.fs.unit.control_volume.properties_out[0].temperature))
-        assert (pytest.approx(0.5953, abs=1e-4) == value(
-            iapws.fs.unit.control_volume.properties_out[0].phase_frac["Liq"]))
+        assert pytest.approx(373.12, abs=1e-2) == value(
+            iapws.fs.unit.control_volume.properties_out[0].temperature
+        )
+        assert pytest.approx(0.5953, abs=1e-4) == value(
+            iapws.fs.unit.control_volume.properties_out[0].phase_frac["Liq"]
+        )
 
     @pytest.mark.ui
     @pytest.mark.unit

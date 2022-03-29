@@ -27,7 +27,7 @@ from pyomo.environ import (
     ExternalFunction,
     Block,
     units as pyunits,
-    check_optimal_termination
+    check_optimal_termination,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.common.deprecation import deprecated
@@ -135,6 +135,7 @@ is an alias for cold_side""",
         ),
     )
 
+
 def delta_temperature_lmtd_callback(b):
     r"""
     This is a callback for a temperature difference expression to calculate
@@ -157,6 +158,7 @@ def delta_temperature_lmtd_callback(b):
     def delta_temperature(b, t):
         return (dT1[t] - dT2[t]) / log(dT1[t] / dT2[t])
 
+
 def delta_temperature_lmtd2_callback(b):
     r"""
     This is a callback for a temperature difference expression to calculate
@@ -178,6 +180,7 @@ def delta_temperature_lmtd2_callback(b):
     @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
         return (dT2[t] - dT1[t]) / log(dT2[t] / dT1[t])
+
 
 def delta_temperature_lmtd3_callback(b):
     r"""
@@ -249,9 +252,8 @@ def delta_temperature_underwood_callback(b):
     # external function that ruturns the real root, for the cuberoot of negitive
     # numbers, so it will return without error for positive and negitive dT.
     b.cbrt = ExternalFunction(
-        library=functions_lib(),
-        function="cbrt",
-        arg_units=[temp_units])
+        library=functions_lib(), function="cbrt", arg_units=[temp_units]
+    )
 
     @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
@@ -269,8 +271,7 @@ class HeatExchangerData(UnitModelBlockData):
     _make_heat_exchanger_config(CONFIG)
 
     def _process_config(self):
-        """Check for configuration errors and alternate config option names.
-        """
+        """Check for configuration errors and alternate config option names."""
         config = self.config
 
         if config.hot_side_name == config.cold_side_name:
@@ -300,14 +301,22 @@ class HeatExchangerData(UnitModelBlockData):
 
         if config.side_1_is_hot:
             if config.cold_side_name in ["hot_side", "side_1"]:
-                raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_1'].")
+                raise ConfigurationError(
+                    "Cold side name cannot be in ['hot_side', 'side_1']."
+                )
             if config.hot_side_name in ["cold_side", "side_2"]:
-                raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_2'].")
+                raise ConfigurationError(
+                    "Hot side name cannot be in ['cold_side', 'side_2']."
+                )
         else:
             if config.cold_side_name in ["hot_side", "side_2"]:
-                raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_2'].")
+                raise ConfigurationError(
+                    "Cold side name cannot be in ['hot_side', 'side_2']."
+                )
             if config.hot_side_name in ["cold_side", "side_1"]:
-                raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_1'].")
+                raise ConfigurationError(
+                    "Hot side name cannot be in ['cold_side', 'side_1']."
+                )
 
     def build(self):
         """
@@ -378,25 +387,25 @@ class HeatExchangerData(UnitModelBlockData):
             domain=PositiveReals,
             initialize=100.0,
             doc="Overall heat transfer coefficient",
-            units=u_units
+            units=u_units,
         )
         a = self.area = Var(
             domain=PositiveReals,
             initialize=1000.0,
             doc="Heat exchange area",
-            units=a_units
+            units=a_units,
         )
         self.delta_temperature_in = Var(
             self.flowsheet().time,
             initialize=10.0,
             doc="Temperature difference at the hot inlet end",
-            units=temp_units
+            units=temp_units,
         )
         self.delta_temperature_out = Var(
             self.flowsheet().time,
             initialize=10.1,
             doc="Temperature difference at the hot outlet end",
-            units=temp_units
+            units=temp_units,
         )
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(
@@ -412,21 +421,21 @@ class HeatExchangerData(UnitModelBlockData):
         # Add ports                                                            #
         ########################################################################
         i1 = self.add_inlet_port(
-            name=f"{config.hot_side_name}_inlet",
-            block=hot_side,
-            doc="Hot side inlet")
+            name=f"{config.hot_side_name}_inlet", block=hot_side, doc="Hot side inlet"
+        )
         i2 = self.add_inlet_port(
             name=f"{config.cold_side_name}_inlet",
             block=cold_side,
-            doc="Cold side inlet")
+            doc="Cold side inlet",
+        )
         o1 = self.add_outlet_port(
-            name=f"{config.hot_side_name}_outlet",
-            block=hot_side,
-            doc="Hot side outlet")
+            name=f"{config.hot_side_name}_outlet", block=hot_side, doc="Hot side outlet"
+        )
         o2 = self.add_outlet_port(
             name=f"{config.cold_side_name}_outlet",
             block=cold_side,
-            doc="Cold side outlet")
+            doc="Cold side outlet",
+        )
 
         if not config.side_1_is_hot:
             i1, i2 = i2, i1
@@ -467,35 +476,31 @@ class HeatExchangerData(UnitModelBlockData):
         @self.Constraint(self.flowsheet().time)
         def delta_temperature_in_equation(b, t):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
-                return (
-                    b.delta_temperature_in[t]
-                    == hot_side.properties_in[t].temperature
-                    - pyunits.convert(cold_side.properties_in[t].temperature,
-                                      to_units=temp_units)
+                return b.delta_temperature_in[t] == hot_side.properties_in[
+                    t
+                ].temperature - pyunits.convert(
+                    cold_side.properties_in[t].temperature, to_units=temp_units
                 )
             else:
-                return (
-                    b.delta_temperature_in[t]
-                    == hot_side.properties_in[t].temperature
-                    - pyunits.convert(cold_side.properties_out[t].temperature,
-                                      to_units=temp_units)
+                return b.delta_temperature_in[t] == hot_side.properties_in[
+                    t
+                ].temperature - pyunits.convert(
+                    cold_side.properties_out[t].temperature, to_units=temp_units
                 )
 
         @self.Constraint(self.flowsheet().time)
         def delta_temperature_out_equation(b, t):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
-                return (
-                    b.delta_temperature_out[t]
-                    == hot_side.properties_out[t].temperature
-                    - pyunits.convert(cold_side.properties_out[t].temperature,
-                                      to_units=temp_units)
+                return b.delta_temperature_out[t] == hot_side.properties_out[
+                    t
+                ].temperature - pyunits.convert(
+                    cold_side.properties_out[t].temperature, to_units=temp_units
                 )
             else:
-                return (
-                    b.delta_temperature_out[t]
-                    == hot_side.properties_out[t].temperature
-                    - pyunits.convert(cold_side.properties_in[t].temperature,
-                                      to_units=temp_units)
+                return b.delta_temperature_out[t] == hot_side.properties_out[
+                    t
+                ].temperature - pyunits.convert(
+                    cold_side.properties_in[t].temperature, to_units=temp_units
                 )
 
         ########################################################################
@@ -503,9 +508,9 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         @self.Constraint(self.flowsheet().time)
         def unit_heat_balance(b, t):
-            return 0 == (hot_side.heat[t] +
-                         pyunits.convert(cold_side.heat[t],
-                                         to_units=q_units))
+            return 0 == (
+                hot_side.heat[t] + pyunits.convert(cold_side.heat[t], to_units=q_units)
+            )
 
         ########################################################################
         # Add delta T calculations using callack function, lots of options,    #
@@ -521,10 +526,12 @@ class HeatExchangerData(UnitModelBlockData):
         def heat_transfer_equation(b, t):
             if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
                 return pyunits.convert(self.heat_duty[t], to_units=q_units) == (
-                    f[t] * u[t] * a * deltaT[t])
+                    f[t] * u[t] * a * deltaT[t]
+                )
             else:
                 return pyunits.convert(self.heat_duty[t], to_units=q_units) == (
-                    u[t] * a * deltaT[t])
+                    u[t] * a * deltaT[t]
+                )
 
         ########################################################################
         # Add symbols for LaTeX equation rendering                             #
@@ -600,23 +607,23 @@ class HeatExchangerData(UnitModelBlockData):
             # Assume 1000 J/s and check for unitless properties
             if s1_units is None and s2_units is None:
                 # Backwards compatability for unitless properties
-                s1_duty = - 1000
+                s1_duty = -1000
                 s2_duty = 1000
             else:
-                s1_duty = pyunits.convert_value(-1000,
-                                                from_units=pyunits.W,
-                                                to_units=s1_units)
-                s2_duty = pyunits.convert_value(1000,
-                                                from_units=pyunits.W,
-                                                to_units=s2_units)
+                s1_duty = pyunits.convert_value(
+                    -1000, from_units=pyunits.W, to_units=s1_units
+                )
+                s2_duty = pyunits.convert_value(
+                    1000, from_units=pyunits.W, to_units=s2_units
+                )
         else:
             # Duty provided with explicit units
-            s1_duty = -pyunits.convert_value(duty[0],
-                                             from_units=duty[1],
-                                             to_units=s1_units)
-            s2_duty = pyunits.convert_value(duty[0],
-                                            from_units=duty[1],
-                                            to_units=s2_units)
+            s1_duty = -pyunits.convert_value(
+                duty[0], from_units=duty[1], to_units=s1_units
+            )
+            s2_duty = pyunits.convert_value(
+                duty[0], from_units=duty[1], to_units=s2_units
+            )
 
         cold_side.heat.fix(s2_duty)
         for i in hot_side.heat:
@@ -642,7 +649,8 @@ class HeatExchangerData(UnitModelBlockData):
         if not check_optimal_termination(res):
             raise InitializationError(
                 f"{self.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
+                f"the output logs for more information."
+            )
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {
@@ -690,21 +698,36 @@ class HeatExchangerData(UnitModelBlockData):
         # 1 and 100 regardless of process of temperature units, so a default
         # should be fine, so don't warn.  Guessing a typical delta t around 10
         # the default scaling factor is set to 0.1
-        sf_dT1 = dict(zip(
-            self.delta_temperature_in.keys(),
-            [iscale.get_scaling_factor(v, default=0.1)
-                for v in self.delta_temperature_in.values()]))
-        sf_dT2 = dict(zip(
-            self.delta_temperature_out.keys(),
-            [iscale.get_scaling_factor(v, default=0.1)
-                for v in self.delta_temperature_out.values()]))
+        sf_dT1 = dict(
+            zip(
+                self.delta_temperature_in.keys(),
+                [
+                    iscale.get_scaling_factor(v, default=0.1)
+                    for v in self.delta_temperature_in.values()
+                ],
+            )
+        )
+        sf_dT2 = dict(
+            zip(
+                self.delta_temperature_out.keys(),
+                [
+                    iscale.get_scaling_factor(v, default=0.1)
+                    for v in self.delta_temperature_out.values()
+                ],
+            )
+        )
 
         # U depends a lot on the process and units of measure so user should set
         # this one.
-        sf_u = dict(zip(
-            self.overall_heat_transfer_coefficient.keys(),
-            [iscale.get_scaling_factor(v, default=1, warning=True)
-                for v in self.overall_heat_transfer_coefficient.values()]))
+        sf_u = dict(
+            zip(
+                self.overall_heat_transfer_coefficient.keys(),
+                [
+                    iscale.get_scaling_factor(v, default=1, warning=True)
+                    for v in self.overall_heat_transfer_coefficient.values()
+                ],
+            )
+        )
 
         # Since this depends on the process size this is another scaling factor
         # the user should always set.
@@ -712,11 +735,13 @@ class HeatExchangerData(UnitModelBlockData):
 
         for t, c in self.heat_transfer_equation.items():
             iscale.constraint_scaling_transform(
-                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
+                c, sf_dT1[t] * sf_u[t] * sf_a, overwrite=False
+            )
 
         for t, c in self.unit_heat_balance.items():
             iscale.constraint_scaling_transform(
-                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
+                c, sf_dT1[t] * sf_u[t] * sf_a, overwrite=False
+            )
 
         for t, c in self.delta_temperature_in_equation.items():
             iscale.constraint_scaling_transform(c, sf_dT1[t], overwrite=False)
@@ -726,6 +751,7 @@ class HeatExchangerData(UnitModelBlockData):
 
         # TODO: Deprecate as part of IDAES 2.0
         # Check for old-style costing block, and scale if required
-        if (hasattr(self, "costing") and
-                not isinstance(self.costing, UnitModelCostingBlock)):
+        if hasattr(self, "costing") and not isinstance(
+            self.costing, UnitModelCostingBlock
+        ):
             costing.calculate_scaling_factors(self.costing)

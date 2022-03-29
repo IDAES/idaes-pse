@@ -22,8 +22,7 @@ callback from the user.
 from pyomo.network import Port
 from pyomo.common.config import ConfigValue, In
 
-from idaes.core.base.process_base import declare_process_block_class, \
-    ProcessBlockData
+from idaes.core.base.process_base import declare_process_block_class, ProcessBlockData
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
@@ -46,29 +45,41 @@ class SkeletonUnitModelData(ProcessBlockData):
     # This is a staticmethod that will be the default callable set for the
     # initializer flag in the config block.
     @staticmethod
-    def _default_initializer(model, opt=None, init_log=None, solve_log=None,
-        initial_guess=None):
+    def _default_initializer(
+        model, opt=None, init_log=None, solve_log=None, initial_guess=None
+    ):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(model, tee=slc.tee)
-        init_log.info("Initialization completed using default method {}.".
-                      format(idaeslog.condition(res)))
+            res = opt.solve(model, tee=slc.tee)
+        init_log.info(
+            "Initialization completed using default method {}.".format(
+                idaeslog.condition(res)
+            )
+        )
 
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
-    CONFIG.declare("dynamic", ConfigValue(
-        default=False,
-        domain=In([False]),
-        description="Dynamic model flag",
-        doc="""Model does not support dynamics or holdup automatically.
+    CONFIG.declare(
+        "dynamic",
+        ConfigValue(
+            default=False,
+            domain=In([False]),
+            description="Dynamic model flag",
+            doc="""Model does not support dynamics or holdup automatically.
         The variables declared in this unit will need to be indexed with the
         flowsheet time domain to facilitate connection with other
-        unit models."""))
-    CONFIG.declare("initializer", ConfigValue(
-        # Note: staticmethod is unbound, extract with __func__
-        default=_default_initializer.__func__,
-        description="Initializer to be used",
-        doc="""Flag to set the callback from user for initialization.
-        Default is set to use the default_initialize method."""))
+        unit models.""",
+        ),
+    )
+    CONFIG.declare(
+        "initializer",
+        ConfigValue(
+            # Note: staticmethod is unbound, extract with __func__
+            default=_default_initializer.__func__,
+            description="Initializer to be used",
+            doc="""Flag to set the callback from user for initialization.
+        Default is set to use the default_initialize method.""",
+        ),
+    )
 
     def build(self):
         """
@@ -83,7 +94,6 @@ class SkeletonUnitModelData(ProcessBlockData):
             None
         """
         super().build()
-
 
     def add_ports(self, name, member_dict, doc=None):
         """
@@ -104,7 +114,8 @@ class SkeletonUnitModelData(ProcessBlockData):
             raise ConfigurationError(
                 "member_dict should be a dictionary "
                 "with the keys being the name assigned(strings) and "
-                "values being the variable objects declared in the model.")
+                "values being the variable objects declared in the model."
+            )
 
         # Create empty Port
         p = Port(noruleinit=True, doc=doc)
@@ -116,10 +127,10 @@ class SkeletonUnitModelData(ProcessBlockData):
         for k in member_dict.keys():
             p.add(member_dict[k], name=k)
 
-
     # TODO : Work out how to make this work with new UnitModel initialization
-    def initialize(self, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None, initial_guess=None):
+    def initialize(
+        self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, initial_guess=None
+    ):
         """Initialize method for the SkeletonUnitModel. If a custom function
         is provided via the initializer argument in the config block,
         then, this method will use it. If no custom function is
@@ -151,11 +162,15 @@ class SkeletonUnitModelData(ProcessBlockData):
 
         if degrees_of_freedom(self) == 0:
             self.config.initializer(
-                self, opt=opt, init_log=init_log, solve_log=solve_log,
-                initial_guess=initial_guess)
+                self,
+                opt=opt,
+                init_log=init_log,
+                solve_log=solve_log,
+                initial_guess=initial_guess,
+            )
         else:
             raise ConfigurationError(
                 "Degrees of freedom is not zero during start of "
                 "initialization. Fix/unfix appropriate number of variables "
-                "to result in zero degrees of freedom for initialization.")
-
+                "to result in zero degrees of freedom for initialization."
+            )

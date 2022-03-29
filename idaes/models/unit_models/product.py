@@ -19,9 +19,7 @@ from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (declare_process_block_class,
-                        UnitModelBlockData,
-                        useDefault)
+from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
@@ -112,9 +110,7 @@ see property package for documentation.}""",
         )
 
         # Add references to all state vars
-        s_vars = self.properties[
-            self.flowsheet().time.first()
-        ].define_state_vars()
+        s_vars = self.properties[self.flowsheet().time.first()].define_state_vars()
         for s in s_vars:
             l_name = s_vars[s].local_name
             if s_vars[s].is_indexed():
@@ -129,8 +125,7 @@ see property package for documentation.}""",
         self.add_port(name="inlet", block=self.properties, doc="Inlet Port")
 
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET,
-        solver=None, optarg=None
+        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
         This method calls the initialization method of the state block.
@@ -153,10 +148,7 @@ see property package for documentation.}""",
         # Initialize state block
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         blk.properties.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args
+            outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args
         )
         init_log.info("Initialization Complete.")
 

@@ -15,22 +15,22 @@ Tests for valve model
 """
 import math
 import pytest
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           units,
-                           value)
+from pyomo.environ import check_optimal_termination, ConcreteModel, units, value
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import Valve, ValveFunctionType
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              number_unused_variables)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     ReactionParameterTestBlock,
-                                     initialization_tester)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+from idaes.core.util.testing import (
+    PhysicalParameterTestBlock,
+    ReactionParameterTestBlock,
+    initialization_tester,
+)
 from idaes.core.util import get_solver
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.models.properties import iapws95
 import idaes.core.util.scaling as iscale
@@ -46,21 +46,24 @@ class GenericValve(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.properties = iapws95.Iapws95ParameterBlock()
-        m.fs.valve = Valve(default={
-            "valve_function_callback": self.type,
-            "property_package": m.fs.properties})
+        m.fs.valve = Valve(
+            default={
+                "valve_function_callback": self.type,
+                "property_package": m.fs.properties,
+            }
+        )
         fin = 1000  # mol/s
         pin = 200000  # Pa
         pout = 100000  # Pa
         tin = 300  # K
-        hin = iapws95.htpx(T=tin*units.K, P=pin*units.Pa)  # J/mol
+        hin = iapws95.htpx(T=tin * units.K, P=pin * units.Pa)  # J/mol
         # Calculate the flow coefficient to give 1000 mol/s flow with given P
         if self.type == ValveFunctionType.linear:
-            cv = 1000/math.sqrt(pin - pout)/0.5
+            cv = 1000 / math.sqrt(pin - pout) / 0.5
         elif self.type == ValveFunctionType.quick_opening:
-            cv = 1000/math.sqrt(pin - pout)/math.sqrt(0.5)
+            cv = 1000 / math.sqrt(pin - pout) / math.sqrt(0.5)
         elif self.type == ValveFunctionType.equal_percentage:
-            cv = 1000/math.sqrt(pin - pout)/100**(0.5-1)
+            cv = 1000 / math.sqrt(pin - pout) / 100 ** (0.5 - 1)
         # set inlet
         m.fs.valve.inlet.enth_mol[0].fix(hin)
         m.fs.valve.inlet.flow_mol[0].fix(fin)
@@ -103,7 +106,7 @@ class GenericValve(object):
     @pytest.mark.component
     def test_units(self, valve_model):
         assert_units_consistent(valve_model)
-        assert_units_equivalent(valve_model.fs.valve.flow_var[0], units.mol/units.s)
+        assert_units_equivalent(valve_model.fs.valve.flow_var[0], units.mol / units.s)
 
     @pytest.mark.unit
     def test_dof(self, valve_model):
@@ -129,14 +132,18 @@ class GenericValve(object):
     @pytest.mark.component
     def test_solution(self, valve_model):
         # calculated Cv to yeild this solution
-        assert (pytest.approx(1000, rel=1e-3) ==
-                value(valve_model.fs.valve.outlet.flow_mol[0]))
+        assert pytest.approx(1000, rel=1e-3) == value(
+            valve_model.fs.valve.outlet.flow_mol[0]
+        )
+
 
 class TestLinearValve(GenericValve):
     type = ValveFunctionType.linear
 
+
 class TestEPValve(GenericValve):
     type = ValveFunctionType.equal_percentage
+
 
 class TestQuickValve(GenericValve):
     type = ValveFunctionType.quick_opening

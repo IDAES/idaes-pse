@@ -59,6 +59,7 @@ def set_scaling_factors(m):
     # Calculate calculated scaling factors
     iscale.calculate_scaling_factors(m)
 
+
 @pytest.fixture
 def m():
     m_ss = get_model(dynamic=False)

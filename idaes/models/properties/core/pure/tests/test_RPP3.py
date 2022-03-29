@@ -44,16 +44,16 @@ def frame():
 
     m.params.config = ConfigBlock(implicit=True)
     m.params.config.parameter_data = {
-        "cp_mol_ig_comp_coeff": {'A': 7.701,
-                                 'B': 4.595e-4,
-                                 'C': 2.521e-6,
-                                 'D': -0.859e-9},
-        "enth_mol_form_vap_comp_ref": (-57.797e3, pyunits.cal/pyunits.mol),
-        "entr_mol_form_vap_comp_ref": (45.13,
-                                       pyunits.cal/pyunits.mol/pyunits.K),
-        "pressure_sat_comp_coeff": {'A': 18.3036,
-                                    'B': 3816.44,
-                                    'C': -46.13}}
+        "cp_mol_ig_comp_coeff": {
+            "A": 7.701,
+            "B": 4.595e-4,
+            "C": 2.521e-6,
+            "D": -0.859e-9,
+        },
+        "enth_mol_form_vap_comp_ref": (-57.797e3, pyunits.cal / pyunits.mol),
+        "entr_mol_form_vap_comp_ref": (45.13, pyunits.cal / pyunits.mol / pyunits.K),
+        "pressure_sat_comp_coeff": {"A": 18.3036, "B": 3816.44, "C": -46.13},
+    }
     m.params.config.include_enthalpy_of_formation = True
 
     # Also need to dummy configblock on the model for the test
@@ -69,6 +69,7 @@ def frame():
 
     def get_metadata(self):
         return m.meta_object
+
     m.get_metadata = types.MethodType(get_metadata, m)
     m.params.get_metadata = types.MethodType(get_metadata, m.params)
 
@@ -103,13 +104,14 @@ def test_cp_mol_ig_comp(frame):
     assert value(frame.params.cp_mol_ig_comp_coeff_D) == -0.859e-9
 
     expr = cp_mol_ig_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     assert value(expr) == pytest.approx(33.636, abs=1e-3)
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(34.447, abs=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol / pyunits.K)
 
 
 @pytest.mark.unit
@@ -118,16 +120,18 @@ def test_enth_mol_ig_comp(frame):
 
     assert isinstance(frame.params.enth_mol_form_vap_comp_ref, Var)
     assert value(frame.params.enth_mol_form_vap_comp_ref) == (
-        pytest.approx(-241822.6, abs=1e-1))
+        pytest.approx(-241822.6, abs=1e-1)
+    )
 
     expr = enth_mol_ig_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     assert value(expr) == pytest.approx(-240983.962, abs=1e-3)
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(-237517.968, abs=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol)
 
 
 @pytest.mark.unit
@@ -139,13 +143,14 @@ def test_enth_mol_ig_comp_no_form(frame):
     assert not hasattr(frame.params, "enth_mol_form_vap_comp_ref")
 
     expr = enth_mol_ig_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     assert value(expr) == pytest.approx(838.686, abs=1e-3)
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(4304.680, abs=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol)
 
 
 @pytest.mark.unit
@@ -154,16 +159,18 @@ def test_entr_mol_ig_comp(frame):
 
     assert isinstance(frame.params.entr_mol_form_vap_comp_ref, Var)
     assert value(frame.params.entr_mol_form_vap_comp_ref) == (
-        pytest.approx(188.8, abs=1e-1))
+        pytest.approx(188.8, abs=1e-1)
+    )
 
     expr = entr_mol_ig_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     assert value(expr) == pytest.approx(191.761, abs=1e-3)
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(201.756, abs=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol / pyunits.K)
 
 
 @pytest.mark.unit
@@ -178,7 +185,8 @@ def test_pressure_sat_comp(frame):
     assert value(frame.params.pressure_sat_comp_coeff_C) == -46.13
 
     expr = pressure_sat_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     assert value(expr) == pytest.approx(3143.1125, abs=1e-3)
 
     frame.props[1].temperature.value = 373.15
@@ -192,27 +200,32 @@ def test_pressure_sat_comp_dT(frame):
     pressure_sat_comp.build_parameters(frame.params)
 
     expr = pressure_sat_comp.dT_expression(
-            frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
 
-    delta = 1e-4*pyunits.K
+    delta = 1e-4 * pyunits.K
     val = pressure_sat_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     val_p = pressure_sat_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature+delta)
+        frame.props[1], frame.params, frame.props[1].temperature + delta
+    )
 
-    dPdT = value((val-val_p)/-delta)
+    dPdT = value((val - val_p) / -delta)
 
     assert value(expr) == pytest.approx(dPdT, 1e-4)
 
     frame.props[1].temperature.value = 373.15
 
     val = pressure_sat_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     val_p = pressure_sat_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature+delta)
+        frame.props[1], frame.params, frame.props[1].temperature + delta
+    )
 
-    dPdT = value((val-val_p)/-delta)
+    dPdT = value((val - val_p) / -delta)
 
     assert value(expr) == pytest.approx(dPdT, 1e-4)
 
-    assert_units_equivalent(expr, pyunits.Pa/pyunits.K)
+    assert_units_equivalent(expr, pyunits.Pa / pyunits.K)

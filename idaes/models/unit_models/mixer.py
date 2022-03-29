@@ -30,7 +30,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
     MaterialBalanceType,
-    MaterialFlowBasis
+    MaterialFlowBasis,
 )
 from idaes.core.util.config import (
     is_physical_parameter_block,
@@ -299,9 +299,7 @@ objects linked to all inlet states and the mixed state,
 
         if mb_type != MaterialBalanceType.none:
             self.add_material_mixing_equations(
-                inlet_blocks=inlet_blocks,
-                mixed_block=mixed_block,
-                mb_type=mb_type
+                inlet_blocks=inlet_blocks, mixed_block=mixed_block, mb_type=mb_type
             )
         else:
             raise BurntToast(
@@ -332,14 +330,13 @@ objects linked to all inlet states and the mixed state,
                 self.add_pressure_minimization_equations(
                     inlet_blocks=inlet_blocks, mixed_block=mixed_block
                 )
-            elif (self.config.momentum_mixing_type ==
-                    MomentumMixingType.equality):
+            elif self.config.momentum_mixing_type == MomentumMixingType.equality:
                 self.add_pressure_equality_equations(
                     inlet_blocks=inlet_blocks, mixed_block=mixed_block
                 )
             elif (
-                self.config.momentum_mixing_type ==
-                MomentumMixingType.minimize_and_equality
+                self.config.momentum_mixing_type
+                == MomentumMixingType.minimize_and_equality
             ):
                 self.add_pressure_minimization_equations(
                     inlet_blocks=inlet_blocks, mixed_block=mixed_block
@@ -356,14 +353,15 @@ objects linked to all inlet states and the mixed state,
                     "momentum_mixing_type argument. This "
                     "should not occur, so please contact "
                     "the IDAES developers with this bug.".format(self.name)
-                    )
+                )
         except PropertyNotSupportedError:
             raise PropertyNotSupportedError(
                 "{} The property package supplied for this unit does not "
                 "appear to support pressure, which is required for momentum "
                 "mixing. Please set momentum_mixing_type to "
                 "MomentumMixingType.none or provide a property package which "
-                "supports pressure.".format(self.name))
+                "supports pressure.".format(self.name)
+            )
 
         self.add_port_objects(inlet_list, inlet_blocks, mixed_block)
 
@@ -374,8 +372,7 @@ objects linked to all inlet states and the mixed state,
         Returns:
             list of strings
         """
-        if (self.config.inlet_list is not None and
-                self.config.num_inlets is not None):
+        if self.config.inlet_list is not None and self.config.num_inlets is not None:
             # If both arguments provided and not consistent, raise Exception
             if len(self.config.inlet_list) != self.config.num_inlets:
                 raise ConfigurationError(
@@ -484,8 +481,7 @@ objects linked to all inlet states and the mixed state,
 
         return self.config.mixed_state_block
 
-    def add_material_mixing_equations(self, inlet_blocks,
-                                      mixed_block, mb_type):
+    def add_material_mixing_equations(self, inlet_blocks, mixed_block, mb_type):
         """
         Add material mixing equations.
         """
@@ -497,7 +493,8 @@ objects linked to all inlet states and the mixed state,
         units = pp.get_metadata()
 
         flow_basis = mixed_block[
-            self.flowsheet().time.first()].get_material_flow_basis()
+            self.flowsheet().time.first()
+        ].get_material_flow_basis()
         if flow_basis == MaterialFlowBasis.molar:
             flow_units = units.get_derived_units("flow_mole")
         elif flow_basis == MaterialFlowBasis.mass:
@@ -515,14 +512,13 @@ objects linked to all inlet states and the mixed state,
                         pp.phase_equilibrium_idx,
                         domain=Reals,
                         doc="Amount of generation in unit by phase equilibria",
-                        units=flow_units
+                        units=flow_units,
                     )
                 except AttributeError:
                     raise PropertyNotSupportedError(
                         "{} Property package does not contain a list of phase "
                         "equilibrium reactions (phase_equilibrium_idx), "
-                        "thus does not support phase equilibrium."
-                        .format(self.name)
+                        "thus does not support phase equilibrium.".format(self.name)
                     )
 
             # Define terms to use in mixing equation
@@ -531,19 +527,9 @@ objects linked to all inlet states and the mixed state,
                     sd = {}
                     for r in pp.phase_equilibrium_idx:
                         if pp.phase_equilibrium_list[r][0] == j:
-                            if (
-                                pp.phase_equilibrium_list[r][1][
-                                    0
-                                ]
-                                == p
-                            ):
+                            if pp.phase_equilibrium_list[r][1][0] == p:
                                 sd[r] = 1
-                            elif (
-                                pp.phase_equilibrium_list[r][1][
-                                    1
-                                ]
-                                == p
-                            ):
+                            elif pp.phase_equilibrium_list[r][1][1] == p:
                                 sd[r] = -1
                             else:
                                 sd[r] = 0
@@ -551,8 +537,8 @@ objects linked to all inlet states and the mixed state,
                             sd[r] = 0
 
                     return sum(
-                        b.phase_equilibrium_generation[t, r] * sd[r] for r in
-                        pp.phase_equilibrium_idx
+                        b.phase_equilibrium_generation[t, r] * sd[r]
+                        for r in pp.phase_equilibrium_idx
                     )
                 else:
                     return 0
@@ -593,9 +579,7 @@ objects linked to all inlet states and the mixed state,
 
         elif mb_type == MaterialBalanceType.total:
             # Write phase-component balances
-            @self.Constraint(
-                self.flowsheet().time, doc="Material mixing equations"
-            )
+            @self.Constraint(self.flowsheet().time, doc="Material mixing equations")
             def material_mixing_equations(b, t):
                 return 0 == sum(
                     sum(
@@ -621,8 +605,7 @@ objects linked to all inlet states and the mixed state,
             raise BurntToast(
                 "{} Mixer received unrecognised value for "
                 "material_balance_type. This should not happen, "
-                "please report this bug to the IDAES developers."
-                .format(self.name)
+                "please report this bug to the IDAES developers.".format(self.name)
             )
 
     def add_energy_mixing_equations(self, inlet_blocks, mixed_block):
@@ -663,7 +646,7 @@ objects linked to all inlet states and the mixed state,
             self.flowsheet().time,
             self.inlet_idx,
             doc="Variable for calculating minimum inlet pressure",
-            units=units.get_derived_units("pressure")
+            units=units.get_derived_units("pressure"),
         )
 
         self.eps_pressure = Param(
@@ -671,7 +654,7 @@ objects linked to all inlet states and the mixed state,
             initialize=1e-3,
             domain=PositiveReals,
             doc="Smoothing term for minimum inlet pressure",
-            units=units.get_derived_units("pressure")
+            units=units.get_derived_units("pressure"),
         )
 
         # Calculate minimum inlet pressure
@@ -682,8 +665,7 @@ objects linked to all inlet states and the mixed state,
         )
         def minimum_pressure_constraint(b, t, i):
             if i == self.inlet_idx.first():
-                return self.minimum_pressure[t, i] == (
-                    inlet_blocks[i - 1][t].pressure)
+                return self.minimum_pressure[t, i] == (inlet_blocks[i - 1][t].pressure)
             else:
                 return self.minimum_pressure[t, i] == (
                     smooth_min(
@@ -694,9 +676,7 @@ objects linked to all inlet states and the mixed state,
                 )
 
         # Set inlet pressure to minimum pressure
-        @self.Constraint(
-            self.flowsheet().time, doc="Link pressure to control volume"
-        )
+        @self.Constraint(self.flowsheet().time, doc="Link pressure to control volume")
         def mixture_pressure(b, t):
             return mixed_block[t].pressure == (
                 self.minimum_pressure[t, self.inlet_idx.last()]
@@ -761,8 +741,7 @@ objects linked to all inlet states and the mixed state,
                 _log.warning(
                     "{} Mixer inlet property block has no model "
                     "checks. To correct this, add a model_check "
-                    "method to the associated StateBlock class."
-                    .format(blk.name)
+                    "method to the associated StateBlock class.".format(blk.name)
                 )
             try:
                 if blk.config.mixed_state_block is None:
@@ -783,8 +762,7 @@ objects linked to all inlet states and the mixed state,
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
         """
-        if (self.config.momentum_mixing_type !=
-                MomentumMixingType.minimize_and_equality):
+        if self.config.momentum_mixing_type != MomentumMixingType.minimize_and_equality:
             _log.warning(
                 """use_minimum_inlet_pressure_constraint() can only be used
                 when momentum_mixing_type ==
@@ -800,8 +778,7 @@ objects linked to all inlet states and the mixed state,
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
         """
-        if (self.config.momentum_mixing_type !=
-                MomentumMixingType.minimize_and_equality):
+        if self.config.momentum_mixing_type != MomentumMixingType.minimize_and_equality:
             _log.warning(
                 """use_equal_pressure_constraint() can only be used when
                 momentum_mixing_type ==
@@ -811,8 +788,9 @@ objects linked to all inlet states and the mixed state,
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize_build(blk, outlvl=idaeslog.NOTSET, optarg=None,
-                         solver=None, hold_state=False):
+    def initialize_build(
+        blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, hold_state=False
+    ):
         """
         Initialization routine for mixer.
 
@@ -878,8 +856,7 @@ objects linked to all inlet states and the mixed state,
                     if not s_vars[s][k].fixed:
                         for i in range(len(i_block_list)):
                             i_vars.append(
-                                getattr(i_block_list[i][t],
-                                        s_vars[s].local_name)
+                                getattr(i_block_list[i][t], s_vars[s].local_name)
                             )
 
                         if s == "pressure":
@@ -892,15 +869,13 @@ objects linked to all inlet states and the mixed state,
                             # If a "flow" variable (i.e. extensive), sum inlets
                             for k in s_vars[s]:
                                 s_vars[s][k].value = sum(
-                                    i_vars[i][k].value for i in range(
-                                        len(i_block_list))
+                                    i_vars[i][k].value for i in range(len(i_block_list))
                                 )
                         else:
                             # Otherwise use average of inlets
                             for k in s_vars[s]:
                                 s_vars[s][k].value = sum(
-                                    i_vars[i][k].value for i in range(
-                                        len(i_block_list))
+                                    i_vars[i][k].value for i in range(len(i_block_list))
                                 ) / len(i_block_list)
 
         mblock.initialize(
@@ -925,11 +900,11 @@ objects linked to all inlet states and the mixed state,
             ):
                 blk.pressure_equality_constraints.deactivate()
                 for t in blk.flowsheet().time:
-                    sys_press = getattr(
-                        blk,
-                        blk.create_inlet_list()[0] + "_state")[t].pressure
+                    sys_press = getattr(blk, blk.create_inlet_list()[0] + "_state")[
+                        t
+                    ].pressure
                     blk.mixed_state[t].pressure.fix(sys_press.value)
-                with idaeslog.solver_log(solve_log, idaeslog.DEBUG)as slc:
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                     res = opt.solve(blk, tee=slc.tee)
                 blk.pressure_equality_constraints.activate()
                 for t in blk.flowsheet().time:
@@ -938,16 +913,15 @@ objects linked to all inlet states and the mixed state,
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                     res = opt.solve(blk, tee=slc.tee)
 
-            init_log.info(
-                "Initialization Complete: {}".format(idaeslog.condition(res))
-            )
+            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
         else:
             init_log.info("Initialization Complete.")
 
         if res is not None and not check_optimal_termination(res):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
+                f"the output logs for more information."
+            )
 
         if hold_state is True:
             return flags
@@ -994,25 +968,29 @@ objects linked to all inlet states and the mixed state,
         if hasattr(self, "pressure_equality_constraints"):
             for (t, i), c in self.pressure_equality_constraints.items():
                 s = iscale.get_scaling_factor(
-                    self.mixed_state[t].pressure, default=1, warning=True)
+                    self.mixed_state[t].pressure, default=1, warning=True
+                )
                 iscale.constraint_scaling_transform(c, s)
 
         if hasattr(self, "minimum_pressure"):
             for (t, i), v in self.minimum_pressure.items():
                 s = iscale.get_scaling_factor(
-                    self.mixed_state[t].pressure, default=1, warning=True)
+                    self.mixed_state[t].pressure, default=1, warning=True
+                )
                 iscale.set_scaling_factor(v, s)
 
         if hasattr(self, "minimum_pressure_constraint"):
             for (t, i), c in self.minimum_pressure_constraint.items():
                 s = iscale.get_scaling_factor(
-                    self.mixed_state[t].pressure, default=1, warning=True)
+                    self.mixed_state[t].pressure, default=1, warning=True
+                )
                 iscale.constraint_scaling_transform(c, s)
 
         if hasattr(self, "mixture_pressure"):
             for t, c in self.mixture_pressure.items():
                 s = iscale.get_scaling_factor(
-                    self.mixed_state[t].pressure, default=1, warning=True)
+                    self.mixed_state[t].pressure, default=1, warning=True
+                )
                 iscale.constraint_scaling_transform(c, s)
 
         if hasattr(self, "material_mixing_equations"):
@@ -1027,7 +1005,7 @@ objects linked to all inlet states and the mixed state,
                         try:
                             ft = self.mixed_state[t].get_material_flow_terms(p, j)
                         except (KeyError, AttributeError):
-                            continue # component not in phase
+                            continue  # component not in phase
                         if i == 0:
                             s = iscale.get_scaling_factor(ft, default=1)
                         else:
@@ -1048,11 +1026,10 @@ objects linked to all inlet states and the mixed state,
 
         if hasattr(self, "enthalpy_mixing_equations"):
             for t, c in self.enthalpy_mixing_equations.items():
+
                 def scale_gen():
                     for v in self.mixed_state[t].phase_list:
                         yield self.mixed_state[t].get_enthalpy_flow_terms(p)
 
-                s = iscale.min_scaling_factor(
-                    scale_gen(),
-                    default=1)
+                s = iscale.min_scaling_factor(scale_gen(), default=1)
                 iscale.constraint_scaling_transform(c, s, overwrite=False)

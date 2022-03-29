@@ -19,13 +19,11 @@ Authors: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import \
-    ConcreteModel, Block, Expression, value, Var, units as pyunits
+from pyomo.environ import ConcreteModel, Block, Expression, value, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_equivalent
 
-from idaes.models.properties.core.pure.electrolyte import \
-    relative_permittivity_constant
+from idaes.models.properties.core.pure.electrolyte import relative_permittivity_constant
 from idaes.core.util.misc import add_object_reference
 from idaes.core.base.property_meta import PropertyClassMetadata
 
@@ -38,8 +36,7 @@ def frame():
     m.params = Block()
 
     m.params.config = ConfigBlock(implicit=True)
-    m.params.config.parameter_data = {
-        "relative_permittivity_liq_comp": 101}
+    m.params.config.parameter_data = {"relative_permittivity_liq_comp": 101}
 
     m.meta_object = PropertyClassMetadata()
     m.meta_object.default_units["temperature"] = pyunits.K
@@ -50,6 +47,7 @@ def frame():
 
     def get_metadata(self):
         return m.meta_object
+
     m.get_metadata = types.MethodType(get_metadata, m)
     m.params.get_metadata = types.MethodType(get_metadata, m.params)
 
@@ -75,7 +73,8 @@ def test_relative_permitivity_constant(frame):
     assert value(frame.params.relative_permittivity_liq_comp) == 101
 
     expr = relative_permittivity_constant.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     assert value(expr) == 101
 
     frame.props[1].temperature.value = 600

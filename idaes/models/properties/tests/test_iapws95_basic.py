@@ -252,8 +252,8 @@ class TestHelm(object):
             h = data["H"][i] * pyunits.J / pyunits.mol
             s = data["S"][i] * pyunits.J / pyunits.mol / pyunits.K
             u = data["U"][i] * pyunits.J / pyunits.mol
-            rho = data["rho"][i] * pyunits.kg / pyunits.m ** 3
-            rho_mol = data["rho"][i] / self.mw * pyunits.mol / pyunits.m ** 3
+            rho = data["rho"][i] * pyunits.kg / pyunits.m**3
+            rho_mol = data["rho"][i] / self.mw * pyunits.mol / pyunits.m**3
             v = 1 / rho_mol
             cv = data["cv"][i] * pyunits.J / pyunits.mol / pyunits.K
             cp = data["cp"][i] * pyunits.J / pyunits.mol / pyunits.K
@@ -269,10 +269,9 @@ class TestHelm(object):
             if T < self.Tmin or T > self.Tmax:
                 continue
             if (
-                (value(abs(T - self.Tc) / self.Tc) < 0.05
-                and value(abs(p - self.Pc) / self.Pc) < 0.05)
-                or value(T) < 281
-            ):
+                value(abs(T - self.Tc) / self.Tc) < 0.05
+                and value(abs(p - self.Pc) / self.Pc) < 0.05
+            ) or value(T) < 281:
                 # some properties blow up or become very sensitive around the
                 # critical point, that will be broken out for special testing
                 # this test just tests that expressions work right, so we'll
@@ -341,32 +340,34 @@ class TestHelm(object):
 
             if x == 0:
                 assert value(te.cv_mol_liq(h=h, p=p, x=x)) == pytest.approx(
-                    value(cv), rel=tol*5
+                    value(cv), rel=tol * 5
                 )
             else:
                 assert value(te.cv_mol_vap(h=h, p=p, x=x)) == pytest.approx(
-                    value(cv), rel=tol*5
+                    value(cv), rel=tol * 5
                 )
 
-            if (value(abs(T - self.Tc) / self.Tc) > 0.10
-                and value(abs(p - self.Pc) / self.Pc) > 0.10):
+            if (
+                value(abs(T - self.Tc) / self.Tc) > 0.10
+                and value(abs(p - self.Pc) / self.Pc) > 0.10
+            ):
                 # for Cp need to back off critical point a bit more.
                 if x == 0:
                     assert value(te.cp_mol_liq(h=h, p=p, x=x)) == pytest.approx(
-                        value(cp), rel=tol*5
+                        value(cp), rel=tol * 5
                     )
                 else:
                     assert value(te.cp_mol_vap(h=h, p=p, x=x)) == pytest.approx(
-                        value(cp), rel=tol*5
+                        value(cp), rel=tol * 5
                     )
 
                 if x == 1:
                     # This one's tricky since entropy is fairly insensitive to
                     # pressure for liquids.  For now we'll just test vapor,
                     # although this does mostly work for liquids too.
-                    assert value(te.p(s=te.s(h=h, p=p), T=te.T(h=h, p=p))) == pytest.approx(
-                        value(p), rel=tol
-                    )
+                    assert value(
+                        te.p(s=te.s(h=h, p=p), T=te.T(h=h, p=p))
+                    ) == pytest.approx(value(p), rel=tol)
 
             # Commenting out the deriative test for now.  The derivatives are
             # tested in the CO2 tests and are the same for all Helmholtz EOSs

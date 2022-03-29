@@ -19,8 +19,7 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 
 from idaes.core import UnitModelBlockData
-from idaes.core.base.process_base import (declare_process_block_class,
-                                          ProcessBlockData)
+from idaes.core.base.process_base import declare_process_block_class, ProcessBlockData
 from idaes.core.util.misc import add_object_reference, StrEnum
 from idaes.core.util.exceptions import ConfigurationError
 
@@ -36,48 +35,55 @@ def register_idaes_currency_units():
     """
     Define conversion rates for US Dollars based on CE Index.
     """
-    if ("USD_CE500" in pyo.units._pint_registry and
-            "USD_CE394" in pyo.units._pint_registry):
+    if (
+        "USD_CE500" in pyo.units._pint_registry
+        and "USD_CE394" in pyo.units._pint_registry
+    ):
         # Assume that standard units have already been registered
         # Log a message and end
-        _log.debug("Standard base currency units (USD_CE500, USD_CE394) "
-                   "already appear in Pyomo unit registry. Assuming repreated "
-                   "call of register_idaes_currency_units.")
+        _log.debug(
+            "Standard base currency units (USD_CE500, USD_CE394) "
+            "already appear in Pyomo unit registry. Assuming repreated "
+            "call of register_idaes_currency_units."
+        )
     else:
-        pyo.units.load_definitions_from_strings([
-            "USD_CE500 = [currency]",
-            "USD_CE394 = 500/394.0 * USD_CE500",
-            "USD_1990 = 500/357.6 * USD_CE500",
-            "USD_1991 = 500/361.3 * USD_CE500",
-            "USD_1992 = 500/358.2 * USD_CE500",
-            "USD_1993 = 500/359.2 * USD_CE500",
-            "USD_1994 = 500/368.1 * USD_CE500",
-            "USD_1995 = 500/381.1 * USD_CE500",
-            "USD_1996 = 500/381.7 * USD_CE500",
-            "USD_1997 = 500/386.5 * USD_CE500",
-            "USD_1998 = 500/389.5 * USD_CE500",
-            "USD_1999 = 500/390.6 * USD_CE500",
-            "USD_2000 = 500/394.1 * USD_CE500",
-            "USD_2001 = 500/394.3 * USD_CE500",
-            "USD_2002 = 500/395.6 * USD_CE500",
-            "USD_2003 = 500/402.0 * USD_CE500",
-            "USD_2004 = 500/444.2 * USD_CE500",
-            "USD_2005 = 500/468.2 * USD_CE500",
-            "USD_2006 = 500/499.6 * USD_CE500",
-            "USD_2007 = 500/525.4 * USD_CE500",
-            "USD_2008 = 500/575.4 * USD_CE500",
-            "USD_2009 = 500/521.9 * USD_CE500",
-            "USD_2010 = 500/550.8 * USD_CE500",
-            "USD_2011 = 500/585.7 * USD_CE500",
-            "USD_2012 = 500/584.6 * USD_CE500",
-            "USD_2013 = 500/567.3 * USD_CE500",
-            "USD_2014 = 500/576.1 * USD_CE500",
-            "USD_2015 = 500/556.8 * USD_CE500",
-            "USD_2016 = 500/541.7 * USD_CE500",
-            "USD_2017 = 500/567.5 * USD_CE500",
-            "USD_2018 = 500/603.1 * USD_CE500",
-            "USD_2019 = 500/607.5 * USD_CE500",
-            "USD_2020 = 500/596.2 * USD_CE500"])
+        pyo.units.load_definitions_from_strings(
+            [
+                "USD_CE500 = [currency]",
+                "USD_CE394 = 500/394.0 * USD_CE500",
+                "USD_1990 = 500/357.6 * USD_CE500",
+                "USD_1991 = 500/361.3 * USD_CE500",
+                "USD_1992 = 500/358.2 * USD_CE500",
+                "USD_1993 = 500/359.2 * USD_CE500",
+                "USD_1994 = 500/368.1 * USD_CE500",
+                "USD_1995 = 500/381.1 * USD_CE500",
+                "USD_1996 = 500/381.7 * USD_CE500",
+                "USD_1997 = 500/386.5 * USD_CE500",
+                "USD_1998 = 500/389.5 * USD_CE500",
+                "USD_1999 = 500/390.6 * USD_CE500",
+                "USD_2000 = 500/394.1 * USD_CE500",
+                "USD_2001 = 500/394.3 * USD_CE500",
+                "USD_2002 = 500/395.6 * USD_CE500",
+                "USD_2003 = 500/402.0 * USD_CE500",
+                "USD_2004 = 500/444.2 * USD_CE500",
+                "USD_2005 = 500/468.2 * USD_CE500",
+                "USD_2006 = 500/499.6 * USD_CE500",
+                "USD_2007 = 500/525.4 * USD_CE500",
+                "USD_2008 = 500/575.4 * USD_CE500",
+                "USD_2009 = 500/521.9 * USD_CE500",
+                "USD_2010 = 500/550.8 * USD_CE500",
+                "USD_2011 = 500/585.7 * USD_CE500",
+                "USD_2012 = 500/584.6 * USD_CE500",
+                "USD_2013 = 500/567.3 * USD_CE500",
+                "USD_2014 = 500/576.1 * USD_CE500",
+                "USD_2015 = 500/556.8 * USD_CE500",
+                "USD_2016 = 500/541.7 * USD_CE500",
+                "USD_2017 = 500/567.5 * USD_CE500",
+                "USD_2018 = 500/603.1 * USD_CE500",
+                "USD_2019 = 500/607.5 * USD_CE500",
+                "USD_2020 = 500/596.2 * USD_CE500",
+            ]
+        )
 
 
 class DefaultCostingComponents(StrEnum):
@@ -87,22 +93,25 @@ class DefaultCostingComponents(StrEnum):
 
 
 def assert_flowsheet_costing_block(val):
-    '''Domain validator for fowhseet costing block attributes
+    """Domain validator for fowhseet costing block attributes
 
     Args:
         val : value to be checked
 
     Returns:
         ConfigurationError if val is not an instance of FlowsheetCostingBlock
-    '''
+    """
     if isinstance(val, FlowsheetCostingBlockData):
         return val
     else:
-        _log.error(f"Flowsheet costing block argument {val} should "
-                   "be an instance of a FlowsheetCostingBlock")
+        _log.error(
+            f"Flowsheet costing block argument {val} should "
+            "be an instance of a FlowsheetCostingBlock"
+        )
         raise ConfigurationError(
             f"Flowsheet costing block argument {val} should "
-            "be an instance of a FlowsheetCostingBlock")
+            "be an instance of a FlowsheetCostingBlock"
+        )
 
 
 @declare_process_block_class("FlowsheetCostingBlock")
@@ -119,6 +128,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
     definitions of standard currency conversions and material and utility
     costs.
     """
+
     # Map costing methods to unit model classes
     unit_mapping = {}
 
@@ -153,7 +163,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         if self.base_currency is None:
             raise ValueError(
                 f"{self.name} - costing package has not specified the base "
-                "currency units to use for costing.")
+                "currency units to use for costing."
+            )
 
         # Register pre-defined flow types
         for f, c in self.defined_flows.items():
@@ -169,7 +180,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         Dervied class must overload this method.
         """
         raise NotImplementedError(
-            "Derived class has not defined a build_global_params method.")
+            "Derived class has not defined a build_global_params method."
+        )
 
     def build_process_costs(self):
         """
@@ -185,7 +197,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         Dervied class must overload this method.
         """
         raise NotImplementedError(
-            "Derived class has not defined a build_process_costs method.")
+            "Derived class has not defined a build_process_costs method."
+        )
 
     def initialize_build(self):
         """
@@ -195,7 +208,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         Dervied class must overload this method.
         """
         raise NotImplementedError(
-            "Derived class has not defined an initialize_build method.")
+            "Derived class has not defined an initialize_build method."
+        )
 
     def cost_process(self):
         """
@@ -235,7 +249,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             raise ValueError(
                 f"{flow_type} is not a recognized flow type. Please check "
                 "your spelling and that the flow type has been registered with"
-                " the FlowsheetCostingBlock.")
+                " the FlowsheetCostingBlock."
+            )
 
         if type(flow_expr) in pyo.native_types:
             # this is a constant?!?
@@ -243,7 +258,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         elif flow_expr.is_indexed():
             raise TypeError(
                 f"{flow_expr.name} is an indexed component. Flow costing only "
-                "supports unindexed components.")
+                "supports unindexed components."
+            )
         elif not flow_expr.is_potentially_variable():
             # this is a constant?!?
             pass
@@ -255,14 +271,16 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                     "flow_expr is an expression with a lower bound of less "
                     "than zero. Costing requires that all flows have a lower "
                     "bound equal to or greater than zero to avoid negative "
-                    "costs.")
+                    "costs."
+                )
         else:
             # this should be a Var
             if flow_expr.lb is None or flow_expr.lb < 0:
                 _log.warning(
                     f"{flow_expr.name} has a lower bound of less than zero. "
                     "Costing requires that all flows have a lower bound "
-                    "equal to or greater than zero to avoid negative costs.")
+                    "equal to or greater than zero to avoid negative costs."
+                )
 
         self._registered_flows[flow_type].append(flow_expr)
 
@@ -297,7 +315,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
                 calculate_variable_from_constraint(
                     self.aggregate_flow_costs[f],
-                    self.aggregate_flow_costs_constraint[f])
+                    self.aggregate_flow_costs_constraint[f],
+                )
             except AttributeError:
                 self.aggregate_flow_costs[f].set_value(0)
 
@@ -322,8 +341,9 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         # Create a Var to hold the cost
         # Units will be different between flows, so have to use scalar Vars
-        fvar = pyo.Var(units=pyo.units.get_units(cost),
-                       doc=f"Cost parameter for {flow_type} flow")
+        fvar = pyo.Var(
+            units=pyo.units.get_units(cost), doc=f"Cost parameter for {flow_type} flow"
+        )
         self.add_component(f"{flow_type}_cost", fvar)
         fvar.fix(cost)
 
@@ -359,14 +379,12 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             for u in self._registered_unit_costing:
                 # Allow for units that might only have a subset of cost Vars
                 if hasattr(u, "capital_cost"):
-                    e += pyo.units.convert(u.capital_cost,
-                                           to_units=c_units)
+                    e += pyo.units.convert(u.capital_cost, to_units=c_units)
 
             return blk.aggregate_capital_cost == e
 
         # Aggregate unit operating costs
-        self.aggregate_fixed_operating_cost = pyo.Var(
-            units=c_units/t_units)
+        self.aggregate_fixed_operating_cost = pyo.Var(units=c_units / t_units)
 
         @self.Constraint(doc="Aggregation constraint for fixed O&M costs")
         def aggregate_fixed_operating_cost_constraint(blk):
@@ -374,13 +392,13 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             for u in self._registered_unit_costing:
                 # Allow for units that might only have a subset of cost Vars
                 if hasattr(u, "fixed_operating_cost"):
-                    e += pyo.units.convert(u.fixed_operating_cost,
-                                           to_units=c_units/t_units)
+                    e += pyo.units.convert(
+                        u.fixed_operating_cost, to_units=c_units / t_units
+                    )
 
             return blk.aggregate_fixed_operating_cost == e
 
-        self.aggregate_variable_operating_cost = pyo.Var(
-            units=c_units/t_units)
+        self.aggregate_variable_operating_cost = pyo.Var(units=c_units / t_units)
 
         @self.Constraint(doc="Aggregation constraint for variable O&M costs")
         def aggregate_variable_operating_cost_constraint(blk):
@@ -388,8 +406,9 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             for u in self._registered_unit_costing:
                 # Allow for units that might only have a subset of cost Vars
                 if hasattr(u, "variable_operating_cost"):
-                    e += pyo.units.convert(u.variable_operating_cost,
-                                           to_units=c_units/t_units)
+                    e += pyo.units.convert(
+                        u.variable_operating_cost, to_units=c_units / t_units
+                    )
 
             return blk.aggregate_variable_operating_cost == e
 
@@ -400,8 +419,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             if len(self._registered_flows[f]) > 0:
                 f1 = self._registered_flows[f][0]
                 funits = pyo.units.get_units(f1)
-                agg_var = pyo.Var(units=funits,
-                                  doc=f"Aggregate flow for {f}")
+                agg_var = pyo.Var(units=funits, doc=f"Aggregate flow for {f}")
                 self.add_component(f"aggregate_flow_{f}", agg_var)
 
                 def agg_flow_rule(blk):
@@ -413,24 +431,23 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
                 agg_const = pyo.Constraint(rule=agg_flow_rule)
 
-                self.add_component(f"aggregate_flow_{f}_constraint",
-                                   agg_const)
+                self.add_component(f"aggregate_flow_{f}_constraint", agg_const)
 
         # TODO : More complex cost functions
-        self.aggregate_flow_costs = pyo.Var(self.flow_types,
-                                            units=c_units/t_units)
+        self.aggregate_flow_costs = pyo.Var(self.flow_types, units=c_units / t_units)
 
-        @self.Constraint(self.flow_types,
-                         doc="Aggregation constraint for material flow costs")
+        @self.Constraint(
+            self.flow_types, doc="Aggregation constraint for material flow costs"
+        )
         def aggregate_flow_costs_constraint(blk, ftype):
             try:
                 agg_var = getattr(blk, f"aggregate_flow_{ftype}")
                 cost_var = getattr(blk, f"{ftype}_cost")
                 return blk.aggregate_flow_costs[ftype] == (
-                    pyo.units.convert(agg_var * cost_var,
-                                      to_units=c_units/t_units))
+                    pyo.units.convert(agg_var * cost_var, to_units=c_units / t_units)
+                )
             except AttributeError:
-                return blk.aggregate_flow_costs[ftype] == 0*c_units/t_units
+                return blk.aggregate_flow_costs[ftype] == 0 * c_units / t_units
 
     def _build_costing_methods_map(self):
         """
@@ -457,7 +474,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             f"Could not identify default costing method for {unit_model.name}."
             " This implies the unit model's class and parent classes do not "
             "exist in the default mapping provided by the costing package. "
-            "Please provide a specific costing method for this unit.")
+            "Please provide a specific costing method for this unit."
+        )
 
     # -------------------------------------------------------------------------
     def report(self):
@@ -486,18 +504,31 @@ class UnitModelCostingBlockData(ProcessBlockData):
     At this stage, the only purpose of this class it to provide a distinct
     type for type-checking.
     """
+
     CONFIG = ConfigBlock()
 
-    CONFIG.declare("flowsheet_costing_block", ConfigValue(
-        domain=assert_flowsheet_costing_block,
-        doc="Reference to assoicated FlowsheetCostingBlock to use."))
-    CONFIG.declare("costing_method", ConfigValue(
-        doc=("Costing method to use for unit (default from Costing Package "
-             "used if not provided).")))
-    CONFIG.declare("costing_method_arguments", ConfigValue(
-        default={},
-        domain=dict,
-        doc="Arguments to be passed to the costing method."))
+    CONFIG.declare(
+        "flowsheet_costing_block",
+        ConfigValue(
+            domain=assert_flowsheet_costing_block,
+            doc="Reference to assoicated FlowsheetCostingBlock to use.",
+        ),
+    )
+    CONFIG.declare(
+        "costing_method",
+        ConfigValue(
+            doc=(
+                "Costing method to use for unit (default from Costing Package "
+                "used if not provided)."
+            )
+        ),
+    )
+    CONFIG.declare(
+        "costing_method_arguments",
+        ConfigValue(
+            default={}, domain=dict, doc="Arguments to be passed to the costing method."
+        ),
+    )
 
     def build(self):
         super().build()
@@ -513,7 +544,8 @@ class UnitModelCostingBlockData(ProcessBlockData):
             raise TypeError(
                 f"{self.name} - parent object ({unit_model.name}) is not an "
                 f"instance of a UnitModelBlockData object. "
-                "UnitModelCostingBlocks can only be added to UnitModelBlocks.")
+                "UnitModelCostingBlocks can only be added to UnitModelBlocks."
+            )
 
         # Check to see if unit model already has costing
         for b in unit_model.component_objects(pyo.Block, descend_into=False):
@@ -522,7 +554,8 @@ class UnitModelCostingBlockData(ProcessBlockData):
                 raise RuntimeError(
                     f"Unit model {unit_model.name} already has a costing block"
                     f" registered: {b.name}. Each unit may only have a single "
-                    "UnitModelCostingBlock associated with it.")
+                    "UnitModelCostingBlock associated with it."
+                )
         # Add block to unit model initialization order
         unit_model._initialization_order.append(self)
 
@@ -551,12 +584,14 @@ class UnitModelCostingBlockData(ProcessBlockData):
                         f"{unit_model.name} {v} component must be a Var. "
                         "Please check the costing package you are using to "
                         "ensure that all costing components are declared as "
-                        "variables.")
+                        "variables."
+                    )
                 elif cvar.lb is None or cvar.lb < 0:
                     _log.warn(
                         f"{unit_model.name} {v} component has a lower bound "
                         "less than zero. Be aware that this may result in "
-                        "negative costs during optimization.")
+                        "negative costs during optimization."
+                    )
             except AttributeError:
                 pass
 

@@ -22,18 +22,21 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.product import Product
 
-from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
 from idaes.models.properties import iapws95
-from idaes.models.properties.examples.saponification_thermo import \
-    SaponificationParameterBlock
+from idaes.models.properties.examples.saponification_thermo import (
+    SaponificationParameterBlock,
+)
 
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              number_unused_variables)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     initialization_tester)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import get_solver
 
 
@@ -132,7 +135,7 @@ class TestBTX(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase": 'Liq'})
+        m.fs.properties = BTXParameterBlock(default={"valid_phase": "Liq"})
 
         m.fs.unit = Product(default={"property_package": m.fs.properties})
 
@@ -190,12 +193,15 @@ class TestBTX(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert (pytest.approx(5, abs=1e-3) ==
-                value(btx.fs.unit.properties[0].flow_mol_phase["Liq"]))
-        assert (pytest.approx(0.5, abs=1e-3) == value(
-            btx.fs.unit.properties[0].mole_frac_phase_comp["Liq", "benzene"]))
-        assert (pytest.approx(0.5, abs=1e-3) == value(
-            btx.fs.unit.properties[0].mole_frac_phase_comp["Liq", "toluene"]))
+        assert pytest.approx(5, abs=1e-3) == value(
+            btx.fs.unit.properties[0].flow_mol_phase["Liq"]
+        )
+        assert pytest.approx(0.5, abs=1e-3) == value(
+            btx.fs.unit.properties[0].mole_frac_phase_comp["Liq", "benzene"]
+        )
+        assert pytest.approx(0.5, abs=1e-3) == value(
+            btx.fs.unit.properties[0].mole_frac_phase_comp["Liq", "toluene"]
+        )
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -205,8 +211,7 @@ class TestBTX(object):
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):

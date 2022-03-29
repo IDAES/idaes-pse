@@ -42,21 +42,21 @@ def frame():
 
     m.params.config = ConfigBlock(implicit=True)
     m.params.config.parameter_data = {
-        "dens_mol_liq_comp_coeff": (55.2046332734557,
-                                    pyunits.kmol/pyunits.m**3),
-        "cp_mol_liq_comp_coeff": (75704.2953333398,
-                                  pyunits.J/pyunits.kmol/pyunits.K),
-        "enth_mol_form_liq_comp_ref": (-285.83, pyunits.kJ/pyunits.mol),
-        "entr_mol_form_liq_comp_ref": (69.95, pyunits.J/pyunits.K/pyunits.mol),
-        "cp_mol_ig_comp_coeff": (29114.850, pyunits.J/pyunits.kmol/pyunits.K),
-        "enth_mol_form_ig_comp_ref": (0.0, pyunits.kJ/pyunits.mol),
-        "entr_mol_form_ig_comp_ref": (0.0, pyunits.J/pyunits.K/pyunits.mol),
-        "dens_mol_sol_comp_coeff": (100,
-                                    pyunits.kmol/pyunits.m**3),
-        "cp_mol_sol_comp_coeff": (100000,
-                                  pyunits.J/pyunits.kmol/pyunits.K),
-        "enth_mol_form_sol_comp_ref": (-300, pyunits.kJ/pyunits.mol),
-        "entr_mol_form_sol_comp_ref": (50, pyunits.J/pyunits.K/pyunits.mol)}
+        "dens_mol_liq_comp_coeff": (55.2046332734557, pyunits.kmol / pyunits.m**3),
+        "cp_mol_liq_comp_coeff": (
+            75704.2953333398,
+            pyunits.J / pyunits.kmol / pyunits.K,
+        ),
+        "enth_mol_form_liq_comp_ref": (-285.83, pyunits.kJ / pyunits.mol),
+        "entr_mol_form_liq_comp_ref": (69.95, pyunits.J / pyunits.K / pyunits.mol),
+        "cp_mol_ig_comp_coeff": (29114.850, pyunits.J / pyunits.kmol / pyunits.K),
+        "enth_mol_form_ig_comp_ref": (0.0, pyunits.kJ / pyunits.mol),
+        "entr_mol_form_ig_comp_ref": (0.0, pyunits.J / pyunits.K / pyunits.mol),
+        "dens_mol_sol_comp_coeff": (100, pyunits.kmol / pyunits.m**3),
+        "cp_mol_sol_comp_coeff": (100000, pyunits.J / pyunits.kmol / pyunits.K),
+        "enth_mol_form_sol_comp_ref": (-300, pyunits.kJ / pyunits.mol),
+        "entr_mol_form_sol_comp_ref": (50, pyunits.J / pyunits.K / pyunits.mol),
+    }
     m.params.config.include_enthalpy_of_formation = True
 
     # Also need to dummy configblock on the model for the test
@@ -94,16 +94,18 @@ def test_cp_mol_liq_comp(frame):
 
     assert isinstance(frame.params.cp_mol_liq_comp_coeff, Var)
     assert value(frame.params.cp_mol_liq_comp_coeff) == pytest.approx(
-        75704.3/1000, rel=1e-5)
+        75704.3 / 1000, rel=1e-5
+    )
 
     expr = Constant.cp_mol_liq_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(75704.3/1000, rel=1e-5)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == pytest.approx(75704.3 / 1000, rel=1e-5)
 
     frame.props[1].temperature.value = 400
-    assert value(expr) == pytest.approx(75704.3/1000, rel=1e-5)
+    assert value(expr) == pytest.approx(75704.3 / 1000, rel=1e-5)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol / pyunits.K)
 
 
 @pytest.mark.unit
@@ -115,9 +117,9 @@ def test_enth_mol_liq_comp(frame):
     assert value(frame.params.enth_mol_form_liq_comp_ref) == -285.83e3
 
     expr = Constant.enth_mol_liq_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == value(
-            frame.params.enth_mol_form_liq_comp_ref)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == value(frame.params.enth_mol_form_liq_comp_ref)
 
     frame.props[1].temperature.value = 301
     assert value(expr) == pytest.approx(-285754.29570466664, rel=1e-3)
@@ -125,7 +127,7 @@ def test_enth_mol_liq_comp(frame):
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(-278259.570466, rel=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol)
 
 
 @pytest.mark.unit
@@ -138,13 +140,14 @@ def test_enth_mol_liq_comp_no_formation(frame):
     assert not hasattr(frame.params, "enth_mol_form_liq_comp_ref")
 
     expr = Constant.enth_mol_liq_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     assert value(expr) == 0
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(7570.42, rel=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol)
 
 
 @pytest.mark.unit
@@ -155,14 +158,14 @@ def test_entr_mol_liq_comp(frame):
     assert value(frame.params.entr_mol_form_liq_comp_ref) == 69.95
 
     expr = Constant.entr_mol_liq_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == value(
-            frame.params.entr_mol_form_liq_comp_ref)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == value(frame.params.entr_mol_form_liq_comp_ref)
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(91.72, rel=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol / pyunits.K)
 
 
 @pytest.mark.unit
@@ -171,16 +174,18 @@ def test_dens_mol_liq_comp(frame):
 
     assert isinstance(frame.params.dens_mol_liq_comp_coeff, Var)
     assert value(frame.params.dens_mol_liq_comp_coeff) == pytest.approx(
-        55.204e3, rel=1e-4)
+        55.204e3, rel=1e-4
+    )
 
     expr = Constant.dens_mol_liq_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     assert value(expr) == pytest.approx(55.204e3, rel=1e-4)
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(55.204e3, rel=1e-4)
 
-    assert_units_equivalent(expr, pyunits.mol/pyunits.m**3)
+    assert_units_equivalent(expr, pyunits.mol / pyunits.m**3)
 
 
 @pytest.mark.unit
@@ -189,16 +194,18 @@ def test_cp_mol_ig_comp(frame):
 
     assert isinstance(frame.params.cp_mol_ig_comp_coeff, Var)
     assert value(frame.params.cp_mol_ig_comp_coeff) == pytest.approx(
-        29114.850/1000, rel=1e-5)
+        29114.850 / 1000, rel=1e-5
+    )
 
     expr = Constant.cp_mol_ig_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(29114.850/1000, rel=1e-5)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == pytest.approx(29114.850 / 1000, rel=1e-5)
 
     frame.props[1].temperature.value = 400
-    assert value(expr) == pytest.approx(29114.850/1000, rel=1e-5)
+    assert value(expr) == pytest.approx(29114.850 / 1000, rel=1e-5)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol / pyunits.K)
 
 
 @pytest.mark.unit
@@ -210,9 +217,9 @@ def test_enth_mol_ig_comp(frame):
     assert value(frame.params.enth_mol_form_ig_comp_ref) == -0.0
 
     expr = Constant.enth_mol_ig_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == value(
-            frame.params.enth_mol_form_ig_comp_ref)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == value(frame.params.enth_mol_form_ig_comp_ref)
 
     frame.props[1].temperature.value = 301
     assert value(expr) == pytest.approx(29.114850, rel=1e-3)
@@ -220,7 +227,7 @@ def test_enth_mol_ig_comp(frame):
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(2911.485, rel=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol)
 
 
 @pytest.mark.unit
@@ -234,13 +241,14 @@ def test_enth_mol_ig_comp_no_formation(frame):
     assert not hasattr(frame.params, "enth_mol_form_ig_comp_ref")
 
     expr = Constant.enth_mol_ig_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     assert value(expr) == 0
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(2911.485, rel=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol)
 
 
 @pytest.mark.unit
@@ -251,14 +259,14 @@ def test_entr_mol_ig_comp(frame):
     assert value(frame.params.entr_mol_form_ig_comp_ref) == 0.0
 
     expr = Constant.entr_mol_ig_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == value(
-            frame.params.entr_mol_form_ig_comp_ref)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == value(frame.params.entr_mol_form_ig_comp_ref)
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(8.37582, rel=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol / pyunits.K)
 
 
 @pytest.mark.unit
@@ -267,16 +275,18 @@ def test_cp_mol_sol_comp(frame):
 
     assert isinstance(frame.params.cp_mol_sol_comp_coeff, Var)
     assert value(frame.params.cp_mol_sol_comp_coeff) == pytest.approx(
-        100000/1000, rel=1e-5)
+        100000 / 1000, rel=1e-5
+    )
 
     expr = Constant.cp_mol_sol_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(100000/1000, rel=1e-5)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == pytest.approx(100000 / 1000, rel=1e-5)
 
     frame.props[1].temperature.value = 400
-    assert value(expr) == pytest.approx(100000/1000, rel=1e-5)
+    assert value(expr) == pytest.approx(100000 / 1000, rel=1e-5)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol / pyunits.K)
 
 
 @pytest.mark.unit
@@ -288,9 +298,9 @@ def test_enth_mol_sol_comp(frame):
     assert value(frame.params.enth_mol_form_sol_comp_ref) == -300e3
 
     expr = Constant.enth_mol_sol_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == value(
-            frame.params.enth_mol_form_sol_comp_ref)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == value(frame.params.enth_mol_form_sol_comp_ref)
 
     frame.props[1].temperature.value = 301
     assert value(expr) == pytest.approx(-299900.0, rel=1e-3)
@@ -298,7 +308,7 @@ def test_enth_mol_sol_comp(frame):
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(-290000.0, rel=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol)
 
 
 @pytest.mark.unit
@@ -311,13 +321,14 @@ def test_enth_mol_sol_comp_no_formation(frame):
     assert not hasattr(frame.params, "enth_mol_form_sol_comp_ref")
 
     expr = Constant.enth_mol_sol_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     assert value(expr) == 0
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(10000, rel=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol)
 
 
 @pytest.mark.unit
@@ -328,14 +339,14 @@ def test_entr_mol_sol_comp(frame):
     assert value(frame.params.entr_mol_form_sol_comp_ref) == 50
 
     expr = Constant.entr_mol_sol_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == value(
-            frame.params.entr_mol_form_sol_comp_ref)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == value(frame.params.entr_mol_form_sol_comp_ref)
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(78.77, rel=1e-3)
 
-    assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol / pyunits.K)
 
 
 @pytest.mark.unit
@@ -343,14 +354,14 @@ def test_dens_mol_sol_comp(frame):
     Constant.dens_mol_sol_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.dens_mol_sol_comp_coeff, Var)
-    assert value(frame.params.dens_mol_sol_comp_coeff) == pytest.approx(
-        100e3, rel=1e-4)
+    assert value(frame.params.dens_mol_sol_comp_coeff) == pytest.approx(100e3, rel=1e-4)
 
     expr = Constant.dens_mol_sol_comp.return_expression(
-        frame.props[1], frame.params, frame.props[1].temperature)
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     assert value(expr) == pytest.approx(100e3, rel=1e-4)
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(100e3, rel=1e-4)
 
-    assert_units_equivalent(expr, pyunits.mol/pyunits.m**3)
+    assert_units_equivalent(expr, pyunits.mol / pyunits.m**3)

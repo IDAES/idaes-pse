@@ -23,17 +23,20 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.translator import Translator
 
-from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
-from idaes.models.properties.examples.saponification_thermo import \
-    SaponificationParameterBlock
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
+from idaes.models.properties.examples.saponification_thermo import (
+    SaponificationParameterBlock,
+)
 
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              number_unused_variables)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     initialization_tester)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import get_solver
 
 
@@ -50,9 +53,12 @@ def test_config():
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = Translator(default={
+    m.fs.unit = Translator(
+        default={
             "inlet_property_package": m.fs.properties,
-            "outlet_property_package": m.fs.properties})
+            "outlet_property_package": m.fs.properties,
+        }
+    )
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 8
@@ -76,8 +82,11 @@ class TestTranslate(object):
         m.fs.properties2 = BTXParameterBlock()
 
         m.fs.unit = Translator(
-                default={"inlet_property_package": m.fs.properties1,
-                         "outlet_property_package": m.fs.properties2})
+            default={
+                "inlet_property_package": m.fs.properties1,
+                "outlet_property_package": m.fs.properties2,
+            }
+        )
 
         m.fs.unit.inlet.flow_vol.fix(1.0e-03)
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)

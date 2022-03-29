@@ -17,6 +17,7 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'Reboiler',
-    'idaes.models_extra.column_models.reboiler.Reboiler',
-    version='2.0.0.alpha0')
+    "Reboiler",
+    "idaes.models_extra.column_models.reboiler.Reboiler",
+    version="2.0.0.alpha0",
+)

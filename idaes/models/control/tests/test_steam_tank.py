@@ -49,7 +49,7 @@ def _valve_pressure_flow_cb(b):
     b.Cv = pyo.Var(
         initialize=0.1,
         doc="Valve flow coefficent",
-        units=umeta("amount")/umeta("time")/umeta("pressure")
+        units=umeta("amount") / umeta("time") / umeta("pressure"),
     )
     b.Cv.fix()
 
@@ -63,7 +63,7 @@ def _valve_pressure_flow_cb(b):
         F = b2.control_volume.properties_in[t].flow_mol
         Cv = b2.Cv
         fun = b2.valve_function[t]
-        return F ** 2 == Cv ** 2 * (Pi ** 2 - Po ** 2) * fun ** 2
+        return F**2 == Cv**2 * (Pi**2 - Po**2) * fun**2
 
 
 def _add_inlet_pressure_step(m, time=1, value=6.0e5):
@@ -89,9 +89,9 @@ def create_model(
     nfe=5,
     calc_integ=True,
     form=PIDForm.standard,
-    tee=False
+    tee=False,
 ):
-    """ Create a test model and solver
+    """Create a test model and solver
 
     Args:
         steady_state (bool): If True, create a steady state model, otherwise
@@ -114,8 +114,7 @@ def create_model(
         fs_cfg = {"dynamic": False}
         model_name = "Steam Tank, Steady State"
     else:
-        fs_cfg = {
-            "dynamic": True, "time_set": time_set, "time_units": time_units}
+        fs_cfg = {"dynamic": True, "time_set": time_set, "time_units": time_units}
         model_name = "Steam Tank, Dynamic"
 
     if time_set is None:
@@ -125,24 +124,34 @@ def create_model(
     m.fs = FlowsheetBlock(default=fs_cfg)
     # Create a property parameter block
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG})
+        default={"phase_presentation": iapws95.PhaseType.LG}
+    )
     # Create the valve and tank models
-    m.fs.valve_1 = Valve(default={
-        "dynamic": False,
-        "has_holdup": False,
-        "pressure_flow_callback": _valve_pressure_flow_cb,
-        "material_balance_type": MaterialBalanceType.componentTotal,
-        "property_package": m.fs.prop_water})
-    m.fs.tank = Heater(default={
-        "has_holdup": True,
-        "material_balance_type": MaterialBalanceType.componentTotal,
-        "property_package": m.fs.prop_water})
-    m.fs.valve_2 = Valve(default={
-        "dynamic": False,
-        "has_holdup": False,
-        "pressure_flow_callback": _valve_pressure_flow_cb,
-        "material_balance_type": MaterialBalanceType.componentTotal,
-        "property_package": m.fs.prop_water})
+    m.fs.valve_1 = Valve(
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "pressure_flow_callback": _valve_pressure_flow_cb,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "property_package": m.fs.prop_water,
+        }
+    )
+    m.fs.tank = Heater(
+        default={
+            "has_holdup": True,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "property_package": m.fs.prop_water,
+        }
+    )
+    m.fs.valve_2 = Valve(
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "pressure_flow_callback": _valve_pressure_flow_cb,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "property_package": m.fs.prop_water,
+        }
+    )
 
     # Connect the models
     m.fs.v1_to_t = Arc(source=m.fs.valve_1.outlet, destination=m.fs.tank.inlet)
@@ -154,31 +163,38 @@ def create_model(
     # volumetric phase fraction hence the densities.
     @m.fs.tank.Constraint(m.fs.time)
     def vol_frac_vap(b, t):
-        return (b.control_volume.properties_out[t].phase_frac["Vap"] *
-                b.control_volume.properties_out[t].dens_mol /
-                b.control_volume.properties_out[t].dens_mol_phase["Vap"]) == (
-                    b.control_volume.phase_fraction[t, "Vap"])
+        return (
+            b.control_volume.properties_out[t].phase_frac["Vap"]
+            * b.control_volume.properties_out[t].dens_mol
+            / b.control_volume.properties_out[t].dens_mol_phase["Vap"]
+        ) == (b.control_volume.phase_fraction[t, "Vap"])
 
     # Add the stream constraints and do the DAE transformation
-    pyo.TransformationFactory('network.expand_arcs').apply_to(m.fs)
+    pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
     if not steady_state:
-        pyo.TransformationFactory('dae.finite_difference').apply_to(
-            m.fs, nfe=nfe, wrt=m.fs.time, scheme='BACKWARD')
+        pyo.TransformationFactory("dae.finite_difference").apply_to(
+            m.fs, nfe=nfe, wrt=m.fs.time, scheme="BACKWARD"
+        )
 
     # Fix the derivative variables to zero at time 0 (steady state assumption)
     m.fs.fix_initial_conditions()
 
     # A tank pressure reference that's directly time-indexed
     m.fs.tank_pressure = pyo.Reference(
-        m.fs.tank.control_volume.properties_out[:].pressure)
+        m.fs.tank.control_volume.properties_out[:].pressure
+    )
 
     # Add a controller
-    m.fs.ctrl = PIDBlock(default={"pv": m.fs.tank_pressure,
-                                  "output": m.fs.valve_1.valve_opening,
-                                  "upper": 1.0,
-                                  "lower": 0.0,
-                                  "calculate_initial_integral": calc_integ,
-                                  "pid_form": form})
+    m.fs.ctrl = PIDBlock(
+        default={
+            "pv": m.fs.tank_pressure,
+            "output": m.fs.valve_1.valve_opening,
+            "upper": 1.0,
+            "lower": 0.0,
+            "calculate_initial_integral": calc_integ,
+            "pid_form": form,
+        }
+    )
     m.fs.ctrl.deactivate()  # Don't want controller turned on by default
 
     # Fix the input variables
@@ -197,7 +213,7 @@ def create_model(
     m.fs.ctrl.setpoint.fix(3e5)
 
     # Initialize the model
-    solver = get_solver(options={"max_iter":50})
+    solver = get_solver(options={"max_iter": 50})
 
     for t in m.fs.time:
         m.fs.valve_1.inlet.flow_mol[t] = 100  # initial guess on flow
@@ -237,12 +253,7 @@ def tpid(form, tee=False):
 
     # Next create a model for the 0 to 5 sec time period
     m_dynamic, solver = create_model(
-        steady_state=False,
-        time_set=[0, 5],
-        nfe=10,
-        calc_integ=True,
-        form=form,
-        tee=tee
+        steady_state=False, time_set=[0, 5], nfe=10, calc_integ=True, form=form, tee=tee
     )
     # Turn on control and solve since the setpoint is different than the
     # steady-state solution, stuff happens, also pressure step at t=5
@@ -267,20 +278,23 @@ def tpid(form, tee=False):
         form=form,
     )
 
-    m_dynamic2.fs.valve_1.valve_opening.fix(
-        m_dynamic.fs.valve_1.valve_opening[5].value)
+    m_dynamic2.fs.valve_1.valve_opening.fix(m_dynamic.fs.valve_1.valve_opening[5].value)
     m_dynamic2.fs.valve_1.inlet.enth_mol.fix(
-        m_dynamic.fs.valve_1.inlet.enth_mol[5].value)
+        m_dynamic.fs.valve_1.inlet.enth_mol[5].value
+    )
     m_dynamic2.fs.valve_1.inlet.pressure.fix(
-        m_dynamic.fs.valve_1.inlet.pressure[5].value)
+        m_dynamic.fs.valve_1.inlet.pressure[5].value
+    )
     for i in m_dynamic2.fs.tank.control_volume.material_accumulation:
         if i[0] == 5:
-            m_dynamic2.fs.tank.control_volume.material_accumulation[i].value =\
-                m_dynamic.fs.tank.control_volume.material_accumulation[i].value
+            m_dynamic2.fs.tank.control_volume.material_accumulation[
+                i
+            ].value = m_dynamic.fs.tank.control_volume.material_accumulation[i].value
     for i in m_dynamic2.fs.tank.control_volume.energy_accumulation:
         if i[0] == 5:
-            m_dynamic2.fs.tank.control_volume.energy_accumulation[i].value =\
-                m_dynamic.fs.tank.control_volume.energy_accumulation[i].value
+            m_dynamic2.fs.tank.control_volume.energy_accumulation[
+                i
+            ].value = m_dynamic.fs.tank.control_volume.energy_accumulation[i].value
     m_dynamic2.fs.ctrl.err_d0.fix(pyo.value(m_dynamic.fs.ctrl.err_d[5]))
     m_dynamic2.fs.ctrl.err_i0.fix(pyo.value(m_dynamic.fs.ctrl.err_i_end))
 
@@ -299,17 +313,20 @@ def tpid(form, tee=False):
     # because I used a low nfe in an attempt to speed it up
     t = m_dynamic.fs.time.get_lower_element_boundary(4.45)
     assert s1_valve == pytest.approx(
-        pyo.value(m_dynamic.fs.valve_1.valve_opening[t]), abs=5e-3)
+        pyo.value(m_dynamic.fs.valve_1.valve_opening[t]), abs=5e-3
+    )
 
     # The second should hit steady state pretty quick if the two models
     # line up smoothly.
     t = m_dynamic2.fs.time.get_lower_element_boundary(7)
     assert s2_valve == pytest.approx(
-        pyo.value(m_dynamic2.fs.valve_1.valve_opening[t]), abs=5e-3)
+        pyo.value(m_dynamic2.fs.valve_1.valve_opening[t]), abs=5e-3
+    )
 
     stitch_time = stitch_dynamic(m_dynamic.fs.time, m_dynamic2.fs.time)
-    stitch_valve = stitch_dynamic(m_dynamic.fs.valve_1.valve_opening,
-                                  m_dynamic2.fs.valve_1.valve_opening)
+    stitch_valve = stitch_dynamic(
+        m_dynamic.fs.valve_1.valve_opening, m_dynamic2.fs.valve_1.valve_opening
+    )
 
     # test the stitch function used to plot time dependent variables across
     # the two models
@@ -323,7 +340,6 @@ def tpid(form, tee=False):
     return m_dynamic, m_dynamic2, solver
 
 
-
 @pytest.mark.integration
 def test_pid_velocity():
     """This test is pretty course-grained, but it should cover everything"""
@@ -335,5 +351,6 @@ def test_pid_standard():
     """This test is pretty course-grained, but it should cover everything"""
     tpid(PIDForm.standard)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     m, m2, solver = tpid(PIDForm.velocity, tee=True)

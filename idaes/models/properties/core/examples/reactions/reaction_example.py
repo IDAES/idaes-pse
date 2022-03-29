@@ -25,18 +25,12 @@ from idaes.core import LiquidPhase, Component
 from idaes.models.properties.core.state_definitions import FcTP
 from idaes.models.properties.core.eos.ideal import Ideal
 
-from idaes.models.properties.core.generic.utility import (
-        ConcentrationForm)
-from idaes.models.properties.core.reactions.dh_rxn import \
-    constant_dh_rxn
-from idaes.models.properties.core.reactions.rate_constant import \
-    arrhenius
-from idaes.models.properties.core.reactions.rate_forms import \
-    power_law_rate
-from idaes.models.properties.core.reactions.equilibrium_constant import \
-    van_t_hoff
-from idaes.models.properties.core.reactions.equilibrium_forms import \
-    power_law_equil
+from idaes.models.properties.core.generic.utility import ConcentrationForm
+from idaes.models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.core.reactions.rate_constant import arrhenius
+from idaes.models.properties.core.reactions.rate_forms import power_law_rate
+from idaes.models.properties.core.reactions.equilibrium_constant import van_t_hoff
+from idaes.models.properties.core.reactions.equilibrium_forms import power_law_equil
 
 
 # First, create a thermophsyical property definition that will be used
@@ -47,94 +41,118 @@ import idaes.models.properties.core.pure.Perrys as Perrys
 # and phases, but in practice users would also need to define some properties
 thermo_configuration = {
     "components": {
-        'A': {"type": Component,
-              "enth_mol_liq_comp": Perrys,
-              "parameter_data": {
-                  "cp_mol_liq_comp_coeff": {
-                      '1': (1E2, pyunits.J/pyunits.kmol/pyunits.K),
-                      '2': (-2E-1, pyunits.J/pyunits.kmol/pyunits.K**2),
-                      '3': (6.5E-4, pyunits.J/pyunits.kmol/pyunits.K**3),
-                      '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
-                      '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
-                  "enth_mol_form_liq_comp_ref": (
-                      5e4, pyunits.J/pyunits.mol)}},
-        'B': {"type": Component,
-              "enth_mol_liq_comp": Perrys,
-              "parameter_data": {
-                  "cp_mol_liq_comp_coeff": {
-                      '1': (1E2, pyunits.J/pyunits.kmol/pyunits.K),
-                      '2': (-2E-1, pyunits.J/pyunits.kmol/pyunits.K**2),
-                      '3': (6.5E-4, pyunits.J/pyunits.kmol/pyunits.K**3),
-                      '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
-                      '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
-                  "enth_mol_form_liq_comp_ref": (
-                      5e4, pyunits.J/pyunits.mol)}},
-        'C': {"type": Component,
-              "enth_mol_liq_comp": Perrys,
-              "parameter_data": {
-                  "cp_mol_liq_comp_coeff": {
-                      '1': (1E2, pyunits.J/pyunits.kmol/pyunits.K),
-                      '2': (-2E-1, pyunits.J/pyunits.kmol/pyunits.K**2),
-                      '3': (6.5E-4, pyunits.J/pyunits.kmol/pyunits.K**3),
-                      '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
-                      '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
-                  "enth_mol_form_liq_comp_ref": (
-                      5e4, pyunits.J/pyunits.mol)}},
-        'D': {"type": Component,
-              "enth_mol_liq_comp": Perrys,
-              "parameter_data": {
-                  "cp_mol_liq_comp_coeff": {
-                      '1': (1E2, pyunits.J/pyunits.kmol/pyunits.K),
-                      '2': (-2E-1, pyunits.J/pyunits.kmol/pyunits.K**2),
-                      '3': (6.5E-4, pyunits.J/pyunits.kmol/pyunits.K**3),
-                      '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
-                      '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
-                  "enth_mol_form_liq_comp_ref": (
-                      5e4, pyunits.J/pyunits.mol)}}},
-    "phases":  {'Liq': {"type": LiquidPhase,
-                        "equation_of_state": Ideal}},
+        "A": {
+            "type": Component,
+            "enth_mol_liq_comp": Perrys,
+            "parameter_data": {
+                "cp_mol_liq_comp_coeff": {
+                    "1": (1e2, pyunits.J / pyunits.kmol / pyunits.K),
+                    "2": (-2e-1, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (6.5e-4, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
+                },
+                "enth_mol_form_liq_comp_ref": (5e4, pyunits.J / pyunits.mol),
+            },
+        },
+        "B": {
+            "type": Component,
+            "enth_mol_liq_comp": Perrys,
+            "parameter_data": {
+                "cp_mol_liq_comp_coeff": {
+                    "1": (1e2, pyunits.J / pyunits.kmol / pyunits.K),
+                    "2": (-2e-1, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (6.5e-4, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
+                },
+                "enth_mol_form_liq_comp_ref": (5e4, pyunits.J / pyunits.mol),
+            },
+        },
+        "C": {
+            "type": Component,
+            "enth_mol_liq_comp": Perrys,
+            "parameter_data": {
+                "cp_mol_liq_comp_coeff": {
+                    "1": (1e2, pyunits.J / pyunits.kmol / pyunits.K),
+                    "2": (-2e-1, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (6.5e-4, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
+                },
+                "enth_mol_form_liq_comp_ref": (5e4, pyunits.J / pyunits.mol),
+            },
+        },
+        "D": {
+            "type": Component,
+            "enth_mol_liq_comp": Perrys,
+            "parameter_data": {
+                "cp_mol_liq_comp_coeff": {
+                    "1": (1e2, pyunits.J / pyunits.kmol / pyunits.K),
+                    "2": (-2e-1, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (6.5e-4, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
+                },
+                "enth_mol_form_liq_comp_ref": (5e4, pyunits.J / pyunits.mol),
+            },
+        },
+    },
+    "phases": {"Liq": {"type": LiquidPhase, "equation_of_state": Ideal}},
     "state_definition": FcTP,
-    "state_bounds": {"flow_mol_comp": (0, 500, 1000),
-                     "temperature": (273.15, 300, 450),
-                     "pressure": (5e4, 1e5, 1e6)},
+    "state_bounds": {
+        "flow_mol_comp": (0, 500, 1000),
+        "temperature": (273.15, 300, 450),
+        "pressure": (5e4, 1e5, 1e6),
+    },
     "pressure_ref": 1e5,
     "temperature_ref": 300,
-    "base_units": {"time": pyunits.s,
-                   "length": pyunits.m,
-                   "mass": pyunits.kg,
-                   "amount": pyunits.mol,
-                   "temperature": pyunits.K}}
+    "base_units": {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.kg,
+        "amount": pyunits.mol,
+        "temperature": pyunits.K,
+    },
+}
 
 
 # Next, create the reaction property definition which describes the system on
 # reactions to be modeled.
 rxn_configuration = {
-    "base_units": {"time": pyunits.s,
-                   "length": pyunits.m,
-                   "mass": pyunits.kg,
-                   "amount": pyunits.mol,
-                   "temperature": pyunits.K},
+    "base_units": {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.kg,
+        "amount": pyunits.mol,
+        "temperature": pyunits.K,
+    },
     "rate_reactions": {
-        "R1": {"stoichiometry": {("Liq", "A"): -1,
-                                 ("Liq", "B"): -1,
-                                 ("Liq", "C"): 2},
-               "heat_of_reaction": constant_dh_rxn,
-               "rate_constant": arrhenius,
-               "rate_form": power_law_rate,
-               "concentration_form": ConcentrationForm.moleFraction,
-               "parameter_data": {
-                   "dh_rxn_ref": (-10000, pyunits.J/pyunits.mol),
-                   "arrhenius_const": (1, pyunits.mol/pyunits.m**3/pyunits.s),
-                   "energy_activation": (1000, pyunits.J/pyunits.mol)}}},
+        "R1": {
+            "stoichiometry": {("Liq", "A"): -1, ("Liq", "B"): -1, ("Liq", "C"): 2},
+            "heat_of_reaction": constant_dh_rxn,
+            "rate_constant": arrhenius,
+            "rate_form": power_law_rate,
+            "concentration_form": ConcentrationForm.moleFraction,
+            "parameter_data": {
+                "dh_rxn_ref": (-10000, pyunits.J / pyunits.mol),
+                "arrhenius_const": (1, pyunits.mol / pyunits.m**3 / pyunits.s),
+                "energy_activation": (1000, pyunits.J / pyunits.mol),
+            },
+        }
+    },
     "equilibrium_reactions": {
-        "R2": {"stoichiometry": {("Liq", "B"): -1,
-                                 ("Liq", "C"): -1,
-                                 ("Liq", "D"): 1},
-               "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": van_t_hoff,
-               "equilibrium_form": power_law_equil,
-               "concentration_form": ConcentrationForm.moleFraction,
-               "parameter_data": {
-                   "dh_rxn_ref": (-20000, pyunits.J/pyunits.mol),
-                   "k_eq_ref": (100, None),
-                   "T_eq_ref": (350, pyunits.K)}}}}
+        "R2": {
+            "stoichiometry": {("Liq", "B"): -1, ("Liq", "C"): -1, ("Liq", "D"): 1},
+            "heat_of_reaction": constant_dh_rxn,
+            "equilibrium_constant": van_t_hoff,
+            "equilibrium_form": power_law_equil,
+            "concentration_form": ConcentrationForm.moleFraction,
+            "parameter_data": {
+                "dh_rxn_ref": (-20000, pyunits.J / pyunits.mol),
+                "k_eq_ref": (100, None),
+                "T_eq_ref": (350, pyunits.K),
+            },
+        }
+    },
+}

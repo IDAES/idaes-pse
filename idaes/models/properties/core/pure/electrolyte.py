@@ -21,13 +21,12 @@ from idaes.core.util.misc import set_param_from_config
 # -----------------------------------------------------------------------------
 # Method for constant relative permittivity
 # RElative permittivity was referred to as the dielectric constant in the past
-class relative_permittivity_constant():
-
+class relative_permittivity_constant:
     @staticmethod
     def build_parameters(cobj):
         cobj.relative_permittivity_liq_comp = Var(
-            doc="Relative permittivity",
-            units=pyunits.dimensionless)
+            doc="Relative permittivity", units=pyunits.dimensionless
+        )
         set_param_from_config(cobj, param="relative_permittivity_liq_comp")
 
     @staticmethod

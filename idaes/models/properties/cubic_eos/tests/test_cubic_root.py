@@ -17,18 +17,20 @@ import pytest
 import pyomo.environ as pyo
 import idaes
 
+
 def cubic_function(z, b, c, d):
-    return z**3 + b*z**2 + c*z + d
+    return z**3 + b * z**2 + c * z + d
+
 
 def derivs(z, b, c, d):
     # Use the tested derivative formulas to make sure the external function
     # keeps returning the right answers. These formulas were confirmed and
     # documented in a jupyter notebook.
-    g = [None]*3
-    h = [None]*6
-    g[0] = 1.0/(-1 + c/z**2 + 2*d/z**3)
-    g[1] = 1.0/(-2*z - b + d/z**2)
-    g[2] = 1.0/(-3*z**2 - 2*b*z - c)
+    g = [None] * 3
+    h = [None] * 6
+    g[0] = 1.0 / (-1 + c / z**2 + 2 * d / z**3)
+    g[1] = 1.0 / (-2 * z - b + d / z**2)
+    g[2] = 1.0 / (-3 * z**2 - 2 * b * z - c)
     """ the hessian structure is:
             b c d
           +------
@@ -36,12 +38,12 @@ def derivs(z, b, c, d):
         c | - 2 4
         d | - - 5
     """
-    h[0] = g[0]**3*(2*c/z**3 + 6*d/z**4)
-    h[1] = g[0]**2*(2*c/z**3*g[1] + 6*d/z**4*g[1] - 1/z**2)
-    h[2] = g[1]**3*(2 + 2*d/z**3)
-    h[3] = g[0]**2*(2*c/z**3*g[2] + 6*d/z**4*g[2] - 2/z**3)
-    h[4] = g[1]**2*(2*g[2] + 2*d/z**3*g[2] - 1/z**2)
-    h[5] = g[2]**3*(6*z + 2*b)
+    h[0] = g[0] ** 3 * (2 * c / z**3 + 6 * d / z**4)
+    h[1] = g[0] ** 2 * (2 * c / z**3 * g[1] + 6 * d / z**4 * g[1] - 1 / z**2)
+    h[2] = g[1] ** 3 * (2 + 2 * d / z**3)
+    h[3] = g[0] ** 2 * (2 * c / z**3 * g[2] + 6 * d / z**4 * g[2] - 2 / z**3)
+    h[4] = g[1] ** 2 * (2 * g[2] + 2 * d / z**3 * g[2] - 1 / z**2)
+    h[5] = g[2] ** 3 * (6 * z + 2 * b)
     return g, h
 
 
@@ -53,10 +55,10 @@ def test_general_cubic_root_finder():
     m.croot_m = pyo.ExternalFunction(library=plib, function="cubic_root_m")
     m.croot_h = pyo.ExternalFunction(library=plib, function="cubic_root_h")
     param_dict = {
-        1:{"b":-3, "c":0.5, "d":-1, "three":False},
-        2:{"b":-3, "c":0.5, "d":1, "three":True},
-        3:{"b":1, "c":0.5, "d":-1, "three":False},
-        4:{"b":1, "c":0.5, "d":2, "three":False},
+        1: {"b": -3, "c": 0.5, "d": -1, "three": False},
+        2: {"b": -3, "c": 0.5, "d": 1, "three": True},
+        3: {"b": 1, "c": 0.5, "d": -1, "three": False},
+        4: {"b": 1, "c": 0.5, "d": 2, "three": False},
     }
 
     for k, v in param_dict.items():

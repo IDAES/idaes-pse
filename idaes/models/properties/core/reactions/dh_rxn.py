@@ -21,8 +21,7 @@ from idaes.core.util.misc import set_param_from_config
 
 # -----------------------------------------------------------------------------
 # Constant dh_rxn
-class constant_dh_rxn():
-
+class constant_dh_rxn:
     @staticmethod
     def build_parameters(rblock, config):
         units = rblock.parent_block().get_metadata().derived_units
@@ -34,9 +33,9 @@ class constant_dh_rxn():
             basis = "mass"
 
         rblock.dh_rxn_ref = Var(
-                doc="Specific heat of reaction at reference state",
-
-                units=units["energy_"+basis])
+            doc="Specific heat of reaction at reference state",
+            units=units["energy_" + basis],
+        )
 
         set_param_from_config(rblock, param="dh_rxn_ref", config=config)
 
@@ -50,6 +49,6 @@ class constant_dh_rxn():
 
         # Need to make sure dh_rxn is not 0 to avoid division by 0
         if v != 0:
-            return 1/abs(value(rblock.dh_rxn_ref))
+            return 1 / abs(value(rblock.dh_rxn_ref))
         else:
             return 1

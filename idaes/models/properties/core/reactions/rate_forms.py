@@ -13,13 +13,11 @@
 """
 Methods for defining reaction rates
 """
-from idaes.models.properties.core.generic.utility import \
-    get_concentration_term
+from idaes.models.properties.core.generic.utility import get_concentration_term
 
 
 # -----------------------------------------------------------------------------
-class power_law_rate():
-
+class power_law_rate:
     @staticmethod
     def build_parameters(rblock, config):
         pass
@@ -32,8 +30,8 @@ class power_law_rate():
             o = rblock.reaction_order[p, j]
 
             if e is None and o.value != 0:
-                e = get_concentration_term(b, r_idx)[p, j]**o
+                e = get_concentration_term(b, r_idx)[p, j] ** o
             elif e is not None and o.value != 0:
-                e = e*get_concentration_term(b, r_idx)[p, j]**o
+                e = e * get_concentration_term(b, r_idx)[p, j] ** o
 
-        return b.k_rxn[r_idx]*e
+        return b.k_rxn[r_idx] * e

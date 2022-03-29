@@ -14,12 +14,14 @@
 Author: Andrew Lee, Alejandro Garciadiego
 """
 import pytest
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Set,
-                           value,
-                           Var,
-                           units as pyunits)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Set,
+    value,
+    Var,
+    units as pyunits,
+)
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.unittest import assertStructuredAlmostEqual
 
@@ -29,26 +31,26 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 
 
-from idaes.models.properties.core.generic.generic_property import (
-        GenericParameterBlock)
+from idaes.models.properties.core.generic.generic_property import GenericParameterBlock
 
 from idaes.models.unit_models import Flash
 from idaes.models.properties.core.state_definitions import FTPx
 from idaes.models.properties.core.phase_equil import SmoothVLE
 
-from idaes.models.properties.core.examples.CO2_bmimPF6_PR \
-    import configuration
+from idaes.models.properties.core.examples.CO2_bmimPF6_PR import configuration
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
 
+
 def _as_quantity(x):
     unit = pyunits.get_units(x)
     if unit is None:
         unit = pyunits.dimensionless
     return value(x) * unit._get_pint_unit()
+
 
 # Test for configuration dictionaries with parameters from Properties of Gases
 # and liquids 4th edition
@@ -69,28 +71,31 @@ class TestParamBlock(object):
         assert isinstance(model.param.component_list, Set)
         assert len(model.param.component_list) == 2
         for i in model.param.component_list:
-            assert i in ['bmimPF6',
-                         'carbon_dioxide']
+            assert i in ["bmimPF6", "carbon_dioxide"]
             assert isinstance(model.param.get_component(i), Component)
 
         assert isinstance(model.param._phase_component_set, Set)
         assert len(model.param._phase_component_set) == 3
         for i in model.param._phase_component_set:
-            assert i in [("Liq", "bmimPF6"), ("Liq", "carbon_dioxide"),
-                         ("Vap", "carbon_dioxide")]
+            assert i in [
+                ("Liq", "bmimPF6"),
+                ("Liq", "carbon_dioxide"),
+                ("Vap", "carbon_dioxide"),
+            ]
 
         assert model.param.config.state_definition == FTPx
 
         assertStructuredAlmostEqual(
             model.param.config.state_bounds,
-            { "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
-              "temperature": (10, 300, 500, pyunits.K),
-              "pressure": (5e-4, 1e5, 1e10, pyunits.Pa) },
+            {
+                "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),
+                "temperature": (10, 300, 500, pyunits.K),
+                "pressure": (5e-4, 1e5, 1e10, pyunits.Pa),
+            },
             item_callback=_as_quantity,
         )
 
-        assert model.param.config.phase_equilibrium_state == {
-            ("Vap", "Liq"): SmoothVLE}
+        assert model.param.config.phase_equilibrium_state == {("Vap", "Liq"): SmoothVLE}
 
         assert isinstance(model.param.phase_equilibrium_idx, Set)
         assert len(model.param.phase_equilibrium_idx) == 1
@@ -98,16 +103,17 @@ class TestParamBlock(object):
             assert i in ["PE1"]
 
         assert model.param.phase_equilibrium_list == {
-            "PE1": {"carbon_dioxide": ("Vap", "Liq")}}
+            "PE1": {"carbon_dioxide": ("Vap", "Liq")}
+        }
 
         assert model.param.pressure_ref.value == 101325
         assert model.param.temperature_ref.value == 298.15
 
-        assert model.param.bmimPF6.mw.value == 284.18E-3
+        assert model.param.bmimPF6.mw.value == 284.18e-3
         assert model.param.bmimPF6.pressure_crit.value == 24e5
         assert model.param.bmimPF6.temperature_crit.value == 860
 
-        assert model.param.carbon_dioxide.mw.value == 44.010E-3
+        assert model.param.carbon_dioxide.mw.value == 44.010e-3
         assert model.param.carbon_dioxide.pressure_crit.value == 71.8e5
         assert model.param.carbon_dioxide.temperature_crit.value == 304.1
 
@@ -124,8 +130,8 @@ class TestStateBlock(object):
         model.fs.param = GenericParameterBlock(default=configuration)
 
         model.fs.props = model.fs.param.build_state_block(
-                [1],
-                default={"defined_state": True})
+            [1], default={"defined_state": True}
+        )
 
         # Fix state
         model.fs.props[1].flow_mol.fix(1)
@@ -168,49 +174,89 @@ class TestStateBlock(object):
         model.fs.props[1].calculate_scaling_factors()
 
         assert len(model.fs.props[1].scaling_factor) == 18
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].flow_mol] == 1e-2
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].flow_mol_phase["Liq"]] == 1e-2
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].flow_mol_phase["Vap"]] == 1e-2
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].flow_mol_phase_comp[
-                "Liq", "bmimPF6"]] == 1e-2
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].flow_mol_phase_comp[
-                "Liq", "carbon_dioxide"]] == 1e-2
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].flow_mol_phase_comp[
-                "Vap", "carbon_dioxide"]] == 1e-2
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].mole_frac_comp["bmimPF6"]] == 1000
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].mole_frac_comp["carbon_dioxide"]] == 1000
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].mole_frac_phase_comp["Liq", "bmimPF6"]] == 1000
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].mole_frac_phase_comp[
-                "Liq", "carbon_dioxide"]] == 1000
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].mole_frac_phase_comp[
-                "Vap", "carbon_dioxide"]] == 1000
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].pressure] == 1e-5
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].temperature] == 1e-2
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1]._teq["Vap", "Liq"]] == 1e-2
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1]._t1_Vap_Liq] == 1e-2
+        assert model.fs.props[1].scaling_factor[model.fs.props[1].flow_mol] == 1e-2
+        assert (
+            model.fs.props[1].scaling_factor[model.fs.props[1].flow_mol_phase["Liq"]]
+            == 1e-2
+        )
+        assert (
+            model.fs.props[1].scaling_factor[model.fs.props[1].flow_mol_phase["Vap"]]
+            == 1e-2
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].flow_mol_phase_comp["Liq", "bmimPF6"]
+            ]
+            == 1e-2
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].flow_mol_phase_comp["Liq", "carbon_dioxide"]
+            ]
+            == 1e-2
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].flow_mol_phase_comp["Vap", "carbon_dioxide"]
+            ]
+            == 1e-2
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].mole_frac_comp["bmimPF6"]
+            ]
+            == 1000
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].mole_frac_comp["carbon_dioxide"]
+            ]
+            == 1000
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].mole_frac_phase_comp["Liq", "bmimPF6"]
+            ]
+            == 1000
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].mole_frac_phase_comp["Liq", "carbon_dioxide"]
+            ]
+            == 1000
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].mole_frac_phase_comp["Vap", "carbon_dioxide"]
+            ]
+            == 1000
+        )
+        assert model.fs.props[1].scaling_factor[model.fs.props[1].pressure] == 1e-5
+        assert model.fs.props[1].scaling_factor[model.fs.props[1].temperature] == 1e-2
+        assert (
+            model.fs.props[1].scaling_factor[model.fs.props[1]._teq["Vap", "Liq"]]
+            == 1e-2
+        )
+        assert model.fs.props[1].scaling_factor[model.fs.props[1]._t1_Vap_Liq] == 1e-2
 
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "bmimPF6"]] == 1
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1]._mole_frac_tbub[
-                "Vap", "Liq", "carbon_dioxide"]] == 1000
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].temperature_bubble["Vap", "Liq"]] == 1e-2
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "bmimPF6"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "carbon_dioxide"]
+            ]
+            == 1000
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].temperature_bubble["Vap", "Liq"]
+            ]
+            == 1e-2
+        )
 
     @pytest.mark.unit
     def test_define_state_vars(self, model):
@@ -218,10 +264,7 @@ class TestStateBlock(object):
 
         assert len(sv) == 4
         for i in sv:
-            assert i in ["flow_mol",
-                         "mole_frac_comp",
-                         "temperature",
-                         "pressure"]
+            assert i in ["flow_mol", "mole_frac_comp", "temperature", "pressure"]
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
@@ -229,10 +272,7 @@ class TestStateBlock(object):
 
         assert len(sv) == 4
         for i in sv:
-            assert i in ["flow_mol",
-                         "mole_frac_comp",
-                         "temperature",
-                         "pressure"]
+            assert i in ["flow_mol", "mole_frac_comp", "temperature", "pressure"]
 
     @pytest.mark.unit
     def test_define_display_vars(self, model):
@@ -240,10 +280,12 @@ class TestStateBlock(object):
 
         assert len(sv) == 4
         for i in sv:
-            assert i in ["Total Molar Flowrate",
-                         "Total Mole Fraction",
-                         "Temperature",
-                         "Pressure"]
+            assert i in [
+                "Total Molar Flowrate",
+                "Total Mole Fraction",
+                "Temperature",
+                "Pressure",
+            ]
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -260,23 +302,25 @@ class TestFlashIntegration(object):
 
         model.fs.param = GenericParameterBlock(default=configuration)
 
-        model.fs.unit = Flash(default={"property_package": model.fs.param,
-                                       "has_heat_transfer": False,
-                                       "has_pressure_change": False})
+        model.fs.unit = Flash(
+            default={
+                "property_package": model.fs.param,
+                "has_heat_transfer": False,
+                "has_pressure_change": False,
+            }
+        )
         # Fix state
         model.fs.unit.inlet.flow_mol.fix(1)
         model.fs.unit.inlet.temperature.fix(200.00)
         model.fs.unit.inlet.pressure.fix(101325)
-        model.fs.unit.inlet.mole_frac_comp[0, "carbon_dioxide"].fix(1/2)
-        model.fs.unit.inlet.mole_frac_comp[0, "bmimPF6"].fix(1/2)
+        model.fs.unit.inlet.mole_frac_comp[0, "carbon_dioxide"].fix(1 / 2)
+        model.fs.unit.inlet.mole_frac_comp[0, "bmimPF6"].fix(1 / 2)
 
         assert degrees_of_freedom(model.fs) == 0
 
         # Apply scaling - model will not solver without this
-        model.fs.unit.control_volume.properties_in[
-            0].calculate_scaling_factors()
-        model.fs.unit.control_volume.properties_out[
-            0].calculate_scaling_factors()
+        model.fs.unit.control_volume.properties_in[0].calculate_scaling_factors()
+        model.fs.unit.control_volume.properties_out[0].calculate_scaling_factors()
 
         return model
 
@@ -295,15 +339,15 @@ class TestFlashIntegration(object):
     @pytest.mark.component
     def test_solution(self, model):
         # Check phase equilibrium results
-        assert value(model.fs.unit.liq_outlet.mole_frac_comp[
-            0, "carbon_dioxide"]) == \
-            pytest.approx(0.3119, abs=1e-4)
-        assert value(model.fs.unit.vap_outlet.mole_frac_comp[
-            0, "carbon_dioxide"]) == \
-            pytest.approx(1.0000, abs=1e-4)
-        assert value(model.fs.unit.vap_outlet.flow_mol[0] /
-                     model.fs.unit.liq_outlet.flow_mol[0]) == \
-            pytest.approx(0.37619, abs=1e-4)
+        assert value(
+            model.fs.unit.liq_outlet.mole_frac_comp[0, "carbon_dioxide"]
+        ) == pytest.approx(0.3119, abs=1e-4)
+        assert value(
+            model.fs.unit.vap_outlet.mole_frac_comp[0, "carbon_dioxide"]
+        ) == pytest.approx(1.0000, abs=1e-4)
+        assert value(
+            model.fs.unit.vap_outlet.flow_mol[0] / model.fs.unit.liq_outlet.flow_mol[0]
+        ) == pytest.approx(0.37619, abs=1e-4)
 
     @pytest.mark.ui
     @pytest.mark.unit

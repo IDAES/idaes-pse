@@ -17,47 +17,61 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Constraint,
-                           Set,
-                           value,
-                           Var,
-                           units as pyunits)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    Set,
+    value,
+    Var,
+    units as pyunits,
+)
 
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import (FlowsheetBlock,
-                        declare_process_block_class,
-                        MaterialBalanceType,
-                        StateBlockData,
-                        StateBlock,
-                        PhysicalParameterBlock,
-                        Phase,
-                        Component)
-from idaes.models.unit_models.separator import (Separator,
-                                                        SeparatorData,
-                                                        SplittingType,
-                                                        EnergySplittingType)
-from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError,
-                                        InitializationError)
+from idaes.core import (
+    FlowsheetBlock,
+    declare_process_block_class,
+    MaterialBalanceType,
+    StateBlockData,
+    StateBlock,
+    PhysicalParameterBlock,
+    Phase,
+    Component,
+)
+from idaes.models.unit_models.separator import (
+    Separator,
+    SeparatorData,
+    SplittingType,
+    EnergySplittingType,
+)
+from idaes.core.util.exceptions import (
+    BurntToast,
+    ConfigurationError,
+    InitializationError,
+)
 
 from idaes.models.properties.examples.saponification_thermo import (
-    SaponificationParameterBlock)
-from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
+    SaponificationParameterBlock,
+)
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
 from idaes.models.properties import iapws95
 
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              number_unused_variables)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     TestStateBlock,
-                                     initialization_tester)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+from idaes.core.util.testing import (
+    PhysicalParameterTestBlock,
+    TestStateBlock,
+    initialization_tester,
+)
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 
@@ -95,8 +109,7 @@ class TestBaseConstruction(object):
         assert build.fs.sep.config.dynamic is False
         assert build.fs.sep.config.has_holdup is False
         assert build.fs.sep.config.property_package == build.fs.pp
-        assert isinstance(build.fs.sep.config.property_package_args,
-                          ConfigBlock)
+        assert isinstance(build.fs.sep.config.property_package_args, ConfigBlock)
         assert len(build.fs.sep.config.property_package_args) == 0
         assert build.fs.sep.config.outlet_list is None
         assert build.fs.sep.config.num_outlets is None
@@ -105,8 +118,9 @@ class TestBaseConstruction(object):
         assert build.fs.sep.config.ideal_split_map is None
         assert build.fs.sep.config.mixed_state_block is None
         assert build.fs.sep.config.construct_ports is True
-        assert build.fs.sep.config.material_balance_type == \
-            MaterialBalanceType.useDefault
+        assert (
+            build.fs.sep.config.material_balance_type == MaterialBalanceType.useDefault
+        )
         assert build.fs.sep.config.has_phase_equilibrium is False
 
     @pytest.mark.unit
@@ -250,8 +264,7 @@ class TestBaseConstruction(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block(self, build):
-        build.fs.sb = TestStateBlock(build.fs.time,
-                                     default={"parameters": build.fs.pp})
+        build.fs.sb = TestStateBlock(build.fs.time, default={"parameters": build.fs.pp})
 
         build.fs.sep.config.mixed_state_block = build.fs.sb
 
@@ -272,8 +285,7 @@ class TestBaseConstruction(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block_mismatch(self, build):
-        build.fs.sb = TestStateBlock(build.fs.time,
-                                     default={"parameters": build.fs.pp})
+        build.fs.sb = TestStateBlock(build.fs.time, default={"parameters": build.fs.pp})
 
         # Change parameters arg to create mismatch
         build.fs.sb[0].config.parameters = None
@@ -291,9 +303,10 @@ class TestBaseConstruction(object):
 # Tests of Separator unit model scaling factors
 @pytest.mark.unit
 class TestBaseScaling(object):
-    """ Test scaling calculations.  For now they just make sure there are no
+    """Test scaling calculations.  For now they just make sure there are no
     exceptions. This can be expanded in the future.
     """
+
     @pytest.fixture(scope="function")
     def m(self):
         b = ConcreteModel()
@@ -304,9 +317,8 @@ class TestBaseScaling(object):
     def test_no_exception_scaling_calc_external_mixed_state(self, m):
         m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
         m.fs.sep1 = Separator(
-            default={
-                "property_package": m.fs.pp,
-                "mixed_state_block": m.fs.sb})
+            default={"property_package": m.fs.pp, "mixed_state_block": m.fs.sb}
+        )
         iscale.calculate_scaling_factors(m)
 
     def test_no_exception_scaling_calc_internal_mixed_state(self, m):
@@ -337,8 +349,7 @@ class TestSplitConstruction(object):
 
     @pytest.mark.unit
     def test_add_split_fractions_total(self, build):
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.outlet_idx, Set)
         assert len(build.fs.sep.outlet_idx) == len(build.outlet_list)
@@ -351,8 +362,7 @@ class TestSplitConstruction(object):
     def test_add_split_fractions_phase(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.outlet_idx, Set)
         assert len(build.fs.sep.outlet_idx) == len(build.outlet_list)
@@ -371,8 +381,7 @@ class TestSplitConstruction(object):
     def test_add_split_fractions_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.outlet_idx, Set)
         assert len(build.fs.sep.outlet_idx) == len(build.outlet_list)
@@ -391,8 +400,7 @@ class TestSplitConstruction(object):
     def test_add_split_fractions_phase_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.outlet_idx, Set)
         assert len(build.fs.sep.outlet_idx) == len(build.outlet_list)
@@ -403,19 +411,16 @@ class TestSplitConstruction(object):
             for o in build.fs.sep.outlet_idx:
                 for p in build.fs.sep.config.property_package.phase_list:
                     for j in build.fs.sep.config.property_package.component_list:
-                        assert 0.5 == \
-                            build.fs.sep.split_fraction[t, o, p, j].value
+                        assert 0.5 == build.fs.sep.split_fraction[t, o, p, j].value
 
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 4
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_total_no_equil(self, build):
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 8
@@ -425,26 +430,21 @@ class TestSplitConstruction(object):
     def test_add_material_splitting_constraints_pc_phase_no_equil(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 8
         assert not hasattr(build.fs.sep, "phase_equilibrium_generation")
 
     @pytest.mark.unit
-    def test_add_material_splitting_constraints_pc_component_no_equil(self,
-                                                                      build):
+    def test_add_material_splitting_constraints_pc_component_no_equil(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 8
@@ -452,14 +452,13 @@ class TestSplitConstruction(object):
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_phase_component_no_equil(
-            self, build):
+        self, build
+    ):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 8
@@ -469,11 +468,9 @@ class TestSplitConstruction(object):
     def test_add_material_splitting_constraints_pc_total_equil(self, build):
         build.fs.sep.config.has_phase_equilibrium = True
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 8
@@ -485,11 +482,9 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
         build.fs.sep.config.has_phase_equilibrium = True
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 8
@@ -497,16 +492,13 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.phase_equilibrium_generation) == 4
 
     @pytest.mark.unit
-    def test_add_material_splitting_constraints_pc_component_equil(self,
-                                                                   build):
+    def test_add_material_splitting_constraints_pc_component_equil(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.has_phase_equilibrium = True
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 8
@@ -514,16 +506,13 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.phase_equilibrium_generation) == 4
 
     @pytest.mark.unit
-    def test_add_material_splitting_constraints_pc_phase_component_equil(
-            self, build):
+    def test_add_material_splitting_constraints_pc_phase_component_equil(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
         build.fs.sep.config.has_phase_equilibrium = True
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 8
@@ -532,14 +521,11 @@ class TestSplitConstruction(object):
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_tc_total(self, build):
-        build.fs.sep.config.material_balance_type = \
-            MaterialBalanceType.componentTotal
+        build.fs.sep.config.material_balance_type = MaterialBalanceType.componentTotal
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 4
@@ -547,14 +533,11 @@ class TestSplitConstruction(object):
     @pytest.mark.unit
     def test_add_material_splitting_constraints_tc_phase(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
-        build.fs.sep.config.material_balance_type = \
-            MaterialBalanceType.componentTotal
+        build.fs.sep.config.material_balance_type = MaterialBalanceType.componentTotal
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 4
@@ -562,30 +545,23 @@ class TestSplitConstruction(object):
     @pytest.mark.unit
     def test_add_material_splitting_constraints_tc_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
-        build.fs.sep.config.material_balance_type = \
-            MaterialBalanceType.componentTotal
+        build.fs.sep.config.material_balance_type = MaterialBalanceType.componentTotal
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 4
 
     @pytest.mark.unit
-    def test_add_material_splitting_constraints_tc_phase_component(self,
-                                                                   build):
+    def test_add_material_splitting_constraints_tc_phase_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
-        build.fs.sep.config.material_balance_type = \
-            MaterialBalanceType.componentTotal
+        build.fs.sep.config.material_balance_type = MaterialBalanceType.componentTotal
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 4
@@ -594,11 +570,9 @@ class TestSplitConstruction(object):
     def test_add_material_splitting_constraints_t_total(self, build):
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 2
@@ -608,11 +582,9 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 2
@@ -622,11 +594,9 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 2
@@ -636,36 +606,29 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 2
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_te_total(self, build):
-        build.fs.sep.config.material_balance_type = \
-            MaterialBalanceType.elementTotal
+        build.fs.sep.config.material_balance_type = MaterialBalanceType.elementTotal
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
         with pytest.raises(ConfigurationError):
-            build.fs.sep.add_material_splitting_constraints(
-                    build.fs.sep.mixed_state)
+            build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_none_total(self, build):
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
 
@@ -674,11 +637,9 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
 
@@ -687,62 +648,56 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
 
     @pytest.mark.unit
-    def test_add_material_splitting_constraints_none_phase_component(self,
-                                                                     build):
+    def test_add_material_splitting_constraints_none_phase_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
 
     @pytest.mark.unit
     def test_add_energy_splitting_constraints(self, build):
-        assert(build.fs.sep.config.energy_split_basis ==
-               EnergySplittingType.equal_temperature)
+        assert (
+            build.fs.sep.config.energy_split_basis
+            == EnergySplittingType.equal_temperature
+        )
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
-        build.fs.sep.add_energy_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        build.fs.sep.add_energy_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.temperature_equality_eqn, Constraint)
         assert len(build.fs.sep.temperature_equality_eqn) == 2
 
     @pytest.mark.unit
     def test_add_energy_splitting_constraints_enthalpy(self, build):
-        build.fs.sep.config.energy_split_basis = \
+        build.fs.sep.config.energy_split_basis = (
             EnergySplittingType.equal_molar_enthalpy
-        assert(build.fs.sep.config.energy_split_basis ==
-               EnergySplittingType.equal_molar_enthalpy)
+        )
+        assert (
+            build.fs.sep.config.energy_split_basis
+            == EnergySplittingType.equal_molar_enthalpy
+        )
 
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
-        build.fs.sep.add_energy_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        build.fs.sep.add_energy_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.molar_enthalpy_equality_eqn, Constraint)
         assert len(build.fs.sep.molar_enthalpy_equality_eqn) == 2
 
     @pytest.mark.unit
     def test_add_momentum_splitting_constraints(self, build):
-        build.fs.sep.add_split_fractions(build.outlet_list,
-                                         build.fs.sep.mixed_state)
-        build.fs.sep.add_momentum_splitting_constraints(
-                build.fs.sep.mixed_state)
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        build.fs.sep.add_momentum_splitting_constraints(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.pressure_equality_eqn, Constraint)
         assert len(build.fs.sep.pressure_equality_eqn) == 2
@@ -763,8 +718,7 @@ class TestSplitConstruction(object):
 
     @pytest.mark.unit
     def test_add_outlet_port_objects(self, build):
-        build.fs.sep.add_outlet_port_objects(build.outlet_list,
-                                             build.outlet_blocks)
+        build.fs.sep.add_outlet_port_objects(build.outlet_list, build.outlet_blocks)
 
         assert isinstance(build.fs.sep.outlet_1, Port)
         assert isinstance(build.fs.sep.outlet_2, Port)
@@ -773,8 +727,7 @@ class TestSplitConstruction(object):
     def test_add_outlet_port_objects_construct_ports_False(self, build):
         build.fs.sep.config.construct_ports = False
 
-        build.fs.sep.add_outlet_port_objects(build.outlet_list,
-                                             build.outlet_blocks)
+        build.fs.sep.add_outlet_port_objects(build.outlet_list, build.outlet_blocks)
 
         assert hasattr(build.fs.sep, "outlet_1") is False
         assert hasattr(build.fs.sep, "outlet_2") is False
@@ -789,13 +742,16 @@ class TestSaponification(object):
 
         m.fs.properties = SaponificationParameterBlock()
 
-        m.fs.unit = Separator(default={
+        m.fs.unit = Separator(
+            default={
                 "property_package": m.fs.properties,
                 "material_balance_type": MaterialBalanceType.componentPhase,
                 "split_basis": SplittingType.totalFlow,
                 "outlet_list": ["a", "B", "c"],
                 "ideal_separation": False,
-                "has_phase_equilibrium": False})
+                "has_phase_equilibrium": False,
+            }
+        )
 
         m.fs.unit.inlet.flow_vol.fix(1)
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
@@ -877,101 +833,150 @@ class TestSaponification(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, sapon):
-        assert (pytest.approx(0.3, abs=1e-5) ==
-                value(sapon.fs.unit.a.flow_vol[0]))
-        assert (pytest.approx(101325.0, abs=1e-2) ==
-                value(sapon.fs.unit.a.pressure[0]))
-        assert (pytest.approx(303.15, abs=1e-2) ==
-                value(sapon.fs.unit.a.temperature[0]))
-        assert (pytest.approx(55388, abs=1e0) ==
-                value(sapon.fs.unit.a.conc_mol_comp[0, "H2O"]))
-        assert (pytest.approx(100.0, abs=1e-3) ==
-                value(sapon.fs.unit.a.conc_mol_comp[0, "NaOH"]))
-        assert (pytest.approx(100.0, abs=1e-3) ==
-                value(sapon.fs.unit.a.conc_mol_comp[0, "EthylAcetate"]))
-        assert (pytest.approx(0.0, abs=1e-3) ==
-                value(sapon.fs.unit.a.conc_mol_comp[0, "SodiumAcetate"]))
-        assert (pytest.approx(0.0, abs=1e-3) ==
-                value(sapon.fs.unit.a.conc_mol_comp[0, "Ethanol"]))
+        assert pytest.approx(0.3, abs=1e-5) == value(sapon.fs.unit.a.flow_vol[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(sapon.fs.unit.a.pressure[0])
+        assert pytest.approx(303.15, abs=1e-2) == value(sapon.fs.unit.a.temperature[0])
+        assert pytest.approx(55388, abs=1e0) == value(
+            sapon.fs.unit.a.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            sapon.fs.unit.a.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            sapon.fs.unit.a.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            sapon.fs.unit.a.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            sapon.fs.unit.a.conc_mol_comp[0, "Ethanol"]
+        )
 
-        assert (pytest.approx(0.5, abs=1e-5) ==
-                value(sapon.fs.unit.B.flow_vol[0]))
-        assert (pytest.approx(101325.0, abs=1e-2) ==
-                value(sapon.fs.unit.B.pressure[0]))
-        assert (pytest.approx(303.15, abs=1e-2) ==
-                value(sapon.fs.unit.B.temperature[0]))
-        assert (pytest.approx(55388, abs=1e0) ==
-                value(sapon.fs.unit.B.conc_mol_comp[0, "H2O"]))
-        assert (pytest.approx(100.0, abs=1e-3) ==
-                value(sapon.fs.unit.B.conc_mol_comp[0, "NaOH"]))
-        assert (pytest.approx(100.0, abs=1e-3) ==
-                value(sapon.fs.unit.B.conc_mol_comp[0, "EthylAcetate"]))
-        assert (pytest.approx(0.0, abs=1e-3) ==
-                value(sapon.fs.unit.B.conc_mol_comp[0, "SodiumAcetate"]))
-        assert (pytest.approx(0.0, abs=1e-3) ==
-                value(sapon.fs.unit.B.conc_mol_comp[0, "Ethanol"]))
+        assert pytest.approx(0.5, abs=1e-5) == value(sapon.fs.unit.B.flow_vol[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(sapon.fs.unit.B.pressure[0])
+        assert pytest.approx(303.15, abs=1e-2) == value(sapon.fs.unit.B.temperature[0])
+        assert pytest.approx(55388, abs=1e0) == value(
+            sapon.fs.unit.B.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            sapon.fs.unit.B.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            sapon.fs.unit.B.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            sapon.fs.unit.B.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            sapon.fs.unit.B.conc_mol_comp[0, "Ethanol"]
+        )
 
-        assert (pytest.approx(0.2, abs=1e-5) ==
-                value(sapon.fs.unit.c.flow_vol[0]))
-        assert (pytest.approx(101325.0, abs=1e-2) ==
-                value(sapon.fs.unit.c.pressure[0]))
-        assert (pytest.approx(303.15, abs=1e-2) ==
-                value(sapon.fs.unit.c.temperature[0]))
-        assert (pytest.approx(55388, abs=1e0) ==
-                value(sapon.fs.unit.c.conc_mol_comp[0, "H2O"]))
-        assert (pytest.approx(100.0, abs=1e-3) ==
-                value(sapon.fs.unit.c.conc_mol_comp[0, "NaOH"]))
-        assert (pytest.approx(100.0, abs=1e-3) ==
-                value(sapon.fs.unit.c.conc_mol_comp[0, "EthylAcetate"]))
-        assert (pytest.approx(0.0, abs=1e-3) ==
-                value(sapon.fs.unit.c.conc_mol_comp[0, "SodiumAcetate"]))
-        assert (pytest.approx(0.0, abs=1e-3) ==
-                value(sapon.fs.unit.c.conc_mol_comp[0, "Ethanol"]))
+        assert pytest.approx(0.2, abs=1e-5) == value(sapon.fs.unit.c.flow_vol[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(sapon.fs.unit.c.pressure[0])
+        assert pytest.approx(303.15, abs=1e-2) == value(sapon.fs.unit.c.temperature[0])
+        assert pytest.approx(55388, abs=1e0) == value(
+            sapon.fs.unit.c.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            sapon.fs.unit.c.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            sapon.fs.unit.c.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            sapon.fs.unit.c.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            sapon.fs.unit.c.conc_mol_comp[0, "Ethanol"]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, sapon):
-        assert abs(value(sapon.fs.unit.inlet.flow_vol[0] -
-                         sapon.fs.unit.a.flow_vol[0] -
-                         sapon.fs.unit.B.flow_vol[0] -
-                         sapon.fs.unit.c.flow_vol[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    sapon.fs.unit.inlet.flow_vol[0]
+                    - sapon.fs.unit.a.flow_vol[0]
+                    - sapon.fs.unit.B.flow_vol[0]
+                    - sapon.fs.unit.c.flow_vol[0]
+                )
+            )
+            <= 1e-6
+        )
 
-        assert (abs(value(sapon.fs.unit.inlet.flow_vol[0] *
-                          sum(sapon.fs.unit.inlet.conc_mol_comp[0, j]
-                              for j in sapon.fs.properties.component_list) -
-                          sapon.fs.unit.a.flow_vol[0] *
-                          sum(sapon.fs.unit.a.conc_mol_comp[0, j]
-                              for j in sapon.fs.properties.component_list) -
-                          sapon.fs.unit.B.flow_vol[0] *
-                          sum(sapon.fs.unit.B.conc_mol_comp[0, j]
-                              for j in sapon.fs.properties.component_list) -
-                          sapon.fs.unit.c.flow_vol[0] *
-                          sum(sapon.fs.unit.c.conc_mol_comp[0, j]
-                              for j in sapon.fs.properties.component_list)))
-                <= 1e-5)
+        assert (
+            abs(
+                value(
+                    sapon.fs.unit.inlet.flow_vol[0]
+                    * sum(
+                        sapon.fs.unit.inlet.conc_mol_comp[0, j]
+                        for j in sapon.fs.properties.component_list
+                    )
+                    - sapon.fs.unit.a.flow_vol[0]
+                    * sum(
+                        sapon.fs.unit.a.conc_mol_comp[0, j]
+                        for j in sapon.fs.properties.component_list
+                    )
+                    - sapon.fs.unit.B.flow_vol[0]
+                    * sum(
+                        sapon.fs.unit.B.conc_mol_comp[0, j]
+                        for j in sapon.fs.properties.component_list
+                    )
+                    - sapon.fs.unit.c.flow_vol[0]
+                    * sum(
+                        sapon.fs.unit.c.conc_mol_comp[0, j]
+                        for j in sapon.fs.properties.component_list
+                    )
+                )
+            )
+            <= 1e-5
+        )
 
-        assert abs(value(
-                (sapon.fs.unit.inlet.flow_vol[0] *
-                 sapon.fs.properties.dens_mol *
-                 sapon.fs.properties.cp_mol *
-                 (sapon.fs.unit.inlet.temperature[0] -
-                    sapon.fs.properties.temperature_ref)) -
-                (sapon.fs.unit.a.flow_vol[0] *
-                 sapon.fs.properties.dens_mol *
-                 sapon.fs.properties.cp_mol *
-                 (sapon.fs.unit.a.temperature[0] -
-                  sapon.fs.properties.temperature_ref)) -
-                (sapon.fs.unit.B.flow_vol[0] *
-                 sapon.fs.properties.dens_mol *
-                 sapon.fs.properties.cp_mol *
-                 (sapon.fs.unit.B.temperature[0] -
-                  sapon.fs.properties.temperature_ref)) -
-                (sapon.fs.unit.c.flow_vol[0] *
-                 sapon.fs.properties.dens_mol *
-                 sapon.fs.properties.cp_mol *
-                 (sapon.fs.unit.c.temperature[0] -
-                  sapon.fs.properties.temperature_ref)))) <= 1e-3
+        assert (
+            abs(
+                value(
+                    (
+                        sapon.fs.unit.inlet.flow_vol[0]
+                        * sapon.fs.properties.dens_mol
+                        * sapon.fs.properties.cp_mol
+                        * (
+                            sapon.fs.unit.inlet.temperature[0]
+                            - sapon.fs.properties.temperature_ref
+                        )
+                    )
+                    - (
+                        sapon.fs.unit.a.flow_vol[0]
+                        * sapon.fs.properties.dens_mol
+                        * sapon.fs.properties.cp_mol
+                        * (
+                            sapon.fs.unit.a.temperature[0]
+                            - sapon.fs.properties.temperature_ref
+                        )
+                    )
+                    - (
+                        sapon.fs.unit.B.flow_vol[0]
+                        * sapon.fs.properties.dens_mol
+                        * sapon.fs.properties.cp_mol
+                        * (
+                            sapon.fs.unit.B.temperature[0]
+                            - sapon.fs.properties.temperature_ref
+                        )
+                    )
+                    - (
+                        sapon.fs.unit.c.flow_vol[0]
+                        * sapon.fs.properties.dens_mol
+                        * sapon.fs.properties.cp_mol
+                        * (
+                            sapon.fs.unit.c.temperature[0]
+                            - sapon.fs.properties.temperature_ref
+                        )
+                    )
+                )
+            )
+            <= 1e-3
+        )
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -986,17 +991,19 @@ class TestBTXIdeal(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase":
-                                                     ('Liq', 'Vap'),
-                                                     "activity_coeff_model":
-                                                     "Ideal"})
+        m.fs.properties = BTXParameterBlock(
+            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+        )
 
-        m.fs.unit = Separator(default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentPhase,
-            "split_basis": SplittingType.phaseFlow,
-            "ideal_separation": False,
-            "has_phase_equilibrium": True})
+        m.fs.unit = Separator(
+            default={
+                "property_package": m.fs.properties,
+                "material_balance_type": MaterialBalanceType.componentPhase,
+                "split_basis": SplittingType.phaseFlow,
+                "ideal_separation": False,
+                "has_phase_equilibrium": True,
+            }
+        )
 
         m.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
         m.fs.unit.inlet.temperature[0].fix(368)  # K
@@ -1053,28 +1060,31 @@ class TestBTXIdeal(object):
     def test_initialiszation(self, btx):
         btx.fs.unit.initialize()
 
-        assert (pytest.approx(1, abs=1e-4) ==
-                value(btx.fs.unit.mixed_state[0].flow_mol))
-        assert (pytest.approx(0.604, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].flow_mol_phase["Liq"]))
-        assert (pytest.approx(0.396, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].flow_mol_phase["Vap"]))
-        assert (pytest.approx(368.0, abs=1e-1) ==
-                value(btx.fs.unit.mixed_state[0].temperature))
-        assert (pytest.approx(101325, abs=1e3) ==
-                value(btx.fs.unit.mixed_state[0].pressure))
-        assert (pytest.approx(0.412, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
-                      "Liq", "benzene"]))
-        assert (pytest.approx(0.588, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
-                      "Liq", "toluene"]))
-        assert (pytest.approx(0.634, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
-                      "Vap", "benzene"]))
-        assert (pytest.approx(0.366, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
-                      "Vap", "toluene"]))
+        assert pytest.approx(1, abs=1e-4) == value(btx.fs.unit.mixed_state[0].flow_mol)
+        assert pytest.approx(0.604, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].flow_mol_phase["Liq"]
+        )
+        assert pytest.approx(0.396, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].flow_mol_phase["Vap"]
+        )
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            btx.fs.unit.mixed_state[0].temperature
+        )
+        assert pytest.approx(101325, abs=1e3) == value(
+            btx.fs.unit.mixed_state[0].pressure
+        )
+        assert pytest.approx(0.412, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].mole_frac_phase_comp["Liq", "benzene"]
+        )
+        assert pytest.approx(0.588, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].mole_frac_phase_comp["Liq", "toluene"]
+        )
+        assert pytest.approx(0.634, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].mole_frac_phase_comp["Vap", "benzene"]
+        )
+        assert pytest.approx(0.366, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].mole_frac_phase_comp["Vap", "toluene"]
+        )
 
         # Also trigger build of phase enthalpy vars.
         btx.fs.unit.mixed_state[0].enth_mol_phase["Vap"] = 0.5
@@ -1094,65 +1104,92 @@ class TestBTXIdeal(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert (pytest.approx(0.438, abs=1e-3) ==
-                value(btx.fs.unit.outlet_1.flow_mol[0]))
-        assert (pytest.approx(368.0, abs=1e-1) ==
-                value(btx.fs.unit.outlet_1.temperature[0]))
-        assert (pytest.approx(101325, abs=1e3) ==
-                value(btx.fs.unit.outlet_1.pressure[0]))
-        assert (pytest.approx(0.573, abs=1e-3) ==
-                value(btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]))
-        assert (pytest.approx(0.427, abs=1e-3) ==
-                value(btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]))
+        assert pytest.approx(0.438, abs=1e-3) == value(btx.fs.unit.outlet_1.flow_mol[0])
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            btx.fs.unit.outlet_1.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(btx.fs.unit.outlet_1.pressure[0])
+        assert pytest.approx(0.573, abs=1e-3) == value(
+            btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.427, abs=1e-3) == value(
+            btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]
+        )
 
-        assert (pytest.approx(0.562, abs=1e-3) ==
-                value(btx.fs.unit.outlet_2.flow_mol[0]))
-        assert (pytest.approx(368.0, abs=1e-1) ==
-                value(btx.fs.unit.outlet_2.temperature[0]))
-        assert (pytest.approx(101325, abs=1e3) ==
-                value(btx.fs.unit.outlet_2.pressure[0]))
-        assert (pytest.approx(0.443, abs=1e-3) ==
-                value(btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]))
-        assert (pytest.approx(0.557, abs=1e-3) ==
-                value(btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]))
+        assert pytest.approx(0.562, abs=1e-3) == value(btx.fs.unit.outlet_2.flow_mol[0])
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            btx.fs.unit.outlet_2.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(btx.fs.unit.outlet_2.pressure[0])
+        assert pytest.approx(0.443, abs=1e-3) == value(
+            btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.557, abs=1e-3) == value(
+            btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, btx):
-        assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
-                         btx.fs.unit.outlet_1.flow_mol[0] -
-                         btx.fs.unit.outlet_2.flow_mol[0])) <= 1e-5
-
-        assert abs(value(btx.fs.unit.inlet.flow_mol[0] *
-                         btx.fs.unit.inlet.mole_frac_comp[0, "benzene"] -
-                         btx.fs.unit.outlet_1.flow_mol[0] *
-                         btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"] -
-                         btx.fs.unit.outlet_2.flow_mol[0] *
-                         btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"])) \
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.inlet.flow_mol[0]
+                    - btx.fs.unit.outlet_1.flow_mol[0]
+                    - btx.fs.unit.outlet_2.flow_mol[0]
+                )
+            )
             <= 1e-5
+        )
 
-        assert abs(value(btx.fs.unit.inlet.flow_mol[0] *
-                         btx.fs.unit.inlet.mole_frac_comp[0, "toluene"] -
-                         btx.fs.unit.outlet_1.flow_mol[0] *
-                         btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"] -
-                         btx.fs.unit.outlet_2.flow_mol[0] *
-                         btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"])) \
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.inlet.flow_mol[0]
+                    * btx.fs.unit.inlet.mole_frac_comp[0, "benzene"]
+                    - btx.fs.unit.outlet_1.flow_mol[0]
+                    * btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]
+                    - btx.fs.unit.outlet_2.flow_mol[0]
+                    * btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]
+                )
+            )
             <= 1e-5
+        )
 
-        assert abs(value(
-            btx.fs.unit.mixed_state[0].flow_mol_phase["Vap"] *
-            btx.fs.unit.mixed_state[0].enth_mol_phase["Vap"] +
-            btx.fs.unit.mixed_state[0].flow_mol_phase["Liq"] *
-            btx.fs.unit.mixed_state[0].enth_mol_phase["Liq"] -
-            btx.fs.unit.outlet_1_state[0].flow_mol_phase["Vap"] *
-            btx.fs.unit.outlet_1_state[0].enth_mol_phase["Vap"] -
-            btx.fs.unit.outlet_1_state[0].flow_mol_phase["Liq"] *
-            btx.fs.unit.outlet_1_state[0].enth_mol_phase["Liq"] -
-            btx.fs.unit.outlet_2_state[0].flow_mol_phase["Vap"] *
-            btx.fs.unit.outlet_2_state[0].enth_mol_phase["Vap"] -
-            btx.fs.unit.outlet_2_state[0].flow_mol_phase["Liq"] *
-            btx.fs.unit.outlet_2_state[0].enth_mol_phase["Liq"])) <= 1e-1
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.inlet.flow_mol[0]
+                    * btx.fs.unit.inlet.mole_frac_comp[0, "toluene"]
+                    - btx.fs.unit.outlet_1.flow_mol[0]
+                    * btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]
+                    - btx.fs.unit.outlet_2.flow_mol[0]
+                    * btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]
+                )
+            )
+            <= 1e-5
+        )
+
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.mixed_state[0].flow_mol_phase["Vap"]
+                    * btx.fs.unit.mixed_state[0].enth_mol_phase["Vap"]
+                    + btx.fs.unit.mixed_state[0].flow_mol_phase["Liq"]
+                    * btx.fs.unit.mixed_state[0].enth_mol_phase["Liq"]
+                    - btx.fs.unit.outlet_1_state[0].flow_mol_phase["Vap"]
+                    * btx.fs.unit.outlet_1_state[0].enth_mol_phase["Vap"]
+                    - btx.fs.unit.outlet_1_state[0].flow_mol_phase["Liq"]
+                    * btx.fs.unit.outlet_1_state[0].enth_mol_phase["Liq"]
+                    - btx.fs.unit.outlet_2_state[0].flow_mol_phase["Vap"]
+                    * btx.fs.unit.outlet_2_state[0].enth_mol_phase["Vap"]
+                    - btx.fs.unit.outlet_2_state[0].flow_mol_phase["Liq"]
+                    * btx.fs.unit.outlet_2_state[0].enth_mol_phase["Liq"]
+                )
+            )
+            <= 1e-1
+        )
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1162,8 +1199,7 @@ class TestBTXIdeal(object):
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
@@ -1172,13 +1208,16 @@ class TestIAPWS(object):
 
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
-        m.fs.unit = Separator(default={
+        m.fs.unit = Separator(
+            default={
                 "property_package": m.fs.properties,
                 "material_balance_type": MaterialBalanceType.componentPhase,
                 "split_basis": SplittingType.componentFlow,
                 "num_outlets": 3,
                 "ideal_separation": False,
-                "has_phase_equilibrium": False})
+                "has_phase_equilibrium": False,
+            }
+        )
 
         m.fs.unit.inlet.flow_mol[0].fix(100)
         m.fs.unit.inlet.enth_mol[0].fix(4000)
@@ -1248,44 +1287,54 @@ class TestIAPWS(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iapws):
-        assert pytest.approx(40, abs=1e-3) == \
-            value(iapws.fs.unit.outlet_1.flow_mol[0])
-        assert pytest.approx(50, abs=1e-3) == \
-            value(iapws.fs.unit.outlet_2.flow_mol[0])
-        assert pytest.approx(10, abs=1e-3) == \
-            value(iapws.fs.unit.outlet_3.flow_mol[0])
+        assert pytest.approx(40, abs=1e-3) == value(iapws.fs.unit.outlet_1.flow_mol[0])
+        assert pytest.approx(50, abs=1e-3) == value(iapws.fs.unit.outlet_2.flow_mol[0])
+        assert pytest.approx(10, abs=1e-3) == value(iapws.fs.unit.outlet_3.flow_mol[0])
 
-        assert pytest.approx(4000, abs=1e0) == \
-            value(iapws.fs.unit.outlet_1.enth_mol[0])
-        assert pytest.approx(4000, abs=1e0) == \
-            value(iapws.fs.unit.outlet_2.enth_mol[0])
-        assert pytest.approx(4000, abs=1e0) == \
-            value(iapws.fs.unit.outlet_3.enth_mol[0])
+        assert pytest.approx(4000, abs=1e0) == value(iapws.fs.unit.outlet_1.enth_mol[0])
+        assert pytest.approx(4000, abs=1e0) == value(iapws.fs.unit.outlet_2.enth_mol[0])
+        assert pytest.approx(4000, abs=1e0) == value(iapws.fs.unit.outlet_3.enth_mol[0])
 
-        assert pytest.approx(101325, abs=1e2) == \
-            value(iapws.fs.unit.outlet_1.pressure[0])
-        assert pytest.approx(101325, abs=1e2) == \
-            value(iapws.fs.unit.outlet_2.pressure[0])
-        assert pytest.approx(101325, abs=1e2) == \
-            value(iapws.fs.unit.outlet_3.pressure[0])
+        assert pytest.approx(101325, abs=1e2) == value(
+            iapws.fs.unit.outlet_1.pressure[0]
+        )
+        assert pytest.approx(101325, abs=1e2) == value(
+            iapws.fs.unit.outlet_2.pressure[0]
+        )
+        assert pytest.approx(101325, abs=1e2) == value(
+            iapws.fs.unit.outlet_3.pressure[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, iapws):
-        assert abs(value(iapws.fs.unit.inlet.flow_mol[0] -
-                         iapws.fs.unit.outlet_1.flow_mol[0] -
-                         iapws.fs.unit.outlet_2.flow_mol[0] -
-                         iapws.fs.unit.outlet_3.flow_mol[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    iapws.fs.unit.inlet.flow_mol[0]
+                    - iapws.fs.unit.outlet_1.flow_mol[0]
+                    - iapws.fs.unit.outlet_2.flow_mol[0]
+                    - iapws.fs.unit.outlet_3.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
 
-        assert abs(value(iapws.fs.unit.inlet.flow_mol[0] *
-                         iapws.fs.unit.inlet.enth_mol[0] -
-                         iapws.fs.unit.outlet_1.flow_mol[0] *
-                         iapws.fs.unit.outlet_1.enth_mol[0] -
-                         iapws.fs.unit.outlet_2.flow_mol[0] *
-                         iapws.fs.unit.outlet_2.enth_mol[0] -
-                         iapws.fs.unit.outlet_3.flow_mol[0] *
-                         iapws.fs.unit.outlet_3.enth_mol[0])) <= 1e-2
+        assert (
+            abs(
+                value(
+                    iapws.fs.unit.inlet.flow_mol[0] * iapws.fs.unit.inlet.enth_mol[0]
+                    - iapws.fs.unit.outlet_1.flow_mol[0]
+                    * iapws.fs.unit.outlet_1.enth_mol[0]
+                    - iapws.fs.unit.outlet_2.flow_mol[0]
+                    * iapws.fs.unit.outlet_2.enth_mol[0]
+                    - iapws.fs.unit.outlet_3.flow_mol[0]
+                    * iapws.fs.unit.outlet_3.enth_mol[0]
+                )
+            )
+            <= 1e-2
+        )
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1305,18 +1354,23 @@ class _IdealParameterBlock(PhysicalParameterBlock):
         self.c1 = Component()
         self.c2 = Component()
 
-        self._phase_component_set = Set(initialize=[
-            ("p1", "c1"), ("p1", "c2"), ("p2", "c1"), ("p2", "c2")])
+        self._phase_component_set = Set(
+            initialize=[("p1", "c1"), ("p1", "c2"), ("p2", "c1"), ("p2", "c2")]
+        )
 
         self._state_block_class = IdealStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': pyunits.s,
-                               'length': pyunits.m,
-                               'mass': pyunits.g,
-                               'amount': pyunits.mol,
-                               'temperature': pyunits.K})
+        obj.add_default_units(
+            {
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.g,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            }
+        )
 
 
 @declare_process_block_class("IdealStateBlock", block_class=StateBlock)
@@ -1329,32 +1383,27 @@ class IdealTestBlockData(StateBlockData):
         # Add an attribute to allow us to change the state variable definition
         self._state_var_switch = 1
 
-        self.flow_mol_phase_comp = Var(self.params.phase_list,
-                                       self.params.component_list,
-                                       initialize=2)
-        self.flow_mol_phase = Var(self.params.phase_list,
-                                  initialize=2)
-        self.flow_mol_comp = Var(self.params.component_list,
-                                 initialize=2)
+        self.flow_mol_phase_comp = Var(
+            self.params.phase_list, self.params.component_list, initialize=2
+        )
+        self.flow_mol_phase = Var(self.params.phase_list, initialize=2)
+        self.flow_mol_comp = Var(self.params.component_list, initialize=2)
         self.flow_mol = Var(initialize=2)
 
         self.pressure = Var(initialize=1e5)
         self.temperature = Var(initialize=300)
 
-        self.mole_frac_comp = Var(self.params.component_list,
-                                  initialize=0.5)
-        self.mole_frac_phase_comp = Var(self.params.phase_list,
-                                        self.params.component_list,
-                                        initialize=0.5)
+        self.mole_frac_comp = Var(self.params.component_list, initialize=0.5)
+        self.mole_frac_phase_comp = Var(
+            self.params.phase_list, self.params.component_list, initialize=0.5
+        )
 
         self.test_var = Var(initialize=1)
-        self.test_var_comp = Var(self.params.component_list,
-                                 initialize=1)
-        self.test_var_phase = Var(self.params.phase_list,
-                                  initialize=1)
-        self.test_var_phase_comp = Var(self.params.phase_list,
-                                       self.params.component_list,
-                                       initialize=1)
+        self.test_var_comp = Var(self.params.component_list, initialize=1)
+        self.test_var_phase = Var(self.params.phase_list, initialize=1)
+        self.test_var_phase_comp = Var(
+            self.params.phase_list, self.params.component_list, initialize=1
+        )
 
         # Set some values to make sure partitioning is correct
         self.flow_mol_phase_comp["p1", "c1"] = 1
@@ -1398,8 +1447,7 @@ class IdealTestBlockData(StateBlockData):
         elif self._state_var_switch == 5:
             return {"flow_mol_comp": self.flow_mol_comp}
         elif self._state_var_switch == 6:
-            return {"temperature": self.temperature,
-                    "pressure": self.pressure}
+            return {"temperature": self.temperature, "pressure": self.pressure}
         elif self._state_var_switch == 7:
             return {"test_var": self.test_var}
 
@@ -1414,15 +1462,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 4,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1430,55 +1483,38 @@ class TestIdealConstruction(object):
         m.outlet_list = m.fs.sep.create_outlet_list()
         m.fs.sep.add_mixed_state_block()
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
         assert isinstance(m.fs.sep.outlet_1, Port)
         assert isinstance(m.fs.sep.outlet_2, Port)
         assert isinstance(m.fs.sep.outlet_3, Port)
         assert isinstance(m.fs.sep.outlet_4, Port)
 
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p1", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_1.temperature[0]) == 300
         assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p1", "c2"]) == 2.0
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_3.component_flow_phase[
-            0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_3.component_flow_phase[
-            0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_3.component_flow_phase[
-            0, "p2", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_3.component_flow_phase[
-            0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_3.temperature[0]) == 300
         assert value(m.fs.sep.outlet_3.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_4.component_flow_phase[
-            0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_4.component_flow_phase[
-            0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_4.component_flow_phase[
-            0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_4.component_flow_phase[
-            0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p2", "c2"]) == 2.0
         assert value(m.fs.sep.outlet_4.temperature[0]) == 300
         assert value(m.fs.sep.outlet_4.pressure[0]) == 1e5
 
@@ -1488,13 +1524,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1",
-                                    ("p2"): "outlet_2"}})
+                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1502,31 +1540,22 @@ class TestIdealConstruction(object):
         m.outlet_list = m.fs.sep.create_outlet_list()
         m.fs.sep.add_mixed_state_block()
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
         assert isinstance(m.fs.sep.outlet_1, Port)
         assert isinstance(m.fs.sep.outlet_2, Port)
 
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p1", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p1", "c2"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_1.temperature[0]) == 300
         assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p2", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c2"]) == 2.0
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
@@ -1536,13 +1565,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1",
-                                    ("c2"): "outlet_2"}})
+                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1550,31 +1581,22 @@ class TestIdealConstruction(object):
         m.outlet_list = m.fs.sep.create_outlet_list()
         m.fs.sep.add_mixed_state_block()
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
         assert isinstance(m.fs.sep.outlet_1, Port)
         assert isinstance(m.fs.sep.outlet_2, Port)
 
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p1", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p2", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow_phase[
-            0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_1.temperature[0]) == 300
         assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p1", "c2"]) == 2.0
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[
-            0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c2"]) == 2.0
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
@@ -1584,14 +1606,16 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1",
-                                    ("c2"): "outlet_2"},
-                "construct_ports": False})
+                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
+                "construct_ports": False,
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1600,8 +1624,7 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         with pytest.raises(ConfigurationError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_ideal_w_total_flow(self):
@@ -1609,13 +1632,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.totalFlow,
-                "ideal_split_map": {("c1"): "outlet_1",
-                                    ("c2"): "outlet_2"}})
+                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1624,8 +1649,7 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         with pytest.raises(ConfigurationError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_ideal_w_no_split_map(self):
@@ -1633,11 +1657,14 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
-                "split_basis": SplittingType.totalFlow})
+                "split_basis": SplittingType.totalFlow,
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1646,8 +1673,7 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         with pytest.raises(ConfigurationError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_phase_component_mismatch(self):
@@ -1655,13 +1681,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 4,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2"}})
+                "ideal_split_map": {("p1", "c1"): "outlet_1", ("p1", "c2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1670,8 +1698,7 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         with pytest.raises(ConfigurationError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_component_mismatch(self):
@@ -1679,15 +1706,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1696,8 +1728,7 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         with pytest.raises(ConfigurationError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_phase_mismatch(self):
@@ -1705,15 +1736,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1722,8 +1758,7 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         with pytest.raises(ConfigurationError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_split_map_mismatch(self):
@@ -1731,15 +1766,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 1,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1748,8 +1788,7 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         with pytest.raises(ConfigurationError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_mole_frac_w_component_split(self):
@@ -1757,13 +1796,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {"c1": "outlet_1",
-                                    "c2": "outlet_2"}})
+                "ideal_split_map": {"c1": "outlet_1", "c2": "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1771,8 +1812,7 @@ class TestIdealConstruction(object):
         m.outlet_list = m.fs.sep.create_outlet_list()
         m.fs.sep.add_mixed_state_block()
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
         assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c1"]) == 1
         assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c2"]) == 1e-8
@@ -1785,13 +1825,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {"p1": "outlet_1",
-                                    "p2": "outlet_2"}})
+                "ideal_split_map": {"p1": "outlet_1", "p2": "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1799,8 +1841,7 @@ class TestIdealConstruction(object):
         m.outlet_list = m.fs.sep.create_outlet_list()
         m.fs.sep.add_mixed_state_block()
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
         assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c1"]) == 0.9
         assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c2"]) == 0.7
@@ -1813,15 +1854,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 4,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1829,8 +1875,7 @@ class TestIdealConstruction(object):
         m.outlet_list = m.fs.sep.create_outlet_list()
         m.fs.sep.add_mixed_state_block()
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
         assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c1"]) == 1
         assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c2"]) == 1e-8
@@ -1847,13 +1892,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {"p1": "outlet_1",
-                                    "p2": "outlet_2"}})
+                "ideal_split_map": {"p1": "outlet_1", "p2": "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1863,11 +1910,11 @@ class TestIdealConstruction(object):
 
         # Delete mole_frac_phase_comp so that the fallback should fail
         m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].mole_frac_phase_comp)
+            m.fs.sep.mixed_state[0].mole_frac_phase_comp
+        )
 
         with pytest.raises(AttributeError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_mole_frac_phase_w_component_split(self):
@@ -1875,13 +1922,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {"c1": "outlet_1",
-                                    "c2": "outlet_2"}})
+                "ideal_split_map": {"c1": "outlet_1", "c2": "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1891,26 +1940,17 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 2
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c1"]) == 1
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c2"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c1"]) == 1
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c2"]) == 1
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 1
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c2"]) == 1
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 1
 
     @pytest.mark.unit
     def test_mole_frac_phase_w_phase_split(self):
@@ -1918,13 +1958,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {"p1": "outlet_1",
-                                    "p2": "outlet_2"}})
+                "ideal_split_map": {"p1": "outlet_1", "p2": "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1936,23 +1978,15 @@ class TestIdealConstruction(object):
 
         m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c1"]) == 0.9
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c2"]) == 0.7
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c1"]) == 0.5
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c2"]) == 0.3
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c1"]) == 0.9
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c2"]) == 0.7
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c1"]) == 0.5
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c2"]) == 0.3
 
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c1"]) == 0.9
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c2"]) == 0.7
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 0.5
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 0.3
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c1"]) == 0.9
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c2"]) == 0.7
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 0.5
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 0.3
 
     @pytest.mark.unit
     def test_mole_frac_phase_w_phase_comp_split(self):
@@ -1960,15 +1994,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 4,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -1980,41 +2019,25 @@ class TestIdealConstruction(object):
 
         m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c1"]) == 1
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c2"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c1"]) == 1
-        assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c2"]) == 1
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 1
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c2"]) == 1
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 1
 
-        assert value(
-                m.fs.sep.outlet_3.mole_frac_phase_comp[0, "p1", "c1"]) == 1
-        assert value(
-                m.fs.sep.outlet_3.mole_frac_phase_comp[0, "p1", "c2"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_3.mole_frac_phase_comp[0, "p2", "c1"]) == 1
-        assert value(
-                m.fs.sep.outlet_3.mole_frac_phase_comp[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.mole_frac_phase_comp[0, "p1", "c1"]) == 1
+        assert value(m.fs.sep.outlet_3.mole_frac_phase_comp[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.mole_frac_phase_comp[0, "p2", "c1"]) == 1
+        assert value(m.fs.sep.outlet_3.mole_frac_phase_comp[0, "p2", "c2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p1", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p1", "c2"]) == 1
-        assert value(
-                m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p2", "c2"]) == 1
+        assert value(m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p1", "c2"]) == 1
+        assert value(m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p2", "c2"]) == 1
 
     @pytest.mark.unit
     def test_flow_phase_comp_w_phase_comp_split(self):
@@ -2022,15 +2045,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 4,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2040,44 +2068,27 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 3
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c1"]) == 1
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c2"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c2"]) == 2
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c2"]) == 2
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_3.flow_mol_phase_comp[0, "p1", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_3.flow_mol_phase_comp[0, "p1", "c2"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_3.flow_mol_phase_comp[0, "p2", "c1"]) == 3
-        assert value(
-                m.fs.sep.outlet_3.flow_mol_phase_comp[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.flow_mol_phase_comp[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.flow_mol_phase_comp[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.flow_mol_phase_comp[0, "p2", "c1"]) == 3
+        assert value(m.fs.sep.outlet_3.flow_mol_phase_comp[0, "p2", "c2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_4.flow_mol_phase_comp[0, "p1", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_4.flow_mol_phase_comp[0, "p1", "c2"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_4.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_4.flow_mol_phase_comp[0, "p2", "c2"]) == 4
+        assert value(m.fs.sep.outlet_4.flow_mol_phase_comp[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.flow_mol_phase_comp[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.flow_mol_phase_comp[0, "p2", "c2"]) == 4
 
     @pytest.mark.unit
     def test_flow_phase_comp_w_phase_split(self):
@@ -2085,13 +2096,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1",
-                                    ("p2"): "outlet_2"}})
+                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2101,26 +2114,17 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 3
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c1"]) == 1
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c2"]) == 2
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c2"]) == 2
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c2"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c1"]) == 3
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c2"]) == 4
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c1"]) == 3
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c2"]) == 4
 
     @pytest.mark.unit
     def test_flow_phase_comp_w_comp_split(self):
@@ -2128,13 +2132,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1",
-                                    ("c2"): "outlet_2"}})
+                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2144,26 +2150,17 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 3
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c1"]) == 1
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c2"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c1"]) == 3
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c1"]) == 3
+        assert value(m.fs.sep.outlet_1.flow_mol_phase_comp[0, "p2", "c2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c2"]) == 2
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c2"]) == 4
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c2"]) == 2
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c2"]) == 4
 
     @pytest.mark.unit
     def test_flow_phase_w_phase_comp_split(self):
@@ -2171,15 +2168,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 4,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2189,28 +2191,19 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 4
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase[0, "p1"]) == 1
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase[0, "p2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.flow_mol_phase[0, "p1"]) == 1
+        assert value(m.fs.sep.outlet_1.flow_mol_phase[0, "p2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase[0, "p1"]) == 2
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase[0, "p2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.flow_mol_phase[0, "p1"]) == 2
+        assert value(m.fs.sep.outlet_2.flow_mol_phase[0, "p2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_3.flow_mol_phase[0, "p1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_3.flow_mol_phase[0, "p2"]) == 3
+        assert value(m.fs.sep.outlet_3.flow_mol_phase[0, "p1"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.flow_mol_phase[0, "p2"]) == 3
 
-        assert value(
-                m.fs.sep.outlet_4.flow_mol_phase[0, "p1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_4.flow_mol_phase[0, "p2"]) == 4
+        assert value(m.fs.sep.outlet_4.flow_mol_phase[0, "p1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.flow_mol_phase[0, "p2"]) == 4
 
     @pytest.mark.unit
     def test_flow_phase_w_phase_comp_split_no_fallback(self):
@@ -2218,15 +2211,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 4,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2236,11 +2234,11 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 4
         m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].flow_mol_phase_comp)
+            m.fs.sep.mixed_state[0].flow_mol_phase_comp
+        )
 
         with pytest.raises(AttributeError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_flow_phase_w_phase_split(self):
@@ -2248,13 +2246,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1",
-                                    ("p2"): "outlet_2"}})
+                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2264,18 +2264,13 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 4
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase[0, "p1"]) == 5
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase[0, "p2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.flow_mol_phase[0, "p1"]) == 5
+        assert value(m.fs.sep.outlet_1.flow_mol_phase[0, "p2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase[0, "p1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase[0, "p2"]) == 6
+        assert value(m.fs.sep.outlet_2.flow_mol_phase[0, "p1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.flow_mol_phase[0, "p2"]) == 6
 
     @pytest.mark.unit
     def test_flow_phase_w_comp_split(self):
@@ -2283,13 +2278,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1",
-                                    ("c2"): "outlet_2"}})
+                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2299,18 +2296,13 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 4
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase[0, "p1"]) == 1
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_phase[0, "p2"]) == 3
+        assert value(m.fs.sep.outlet_1.flow_mol_phase[0, "p1"]) == 1
+        assert value(m.fs.sep.outlet_1.flow_mol_phase[0, "p2"]) == 3
 
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase[0, "p1"]) == 2
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_phase[0, "p2"]) == 4
+        assert value(m.fs.sep.outlet_2.flow_mol_phase[0, "p1"]) == 2
+        assert value(m.fs.sep.outlet_2.flow_mol_phase[0, "p2"]) == 4
 
     @pytest.mark.unit
     def test_flow_phase_w_comp_split_no_fallback(self):
@@ -2318,13 +2310,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1",
-                                    ("c2"): "outlet_2"}})
+                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2334,11 +2328,11 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 4
         m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].flow_mol_phase_comp)
+            m.fs.sep.mixed_state[0].flow_mol_phase_comp
+        )
 
         with pytest.raises(AttributeError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_flow_comp_w_phase_comp_split(self):
@@ -2346,15 +2340,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 4,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2364,28 +2363,19 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 5
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_comp[0, "c1"]) == 1
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_comp[0, "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.flow_mol_comp[0, "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.flow_mol_comp[0, "c2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_comp[0, "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_comp[0, "c2"]) == 2
+        assert value(m.fs.sep.outlet_2.flow_mol_comp[0, "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.flow_mol_comp[0, "c2"]) == 2
 
-        assert value(
-                m.fs.sep.outlet_3.flow_mol_comp[0, "c1"]) == 3
-        assert value(
-                m.fs.sep.outlet_3.flow_mol_comp[0, "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.flow_mol_comp[0, "c1"]) == 3
+        assert value(m.fs.sep.outlet_3.flow_mol_comp[0, "c2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_4.flow_mol_comp[0, "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_4.flow_mol_comp[0, "c2"]) == 4
+        assert value(m.fs.sep.outlet_4.flow_mol_comp[0, "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.flow_mol_comp[0, "c2"]) == 4
 
     @pytest.mark.unit
     def test_flow_comp_w_phase_comp_split_no_fallback(self):
@@ -2393,15 +2383,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 4,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2411,11 +2406,11 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 5
         m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].flow_mol_phase_comp)
+            m.fs.sep.mixed_state[0].flow_mol_phase_comp
+        )
 
         with pytest.raises(AttributeError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_flow_comp_w_phase_split(self):
@@ -2423,13 +2418,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1",
-                                    ("p2"): "outlet_2"}})
+                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2439,18 +2436,13 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 5
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_comp[0, "c1"]) == 1
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_comp[0, "c2"]) == 2
+        assert value(m.fs.sep.outlet_1.flow_mol_comp[0, "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.flow_mol_comp[0, "c2"]) == 2
 
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_comp[0, "c1"]) == 3
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_comp[0, "c2"]) == 4
+        assert value(m.fs.sep.outlet_2.flow_mol_comp[0, "c1"]) == 3
+        assert value(m.fs.sep.outlet_2.flow_mol_comp[0, "c2"]) == 4
 
     @pytest.mark.unit
     def test_flow_comp_w_phase_split_no_fallback(self):
@@ -2458,13 +2450,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1",
-                                    ("p2"): "outlet_2"}})
+                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2474,11 +2468,11 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 5
         m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].flow_mol_phase_comp)
+            m.fs.sep.mixed_state[0].flow_mol_phase_comp
+        )
 
         with pytest.raises(AttributeError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_flow_comp_w_comp_split(self):
@@ -2486,13 +2480,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1",
-                                    ("c2"): "outlet_2"}})
+                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2502,18 +2498,13 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 5
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_comp[0, "c1"]) == 7
-        assert value(
-                m.fs.sep.outlet_1.flow_mol_comp[0, "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.flow_mol_comp[0, "c1"]) == 7
+        assert value(m.fs.sep.outlet_1.flow_mol_comp[0, "c2"]) == 1e-8
 
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_comp[0, "c1"]) == 1e-8
-        assert value(
-                m.fs.sep.outlet_2.flow_mol_comp[0, "c2"]) == 8
+        assert value(m.fs.sep.outlet_2.flow_mol_comp[0, "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.flow_mol_comp[0, "c2"]) == 8
 
     @pytest.mark.unit
     def test_t_p(self):
@@ -2521,13 +2512,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1",
-                                    ("c2"): "outlet_2"}})
+                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2537,18 +2530,13 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 6
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.temperature[0]) == 300
-        assert value(
-                m.fs.sep.outlet_1.pressure[0]) == 1e5
+        assert value(m.fs.sep.outlet_1.temperature[0]) == 300
+        assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
 
-        assert value(
-                m.fs.sep.outlet_2.temperature[0]) == 300
-        assert value(
-                m.fs.sep.outlet_2.pressure[0]) == 1e5
+        assert value(m.fs.sep.outlet_2.temperature[0]) == 300
+        assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
     @pytest.mark.unit
     def test_general_comp_split(self):
@@ -2556,13 +2544,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1",
-                                    ("c2"): "outlet_2"}})
+                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2572,14 +2562,11 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 7
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.test_var[0]) == 2000
+        assert value(m.fs.sep.outlet_1.test_var[0]) == 2000
 
-        assert value(
-                m.fs.sep.outlet_2.test_var[0]) == 3000
+        assert value(m.fs.sep.outlet_2.test_var[0]) == 3000
 
     @pytest.mark.unit
     def test_general_comp_split_fallback(self):
@@ -2587,13 +2574,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1",
-                                    ("c2"): "outlet_2"}})
+                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2602,17 +2591,13 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         m.fs.sep.mixed_state[0]._state_var_switch = 7
-        m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].test_var_comp)
+        m.fs.sep.mixed_state[0].del_component(m.fs.sep.mixed_state[0].test_var_comp)
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.test_var[0]) == 14000
+        assert value(m.fs.sep.outlet_1.test_var[0]) == 14000
 
-        assert value(
-                m.fs.sep.outlet_2.test_var[0]) == 16000
+        assert value(m.fs.sep.outlet_2.test_var[0]) == 16000
 
     @pytest.mark.unit
     def test_general_comp_split_fallback_fail(self):
@@ -2620,13 +2605,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1",
-                                    ("c2"): "outlet_2"}})
+                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2635,14 +2622,13 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         m.fs.sep.mixed_state[0]._state_var_switch = 7
+        m.fs.sep.mixed_state[0].del_component(m.fs.sep.mixed_state[0].test_var_comp)
         m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].test_var_comp)
-        m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].test_var_phase_comp)
+            m.fs.sep.mixed_state[0].test_var_phase_comp
+        )
 
         with pytest.raises(AttributeError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_general_phase_split(self):
@@ -2650,13 +2636,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1",
-                                    ("p2"): "outlet_2"}})
+                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2666,14 +2654,11 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 7
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.test_var[0]) == 4000
+        assert value(m.fs.sep.outlet_1.test_var[0]) == 4000
 
-        assert value(
-                m.fs.sep.outlet_2.test_var[0]) == 5000
+        assert value(m.fs.sep.outlet_2.test_var[0]) == 5000
 
     @pytest.mark.unit
     def test_general_phase_split_fallback(self):
@@ -2681,13 +2666,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1",
-                                    ("p2"): "outlet_2"}})
+                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2696,17 +2683,13 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         m.fs.sep.mixed_state[0]._state_var_switch = 7
-        m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].test_var_phase)
+        m.fs.sep.mixed_state[0].del_component(m.fs.sep.mixed_state[0].test_var_phase)
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.test_var[0]) == 13000
+        assert value(m.fs.sep.outlet_1.test_var[0]) == 13000
 
-        assert value(
-                m.fs.sep.outlet_2.test_var[0]) == 17000
+        assert value(m.fs.sep.outlet_2.test_var[0]) == 17000
 
     @pytest.mark.unit
     def test_general_phase_split_fallback_fail(self):
@@ -2714,13 +2697,15 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 2,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1",
-                                    ("p2"): "outlet_2"}})
+                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2729,14 +2714,13 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         m.fs.sep.mixed_state[0]._state_var_switch = 7
+        m.fs.sep.mixed_state[0].del_component(m.fs.sep.mixed_state[0].test_var_phase)
         m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].test_var_phase)
-        m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].test_var_phase_comp)
+            m.fs.sep.mixed_state[0].test_var_phase_comp
+        )
 
         with pytest.raises(AttributeError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
     def test_general_phase_comp_split(self):
@@ -2744,15 +2728,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 4,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2762,17 +2751,12 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 7
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
-        assert value(
-                m.fs.sep.outlet_1.test_var[0]) == 6000
-        assert value(
-                m.fs.sep.outlet_2.test_var[0]) == 7000
-        assert value(
-                m.fs.sep.outlet_3.test_var[0]) == 8000
-        assert value(
-                m.fs.sep.outlet_4.test_var[0]) == 9000
+        assert value(m.fs.sep.outlet_1.test_var[0]) == 6000
+        assert value(m.fs.sep.outlet_2.test_var[0]) == 7000
+        assert value(m.fs.sep.outlet_3.test_var[0]) == 8000
+        assert value(m.fs.sep.outlet_4.test_var[0]) == 9000
 
     @pytest.mark.unit
     def test_general_phase_comp_split_fallback_fail(self):
@@ -2780,15 +2764,20 @@ class TestIdealConstruction(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={
+        m.fs.sep = SeparatorFrame(
+            default={
                 "property_package": m.fs.pp,
                 "num_outlets": 4,
                 "ideal_separation": True,
                 "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1",
-                                    ("p1", "c2"): "outlet_2",
-                                    ("p2", "c1"): "outlet_3",
-                                    ("p2", "c2"): "outlet_4"}})
+                "ideal_split_map": {
+                    ("p1", "c1"): "outlet_1",
+                    ("p1", "c2"): "outlet_2",
+                    ("p2", "c1"): "outlet_3",
+                    ("p2", "c2"): "outlet_4",
+                },
+            }
+        )
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -2798,11 +2787,11 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 7
         m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].test_var_phase_comp)
+            m.fs.sep.mixed_state[0].test_var_phase_comp
+        )
 
         with pytest.raises(AttributeError):
-            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
 
 # -----------------------------------------------------------------------------
@@ -2814,14 +2803,16 @@ class TestBTX_Ideal(object):
 
         m.fs.properties = BTXParameterBlock()
 
-        m.fs.unit = Separator(default={
+        m.fs.unit = Separator(
+            default={
                 "property_package": m.fs.properties,
                 "material_balance_type": MaterialBalanceType.componentPhase,
                 "split_basis": SplittingType.phaseFlow,
                 "ideal_separation": True,
-                "ideal_split_map": {"Vap": "outlet_1",
-                                    "Liq": "outlet_2"},
-                "has_phase_equilibrium": False})
+                "ideal_split_map": {"Vap": "outlet_1", "Liq": "outlet_2"},
+                "has_phase_equilibrium": False,
+            }
+        )
 
         m.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
         m.fs.unit.inlet.temperature[0].fix(368)  # K
@@ -2874,28 +2865,31 @@ class TestBTX_Ideal(object):
     def test_initialiszation(self, btx):
         btx.fs.unit.initialize()
 
-        assert (pytest.approx(1, abs=1e-4) ==
-                value(btx.fs.unit.mixed_state[0].flow_mol))
-        assert (pytest.approx(0.604, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].flow_mol_phase["Liq"]))
-        assert (pytest.approx(0.396, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].flow_mol_phase["Vap"]))
-        assert (pytest.approx(368.0, abs=1e-1) ==
-                value(btx.fs.unit.mixed_state[0].temperature))
-        assert (pytest.approx(101325, abs=1e3) ==
-                value(btx.fs.unit.mixed_state[0].pressure))
-        assert (pytest.approx(0.412, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
-                        "Liq", "benzene"]))
-        assert (pytest.approx(0.588, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
-                        "Liq", "toluene"]))
-        assert (pytest.approx(0.634, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
-                        "Vap", "benzene"]))
-        assert (pytest.approx(0.366, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
-                        "Vap", "toluene"]))
+        assert pytest.approx(1, abs=1e-4) == value(btx.fs.unit.mixed_state[0].flow_mol)
+        assert pytest.approx(0.604, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].flow_mol_phase["Liq"]
+        )
+        assert pytest.approx(0.396, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].flow_mol_phase["Vap"]
+        )
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            btx.fs.unit.mixed_state[0].temperature
+        )
+        assert pytest.approx(101325, abs=1e3) == value(
+            btx.fs.unit.mixed_state[0].pressure
+        )
+        assert pytest.approx(0.412, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].mole_frac_phase_comp["Liq", "benzene"]
+        )
+        assert pytest.approx(0.588, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].mole_frac_phase_comp["Liq", "toluene"]
+        )
+        assert pytest.approx(0.634, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].mole_frac_phase_comp["Vap", "benzene"]
+        )
+        assert pytest.approx(0.366, abs=1e-3) == value(
+            btx.fs.unit.mixed_state[0].mole_frac_phase_comp["Vap", "toluene"]
+        )
 
         assert degrees_of_freedom(btx) == 0
 
@@ -2912,51 +2906,72 @@ class TestBTX_Ideal(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert (pytest.approx(0.396, abs=1e-3) ==
-                value(btx.fs.unit.outlet_1.flow_mol[0]))
-        assert (pytest.approx(368.0, abs=1e-1) ==
-                value(btx.fs.unit.outlet_1.temperature[0]))
-        assert (pytest.approx(101325, abs=1e3) ==
-                value(btx.fs.unit.outlet_1.pressure[0]))
-        assert (pytest.approx(0.634, abs=1e-3) ==
-                value(btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]))
-        assert (pytest.approx(0.366, abs=1e-3) ==
-                value(btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]))
+        assert pytest.approx(0.396, abs=1e-3) == value(btx.fs.unit.outlet_1.flow_mol[0])
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            btx.fs.unit.outlet_1.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(btx.fs.unit.outlet_1.pressure[0])
+        assert pytest.approx(0.634, abs=1e-3) == value(
+            btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.366, abs=1e-3) == value(
+            btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]
+        )
 
-        assert (pytest.approx(0.604, abs=1e-3) ==
-                value(btx.fs.unit.outlet_2.flow_mol[0]))
-        assert (pytest.approx(368.0, abs=1e-1) ==
-                value(btx.fs.unit.outlet_2.temperature[0]))
-        assert (pytest.approx(101325, abs=1e3) ==
-                value(btx.fs.unit.outlet_2.pressure[0]))
-        assert (pytest.approx(0.412, abs=1e-3) ==
-                value(btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]))
-        assert (pytest.approx(0.588, abs=1e-3) ==
-                value(btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]))
+        assert pytest.approx(0.604, abs=1e-3) == value(btx.fs.unit.outlet_2.flow_mol[0])
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            btx.fs.unit.outlet_2.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(btx.fs.unit.outlet_2.pressure[0])
+        assert pytest.approx(0.412, abs=1e-3) == value(
+            btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.588, abs=1e-3) == value(
+            btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, btx):
-        assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
-                         btx.fs.unit.outlet_1.flow_mol[0] -
-                         btx.fs.unit.outlet_2.flow_mol[0])) <= 1e-5
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.inlet.flow_mol[0]
+                    - btx.fs.unit.outlet_1.flow_mol[0]
+                    - btx.fs.unit.outlet_2.flow_mol[0]
+                )
+            )
+            <= 1e-5
+        )
 
-        assert abs(value(
-                btx.fs.unit.inlet.flow_mol[0] *
-                btx.fs.unit.inlet.mole_frac_comp[0, "benzene"] -
-                btx.fs.unit.outlet_1.flow_mol[0] *
-                btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"] -
-                btx.fs.unit.outlet_2.flow_mol[0] *
-                btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"])) <= 1e-5
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.inlet.flow_mol[0]
+                    * btx.fs.unit.inlet.mole_frac_comp[0, "benzene"]
+                    - btx.fs.unit.outlet_1.flow_mol[0]
+                    * btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]
+                    - btx.fs.unit.outlet_2.flow_mol[0]
+                    * btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]
+                )
+            )
+            <= 1e-5
+        )
 
-        assert abs(value(
-                btx.fs.unit.inlet.flow_mol[0] *
-                btx.fs.unit.inlet.mole_frac_comp[0, "toluene"] -
-                btx.fs.unit.outlet_1.flow_mol[0] *
-                btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"] -
-                btx.fs.unit.outlet_2.flow_mol[0] *
-                btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"])) <= 1e-5
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.inlet.flow_mol[0]
+                    * btx.fs.unit.inlet.mole_frac_comp[0, "toluene"]
+                    - btx.fs.unit.outlet_1.flow_mol[0]
+                    * btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]
+                    - btx.fs.unit.outlet_2.flow_mol[0]
+                    * btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]
+                )
+            )
+            <= 1e-5
+        )
 
         # Assume energy conservation is covered by control volume tests
 

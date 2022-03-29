@@ -14,45 +14,47 @@
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Expression,
-                           Set,
-                           value,
-                           Var,
-                           units as pyunits)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Expression,
+    Set,
+    value,
+    Var,
+    units as pyunits,
+)
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.unittest import assertStructuredAlmostEqual
 
 from idaes.core import Component
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              fixed_variables_set,
-                                              activated_constraints_set)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    fixed_variables_set,
+    activated_constraints_set,
+)
 from idaes.core.util import get_solver
 
 from idaes.core import LiquidPhase, VaporPhase
 
-from idaes.models.properties.core.generic.generic_property import (
-        GenericParameterBlock)
+from idaes.models.properties.core.generic.generic_property import GenericParameterBlock
 
 from idaes.models.properties.core.state_definitions import FcTP
 from idaes.models.properties.core.eos.ideal import Ideal
 from idaes.models.properties.core.phase_equil import SmoothVLE
-from idaes.models.properties.core.phase_equil.bubble_dew import (
-        IdealBubbleDew)
+from idaes.models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
 from idaes.models.properties.core.phase_equil.forms import fugacity
 
 import idaes.models.properties.core.pure.Perrys as Perrys
 import idaes.models.properties.core.pure.RPP4 as RPP4
 import idaes.models.properties.core.pure.NIST as NIST
 
-from idaes.models.properties.tests.test_harness import \
-    PropertyTestHarness
+from idaes.models.properties.tests.test_harness import PropertyTestHarness
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
 
 def _as_quantity(x):
     unit = pyunits.get_units(x)
@@ -60,9 +62,10 @@ def _as_quantity(x):
         unit = pyunits.dimensionless
     return value(x) * unit._get_pint_unit()
 
+
 config_dict = {
     "components": {
-        'benzene': {
+        "benzene": {
             "type": Component,
             "dens_mol_liq_comp": Perrys,
             "enth_mol_liq_comp": Perrys,
@@ -70,28 +73,38 @@ config_dict = {
             "pressure_sat_comp": NIST,
             "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
             "parameter_data": {
-                "mw": 78.1136E-3,  # [1]
+                "mw": 78.1136e-3,  # [1]
                 "pressure_crit": 48.9e5,  # [1]
                 "temperature_crit": 562.2,  # [1]
-                "dens_mol_liq_comp_coeff": {'1': 1.0162,  # [2] pg. 2-98
-                                            '2': 0.2655,
-                                            '3': 562.16,
-                                            '4': 0.28212},
-                "cp_mol_ig_comp_coeff": {'A': -3.392E1,  # [1]
-                                         'B': 4.739E-1,
-                                         'C': -3.017E-4,
-                                         'D': 7.130E-8},
-                "cp_mol_liq_comp_coeff": {'1': 1.29E2,  # [2]
-                                          '2': -1.7E-1,
-                                          '3': 6.48E-4,
-                                          '4': 0,
-                                          '5': 0},
+                "dens_mol_liq_comp_coeff": {
+                    "1": 1.0162,  # [2] pg. 2-98
+                    "2": 0.2655,
+                    "3": 562.16,
+                    "4": 0.28212,
+                },
+                "cp_mol_ig_comp_coeff": {
+                    "A": -3.392e1,  # [1]
+                    "B": 4.739e-1,
+                    "C": -3.017e-4,
+                    "D": 7.130e-8,
+                },
+                "cp_mol_liq_comp_coeff": {
+                    "1": 1.29e2,  # [2]
+                    "2": -1.7e-1,
+                    "3": 6.48e-4,
+                    "4": 0,
+                    "5": 0,
+                },
                 "enth_mol_form_liq_comp_ref": 49.0e3,  # [3]
                 "enth_mol_form_vap_comp_ref": 82.9e3,  # [3]
-                "pressure_sat_comp_coeff": {'A': 4.72583,  # [NIST]
-                                            'B': 1660.652,
-                                            'C': -1.461}}},
-        'toluene': {
+                "pressure_sat_comp_coeff": {
+                    "A": 4.72583,  # [NIST]
+                    "B": 1660.652,
+                    "C": -1.461,
+                },
+            },
+        },
+        "toluene": {
             "type": Component,
             "dens_mol_liq_comp": Perrys,
             "enth_mol_liq_comp": Perrys,
@@ -99,45 +112,61 @@ config_dict = {
             "pressure_sat_comp": NIST,
             "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
             "parameter_data": {
-                "mw": 92.1405E-3,  # [1]
+                "mw": 92.1405e-3,  # [1]
                 "pressure_crit": 41e5,  # [1]
                 "temperature_crit": 591.8,  # [1]
-                "dens_mol_liq_comp_coeff": {'1': 0.8488,  # [2] pg. 2-98
-                                            '2': 0.26655,
-                                            '3': 591.8,
-                                            '4': 0.2878},
-                "cp_mol_ig_comp_coeff": {'A': -2.435E1,
-                                         'B': 5.125E-1,
-                                         'C': -2.765E-4,
-                                         'D': 4.911E-8},
-                "cp_mol_liq_comp_coeff": {'1': 1.40E2,  # [2]
-                                          '2': -1.52E-1,
-                                          '3': 6.95E-4,
-                                          '4': 0,
-                                          '5': 0},
+                "dens_mol_liq_comp_coeff": {
+                    "1": 0.8488,  # [2] pg. 2-98
+                    "2": 0.26655,
+                    "3": 591.8,
+                    "4": 0.2878,
+                },
+                "cp_mol_ig_comp_coeff": {
+                    "A": -2.435e1,
+                    "B": 5.125e-1,
+                    "C": -2.765e-4,
+                    "D": 4.911e-8,
+                },
+                "cp_mol_liq_comp_coeff": {
+                    "1": 1.40e2,  # [2]
+                    "2": -1.52e-1,
+                    "3": 6.95e-4,
+                    "4": 0,
+                    "5": 0,
+                },
                 "enth_mol_form_liq_comp_ref": 12.0e3,  # [3]
                 "enth_mol_form_vap_comp_ref": 50.1e3,  # [3]
-                "pressure_sat_comp_coeff": {'A': 4.07827,  # [NIST]
-                                            'B': 1343.943,
-                                            'C': -53.773}}}},
-    "phases":  {'Liq': {"type": LiquidPhase,
-                        "equation_of_state": Ideal},
-                'Vap': {"type": VaporPhase,
-                        "equation_of_state": Ideal}},
-    "base_units": {"time": pyunits.s,
-                   "length": pyunits.m,
-                   "mass": pyunits.kg,
-                   "amount": pyunits.mol,
-                   "temperature": pyunits.K},
+                "pressure_sat_comp_coeff": {
+                    "A": 4.07827,  # [NIST]
+                    "B": 1343.943,
+                    "C": -53.773,
+                },
+            },
+        },
+    },
+    "phases": {
+        "Liq": {"type": LiquidPhase, "equation_of_state": Ideal},
+        "Vap": {"type": VaporPhase, "equation_of_state": Ideal},
+    },
+    "base_units": {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.kg,
+        "amount": pyunits.mol,
+        "temperature": pyunits.K,
+    },
     "state_definition": FcTP,
-    "state_bounds": {"flow_mol_comp": (0, 100, 1000, pyunits.mol/pyunits.s),
-                     "temperature": (273.15, 300, 450, pyunits.K),
-                     "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
+    "state_bounds": {
+        "flow_mol_comp": (0, 100, 1000, pyunits.mol / pyunits.s),
+        "temperature": (273.15, 300, 450, pyunits.K),
+        "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+    },
     "pressure_ref": 1e5,
     "temperature_ref": 300,
     "phases_in_equilibrium": [("Vap", "Liq")],
     "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
-    "bubble_dew_method": IdealBubbleDew}
+    "bubble_dew_method": IdealBubbleDew,
+}
 
 
 @pytest.mark.unit
@@ -165,28 +194,34 @@ class TestParamBlock(object):
         assert isinstance(model.params.component_list, Set)
         assert len(model.params.component_list) == 2
         for i in model.params.component_list:
-            assert i in ['benzene',
-                         'toluene']
+            assert i in ["benzene", "toluene"]
             assert isinstance(model.params.get_component(i), Component)
 
         assert isinstance(model.params._phase_component_set, Set)
         assert len(model.params._phase_component_set) == 4
         for i in model.params._phase_component_set:
-            assert i in [("Liq", "benzene"), ("Liq", "toluene"),
-                         ("Vap", "benzene"), ("Vap", "toluene")]
+            assert i in [
+                ("Liq", "benzene"),
+                ("Liq", "toluene"),
+                ("Vap", "benzene"),
+                ("Vap", "toluene"),
+            ]
 
         assert model.params.config.state_definition == FcTP
 
         assertStructuredAlmostEqual(
             model.params.config.state_bounds,
-            {"flow_mol_comp": (0, 100, 1000, pyunits.mol/pyunits.s),
-             "temperature": (273.15, 300, 450, pyunits.K),
-              "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
+            {
+                "flow_mol_comp": (0, 100, 1000, pyunits.mol / pyunits.s),
+                "temperature": (273.15, 300, 450, pyunits.K),
+                "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+            },
             item_callback=_as_quantity,
         )
 
         assert model.params.config.phase_equilibrium_state == {
-            ("Vap", "Liq"): SmoothVLE}
+            ("Vap", "Liq"): SmoothVLE
+        }
 
         assert isinstance(model.params.phase_equilibrium_idx, Set)
         assert len(model.params.phase_equilibrium_idx) == 2
@@ -195,7 +230,8 @@ class TestParamBlock(object):
 
         assert model.params.phase_equilibrium_list == {
             "PE1": {"benzene": ("Vap", "Liq")},
-            "PE2": {"toluene": ("Vap", "Liq")}}
+            "PE2": {"toluene": ("Vap", "Liq")},
+        }
 
         assert model.params.pressure_ref.value == 1e5
         assert model.params.temperature_ref.value == 300
@@ -210,9 +246,8 @@ class TestStateBlock(object):
         model.params = GenericParameterBlock(default=config_dict)
 
         model.props = model.params.state_block_class(
-                [1],
-                default={"parameters": model.params,
-                         "defined_state": True})
+            [1], default={"parameters": model.params, "defined_state": True}
+        )
 
         model.props[1].calculate_scaling_factors()
 
@@ -255,54 +290,115 @@ class TestStateBlock(object):
 
         assert len(model.props[1].scaling_factor) == 25
         assert model.props[1].scaling_factor[model.props[1].flow_mol] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1].flow_mol_phase["Liq"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1].flow_mol_phase["Vap"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1].flow_mol_comp["benzene"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1].flow_mol_comp["toluene"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1].flow_mol_phase_comp["Liq", "benzene"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1].flow_mol_phase_comp["Liq", "toluene"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1].flow_mol_phase_comp["Vap", "benzene"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1].flow_mol_phase_comp["Vap", "toluene"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1].mole_frac_comp["benzene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1].mole_frac_comp["toluene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1].mole_frac_phase_comp["Liq", "benzene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1].mole_frac_phase_comp["Liq", "toluene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1].mole_frac_phase_comp["Vap", "benzene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1].mole_frac_phase_comp["Vap", "toluene"]] == 1000
+        assert (
+            model.props[1].scaling_factor[model.props[1].flow_mol_phase["Liq"]] == 1e-2
+        )
+        assert (
+            model.props[1].scaling_factor[model.props[1].flow_mol_phase["Vap"]] == 1e-2
+        )
+        assert (
+            model.props[1].scaling_factor[model.props[1].flow_mol_comp["benzene"]]
+            == 1e-2
+        )
+        assert (
+            model.props[1].scaling_factor[model.props[1].flow_mol_comp["toluene"]]
+            == 1e-2
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1].flow_mol_phase_comp["Liq", "benzene"]
+            ]
+            == 1e-2
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1].flow_mol_phase_comp["Liq", "toluene"]
+            ]
+            == 1e-2
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1].flow_mol_phase_comp["Vap", "benzene"]
+            ]
+            == 1e-2
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1].flow_mol_phase_comp["Vap", "toluene"]
+            ]
+            == 1e-2
+        )
+        assert (
+            model.props[1].scaling_factor[model.props[1].mole_frac_comp["benzene"]]
+            == 1000
+        )
+        assert (
+            model.props[1].scaling_factor[model.props[1].mole_frac_comp["toluene"]]
+            == 1000
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1].mole_frac_phase_comp["Liq", "benzene"]
+            ]
+            == 1000
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1].mole_frac_phase_comp["Liq", "toluene"]
+            ]
+            == 1000
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1].mole_frac_phase_comp["Vap", "benzene"]
+            ]
+            == 1000
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1].mole_frac_phase_comp["Vap", "toluene"]
+            ]
+            == 1000
+        )
         assert model.props[1].scaling_factor[model.props[1].pressure] == 1e-5
-        assert model.props[1].scaling_factor[
-            model.props[1].temperature] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1]._teq["Vap", "Liq"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1]._t1_Vap_Liq] == 1e-2
+        assert model.props[1].scaling_factor[model.props[1].temperature] == 1e-2
+        assert model.props[1].scaling_factor[model.props[1]._teq["Vap", "Liq"]] == 1e-2
+        assert model.props[1].scaling_factor[model.props[1]._t1_Vap_Liq] == 1e-2
 
-        assert model.props[1].scaling_factor[
-            model.props[1]._mole_frac_tbub["Vap", "Liq", "benzene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1]._mole_frac_tbub["Vap", "Liq", "toluene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1]._mole_frac_tdew["Vap", "Liq", "benzene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1]._mole_frac_tdew["Vap", "Liq", "toluene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1].temperature_bubble["Vap", "Liq"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1].temperature_dew["Vap", "Liq"]] == 1e-2
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1]._mole_frac_tbub["Vap", "Liq", "benzene"]
+            ]
+            == 1000
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1]._mole_frac_tbub["Vap", "Liq", "toluene"]
+            ]
+            == 1000
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1]._mole_frac_tdew["Vap", "Liq", "benzene"]
+            ]
+            == 1000
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1]._mole_frac_tdew["Vap", "Liq", "toluene"]
+            ]
+            == 1000
+        )
+        assert (
+            model.props[1].scaling_factor[
+                model.props[1].temperature_bubble["Vap", "Liq"]
+            ]
+            == 1e-2
+        )
+        assert (
+            model.props[1].scaling_factor[model.props[1].temperature_dew["Vap", "Liq"]]
+            == 1e-2
+        )
 
     @pytest.mark.unit
     def test_define_state_vars(self, model):
@@ -310,9 +406,7 @@ class TestStateBlock(object):
 
         assert len(sv) == 3
         for i in sv:
-            assert i in ["flow_mol_comp",
-                         "temperature",
-                         "pressure"]
+            assert i in ["flow_mol_comp", "temperature", "pressure"]
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
@@ -320,9 +414,7 @@ class TestStateBlock(object):
 
         assert len(sv) == 3
         for i in sv:
-            assert i in ["flow_mol_comp",
-                         "temperature",
-                         "pressure"]
+            assert i in ["flow_mol_comp", "temperature", "pressure"]
 
     @pytest.mark.unit
     def test_define_display_vars(self, model):
@@ -330,9 +422,7 @@ class TestStateBlock(object):
 
         assert len(sv) == 3
         for i in sv:
-            assert i in ["Molar Flowrate",
-                         "Temperature",
-                         "Pressure"]
+            assert i in ["Molar Flowrate", "Temperature", "Pressure"]
 
     @pytest.mark.unit
     def test_dof(self, model):
@@ -343,7 +433,7 @@ class TestStateBlock(object):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        model.props.initialize(optarg={'tol': 1e-6})
+        model.props.initialize(optarg={"tol": 1e-6})
 
         assert degrees_of_freedom(model) == 0
 
@@ -368,12 +458,13 @@ class TestStateBlock(object):
     @pytest.mark.component
     def test_solution(self, model):
         # Check phase equilibrium results
-        assert model.props[1].mole_frac_phase_comp["Liq", "benzene"].value == \
-            pytest.approx(0.4070, abs=1e-4)
-        assert model.props[1].mole_frac_phase_comp["Vap", "benzene"].value == \
-            pytest.approx(0.6296, abs=1e-4)
-        assert model.props[1].phase_frac["Vap"].value == \
-            pytest.approx(0.4177, abs=1e-4)
+        assert model.props[1].mole_frac_phase_comp[
+            "Liq", "benzene"
+        ].value == pytest.approx(0.4070, abs=1e-4)
+        assert model.props[1].mole_frac_phase_comp[
+            "Vap", "benzene"
+        ].value == pytest.approx(0.6296, abs=1e-4)
+        assert model.props[1].phase_frac["Vap"].value == pytest.approx(0.4177, abs=1e-4)
 
         assert value(model.props[1].enth_mol) == pytest.approx(48220.5, 1e-5)
 

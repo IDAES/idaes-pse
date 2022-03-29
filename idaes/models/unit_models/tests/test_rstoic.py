@@ -17,35 +17,37 @@ Author: Chinedu Okoli, Andrew Lee
 """
 import pytest
 
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           value,
-                           units,
-                           Var)
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+from pyomo.environ import check_optimal_termination, ConcreteModel, value, units, Var
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
-from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType)
+from idaes.core import (
+    FlowsheetBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+)
 
-from idaes.models.unit_models.stoichiometric_reactor import \
-    StoichiometricReactor
+from idaes.models.unit_models.stoichiometric_reactor import StoichiometricReactor
 
 from idaes.models.properties.examples.saponification_thermo import (
-    SaponificationParameterBlock)
+    SaponificationParameterBlock,
+)
 from idaes.models.properties.examples.saponification_reactions import (
-    SaponificationReactionParameterBlock)
+    SaponificationReactionParameterBlock,
+)
 
 from idaes.core.util import get_solver
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              number_unused_variables)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     ReactionParameterTestBlock,
-                                     initialization_tester)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+from idaes.core.util.testing import (
+    PhysicalParameterTestBlock,
+    ReactionParameterTestBlock,
+    initialization_tester,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -60,22 +62,23 @@ def test_config():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.properties = PhysicalParameterTestBlock()
-    m.fs.reactions = ReactionParameterTestBlock(default={
-                            "property_package": m.fs.properties})
+    m.fs.reactions = ReactionParameterTestBlock(
+        default={"property_package": m.fs.properties}
+    )
 
-    m.fs.unit = StoichiometricReactor(default={
+    m.fs.unit = StoichiometricReactor(
+        default={
             "property_package": m.fs.properties,
-            "reaction_package": m.fs.reactions})
+            "reaction_package": m.fs.reactions,
+        }
+    )
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 12
 
-    assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.useDefault
-    assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
+    assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+    assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_heat_transfer
     assert not m.fs.unit.config.has_pressure_change
     assert not m.fs.unit.config.has_heat_of_reaction
@@ -91,15 +94,19 @@ class TestSaponification(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.properties = SaponificationParameterBlock()
-        m.fs.reactions = SaponificationReactionParameterBlock(default={
-                                "property_package": m.fs.properties})
+        m.fs.reactions = SaponificationReactionParameterBlock(
+            default={"property_package": m.fs.properties}
+        )
 
-        m.fs.unit = StoichiometricReactor(default={
+        m.fs.unit = StoichiometricReactor(
+            default={
                 "property_package": m.fs.properties,
                 "reaction_package": m.fs.reactions,
                 "has_heat_transfer": True,
                 "has_heat_of_reaction": True,
-                "has_pressure_change": True})
+                "has_pressure_change": True,
+            }
+        )
 
         m.fs.unit.inlet.flow_vol.fix(1)
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
@@ -111,7 +118,7 @@ class TestSaponification(object):
         m.fs.unit.inlet.temperature.fix(303.15)
         m.fs.unit.inlet.pressure.fix(101325.0)
 
-        m.fs.unit.rate_reaction_extent[0, 'R1'].fix(90)
+        m.fs.unit.rate_reaction_extent[0, "R1"].fix(90)
         m.fs.unit.heat_duty.fix(0)
         m.fs.unit.deltaP.fix(0)
 
@@ -146,8 +153,9 @@ class TestSaponification(object):
         assert_units_consistent(sapon)
         assert_units_equivalent(sapon.fs.unit.heat_duty[0], units.W)
         assert_units_equivalent(sapon.fs.unit.deltaP[0], units.Pa)
-        assert_units_equivalent(sapon.fs.unit.rate_reaction_extent[0, "R1"],
-                                units.mol/units.s)
+        assert_units_equivalent(
+            sapon.fs.unit.rate_reaction_extent[0, "R1"], units.mol / units.s
+        )
 
     @pytest.mark.unit
     def test_dof(self, sapon):
@@ -173,41 +181,75 @@ class TestSaponification(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, sapon):
-        assert (pytest.approx(101325.0, abs=1e-2) ==
-                value(sapon.fs.unit.outlet.pressure[0]))
-        assert (pytest.approx(304.21, abs=1e-2) ==
-                value(sapon.fs.unit.outlet.temperature[0]))
-        assert (pytest.approx(90, abs=1e-2) ==
-                value(sapon.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]))
+        assert pytest.approx(101325.0, abs=1e-2) == value(
+            sapon.fs.unit.outlet.pressure[0]
+        )
+        assert pytest.approx(304.21, abs=1e-2) == value(
+            sapon.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(90, abs=1e-2) == value(
+            sapon.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, sapon):
-        assert abs(value(sapon.fs.unit.inlet.flow_vol[0] -
-                         sapon.fs.unit.outlet.flow_vol[0])) <= 1e-6
-        assert (abs(value(sapon.fs.unit.inlet.flow_vol[0] *
-                          sum(sapon.fs.unit.inlet.conc_mol_comp[0, j]
-                              for j in sapon.fs.properties.component_list) -
-                          sapon.fs.unit.outlet.flow_vol[0] *
-                          sum(sapon.fs.unit.outlet.conc_mol_comp[0, j]
-                              for j in sapon.fs.properties.component_list)))
-                <= 1e-6)
+        assert (
+            abs(
+                value(
+                    sapon.fs.unit.inlet.flow_vol[0] - sapon.fs.unit.outlet.flow_vol[0]
+                )
+            )
+            <= 1e-6
+        )
+        assert (
+            abs(
+                value(
+                    sapon.fs.unit.inlet.flow_vol[0]
+                    * sum(
+                        sapon.fs.unit.inlet.conc_mol_comp[0, j]
+                        for j in sapon.fs.properties.component_list
+                    )
+                    - sapon.fs.unit.outlet.flow_vol[0]
+                    * sum(
+                        sapon.fs.unit.outlet.conc_mol_comp[0, j]
+                        for j in sapon.fs.properties.component_list
+                    )
+                )
+            )
+            <= 1e-6
+        )
 
-        assert (pytest.approx(4410000, abs=1e3) == value(
-                sapon.fs.unit.control_volume.heat_of_reaction[0]))
-        assert abs(value(
-                (sapon.fs.unit.inlet.flow_vol[0] *
-                 sapon.fs.properties.dens_mol *
-                 sapon.fs.properties.cp_mol *
-                 (sapon.fs.unit.inlet.temperature[0] -
-                    sapon.fs.properties.temperature_ref)) -
-                (sapon.fs.unit.outlet.flow_vol[0] *
-                 sapon.fs.properties.dens_mol *
-                 sapon.fs.properties.cp_mol *
-                 (sapon.fs.unit.outlet.temperature[0] -
-                  sapon.fs.properties.temperature_ref)) +
-                sapon.fs.unit.control_volume.heat_of_reaction[0])) <= 1e-3
+        assert pytest.approx(4410000, abs=1e3) == value(
+            sapon.fs.unit.control_volume.heat_of_reaction[0]
+        )
+        assert (
+            abs(
+                value(
+                    (
+                        sapon.fs.unit.inlet.flow_vol[0]
+                        * sapon.fs.properties.dens_mol
+                        * sapon.fs.properties.cp_mol
+                        * (
+                            sapon.fs.unit.inlet.temperature[0]
+                            - sapon.fs.properties.temperature_ref
+                        )
+                    )
+                    - (
+                        sapon.fs.unit.outlet.flow_vol[0]
+                        * sapon.fs.properties.dens_mol
+                        * sapon.fs.properties.cp_mol
+                        * (
+                            sapon.fs.unit.outlet.temperature[0]
+                            - sapon.fs.properties.temperature_ref
+                        )
+                    )
+                    + sapon.fs.unit.control_volume.heat_of_reaction[0]
+                )
+            )
+            <= 1e-3
+        )
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -225,9 +267,11 @@ class TestSaponification(object):
         results = solver.solve(sapon)
         # Check for optimal solution
         assert check_optimal_termination(results)
-        assert (pytest.approx(56327.5803, abs=1e3) ==
-                value(sapon.fs.unit.costing.base_cost))
-        assert (pytest.approx(85432.06008, abs=1e3) ==
-                value(sapon.fs.unit.costing.purchase_cost))
+        assert pytest.approx(56327.5803, abs=1e3) == value(
+            sapon.fs.unit.costing.base_cost
+        )
+        assert pytest.approx(85432.06008, abs=1e3) == value(
+            sapon.fs.unit.costing.purchase_cost
+        )
 
         assert_units_consistent(sapon.fs.unit.costing)

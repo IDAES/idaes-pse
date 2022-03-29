@@ -29,25 +29,25 @@ prop_available = iapws95.iapws95_available()
 @pytest.mark.unit
 def test_htpx_invalid_args():
     with pytest.raises(ConfigurationError):
-        iapws95.htpx(300*pyunits.K, P=101325*pyunits.Pa, x=0.5)
+        iapws95.htpx(300 * pyunits.K, P=101325 * pyunits.Pa, x=0.5)
 
     with pytest.raises(ConfigurationError):
-        iapws95.htpx(100*pyunits.K, x=0.5)
+        iapws95.htpx(100 * pyunits.K, x=0.5)
 
     with pytest.raises(ConfigurationError):
-        iapws95.htpx(5e3*pyunits.K, x=0.5)
+        iapws95.htpx(5e3 * pyunits.K, x=0.5)
 
     with pytest.raises(ConfigurationError):
-        iapws95.htpx(300*pyunits.K, P=1e-10*pyunits.Pa)
+        iapws95.htpx(300 * pyunits.K, P=1e-10 * pyunits.Pa)
 
     with pytest.raises(ConfigurationError):
-        iapws95.htpx(300*pyunits.K, P=1e10*pyunits.Pa)
+        iapws95.htpx(300 * pyunits.K, P=1e10 * pyunits.Pa)
 
     with pytest.raises(ConfigurationError):
-        iapws95.htpx(300*pyunits.K, x=-1)
+        iapws95.htpx(300 * pyunits.K, x=-1)
 
     with pytest.raises(ConfigurationError):
-        iapws95.htpx(300*pyunits.K, x=2)
+        iapws95.htpx(300 * pyunits.K, x=2)
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
@@ -65,24 +65,29 @@ def test_htpx():
     offset = 9.22
 
     # Subcooled liquid
-    assert iapws95.htpx(300*pyunits.K, P=101325*pyunits.Pa) == pytest.approx(
-        112143 * mw + offset, 1e-5)
+    assert iapws95.htpx(300 * pyunits.K, P=101325 * pyunits.Pa) == pytest.approx(
+        112143 * mw + offset, 1e-5
+    )
 
     # Saturated liquid
-    assert iapws95.htpx(500*pyunits.K, x=0) == pytest.approx(
-        974919 * mw + offset, 1e-5)
+    assert iapws95.htpx(500 * pyunits.K, x=0) == pytest.approx(
+        974919 * mw + offset, 1e-5
+    )
 
     # Wet steam
-    assert iapws95.htpx(550*pyunits.K, x=0.5) == pytest.approx(
-        2.00138e06 * mw + offset, 1e-5)
+    assert iapws95.htpx(550 * pyunits.K, x=0.5) == pytest.approx(
+        2.00138e06 * mw + offset, 1e-5
+    )
 
     # Saturated vapor
-    assert iapws95.htpx(600*pyunits.K, x=1) == pytest.approx(
-        2.67730e06 * mw + offset, 1e-5)
+    assert iapws95.htpx(600 * pyunits.K, x=1) == pytest.approx(
+        2.67730e06 * mw + offset, 1e-5
+    )
 
     # Superheated steam
-    assert iapws95.htpx(400*pyunits.K, P=101325*pyunits.Pa) == pytest.approx(
-        2.72979e06 * mw + offset, 1e-5)
+    assert iapws95.htpx(400 * pyunits.K, P=101325 * pyunits.Pa) == pytest.approx(
+        2.72979e06 * mw + offset, 1e-5
+    )
 
 
 @pytest.mark.unit
@@ -113,11 +118,14 @@ class TestMixPh(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = iapws95.Iapws95ParameterBlock(default={
-                "temperature_bounds": (249*pyunits.K, 2501*pyunits.K),
-                "pressure_bounds": (0.11*pyunits.Pa, 1.1e9*pyunits.Pa),
+        model.params = iapws95.Iapws95ParameterBlock(
+            default={
+                "temperature_bounds": (249 * pyunits.K, 2501 * pyunits.K),
+                "pressure_bounds": (0.11 * pyunits.Pa, 1.1e9 * pyunits.Pa),
                 "enthalpy_mol_bounds": (
-                    0.1*pyunits.J/pyunits.mol, 1.1e5*pyunits.J/pyunits.mol),
+                    0.1 * pyunits.J / pyunits.mol,
+                    1.1e5 * pyunits.J / pyunits.mol,
+                ),
             }
         )
         return model
@@ -125,18 +133,22 @@ class TestMixPh(object):
     @pytest.mark.unit
     def test_config_enth_mass(self, model):
         model = ConcreteModel()
-        l = 0.1/0.018
-        u = 1.1e5/0.018
-        model.params = iapws95.Iapws95ParameterBlock(default={
+        l = 0.1 / 0.018
+        u = 1.1e5 / 0.018
+        model.params = iapws95.Iapws95ParameterBlock(
+            default={
                 "enthalpy_mass_bounds": (
-                    l*pyunits.J/pyunits.kg,
-                    u*pyunits.J/pyunits.kg)
+                    l * pyunits.J / pyunits.kg,
+                    u * pyunits.J / pyunits.kg,
+                )
             }
         )
         assert pytest.approx(0.1, rel=1e-3) == value(
-            model.params.default_enthalpy_bounds[0])
+            model.params.default_enthalpy_bounds[0]
+        )
         assert pytest.approx(1.1e5, rel=1e-3) == value(
-            model.params.default_enthalpy_bounds[1])
+            model.params.default_enthalpy_bounds[1]
+        )
 
     @pytest.mark.unit
     def test_config(self, model):
@@ -147,18 +159,12 @@ class TestMixPh(object):
         for i in model.params.phase_list:
             assert i in ["Mix"]
 
-        assert pytest.approx(249) == value(
-            model.params.default_temperature_bounds[0])
-        assert pytest.approx(2501) == value(
-            model.params.default_temperature_bounds[1])
-        assert pytest.approx(0.11) == value(
-            model.params.default_pressure_bounds[0])
-        assert pytest.approx(1.1e9) == value(
-            model.params.default_pressure_bounds[1])
-        assert pytest.approx(0.1) == value(
-            model.params.default_enthalpy_bounds[0])
-        assert pytest.approx(1.1e5) == value(
-            model.params.default_enthalpy_bounds[1])
+        assert pytest.approx(249) == value(model.params.default_temperature_bounds[0])
+        assert pytest.approx(2501) == value(model.params.default_temperature_bounds[1])
+        assert pytest.approx(0.11) == value(model.params.default_pressure_bounds[0])
+        assert pytest.approx(1.1e9) == value(model.params.default_pressure_bounds[1])
+        assert pytest.approx(0.1) == value(model.params.default_enthalpy_bounds[0])
+        assert pytest.approx(1.1e5) == value(model.params.default_enthalpy_bounds[1])
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -177,17 +183,15 @@ class TestMixPh(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert value(
-                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                assert value(model.prop[1].get_material_flow_terms(p, j)) == value(
                     model.prop[1].flow_mol
                 )
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert (
-                value(model.prop[1].get_enthalpy_flow_terms(p))
-                == value(model.prop[1].enth_mol * model.prop[1].flow_mol)
+            assert value(model.prop[1].get_enthalpy_flow_terms(p)) == value(
+                model.prop[1].enth_mol * model.prop[1].flow_mol
             )
 
     @pytest.mark.unit
@@ -202,8 +206,7 @@ class TestMixPh(object):
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert value(
-                model.prop[1].get_energy_density_terms(p)) == value(
+            assert value(model.prop[1].get_energy_density_terms(p)) == value(
                 model.prop[1].dens_mol * model.prop[1].energy_internal_mol
             )
 
@@ -320,8 +323,7 @@ class TestMixPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"flow_mol": 30})
+        flags = model.prop.initialize(hold_state=True, state_args={"flow_mol": 30})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -347,8 +349,7 @@ class TestMixPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"enth_mol": 300})
+        flags = model.prop.initialize(hold_state=True, state_args={"enth_mol": 300})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -374,8 +375,7 @@ class TestMixPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"pressure": 3000})
+        flags = model.prop.initialize(hold_state=True, state_args={"pressure": 3000})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -462,8 +462,7 @@ class TestLGPh(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert value(
-                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                assert value(model.prop[1].get_material_flow_terms(p, j)) == value(
                     model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
@@ -606,8 +605,7 @@ class TestLGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"flow_mol": 30})
+        flags = model.prop.initialize(hold_state=True, state_args={"flow_mol": 30})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -633,8 +631,7 @@ class TestLGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"enth_mol": 300})
+        flags = model.prop.initialize(hold_state=True, state_args={"enth_mol": 300})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -660,8 +657,7 @@ class TestLGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"pressure": 3000})
+        flags = model.prop.initialize(hold_state=True, state_args={"pressure": 3000})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -748,8 +744,7 @@ class TestLPh(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert value(
-                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                assert value(model.prop[1].get_material_flow_terms(p, j)) == value(
                     model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
@@ -892,8 +887,7 @@ class TestLPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"flow_mol": 30})
+        flags = model.prop.initialize(hold_state=True, state_args={"flow_mol": 30})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -919,8 +913,7 @@ class TestLPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"enth_mol": 300})
+        flags = model.prop.initialize(hold_state=True, state_args={"enth_mol": 300})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -946,8 +939,7 @@ class TestLPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"pressure": 3000})
+        flags = model.prop.initialize(hold_state=True, state_args={"pressure": 3000})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -1034,8 +1026,7 @@ class TestGPh(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert value(
-                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                assert value(model.prop[1].get_material_flow_terms(p, j)) == value(
                     model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
@@ -1178,8 +1169,7 @@ class TestGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"flow_mol": 30})
+        flags = model.prop.initialize(hold_state=True, state_args={"flow_mol": 30})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -1205,8 +1195,7 @@ class TestGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"enth_mol": 300})
+        flags = model.prop.initialize(hold_state=True, state_args={"enth_mol": 300})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -1232,8 +1221,7 @@ class TestGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"pressure": 3000})
+        flags = model.prop.initialize(hold_state=True, state_args={"pressure": 3000})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].enth_mol.fixed
@@ -1321,16 +1309,14 @@ class TestMixTpx(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert value(
-                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                assert value(model.prop[1].get_material_flow_terms(p, j)) == value(
                     model.prop[1].flow_mol
                 )
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert value(
-                model.prop[1].get_enthalpy_flow_terms(p)) == value(
+            assert value(model.prop[1].get_enthalpy_flow_terms(p)) == value(
                 model.prop[1].enth_mol * model.prop[1].flow_mol
             )
 
@@ -1346,8 +1332,7 @@ class TestMixTpx(object):
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert value(
-                model.prop[1].get_energy_density_terms(p)) == value(
+            assert value(model.prop[1].get_energy_density_terms(p)) == value(
                 model.prop[1].dens_mol * model.prop[1].energy_internal_mol
             )
 
@@ -1482,8 +1467,7 @@ class TestMixTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"flow_mol": 30})
+        flags = model.prop.initialize(hold_state=True, state_args={"flow_mol": 30})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -1514,8 +1498,7 @@ class TestMixTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"temperature": 300})
+        flags = model.prop.initialize(hold_state=True, state_args={"temperature": 300})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -1546,8 +1529,7 @@ class TestMixTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"pressure": 3000})
+        flags = model.prop.initialize(hold_state=True, state_args={"pressure": 3000})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -1646,8 +1628,7 @@ class TestLgTpx(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert value(
-                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                assert value(model.prop[1].get_material_flow_terms(p, j)) == value(
                     model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
@@ -1801,8 +1782,7 @@ class TestLgTpx(object):
         assert not model.prop[1].pressure.fixed
         assert not model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"flow_mol": 30})
+        flags = model.prop.initialize(hold_state=True, state_args={"flow_mol": 30})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -1831,8 +1811,7 @@ class TestLgTpx(object):
         assert not model.prop[1].pressure.fixed
         assert not model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"temperature": 300})
+        flags = model.prop.initialize(hold_state=True, state_args={"temperature": 300})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -1861,8 +1840,7 @@ class TestLgTpx(object):
         assert not model.prop[1].pressure.fixed
         assert not model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"pressure": 3000})
+        flags = model.prop.initialize(hold_state=True, state_args={"pressure": 3000})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -1955,8 +1933,7 @@ class TestLTpx(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert value(
-                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                assert value(model.prop[1].get_material_flow_terms(p, j)) == value(
                     model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
@@ -2110,8 +2087,7 @@ class TestLTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"flow_mol": 30})
+        flags = model.prop.initialize(hold_state=True, state_args={"flow_mol": 30})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -2140,8 +2116,7 @@ class TestLTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"temperature": 300})
+        flags = model.prop.initialize(hold_state=True, state_args={"temperature": 300})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -2170,8 +2145,7 @@ class TestLTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"pressure": 3000})
+        flags = model.prop.initialize(hold_state=True, state_args={"pressure": 3000})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -2265,8 +2239,7 @@ class TestGTpx(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert value(
-                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                assert value(model.prop[1].get_material_flow_terms(p, j)) == value(
                     model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
@@ -2420,8 +2393,7 @@ class TestGTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"flow_mol": 30})
+        flags = model.prop.initialize(hold_state=True, state_args={"flow_mol": 30})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -2450,8 +2422,7 @@ class TestGTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"temperature": 300})
+        flags = model.prop.initialize(hold_state=True, state_args={"temperature": 300})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -2480,8 +2451,7 @@ class TestGTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
-        flags = model.prop.initialize(hold_state=True,
-                                      state_args={"pressure": 3000})
+        flags = model.prop.initialize(hold_state=True, state_args={"pressure": 3000})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed

@@ -22,6 +22,7 @@ from idaes.core.util.exceptions import ConfigurationError
 # TODO : Only have temperature derivative expression for exponential_tau form
 # TODO : Add other derivative forms as/if required
 
+
 def parameters_nt_sum(cobj, prop, nlist, tlist):
     """
     Create parameters for expression forms using n-t parameters
@@ -39,21 +40,26 @@ def parameters_nt_sum(cobj, prop, nlist, tlist):
         raise ConfigurationError(
             f"{cobj.name} mismatched length between n and t parameters "
             f"for CoolProp exponential form for property {prop}. Please "
-            f"ensure the number of n and t parameters are equal.")
+            f"ensure the number of n and t parameters are equal."
+        )
 
     # Use multiple Vars, instead of single indexed Var, to have same
     # structure as cases where each parameter value has different units
 
     for i, nval in enumerate(nlist):
-        coeff = Var(doc="Multiplying parameter for CoolProp exponential form",
-                    units=pyunits.dimensionless)
-        cobj.add_component(prop+"_coeff_n"+str(i+1), coeff)
+        coeff = Var(
+            doc="Multiplying parameter for CoolProp exponential form",
+            units=pyunits.dimensionless,
+        )
+        cobj.add_component(prop + "_coeff_n" + str(i + 1), coeff)
         coeff.fix(nval)
 
     for i, tval in enumerate(tlist):
-        coeff = Var(doc="Exponent parameter for CoolProp exponential form",
-                    units=pyunits.dimensionless)
-        cobj.add_component(prop+"_coeff_t"+str(i+1), coeff)
+        coeff = Var(
+            doc="Exponent parameter for CoolProp exponential form",
+            units=pyunits.dimensionless,
+        )
+        cobj.add_component(prop + "_coeff_t" + str(i + 1), coeff)
         coeff.fix(tval)
 
 
@@ -76,7 +82,7 @@ def _nt_sum(cobj, prop, theta):
         try:
             ni = getattr(cobj, f"{prop}_coeff_n{i}")
             ti = getattr(cobj, f"{prop}_coeff_t{i}")
-            s += ni*theta**ti
+            s += ni * theta**ti
             i += 1
         except AttributeError:
             break
@@ -102,14 +108,14 @@ def expression_exponential(cobj, prop, T, yc, tau=False):
         Pyomo expression matching CoolProp exponential sum form
     """
     Tc = cobj.temperature_crit
-    theta = 1 - T/Tc
+    theta = 1 - T / Tc
 
     s = _nt_sum(cobj, prop, theta)
 
     if tau:
-        return yc*exp(Tc/T*s)
+        return yc * exp(Tc / T * s)
     else:
-        return yc*exp(s)
+        return yc * exp(s)
 
 
 def dT_expression_exponential(cobj, prop, T, yc, tau=False):
@@ -151,11 +157,11 @@ def expression_nonexponential(cobj, prop, T, yc):
     """
     # y = yc * (1 + sum(ni*theta^ti))
     Tc = cobj.temperature_crit
-    theta = 1 - T/Tc
+    theta = 1 - T / Tc
 
     s = _nt_sum(cobj, prop, theta)
 
-    return yc*(1 + s)
+    return yc * (1 + s)
 
 
 def parameters_polynomial(cobj, prop, prop_units, alist, blist):
@@ -177,11 +183,10 @@ def parameters_polynomial(cobj, prop, prop_units, alist, blist):
         if i == 0:
             param_units = prop_units
         else:
-            param_units = prop_units/pyunits.K**i
+            param_units = prop_units / pyunits.K**i
 
-        coeff = Var(doc="A parameter for CoolProp polynomial form",
-                    units=param_units)
-        cobj.add_component(prop+"_coeff_A"+str(i), coeff)
+        coeff = Var(doc="A parameter for CoolProp polynomial form", units=param_units)
+        cobj.add_component(prop + "_coeff_A" + str(i), coeff)
         coeff.fix(aval)
 
     for i, bval in enumerate(blist):
@@ -190,9 +195,8 @@ def parameters_polynomial(cobj, prop, prop_units, alist, blist):
         else:
             param_units = pyunits.K**-i
 
-        coeff = Var(doc="B parameter for CoolProp exponential form",
-                    units=param_units)
-        cobj.add_component(prop+"_coeff_B"+str(i), coeff)
+        coeff = Var(doc="B parameter for CoolProp exponential form", units=param_units)
+        cobj.add_component(prop + "_coeff_B" + str(i), coeff)
         coeff.fix(bval)
 
 
@@ -213,7 +217,7 @@ def expression_polynomial(cobj, prop, T):
     try:
         while True:
             Ai = getattr(cobj, f"{prop}_coeff_A{i}")
-            asum += Ai*T**i
+            asum += Ai * T**i
             i += 1
     except AttributeError:
         pass
@@ -223,9 +227,9 @@ def expression_polynomial(cobj, prop, T):
     try:
         while True:
             Bi = getattr(cobj, f"{prop}_coeff_B{i}")
-            bsum += Bi*T**i
+            bsum += Bi * T**i
             i += 1
     except AttributeError:
         pass
 
-    return asum/bsum
+    return asum / bsum

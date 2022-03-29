@@ -17,9 +17,7 @@ Standard IDAES StateJunction model.
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (declare_process_block_class,
-                        UnitModelBlockData,
-                        useDefault)
+from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 
@@ -105,16 +103,11 @@ see property package for documentation.}""",
         )
 
         # Add Ports
-        self.add_inlet_port(name="inlet",
-                            block=self.properties,
-                            doc="Inlet block")
-        self.add_outlet_port(name="outlet",
-                             block=self.properties,
-                             doc="Outlet block")
+        self.add_inlet_port(name="inlet", block=self.properties, doc="Inlet block")
+        self.add_outlet_port(name="outlet", block=self.properties, doc="Outlet block")
 
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET,
-        solver=None, optarg=None
+        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
         This method initializes the StateJunction block by calling the
@@ -143,6 +136,6 @@ see property package for documentation.}""",
             optarg=optarg,
             solver=solver,
             hold_state=False,
-            state_args=state_args
+            state_args=state_args,
         )
         init_log.info("Initialization Step Complete.")

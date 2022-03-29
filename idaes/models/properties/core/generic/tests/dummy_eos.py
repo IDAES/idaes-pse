@@ -80,23 +80,23 @@ class DummyEoS(EoSBase):
 
     @staticmethod
     def dens_mol_phase(b, p):
-        return 55e3*pyunits.mol/pyunits.m**3
+        return 55e3 * pyunits.mol / pyunits.m**3
 
     @staticmethod
     def energy_internal_mol_phase(b, p):
-        return 2e2*b.temperature
+        return 2e2 * b.temperature
 
     @staticmethod
     def energy_internal_mol_phase_comp(b, p, j):
-        return 2e2*b.temperature
+        return 2e2 * b.temperature
 
     @staticmethod
     def enth_mol_phase(b, p):
-        return 1e2*b.temperature
+        return 1e2 * b.temperature
 
     @staticmethod
     def enth_mol_phase_comp(b, p, j):
-        return 1e2*b.temperature
+        return 1e2 * b.temperature
 
     @staticmethod
     def entr_mol_phase(b, p):
@@ -133,7 +133,7 @@ class DummyEoS(EoSBase):
     @staticmethod
     def vol_mol_phase(b, p):
         return 42
-    
+
     @staticmethod
     def vol_mol_phase_comp(b, p, j):
         return 42

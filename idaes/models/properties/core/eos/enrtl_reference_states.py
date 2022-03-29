@@ -26,8 +26,7 @@ Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 """
 from pyomo.environ import Expression
 
-from idaes.models.properties.core.generic.utility import (
-    get_component_object as cobj)
+from idaes.models.properties.core.generic.utility import get_component_object as cobj
 import idaes.logger as idaeslog
 
 
@@ -43,19 +42,22 @@ class Unsymmetric(object):
     """
     Sub-methods for the symmetric (fused-salt) reference state
     """
+
     @staticmethod
     def ref_state(b, pname):
         def rule_x_ref(b, i):
             if i in b.params.solvent_set or i in b.params.solute_set:
                 # Eqn 66
-                return (b.mole_frac_phase_comp_true[pname, i] /
-                        sum(b.mole_frac_phase_comp_true[pname, j]
-                            for j in b.params.solvent_set|b.params.solute_set))
+                return b.mole_frac_phase_comp_true[pname, i] / sum(
+                    b.mole_frac_phase_comp_true[pname, j]
+                    for j in b.params.solvent_set | b.params.solute_set
+                )
             else:
                 return EPS
 
-        b.add_component(pname+"_x_ref",
-                        Expression(b.params.true_species_set, rule=rule_x_ref))
+        b.add_component(
+            pname + "_x_ref", Expression(b.params.true_species_set, rule=rule_x_ref)
+        )
 
     @staticmethod
     def ndIdn(b, pname, i):
@@ -67,29 +69,33 @@ class Symmetric(object):
     """
     Sub-methods for the symmetric (fused-salt) reference state
     """
+
     @staticmethod
     def ref_state(b, pname):
         def rule_x_ref(b, i):
             if i in b.params.ion_set:
                 # Eqn 66
-                return (b.mole_frac_phase_comp_true[pname, i] /
-                        sum(b.mole_frac_phase_comp_true[pname, j]
-                            for j in b.params.ion_set))
+                return b.mole_frac_phase_comp_true[pname, i] / sum(
+                    b.mole_frac_phase_comp_true[pname, j] for j in b.params.ion_set
+                )
             else:
                 return 0
 
-        b.add_component(pname+"_x_ref",
-                        Expression(b.params.true_species_set, rule=rule_x_ref))
+        b.add_component(
+            pname + "_x_ref", Expression(b.params.true_species_set, rule=rule_x_ref)
+        )
 
     @staticmethod
     def ndIdn(b, pname, i):
         # Eqn 75
-        return 0.5*sum(cobj(b, j).config.charge**2*ndxdn(b, pname, i, j)
-                       for j in b.params.ion_set)
+        return 0.5 * sum(
+            cobj(b, j).config.charge ** 2 * ndxdn(b, pname, i, j)
+            for j in b.params.ion_set
+        )
 
 
 def ndxdn(b, pname, i, j):
-    x0 = getattr(b, pname+"_x_ref")
+    x0 = getattr(b, pname + "_x_ref")
 
     # Delta function used in Eqns 73-76 (not defined in paper)
     if i == j:
@@ -98,6 +104,6 @@ def ndxdn(b, pname, i, j):
         delta = 0
 
     # Eqn 76
-    return ((delta - x0[j]) /
-            sum(b.mole_frac_phase_comp_true[pname, k]
-                for k in b.params.ion_set))
+    return (delta - x0[j]) / sum(
+        b.mole_frac_phase_comp_true[pname, k] for k in b.params.ion_set
+    )

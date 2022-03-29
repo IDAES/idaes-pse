@@ -47,15 +47,15 @@ def model():
     m.rparams.config.rate_reactions = ConfigBlock(implicit=True)
     m.rparams.config.rate_reactions.r1 = ConfigBlock(implicit=True)
     m.rparams.config.rate_reactions.r1 = {
-        "stoichiometry": {("p1", "c1"): -1,
-                          ("p1", "c2"): 2},
-        "parameter_data": {}}
+        "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+        "parameter_data": {},
+    }
     m.rparams.config.equilibrium_reactions = ConfigBlock(implicit=True)
     m.rparams.config.equilibrium_reactions.e1 = ConfigBlock(implicit=True)
     m.rparams.config.equilibrium_reactions.e1 = {
-        "stoichiometry": {("p1", "c1"): -1,
-                          ("p1", "c2"): 2},
-        "parameter_data": {}}
+        "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+        "parameter_data": {},
+    }
 
     m.rparams.reaction_r1 = Block()
     m.rparams.reaction_e1 = Block()
@@ -69,6 +69,7 @@ def model():
 
     def get_metadata(self):
         return m.meta_object
+
     m.rparams.get_metadata = types.MethodType(get_metadata, m.rparams)
 
     # Create a dummy state block
@@ -81,16 +82,15 @@ def model():
 
 @pytest.mark.unit
 def test_constant_dh_rxn(model):
-    model.rparams.config.rate_reactions.r1.parameter_data = {
-        "dh_rxn_ref": 1}
-    model.rparams.config.equilibrium_reactions.e1.parameter_data = {
-        "dh_rxn_ref": 10}
+    model.rparams.config.rate_reactions.r1.parameter_data = {"dh_rxn_ref": 1}
+    model.rparams.config.equilibrium_reactions.e1.parameter_data = {"dh_rxn_ref": 10}
 
     constant_dh_rxn.build_parameters(
-        model.rparams.reaction_r1, model.rparams.config.rate_reactions["r1"])
+        model.rparams.reaction_r1, model.rparams.config.rate_reactions["r1"]
+    )
     constant_dh_rxn.build_parameters(
-        model.rparams.reaction_e1,
-        model.rparams.config.equilibrium_reactions["e1"])
+        model.rparams.reaction_e1, model.rparams.config.equilibrium_reactions["e1"]
+    )
 
     # Check parameter construction
     assert isinstance(model.rparams.reaction_r1.dh_rxn_ref, Var)
@@ -101,13 +101,15 @@ def test_constant_dh_rxn(model):
 
     # Check expressions
     rform = constant_dh_rxn.return_expression(
-        model.rxn[1], model.rparams.reaction_r1, "r1", 300)
+        model.rxn[1], model.rparams.reaction_r1, "r1", 300
+    )
 
     assert str(rform) == str(model.rparams.reaction_r1.dh_rxn_ref)
 
     rform = constant_dh_rxn.return_expression(
-        model.rxn[1], model.rparams.reaction_e1, "e1", 300)
+        model.rxn[1], model.rparams.reaction_e1, "e1", 300
+    )
 
     assert str(rform) == str(model.rparams.reaction_e1.dh_rxn_ref)
-    
-    assert_units_equivalent(rform, pyunits.J/pyunits.mol)
+
+    assert_units_equivalent(rform, pyunits.J / pyunits.mol)

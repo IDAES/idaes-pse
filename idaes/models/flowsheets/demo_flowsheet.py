@@ -23,8 +23,9 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.initialization import propagate_state
-from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
 from idaes.models.unit_models import Mixer, Heater, Flash
 
 import idaes.logger as idaeslog

@@ -15,8 +15,7 @@ __author__ = "John Eslick"
 
 import pytest
 import idaes.models.properties.iapws95 as iapws95
-from idaes.models.properties.tests.test_harness import \
-    PropertyTestHarness
+from idaes.models.properties.tests.test_harness import PropertyTestHarness
 import pyomo.environ as pyo
 
 

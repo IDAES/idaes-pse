@@ -17,26 +17,29 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Constraint,
-                           value,
-                           units)
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    value,
+    units,
+)
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import FlowsheetBlock, EnergyBalanceType, MomentumBalanceType
 from idaes.models.unit_models.gibbs_reactor import GibbsReactor
-from idaes.models.properties.activity_coeff_models.methane_combustion_ideal \
-    import MethaneParameterBlock as MethaneCombustionParameterBlock
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
-                                              number_unused_variables)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     initialization_tester)
+from idaes.models.properties.activity_coeff_models.methane_combustion_ideal import (
+    MethaneParameterBlock as MethaneCombustionParameterBlock,
+)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    fixed_variables_set,
+    activated_constraints_set,
+    number_unused_variables,
+)
+from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import get_solver
 from idaes.core.util.exceptions import ConfigurationError
 
@@ -61,10 +64,8 @@ def test_config():
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
-    assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.useDefault
-    assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
+    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+    assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_heat_transfer
     assert not m.fs.unit.config.has_pressure_change
     assert m.fs.unit.config.property_package is m.fs.properties
@@ -83,8 +84,9 @@ def test_inerts():
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
-                                      "inert_species": ["c1"]})
+    m.fs.unit = GibbsReactor(
+        default={"property_package": m.fs.properties, "inert_species": ["c1"]}
+    )
 
     assert isinstance(m.fs.unit.inert_species_balance, Constraint)
     assert len(m.fs.unit.inert_species_balance) == 2
@@ -102,11 +104,14 @@ def test_inerts_dependent_w_multi_phase():
 
     m.fs.properties = PhysicalParameterTestBlock()
     # Change elemental composition to introduce dependency
-    m.fs.properties.element_comp = {"c1": {"H": 0, "He": 0, "Li": 3},
-                                    "c2": {"H": 4, "He": 5, "Li": 0}}
+    m.fs.properties.element_comp = {
+        "c1": {"H": 0, "He": 0, "Li": 3},
+        "c2": {"H": 4, "He": 5, "Li": 0},
+    }
 
-    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
-                                      "inert_species": ["c1"]})
+    m.fs.unit = GibbsReactor(
+        default={"property_package": m.fs.properties, "inert_species": ["c1"]}
+    )
 
     assert isinstance(m.fs.unit.inert_species_balance, Constraint)
     assert len(m.fs.unit.inert_species_balance) == 2
@@ -126,11 +131,14 @@ def test_inerts_dependent_w_single_phase():
     # Set phase list to only have 1 phase
     m.fs.properties.phase_list = ["p1"]
     # Change elemental composition to introduce dependency
-    m.fs.properties.element_comp = {"c1": {"H": 0, "He": 0, "Li": 3},
-                                    "c2": {"H": 4, "He": 5, "Li": 0}}
+    m.fs.properties.element_comp = {
+        "c1": {"H": 0, "He": 0, "Li": 3},
+        "c2": {"H": 4, "He": 5, "Li": 0},
+    }
 
-    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
-                                      "inert_species": ["c1"]})
+    m.fs.unit = GibbsReactor(
+        default={"property_package": m.fs.properties, "inert_species": ["c1"]}
+    )
 
     assert isinstance(m.fs.unit.inert_species_balance, Constraint)
     assert len(m.fs.unit.inert_species_balance) == 0
@@ -147,12 +155,15 @@ def test_invalid_inert():
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    with pytest.raises(ConfigurationError,
-                       match="fs.unit invalid component in inert_species "
-                       "argument. foo is not in the property package "
-                       "component list."):
-        m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
-                                          "inert_species": ["foo"]})
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.unit invalid component in inert_species "
+        "argument. foo is not in the property package "
+        "component list.",
+    ):
+        m.fs.unit = GibbsReactor(
+            default={"property_package": m.fs.properties, "inert_species": ["foo"]}
+        )
 
 
 # -----------------------------------------------------------------------------
@@ -164,10 +175,13 @@ class TestMethane(object):
 
         m.fs.properties = MethaneCombustionParameterBlock()
 
-        m.fs.unit = GibbsReactor(default={
+        m.fs.unit = GibbsReactor(
+            default={
                 "property_package": m.fs.properties,
                 "has_heat_transfer": True,
-                "has_pressure_change": True})
+                "has_pressure_change": True,
+            }
+        )
 
         m.fs.unit.inlet.flow_mol[0].fix(230.0)
         m.fs.unit.inlet.mole_frac_comp[0, "H2"].fix(0.0435)
@@ -225,19 +239,25 @@ class TestMethane(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_temperature(self, methane):
-        initialization_tester(methane,
-                              optarg={'tol': 1e-6},
-                              state_args={'temperature': 2844.38,
-                                          'pressure': 101325.0,
-                                          'flow_mol': 251.05,
-                                          'mole_frac_comp': {'CH4': 1e-5,
-                                                             'CO': 0.0916,
-                                                             'CO2': 0.0281,
-                                                             'H2': 0.1155,
-                                                             'H2O': 0.1633,
-                                                             'N2': 0.5975,
-                                                             'NH3': 1e-5,
-                                                             'O2': 0.0067}})
+        initialization_tester(
+            methane,
+            optarg={"tol": 1e-6},
+            state_args={
+                "temperature": 2844.38,
+                "pressure": 101325.0,
+                "flow_mol": 251.05,
+                "mole_frac_comp": {
+                    "CH4": 1e-5,
+                    "CO": 0.0916,
+                    "CO2": 0.0281,
+                    "H2": 0.1155,
+                    "H2O": 0.1633,
+                    "N2": 0.5975,
+                    "NH3": 1e-5,
+                    "O2": 0.0067,
+                },
+            },
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -252,41 +272,58 @@ class TestMethane(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution_temperature(self, methane):
-        assert (pytest.approx(250.06, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol[0]))
-        assert (pytest.approx(0.0, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "CH4"]))
-        assert (pytest.approx(0.0974, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "CO"]))
-        assert (pytest.approx(0.0226, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "CO2"]))
-        assert (pytest.approx(0.1030, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "H2"]))
-        assert (pytest.approx(0.1769, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "H2O"]))
-        assert (pytest.approx(0.5999, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "N2"]))
-        assert (pytest.approx(0.0, abs=1e-5) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "NH3"]))
-        assert (pytest.approx(0.0002, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "O2"]))
-        assert (pytest.approx(-7454077, abs=1e2) ==
-                value(methane.fs.unit.heat_duty[0]))
-        assert (pytest.approx(101325.0, abs=1e-2) ==
-                value(methane.fs.unit.outlet.pressure[0]))
+        assert pytest.approx(250.06, abs=1e-2) == value(
+            methane.fs.unit.outlet.flow_mol[0]
+        )
+        assert pytest.approx(0.0, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "CH4"]
+        )
+        assert pytest.approx(0.0974, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "CO"]
+        )
+        assert pytest.approx(0.0226, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.1030, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "H2"]
+        )
+        assert pytest.approx(0.1769, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "H2O"]
+        )
+        assert pytest.approx(0.5999, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "N2"]
+        )
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "NH3"]
+        )
+        assert pytest.approx(0.0002, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "O2"]
+        )
+        assert pytest.approx(-7454077, abs=1e2) == value(methane.fs.unit.heat_duty[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(
+            methane.fs.unit.outlet.pressure[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation_temperature(self, methane):
-        assert abs(value(
-                methane.fs.unit.inlet.flow_mol[0] *
-                methane.fs.unit.control_volume.properties_in[0]
-                    .enth_mol_phase["Vap"] -
-                methane.fs.unit.outlet.flow_mol[0] *
-                methane.fs.unit.control_volume.properties_out[0]
-                    .enth_mol_phase["Vap"] +
-                methane.fs.unit.heat_duty[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    methane.fs.unit.inlet.flow_mol[0]
+                    * methane.fs.unit.control_volume.properties_in[0].enth_mol_phase[
+                        "Vap"
+                    ]
+                    - methane.fs.unit.outlet.flow_mol[0]
+                    * methane.fs.unit.control_volume.properties_out[0].enth_mol_phase[
+                        "Vap"
+                    ]
+                    + methane.fs.unit.heat_duty[0]
+                )
+            )
+            <= 1e-6
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -300,18 +337,23 @@ class TestMethane(object):
         orig_act_consts = activated_constraints_set(methane)
 
         methane.fs.unit.initialize(
-                          optarg={'tol': 1e-6},
-                          state_args={'temperature': 2844.38,
-                                      'pressure': 101325.0,
-                                      'flow_mol': 251.05,
-                                      'mole_frac_comp': {'CH4': 1e-5,
-                                                         'CO': 0.0916,
-                                                         'CO2': 0.0281,
-                                                         'H2': 0.1155,
-                                                         'H2O': 0.1633,
-                                                         'N2': 0.5975,
-                                                         'NH3': 1e-5,
-                                                         'O2': 0.0067}})
+            optarg={"tol": 1e-6},
+            state_args={
+                "temperature": 2844.38,
+                "pressure": 101325.0,
+                "flow_mol": 251.05,
+                "mole_frac_comp": {
+                    "CH4": 1e-5,
+                    "CO": 0.0916,
+                    "CO2": 0.0281,
+                    "H2": 0.1155,
+                    "H2O": 0.1633,
+                    "N2": 0.5975,
+                    "NH3": 1e-5,
+                    "O2": 0.0067,
+                },
+            },
+        )
 
         assert degrees_of_freedom(methane) == 0
 
@@ -342,41 +384,58 @@ class TestMethane(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution_duty(self, methane):
-        assert (pytest.approx(250.06, abs=1e-1) ==
-                value(methane.fs.unit.outlet.flow_mol[0]))
-        assert (pytest.approx(0.0, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "CH4"]))
-        assert (pytest.approx(0.103863, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "CO"]))
-        assert (pytest.approx(0.016123, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "CO2"]))
-        assert (pytest.approx(0.096080, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "H2"]))
-        assert (pytest.approx(0.183897, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "H2O"]))
-        assert (pytest.approx(0.600030, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "N2"]))
-        assert (pytest.approx(0.0, abs=1e-5) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "NH3"]))
-        assert (pytest.approx(2.86950e-06, abs=1e-4) ==
-                value(methane.fs.unit.outlet.mole_frac_comp[0, "O2"]))
-        assert (pytest.approx(-7454077, abs=1e2) ==
-                value(methane.fs.unit.heat_duty[0]))
-        assert (pytest.approx(101325.0, abs=1e-2) ==
-                value(methane.fs.unit.outlet.pressure[0]))
+        assert pytest.approx(250.06, abs=1e-1) == value(
+            methane.fs.unit.outlet.flow_mol[0]
+        )
+        assert pytest.approx(0.0, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "CH4"]
+        )
+        assert pytest.approx(0.103863, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "CO"]
+        )
+        assert pytest.approx(0.016123, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.096080, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "H2"]
+        )
+        assert pytest.approx(0.183897, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "H2O"]
+        )
+        assert pytest.approx(0.600030, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "N2"]
+        )
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "NH3"]
+        )
+        assert pytest.approx(2.86950e-06, abs=1e-4) == value(
+            methane.fs.unit.outlet.mole_frac_comp[0, "O2"]
+        )
+        assert pytest.approx(-7454077, abs=1e2) == value(methane.fs.unit.heat_duty[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(
+            methane.fs.unit.outlet.pressure[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation_duty(self, methane):
-        assert abs(value(
-                methane.fs.unit.inlet.flow_mol[0] *
-                methane.fs.unit.control_volume.properties_in[0]
-                    .enth_mol_phase["Vap"] -
-                methane.fs.unit.outlet.flow_mol[0] *
-                methane.fs.unit.control_volume.properties_out[0]
-                    .enth_mol_phase["Vap"] +
-                methane.fs.unit.heat_duty[0])) <= 1e-4
+        assert (
+            abs(
+                value(
+                    methane.fs.unit.inlet.flow_mol[0]
+                    * methane.fs.unit.control_volume.properties_in[0].enth_mol_phase[
+                        "Vap"
+                    ]
+                    - methane.fs.unit.outlet.flow_mol[0]
+                    * methane.fs.unit.control_volume.properties_out[0].enth_mol_phase[
+                        "Vap"
+                    ]
+                    + methane.fs.unit.heat_duty[0]
+                )
+            )
+            <= 1e-4
+        )
 
     @pytest.mark.ui
     @pytest.mark.unit

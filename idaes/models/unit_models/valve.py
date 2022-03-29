@@ -48,6 +48,7 @@ def linear_cb(valve):
     """
     Linear opening valve function callback.
     """
+
     @valve.Expression(valve.flowsheet().time)
     def valve_function(b, t):
         return b.valve_opening[t]
@@ -57,6 +58,7 @@ def quick_cb(valve):
     """
     Quick opening valve function callback.
     """
+
     @valve.Expression(valve.flowsheet().time)
     def valve_function(b, t):
         return pyo.sqrt(b.valve_opening[t])
@@ -68,6 +70,7 @@ def equal_percentage_cb(valve):
     """
     valve.alpha = pyo.Var(initialize=100, doc="Valve function parameter")
     valve.alpha.fix()
+
     @valve.Expression(valve.flowsheet().time)
     def valve_function(b, t):
         return b.alpha ** (b.valve_opening[t] - 1)
@@ -83,12 +86,12 @@ def pressure_flow_default_callback(valve):
     valve.Cv = pyo.Var(
         initialize=0.1,
         doc="Valve flow coefficent",
-        units=umeta("amount")/umeta("time")/umeta("pressure")**0.5
+        units=umeta("amount") / umeta("time") / umeta("pressure") ** 0.5,
     )
     valve.Cv.fix()
 
     valve.flow_var = pyo.Reference(valve.control_volume.properties_in[:].flow_mol)
-    valve.pressure_flow_equation_scale = lambda x : x**2
+    valve.pressure_flow_equation_scale = lambda x: x**2
 
     @valve.Constraint(valve.flowsheet().time)
     def pressure_flow_equation(b, t):
@@ -97,7 +100,7 @@ def pressure_flow_default_callback(valve):
         F = b.control_volume.properties_in[t].flow_mol
         Cv = b.Cv
         fun = b.valve_function[t]
-        return F ** 2 == Cv ** 2 * (Pi - Po) * fun ** 2
+        return F**2 == Cv**2 * (Pi - Po) * fun**2
 
 
 @declare_process_block_class("Valve", doc="Adiabatic valves")
@@ -109,11 +112,9 @@ class ValveData(PressureChangerData):
     CONFIG.get("compressor")._default = False
     CONFIG.get("compressor")._domain = In([False])
     CONFIG.material_balance_type = MaterialBalanceType.componentTotal
-    CONFIG.get("material_balance_type")._default = \
-        MaterialBalanceType.componentTotal
+    CONFIG.get("material_balance_type")._default = MaterialBalanceType.componentTotal
     CONFIG.thermodynamic_assumption = ThermodynamicAssumption.adiabatic
-    CONFIG.get("thermodynamic_assumption")._default = \
-        ThermodynamicAssumption.adiabatic
+    CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.adiabatic
     CONFIG.get("thermodynamic_assumption")._domain = In(
         [ThermodynamicAssumption.adiabatic]
     )
@@ -185,8 +186,11 @@ variables, expressions, or constraints required can also be added by the callbac
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
 
         for t in self.flowsheet().time:
-            if (self.deltaP[t].fixed or self.ratioP[t].fixed or
-                self.outlet.pressure[t].fixed):
+            if (
+                self.deltaP[t].fixed
+                or self.ratioP[t].fixed
+                or self.outlet.pressure[t].fixed
+            ):
                 continue
             # Generally for the valve initialization pressure drop won't be
             # fixed, so if there is no good guess on deltaP try to out one in
@@ -209,7 +213,8 @@ variables, expressions, or constraints required can also be added by the callbac
         # one bad thing about reusing this is that the log messages aren't
         # really compatible with being nested inside another initialization
         super().initialize_build(
-            state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg)
+            state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
+        )
 
     def calculate_scaling_factors(self):
         """
@@ -233,26 +238,30 @@ variables, expressions, or constraints required can also be added by the callbac
         # Do some error trapping.
         if not hasattr(self, "pressure_flow_equation"):
             raise AttributeError(
-                "Pressure-flow callback must define pressure_flow_equation[t]")
+                "Pressure-flow callback must define pressure_flow_equation[t]"
+            )
         # Check for flow term form if none assume flow = f(Pin, Pout)
         if hasattr(self, "pressure_flow_equation_scale"):
             ff = self.pressure_flow_equation_scale
         else:
-            ff = lambda x : x
+            ff = lambda x: x
         # if the "flow_var" is not set raise an exception
         if not hasattr(self, "flow_var"):
             raise AttributeError(
-                "Pressure-flow callback must define flow_var[t] reference")
+                "Pressure-flow callback must define flow_var[t] reference"
+            )
 
         # Calculate and set the pressure-flow relation scale.
         if hasattr(self, "pressure_flow_equation"):
             for t, c in self.pressure_flow_equation.items():
                 iscale.constraint_scaling_transform(
                     c,
-                    ff(iscale.get_scaling_factor(
-                        self.flow_var[t],
-                        default=1,
-                        warning=True)))
+                    ff(
+                        iscale.get_scaling_factor(
+                            self.flow_var[t], default=1, warning=True
+                        )
+                    ),
+                )
 
     def _get_performance_contents(self, time_point=0):
         pc = super()._get_performance_contents(time_point=time_point)

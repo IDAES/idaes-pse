@@ -53,10 +53,10 @@ class TestIntegration(object):
         for i, F in enumerate(cases["F"]):
             Tin = cases["Tin"][i]
             Tout = cases["Tout"][i]
-            Pin = cases["Pin"][i]*1000
-            Pout = cases["Pout"][i]*1000
-            hin = swco2.htpx(T=Tin*pyunits.K, P=Pin*pyunits.Pa)
-            W = cases["W"][i]*1000
+            Pin = cases["Pin"][i] * 1000
+            Pout = cases["Pout"][i] * 1000
+            hin = swco2.htpx(T=Tin * pyunits.K, P=Pin * pyunits.Pa)
+            W = cases["W"][i] * 1000
             Tis = cases["Tisen"][i]
             xout = cases["xout"][i]
 
@@ -65,13 +65,13 @@ class TestIntegration(object):
             model.fs.unit.inlet.pressure[0].fix(Pin)
             model.fs.unit.deltaP.fix(Pout - Pin)
             model.fs.unit.efficiency_isentropic.fix(0.9)
-            model.fs.unit.initialize(optarg={'tol': 1e-6})
+            model.fs.unit.initialize(optarg={"tol": 1e-6})
             solver.solve(model)
 
             Tout = pytest.approx(cases["Tout"][i], rel=1e-2)
-            Pout = pytest.approx(cases["Pout"][i]*1000, rel=1e-2)
-            Pout = pytest.approx(cases["Pout"][i]*1000, rel=1e-2)
-            W = pytest.approx(cases["W"][i]*1000, rel=1e-2)
+            Pout = pytest.approx(cases["Pout"][i] * 1000, rel=1e-2)
+            Pout = pytest.approx(cases["Pout"][i] * 1000, rel=1e-2)
+            W = pytest.approx(cases["W"][i] * 1000, rel=1e-2)
             xout = pytest.approx(xout, rel=1e-2)
             prop_out = model.fs.unit.control_volume.properties_out[0]
             prop_in = model.fs.unit.control_volume.properties_in[0]

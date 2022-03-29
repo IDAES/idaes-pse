@@ -18,13 +18,11 @@ from pyomo.environ import Param, units as pyunits
 from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
 
-from idaes.models.properties.core.generic.utility import \
-    get_concentration_term
+from idaes.models.properties.core.generic.utility import get_concentration_term
 
 
 # ----------------------------------------------------------------------------
-class power_law_equil():
-
+class power_law_equil:
     @staticmethod
     def build_parameters(rblock, config):
         pass
@@ -43,9 +41,9 @@ class power_law_equil():
             o = rblock.reaction_order[p, j]
 
             if e is None and o.value != 0:
-                e = get_concentration_term(b, r_idx)[p, j]**o
+                e = get_concentration_term(b, r_idx)[p, j] ** o
             elif e is not None and o.value != 0:
-                e = e*get_concentration_term(b, r_idx)[p, j]**o
+                e = e * get_concentration_term(b, r_idx)[p, j] ** o
 
         return b.k_eq[r_idx] == e
 
@@ -55,7 +53,7 @@ class power_law_equil():
 
 
 # ----------------------------------------------------------------------------
-class log_power_law_equil():
+class log_power_law_equil:
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
         e = None
@@ -71,10 +69,10 @@ class log_power_law_equil():
 
             if e is None and o.value != 0:
                 c = get_concentration_term(b, r_idx, log=True)[p, j]
-                e = o*c
+                e = o * c
             elif e is not None and o.value != 0:
                 c = get_concentration_term(b, r_idx, log=True)[p, j]
-                e = e + o*c
+                e = e + o * c
 
         return b.log_k_eq[r_idx] == e
 
@@ -84,7 +82,7 @@ class log_power_law_equil():
 
 
 # ----------------------------------------------------------------------------
-class solubility_product():
+class solubility_product:
     """
     Complementariity formulation for solid precipitation
     Thanks to Larry Biegler for the formulation
@@ -117,9 +115,9 @@ class solubility_product():
 
     @staticmethod
     def build_parameters(rblock, config):
-        rblock.eps = Param(mutable=True,
-                           initialize=1e-4,
-                           doc="Smoothing parameter for smooth maximum")
+        rblock.eps = Param(
+            mutable=True, initialize=1e-4, doc="Smoothing parameter for smooth maximum"
+        )
 
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
@@ -139,9 +137,9 @@ class solubility_product():
             o = rblock.reaction_order[p, j]
 
             if e is None and o.value != 0:
-                e = get_concentration_term(b, r_idx)[p, j]**o
+                e = get_concentration_term(b, r_idx)[p, j] ** o
             elif e is not None and o.value != 0:
-                e = e*get_concentration_term(b, r_idx)[p, j]**o
+                e = e * get_concentration_term(b, r_idx)[p, j] ** o
 
             if p_obj.is_solid_phase():
                 # If solid phase, identify S
@@ -162,13 +160,14 @@ class solubility_product():
             raise ConfigurationError(
                 "{} did not find a solid phase component for precipitation "
                 "reaction {}. This is likely due to the reaction "
-                "configuration.".format(b.name, r_idx))
+                "configuration.".format(b.name, r_idx)
+            )
         else:
             # Need to remove units as complementarity is not consistent
             sunits = pyunits.get_units(s)
 
             if sunits is not None:
-                s = s/sunits
+                s = s / sunits
 
         Q = b.k_eq[r_idx] - e
 
@@ -176,16 +175,16 @@ class solubility_product():
         Qunits = pyunits.get_units(b.k_eq[r_idx])
 
         if Qunits is not None:
-            Q = Q/Qunits
+            Q = Q / Qunits
 
-        return s - smooth_max(0, s-Q, rblock.eps) == 0
+        return s - smooth_max(0, s - Q, rblock.eps) == 0
 
     @staticmethod
     def calculate_scaling_factors(b, sf_keq):
         return sf_keq
 
 
-class log_solubility_product():
+class log_solubility_product:
     """
     Complementariity formulation for solid precipitation
     Thanks to Larry Biegler for the formulation
@@ -219,9 +218,9 @@ class log_solubility_product():
 
     @staticmethod
     def build_parameters(rblock, config):
-        rblock.eps = Param(mutable=True,
-                           initialize=1e-4,
-                           doc="Smoothing parameter for smooth maximum")
+        rblock.eps = Param(
+            mutable=True, initialize=1e-4, doc="Smoothing parameter for smooth maximum"
+        )
 
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
@@ -241,9 +240,9 @@ class log_solubility_product():
             o = rblock.reaction_order[p, j]
 
             if e is None and o.value != 0:
-                e = get_concentration_term(b, r_idx, log=True)[p, j]*o
+                e = get_concentration_term(b, r_idx, log=True)[p, j] * o
             elif e is not None and o.value != 0:
-                e += get_concentration_term(b, r_idx, log=True)[p, j]*o
+                e += get_concentration_term(b, r_idx, log=True)[p, j] * o
 
             if p_obj.is_solid_phase():
                 # If solid phase, identify S
@@ -264,18 +263,19 @@ class log_solubility_product():
             raise ConfigurationError(
                 "{} did not find a solid phase component for precipitation "
                 "reaction {}. This is likely due to the reaction "
-                "configuration.".format(b.name, r_idx))
+                "configuration.".format(b.name, r_idx)
+            )
         else:
             # Need to remove units as complementarity is not consistent
             sunits = pyunits.get_units(s)
 
             if sunits is not None:
-                s = s/sunits
+                s = s / sunits
 
         Q = b.log_k_eq[r_idx] - e
         # Q should be unitless due to log form
 
-        return s - smooth_max(0, s-Q, rblock.eps) == 0
+        return s - smooth_max(0, s - Q, rblock.eps) == 0
 
     @staticmethod
     def calculate_scaling_factors(b, sf_keq):

@@ -16,18 +16,14 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           Constraint,
-                           Param,
-                           value,
-                           Var)
+from pyomo.environ import ConcreteModel, Constraint, Param, value, Var
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core import (MaterialBalanceType,
-                        EnergyBalanceType,
-                        MaterialFlowBasis)
+from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 
 from idaes.models.properties.examples.saponification_thermo import (
-    SaponificationParameterBlock, SaponificationStateBlock)
+    SaponificationParameterBlock,
+    SaponificationStateBlock,
+)
 
 from idaes.core.util import get_solver
 
@@ -59,11 +55,7 @@ class TestParamBlock(object):
 
         assert len(model.params.component_list) == 5
         for i in model.params.component_list:
-            assert i in ['H2O',
-                         'NaOH',
-                         'EthylAcetate',
-                         'SodiumAcetate',
-                         'Ethanol']
+            assert i in ["H2O", "NaOH", "EthylAcetate", "SodiumAcetate", "Ethanol"]
 
         assert isinstance(model.params.cp_mol, Param)
         assert value(model.params.cp_mol) == 75.327
@@ -113,8 +105,8 @@ class TestStateBlock(object):
         model.params = SaponificationParameterBlock()
 
         model.props = model.params.build_state_block(
-                [1],
-                default={"defined_state": True})
+            [1], default={"defined_state": True}
+        )
 
         assert isinstance(model.props[1].flow_vol, Var)
         assert value(model.props[1].flow_vol) == 1
@@ -136,51 +128,54 @@ class TestStateBlock(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert str(
-                    model.props[1].get_material_flow_terms(p, j)) == str(
-                    model.props[1].flow_vol *
-                    model.props[1].conc_mol_comp[j])
+                assert str(model.props[1].get_material_flow_terms(p, j)) == str(
+                    model.props[1].flow_vol * model.props[1].conc_mol_comp[j]
+                )
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert str(model.props[1].get_enthalpy_flow_terms(p)) == str(
-                    model.props[1].flow_vol*model.props[1].params.dens_mol *
-                    model.props[1].params.cp_mol*(
-                            model.props[1].temperature -
-                            model.props[1].params.temperature_ref))
+                model.props[1].flow_vol
+                * model.props[1].params.dens_mol
+                * model.props[1].params.cp_mol
+                * (model.props[1].temperature - model.props[1].params.temperature_ref)
+            )
 
     @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert str(
-                    model.props[1].get_material_density_terms(p, j)) == str(
-                    model.props[1].conc_mol_comp[j])
+                assert str(model.props[1].get_material_density_terms(p, j)) == str(
+                    model.props[1].conc_mol_comp[j]
+                )
 
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
             assert str(model.props[1].get_energy_density_terms(p)) == str(
-                    model.props[1].params.dens_mol *
-                    model.props[1].params.cp_mol*(
-                            model.props[1].temperature -
-                            model.props[1].params.temperature_ref))
+                model.props[1].params.dens_mol
+                * model.props[1].params.cp_mol
+                * (model.props[1].temperature - model.props[1].params.temperature_ref)
+            )
 
     @pytest.mark.unit
     def test_default_material_balance_type(self, model):
-        assert model.props[1].default_material_balance_type() == \
-            MaterialBalanceType.componentPhase
+        assert (
+            model.props[1].default_material_balance_type()
+            == MaterialBalanceType.componentPhase
+        )
 
     @pytest.mark.unit
     def test_default_energy_balance_type(self, model):
-        assert model.props[1].default_energy_balance_type() == \
-            EnergyBalanceType.enthalpyTotal
+        assert (
+            model.props[1].default_energy_balance_type()
+            == EnergyBalanceType.enthalpyTotal
+        )
 
     @pytest.mark.unit
     def test_get_material_flow_basis(self, model):
-        assert model.props[1].get_material_flow_basis() == \
-            MaterialFlowBasis.molar
+        assert model.props[1].get_material_flow_basis() == MaterialFlowBasis.molar
 
     @pytest.mark.unit
     def test_define_state_vars(self, model):
@@ -188,10 +183,7 @@ class TestStateBlock(object):
 
         assert len(sv) == 4
         for i in sv:
-            assert i in ["flow_vol",
-                         "conc_mol_comp",
-                         "temperature",
-                         "pressure"]
+            assert i in ["flow_vol", "conc_mol_comp", "temperature", "pressure"]
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
@@ -199,10 +191,7 @@ class TestStateBlock(object):
 
         assert len(sv) == 4
         for i in sv:
-            assert i in ["flow_vol",
-                         "conc_mol_comp",
-                         "temperature",
-                         "pressure"]
+            assert i in ["flow_vol", "conc_mol_comp", "temperature", "pressure"]
 
     @pytest.mark.unit
     def test_define_display_vars(self, model):
@@ -210,36 +199,38 @@ class TestStateBlock(object):
 
         assert len(sv) == 4
         for i in sv:
-            assert i in ["Volumetric Flowrate",
-                         "Molar Concentration",
-                         "Temperature",
-                         "Pressure"]
+            assert i in [
+                "Volumetric Flowrate",
+                "Molar Concentration",
+                "Temperature",
+                "Pressure",
+            ]
 
     @pytest.mark.unit
     def test_model_check_none(self, model, caplog):
         assert model.props[1].model_check() is None
-        assert 'Temperature set below lower bound' not in caplog.text
-        assert 'Temperature set above upper bound' not in caplog.text
-        assert 'Pressure set below lower bound' not in caplog.text
-        assert 'Pressure set above upper bound' not in caplog.text
+        assert "Temperature set below lower bound" not in caplog.text
+        assert "Temperature set above upper bound" not in caplog.text
+        assert "Pressure set below lower bound" not in caplog.text
+        assert "Pressure set above upper bound" not in caplog.text
 
     @pytest.mark.unit
     def test_model_check_low_T(self, model, caplog):
         model.props[1].temperature.value = 200
         assert model.props[1].model_check() is None
-        assert 'Temperature set below lower bound' in caplog.text
-        assert 'Temperature set above upper bound' not in caplog.text
-        assert 'Pressure set below lower bound' not in caplog.text
-        assert 'Pressure set above upper bound' not in caplog.text
+        assert "Temperature set below lower bound" in caplog.text
+        assert "Temperature set above upper bound" not in caplog.text
+        assert "Pressure set below lower bound" not in caplog.text
+        assert "Pressure set above upper bound" not in caplog.text
 
     @pytest.mark.unit
     def test_model_check_high_T(self, model, caplog):
         model.props[1].temperature.value = 350
         assert model.props[1].model_check() is None
-        assert 'Temperature set below lower bound' not in caplog.text
-        assert 'Temperature set above upper bound' in caplog.text
-        assert 'Pressure set below lower bound' not in caplog.text
-        assert 'Pressure set above upper bound' not in caplog.text
+        assert "Temperature set below lower bound" not in caplog.text
+        assert "Temperature set above upper bound" in caplog.text
+        assert "Pressure set below lower bound" not in caplog.text
+        assert "Pressure set above upper bound" not in caplog.text
         # Reset temeprature
         model.props[1].temperature.value = 298.15
 
@@ -247,19 +238,19 @@ class TestStateBlock(object):
     def test_model_check_low_P(self, model, caplog):
         model.props[1].pressure.value = 1e2
         assert model.props[1].model_check() is None
-        assert 'Temperature set below lower bound' not in caplog.text
-        assert 'Temperature set above upper bound' not in caplog.text
-        assert 'Pressure set below lower bound' in caplog.text
-        assert 'Pressure set above upper bound' not in caplog.text
+        assert "Temperature set below lower bound" not in caplog.text
+        assert "Temperature set above upper bound" not in caplog.text
+        assert "Pressure set below lower bound" in caplog.text
+        assert "Pressure set above upper bound" not in caplog.text
 
     @pytest.mark.unit
     def test_model_check_high_P(self, model, caplog):
         model.props[1].pressure.value = 1e7
         assert model.props[1].model_check() is None
-        assert 'Temperature set below lower bound' not in caplog.text
-        assert 'Temperature set above upper bound' not in caplog.text
-        assert 'Pressure set below lower bound' not in caplog.text
-        assert 'Pressure set above upper bound' in caplog.text
+        assert "Temperature set below lower bound" not in caplog.text
+        assert "Temperature set above upper bound" not in caplog.text
+        assert "Pressure set below lower bound" not in caplog.text
+        assert "Pressure set above upper bound" in caplog.text
         # Reset pressure
         model.props[1].pressure.value = 101325
 

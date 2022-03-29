@@ -20,8 +20,7 @@ from enum import Enum
 
 from pyomo.environ import log, value, Var
 
-from idaes.models.properties.core.generic.utility import (
-    StateIndex)
+from idaes.models.properties.core.generic.utility import StateIndex
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -34,12 +33,13 @@ class HenryType(Enum):
     Any different forms can use values 101+, but will need to add the custom
     code in if branches where necessary
     """
+
     # TODO: Add more forms as needed
     Hcp = 1
     Kpc = 51
     Hxp = 2
     Kpx = 52
-    Dummy = 999 # To test error handling
+    Dummy = 999  # To test error handling
 
 
 # Define a method for getting the correct concentration term
@@ -67,7 +67,7 @@ def get_henry_concentration_term(blk, henry_dict, log=False):
     else:
         _raise_henry_type_error(henry_type)
 
-    return getattr(blk, pre+conc_type+sub)
+    return getattr(blk, pre + conc_type + sub)
 
 
 # TODO pressure -> fugacity
@@ -86,14 +86,15 @@ def henry_pressure(b, p, j, T=None):
 
     if henry_def["type"].value <= 50:
         # H = c/P type
-        h_press = h_conc/henry
+        h_press = h_conc / henry
     elif henry_def["type"].value <= 100:
         # K = P/c type
-        h_press = h_conc*henry
+        h_press = h_conc * henry
     else:
-        _raise_henry_type_error(henry_def['type'])
+        _raise_henry_type_error(henry_def["type"])
 
     return h_press
+
 
 # TODO pressure -> fugacity
 def log_henry_pressure(b, p, j, T=None):
@@ -117,9 +118,10 @@ def log_henry_pressure(b, p, j, T=None):
         # K = P/c type
         log_h_press = h_conc + log(henry)
     else:
-        _raise_henry_type_error(henry_def['type'])
+        _raise_henry_type_error(henry_def["type"])
 
     return log_h_press
+
 
 def henry_equilibrium_ratio(b, p, j):
     """
@@ -130,46 +132,46 @@ def henry_equilibrium_ratio(b, p, j):
         b: Property block for which this calculation is taking place
         p: Liquid phase for which this ratio is being calculated
         j: Henry component in phase p
-        
+
     Returns:
         Molar ratio of component j in the vapor phase to that in liquid phase p
-        
+
     Notes:
         If Henry's law is defined in terms of mole fraction, this method
         gives a meaningful answer whether or not the liquid phase composition
         has been set. If it is defined in terms of concentration, a reasonable
         value is given only if a reasonable liquid phase composition has been
         specified.
-        
+
         This function returns a value regardless of whether or not block b
         is experiencing phase equilibrium at its current conditions.
     """
-    
+
     henry_def = b.params.get_component(j).config.henry_component[p]
     henry_constant = b.henry[p, j]
     if henry_def["type"] == HenryType.Hcp:
         henry_constant /= b.dens_mol_phase[p]
     elif henry_def["type"] == HenryType.Kpc:
         henry_constant *= b.dens_mol_phase[p]
-        
+
     if henry_def["type"].value <= 50:
         # H = c/P type
-        return 1/(henry_constant*b.pressure)
+        return 1 / (henry_constant * b.pressure)
     elif henry_def["type"].value <= 100:
         # K = P/c type
-        return henry_constant/b.pressure
+        return henry_constant / b.pressure
     else:
-        _raise_henry_type_error(henry_def['type'])
-    
+        _raise_henry_type_error(henry_def["type"])
+
 
 # Define units for Henry's constant
 def henry_units(henry_type, units):
     if henry_type == HenryType.Hcp:
-        h_units = units["density_mole"]/units["pressure"]
+        h_units = units["density_mole"] / units["pressure"]
     elif henry_type == HenryType.Kpc:
-        h_units = units["pressure"]/units["density_mole"]
+        h_units = units["pressure"] / units["density_mole"]
     elif henry_type == HenryType.Hxp:
-        h_units = units["pressure"]**-1
+        h_units = units["pressure"] ** -1
     elif henry_type == HenryType.Kpx:
         h_units = units["pressure"]
     else:
@@ -178,8 +180,7 @@ def henry_units(henry_type, units):
     return h_units
 
 
-class ConstantH():
-
+class ConstantH:
     @staticmethod
     def build_parameters(cobj, p, h_type):
         b = cobj.parent_block()
@@ -187,16 +188,19 @@ class ConstantH():
         h_units = henry_units(h_type, units)
 
         cobj.add_component(
-            "henry_ref_"+p,
-            Var(initialize=cobj.config.parameter_data["henry_ref"][p],
+            "henry_ref_" + p,
+            Var(
+                initialize=cobj.config.parameter_data["henry_ref"][p],
                 doc="Henry coefficient (mole fraction basis) at reference "
-                "state for phase "+p,
-                units=h_units))
+                "state for phase " + p,
+                units=h_units,
+            ),
+        )
 
     @staticmethod
     def return_expression(b, p, j, T=None):
         cobj = b.params.get_component(j)
-        H = getattr(cobj, "henry_ref_"+p)
+        H = getattr(cobj, "henry_ref_" + p)
 
         return H
 
@@ -205,6 +209,7 @@ class ConstantH():
     @staticmethod
     def dT_expression(b, p, j, T=None):
         return 0
+
 
 def _raise_henry_type_error(henry_type):
     raise ConfigurationError(f"Unrecognized value for HenryType {henry_type}")

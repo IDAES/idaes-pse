@@ -31,20 +31,21 @@ class ConstantAlpha(object):
 
         # Get user provided values for alpha (if present)
         try:
-            alpha_data = param_block.config.parameter_data[
-                b.local_name+"_alpha"]
+            alpha_data = param_block.config.parameter_data[b.local_name + "_alpha"]
         except KeyError:
             alpha_data = {}
 
         # Check for unused parameters in alpha_data
         for (i, j) in alpha_data.keys():
-            if ((i, j) not in b.component_pair_set_symmetric and
-                    (j, i) not in b.component_pair_set_symmetric):
+            if (i, j) not in b.component_pair_set_symmetric and (
+                j,
+                i,
+            ) not in b.component_pair_set_symmetric:
                 raise ConfigurationError(
                     "{} eNRTL alpha parameter provided for invalid "
                     "component pair {}. Please check typing and only provide "
-                    "parameters for valid species pairs."
-                    .format(b.name, (i, j)))
+                    "parameters for valid species pairs.".format(b.name, (i, j))
+                )
 
         def alpha_init(b, i, j):
             if (i, j) in alpha_data.keys():
@@ -55,18 +56,21 @@ class ConstantAlpha(object):
                         raise ConfigurationError(
                             "{} eNRTL alpha parameter assigned non-symmetric "
                             "value for pair {}. Please assign only one value "
-                            "for component pair.".format(b.name, (i, j)))
+                            "for component pair.".format(b.name, (i, j))
+                        )
                     else:
-                        _log.info("eNRTL alpha value provided for both {} and "
-                                  "{}. It is only necessary to provide a "
-                                  "value for one of these due to symmetry."
-                                  .format((i, j), (j, i)))
-            elif(j, i) in alpha_data.keys():
+                        _log.info(
+                            "eNRTL alpha value provided for both {} and "
+                            "{}. It is only necessary to provide a "
+                            "value for one of these due to symmetry.".format(
+                                (i, j), (j, i)
+                            )
+                        )
+            elif (j, i) in alpha_data.keys():
                 v = alpha_data[(j, i)]
-            elif ((i in param_block.solvent_set or
-                   i in param_block.solute_set) and
-                  (j in param_block.solvent_set or
-                   j in param_block.solute_set)):
+            elif (i in param_block.solvent_set or i in param_block.solute_set) and (
+                j in param_block.solvent_set or j in param_block.solute_set
+            ):
                 # Molecular-molecular interaction, default value is 0.3
                 v = 0.3
             else:
@@ -75,12 +79,15 @@ class ConstantAlpha(object):
             return v
 
         b.add_component(
-            'alpha',
-            Var(b.component_pair_set_symmetric,
+            "alpha",
+            Var(
+                b.component_pair_set_symmetric,
                 within=Reals,
                 initialize=alpha_init,
-                doc='Symmetric non-randomness parameters',
-                units=pyunits.dimensionless))
+                doc="Symmetric non-randomness parameters",
+                units=pyunits.dimensionless,
+            ),
+        )
 
     @staticmethod
     def return_expression(b, pobj, i, j, T):
@@ -93,8 +100,8 @@ class ConstantAlpha(object):
         else:
             raise BurntToast(
                 "{} alpha rule encountered unexpected index {}. Please contact"
-                "the IDAES Developers with this bug."
-                .format(b.name, (i, j)))
+                "the IDAES Developers with this bug.".format(b.name, (i, j))
+            )
 
 
 class ConstantTau(object):
@@ -104,8 +111,7 @@ class ConstantTau(object):
 
         # Get user provided values for tau (if present)
         try:
-            tau_data = param_block.config.parameter_data[
-                b.local_name+"_tau"]
+            tau_data = param_block.config.parameter_data[b.local_name + "_tau"]
         except KeyError:
             tau_data = {}
 
@@ -115,8 +121,8 @@ class ConstantTau(object):
                 raise ConfigurationError(
                     "{} eNRTL tau parameter provided for invalid "
                     "component pair {}. Please check typing and only provide "
-                    "parameters for valid species pairs."
-                    .format(b.name, (i, j)))
+                    "parameters for valid species pairs.".format(b.name, (i, j))
+                )
 
         def tau_init(b, i, j):
             if (i, j) in tau_data.keys():
@@ -127,12 +133,15 @@ class ConstantTau(object):
             return v
 
         b.add_component(
-            'tau',
-            Var(b.component_pair_set,
+            "tau",
+            Var(
+                b.component_pair_set,
                 within=Reals,
                 initialize=tau_init,
-                doc='Binary interaction energy parameters',
-                units=pyunits.dimensionless))
+                doc="Binary interaction energy parameters",
+                units=pyunits.dimensionless,
+            ),
+        )
 
     @staticmethod
     def return_expression(b, pobj, i, j, T):
@@ -145,5 +154,5 @@ class ConstantTau(object):
         else:
             raise BurntToast(
                 "{} tau rule encountered unexpected index {}. Please contact"
-                "the IDAES Developers with this bug."
-                .format(b.name, (i, j)))
+                "the IDAES Developers with this bug.".format(b.name, (i, j))
+            )

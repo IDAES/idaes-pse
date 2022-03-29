@@ -27,17 +27,19 @@ from pyomo.environ import units as pyunits, Var
 import idaes.models.properties.core.coolprop.coolprop_forms as cforms
 from idaes.core.util.exceptions import BurntToast
 
-CoolProp, coolprop_available = attempt_import('CoolProp.CoolProp')
+CoolProp, coolprop_available = attempt_import("CoolProp.CoolProp")
 
 
 # Map IDAES names to Coolprop names and where to look for them
-name_map = {"dens_mol_crit": ("rhomolar", "CRITICAL"),
-            "enth_mol_crit": ("hmolar", "CRITICAL"),
-            "entr_mol_crit": ("smolar", "CRITICAL"),
-            "mw": ("molar_mass", "EOS"),
-            "omega": ("acentric", "EOS"),
-            "pressure_crit": ("p", "CRITICAL"),
-            "temperature_crit": ("T", "CRITICAL")}
+name_map = {
+    "dens_mol_crit": ("rhomolar", "CRITICAL"),
+    "enth_mol_crit": ("hmolar", "CRITICAL"),
+    "entr_mol_crit": ("smolar", "CRITICAL"),
+    "mw": ("molar_mass", "EOS"),
+    "omega": ("acentric", "EOS"),
+    "pressure_crit": ("p", "CRITICAL"),
+    "temperature_crit": ("T", "CRITICAL"),
+}
 
 
 class CoolPropExpressionError(ValueError):
@@ -49,10 +51,12 @@ class CoolPropExpressionError(ValueError):
     """
 
     def __init__(self, prop, comp):
-        msg = (f"Found unsupported expression form for {prop} "
-               f"of component {comp}. This likely occured due to "
-               f"changes in CoolProp and the interface should be "
-               f"updated.")
+        msg = (
+            f"Found unsupported expression form for {prop} "
+            f"of component {comp}. This likely occured due to "
+            f"changes in CoolProp and the interface should be "
+            f"updated."
+        )
 
         super().__init__(self, msg)
 
@@ -64,10 +68,12 @@ class CoolPropPropertyError(KeyError):
     """
 
     def __init__(self, prop, comp):
-        msg = (f"Could not retrieve parameters for {prop} of "
-               f"component {comp} from CoolProp. This likely indicates "
-               f"that CoolProp does not have values for the necessary "
-               f"parameters.")
+        msg = (
+            f"Could not retrieve parameters for {prop} of "
+            f"component {comp} from CoolProp. This likely indicates "
+            f"that CoolProp does not have values for the necessary "
+            f"parameters."
+        )
 
         super().__init__(self, msg)
 
@@ -82,6 +88,7 @@ class CoolPropWrapper:
     from the CoolProp libraries (if available). This requires that the user
     have CoolProp installed locally.
     """
+
     _cached_components = {}
 
     @staticmethod
@@ -101,18 +108,18 @@ class CoolPropWrapper:
         if map_tuple is None:
             raise BurntToast(
                 "Unrecognized property name in CoolProp wrapper. Please "
-                "contact the IDAES developers with this bug.")
+                "contact the IDAES developers with this bug."
+            )
 
         if map_tuple[1] == "CRITICAL":
-            ptuple = CoolPropWrapper._get_critical_property(
-                comp_name, map_tuple[0])
+            ptuple = CoolPropWrapper._get_critical_property(comp_name, map_tuple[0])
         elif map_tuple[1] == "EOS":
-            ptuple = CoolPropWrapper._get_eos_property(
-                comp_name, map_tuple[0])
+            ptuple = CoolPropWrapper._get_eos_property(comp_name, map_tuple[0])
         else:
             raise BurntToast(
                 "Unrecognized argument in CoolProp wrapper. Please contact "
-                "the IDAES developers with this bug.")
+                "the IDAES developers with this bug."
+            )
 
         return ptuple
 
@@ -144,18 +151,16 @@ class CoolPropWrapper:
 
             # 8-Dec-21: CoolProp only uses rhoLnoexp for liquid density
             nlist, tlist = CoolPropWrapper._get_param_dicts(
-                    cname,
-                    cdict,
-                    "dens_mol_liq_comp",
-                    "rhoL",
-                    ["rhoLnoexp"])
+                cname, cdict, "dens_mol_liq_comp", "rhoL", ["rhoLnoexp"]
+            )
 
             cforms.parameters_nt_sum(cobj, "dens_mol_liq_comp", nlist, tlist)
 
         @staticmethod
         def return_expression(b, cobj, T):
             return cforms.expression_nonexponential(
-                cobj, "dens_mol_liq_comp", T, cobj.dens_mol_crit)
+                cobj, "dens_mol_liq_comp", T, cobj.dens_mol_crit
+            )
 
     class enth_mol_liq_comp:
         """
@@ -169,25 +174,26 @@ class CoolPropWrapper:
 
             # 29-Dec-21: CoolProp only uses rational_polynomial.
             Alist, Blist = CoolPropWrapper._get_param_dicts(
-                    cname,
-                    cdict,
-                    "enth_mol_liq_comp",
-                    "hL",
-                    ["rational_polynomial"])
+                cname, cdict, "enth_mol_liq_comp", "hL", ["rational_polynomial"]
+            )
             href = cdict["EOS"][0]["STATES"]["hs_anchor"]["hmolar"]
 
             cforms.parameters_polynomial(
-                cobj, "enth_mol_liq_comp", pyunits.J/pyunits.mol, Alist, Blist)
+                cobj, "enth_mol_liq_comp", pyunits.J / pyunits.mol, Alist, Blist
+            )
 
-            href_var = Var(doc="Reference heat of formation",
-                           units=pyunits.J/pyunits.mol)
+            href_var = Var(
+                doc="Reference heat of formation", units=pyunits.J / pyunits.mol
+            )
             cobj.add_component("enth_mol_liq_comp_anchor", href_var)
             href_var.fix(href)
 
         @staticmethod
         def return_expression(b, cobj, T):
-            h = (cforms.expression_polynomial(cobj, "enth_mol_liq_comp", T) +
-                 cobj.enth_mol_liq_comp_anchor)
+            h = (
+                cforms.expression_polynomial(cobj, "enth_mol_liq_comp", T)
+                + cobj.enth_mol_liq_comp_anchor
+            )
 
             units = b.params.get_metadata().derived_units
             return pyunits.convert(h, units["energy_mole"])
@@ -204,14 +210,12 @@ class CoolPropWrapper:
 
             # 29-Dec-21: CoolProp only uses rational_polynomial.
             Alist, Blist = CoolPropWrapper._get_param_dicts(
-                    cname,
-                    cdict,
-                    "enth_mol_ig_comp",
-                    "hLV",
-                    ["rational_polynomial"])
+                cname, cdict, "enth_mol_ig_comp", "hLV", ["rational_polynomial"]
+            )
 
             cforms.parameters_polynomial(
-                cobj, "enth_mol_ig_comp", pyunits.J/pyunits.mol, Alist, Blist)
+                cobj, "enth_mol_ig_comp", pyunits.J / pyunits.mol, Alist, Blist
+            )
 
             # Next, build parameters for enth_mol_liq_comp if necessary
             if not hasattr(cobj, "enth_mol_liq_comp_coeff_A0"):
@@ -219,9 +223,9 @@ class CoolPropWrapper:
 
         @staticmethod
         def return_expression(b, cobj, T):
-            h = (cforms.expression_polynomial(cobj, "enth_mol_ig_comp", T) +
-                 CoolPropWrapper.enth_mol_liq_comp.return_expression(
-                     b, cobj, T))
+            h = cforms.expression_polynomial(
+                cobj, "enth_mol_ig_comp", T
+            ) + CoolPropWrapper.enth_mol_liq_comp.return_expression(b, cobj, T)
 
             units = b.params.get_metadata().derived_units
             return pyunits.convert(h, units["energy_mole"])
@@ -238,29 +242,31 @@ class CoolPropWrapper:
 
             # 29-Dec-21: CoolProp only uses rational_polynomial.
             Alist, Blist = CoolPropWrapper._get_param_dicts(
-                    cname,
-                    cdict,
-                    "entr_mol_liq_comp",
-                    "sL",
-                    ["rational_polynomial"])
+                cname, cdict, "entr_mol_liq_comp", "sL", ["rational_polynomial"]
+            )
             sref = cdict["EOS"][0]["STATES"]["hs_anchor"]["smolar"]
 
             cforms.parameters_polynomial(
                 cobj,
                 "entr_mol_liq_comp",
-                pyunits.J/pyunits.mol/pyunits.K,
+                pyunits.J / pyunits.mol / pyunits.K,
                 Alist,
-                Blist)
+                Blist,
+            )
 
-            sref_var = Var(doc="Reference heat of formation",
-                           units=pyunits.J/pyunits.mol/pyunits.K)
+            sref_var = Var(
+                doc="Reference heat of formation",
+                units=pyunits.J / pyunits.mol / pyunits.K,
+            )
             cobj.add_component("entr_mol_liq_comp_anchor", sref_var)
             sref_var.fix(sref)
 
         @staticmethod
         def return_expression(b, cobj, T):
-            s = (cforms.expression_polynomial(cobj, "entr_mol_liq_comp", T) +
-                 cobj.entr_mol_liq_comp_anchor)
+            s = (
+                cforms.expression_polynomial(cobj, "entr_mol_liq_comp", T)
+                + cobj.entr_mol_liq_comp_anchor
+            )
 
             units = b.params.get_metadata().derived_units
             return pyunits.convert(s, units["entropy_mole"])
@@ -277,18 +283,16 @@ class CoolPropWrapper:
 
             # 29-Dec-21: CoolProp only uses rational_polynomial.
             Alist, Blist = CoolPropWrapper._get_param_dicts(
-                    cname,
-                    cdict,
-                    "entr_mol_ig_comp",
-                    "sLV",
-                    ["rational_polynomial"])
+                cname, cdict, "entr_mol_ig_comp", "sLV", ["rational_polynomial"]
+            )
 
             cforms.parameters_polynomial(
                 cobj,
                 "entr_mol_ig_comp",
-                pyunits.J/pyunits.mol/pyunits.K,
+                pyunits.J / pyunits.mol / pyunits.K,
                 Alist,
-                Blist)
+                Blist,
+            )
 
             # Next, build parameters for entr_mol_liq_comp if necessary
             if not hasattr(cobj, "entr_mol_liq_comp_coeff_A0"):
@@ -296,9 +300,9 @@ class CoolPropWrapper:
 
         @staticmethod
         def return_expression(b, cobj, T):
-            s = (cforms.expression_polynomial(cobj, "entr_mol_ig_comp", T) +
-                 CoolPropWrapper.entr_mol_liq_comp.return_expression(
-                     b, cobj, T))
+            s = cforms.expression_polynomial(
+                cobj, "entr_mol_ig_comp", T
+            ) + CoolPropWrapper.entr_mol_liq_comp.return_expression(b, cobj, T)
 
             units = b.params.get_metadata().derived_units
             return pyunits.convert(s, units["entropy_mole"])
@@ -317,28 +321,25 @@ class CoolPropWrapper:
             # 8-Dec-21: CoolProp only has two "types" for pressure_sat
             # which appear to be equivalent.
             nlist, tlist = CoolPropWrapper._get_param_dicts(
-                    cname,
-                    cdict,
-                    "pressure_sat",
-                    "pS",
-                    ["pL", "pV"],
-                    using_tau_r=True)
+                cname, cdict, "pressure_sat", "pS", ["pL", "pV"], using_tau_r=True
+            )
 
             cforms.parameters_nt_sum(cobj, "pressure_sat", nlist, tlist)
 
         @staticmethod
         def return_expression(b, cobj, T, dT=False):
             if dT:
-                return CoolPropWrapper.pressure_sat_comp.dT_expression(
-                    b, cobj, T)
+                return CoolPropWrapper.pressure_sat_comp.dT_expression(b, cobj, T)
 
             return cforms.expression_exponential(
-                cobj, "pressure_sat", T, cobj.pressure_crit, tau=True)
+                cobj, "pressure_sat", T, cobj.pressure_crit, tau=True
+            )
 
         @staticmethod
         def dT_expression(b, cobj, T):
             return cforms.dT_expression_exponential(
-                cobj, "pressure_sat", T, cobj.pressure_crit, tau=True)
+                cobj, "pressure_sat", T, cobj.pressure_crit, tau=True
+            )
 
     # -------------------------------------------------------------------------
     # Internal methods
@@ -362,8 +363,7 @@ class CoolPropWrapper:
         else:
             # Check to see if comp_name is an alias for a cached component
             for v in CoolPropWrapper._cached_components.values():
-                if (comp_name in v["INFO"]["ALIASES"] or
-                        comp_name in v["INFO"]["NAME"]):
+                if comp_name in v["INFO"]["ALIASES"] or comp_name in v["INFO"]["NAME"]:
                     CoolPropWrapper._cached_components[comp_name] = v
                     return v
 
@@ -390,8 +390,8 @@ class CoolPropWrapper:
             prop_str = CoolProp.get_fluid_param_string(comp_name, "JSON")
         except RuntimeError:
             raise RuntimeError(
-                f"Failed to find component {comp_name} in CoolProp JSON "
-                f"database.")
+                f"Failed to find component {comp_name} in CoolProp JSON " f"database."
+            )
         comp_prop = json.loads(prop_str)[0]
 
         CoolPropWrapper._cached_components[comp_name] = comp_prop
@@ -408,8 +408,7 @@ class CoolPropWrapper:
         cdict = CoolPropWrapper._get_component_data(comp_name)
 
         pc = cdict["STATES"]["critical"][prop_name]
-        punits = getattr(pyunits, cdict["STATES"]["critical"][
-            prop_name+"_units"])
+        punits = getattr(pyunits, cdict["STATES"]["critical"][prop_name + "_units"])
 
         return (pc, punits)
 
@@ -422,7 +421,7 @@ class CoolPropWrapper:
         cdict = CoolPropWrapper._get_component_data(comp_name)
 
         pc = cdict["EOS"][0][prop_name]
-        punits = cdict["EOS"][0][prop_name+"_units"]
+        punits = cdict["EOS"][0][prop_name + "_units"]
         if punits == "-":
             punits = pyunits.dimensionless
         else:
@@ -431,12 +430,14 @@ class CoolPropWrapper:
         return (pc, punits)
 
     @staticmethod
-    def _get_param_dicts(comp_name,
-                         comp_data,
-                         prop_name,
-                         coolprop_name,
-                         expected_forms,
-                         using_tau_r=False):
+    def _get_param_dicts(
+        comp_name,
+        comp_data,
+        prop_name,
+        coolprop_name,
+        expected_forms,
+        using_tau_r=False,
+    ):
         """
         Method to get parameter sets for expression forms. Also includes check
         to verify the expression form listed by CoolProp mathces the expected
@@ -459,12 +460,13 @@ class CoolPropWrapper:
         try:
             # First, check to make sure the listed expression form is
             # supported.
-            if (comp_data["ANCILLARIES"][coolprop_name]["type"] not in
-                    expected_forms):
+            if comp_data["ANCILLARIES"][coolprop_name]["type"] not in expected_forms:
                 # If not one of the forms we recognise, raise an exception
                 raise CoolPropExpressionError(prop_name, comp_name)
-            elif (using_tau_r and not
-                  comp_data["ANCILLARIES"][coolprop_name]["using_tau_r"]):
+            elif (
+                using_tau_r
+                and not comp_data["ANCILLARIES"][coolprop_name]["using_tau_r"]
+            ):
                 # If not one of the forms we recognise, raise an exception
                 raise CoolPropExpressionError(prop_name, comp_name)
 

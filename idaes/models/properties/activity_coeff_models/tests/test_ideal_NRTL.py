@@ -22,8 +22,9 @@ from pyomo.environ import ConcreteModel
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # -----------------------------------------------------------------------------
@@ -32,30 +33,28 @@ m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
 # vapor-liquid (NRTL)
-m.fs.properties_NRTL_vl = BTXParameterBlock(default={"valid_phase":
-                                                     ('Liq', 'Vap'),
-                                                     "activity_coeff_model":
-                                                     'NRTL'})
+m.fs.properties_NRTL_vl = BTXParameterBlock(
+    default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "NRTL"}
+)
 m.fs.state_block_NRTL_vl = m.fs.properties_NRTL_vl.build_state_block(
-    default={"defined_state": True})
+    default={"defined_state": True}
+)
 
 # liquid only (NRTL)
-m.fs.properties_NRTL_l = BTXParameterBlock(default={"valid_phase":
-                                                    'Liq',
-                                                    "activity_coeff_model":
-                                                    'NRTL'})
+m.fs.properties_NRTL_l = BTXParameterBlock(
+    default={"valid_phase": "Liq", "activity_coeff_model": "NRTL"}
+)
 m.fs.state_block_NRTL_l = m.fs.properties_NRTL_l.build_state_block(
-    default={"has_phase_equilibrium": False,
-             "defined_state": True})
+    default={"has_phase_equilibrium": False, "defined_state": True}
+)
 
 # vapour only (NRTL)
-m.fs.properties_NRTL_v = BTXParameterBlock(default={"valid_phase":
-                                                    'Vap',
-                                                    "activity_coeff_model":
-                                                    'NRTL'})
+m.fs.properties_NRTL_v = BTXParameterBlock(
+    default={"valid_phase": "Vap", "activity_coeff_model": "NRTL"}
+)
 m.fs.state_block_NRTL_v = m.fs.properties_NRTL_v.build_state_block(
-    default={"has_phase_equilibrium": False,
-             "defined_state": True})
+    default={"has_phase_equilibrium": False, "defined_state": True}
+)
 
 
 @pytest.mark.unit
@@ -63,8 +62,10 @@ def test_build_inlet_state_block():
     assert len(m.fs.properties_NRTL_vl.config) == 4
 
     # vapor-liquid (NRTL)
-    assert m.fs.properties_NRTL_vl.config.valid_phase == ('Vap', 'Liq') or \
-        m.fs.properties_NRTL_vl.config.valid_phase == ('Liq', 'Vap')
+    assert m.fs.properties_NRTL_vl.config.valid_phase == (
+        "Vap",
+        "Liq",
+    ) or m.fs.properties_NRTL_vl.config.valid_phase == ("Liq", "Vap")
     assert len(m.fs.properties_NRTL_vl.phase_list) == 2
     assert m.fs.properties_NRTL_vl.phase_list == ["Liq", "Vap"]
     assert m.fs.state_block_NRTL_vl.config.defined_state
@@ -75,7 +76,7 @@ def test_build_inlet_state_block():
     # liquid only (NRTL)
     assert len(m.fs.properties_NRTL_l.config) == 4
 
-    assert m.fs.properties_NRTL_l.config.valid_phase == 'Liq'
+    assert m.fs.properties_NRTL_l.config.valid_phase == "Liq"
     assert len(m.fs.properties_NRTL_l.phase_list) == 1
     assert m.fs.properties_NRTL_l.phase_list == ["Liq"]
     assert m.fs.state_block_NRTL_l.config.defined_state
@@ -86,7 +87,7 @@ def test_build_inlet_state_block():
     # vapor only (NRTL)
     assert len(m.fs.properties_NRTL_v.config) == 4
 
-    assert m.fs.properties_NRTL_v.config.valid_phase == 'Vap'
+    assert m.fs.properties_NRTL_v.config.valid_phase == "Vap"
     assert len(m.fs.properties_NRTL_v.phase_list) == 1
     assert m.fs.properties_NRTL_v.phase_list == ["Vap"]
     assert m.fs.state_block_NRTL_v.config.defined_state
@@ -136,30 +137,28 @@ def test_setInputs_inlet_state_block():
 m.fs1 = FlowsheetBlock(default={"dynamic": False})
 
 # vapor-liquid (NRTL)
-m.fs1.properties_NRTL_vl = BTXParameterBlock(default={"valid_phase":
-                                                      ('Liq', 'Vap'),
-                                                      "activity_coeff_model":
-                                                      'NRTL'})
+m.fs1.properties_NRTL_vl = BTXParameterBlock(
+    default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "NRTL"}
+)
 m.fs1.state_block_NRTL_vl = m.fs1.properties_NRTL_vl.build_state_block(
-    default={"defined_state": False})
+    default={"defined_state": False}
+)
 
 # liquid only (NRTL)
-m.fs1.properties_NRTL_l = BTXParameterBlock(default={"valid_phase":
-                                                     "Liq",
-                                                     "activity_coeff_model":
-                                                     'NRTL'})
+m.fs1.properties_NRTL_l = BTXParameterBlock(
+    default={"valid_phase": "Liq", "activity_coeff_model": "NRTL"}
+)
 m.fs1.state_block_NRTL_l = m.fs1.properties_NRTL_l.build_state_block(
-    default={"has_phase_equilibrium": False,
-             "defined_state": False})
+    default={"has_phase_equilibrium": False, "defined_state": False}
+)
 
 # vapour only (NRTL)
-m.fs1.properties_NRTL_v = BTXParameterBlock(default={"valid_phase":
-                                                     "Vap",
-                                                     "activity_coeff_model":
-                                                     'NRTL'})
+m.fs1.properties_NRTL_v = BTXParameterBlock(
+    default={"valid_phase": "Vap", "activity_coeff_model": "NRTL"}
+)
 m.fs1.state_block_NRTL_v = m.fs1.properties_NRTL_v.build_state_block(
-    default={"has_phase_equilibrium": False,
-             "defined_state": False})
+    default={"has_phase_equilibrium": False, "defined_state": False}
+)
 
 
 @pytest.mark.unit
@@ -167,8 +166,10 @@ def test_build_outlet_state_block():
     assert len(m.fs.properties_NRTL_vl.config) == 4
 
     # vapor-liquid (NRTL)
-    assert m.fs1.properties_NRTL_vl.config.valid_phase == ('Vap', 'Liq') or \
-        m.fs1.properties_NRTL_vl.config.valid_phase == ('Liq', 'Vap')
+    assert m.fs1.properties_NRTL_vl.config.valid_phase == (
+        "Vap",
+        "Liq",
+    ) or m.fs1.properties_NRTL_vl.config.valid_phase == ("Liq", "Vap")
     assert len(m.fs1.properties_NRTL_vl.phase_list) == 2
     assert m.fs1.properties_NRTL_vl.phase_list == ["Liq", "Vap"]
     assert not m.fs1.state_block_NRTL_vl.config.defined_state
@@ -179,7 +180,7 @@ def test_build_outlet_state_block():
     # liquid only (NRTL)
     assert len(m.fs1.properties_NRTL_l.config) == 4
 
-    assert m.fs1.properties_NRTL_l.config.valid_phase == 'Liq'
+    assert m.fs1.properties_NRTL_l.config.valid_phase == "Liq"
     assert len(m.fs1.properties_NRTL_l.phase_list) == 1
     assert m.fs1.properties_NRTL_l.phase_list == ["Liq"]
     assert not m.fs1.state_block_NRTL_l.config.defined_state
@@ -190,7 +191,7 @@ def test_build_outlet_state_block():
     # vapour only (NRTL)
     assert len(m.fs1.properties_NRTL_v.config) == 4
 
-    assert m.fs1.properties_NRTL_v.config.valid_phase == 'Vap'
+    assert m.fs1.properties_NRTL_v.config.valid_phase == "Vap"
     assert len(m.fs1.properties_NRTL_v.phase_list) == 1
     assert m.fs1.properties_NRTL_v.phase_list == ["Vap"]
     assert not m.fs1.state_block_NRTL_v.config.defined_state

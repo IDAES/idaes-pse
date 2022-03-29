@@ -16,18 +16,16 @@ Authors: Andrew Lee
 """
 import logging
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           Constraint,
-                           Param,
-                           units,
-                           value,
-                           Var)
+from pyomo.environ import ConcreteModel, Constraint, Param, units, value, Var
 from idaes.core import MaterialFlowBasis
 
 from idaes.models.properties.examples.saponification_reactions import (
-    SaponificationReactionParameterBlock, ReactionBlock)
+    SaponificationReactionParameterBlock,
+    ReactionBlock,
+)
 from idaes.models.properties.examples.saponification_thermo import (
-    SaponificationParameterBlock)
+    SaponificationParameterBlock,
+)
 
 from idaes.core.util import get_solver
 
@@ -43,7 +41,8 @@ class TestParamBlock(object):
         model = ConcreteModel()
         model.pparams = SaponificationParameterBlock()
         model.rparams = SaponificationReactionParameterBlock(
-                default={"property_package": model.pparams})
+            default={"property_package": model.pparams}
+        )
 
         return model
 
@@ -61,11 +60,13 @@ class TestParamBlock(object):
 
         assert len(model.rparams.rate_reaction_stoichiometry) == 5
         for i in model.rparams.rate_reaction_stoichiometry:
-            assert i in [("R1", "Liq", "NaOH"),
-                         ("R1", "Liq", "EthylAcetate"),
-                         ("R1", "Liq", "SodiumAcetate"),
-                         ("R1", "Liq", "Ethanol"),
-                         ("R1", "Liq", "H2O")]
+            assert i in [
+                ("R1", "Liq", "NaOH"),
+                ("R1", "Liq", "EthylAcetate"),
+                ("R1", "Liq", "SodiumAcetate"),
+                ("R1", "Liq", "Ethanol"),
+                ("R1", "Liq", "H2O"),
+            ]
 
         assert isinstance(model.rparams.arrhenius, Param)
         assert value(model.rparams.arrhenius) == 3.132e6
@@ -85,12 +86,14 @@ class TestReactionBlock(object):
         model = ConcreteModel()
         model.pparams = SaponificationParameterBlock()
         model.rparams = SaponificationReactionParameterBlock(
-                default={"property_package": model.pparams})
+            default={"property_package": model.pparams}
+        )
 
         model.props = model.pparams.build_state_block([1])
 
         model.rxns = model.rparams.build_reaction_block(
-                [1], default={"state_block": model.props})
+            [1], default={"state_block": model.props}
+        )
 
         return model
 
@@ -112,8 +115,7 @@ class TestReactionBlock(object):
 
     @pytest.mark.unit
     def test_get_reaction_rate_basis(self, model):
-        assert model.rxns[1].get_reaction_rate_basis() == \
-            MaterialFlowBasis.molar
+        assert model.rxns[1].get_reaction_rate_basis() == MaterialFlowBasis.molar
 
     @pytest.mark.unit
     def test_model_check(self, model):

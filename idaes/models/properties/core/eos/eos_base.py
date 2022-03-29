@@ -19,23 +19,25 @@ some. EoS developers should overload all these methods.
 from pyomo.environ import units as pyunits
 from idaes.core.util.constants import Constants as const
 from idaes.models.properties.core.generic.utility import (
-    get_method, get_component_object as cobj)
-from idaes.core.util.exceptions import (
-    PropertyNotSupportedError, ConfigurationError)
+    get_method,
+    get_component_object as cobj,
+)
+from idaes.core.util.exceptions import PropertyNotSupportedError, ConfigurationError
 
 
-class EoSBase():
-
+class EoSBase:
     @staticmethod
     def gas_constant(b):
         # Utility method to convert gas constant to base units
         base_units = b.params.get_metadata().default_units
 
-        r_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["temperature"]**-1 *
-                   base_units["amount"]**-1 *
-                   base_units["time"]**-2)
+        r_units = (
+            base_units["mass"]
+            * base_units["length"] ** 2
+            * base_units["temperature"] ** -1
+            * base_units["amount"] ** -1
+            * base_units["time"] ** -2
+        )
 
         return pyunits.convert(const.gas_constant, to_units=r_units)
 
@@ -54,22 +56,25 @@ class EoSBase():
     @staticmethod
     def get_vol_mol_pure(b, phase, comp, temperature):
         try:
-            vol_mol = get_method(b, "vol_mol_"+phase+"_comp", comp)(
-                                 b, cobj(b, comp), temperature)
+            vol_mol = get_method(b, "vol_mol_" + phase + "_comp", comp)(
+                b, cobj(b, comp), temperature
+            )
         except (AttributeError, ConfigurationError):
             # vol_mol not defined, try for dens_mol instead
             try:
-                vol_mol = 1/get_method(b, "dens_mol_"+phase+"_comp", comp)(
-                                       b, cobj(b, comp), temperature)
+                vol_mol = 1 / get_method(b, "dens_mol_" + phase + "_comp", comp)(
+                    b, cobj(b, comp), temperature
+                )
             except (AttributeError, ConfigurationError):
                 # Does not have either vol_mol or dens_mol
-                suffix = "_"+phase+"_comp"
+                suffix = "_" + phase + "_comp"
                 raise ConfigurationError(
                     f"{b.name} does not have a method defined to use "
                     f"when calculating molar volume and density for "
                     f"component {comp} in phase {phase}. Each component "
                     f"must define a method for either vol_mol{suffix} or "
-                    f"dens_mol{suffix}.")
+                    f"dens_mol{suffix}."
+                )
         return vol_mol
 
     @staticmethod
@@ -114,18 +119,15 @@ class EoSBase():
 
     @staticmethod
     def heat_capacity_ratio_phase(b, p):
-        return (b.cp_mol_phase[p] /
-                b.cv_mol_phase[p])
+        return b.cp_mol_phase[p] / b.cv_mol_phase[p]
 
     @staticmethod
     def cv_mol_ig_comp_pure(b, j):
         # Method for calculating pure component ideal gas cv from cp
         # For ideal gases, cv = cp - R
         units = b.params.get_metadata().derived_units
-        R = pyunits.convert(const.gas_constant,
-                            to_units=units["heat_capacity_mole"])
-        return (get_method(b, "cp_mol_ig_comp", j)(
-            b, cobj(b, j), b.temperature) - R)
+        R = pyunits.convert(const.gas_constant, to_units=units["heat_capacity_mole"])
+        return get_method(b, "cp_mol_ig_comp", j)(b, cobj(b, j), b.temperature) - R
 
     @staticmethod
     def cv_mol_ls_comp_pure(b, p, j):
@@ -133,11 +135,9 @@ class EoSBase():
         # For ideal (incompressible) liquids and solids, cv = cp
         pobj = b.params.get_phase(p)
         if pobj.is_liquid_phase():
-            return get_method(b, "cp_mol_liq_comp", j)(
-                b, cobj(b, j), b.temperature)
+            return get_method(b, "cp_mol_liq_comp", j)(b, cobj(b, j), b.temperature)
         elif pobj.is_solid_phase():
-            return get_method(b, "cp_mol_sol_comp", j)(
-                b, cobj(b, j), b.temperature)
+            return get_method(b, "cp_mol_sol_comp", j)(b, cobj(b, j), b.temperature)
 
     @staticmethod
     def dens_mass_phase(b, p):
@@ -159,8 +159,7 @@ class EoSBase():
     def energy_internal_mol_ig_comp_pure(b, j):
         # Method for calculating pure component U from H for ideal gases
         units = b.params.get_metadata().derived_units
-        R = pyunits.convert(const.gas_constant,
-                            to_units=units["heat_capacity_mole"])
+        R = pyunits.convert(const.gas_constant, to_units=units["heat_capacity_mole"])
 
         if cobj(b, j).parent_block().config.include_enthalpy_of_formation:
             # First, need to determine correction between U_form and H_form
@@ -171,7 +170,8 @@ class EoSBase():
                     "{} calculation of internal energy requires elemental "
                     "composition of all species. Please set this using the "
                     "elemental_composition argument in the component "
-                    "declaration ({}).".format(b.name, j))
+                    "declaration ({}).".format(b.name, j)
+                )
 
             delta_n = 0
             for e, s in ele_comp.items():
@@ -179,18 +179,19 @@ class EoSBase():
                 if e in ["He", "Ne", "Ar", "Kr", "Xe", "Ra"]:
                     delta_n += -s
                 elif e in ["F", "Cl", "H", "N", "O"]:
-                    delta_n += -s/2  # These are diatomic at standard state
+                    delta_n += -s / 2  # These are diatomic at standard state
 
             delta_n += 1  # One mole of gaseous compound is formed
-            dU_form = delta_n*R*b.params.temperature_ref
+            dU_form = delta_n * R * b.params.temperature_ref
         else:
             dU_form = 0  # No heat of formation to correct
 
         # For ideal gases, U = H - R(T-T_ref) + dU_form
-        return (get_method(b, "enth_mol_ig_comp", j)(
-            b, cobj(b, j), b.temperature) -
-            R*(b.temperature-b.params.temperature_ref) +
-            dU_form)
+        return (
+            get_method(b, "enth_mol_ig_comp", j)(b, cobj(b, j), b.temperature)
+            - R * (b.temperature - b.params.temperature_ref)
+            + dU_form
+        )
 
     @staticmethod
     def energy_internal_mol_ls_comp_pure(b, p, j):
@@ -202,8 +203,7 @@ class EoSBase():
 
         # Method for calculating pure component U from H for liquids & solids
         units = b.params.get_metadata().derived_units
-        R = pyunits.convert(const.gas_constant,
-                            to_units=units["heat_capacity_mole"])
+        R = pyunits.convert(const.gas_constant, to_units=units["heat_capacity_mole"])
 
         if cobj(b, j).parent_block().config.include_enthalpy_of_formation:
             # First, need to determine correction between U_form and H_form
@@ -214,7 +214,8 @@ class EoSBase():
                     "{} calculation of internal energy requires elemental "
                     "composition of all species. Please set this using the "
                     "elemental_composition argument in the component "
-                    "declaration ({}).".format(b.name, j))
+                    "declaration ({}).".format(b.name, j)
+                )
 
             delta_n = 0
             for e, s in ele_comp.items():
@@ -222,11 +223,11 @@ class EoSBase():
                 if e in ["He", "Ne", "Ar", "Kr", "Xe", "Ra"]:
                     delta_n += -s
                 elif e in ["F", "Cl", "H", "N", "O"]:
-                    delta_n += -s/2  # These are diatomic at standard state
-            dU_form = delta_n*R*b.params.temperature_ref
+                    delta_n += -s / 2  # These are diatomic at standard state
+            dU_form = delta_n * R * b.params.temperature_ref
 
             # For ideal (incompressible) liquids and solids, U = H + dU_form
-            return (mthd(b, cobj(b, j), b.temperature) + dU_form)
+            return mthd(b, cobj(b, j), b.temperature) + dU_form
         else:
             # If not including heat of formation, U = H
             return mthd(b, cobj(b, j), b.temperature)
@@ -298,20 +299,23 @@ class EoSBase():
     @staticmethod
     def isothermal_speed_sound_phase(b, p):
         raise NotImplementedError(_msg(b, "isothermal_speed_sound_phase"))
-        
+
     def pressure_osm_phase(b, p):
         raise NotImplementedError(_msg(b, "pressure_osm_phase"))
 
     @staticmethod
     def vol_mol_phase(b, p):
         raise NotImplementedError(_msg(b, "vol_mol_phase"))
-        
+
     @staticmethod
-    def vol_mol_phase_comp(b,p,j):
+    def vol_mol_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "vol_mol_phase_comp"))
 
 
 def _msg(b, attr):
-    return ("{} Equation of State module has not implemented a method for {}. "
-            "Please contact the EoS developer or use a different module."
-            .format(b.name, attr))
+    return (
+        "{} Equation of State module has not implemented a method for {}. "
+        "Please contact the EoS developer or use a different module.".format(
+            b.name, attr
+        )
+    )

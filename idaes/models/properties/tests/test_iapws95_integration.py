@@ -38,18 +38,15 @@ solver = get_solver()
 
 @pytest.mark.unit
 def test_heater_ph_mixed_byphase():
-    """Test mixed phase form with P-H state vars and phase mass balances
-    """
+    """Test mixed phase form with P-H state vars and phase mass balances"""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={})
-    m.fs.heater = Heater(
-        default={"property_package": m.fs.properties})
+    m.fs.properties = iapws95.Iapws95ParameterBlock(default={})
+    m.fs.heater = Heater(default={"property_package": m.fs.properties})
     m.fs.heater.inlet.enth_mol.fix(4000)
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
-    m.fs.heater.heat_duty[0].fix(100*20000)
+    m.fs.heater.heat_duty[0].fix(100 * 20000)
     m.fs.heater.initialize()
     assert degrees_of_freedom(m) == 0
     solver.solve(m)
@@ -58,28 +55,27 @@ def test_heater_ph_mixed_byphase():
     assert value(prop_in.temperature) == pytest.approx(326.166707, rel=1e-5)
     assert value(prop_out.temperature) == pytest.approx(373.12429, rel=1e-5)
     assert value(prop_in.phase_frac["Liq"]) == pytest.approx(1, rel=1e-6)
-    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(
-        0.5953219, rel=1e-5)
+    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(0.5953219, rel=1e-5)
     assert value(prop_in.phase_frac["Vap"]) == pytest.approx(0, abs=1e-6)
-    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(
-        0.4046781, rel=1e-4)
+    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-4)
 
 
 @pytest.mark.unit
 def test_heater_phmixed_mixed_total():
-    """Test mixed phase form with P-H state vars and total mass balances
-    """
+    """Test mixed phase form with P-H state vars and total mass balances"""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={})
+    m.fs.properties = iapws95.Iapws95ParameterBlock(default={})
     m.fs.heater = Heater(
-        default={"property_package": m.fs.properties,
-                 "material_balance_type": MaterialBalanceType.componentTotal})
+        default={
+            "property_package": m.fs.properties,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+        }
+    )
     m.fs.heater.inlet.enth_mol.fix(4000)
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
-    m.fs.heater.heat_duty[0].fix(100*20000)
+    m.fs.heater.heat_duty[0].fix(100 * 20000)
     m.fs.heater.initialize()
     assert degrees_of_freedom(m) == 0
     solver.solve(m)
@@ -88,28 +84,29 @@ def test_heater_phmixed_mixed_total():
     assert value(prop_in.temperature) == pytest.approx(326.166707, rel=1e-5)
     assert value(prop_out.temperature) == pytest.approx(373.12429, rel=1e-5)
     assert value(prop_in.phase_frac["Liq"]) == pytest.approx(1, rel=1e-6)
-    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(
-        0.5953219, rel=1e-5)
+    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(0.5953219, rel=1e-5)
     assert value(prop_in.phase_frac["Vap"]) == pytest.approx(0, abs=1e-5)
-    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(
-        0.4046781, rel=1e-4)
+    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-4)
 
 
 @pytest.mark.unit
 def test_heater_ph_lg_total():
-    """Test liquid/vapor form with P-H state vars and total mass balances
-    """
+    """Test liquid/vapor form with P-H state vars and total mass balances"""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG})
+        default={"phase_presentation": iapws95.PhaseType.LG}
+    )
     m.fs.heater = Heater(
-        default={"property_package": m.fs.properties,
-                 "material_balance_type": MaterialBalanceType.componentTotal})
+        default={
+            "property_package": m.fs.properties,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+        }
+    )
     m.fs.heater.inlet.enth_mol.fix(4000)
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
-    m.fs.heater.heat_duty[0].fix(100*20000)
+    m.fs.heater.heat_duty[0].fix(100 * 20000)
     m.fs.heater.initialize()
     assert degrees_of_freedom(m) == 0
     solver.solve(m)
@@ -118,11 +115,9 @@ def test_heater_ph_lg_total():
     assert value(prop_in.temperature) == pytest.approx(326.166707, rel=1e-5)
     assert value(prop_out.temperature) == pytest.approx(373.12429, rel=1e-5)
     assert value(prop_in.phase_frac["Liq"]) == pytest.approx(1, rel=1e-5)
-    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(
-        0.5953219, rel=1e-5)
+    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(0.5953219, rel=1e-5)
     assert value(prop_in.phase_frac["Vap"]) == pytest.approx(0, abs=1e-5)
-    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(
-        0.4046781, rel=1e-4)
+    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-4)
 
 
 @pytest.mark.unit
@@ -138,14 +133,18 @@ def test_heater_ph_lg_phase():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG})
+        default={"phase_presentation": iapws95.PhaseType.LG}
+    )
     m.fs.heater = Heater(
-        default={"property_package": m.fs.properties,
-                 "material_balance_type": MaterialBalanceType.componentPhase})
+        default={
+            "property_package": m.fs.properties,
+            "material_balance_type": MaterialBalanceType.componentPhase,
+        }
+    )
     m.fs.heater.inlet.enth_mol.fix(4000)
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
-    m.fs.heater.heat_duty[0].fix(100*20000)
+    m.fs.heater.heat_duty[0].fix(100 * 20000)
     assert degrees_of_freedom(m) == -1
 
 
@@ -160,14 +159,18 @@ def test_heater_ph_l_phase_two():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.L})
+        default={"phase_presentation": iapws95.PhaseType.L}
+    )
     m.fs.heater = Heater(
-        default={"property_package": m.fs.properties,
-                 "material_balance_type": MaterialBalanceType.componentPhase})
+        default={
+            "property_package": m.fs.properties,
+            "material_balance_type": MaterialBalanceType.componentPhase,
+        }
+    )
     m.fs.heater.inlet.enth_mol.fix(3000)
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
-    m.fs.heater.heat_duty[0].fix(100*1000)
+    m.fs.heater.heat_duty[0].fix(100 * 1000)
     m.fs.heater.initialize()
     assert degrees_of_freedom(m) == 0
     solver.solve(m)
@@ -183,19 +186,22 @@ def test_heater_ph_l_phase_two():
 
 @pytest.mark.unit
 def test_heater_ph_l_phase():
-    """Test liquid phase only form with P-H state vars and phase mass balances
-    """
+    """Test liquid phase only form with P-H state vars and phase mass balances"""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.L})
+        default={"phase_presentation": iapws95.PhaseType.L}
+    )
     m.fs.heater = Heater(
-        default={"property_package": m.fs.properties,
-                 "material_balance_type": MaterialBalanceType.componentPhase})
+        default={
+            "property_package": m.fs.properties,
+            "material_balance_type": MaterialBalanceType.componentPhase,
+        }
+    )
     m.fs.heater.inlet.enth_mol.fix(3000)
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
-    m.fs.heater.heat_duty[0].fix(100*1000)
+    m.fs.heater.heat_duty[0].fix(100 * 1000)
     m.fs.heater.initialize()
     assert degrees_of_freedom(m) == 0
     solver.solve(m)
@@ -211,19 +217,22 @@ def test_heater_ph_l_phase():
 
 @pytest.mark.unit
 def test_heater_ph_g_phase():
-    """Test vapor phase only form with P-H state vars and phase mass balances
-    """
+    """Test vapor phase only form with P-H state vars and phase mass balances"""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.G})
+        default={"phase_presentation": iapws95.PhaseType.G}
+    )
     m.fs.heater = Heater(
-        default={"property_package": m.fs.properties,
-                 "material_balance_type": MaterialBalanceType.componentPhase})
+        default={
+            "property_package": m.fs.properties,
+            "material_balance_type": MaterialBalanceType.componentPhase,
+        }
+    )
     m.fs.heater.inlet.enth_mol.fix(50000)
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
-    m.fs.heater.heat_duty[0].fix(100*10000)
+    m.fs.heater.heat_duty[0].fix(100 * 10000)
     m.fs.heater.initialize()
     assert degrees_of_freedom(m) == 0
     solver.solve(m)
@@ -239,20 +248,25 @@ def test_heater_ph_g_phase():
 
 @pytest.mark.unit
 def test_heater_tpx_g_phase():
-    """Test vapor phase only form with T-P-x state vars and phase mass balances
-    """
+    """Test vapor phase only form with T-P-x state vars and phase mass balances"""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.G,
-                 "state_vars": iapws95.StateVars.TPX})
+        default={
+            "phase_presentation": iapws95.PhaseType.G,
+            "state_vars": iapws95.StateVars.TPX,
+        }
+    )
     m.fs.heater = Heater(
-        default={"property_package": m.fs.properties,
-                 "material_balance_type": MaterialBalanceType.componentPhase})
+        default={
+            "property_package": m.fs.properties,
+            "material_balance_type": MaterialBalanceType.componentPhase,
+        }
+    )
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.temperature.fix(422.60419933276177)
     m.fs.heater.inlet.pressure.fix(101325)
-    m.fs.heater.heat_duty[0].fix(100*10000)
+    m.fs.heater.heat_duty[0].fix(100 * 10000)
     prop_in = m.fs.heater.control_volume.properties_in[0]
     prop_out = m.fs.heater.control_volume.properties_out[0]
     prop_out.temperature = 550
@@ -276,16 +290,22 @@ def test_heater_tpx_lg_total():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG,
-                 "state_vars": iapws95.StateVars.TPX})
+        default={
+            "phase_presentation": iapws95.PhaseType.LG,
+            "state_vars": iapws95.StateVars.TPX,
+        }
+    )
     m.fs.heater = Heater(
-        default={"property_package": m.fs.properties,
-                 "material_balance_type": MaterialBalanceType.componentTotal})
+        default={
+            "property_package": m.fs.properties,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+        }
+    )
     m.fs.heater.inlet.temperature.fix(326.1667075078748)
     m.fs.heater.inlet.vapor_frac.fix(0.0)
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
-    m.fs.heater.heat_duty[0].fix(100*20000)
+    m.fs.heater.heat_duty[0].fix(100 * 20000)
     prop_in = m.fs.heater.control_volume.properties_in[0]
     prop_out = m.fs.heater.control_volume.properties_out[0]
     prop_out.temperature = 400
@@ -296,11 +316,9 @@ def test_heater_tpx_lg_total():
     assert value(prop_in.temperature) == pytest.approx(326.166707, rel=1e-5)
     assert value(prop_out.temperature) == pytest.approx(373.12429, rel=1e-5)
     assert value(prop_in.phase_frac["Liq"]) == pytest.approx(1, rel=1e-5)
-    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(
-        0.5953219, rel=1e-5)
+    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(0.5953219, rel=1e-5)
     assert value(prop_in.phase_frac["Vap"]) == pytest.approx(0, abs=1e-5)
-    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(
-        0.4046781, rel=1e-4)
+    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-4)
 
 
 @pytest.mark.unit
@@ -311,16 +329,22 @@ def test_heater_tpx_lg_total_2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG,
-                 "state_vars": iapws95.StateVars.TPX})
+        default={
+            "phase_presentation": iapws95.PhaseType.LG,
+            "state_vars": iapws95.StateVars.TPX,
+        }
+    )
     m.fs.heater = Heater(
-        default={"property_package": m.fs.properties,
-                 "material_balance_type": MaterialBalanceType.componentTotal})
+        default={
+            "property_package": m.fs.properties,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+        }
+    )
     m.fs.heater.inlet.temperature.fix(326.1667075078748)
     m.fs.heater.inlet.vapor_frac.fix(0.0)
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
-    m.fs.heater.heat_duty[0].fix(100*50000)
+    m.fs.heater.heat_duty[0].fix(100 * 50000)
     prop_in = m.fs.heater.control_volume.properties_in[0]
     prop_out = m.fs.heater.control_volume.properties_out[0]
     prop_out.temperature = 400
@@ -345,15 +369,21 @@ def test_heater_tpx_lg_phase():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG,
-                 "state_vars": iapws95.StateVars.TPX})
+        default={
+            "phase_presentation": iapws95.PhaseType.LG,
+            "state_vars": iapws95.StateVars.TPX,
+        }
+    )
     m.fs.heater = Heater(
-        default={"property_package": m.fs.properties,
-                 "material_balance_type": MaterialBalanceType.componentPhase})
+        default={
+            "property_package": m.fs.properties,
+            "material_balance_type": MaterialBalanceType.componentPhase,
+        }
+    )
     m.fs.heater.inlet.temperature.fix(326.1667075078748)
     m.fs.heater.inlet.vapor_frac.fix(0.0)
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
-    m.fs.heater.heat_duty[0].fix(100*50000)
+    m.fs.heater.heat_duty[0].fix(100 * 50000)
 
     assert degrees_of_freedom(m) == -1

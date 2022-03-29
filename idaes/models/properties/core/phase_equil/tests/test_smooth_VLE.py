@@ -18,16 +18,17 @@ Authors: Andrew Lee
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           Constraint,
-                           Expression,
-                           Param,
-                           value,
-                           Var,
-                           units as pyunits)
+from pyomo.environ import (
+    ConcreteModel,
+    Constraint,
+    Expression,
+    Param,
+    value,
+    Var,
+    units as pyunits,
+)
 
-from idaes.models.properties.core.generic.generic_property import \
-    GenericParameterBlock
+from idaes.models.properties.core.generic.generic_property import GenericParameterBlock
 from idaes.models.properties.core.state_definitions import FTPx
 from idaes.models.properties.core.phase_equil import SmoothVLE
 from idaes.models.properties.core.phase_equil.forms import fugacity
@@ -51,20 +52,30 @@ def frame():
     m = ConcreteModel()
 
     # Create a dummy parameter block
-    m.params = GenericParameterBlock(default={
-        "components": {"H2O": {"parameter_data": {"temperature_crit": 647.3},
-                               "phase_equilibrium_form":
-                                   {("Vap", "Liq"): fugacity}}},
-        "phases": {"Liq": {"equation_of_state": DummyEoS},
-                   "Vap": {"equation_of_state": DummyEoS}},
-        "state_definition": FTPx,
-        "pressure_ref": 1e5,
-        "temperature_ref": 300,
-        "base_units": {"time": pyunits.s,
-                       "length": pyunits.m,
-                       "mass": pyunits.kg,
-                       "amount": pyunits.mol,
-                       "temperature": pyunits.K}})
+    m.params = GenericParameterBlock(
+        default={
+            "components": {
+                "H2O": {
+                    "parameter_data": {"temperature_crit": 647.3},
+                    "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+                }
+            },
+            "phases": {
+                "Liq": {"equation_of_state": DummyEoS},
+                "Vap": {"equation_of_state": DummyEoS},
+            },
+            "state_definition": FTPx,
+            "pressure_ref": 1e5,
+            "temperature_ref": 300,
+            "base_units": {
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+        }
+    )
 
     # Create a dummy state block
     m.props = m.params.state_block_class([1], default={"parameters": m.params})
@@ -73,9 +84,9 @@ def frame():
     m.props[1].temperature_dew = Var([("Liq", "Vap")], initialize=300)
     m.props[1]._teq = Var([("Liq", "Vap")], initialize=300)
 
-    m.props[1].fug_phase_comp = Var(m.params.phase_list,
-                                    m.params.component_list,
-                                    initialize=10)
+    m.props[1].fug_phase_comp = Var(
+        m.params.phase_list, m.params.component_list, initialize=10
+    )
 
     SmoothVLE.phase_equil(m.props[1], ("Liq", "Vap"))
 
@@ -105,8 +116,9 @@ def test_t1(frame):
             frame.props[1].temperature.value = t
             frame.props[1].temperature_bubble[("Liq", "Vap")].value = tb
             frame.props[1]._t1_Liq_Vap.value = max(t, tb)
-            assert value(frame.props[1]._t1_constraint_Liq_Vap.body) == \
-                pytest.approx(0, abs=5e-3)
+            assert value(frame.props[1]._t1_constraint_Liq_Vap.body) == pytest.approx(
+                0, abs=5e-3
+            )
 
 
 @pytest.mark.unit
@@ -118,8 +130,9 @@ def test_t_eq(frame):
             frame.props[1]._t1_Liq_Vap.value = t1
             frame.props[1].temperature_dew[("Liq", "Vap")].value = td
             frame.props[1]._teq[("Liq", "Vap")].value = min(t1, td)
-            assert value(frame.props[1]._teq_constraint_Liq_Vap.body) == \
-                pytest.approx(0, abs=5e-3)
+            assert value(frame.props[1]._teq_constraint_Liq_Vap.body) == pytest.approx(
+                0, abs=5e-3
+            )
 
 
 @pytest.mark.unit
@@ -127,26 +140,38 @@ def test_non_VLE_pair():
     m = ConcreteModel()
 
     # Create a dummy parameter block
-    m.params = GenericParameterBlock(default={
-        "components": {"H2O": {"parameter_data": {"temperature_crit": 647.3},
-                               "phase_equilibrium_form":
-                                   {("Sol", "Liq"): fugacity}}},
-        "phases": {"Sol": {"equation_of_state": DummyEoS},
-                   "Liq": {"equation_of_state": DummyEoS}},
-        "state_definition": FTPx,
-        "pressure_ref": 1e5,
-        "temperature_ref": 300,
-        "base_units": {"time": pyunits.s,
-                       "length": pyunits.m,
-                       "mass": pyunits.kg,
-                       "amount": pyunits.mol,
-                       "temperature": pyunits.K}})
+    m.params = GenericParameterBlock(
+        default={
+            "components": {
+                "H2O": {
+                    "parameter_data": {"temperature_crit": 647.3},
+                    "phase_equilibrium_form": {("Sol", "Liq"): fugacity},
+                }
+            },
+            "phases": {
+                "Sol": {"equation_of_state": DummyEoS},
+                "Liq": {"equation_of_state": DummyEoS},
+            },
+            "state_definition": FTPx,
+            "pressure_ref": 1e5,
+            "temperature_ref": 300,
+            "base_units": {
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+        }
+    )
 
     # Create a dummy state block
     m.props = m.params.state_block_class([1], default={"parameters": m.params})
 
-    with pytest.raises(ConfigurationError,
-                       match="params Generic Property Package phase pair "
-                       "Liq-Sol was set to use Smooth VLE formulation, "
-                       "however this is not a vapor-liquid pair."):
+    with pytest.raises(
+        ConfigurationError,
+        match="params Generic Property Package phase pair "
+        "Liq-Sol was set to use Smooth VLE formulation, "
+        "however this is not a vapor-liquid pair.",
+    ):
         SmoothVLE.phase_equil(m.props[1], ("Liq", "Sol"))

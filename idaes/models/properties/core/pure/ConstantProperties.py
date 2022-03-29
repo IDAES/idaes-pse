@@ -25,13 +25,13 @@ class Constant(object):
 
     # Ideal liquid properties methods
     class cp_mol_liq_comp(object):
-
         @staticmethod
         def build_parameters(cobj):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.cp_mol_liq_comp_coeff = Var(
                 doc="Parameter for liquid phase molar heat capacity",
-                units=units["heat_capacity_mole"])
+                units=units["heat_capacity_mole"],
+            )
             set_param_from_config(cobj, param="cp_mol_liq_comp_coeff")
 
         @staticmethod
@@ -40,7 +40,6 @@ class Constant(object):
             return cobj.cp_mol_liq_comp_coeff
 
     class enth_mol_liq_comp(object):
-
         @staticmethod
         def build_parameters(cobj):
             if not hasattr(cobj, "cp_mol_liq_comp_coeff"):
@@ -50,8 +49,9 @@ class Constant(object):
                 units = cobj.parent_block().get_metadata().derived_units
 
                 cobj.enth_mol_form_liq_comp_ref = Var(
-                        doc="Liquid phase molar heat of formation @ Tref",
-                        units=units["energy_mole"])
+                    doc="Liquid phase molar heat of formation @ Tref",
+                    units=units["energy_mole"],
+                )
                 set_param_from_config(cobj, param="enth_mol_form_liq_comp_ref")
 
         @staticmethod
@@ -60,14 +60,15 @@ class Constant(object):
             units = b.params.get_metadata().derived_units
             Tr = b.params.temperature_ref
 
-            h_form = (cobj.enth_mol_form_liq_comp_ref if
-                      b.params.config.include_enthalpy_of_formation
-                      else 0*units["energy_mole"])
+            h_form = (
+                cobj.enth_mol_form_liq_comp_ref
+                if b.params.config.include_enthalpy_of_formation
+                else 0 * units["energy_mole"]
+            )
 
-            return cobj.cp_mol_liq_comp_coeff*(T-Tr) + h_form
+            return cobj.cp_mol_liq_comp_coeff * (T - Tr) + h_form
 
     class entr_mol_liq_comp(object):
-
         @staticmethod
         def build_parameters(cobj):
             if not hasattr(cobj, "cp_mol_liq_comp_coeff"):
@@ -76,8 +77,9 @@ class Constant(object):
             units = cobj.parent_block().get_metadata().derived_units
 
             cobj.entr_mol_form_liq_comp_ref = Var(
-                    doc="Liquid phase molar entropy of formation @ Tref",
-                    units=units["entropy_mole"])
+                doc="Liquid phase molar entropy of formation @ Tref",
+                units=units["entropy_mole"],
+            )
             set_param_from_config(cobj, param="entr_mol_form_liq_comp_ref")
 
         @staticmethod
@@ -85,17 +87,19 @@ class Constant(object):
             # Specific entropy
             Tr = b.params.temperature_ref
 
-            return (cobj.cp_mol_liq_comp_coeff*log(T/Tr) +
-                    cobj.entr_mol_form_liq_comp_ref)
+            return (
+                cobj.cp_mol_liq_comp_coeff * log(T / Tr)
+                + cobj.entr_mol_form_liq_comp_ref
+            )
 
     class dens_mol_liq_comp(object):
-
         @staticmethod
         def build_parameters(cobj):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.dens_mol_liq_comp_coeff = Var(
-                    doc="Parameter for liquid phase molar density",
-                    units=units["density_mole"])
+                doc="Parameter for liquid phase molar density",
+                units=units["density_mole"],
+            )
             set_param_from_config(cobj, param="dens_mol_liq_comp_coeff")
 
         @staticmethod
@@ -105,13 +109,13 @@ class Constant(object):
 
     # Ideal gas properties methods
     class cp_mol_ig_comp(object):
-
         @staticmethod
         def build_parameters(cobj):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.cp_mol_ig_comp_coeff = Var(
                 doc="Parameter for ideal gas molar heat capacity",
-                units=units["heat_capacity_mole"])
+                units=units["heat_capacity_mole"],
+            )
             set_param_from_config(cobj, param="cp_mol_ig_comp_coeff")
 
         @staticmethod
@@ -120,7 +124,6 @@ class Constant(object):
             return cobj.cp_mol_ig_comp_coeff
 
     class enth_mol_ig_comp(object):
-
         @staticmethod
         def build_parameters(cobj):
             if not hasattr(cobj, "cp_mol_ig_comp_coeff"):
@@ -130,8 +133,9 @@ class Constant(object):
                 units = cobj.parent_block().get_metadata().derived_units
 
                 cobj.enth_mol_form_ig_comp_ref = Var(
-                        doc="Ideal gas molar heat of formation @ Tref",
-                        units=units["energy_mole"])
+                    doc="Ideal gas molar heat of formation @ Tref",
+                    units=units["energy_mole"],
+                )
                 set_param_from_config(cobj, param="enth_mol_form_ig_comp_ref")
 
         @staticmethod
@@ -140,14 +144,15 @@ class Constant(object):
             units = b.params.get_metadata().derived_units
             Tr = b.params.temperature_ref
 
-            h_form = (cobj.enth_mol_form_ig_comp_ref if
-                      b.params.config.include_enthalpy_of_formation
-                      else 0*units["energy_mole"])
+            h_form = (
+                cobj.enth_mol_form_ig_comp_ref
+                if b.params.config.include_enthalpy_of_formation
+                else 0 * units["energy_mole"]
+            )
 
-            return cobj.cp_mol_ig_comp_coeff*(T-Tr) + h_form
+            return cobj.cp_mol_ig_comp_coeff * (T - Tr) + h_form
 
     class entr_mol_ig_comp(object):
-
         @staticmethod
         def build_parameters(cobj):
             if not hasattr(cobj, "cp_mol_ig_comp_coeff"):
@@ -156,8 +161,9 @@ class Constant(object):
             units = cobj.parent_block().get_metadata().derived_units
 
             cobj.entr_mol_form_ig_comp_ref = Var(
-                    doc="Ideal gas molar entropy of formation @ Tref",
-                    units=units["entropy_mole"])
+                doc="Ideal gas molar entropy of formation @ Tref",
+                units=units["entropy_mole"],
+            )
             set_param_from_config(cobj, param="entr_mol_form_ig_comp_ref")
 
         @staticmethod
@@ -165,18 +171,19 @@ class Constant(object):
             # Specific entropy
             Tr = b.params.temperature_ref
 
-            return (cobj.cp_mol_ig_comp_coeff*log(T/Tr) +
-                    cobj.entr_mol_form_ig_comp_ref)
+            return (
+                cobj.cp_mol_ig_comp_coeff * log(T / Tr) + cobj.entr_mol_form_ig_comp_ref
+            )
 
     # Ideal solid properties methods
     class cp_mol_sol_comp(object):
-
         @staticmethod
         def build_parameters(cobj):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.cp_mol_sol_comp_coeff = Var(
                 doc="Parameter for solid phase molar heat capacity",
-                units=units["heat_capacity_mole"])
+                units=units["heat_capacity_mole"],
+            )
             set_param_from_config(cobj, param="cp_mol_sol_comp_coeff")
 
         @staticmethod
@@ -186,7 +193,6 @@ class Constant(object):
             return cp
 
     class enth_mol_sol_comp(object):
-
         @staticmethod
         def build_parameters(cobj):
             if not hasattr(cobj, "cp_mol_sol_comp_coeff"):
@@ -196,8 +202,9 @@ class Constant(object):
                 units = cobj.parent_block().get_metadata().derived_units
 
                 cobj.enth_mol_form_sol_comp_ref = Var(
-                        doc="Solid phase molar heat of formation @ Tref",
-                        units=units["energy_mole"])
+                    doc="Solid phase molar heat of formation @ Tref",
+                    units=units["energy_mole"],
+                )
                 set_param_from_config(cobj, param="enth_mol_form_sol_comp_ref")
 
         @staticmethod
@@ -206,14 +213,15 @@ class Constant(object):
             units = b.params.get_metadata().derived_units
             Tr = b.params.temperature_ref
 
-            h_form = (cobj.enth_mol_form_sol_comp_ref if
-                      b.params.config.include_enthalpy_of_formation
-                      else 0*units["energy_mole"])
+            h_form = (
+                cobj.enth_mol_form_sol_comp_ref
+                if b.params.config.include_enthalpy_of_formation
+                else 0 * units["energy_mole"]
+            )
 
-            return cobj.cp_mol_sol_comp_coeff*(T-Tr) + h_form
+            return cobj.cp_mol_sol_comp_coeff * (T - Tr) + h_form
 
     class entr_mol_sol_comp(object):
-
         @staticmethod
         def build_parameters(cobj):
             if not hasattr(cobj, "cp_mol_sol_comp_coeff"):
@@ -222,8 +230,9 @@ class Constant(object):
             units = cobj.parent_block().get_metadata().derived_units
 
             cobj.entr_mol_form_sol_comp_ref = Var(
-                    doc="Solid phase molar entropy of formation @ Tref",
-                    units=units["entropy_mole"])
+                doc="Solid phase molar entropy of formation @ Tref",
+                units=units["entropy_mole"],
+            )
             set_param_from_config(cobj, param="entr_mol_form_sol_comp_ref")
 
         @staticmethod
@@ -231,17 +240,19 @@ class Constant(object):
             # Specific entropy
             Tr = b.params.temperature_ref
 
-            return (cobj.cp_mol_sol_comp_coeff*log(T/Tr) +
-                    cobj.entr_mol_form_sol_comp_ref)
+            return (
+                cobj.cp_mol_sol_comp_coeff * log(T / Tr)
+                + cobj.entr_mol_form_sol_comp_ref
+            )
 
     class dens_mol_sol_comp(object):
-
         @staticmethod
         def build_parameters(cobj):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.dens_mol_sol_comp_coeff = Var(
-                    doc="Parameter for solid phase molar density",
-                    units=units["density_mole"])
+                doc="Parameter for solid phase molar density",
+                units=units["density_mole"],
+            )
             set_param_from_config(cobj, param="dens_mol_sol_comp_coeff")
 
         @staticmethod

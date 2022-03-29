@@ -19,8 +19,11 @@ from enum import Enum
 
 from pyomo.environ import units as pyunits
 
-from idaes.core.util.exceptions import \
-    BurntToast, ConfigurationError, PropertyPackageError
+from idaes.core.util.exceptions import (
+    BurntToast,
+    ConfigurationError,
+    PropertyPackageError,
+)
 import idaes.logger as idaeslog
 
 # Set up logger
@@ -39,10 +42,12 @@ class GenericPropertyPackageError(PropertyPackageError):
         self.block = block
 
     def __str__(self):
-        return f"Generic Property Package instance {self.block} called for " \
-               f"{self.prop}, but was not provided with a method " \
-               f"for this property. Please add a method for this property " \
-               f"in the property parameter configuration."
+        return (
+            f"Generic Property Package instance {self.block} called for "
+            f"{self.prop}, but was not provided with a method "
+            f"for this property. Please add a method for this property "
+            f"in the property parameter configuration."
+        )
 
 
 def get_method(self, config_arg, comp=None, phase=None):
@@ -72,10 +77,11 @@ def get_method(self, config_arg, comp=None, phase=None):
     try:
         c_arg = getattr(source_block, config_arg)
     except AttributeError:
-        raise AttributeError("{} Generic Property Package called for invalid "
-                             "configuration option {}. Please contact the "
-                             "developer of the property package."
-                             .format(self.name, config_arg))
+        raise AttributeError(
+            "{} Generic Property Package called for invalid "
+            "configuration option {}. Please contact the "
+            "developer of the property package.".format(self.name, config_arg)
+        )
 
     if c_arg is None:
         raise GenericPropertyPackageError(self, config_arg)
@@ -99,10 +105,11 @@ def get_method(self, config_arg, comp=None, phase=None):
         return mthd
     else:
         raise ConfigurationError(
-                "{} Generic Property Package received invalid value "
-                "for argument {}. Value must be a method, a class with a "
-                "method named expression or a module containing one of the "
-                "previous.".format(self.name, config_arg))
+            "{} Generic Property Package received invalid value "
+            "for argument {}. Value must be a method, a class with a "
+            "method named expression or a module containing one of the "
+            "previous.".format(self.name, config_arg)
+        )
 
 
 def get_phase_method(self, config_arg, phase):
@@ -122,10 +129,11 @@ def get_phase_method(self, config_arg, phase):
     try:
         c_arg = getattr(p_config, config_arg)
     except AttributeError:
-        raise AttributeError("{} Generic Property Package called for invalid "
-                             "configuration option {}. Please contact the "
-                             "developer of the property package."
-                             .format(self.name, config_arg))
+        raise AttributeError(
+            "{} Generic Property Package called for invalid "
+            "configuration option {}. Please contact the "
+            "developer of the property package.".format(self.name, config_arg)
+        )
 
     if c_arg is None:
         raise GenericPropertyPackageError(self, config_arg)
@@ -147,10 +155,11 @@ def get_phase_method(self, config_arg, phase):
         return mthd
     else:
         raise ConfigurationError(
-                "{} Generic Property Package received invalid value "
-                "for argument {}. Value must be a method, a class with a "
-                "method named expression or a module containing one of the "
-                "previous.".format(self.name, config_arg))
+            "{} Generic Property Package received invalid value "
+            "for argument {}. Value must be a method, a class with a "
+            "method named expression or a module containing one of the "
+            "previous.".format(self.name, config_arg)
+        )
 
     return mthd
 
@@ -195,15 +204,17 @@ def get_bounds_from_config(b, state, base_units):
 
     if len(var_config) == 4:
         # Units provided, need to convert values
-        bounds = (pyunits.convert_value(var_config[0],
-                                        from_units=var_config[3],
-                                        to_units=base_units),
-                  pyunits.convert_value(var_config[2],
-                                        from_units=var_config[3],
-                                        to_units=base_units))
-        default_val = pyunits.convert_value(var_config[1],
-                                            from_units=var_config[3],
-                                            to_units=base_units)
+        bounds = (
+            pyunits.convert_value(
+                var_config[0], from_units=var_config[3], to_units=base_units
+            ),
+            pyunits.convert_value(
+                var_config[2], from_units=var_config[3], to_units=base_units
+            ),
+        )
+        default_val = pyunits.convert_value(
+            var_config[1], from_units=var_config[3], to_units=base_units
+        )
     else:
         bounds = (var_config[0], var_config[2])
         default_val = var_config[1]
@@ -247,23 +258,25 @@ def get_concentration_term(blk, r_idx, log=False):
         raise ConfigurationError(
             "{} concentration_form configuration argument was not set. "
             "Please ensure that this argument is included in your "
-            "configuration dict.".format(blk.name))
+            "configuration dict.".format(blk.name)
+        )
     elif conc_form == ConcentrationForm.molarity:
-        conc_term = getattr(state, pre+"conc_mol_phase_comp"+sub)
+        conc_term = getattr(state, pre + "conc_mol_phase_comp" + sub)
     elif conc_form == ConcentrationForm.activity:
-        conc_term = getattr(state, pre+"act_phase_comp"+sub)
+        conc_term = getattr(state, pre + "act_phase_comp" + sub)
     elif conc_form == ConcentrationForm.molality:
-        conc_term = getattr(state, pre+"molality_phase_comp"+sub)
+        conc_term = getattr(state, pre + "molality_phase_comp" + sub)
     elif conc_form == ConcentrationForm.moleFraction:
-        conc_term = getattr(state, pre+"mole_frac_phase_comp"+sub)
+        conc_term = getattr(state, pre + "mole_frac_phase_comp" + sub)
     elif conc_form == ConcentrationForm.massFraction:
-        conc_term = getattr(state, pre+"mass_frac_phase_comp"+sub)
+        conc_term = getattr(state, pre + "mass_frac_phase_comp" + sub)
     elif conc_form == ConcentrationForm.partialPressure:
-        conc_term = (getattr(state, pre+"pressure_phase_comp"+sub))
+        conc_term = getattr(state, pre + "pressure_phase_comp" + sub)
     else:
         raise BurntToast(
             "{} get_concentration_term received unrecognised "
             "ConcentrationForm ({}). This should not happen - please contact "
-            "the IDAES developers with this bug.".format(blk.name, conc_form))
+            "the IDAES developers with this bug.".format(blk.name, conc_form)
+        )
 
     return conc_term

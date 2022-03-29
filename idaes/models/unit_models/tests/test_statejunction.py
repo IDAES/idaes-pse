@@ -23,18 +23,21 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.statejunction import StateJunction
 
-from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
 from idaes.models.properties import iapws95
-from idaes.models.properties.examples.saponification_thermo import \
-    SaponificationParameterBlock
+from idaes.models.properties.examples.saponification_thermo import (
+    SaponificationParameterBlock,
+)
 
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              number_unused_variables)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     initialization_tester)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import get_solver
 
 
@@ -70,8 +73,7 @@ class TestSaponification(object):
 
         m.fs.properties = SaponificationParameterBlock()
 
-        m.fs.unit = StateJunction(
-                default={"property_package": m.fs.properties})
+        m.fs.unit = StateJunction(default={"property_package": m.fs.properties})
 
         m.fs.unit.inlet.flow_vol.fix(1.0e-03)
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
@@ -137,10 +139,9 @@ class TestBTX(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase": 'Liq'})
+        m.fs.properties = BTXParameterBlock(default={"valid_phase": "Liq"})
 
-        m.fs.unit = StateJunction(default={
-            "property_package": m.fs.properties})
+        m.fs.unit = StateJunction(default={"property_package": m.fs.properties})
 
         m.fs.unit.inlet.flow_mol[0].fix(5)  # mol/s
         m.fs.unit.inlet.temperature[0].fix(365)  # K
@@ -200,12 +201,9 @@ class TestBTX(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert (pytest.approx(5, abs=1e-3) ==
-                value(btx.fs.unit.outlet.flow_mol[0]))
-        assert (pytest.approx(365, abs=1e-2) ==
-                value(btx.fs.unit.outlet.temperature[0]))
-        assert (pytest.approx(101325, abs=1e2) ==
-                value(btx.fs.unit.outlet.pressure[0]))
+        assert pytest.approx(5, abs=1e-3) == value(btx.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(365, abs=1e-2) == value(btx.fs.unit.outlet.temperature[0])
+        assert pytest.approx(101325, abs=1e2) == value(btx.fs.unit.outlet.pressure[0])
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -215,8 +213,7 @@ class TestBTX(object):
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
@@ -225,8 +222,7 @@ class TestIAPWS(object):
 
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
-        m.fs.unit = StateJunction(default={
-                "property_package": m.fs.properties})
+        m.fs.unit = StateJunction(default={"property_package": m.fs.properties})
 
         m.fs.unit.inlet.flow_mol[0].fix(100)
         m.fs.unit.inlet.enth_mol[0].fix(4000)

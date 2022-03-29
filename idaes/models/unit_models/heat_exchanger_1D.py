@@ -24,7 +24,7 @@ from pyomo.environ import (
     check_optimal_termination,
     Constraint,
     value,
-    units as pyunits
+    units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
@@ -39,8 +39,7 @@ from idaes.core import (
     FlowDirection,
     useDefault,
 )
-from idaes.models.unit_models.heat_exchanger \
-    import HeatExchangerFlowPattern
+from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -224,10 +223,8 @@ Pyomo documentation for supported schemes.""",
     )
 
     # Create individual config blocks for shell and tube side
-    CONFIG.declare(
-        "shell_side", _SideTemplate(doc="shell side config arguments"))
-    CONFIG.declare(
-        "tube_side", _SideTemplate(doc="tube side config arguments"))
+    CONFIG.declare("shell_side", _SideTemplate(doc="shell side config arguments"))
+    CONFIG.declare("tube_side", _SideTemplate(doc="tube side config arguments"))
 
     # Common config args for both sides
     CONFIG.declare(
@@ -316,8 +313,7 @@ thickness of the tube""",
                     "Defaulting to finite "
                     "difference method on the shell side."
                 )
-                self.config.shell_side.transformation_method = \
-                    "dae.finite_difference"
+                self.config.shell_side.transformation_method = "dae.finite_difference"
             if self.config.tube_side.transformation_method is useDefault:
                 _log.warning(
                     "Discretization method was "
@@ -326,8 +322,7 @@ thickness of the tube""",
                     "Defaulting to finite "
                     "difference method on the tube side."
                 )
-                self.config.tube_side.transformation_method = \
-                    "dae.finite_difference"
+                self.config.tube_side.transformation_method = "dae.finite_difference"
             if self.config.shell_side.transformation_scheme is useDefault:
                 _log.warning(
                     "Discretization scheme was "
@@ -357,8 +352,7 @@ thickness of the tube""",
                     "Defaulting to finite "
                     "difference method on the shell side."
                 )
-                self.config.shell_side.transformation_method = \
-                    "dae.finite_difference"
+                self.config.shell_side.transformation_method = "dae.finite_difference"
             if self.config.tube_side.transformation_method is useDefault:
                 _log.warning(
                     "Discretization method was "
@@ -367,8 +361,7 @@ thickness of the tube""",
                     "Defaulting to finite "
                     "difference method on the tube side."
                 )
-                self.config.tube_side.transformation_method = \
-                    "dae.finite_difference"
+                self.config.tube_side.transformation_method = "dae.finite_difference"
             if self.config.shell_side.transformation_scheme is useDefault:
                 _log.warning(
                     "Discretization scheme was "
@@ -391,8 +384,7 @@ thickness of the tube""",
             raise ConfigurationError(
                 "{} HeatExchanger1D only supports cocurrent and "
                 "countercurrent flow patterns, but flow_type configuration"
-                " argument was set to {}."
-                .format(self.name, self.config.flow_type)
+                " argument was set to {}.".format(self.name, self.config.flow_type)
             )
 
         # Control volume 1D for shell
@@ -401,12 +393,9 @@ thickness of the tube""",
                 "dynamic": self.config.shell_side.dynamic,
                 "has_holdup": self.config.shell_side.has_holdup,
                 "property_package": self.config.shell_side.property_package,
-                "property_package_args":
-                self.config.shell_side.property_package_args,
-                "transformation_method":
-                self.config.shell_side.transformation_method,
-                "transformation_scheme":
-                self.config.shell_side.transformation_scheme,
+                "property_package_args": self.config.shell_side.property_package_args,
+                "transformation_method": self.config.shell_side.transformation_method,
+                "transformation_scheme": self.config.shell_side.transformation_scheme,
                 "finite_elements": self.config.finite_elements,
                 "collocation_points": self.config.collocation_points,
             }
@@ -417,12 +406,9 @@ thickness of the tube""",
                 "dynamic": self.config.tube_side.dynamic,
                 "has_holdup": self.config.tube_side.has_holdup,
                 "property_package": self.config.tube_side.property_package,
-                "property_package_args":
-                self.config.tube_side.property_package_args,
-                "transformation_method":
-                self.config.tube_side.transformation_method,
-                "transformation_scheme":
-                self.config.tube_side.transformation_scheme,
+                "property_package_args": self.config.tube_side.property_package_args,
+                "transformation_method": self.config.tube_side.transformation_method,
+                "transformation_scheme": self.config.tube_side.transformation_scheme,
                 "finite_elements": self.config.finite_elements,
                 "collocation_points": self.config.collocation_points,
             }
@@ -502,25 +488,27 @@ thickness of the tube""",
         Returns:
             None
         """
-        shell_units = self.config.shell_side.property_package.\
-            get_metadata().get_derived_units
-        tube_units = self.config.tube_side.property_package.\
-            get_metadata().get_derived_units
+        shell_units = (
+            self.config.shell_side.property_package.get_metadata().get_derived_units
+        )
+        tube_units = (
+            self.config.tube_side.property_package.get_metadata().get_derived_units
+        )
 
         # Unit model variables
         # HX dimensions
-        self.d_shell = Var(initialize=1,
-                           doc="Diameter of shell",
-                           units=shell_units("length"))
-        self.d_tube_outer = Var(initialize=0.011,
-                                doc="Outer diameter of tube",
-                           units=shell_units("length"))
-        self.d_tube_inner = Var(initialize=0.010,
-                                doc="Inner diameter of tube",
-                           units=shell_units("length"))
-        self.N_tubes = Var(initialize=1,
-                           doc="Number of tubes",
-                           units=pyunits.dimensionless)
+        self.d_shell = Var(
+            initialize=1, doc="Diameter of shell", units=shell_units("length")
+        )
+        self.d_tube_outer = Var(
+            initialize=0.011, doc="Outer diameter of tube", units=shell_units("length")
+        )
+        self.d_tube_inner = Var(
+            initialize=0.010, doc="Inner diameter of tube", units=shell_units("length")
+        )
+        self.N_tubes = Var(
+            initialize=1, doc="Number of tubes", units=pyunits.dimensionless
+        )
 
         # Note: In addition to the above variables, "shell_length" and
         # "tube_length" need to be fixed at the flowsheet level
@@ -531,24 +519,23 @@ thickness of the tube""",
             self.shell.length_domain,
             initialize=50,
             doc="Heat transfer coefficient",
-            units=shell_units("heat_transfer_coefficient")
+            units=shell_units("heat_transfer_coefficient"),
         )
         self.tube_heat_transfer_coefficient = Var(
             self.flowsheet().time,
             self.tube.length_domain,
             initialize=50,
             doc="Heat transfer coefficient",
-            units=tube_units("heat_transfer_coefficient")
+            units=tube_units("heat_transfer_coefficient"),
         )
 
         # Wall 0D model (Q_shell = Q_tube*N_tubes)
-        if self.config.has_wall_conduction == \
-                WallConductionType.zero_dimensional:
+        if self.config.has_wall_conduction == WallConductionType.zero_dimensional:
             self.temperature_wall = Var(
                 self.flowsheet().time,
                 self.tube.length_domain,
                 initialize=298.15,
-                units=shell_units("temperature")
+                units=shell_units("temperature"),
             )
 
             # Performance equations
@@ -577,21 +564,22 @@ thickness of the tube""",
                 doc="Convective heat transfer",
             )
             def tube_heat_transfer_eq(self, t, x):
-                return self.tube.heat[t, x] == \
-                    self.tube_heat_transfer_coefficient[
+                return self.tube.heat[t, x] == self.tube_heat_transfer_coefficient[
                     t, x
-                ] * c.pi * pyunits.convert(self.d_tube_inner,
-                                           to_units=tube_units("length")) * (
-                    pyunits.convert(self.temperature_wall[t, x],
-                                    to_units=tube_units('temperature')) -
-                    self.tube.properties[t, x].temperature
+                ] * c.pi * pyunits.convert(
+                    self.d_tube_inner, to_units=tube_units("length")
+                ) * (
+                    pyunits.convert(
+                        self.temperature_wall[t, x], to_units=tube_units("temperature")
+                    )
+                    - self.tube.properties[t, x].temperature
                 )
 
             if shell_units("length") is None:
                 # Backwards compatability check
                 q_units = None
             else:
-                q_units = shell_units("power")/shell_units("length")
+                q_units = shell_units("power") / shell_units("length")
             # Wall 0D model
             @self.Constraint(
                 self.flowsheet().time,
@@ -599,9 +587,9 @@ thickness of the tube""",
                 doc="wall 0D model",
             )
             def wall_0D_model(self, t, x):
-                return pyunits.convert(self.tube.heat[t, x],
-                                       to_units=q_units) == -(
-                            self.shell.heat[t, x] / self.N_tubes)
+                return pyunits.convert(self.tube.heat[t, x], to_units=q_units) == -(
+                    self.shell.heat[t, x] / self.N_tubes
+                )
 
         else:
             raise NotImplementedError(
@@ -611,14 +599,15 @@ thickness of the tube""",
 
         # Define tube area in terms of tube diameter
         self.area_calc_tube = Constraint(
-            expr=4 * self.tube_area == c.pi * pyunits.convert(
-                self.d_tube_inner, to_units=tube_units("length"))**2
+            expr=4 * self.tube_area
+            == c.pi
+            * pyunits.convert(self.d_tube_inner, to_units=tube_units("length")) ** 2
         )
 
         # Define shell area in terms of shell and tube diameter
         self.area_calc_shell = Constraint(
             expr=4 * self.shell_area
-            == c.pi * (self.d_shell**2 - self.N_tubes*self.d_tube_outer**2)
+            == c.pi * (self.d_shell**2 - self.N_tubes * self.d_tube_outer**2)
         )
 
     def initialize_build(
@@ -673,10 +662,10 @@ thickness of the tube""",
         # ---------------------------------------------------------------------
         # Solve unit
         # Wall 0D
-        if self.config.has_wall_conduction == \
-                WallConductionType.zero_dimensional:
-            shell_units = self.config.shell_side.property_package.\
-                get_metadata().get_derived_units
+        if self.config.has_wall_conduction == WallConductionType.zero_dimensional:
+            shell_units = (
+                self.config.shell_side.property_package.get_metadata().get_derived_units
+            )
             for t in self.flowsheet().time:
                 for z in self.shell.length_domain:
                     self.temperature_wall[t, z].fix(
@@ -686,7 +675,8 @@ thickness of the tube""",
                                 self.shell.properties[t, 0].temperature
                                 + pyunits.convert(
                                     self.tube.properties[t, 0].temperature,
-                                    to_units=shell_units('temperature'))
+                                    to_units=shell_units("temperature"),
+                                )
                             )
                         )
                     )
@@ -727,7 +717,8 @@ thickness of the tube""",
         if res is not None and not check_optimal_termination(res):
             raise InitializationError(
                 f"{self.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
+                f"the output logs for more information."
+            )
 
         init_log.info("Initialization Complete.")
 
@@ -760,11 +751,14 @@ thickness of the tube""",
 
         for i, c in self.shell_heat_transfer_eq.items():
             iscale.constraint_scaling_transform(
-                c, iscale.get_scaling_factor(
-                    self.shell.heat[i], default=1, warning=True),
-                overwrite=False)
+                c,
+                iscale.get_scaling_factor(self.shell.heat[i], default=1, warning=True),
+                overwrite=False,
+            )
 
         for i, c in self.tube_heat_transfer_eq.items():
-            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                    self.tube.heat[i], default=1, warning=True),
-                overwrite=False)
+            iscale.constraint_scaling_transform(
+                c,
+                iscale.get_scaling_factor(self.tube.heat[i], default=1, warning=True),
+                overwrite=False,
+            )

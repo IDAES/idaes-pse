@@ -29,54 +29,52 @@ Author: Andrew Lee
 import pytest
 from math import log
 
-from pyomo.environ import (ConcreteModel,
-                           units as pyunits,
-                           value)
+from pyomo.environ import ConcreteModel, units as pyunits, value
 
-from idaes.core import (AqueousPhase,
-                        Solvent,
-                        Apparent,
-                        Anion,
-                        Cation)
+from idaes.core import AqueousPhase, Solvent, Apparent, Anion, Cation
 from idaes.models.properties.core.eos.enrtl import ENRTL
-from idaes.models.properties.core.eos.enrtl_reference_states import \
-    Unsymmetric
+from idaes.models.properties.core.eos.enrtl_reference_states import Unsymmetric
 from idaes.models.properties.core.generic.generic_property import (
-        GenericParameterBlock, StateIndex)
+    GenericParameterBlock,
+    StateIndex,
+)
 from idaes.models.properties.core.state_definitions import FTPx
-from idaes.models.properties.core.pure.electrolyte import \
-    relative_permittivity_constant
+from idaes.models.properties.core.pure.electrolyte import relative_permittivity_constant
 
 
 def dummy_method(b, *args, **kwargs):
-    return 1000/18e-3*pyunits.mol/pyunits.m**3
+    return 1000 / 18e-3 * pyunits.mol / pyunits.m**3
 
 
 configuration = {
     "components": {
-        "H2O": {"type": Solvent,
-                "dens_mol_liq_comp": dummy_method,
-                "relative_permittivity_liq_comp":
-                    relative_permittivity_constant,
-                "parameter_data": {
-                    "mw": (18E-3, pyunits.kg/pyunits.mol),
-                    "relative_permittivity_liq_comp": 78.54}},
-        "KCl": {"type": Apparent,
-                "dissociation_species": {"K+": 1, "Cl-": 1}},
-        "K+": {"type": Cation,
-               "charge": +1},
-        "Cl-": {"type": Anion,
-                "charge": -1}},
+        "H2O": {
+            "type": Solvent,
+            "dens_mol_liq_comp": dummy_method,
+            "relative_permittivity_liq_comp": relative_permittivity_constant,
+            "parameter_data": {
+                "mw": (18e-3, pyunits.kg / pyunits.mol),
+                "relative_permittivity_liq_comp": 78.54,
+            },
+        },
+        "KCl": {"type": Apparent, "dissociation_species": {"K+": 1, "Cl-": 1}},
+        "K+": {"type": Cation, "charge": +1},
+        "Cl-": {"type": Anion, "charge": -1},
+    },
     "phases": {
-        "Liq": {"type": AqueousPhase,
-                "equation_of_state": ENRTL,
-                "equation_of_state_options": {
-                    "reference_state": Unsymmetric}}},
-    "base_units": {"time": pyunits.s,
-                   "length": pyunits.m,
-                   "mass": pyunits.kg,
-                   "amount": pyunits.mol,
-                   "temperature": pyunits.K},
+        "Liq": {
+            "type": AqueousPhase,
+            "equation_of_state": ENRTL,
+            "equation_of_state_options": {"reference_state": Unsymmetric},
+        }
+    },
+    "base_units": {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.kg,
+        "amount": pyunits.mol,
+        "temperature": pyunits.K,
+    },
     "state_definition": FTPx,
     "state_components": StateIndex.true,
     "pressure_ref": 1e5,
@@ -84,7 +82,10 @@ configuration = {
     "parameter_data": {
         "Liq_tau": {
             ("H2O", "K+, Cl-"): 8.064,  # Table 1, [1]
-            ("K+, Cl-", "H2O"): -4.107}}}  # Table 1, [1]
+            ("K+, Cl-", "H2O"): -4.107,
+        }
+    },
+}  # Table 1, [1]
 
 
 class TestStateBlockUnsymmetric(object):
@@ -117,48 +118,48 @@ class TestStateBlockUnsymmetric(object):
             model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
 
         # Data from [2] - Form {molality: gamma_KCl}
-        data = {0.001: 0.965,
-                0.002: 0.951,
-                0.005: 0.927,
-                0.01: 0.901,
-                0.0201: 0.869,
-                0.05: 0.816,
-                0.0982: 0.768,
-                0.1983: 0.717,
-                0.3049: 0.687,
-                0.3999: 0.665,
-                0.5001: 0.649,
-                0.6032: 0.636,
-                0.7003: 0.626,
-                0.7996: 0.617,
-                0.8968: 0.61,
-                0.9926: 0.604,
-                1.1899: 0.594,
-                1.3844: 0.586,
-                1.5817: 0.58,
-                1.7923: 0.576,
-                1.9895: 0.573,
-                2.5039: 0.568,
-                2.9837: 0.568,
-                3.4982: 0.571,
-                3.994: 0.576,
-                4.4897: 0.584,
-                4.7909: 0.589,
-                4.9908: 0.593
-                }
+        data = {
+            0.001: 0.965,
+            0.002: 0.951,
+            0.005: 0.927,
+            0.01: 0.901,
+            0.0201: 0.869,
+            0.05: 0.816,
+            0.0982: 0.768,
+            0.1983: 0.717,
+            0.3049: 0.687,
+            0.3999: 0.665,
+            0.5001: 0.649,
+            0.6032: 0.636,
+            0.7003: 0.626,
+            0.7996: 0.617,
+            0.8968: 0.61,
+            0.9926: 0.604,
+            1.1899: 0.594,
+            1.3844: 0.586,
+            1.5817: 0.58,
+            1.7923: 0.576,
+            1.9895: 0.573,
+            2.5039: 0.568,
+            2.9837: 0.568,
+            3.4982: 0.571,
+            3.994: 0.576,
+            4.4897: 0.584,
+            4.7909: 0.589,
+            4.9908: 0.593,
+        }
 
         for x, g in data.items():
-            w = 1000/18
+            w = 1000 / 18
 
-            model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(
-                w/(w+2*x))
-            model.state[1].mole_frac_phase_comp["Liq", "K+"].set_value(
-                x/(w+2*x))
-            model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
-                x/(w+2*x))
+            model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(w / (w + 2 * x))
+            model.state[1].mole_frac_phase_comp["Liq", "K+"].set_value(x / (w + 2 * x))
+            model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(x / (w + 2 * x))
 
-            conv = log(1+18*2*x/1000)  # Convert mole frac to molal basis
+            conv = log(1 + 18 * 2 * x / 1000)  # Convert mole frac to molal basis
             assert pytest.approx(log(g), rel=3e-2, abs=6e-3) == value(
-                model.state[1].Liq_log_gamma["K+"] - conv)
+                model.state[1].Liq_log_gamma["K+"] - conv
+            )
             assert pytest.approx(log(g), rel=3e-2, abs=6e-3) == value(
-                model.state[1].Liq_log_gamma["Cl-"] - conv)
+                model.state[1].Liq_log_gamma["Cl-"] - conv
+            )

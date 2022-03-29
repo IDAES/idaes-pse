@@ -14,25 +14,25 @@
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import (check_optimal_termination,
-                           Block,
-                           ConcreteModel,
-                           Set,
-                           value)
+from pyomo.environ import check_optimal_termination, Block, ConcreteModel, Set, value
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              fixed_variables_set,
-                                              activated_constraints_set)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    fixed_variables_set,
+    activated_constraints_set,
+)
 from idaes.core.util import get_solver
 
-from idaes.models.properties.core.generic.generic_property import (
-        GenericParameterBlock)
+from idaes.models.properties.core.generic.generic_property import GenericParameterBlock
 from idaes.models.properties.core.generic.generic_reaction import (
-        GenericReactionParameterBlock)
+    GenericReactionParameterBlock,
+)
 
-from idaes.models.properties.core.examples.reactions.reaction_example \
-    import thermo_configuration, rxn_configuration
+from idaes.models.properties.core.examples.reactions.reaction_example import (
+    thermo_configuration,
+    rxn_configuration,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -44,12 +44,11 @@ class TestParamBlock(object):
     @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
-        model.thermo_params = GenericParameterBlock(
-            default=thermo_configuration)
+        model.thermo_params = GenericParameterBlock(default=thermo_configuration)
 
         model.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.thermo_params,
-                     **rxn_configuration})
+            default={"property_package": model.thermo_params, **rxn_configuration}
+        )
 
         rate_config = model.rxn_params.config.rate_reactions
         equil_config = model.rxn_params.config.equilibrium_reactions
@@ -70,8 +69,7 @@ class TestParamBlock(object):
             else:
                 assert v == 0
 
-        assert isinstance(model.rxn_params.equilibrium_reaction_stoichiometry,
-                          dict)
+        assert isinstance(model.rxn_params.equilibrium_reaction_stoichiometry, dict)
         assert len(model.rxn_params.equilibrium_reaction_stoichiometry) == 4
         for k, v in model.rxn_params.equilibrium_reaction_stoichiometry.items():
             if (k[1], k[2]) in equil_config[k[0]].stoichiometry.keys():
@@ -89,21 +87,19 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.thermo_params = GenericParameterBlock(
-            default=thermo_configuration)
+        model.thermo_params = GenericParameterBlock(default=thermo_configuration)
 
         model.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.thermo_params,
-                     **rxn_configuration})
+            default={"property_package": model.thermo_params, **rxn_configuration}
+        )
 
         model.props = model.thermo_params.build_state_block(
-                [1],
-                default={"defined_state": True})
+            [1], default={"defined_state": True}
+        )
 
         model.rxns = model.rxn_params.build_reaction_block(
-                [1],
-                default={"state_block": model.props,
-                         "has_equilibrium": True})
+            [1], default={"state_block": model.props, "has_equilibrium": True}
+        )
 
         assert_units_consistent(model)
 
@@ -129,8 +125,8 @@ class TestStateBlock(object):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        model.props.initialize(optarg={'tol': 1e-6})
-        model.rxns.initialize(optarg={'tol': 1e-6})
+        model.props.initialize(optarg={"tol": 1e-6})
+        model.rxns.initialize(optarg={"tol": 1e-6})
 
         assert degrees_of_freedom(model) == 0
 
@@ -159,35 +155,44 @@ class TestStateBlock(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.unit
     def test_solution(self, model):
-        assert model.props[1].flow_mol_comp["D"].value == \
-            pytest.approx(7.0849, rel=1e-4)
+        assert model.props[1].flow_mol_comp["D"].value == pytest.approx(
+            7.0849, rel=1e-4
+        )
 
-        assert model.props[1].mole_frac_phase_comp["Liq", "A"].value == \
-            pytest.approx(0.09916, rel=1e-4)
-        assert model.props[1].mole_frac_phase_comp["Liq", "B"].value == \
-            pytest.approx(0.09916, rel=1e-4)
-        assert model.props[1].mole_frac_phase_comp["Liq", "C"].value == \
-            pytest.approx(0.09916, rel=1e-4)
-        assert model.props[1].mole_frac_phase_comp["Liq", "D"].value == \
-            pytest.approx(0.70253, rel=1e-4)
+        assert model.props[1].mole_frac_phase_comp["Liq", "A"].value == pytest.approx(
+            0.09916, rel=1e-4
+        )
+        assert model.props[1].mole_frac_phase_comp["Liq", "B"].value == pytest.approx(
+            0.09916, rel=1e-4
+        )
+        assert model.props[1].mole_frac_phase_comp["Liq", "C"].value == pytest.approx(
+            0.09916, rel=1e-4
+        )
+        assert model.props[1].mole_frac_phase_comp["Liq", "D"].value == pytest.approx(
+            0.70253, rel=1e-4
+        )
 
-        assert value(model.rxns[1].k_rxn["R1"]) == \
-            pytest.approx(0.72121, rel=1e-4)
+        assert value(model.rxns[1].k_rxn["R1"]) == pytest.approx(0.72121, rel=1e-4)
 
         assert value(model.rxns[1].reaction_rate["R1"]) == pytest.approx(
-            value(model.rxns[1].k_rxn["R1"] *
-                  model.props[1].mole_frac_phase_comp["Liq", "A"]**1 *
-                  model.props[1].mole_frac_phase_comp["Liq", "B"]**1),
-            rel=1e-6)
+            value(
+                model.rxns[1].k_rxn["R1"]
+                * model.props[1].mole_frac_phase_comp["Liq", "A"] ** 1
+                * model.props[1].mole_frac_phase_comp["Liq", "B"] ** 1
+            ),
+            rel=1e-6,
+        )
 
-        assert value(model.rxns[1].k_eq["R2"]) == \
-            pytest.approx(71.4505, rel=1e-4)
+        assert value(model.rxns[1].k_eq["R2"]) == pytest.approx(71.4505, rel=1e-4)
 
         assert value(model.rxns[1].k_eq["R2"]) == pytest.approx(
-            value(model.props[1].mole_frac_phase_comp["Liq", "D"]**1 *
-                  model.props[1].mole_frac_phase_comp["Liq", "B"]**-1 *
-                  model.props[1].mole_frac_phase_comp["Liq", "C"]**-1),
-            rel=1e-6)
+            value(
+                model.props[1].mole_frac_phase_comp["Liq", "D"] ** 1
+                * model.props[1].mole_frac_phase_comp["Liq", "B"] ** -1
+                * model.props[1].mole_frac_phase_comp["Liq", "C"] ** -1
+            ),
+            rel=1e-6,
+        )
 
     @pytest.mark.ui
     @pytest.mark.unit

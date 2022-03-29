@@ -16,31 +16,35 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           value,
-                           units)
-from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType)
+from pyomo.environ import check_optimal_termination, ConcreteModel, value, units
+from idaes.core import (
+    FlowsheetBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+)
 from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 from idaes.models.properties.examples.saponification_thermo import (
-                        SaponificationParameterBlock)
+    SaponificationParameterBlock,
+)
 from idaes.models.properties.examples.saponification_reactions import (
-                        SaponificationReactionParameterBlock)
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
-                                              number_unused_variables)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     ReactionParameterTestBlock,
-                                     initialization_tester)
+    SaponificationReactionParameterBlock,
+)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    fixed_variables_set,
+    activated_constraints_set,
+    number_unused_variables,
+)
+from idaes.core.util.testing import (
+    PhysicalParameterTestBlock,
+    ReactionParameterTestBlock,
+    initialization_tester,
+)
 from idaes.core.util import get_solver
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 from idaes.core.util.exceptions import InitializationError
 
 
@@ -56,24 +60,25 @@ def test_config():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.properties = PhysicalParameterTestBlock()
-    m.fs.reactions = ReactionParameterTestBlock(default={
-                            "property_package": m.fs.properties})
+    m.fs.reactions = ReactionParameterTestBlock(
+        default={"property_package": m.fs.properties}
+    )
 
-    m.fs.unit = EquilibriumReactor(default={
+    m.fs.unit = EquilibriumReactor(
+        default={
             "property_package": m.fs.properties,
-            "reaction_package": m.fs.reactions})
+            "reaction_package": m.fs.reactions,
+        }
+    )
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 15
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
-    assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.useDefault
-    assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
+    assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+    assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
     assert m.fs.unit.config.has_rate_reactions
     assert not m.fs.unit.config.has_heat_transfer
     assert not m.fs.unit.config.has_pressure_change
@@ -92,16 +97,20 @@ class TestSaponification(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.properties = SaponificationParameterBlock()
-        m.fs.reactions = SaponificationReactionParameterBlock(default={
-                                "property_package": m.fs.properties})
+        m.fs.reactions = SaponificationReactionParameterBlock(
+            default={"property_package": m.fs.properties}
+        )
 
         m.fs.unit = EquilibriumReactor(
-                default={"property_package": m.fs.properties,
-                         "reaction_package": m.fs.reactions,
-                         "has_equilibrium_reactions": False,
-                         "has_heat_transfer": True,
-                         "has_heat_of_reaction": True,
-                         "has_pressure_change": True})
+            default={
+                "property_package": m.fs.properties,
+                "reaction_package": m.fs.reactions,
+                "has_equilibrium_reactions": False,
+                "has_heat_transfer": True,
+                "has_heat_of_reaction": True,
+                "has_pressure_change": True,
+            }
+        )
 
         m.fs.unit.inlet.flow_vol.fix(1.0e-03)
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
@@ -172,35 +181,65 @@ class TestSaponification(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, sapon):
-        assert (pytest.approx(101325.0, abs=1e-2) ==
-                value(sapon.fs.unit.outlet.pressure[0]))
-        assert (pytest.approx(304.32, abs=1e-2) ==
-                value(sapon.fs.unit.outlet.temperature[0]))
-        assert (pytest.approx(0.01, abs=1e-2) ==
-                value(sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]))
+        assert pytest.approx(101325.0, abs=1e-2) == value(
+            sapon.fs.unit.outlet.pressure[0]
+        )
+        assert pytest.approx(304.32, abs=1e-2) == value(
+            sapon.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(0.01, abs=1e-2) == value(
+            sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, sapon):
-        assert abs(value(sapon.fs.unit.inlet.flow_vol[0] -
-                         sapon.fs.unit.outlet.flow_vol[0])) <= 1e-6
-        assert (abs(value(sapon.fs.unit.inlet.flow_vol[0] *
-                          sum(sapon.fs.unit.inlet.conc_mol_comp[0, j]
-                              for j in sapon.fs.properties.component_list) -
-                          sapon.fs.unit.outlet.flow_vol[0] *
-                          sum(sapon.fs.unit.outlet.conc_mol_comp[0, j]
-                              for j in sapon.fs.properties.component_list)))
-                <= 1e-6)
-        assert abs(value(sapon.fs.unit.inlet.flow_vol[0] *
-                         sapon.fs.properties.cp_mol *
-                         (sapon.fs.unit.inlet.temperature[0] -
-                          sapon.fs.properties.temperature_ref) -
-                         sapon.fs.unit.outlet.flow_vol[0] *
-                         sapon.fs.properties.cp_mol *
-                         (sapon.fs.unit.outlet.temperature[0] -
-                          sapon.fs.properties.temperature_ref) +
-                         sapon.fs.unit.heat_duty[0])) <= 1e-1
+        assert (
+            abs(
+                value(
+                    sapon.fs.unit.inlet.flow_vol[0] - sapon.fs.unit.outlet.flow_vol[0]
+                )
+            )
+            <= 1e-6
+        )
+        assert (
+            abs(
+                value(
+                    sapon.fs.unit.inlet.flow_vol[0]
+                    * sum(
+                        sapon.fs.unit.inlet.conc_mol_comp[0, j]
+                        for j in sapon.fs.properties.component_list
+                    )
+                    - sapon.fs.unit.outlet.flow_vol[0]
+                    * sum(
+                        sapon.fs.unit.outlet.conc_mol_comp[0, j]
+                        for j in sapon.fs.properties.component_list
+                    )
+                )
+            )
+            <= 1e-6
+        )
+        assert (
+            abs(
+                value(
+                    sapon.fs.unit.inlet.flow_vol[0]
+                    * sapon.fs.properties.cp_mol
+                    * (
+                        sapon.fs.unit.inlet.temperature[0]
+                        - sapon.fs.properties.temperature_ref
+                    )
+                    - sapon.fs.unit.outlet.flow_vol[0]
+                    * sapon.fs.properties.cp_mol
+                    * (
+                        sapon.fs.unit.outlet.temperature[0]
+                        - sapon.fs.properties.temperature_ref
+                    )
+                    + sapon.fs.unit.heat_duty[0]
+                )
+            )
+            <= 1e-1
+        )
 
     @pytest.mark.ui
     @pytest.mark.unit

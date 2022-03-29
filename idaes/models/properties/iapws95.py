@@ -46,15 +46,7 @@ __author__ = "John Eslick"
 import os
 
 # Import Pyomo libraries
-from pyomo.environ import (
-    Expression,
-    Param,
-    RangeSet,
-    Set,
-    exp,
-    sqrt,
-    units as pyunits
-)
+from pyomo.environ import Expression, Param, RangeSet, Set, exp, sqrt, units as pyunits
 
 # Import IDAES
 from idaes.core import declare_process_block_class
@@ -101,9 +93,16 @@ def htpx(T=None, P=None, x=None):
         Total molar enthalpy [J/mol].
     """
     prop = Iapws95StateBlock(default={"parameters": Iapws95ParameterBlock()})
-    return _htpx(T=T, P=P, x=x, prop=prop,
-                 Tmin=270*pyunits.K, Tmax=3e3*pyunits.K,
-                 Pmin=1e-4*pyunits.kPa, Pmax=1e6*pyunits.kPa)
+    return _htpx(
+        T=T,
+        P=P,
+        x=x,
+        prop=prop,
+        Tmin=270 * pyunits.K,
+        Tmax=3e3 * pyunits.K,
+        Pmin=1e-4 * pyunits.kPa,
+        Pmax=1e6 * pyunits.kPa,
+    )
 
 
 @declare_process_block_class("Iapws95ParameterBlock")
@@ -118,23 +117,27 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
             component_list=Set(initialize=["H2O"]),
             phase_equilibrium_idx=Set(initialize=[1]),
             phase_equilibrium_list={1: ["H2O", ("Vap", "Liq")]},
-            mw=Param(initialize=0.01801528,
-                     doc="Molecular weight [kg/mol]",
-                     units=pyunits.kg/pyunits.mol),
+            mw=Param(
+                initialize=0.01801528,
+                doc="Molecular weight [kg/mol]",
+                units=pyunits.kg / pyunits.mol,
+            ),
             temperature_crit=Param(
-                initialize=647.096,
-                doc="Critical temperature [K]",
-                units=pyunits.K),
-            pressure_crit=Param(initialize=2.2064e7,
-                                doc="Critical pressure [Pa]",
-                                units=pyunits.Pa),
-            dens_mass_crit=Param(initialize=322,
-                                 doc="Critical density [kg/m3]",
-                                 units=pyunits.kg/pyunits.m**3),
+                initialize=647.096, doc="Critical temperature [K]", units=pyunits.K
+            ),
+            pressure_crit=Param(
+                initialize=2.2064e7, doc="Critical pressure [Pa]", units=pyunits.Pa
+            ),
+            dens_mass_crit=Param(
+                initialize=322,
+                doc="Critical density [kg/m3]",
+                units=pyunits.kg / pyunits.m**3,
+            ),
             specific_gas_constant=Param(
                 initialize=461.51805,
                 doc="Water Specific Gas Constant [J/kg/K]",
-                units=pyunits.J/pyunits.kg/pyunits.K),
+                units=pyunits.J / pyunits.kg / pyunits.K,
+            ),
             pressure_bounds=(0.1, 1e9),
             temperature_bounds=(250, 2500),
             enthalpy_bounds=(0, 1e5),
@@ -153,7 +156,7 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
                 4: 4.096266e-1,
             },
             doc="0th order thermal conductivity parameters",
-            units=pyunits.K*pyunits.m/pyunits.W
+            units=pyunits.K * pyunits.m / pyunits.W,
         )
 
         self.tc_L1 = Param(
@@ -200,7 +203,7 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
             RangeSet(0, 3),
             initialize={0: 1.67752, 1: 2.20462, 2: 0.6366564, 3: -0.241605},
             doc="0th order viscosity parameters",
-            units=1/pyunits.s/pyunits.Pa
+            units=1 / pyunits.s / pyunits.Pa,
         )
 
         self.visc_H1 = Param(
@@ -286,10 +289,17 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
             L0 = self.config.parameters.tc_L0
             L1 = self.config.parameters.tc_L1
             return (
-                sqrt(1.0 / tau) / sum(L0[i] * tau ** i for i in L0) *
-                exp(delta[p] * sum((tau - 1)**i *
-                    sum(L1[i, j] * (delta[p] - 1)**j for j in range(0, 6))
-                for i in range(0, 5))))
+                sqrt(1.0 / tau)
+                / sum(L0[i] * tau**i for i in L0)
+                * exp(
+                    delta[p]
+                    * sum(
+                        (tau - 1) ** i
+                        * sum(L1[i, j] * (delta[p] - 1) ** j for j in range(0, 6))
+                        for i in range(0, 5)
+                    )
+                )
+            )
 
         self.therm_cond_phase = Expression(
             phlist, rule=rule_tc, doc="Thermal conductivity [W/K/m]"
@@ -302,19 +312,23 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
             # The units of this are really weird, so I am just going to append
             # units to the expression rather than give units to the parameters
             return (
-                1e-4 * sqrt(1.0 / tau) / sum(H0[i] * tau ** i for i in H0) *
-                exp(delta[p] * sum((tau - 1)**i *
-                    sum(H1[i, j] * (delta[p] - 1)**j for j in range(0, 7))
-                for i in range(0, 6))))
+                1e-4
+                * sqrt(1.0 / tau)
+                / sum(H0[i] * tau**i for i in H0)
+                * exp(
+                    delta[p]
+                    * sum(
+                        (tau - 1) ** i
+                        * sum(H1[i, j] * (delta[p] - 1) ** j for j in range(0, 7))
+                        for i in range(0, 6)
+                    )
+                )
+            )
 
-        self.visc_d_phase = Expression(
-            phlist, rule=rule_mu, doc="Viscosity (dynamic)"
-        )
+        self.visc_d_phase = Expression(phlist, rule=rule_mu, doc="Viscosity (dynamic)")
 
         # Phase kinimatic viscosity
         def rule_nu(b, p):
             return self.visc_d_phase[p] / self.dens_mass_phase[p]
 
-        self.visc_k_phase = Expression(
-            phlist, rule=rule_nu, doc="Kinematic viscosity"
-        )
+        self.visc_k_phase = Expression(phlist, rule=rule_nu, doc="Kinematic viscosity")
