@@ -35,6 +35,7 @@ from pyomo.solvers.plugins.solvers.ASL import ASL
 from pyomo.opt.solver import SystemCallSolver
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.common.errors import ApplicationError
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
@@ -216,7 +217,7 @@ def _copy_time(time_vars, t_from, t_to):
 
 
 def find_discretization_equations(m, time):
-    """This is a generator for time discretization equations. Since we aren't
+    """This returns a list of time discretization equations. Since we aren't
     solving the whole time period simultaneously, we'll want to deactivate
     these constraints.
 
@@ -224,8 +225,8 @@ def find_discretization_equations(m, time):
         m (Block): model or block to search for constraints
         time (ContinuousSet):
 
-    Yields:
-        time discretization constraints
+    Returns:
+        list of time discretization constraints
     """
     disc_eqns = []
     for var in m.component_objects(pyo.Var):
@@ -517,6 +518,30 @@ def petsc_dae_by_time_element(
             count += 1
             res_list.append(res)
     return res_list
+
+
+def calculate_time_derivatives(m, time):
+    """Calculate the derivative values from the discretization equations.
+
+    Args:
+        m (Block): Pyomo model block
+        time (ContinuousSet): Time set
+
+    Returns:
+        None
+    """
+    for var in m.component_objects(pyo.Var):
+        if isinstance(var, pyodae.DerivativeVar):
+            if time in ComponentSet(var.get_continuousset_list()):
+                parent = var.parent_block()
+                name = var.local_name + "_disc_eq"
+                disc_eq = getattr(parent, name)
+                for i, v in var.items():
+                    try:
+                        if disc_eq[i].active:
+                            calculate_variable_from_constraint(v, disc_eq[i])
+                    except KeyError:
+                        pass # discretization equation may not exist at first time
 
 
 class PetscTrajectory(object):
