@@ -37,14 +37,14 @@ from idaes.core.util.tables import (
     tag_state_quantities,
     stream_states_dict,
 )
-import idaes.generic_models.properties.examples.saponification_thermo as thermo_props
-import idaes.generic_models.properties.examples.saponification_reactions as rxn_props
-from idaes.generic_models.unit_models import CSTR, Flash
-from idaes.generic_models.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
+import idaes.models.properties.examples.saponification_thermo as thermo_props
+import idaes.models.properties.examples.saponification_reactions as rxn_props
+from idaes.models.unit_models import CSTR, Flash
+from idaes.models.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
 from idaes.core.util.testing import PhysicalParameterTestBlock
-from idaes.generic_models.unit_models.column_models import TrayColumn
-from idaes.generic_models.unit_models.column_models.condenser import CondenserType, TemperatureSpec
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import BTXParameterBlock
+from idaes.models.unit_models.column_models import TrayColumn
+from idaes.models.unit_models.column_models.condenser import CondenserType, TemperatureSpec
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import BTXParameterBlock
 
 @pytest.fixture()
 def m():

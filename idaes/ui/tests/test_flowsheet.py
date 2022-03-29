@@ -18,16 +18,16 @@ from pathlib import Path
 import pytest
 
 from idaes.ui.flowsheet import FlowsheetSerializer, FlowsheetDiff, validate_flowsheet
-from idaes.generic_models.properties.swco2 import SWCO2ParameterBlock
-from idaes.generic_models.unit_models import Heater, PressureChanger, HeatExchanger
-from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
+from idaes.models.properties.swco2 import SWCO2ParameterBlock
+from idaes.models.unit_models import Heater, PressureChanger, HeatExchanger
+from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 from pyomo.environ import Expression, TransformationFactory, ConcreteModel
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
-from idaes.generic_models.unit_models import Flash, Mixer
+from idaes.models.unit_models import Flash, Mixer
 from .shared import dict_diff
 
 # === Sample data ===
@@ -383,13 +383,13 @@ def test_flowsheet_serializer_invalid():
 @pytest.mark.unit
 def test_flowsheet_serializer_get_unit_model_type():
     from idaes.core import MaterialBalanceType
-    from idaes.generic_models.unit_models.pressure_changer import (
+    from idaes.models.unit_models.pressure_changer import (
         ThermodynamicAssumption,
     )
-    from idaes.generic_models.unit_models.heat_exchanger import (
+    from idaes.models.unit_models.heat_exchanger import (
         delta_temperature_underwood_callback,
     )
-    from idaes.generic_models.properties import iapws95
+    from idaes.models.properties import iapws95
     from pyomo.environ import Set
 
     # flowsheet

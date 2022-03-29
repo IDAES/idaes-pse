@@ -27,8 +27,8 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType,
                         MomentumBalanceType)
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
-from idaes.generic_models.control import PIDBlock, PIDForm
+from idaes.models.unit_models import CSTR, Mixer, MomentumMixingType
+from idaes.models.control import PIDBlock, PIDForm
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util.tests.test_initialization import \
         AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock

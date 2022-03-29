@@ -23,7 +23,7 @@ from pyomo.util.check_units import assert_units_consistent
 import idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
 import idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.SCPC_full_plant as SCPC
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 
 
 @pytest.fixture(scope="module")

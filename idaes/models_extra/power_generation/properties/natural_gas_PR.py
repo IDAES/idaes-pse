@@ -38,25 +38,25 @@ from pyomo.environ import units as pyunits
 # Import IDAES cores
 from idaes.core import VaporPhase, LiquidPhase, Component, PhaseType
 
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
-from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil.forms import (
+from idaes.models.properties.core.state_definitions import FTPx
+from idaes.models.properties.core.eos.ceos import Cubic, CubicType
+from idaes.models.properties.core.eos.ideal import Ideal
+from idaes.models.properties.core.phase_equil.forms import (
     fugacity,
     log_fugacity,
 )
-from idaes.generic_models.properties.core.phase_equil import SmoothVLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
-from idaes.generic_models.properties.core.pure import NIST, RPP4, RPP5, Perrys
+from idaes.models.properties.core.phase_equil import SmoothVLE
+from idaes.models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
+from idaes.models.properties.core.pure import NIST, RPP4, RPP5, Perrys
 
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.reactions.rate_constant import arrhenius
-from idaes.generic_models.properties.core.reactions.rate_forms import power_law_rate
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.core.reactions.rate_constant import arrhenius
+from idaes.models.properties.core.reactions.rate_forms import power_law_rate
+from idaes.models.properties.core.generic.generic_reaction import (
     GenericReactionParameterBlock,
     ConcentrationForm,
 )
-import idaes.generic_models.properties.core.reactions as rxn
+import idaes.models.properties.core.reactions as rxn
 from idaes.core.util.exceptions import ConfigurationError
 
 # Set up logger

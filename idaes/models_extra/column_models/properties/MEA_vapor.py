@@ -35,9 +35,9 @@ from pyomo.environ import sqrt, units as pyunits, Var
 from idaes.core import VaporPhase, Component
 from idaes.core.util.constants import Constants
 
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.generic.generic_property import StateIndex
-from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.models.properties.core.state_definitions import FTPx
+from idaes.models.properties.core.generic.generic_property import StateIndex
+from idaes.models.properties.core.eos.ideal import Ideal
 
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
