@@ -1496,8 +1496,6 @@ class TestPysmoSurrogate():
         _, poly_trained, _, rbf_trained, _, krg_trained = pysmo_surr2
         stream2a = StringIO()
         poly_trained.save(stream2a)
-        # re.sub('errors.*?}', "", jstring_poly_2)
-        # assert stream2a.getvalue() == jstring_poly_2
         assert re.sub('errors.*?}', "", jstring_poly_2) == re.sub('errors.*?}', "", stream2a.getvalue())
 
     #     # Test save for RBF
@@ -1510,10 +1508,10 @@ class TestPysmoSurrogate():
     #     krg_trained.save(stream2c)
     #     assert stream2c.getvalue() == jstring_krg
 
-    #     # Test save for case with bounds supplied
-    #     stream1 = StringIO()
-    #     pysmo_surr1.save(stream1)
-    #     assert stream1.getvalue() == jstring_poly_1
+        # Test save for case with bounds supplied
+        stream1 = StringIO()
+        pysmo_surr1.save(stream1)
+        assert re.sub('errors.*?}', "", jstring_poly_1) == re.sub('errors.*?}', "", stream1.getvalue())
 
     #     # Test save for PR cases with trig/log user-supplied terms
     #     stream3 = StringIO()
@@ -1521,10 +1519,10 @@ class TestPysmoSurrogate():
     #     poly_trained.save(stream3)
     #     assert stream3.getvalue() == jstring_poly_3x
 
-    #     # Test save for PR cases with other user-supplied terms 
-    #     stream4 = StringIO()
-    #     pysmo_surr4.save(stream4)
-    #     assert stream4.getvalue() == jstring_poly_4
+        # Test save for PR cases with other user-supplied terms 
+        stream4 = StringIO()
+        pysmo_surr4.save(stream4)
+        assert re.sub('errors.*?}', "", jstring_poly_4) == re.sub('errors.*?}', "", stream4.getvalue())
 
     @pytest.mark.unit
     def test_load_poly1(self):
