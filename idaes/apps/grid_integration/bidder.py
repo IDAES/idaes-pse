@@ -125,6 +125,8 @@ class SelfScheduler(AbstractBidder):
         self.forecaster = forecaster
         self.generator = self.bidding_model_object.generator
 
+        self._check_inputs()
+
         # add flowsheets to model
         self.model = pyo.ConcreteModel()
 
