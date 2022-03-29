@@ -1,14 +1,14 @@
 import pandas as pd
 import pyomo.environ as pyo
 from pyomo.opt.base.solvers import OptSolver
-from collections import deque
 import os
 
 
 class Tracker:
 
     """
-    Wrap a model object to do tracking.
+    Wrap a model object to track the market dispatch signals. This class interfaces
+    with the DoubleLoopCoordinator.
     """
 
     def __init__(self, tracking_model_object, n_tracking_hour, solver):
@@ -153,6 +153,17 @@ class Tracker:
 
     def _add_tracking_vars(self):
 
+        """
+        Add necessary tracking variables to the model, i.e., power under and over
+        delivered.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+
         self.model.power_underdelivered = pyo.Var(
             self.time_set, initialize=0, within=pyo.NonNegativeReals
         )
@@ -256,7 +267,8 @@ class Tracker:
         record the results from the solve and update the model.
 
         Arguments:
-            market_dispatch: a dictionary that contains the market dispatch signals that we want to track. {generator name: [float]}
+            market_dispatch: a dictionary that contains the market dispatch
+            signals that we want to track. {generator name: [float]}
 
             date: current simulation date
 
