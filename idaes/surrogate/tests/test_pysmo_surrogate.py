@@ -22,6 +22,7 @@ from math import sin, cos, log, exp
 # from pyomo.environ import sin, cos, log, exp
 from pathlib import Path
 from io import StringIO
+import re
 
 import pyomo as pyo
 from pyomo.environ import ConcreteModel, Var, Constraint
@@ -1489,13 +1490,15 @@ class TestPysmoSurrogate():
         assert isinstance(blk.pysmo_constraint, Constraint)
         assert len(blk.pysmo_constraint) == 2
 
-    # @pytest.mark.unit
-    # def test_save(self, pysmo_surr1, pysmo_surr2, pysmo_surr3, pysmo_surr4):
-    #     # Test save for polynomial regression
-    #     _, poly_trained, _, rbf_trained, _, krg_trained = pysmo_surr2
-    #     stream2a = StringIO()
-    #     poly_trained.save(stream2a)
-    #     assert stream2a.getvalue() == jstring_poly_2
+    @pytest.mark.unit
+    def test_save(self, pysmo_surr1, pysmo_surr2, pysmo_surr3, pysmo_surr4):
+        # Test save for polynomial regression
+        _, poly_trained, _, rbf_trained, _, krg_trained = pysmo_surr2
+        stream2a = StringIO()
+        poly_trained.save(stream2a)
+        # re.sub('errors.*?}', "", jstring_poly_2)
+        # assert stream2a.getvalue() == jstring_poly_2
+        assert re.sub('errors.*?}', "", jstring_poly_2) == re.sub('errors.*?}', "", stream2a.getvalue())
 
     #     # Test save for RBF
     #     stream2b = StringIO()
