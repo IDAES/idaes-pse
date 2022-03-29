@@ -36,33 +36,69 @@ class AbstractBidder(ABC):
     def generator(self):
         return "AbstractGenerator"
 
+    def _check_inputs(self):
 
-class AbstractBidderTestBidder(AbstractBidder):
-    def __init__(self, generator_name):
-        self.generator = generator_name
+        """
+        Check if the inputs to construct the tracker is valid. If not raise errors.
+        """
 
-    def compute_bids(self):
-        print("computing bids")
+        self._check_bidding_model_object()
+        self._check_n_scenario()
+        self._check_solver()
 
-    def record_bids(self):
-        print("recording bids")
+    def _check_bidding_model_object(self):
 
-    def write_results(self):
-        print("writing results")
+        """
+        Check if tracking model object has the necessary methods and attributes.
+        """
 
-    def update_model(self):
-        print("updating the model")
+        method_list = ["populate_model", "update_model"]
+        attr_list = ["power_output", "total_cost", "generator", "pmin", "default_bids"]
+        msg = "Tracking model object does not have a "
 
-    def formulate_bidding_problem(self):
-        print("formulating bidding problem")
+        for m in method_list:
+            obtained_m = getattr(self.bidding_model_object, m, None)
+            if obtained_m is None:
+                raise AttributeError(
+                    msg
+                    + f"{m}() method. The bidder object needs the users to implement this method in their model object."
+                )
 
-    @property
-    def generator(self):
-        return self._generator
+        for attr in attr_list:
+            obtained_attr = getattr(self.bidding_model_object, attr, None)
+            if obtained_attr is None:
+                raise AttributeError(
+                    msg
+                    + f"{attr} property. The bidder object needs the users to specify this property in their model object."
+                )
 
-    @generator.setter
-    def generator(self, name):
-        self._generator = name
+    def _check_n_scenario(self):
+
+        """
+        Check if the number of LMP scenarios is an integer and greater than 0.
+        """
+
+        # check if it is an integer
+        if not isinstance(self.n_scenario, int):
+            raise TypeError(
+                f"The number of LMP scenarios should be an integer, but a {type(self.n_scenario).__name__} was given."
+            )
+
+        if self.n_scenario <= 0:
+            raise ValueError(
+                f"The number of LMP scenarios should be greater than zero, but {self.n_scenario} was given."
+            )
+
+    def _check_solver(self):
+
+        """
+        Check if provides solver is a valid Pyomo solver object.
+        """
+
+        if not isinstance(self.solver, OptSolver):
+            raise TypeError(
+                f"The provided solver {self.solver} is not a valid Pyomo solver."
+            )
 
 
 class SelfScheduler(AbstractBidder):
@@ -78,6 +114,8 @@ class SelfScheduler(AbstractBidder):
         self.solver = solver
         self.forecaster = forecaster
         self.generator = self.bidding_model_object.generator
+
+        self._check_inputs()
 
         # add flowsheets to model
         self.model = pyo.ConcreteModel()
@@ -243,7 +281,7 @@ class SelfScheduler(AbstractBidder):
                 result_dict = {}
                 result_dict["Generator"] = g
                 result_dict["Date"] = date
-                if hour:
+                if hour is not None:
                     result_dict["Hour"] = hour
 
                 result_dict["Horizon"] = t
@@ -385,80 +423,6 @@ class Bidder(AbstractBidder):
 
         # declare a list to store results
         self.bids_result_list = []
-
-    def _check_inputs(self):
-
-        """
-        Check if the inputs to construct the tracker is valid. If not raise errors.
-        """
-
-        self._check_bidding_model_object()
-        self._check_n_scenario()
-        self._check_solver()
-
-    def _check_bidding_model_object(self):
-
-        """
-        Check if tracking model object has the necessary methods and attributes.
-        """
-
-        method_list = ["populate_model", "update_model"]
-        attr_list = ["power_output", "total_cost", "generator", "pmin", "default_bids"]
-        msg = "Tracking model object does not have a "
-
-        for m in method_list:
-            obtained_m = getattr(self.bidding_model_object, m, None)
-            if obtained_m is None:
-                raise AttributeError(
-                    msg
-                    + m
-                    + "() method. "
-                    + "The bidder object needs the users to "
-                    + "implement this method in their model object."
-                )
-
-        for attr in attr_list:
-            obtained_attr = getattr(self.bidding_model_object, attr, None)
-            if obtained_attr is None:
-                raise AttributeError(
-                    msg
-                    + attr
-                    + " property. "
-                    + "The bidder object needs the users to "
-                    + "specify this property in their model object."
-                )
-
-    def _check_n_scenario(self):
-
-        """
-        Check if the number of LMP scenarios is an integer and greater than 0.
-        """
-
-        # check if it is an integer
-        if not isinstance(self.n_scenario, int):
-            raise TypeError(
-                "The number of LMP scenarios should be an integer, "
-                + "but a {} was given.".format(type(self.n_scenario).__name__)
-            )
-
-        if self.n_scenario <= 0:
-            raise ValueError(
-                "The number of LMP scenarios should be greater than zero, "
-                + "but {} was given.".format(self.n_scenario)
-            )
-
-    def _check_solver(self):
-
-        """
-        Check if provides solver is a valid Pyomo solver object.
-        """
-
-        if not isinstance(self.solver, OptSolver):
-            raise TypeError(
-                "The provided solver {} is not a valid Pyomo solver.".format(
-                    self.solver
-                )
-            )
 
     def _save_power_outputs(self):
 
@@ -872,14 +836,3 @@ class Bidder(AbstractBidder):
     @generator.setter
     def generator(self, name):
         self._generator = name
-
-
-if __name__ == "__main__":
-
-    abstract_bidder_test_bidder = AbstractBidderTestBidder(
-        generator_name="awesome_generator"
-    )
-    abstract_bidder_test_bidder.compute_bids()
-    abstract_bidder_test_bidder.write_results()
-    abstract_bidder_test_bidder.update_model()
-    print(abstract_bidder_test_bidder.generator)
