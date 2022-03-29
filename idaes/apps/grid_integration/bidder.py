@@ -243,7 +243,7 @@ class SelfScheduler(AbstractBidder):
                 result_dict = {}
                 result_dict["Generator"] = g
                 result_dict["Date"] = date
-                if hour:
+                if hour is not None:
                     result_dict["Hour"] = hour
 
                 result_dict["Horizon"] = t
