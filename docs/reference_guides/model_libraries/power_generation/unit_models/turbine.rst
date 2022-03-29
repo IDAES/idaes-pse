@@ -2,9 +2,9 @@ Turbine (Isentropic)
 ====================
 
 .. index::
-  pair: idaes.power_generation.unit_models.helm.turbine_stage;HelmIsentropicTurbine
+  pair: idaes.models_extra.power_generation.unit_models.helm.turbine_stage;HelmIsentropicTurbine
 
-.. module:: idaes.power_generation.unit_models.helm.turbine
+.. module:: idaes.models_extra.power_generation.unit_models.helm.turbine
 
 This is a steam power generation turbine model for the basic isentropic turbine
 calculations. It is the basis of the :ref:`TurbineInletStage
