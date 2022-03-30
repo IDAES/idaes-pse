@@ -42,8 +42,8 @@ import idaes.models.properties.examples.saponification_reactions as rxn_props
 from idaes.models.unit_models import CSTR, Flash
 from idaes.models.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
 from idaes.core.util.testing import PhysicalParameterTestBlock
-from idaes.models.unit_models.column_models import TrayColumn
-from idaes.models.unit_models.column_models.condenser import CondenserType, TemperatureSpec
+from idaes.models_extra.column_models import TrayColumn
+from idaes.models_extra.column_models.condenser import CondenserType, TemperatureSpec
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import BTXParameterBlock
 
 @pytest.fixture()

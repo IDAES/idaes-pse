@@ -15,8 +15,8 @@ Deprecation path for renamed module.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The generic_models.flowsheets.demo_flowsheets module has been "
-                    "moved to idaes.models.flowsheets.demo_flowsheets",
+deprecation_warning("The generic_models.flowsheets.demo_flowsheet module has been "
+                    "moved to idaes.models.flowsheets.demo_flowsheet",
                     version="2.0.0.alpha0")
 
-from idaes.models.flowsheets.demo_flowsheets import *
+from idaes.models.flowsheets.demo_flowsheet import *
