@@ -153,14 +153,16 @@ def _run(what, args, timeout, not_really):
         return
     _log.debug(f"command={command_line}")
     try:
-        proc = subprocess.Popen(args)
+        res = subprocess.run(args, check=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise CommandError(what, f"Timed out after {timeout} seconds")
+    except subprocess.CalledProcessError as e:
+        raise CommandError(what, f"Exited with nonzero exit code {e.returncode}")
     except Exception as err:
         exe = args[0]
         raise CommandError(what, f"Could not run '{exe}':\n{err}")
-    try:
-        proc.wait(timeout)
-    except subprocess.TimeoutExpired:
-        raise CommandError(what, f"Timed out after {timeout} seconds")
+    else:
+        print_status(f"{what} completed with exit code {res.returncode}")
 
 
 def print_header(msg: str, first: bool = False):
