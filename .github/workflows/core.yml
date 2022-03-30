@@ -41,7 +41,6 @@ jobs:
     # description: Run pytest with dev dependencies
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    if: 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -86,7 +85,6 @@ jobs:
   build-docs:
     name: Build Sphinx docs
     runs-on: ubuntu-latest
-    if: 'true'
     steps:
       - uses: actions/checkout@v2
       - name: Set up Conda environment
@@ -112,7 +110,6 @@ jobs:
   pylint:
     name: pylint (errors only)
     runs-on: ubuntu-latest
-    if: 'false'
     env:
       pylint_target_dir: idaes/
       pylint_output_path: pylint.json
