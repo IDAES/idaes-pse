@@ -100,28 +100,23 @@ def run_html(clean=True, vb=0, timeout=0, dry_run=False, nprocs=1, **kwargs):
                 shutil.rmtree(build_dir)
         if os.path.exists(output_file):
             os.unlink(output_file)
-    # run
-    if vb > 0:
-        verbosity = "-" + "v" * vb
-    else:
-        verbosity = "-q"
-    if nprocs <= 0:
-        nprocs_arg = "-j auto"
-    elif nprocs == 1:
-        nprocs_arg = ""
-    else:
-        nprocs_arg = f"-j {nprocs}"
     args = [
         "sphinx-build",
-        "-M",
-        "html",
+        "-M", "html",
         ".",
         build_dir,
-        "-w",
-        output_file,
-        nprocs_arg,
-        verbosity,
+        "-w", output_file
     ]
+    # run
+    verbosity = "-q" if vb <= 0 else "-" + "v" * vb
+    args.append(verbosity)
+
+    if nprocs <= 0:
+        args.append("-j auto")
+    elif nprocs > 1:
+        args.append(f"-j {nprocs}")
+    # if nprocs == 1, do not specify "-j" args and fall back to sphinx-build's default
+
     print_status(f"Run: {' '.join(args)}")
     _run("html", args, timeout, dry_run)
     if dry_run:
