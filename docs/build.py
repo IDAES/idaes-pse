@@ -129,6 +129,8 @@ def run_html(clean=True, vb=0, timeout=0, dry_run=False, nprocs=1, **kwargs):
         with open(output_file) as outf:
             for line in outf:
                 num_lines += 1
+                # HACK: this is a crude way to ignore errors/warnings originating from MatOpt
+                if "matopt" in line.lower(): continue
                 num_warnings = num_warnings + 1 if "WARNING: " in line else num_warnings
                 num_errors = num_errors + 1 if "ERROR: " in line else num_errors
     if num_lines > 0:
