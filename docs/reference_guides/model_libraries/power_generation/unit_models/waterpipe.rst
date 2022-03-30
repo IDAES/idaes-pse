@@ -2,9 +2,9 @@ Water Pipe Model
 ================
 
 .. index::
-  pair: idaes.power_generation.unit_models.waterpipe;WaterPipe
+  pair: idaes.models_extra.power_generation.unit_models.waterpipe;WaterPipe
 
-.. currentmodule:: idaes.power_generation.unit_models.waterpipe
+.. currentmodule:: idaes.models_extra.power_generation.unit_models.waterpipe
 
 Introduction
 ------------

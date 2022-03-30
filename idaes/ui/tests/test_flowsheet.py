@@ -323,7 +323,7 @@ def test_flowsheet_serializer_demo(demo_flowsheet, demo_flowsheet_json):
 
 @pytest.mark.component
 def test_boiler_demo(serialized_boiler_flowsheet_json):
-    import idaes.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
+    import idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
 
     m, solver = blr.main()
     test_dict = FlowsheetSerializer(m.fs, "boiler").as_dict()

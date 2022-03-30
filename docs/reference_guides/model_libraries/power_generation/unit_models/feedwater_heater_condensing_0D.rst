@@ -2,9 +2,9 @@ Feedwater Heater (Condensing Section 0D)
 ========================================
 
 .. index::
-  pair: idaes.power_generation.unit_models.feedwater_heater_0D; FWHCondensing0D
+  pair: idaes.models_extra.power_generation.unit_models.feedwater_heater_0D; FWHCondensing0D
 
-.. module:: idaes.power_generation.unit_models.feedwater_heater_0D
+.. module:: idaes.models_extra.power_generation.unit_models.feedwater_heater_0D
 
 The condensing feedwater heater is the same as the
 :ref:`HeatExchanger <reference_guides/model_libraries/generic/unit_models/heat_exchanger:HeatExchanger (0D)>`
