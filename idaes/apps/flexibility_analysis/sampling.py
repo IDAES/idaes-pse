@@ -108,6 +108,38 @@ class SamplingConfig(ConfigDict):
         )
 
 
+def _deactivate_inequalities(m: _BlockData):
+    deactivated_cons = list()
+    for c in m.component_data_objects(pe.Constraint, descend_into=True, active=True):
+        if not c.equality and c.lb != c.ub:
+            deactivated_cons.append(c)
+            c.deactivate()
+    return deactivated_cons
+
+
+def _init_with_square_problem(m: _BlockData, controls, solver):
+    for v in controls:
+        v.fix()
+    m.max_constraint_violation.fix()
+    deactivated_cons = _deactivate_inequalities(m)
+    res = solver.solve(m, tee=True)
+    for c in deactivated_cons:
+        c.activate()
+    for v in controls:
+        v.unfix()
+    m.max_constraint_violation.value = 0
+    max_viol = 0
+    for c in deactivated_cons:
+        assert c.lb is None
+        assert c.ub == 0
+        body_val = pe.value(c.body)
+        if body_val > max_viol:
+            max_viol = body_val
+    m.max_constraint_violation.value = max_viol
+    m.max_constraint_violation.unfix()
+    return max_viol
+
+
 def _perform_sampling(
     m: _BlockData,
     uncertain_params: Sequence[Union[_GeneralVarData, _ParamData]],
@@ -152,6 +184,8 @@ def _perform_sampling(
     for v in controls:
         control_values[v] = list()
 
+    orig_max_constraint_violation_ub = m.max_constraint_violation.ub
+
     for sample_ndx in tqdm(
         list(range(n_samples)),
         ncols=100,
@@ -160,16 +194,21 @@ def _perform_sampling(
     ):
         for p, p_vals in sample_points.items():
             p.fix(p_vals[sample_ndx])
+            print(p, p.value)
 
         if using_persistent:
             config.solver.update_variables(unc_param_vars)
 
-        res = config.solver.solve(m)
+        max_viol_ub = _init_with_square_problem(m, controls, config.solver)
+        m.max_constraint_violation.setub(max_viol_ub + 1)
+        res = config.solver.solve(m, tee=False)
         pe.assert_optimal_termination(res)
         max_violation_values.append(m.max_constraint_violation.value)
 
         for v in controls:
             control_values[v].append(v.value)
+
+    m.max_constraint_violation.setub(orig_max_constraint_violation_ub)
 
     if using_persistent:
         config.solver.update_config.set_value(original_update_config)
