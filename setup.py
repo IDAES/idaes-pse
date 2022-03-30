@@ -105,7 +105,6 @@ kwargs = dict(
     },
     # Only installed if [<key>] is added to package name
     extras_require={
-        "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
             "tensorflow",  # idaes.surrogate.keras_surrogate
             # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
