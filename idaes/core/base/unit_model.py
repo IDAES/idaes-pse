@@ -654,9 +654,10 @@ Must be True if dynamic = True,
         and re-activates these whilst calling the associated initialize method.
 
         Currently, parsing of arguments to the initialize method of attached
-        blocks is ahrd coded - this will be addressed in a future PR.
+        blocks is hard coded - this will be addressed in a future PR.
         Currently, the method supports the following attached components:
-            * UnitModelCostingBlocks
+
+        * UnitModelCostingBlocks
 
         Args:
             costing_args - dict arguments to be passed to costing block

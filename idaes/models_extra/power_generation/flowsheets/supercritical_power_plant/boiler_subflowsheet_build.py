@@ -20,7 +20,7 @@ Inputs:
 
 Main Assumptions:
     Coal flowrate as a function of load, coal HHV is fixed and heat dutty
-    splitt from fire side to water wall and platen superheater is fixed.
+    split from fire side to water wall and platen superheater is fixed.
 
     Boiler heat exchanger network:
         Water Flow:
@@ -29,7 +29,7 @@ Main Assumptions:
             Fire Ball -> Platen SH -> Finishing SH -> Reheater  -> o -> Economizer -> Air Preheater
                                                    -> Primary SH --^
 
-        *HP Turbine, IP Turbine, Air Preheater ==> not included in this release
+        * HP Turbine, IP Turbine, Air Preheater ==> not included in this release
 
     Models used:
         - Mixers: Attemperator, Flue gas mix
