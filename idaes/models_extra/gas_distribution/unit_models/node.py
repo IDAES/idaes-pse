@@ -390,7 +390,7 @@ class PipelineNodeData(UnitModelBlockData):
             )
 
         self.enthalpy_mixing_eq = Constraint(
-            time, component_list, rule=enthalpy_mixing_rule
+            time, rule=enthalpy_mixing_rule
         )
 
     def add_pipeline_to_inlet(self, pipeline, idx=None):
