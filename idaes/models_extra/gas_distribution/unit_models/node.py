@@ -273,7 +273,8 @@ class PipelineNodeData(UnitModelBlockData):
 
             # Add equations to link temperature and pressure of this supply
             # to that of the node.
-            b.isothermal_eq = self.get_temperature_eq_con(self.state, b.state)
+            # TODO: Test
+            #b.isothermal_eq = self.get_temperature_eq_con(self.state, b.state)
             b.isobaric_eq = self.get_pressure_eq_con(self.state, b.state)
 
         return block_rule
