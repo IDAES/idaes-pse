@@ -109,6 +109,7 @@ class PipelineNodeData(UnitModelBlockData):
         self.add_flow_balance_con()
         self.add_total_flow_con()
         self.add_component_mixing_con()
+        self.add_enthalpy_mixing_con()
 
         self.n_inlet_pipelines = 0
         self.n_outlet_pipelines = 0
@@ -217,12 +218,15 @@ class PipelineNodeData(UnitModelBlockData):
             b.pressure_eq = self.get_pressure_eq_con(self.state, b.state)
             # This temperature equation will be redundant if we end up adding
             # an enthalpy mixing equation.
-            b.temperature_eq = self.get_temperature_eq_con(self.state, b.state)
+            # TODO: Test and update comments
 
             if outlet:
                 # For inlets, mole fractions are already defined.
                 # (By the mixing rule)
                 b.mole_frac_comp_eq = self.get_mole_frac_comp_eq_con(
+                    self.state, b.state
+                )
+                b.temperature_eq = self.get_temperature_eq_con(
                     self.state, b.state
                 )
 
