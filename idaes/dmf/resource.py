@@ -353,12 +353,12 @@ class Resource:
         return tables
 
     @property
-    def table(self) -> "Table":
+    def table(self) -> "idaes.dmf.tables.Table":
         """Convenience attribute for retrieving a table from the resource when you
         know that there is only one. If there are no tables, returns None.
 
         Returns:
-            If one table, the idaes.dmf.tables.Table object
+            If one table, the Table object
             If no tables, None
             If multiple tables, raises an error
 
