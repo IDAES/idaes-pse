@@ -32,9 +32,9 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType)
-from idaes.core.phases import LiquidPhase
-from idaes.core.components import Component
+                        EnergyBalanceType,
+                        LiquidPhase,
+                        Component)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog

@@ -144,7 +144,7 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
         # "Release on the IAPWS Formulation 2011 for the Thermal Conductivity
         # of Ordinary Water Substance"
         self.tc_L0 = Param(
-            RangeSet(0, 5),
+            RangeSet(0, 4),
             initialize={
                 0: 2.443221e0,
                 1: 1.323095e1,
@@ -157,8 +157,8 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
         )
 
         self.tc_L1 = Param(
+            RangeSet(0, 4),
             RangeSet(0, 5),
-            RangeSet(0, 6),
             initialize={
                 (0, 0): 1.60397357,
                 (1, 0): 2.33771842,
@@ -197,15 +197,15 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
         # "Release on the IAPWS Formulation 2008 for the Viscosity of
         # Ordinary Water Substance "
         self.visc_H0 = Param(
-            RangeSet(0, 4),
+            RangeSet(0, 3),
             initialize={0: 1.67752, 1: 2.20462, 2: 0.6366564, 3: -0.241605},
             doc="0th order viscosity parameters",
             units=1/pyunits.s/pyunits.Pa
         )
 
         self.visc_H1 = Param(
+            RangeSet(0, 5),
             RangeSet(0, 6),
-            RangeSet(0, 7),
             initialize={
                 (0, 0): 5.20094e-1,
                 (1, 0): 8.50895e-2,

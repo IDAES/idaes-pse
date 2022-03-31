@@ -22,7 +22,7 @@ callback from the user.
 from pyomo.network import Port
 from pyomo.common.config import ConfigValue, In
 
-from idaes.core.process_base import declare_process_block_class, \
+from idaes.core.base.process_base import declare_process_block_class, \
     ProcessBlockData
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom

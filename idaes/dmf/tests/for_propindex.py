@@ -10,7 +10,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from idaes.core.property_base import PhysicalParameterBlock
+from idaes.core.base.property_base import PhysicalParameterBlock
 from pyomo.environ import units as pyunits
 
 

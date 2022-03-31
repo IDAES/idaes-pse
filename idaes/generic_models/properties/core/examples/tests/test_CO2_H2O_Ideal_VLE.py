@@ -27,7 +27,7 @@ from pyomo.common.unittest import assertStructuredAlmostEqual
 
 from idaes.core import Component
 
-from idaes.core.flowsheet_model import FlowsheetBlock
+from idaes.core import FlowsheetBlock
 
 from idaes.generic_models.unit_models import Flash
 
