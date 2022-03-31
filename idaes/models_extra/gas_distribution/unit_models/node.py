@@ -363,6 +363,31 @@ class PipelineNodeData(UnitModelBlockData):
             time, component_list, rule=component_mixing_rule
         )
 
+    def add_enthalpy_mixing_con(self):
+        """
+        Adds and equation that calculates temperature of the node from
+        temperatures, heat capacities, and flow rates of the supplies
+        and inlet pipelines.
+
+        """
+        time = self.flowsheet().time
+
+        def get_enthalpy_rate(state):
+            return state.temperature * state.flow_mol * state.cp_mol
+
+        def enthalpy_mixing_rule(b, t):
+            supplies = [self.supplies[i].state[t] for i in self.supply_set]
+            inlets = [self.inlets[i].state[t] for i in self.inlet_set]
+            return (
+                sum(get_enthalpy_rate(supply) for supply in supplies)
+                + sum(get_enthalpy_rate(inlet) for inlet in inlets)
+                == get_enthalpy_rate(self.state[t])
+            )
+
+        self.enthalpy_mixing_eq = Constraint(
+            time, component_list, rule=enthalpy_mixing_rule
+        )
+
     def add_pipeline_to_inlet(self, pipeline, idx=None):
         """
         Creates an Arc between the outlet port of a pipeline and one
