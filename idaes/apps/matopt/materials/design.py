@@ -27,7 +27,8 @@ class Design(object):
     This class combines a ``Canvas`` objects and a list of contents.
     It assigns an element (possibly None) to each point in the ``Canvas``.
     This generally works for any type of content, but it is intended
-    to work with ``Atom`` objects and can be used to generate CFG, PDB, POSCAR, and XYZ files.
+    to work with ``Atom`` objects and can be used to generate CFG, PDB, POSCAR,
+    and XYZ files.
     """
 
     # === STANDARD CONSTRUCTOR
@@ -51,7 +52,7 @@ class Design(object):
         Args:
             filename(str): PDB file to read from.
             DefaultNN(int, optional): Optional, the default number of nearest
-        neighbors to initialize the Canvas with.
+                neighbors to initialize the Canvas with.
 
         Returns:
             (Design) A new Design.
@@ -68,7 +69,7 @@ class Design(object):
         Args:
             filename(str): XYZ file to read from.
             DefaultNN(int, optional): Optional, the default number of nearest
-        neighbors to initialize the Canvas with.
+                neighbors to initialize the Canvas with.
 
         Returns:
             (Design) A new Design.
@@ -85,7 +86,7 @@ class Design(object):
         Args:
             filename(str): CFG file to read from.
             DefaultNN(int, optional): Optional, the default number of nearest
-        neighbors to initialize the Canvas with.
+                neighbors to initialize the Canvas with.
 
         Returns:
             (Design) A new Design.
@@ -102,7 +103,7 @@ class Design(object):
         Args:
             filename(str): POSCAR file to read from.
             DefaultNN(int, optional): Optional, the default number of nearest
-        neighbors to initialize the Canvas with.
+                neighbors to initialize the Canvas with.
 
         Returns:
             (Design) A new Design.
@@ -187,7 +188,8 @@ class Design(object):
         Args:
             other(Design): Design to append.
             blnAssertNotAlreadyInDesign(bool, optional): Optional, flag to enable
-        assertion that all locations were new and unique. (Default value = True)
+                assertion that all locations were new and unique.
+                (Default value = True)
 
         Returns:
             None.
@@ -212,11 +214,11 @@ class Design(object):
             blnIgnoreVoid:
             other(Design): other Design to compare against.
             blnPreserveIndexing(bool, optional): Optional, flag to determine if
-        index order is considered. (Default value = False)
+                index order is considered. (Default value = False)
             blnIgnoreVoid(bool, optional): Optional, flag to determine if void
-        (i.e., None or Atom() contents) should be considered.
-        For example, if all solid atoms are equivalent, but there
-        are void locations that do not match. (Default value = True)
+                (i.e., None or Atom() contents) should be considered.
+                For example, if all solid atoms are equivalent, but there
+                are void locations that do not match. (Default value = True)
 
         Returns:
             bool) True if Designs are considered equivalent.
@@ -293,14 +295,16 @@ class Design(object):
             BBox:
             filename(str): CFG file to write to.
             GS(float, optional): Optional, Global scaling to write to file
-        (see CFG file format). (Default value = None)
+                (see CFG file format). (Default value = None)
             BBox(Parallelepiped, optional): Optional, Bounding box to write to file
-        (see CFG file format). If not provided, calculates a
-        rectangular prism 2x the necesary size to encompass points. (Default value = None)
+                (see CFG file format). If not provided, calculates a
+                rectangular prism 2x the necesary size to encompass points.
+                (Default value = None)
             AuxPropMap(dict<tuple<str, optional): Optional, Auxilliary
-        property map. Example: {('Energy','eV'):[0.0, 1.0, ... ]} (Default value = None)
+                property map. Example: {('Energy','eV'):[0.0, 1.0, ... ]}
+                (Default value = None)
             blnGroupByType(bool, optional): Optional, flag to group atoms by element.
-        (see CFG file format). (Default value = True)
+                (see CFG file format). (Default value = True)
 
         Returns:
             None.
@@ -333,15 +337,17 @@ class Design(object):
             filename(str): CFG file to write to.
             CommentLine(str, optional): Optional, line to write at top of file. (Default value = None)
             GS(float, optional): Optional, Global scaling to write to file
-        (see POSCAR file format). (Default value = None)
+                (see POSCAR file format). (Default value = None)
             BBox(Parallelepiped, optional): Optional, Bounding box to write to file
-        (see POSCAR file format). If not provided, calculates a
-        rectangular prism 2x the necesary size to encompass points. (Default value = None)
+                (see POSCAR file format). If not provided, calculates a
+                rectangular prism 2x the necesary size to encompass points.
+                (Default value = None)
             Elems(list<Atom>, optional): Optional, order of elements to write to file.
-        Only important because they are sometimes implicitly defined
-        in other VASP files and may need to be in a definite order. (Default value = None)
+                Only important because they are sometimes implicitly defined
+                in other VASP files and may need to be in a definite order.
+                (Default value = None)
             blnUseDirect(bool, optional): Optional, flag to switch between direct and
-        cartesian flag of POSCAR file. (Default value = True)
+                cartesian flag of POSCAR file. (Default value = True)
 
         Returns:
             None.

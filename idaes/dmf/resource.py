@@ -358,7 +358,7 @@ class Resource:
         know that there is only one. If there are no tables, returns None.
 
         Returns:
-            If one table, the Table object
+            If one table, the idaes.dmf.tables.Table object
             If no tables, None
             If multiple tables, raises an error
 
