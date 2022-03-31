@@ -12,6 +12,7 @@ import enum
 from idaes.surrogate.pysmo.sampling import LatinHypercubeSampling
 from .indices import _VarIndex
 from pyomo.common.config import ConfigDict, ConfigValue, InEnum
+import coramin
 try:
     from tqdm import tqdm
 except ImportError:
@@ -122,22 +123,58 @@ def _init_with_square_problem(m: _BlockData, controls, solver):
         v.fix()
     m.max_constraint_violation.fix()
     deactivated_cons = _deactivate_inequalities(m)
-    res = solver.solve(m, tee=True)
+    try:
+        res = solver.solve(m, tee=False, load_solutions=False)
+    except:
+        res = None
     for c in deactivated_cons:
         c.activate()
     for v in controls:
         v.unfix()
-    m.max_constraint_violation.value = 0
-    max_viol = 0
-    for c in deactivated_cons:
-        assert c.lb is None
-        assert c.ub == 0
-        body_val = pe.value(c.body)
-        if body_val > max_viol:
-            max_viol = body_val
-    m.max_constraint_violation.value = max_viol
+    if res is not None and pe.check_optimal_termination(res):
+        m.max_constraint_violation.value = 0
+        max_viol = 0
+        for c in deactivated_cons:
+            assert c.lb is None
+            assert c.ub == 0
+            body_val = pe.value(c.body)
+            if body_val > max_viol:
+                max_viol = body_val
+        m.max_constraint_violation.value = max_viol
+    else:
+        max_viol = None
     m.max_constraint_violation.unfix()
     return max_viol
+
+
+def _solve_with_max_viol_fixed(m: _BlockData, controls, solver):
+    orig_obj = coramin.utils.get_objective(m)
+    orig_obj.deactivate()
+    orig_max_viol_value = m.max_constraint_violation.value
+    m.max_constraint_violation.fix(0)
+
+    m.control_setpoints_obj = pe.Objective(expr=sum((v - v.value)**2 for v in controls))
+
+    try:
+        res = solver.solve(m, tee=False, load_solutions=False)
+        if pe.check_optimal_termination(res):
+            m.solutions.load_from(res)
+            feasible = True
+            control_vals = [v.value for v in controls]
+        else:
+            feasible = False
+            control_vals = None
+            m.max_constraint_violation.value = orig_max_viol_value
+    except:
+        feasible = False
+        control_vals = None
+        m.max_constraint_violation.value = orig_max_viol_value
+
+    del m.control_setpoints_obj
+    m.max_constraint_violation.unfix()
+    orig_obj.activate()
+
+    return feasible, control_vals
 
 
 def _perform_sampling(
@@ -184,6 +221,7 @@ def _perform_sampling(
     for v in controls:
         control_values[v] = list()
 
+    m.max_constraint_violation.value = 0
     orig_max_constraint_violation_ub = m.max_constraint_violation.ub
 
     for sample_ndx in tqdm(
@@ -194,21 +232,27 @@ def _perform_sampling(
     ):
         for p, p_vals in sample_points.items():
             p.fix(p_vals[sample_ndx])
-            print(p, p.value)
 
         if using_persistent:
             config.solver.update_variables(unc_param_vars)
 
         max_viol_ub = _init_with_square_problem(m, controls, config.solver)
-        m.max_constraint_violation.setub(max_viol_ub + 1)
-        res = config.solver.solve(m, tee=False)
-        pe.assert_optimal_termination(res)
-        max_violation_values.append(m.max_constraint_violation.value)
+        if max_viol_ub is not None:
+            m.max_constraint_violation.setub(max_viol_ub + 1)
+        feasible, control_vals = _solve_with_max_viol_fixed(m, controls, config.solver)
+        if feasible:
+            max_violation_values.append(0)
+            for v, val in zip(controls, control_vals):
+                control_values[v].append(val)
+        else:
+            res = config.solver.solve(m, tee=False)
+            pe.assert_optimal_termination(res)
+            max_violation_values.append(m.max_constraint_violation.value)
 
-        for v in controls:
-            control_values[v].append(v.value)
+            for v in controls:
+                control_values[v].append(v.value)
 
-    m.max_constraint_violation.setub(orig_max_constraint_violation_ub)
+        m.max_constraint_violation.setub(orig_max_constraint_violation_ub)
 
     if using_persistent:
         config.solver.update_config.set_value(original_update_config)
