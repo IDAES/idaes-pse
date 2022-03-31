@@ -18,14 +18,14 @@ compressor, a pipeline, and a demand node.
 import pyomo.environ as pyo
 import idaes.core as idaes
 import pyomo.network as network
-from idaes.gas_distribution.properties.natural_gas import (
+from idaes.models_extra.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )
-from idaes.gas_distribution.unit_models.pipeline import GasPipeline
-from idaes.gas_distribution.unit_models.compressor import (
+from idaes.models_extra.gas_distribution.unit_models.pipeline import GasPipeline
+from idaes.models_extra.gas_distribution.unit_models.compressor import (
     IsothermalCompressor as Compressor,
 )
-from idaes.gas_distribution.unit_models.node import PipelineNode
+from idaes.models_extra.gas_distribution.unit_models.node import PipelineNode
 
 
 def make_simple_model(

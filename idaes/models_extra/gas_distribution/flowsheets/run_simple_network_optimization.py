@@ -19,7 +19,7 @@ The dynamic optimization problem penalizes deviation from target demand
 import pyomo.environ as pyo
 from pyomo.dae.flatten import flatten_dae_components
 
-from idaes.gas_distribution.flowsheets.simple_network_model import (
+from idaes.models_extra.gas_distribution.flowsheets.simple_network_model import (
     make_simple_model,
     add_objective_to_model,
 )

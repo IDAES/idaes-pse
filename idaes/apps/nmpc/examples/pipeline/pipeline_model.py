@@ -12,10 +12,10 @@
 #################################################################################
 import pyomo.environ as pyo
 import idaes.core as idaes
-from idaes.gas_distribution.properties.natural_gas import (
+from idaes.models_extra.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )
-from idaes.gas_distribution.unit_models.pipeline import GasPipeline
+from idaes.models_extra.gas_distribution.unit_models.pipeline import GasPipeline
 
 """
 Utilies for constructing and simulating a gas pipeline model
