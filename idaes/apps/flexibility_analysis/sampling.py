@@ -1,8 +1,9 @@
+from __future__ import annotations
 from pyomo.core.base.block import _BlockData
 import pyomo.environ as pe
 import numpy as np
 import itertools
-from typing import Sequence, Union, Mapping, Optional, MutableMapping, Tuple
+from typing import Sequence, Union, Mapping, Optional, MutableMapping, Tuple, List
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
 from pyomo.contrib.appsi.base import PersistentSolver
@@ -25,22 +26,104 @@ class SamplingStrategy(enum.Enum):
     lhs = 'lhs'
 
 
+class _GridSamplingState(enum.Enum):
+    increment = 'increment'
+    decrement = 'decrement'
+
+
+class _ParamIterator(object):
+    def __init__(
+        self,
+        param: _GeneralVarData,
+        num_points: int,
+        next_param: Optional[_ParamIterator],
+    ):
+        self.state = _GridSamplingState.increment
+        self.ndx = 0
+        self.pts = list(set([float(i) for i in np.linspace(param.lb, param.ub, num_points)]))
+        self.pts.sort()
+        self.next_param = next_param
+
+    def reset(self):
+        self.state = _GridSamplingState.increment
+        self.ndx = 0
+
+    def get_value(self):
+        res = self.pts[self.ndx]
+        return res
+
+    def swap_state(self):
+        if self.state == _GridSamplingState.increment:
+            self.state = _GridSamplingState.decrement
+        else:
+            assert self.state == _GridSamplingState.decrement
+            self.state = _GridSamplingState.increment
+
+    def step(self) -> bool:
+        if self.state == _GridSamplingState.increment:
+            if self.ndx == len(self.pts) - 1:
+                if self.next_param is None:
+                    done = True
+                else:
+                    done = self.next_param.step()
+                    self.swap_state()
+            else:
+                self.ndx += 1
+                done = False
+        else:
+            assert self.state == _GridSamplingState.decrement
+            if self.ndx == 0:
+                assert self.next_param is not None
+                done = self.next_param.step()
+                self.swap_state()
+            else:
+                self.ndx -= 1
+                done = False
+        return done
+
+
+class _GridSamplingIterator(object):
+    def __init__(
+        self, uncertain_params: Sequence[_GeneralVarData], num_points: int
+    ):
+        self.params = list(uncertain_params)
+        self.param_iterators: List[Optional[_ParamIterator]] = [None] * len(self.params)
+        self.param_iterators[-1] = _ParamIterator(
+            param=self.params[-1], num_points=num_points, next_param=None
+        )
+        for ndx in reversed(range(len(self.params) - 1)):
+            self.param_iterators[ndx] = _ParamIterator(
+                param=self.params[ndx], num_points=num_points,
+                next_param=self.param_iterators[ndx + 1]
+            )
+        self.done = False
+
+    def __next__(self):
+        if self.done:
+            raise StopIteration
+
+        res = [i.get_value() for i in self.param_iterators]
+        self.done = self.param_iterators[0].step()
+
+        return res
+
+    def __iter__(self):
+        [i.reset() for i in self.param_iterators]
+        self.done = False
+        return self
+
+
 def _grid_sampling(
     uncertain_params: Sequence[_GeneralVarData], num_points: int, seed: int
 ):
-    uncertain_params_values = pe.ComponentMap()
-    for p in uncertain_params:
-        uncertain_params_values[p] = list(
-            set([float(i) for i in np.linspace(p.lb, p.ub, num_points)])
-        )
-        uncertain_params_values[p].sort()
+    it = _GridSamplingIterator(uncertain_params=uncertain_params, num_points=num_points)
 
     sample_points = pe.ComponentMap()
     for p in uncertain_params:
         sample_points[p] = list()
 
     n_samples = 0
-    for sample in itertools.product(*uncertain_params_values.values()):
+    for sample in it:
         for p, v in zip(uncertain_params, sample):
             sample_points[p].append(float(v))
         n_samples += 1
@@ -132,7 +215,7 @@ def _init_with_square_problem(m: _BlockData, controls, solver):
     for v in controls:
         v.unfix()
     if res is not None and pe.check_optimal_termination(res):
-        m.max_constraint_violation.value = 0
+        m.solutions.load_from(res)
         max_viol = 0
         for c in deactivated_cons:
             assert c.lb is None
@@ -238,7 +321,7 @@ def _perform_sampling(
 
         max_viol_ub = _init_with_square_problem(m, controls, config.solver)
         if max_viol_ub is not None:
-            m.max_constraint_violation.setub(max_viol_ub + 1)
+            m.max_constraint_violation.setub(max_viol_ub)
         feasible, control_vals = _solve_with_max_viol_fixed(m, controls, config.solver)
         if feasible:
             max_violation_values.append(0)
