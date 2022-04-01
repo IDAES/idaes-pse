@@ -223,10 +223,10 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         This is completely up to you, but you will have access to the
         following aggregate costs:
 
-            1. self.aggregate_capital_cost
-            2. self.aggregate_fixed_operating_cost
-            3. self.aggregate_variable_operating_cost
-            4. self.aggregate_flow_costs (indexed by flow type)
+        1. self.aggregate_capital_cost
+        2. self.aggregate_fixed_operating_cost
+        3. self.aggregate_variable_operating_cost
+        4. self.aggregate_flow_costs (indexed by flow type)
         """
         # TODO: Do we have any process level methods to add here?
         pass
@@ -267,15 +267,14 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                         number_of_units
 
         Args:
-            hx_type - HXType Enum indicating type of heat exchanger design,
-                      default = HXType.Utube.
-            material_type - HXMaterial Enum indicating material of
-                            construction, default =
-                            HXMaterial.StainlessSteelStainlessSteel.
-            tube_length - HXTubeLength Enum indicating length of HX tubes,
-                          default = HXTubeLength.TwelveFoot.
-            integer - whether the number of units should be constrained to be
-                      an integer or not (default = True).
+            hx_type: HXType Enum indicating type of heat exchanger design,
+                default = HXType.Utube.
+            material_type: HXMaterial Enum indicating material of construction,
+                default = HXMaterial.StainlessSteelStainlessSteel.
+            tube_length: HXTubeLength Enum indicating length of HX tubes,
+                default = HXTubeLength.TwelveFoot.
+            integer: whether the number of units should be constrained to be
+                an integer or not (default = True).
         """
         # Validate arguments
         if hx_type not in HXType:
@@ -444,35 +443,32 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         Generic vessel costing method.
 
         Args:
-            vertical - alignment of vessel; vertical if True, horizontal if
-                       False (default=False).
-            material_type - VesselMaterial Enum indicating material of
-                            construction, default = VesselMaterial.CarbonSteel.
-            shell_thickness - thickness of vessel shell, including pressure
-                              allowance. Default = 1.25 inches.
-            weight_limit - 1: (default) 1000 to 920,000 lb, 2: 4200 to 1M lb.
-                           Option 2 is only valid for vertical vessels.
-            aspect_ratio_range - vertical vessels only, default = 1;
-                                 1: 3 < D < 21 ft, 12 < L < 40 ft,
-                                 2: 3 < D < 24 ft; 27 < L < 170 ft.
-            include_platforms_ladders - whether to include platforms and
-                                        ladders in costing , default = True.
-            vessel_diameter - Pyomo component representing vessel diameter.
-                              If not provided, assumed to be named "diameter"
-            vessel_length - Pyomo component representing vessel length.
-                            If not provided, assumed to be named "length".
-            number_of_units - Integer or Pyomo component representing the
-                               number of parallel units to be costed,
-                               default = 1.
-            number_of_trays - Pyomo component representing the number of
-                              distillation trays in vessel (default=None)
-            tray_material - Only required if number_of_trays is not None.
-                            TrayMaterial Enum indicating material of
-                            construction for distillation trays, default =
-                            TrayMaterial.CarbonSteel.
-            tray_type - Only required if number_of_trays is not None.
-                        TrayType Enum indicating type of distillation trays
-                        to use, default = TrayMaterial.Sieve.
+            vertical: alignment of vessel; vertical if True, horizontal if
+                False (default=False).
+            material_type: VesselMaterial Enum indicating material of
+                construction, default = VesselMaterial.CarbonSteel.
+            shell_thickness: thickness of vessel shell, including pressure
+                allowance. Default = 1.25 inches.
+            weight_limi: 1: (default) 1000 to 920,000 lb, 2: 4200 to 1M lb.
+                Option 2 is only valid for vertical vessels.
+            aspect_ratio_range: vertical vessels only, default = 1;
+                1: 3 < D < 21 ft, 12 < L < 40 ft, 2: 3 < D < 24 ft; 27 < L < 170 ft.
+            include_platforms_ladders: whether to include platforms and
+                ladders in costing , default = True.
+            vessel_diameter: Pyomo component representing vessel diameter.
+                If not provided, assumed to be named "diameter"
+            vessel_length: Pyomo component representing vessel length.
+                If not provided, assumed to be named "length".
+            number_of_units: Integer or Pyomo component representing the
+                number of parallel units to be costed, default = 1.
+            number_of_trays: Pyomo component representing the number of
+                distillation trays in vessel (default=None)
+            tray_material: Only required if number_of_trays is not None.
+                TrayMaterial Enum indicating material of construction for
+                distillation trays, default = TrayMaterial.CarbonSteel.
+            tray_type: Only required if number_of_trays is not None.
+                TrayType Enum indicating type of distillation trays to use,
+                default = TrayMaterial.Sieve.
         """
         # Build generic costing variables
         blk.base_cost_per_unit = pyo.Var(
@@ -809,33 +805,29 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         Specific case of vessel costing method for vertical vessels.
 
         Args:
-            material_type - VesselMaterial Enum indicating material of
-                            construction, default = VesselMaterial.CarbonSteel.
-            shell_thickness - thickness of vessel shell, including pressure
-                              allowance. Default = 1.25 inches.
-            weight_limit - 1: (default) 1000 to 920,000 lb, 2: 4200 to 1M lb.
-                           Option 2 is only valid for vertical vessels.
-            aspect_ratio_range - vertical vessels only, default = 1;
-                                 1: 3 < D < 21 ft, 12 < L < 40 ft,
-                                 2: 3 < D < 24 ft; 27 < L < 170 ft.
-            include_platforms_ladders - whether to include platforms and
-                                        ladders in costing , default = True.
-            vessel_diameter - Pyomo component representing vessel diameter.
-                              If not provided, assumed to be named "diameter"
-            vessel_length - Pyomo component representing vessel length.
-                            If not provided, assumed to be named "length".
-            number_of_units - Integer or Pyomo component representing the
-                               number of parallel units to be costed,
-                               default = 1.
-            number_of_trays - Pyomo component representing the number of
-                              distillation trays in vessel (default=None)
-            tray_material - Only required if number_of_trays is not None.
-                            TrayMaterial Enum indicating material of
-                            construction for distillation trays, default =
-                            TrayMaterial.CarbonSteel.
-            tray_type - Only required if number_of_trays is not None.
-                        TrayType Enum indicating type of distillation trays
-                        to use, default = TrayMaterial.Sieve.
+            material_type: VesselMaterial Enum indicating material of
+                construction, default = VesselMaterial.CarbonSteel.
+            shell_thickness: thickness of vessel shell, including pressure
+                allowance. Default = 1.25 inches.
+            weight_limit: 1: (default) 1000 to 920,000 lb, 2: 4200 to 1M lb.
+            aspect_ratio_range: default = 1;
+                1: 3 < D < 21 ft, 12 < L < 40 ft, 2: 3 < D < 24 ft; 27 < L < 170 ft.
+            include_platforms_ladders: whether to include platforms and
+                ladders in costing , default = True.
+            vessel_diameter: Pyomo component representing vessel diameter.
+                If not provided, assumed to be named "diameter"
+            vessel_length: Pyomo component representing vessel length.
+                If not provided, assumed to be named "length".
+            number_of_units: Integer or Pyomo component representing the
+                number of parallel units to be costed, default = 1.
+            number_of_trays: Pyomo component representing the number of
+                distillation trays in vessel (default=None)
+            tray_material: Only required if number_of_trays is not None.
+                TrayMaterial Enum indicating material of construction for
+                distillation trays, default = TrayMaterial.CarbonSteel.
+            tray_type: Only required if number_of_trays is not None.
+                TrayType Enum indicating type of distillation trays to use,
+                default = TrayMaterial.Sieve.
         """
         SSLWCostingData.cost_vessel(
             blk,
@@ -868,19 +860,18 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         Arguments which do not apply ot horizontal vessels are excluded.
 
         Args:
-            material_type - VesselMaterial Enum indicating material of
-                            construction, default = VesselMaterial.CarbonSteel.
-            shell_thickness - thickness of vessel shell, including pressure
-                              allowance. Default = 1.25 inches.
-            include_platforms_ladders - whether to include platforms and
-                                        ladders in costing , default = True.
-            vessel_diameter - Pyomo component representing vessel diameter.
-                              If not provided, assumed to be named "diameter"
-            vessel_length - Pyomo component representing vessel length.
-                            If not provided, assumed to be named "length".
-            number_of_units - Integer or Pyomo component representing the
-                               number of parallel units to be costed,
-                               default = 1.
+            material_type: VesselMaterial Enum indicating material of
+                construction, default = VesselMaterial.CarbonSteel.
+            shell_thickness: thickness of vessel shell, including pressure
+                allowance. Default = 1.25 inches.
+            include_platforms_ladders: whether to include platforms and
+                ladders in costing, default = True.
+            vessel_diameter: Pyomo component representing vessel diameter.
+                If not provided, assumed to be named "diameter"
+            vessel_length: Pyomo component representing vessel length.
+                If not provided, assumed to be named "length".
+            number_of_units: Integer or Pyomo component representing the
+                number of parallel units to be costed, default = 1.
         """
         SSLWCostingData.cost_vessel(
             blk,
@@ -904,12 +895,12 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         Generic costing method for fired heaters.
 
         Args:
-            heat_source - HeaterSource Enum indicating type of source of heat,
-                          default = HeaterSource.Fuel.
-            material_type - HeaterMaterial Enum indicating material of
-                            construction, default = HeaterMaterial.CarbonSteel.
-            integer - whether the number of units should be constrained to be
-                      an integer or not (default = True).
+            heat_source: HeaterSource Enum indicating type of source of heat,
+                default = HeaterSource.Fuel.
+            material_type: HeaterMaterial Enum indicating material of
+                construction, default = HeaterMaterial.CarbonSteel.
+            integer: whether the number of units should be constrained to be
+                an integer or not (default = True).
         """
         # Validate arguments
         if heat_source not in HeaterSource:
@@ -1016,16 +1007,14 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         Generic costing method for compressors.
 
         Args:
-            compressor_type - CompressorType Enum indicating type of type of
-                              equipment, default = CompressorType.Centrifugal.
-            material_type - CompressorMaterial Enum indicating material of
-                            construction, default =
-                            CompressorMaterial.StainlessSteel.
-            drive_type - CompressorDriveType Enum indicating type of type of
-                         drive to be used, default =
-                         CompressorDriveType.ElectricMotor.
-            integer - whether the number of units should be constrained to be
-                      an integer or not (default = True).
+            compressor_type: CompressorType Enum indicating type of type of
+                equipment, default = CompressorType.Centrifugal.
+            material_type: CompressorMaterial Enum indicating material of
+                construction, default = CompressorMaterial.StainlessSteel.
+            drive_type: CompressorDriveType Enum indicating type of type of
+                drive to be used, default = CompressorDriveType.ElectricMotor.
+            integer: whether the number of units should be constrained to be
+                an integer or not (default = True).
         """
         # Confirm that unit is a turbine
         if not blk.unit_model.config.compressor:
@@ -1099,13 +1088,13 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         Generic costing method for fans.
 
         Args:
-            fan_type - FanType Enum indicating type of type of equipment,
-                       default = FanType.CentrifugalBackward.
-            fan_head_factor - (float) fan head factor (default=1.45).
-            material_type - FanMaterial Enum indicating material of
-                            construction, default = FanMaterial.StainlessSteel.
-            integer - whether the number of units should be constrained to be
-                      an integer or not (default = True).
+            fan_type: FanType Enum indicating type of type of equipment,
+                default = FanType.CentrifugalBackward.
+            fan_head_factor: (float) fan head factor (default=1.45).
+            material_type: FanMaterial Enum indicating material of
+                construction, default = FanMaterial.StainlessSteel.
+            integer: whether the number of units should be constrained to be
+                an integer or not (default = True).
         """
         # Confirm that unit is a turbine
         if not blk.unit_model.config.compressor:
@@ -1184,13 +1173,12 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         Generic costing method for blowers.
 
         Args:
-            blower_type - BlowerType Enum indicating type of type of equipment,
-                          default = BlowerType.Centrifugal.
-            material_type - BlowerMaterial Enum indicating material of
-                            construction, default =
-                            BlowerMaterial.StainlessSteel.
-            integer - whether the number of units should be constrained to be
-                      an integer or not (default = True).
+            blower_type: BlowerType Enum indicating type of type of equipment,
+                default = BlowerType.Centrifugal.
+            material_type: BlowerMaterial Enum indicating material of
+                construction, default = BlowerMaterial.StainlessSteel.
+            integer: whether the number of units should be constrained to be
+                an integer or not (default = True).
         """
         # Confirm that unit is a turbine
         if not blk.unit_model.config.compressor:
@@ -1253,8 +1241,8 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         Generic costing method for turbines.
 
         Args:
-            integer - whether the number of units should be constrained to be
-                      an integer or not (default = True).
+            integer: whether the number of units should be constrained to be
+                an integer or not (default = True).
         """
         # Confirm that unit is a turbine
         if blk.unit_model.config.compressor:
@@ -1310,18 +1298,18 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         Generic costing method for pumps.
 
         Args:
-            pump_type - PumpType Enum indicating type of type of equipment,
-                      default = PumpType.Centrifugal.
-            material_type - PumpMaterial Enum indicating material of
-                            construction, default = PumpMaterial.StainlessSteel.
-                            Material type is tied to PumpType.
-            pump_type_factor - empirical factor for centrigual pumps based on
-                               table in source. Valid values are [1.1, 1.2, "
-                               1.3, 1.4 (default), 2.1, 2.2].
-            motor_type - PumpMotorType Enum indicating type of type of motor
-                         to be used, default = PumpMotorType.Open.
-            integer - whether the number of units should be constrained to be
-                      an integer or not (default = True).
+            pump_type: PumpType Enum indicating type of type of equipment,
+                default = PumpType.Centrifugal.
+            material_type: PumpMaterial Enum indicating material of
+                construction, default = PumpMaterial.StainlessSteel.
+                Material type is tied to PumpType.
+            pump_type_factor: empirical factor for centrigual pumps based on
+                table in source. Valid values are [1.1, 1.2,  1.3, 1.4 (default),
+                2.1, 2.2].
+            motor_type: PumpMotorType Enum indicating type of type of motor
+                to be used, default = PumpMotorType.Open.
+            integer: whether the number of units should be constrained to be
+                an integer or not (default = True).
         """
         # Confirm that unit is a pump/compressor
         if not blk.unit_model.config.compressor:
@@ -1607,8 +1595,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         to call the specific sub-methods directly as required.
 
         Args:
-            mover_type - optional arguemnt to indicate type of pressure
-                         changer.
+            mover_type: optional arguemnt to indicate type of pressure changer.
         """
         if not blk.unit_model.config.compressor or mover_type == "turbine":
             # Unit is a turbine
