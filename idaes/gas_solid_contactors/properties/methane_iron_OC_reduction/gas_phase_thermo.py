@@ -312,7 +312,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.set_default_scaling("cp_mass", 1e-6)
         self.set_default_scaling("entr_mol", 1e-2)
         self.set_default_scaling("entr_mol_phase", 1e-2)
-        self.set_default_scaling("dens_mol", 1)
+        # self.set_default_scaling("dens_mol", 1)  # defined later
         self.set_default_scaling("dens_mol_comp", 1)
         self.set_default_scaling("dens_mass", 1e2)
         self.set_default_scaling("visc_d_comp", 1e4)
@@ -343,8 +343,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'enth_mol': {'method': '_enth_mol', 'units': 'J/mol'},
                 'enth_mol_comp': {'method': '_enth_mol_comp',
                                   'units': 'J/mol'},
-                'entr_mol': {'method': '_entropy_calc', 'units': 'J/mol.K'},
-                'entr_mol_phase': {'method': '_entropy_calc',
+                'entr_mol': {'method': '_entr_mol', 'units': 'J/mol.K'},
+                'entr_mol_phase': {'method': '_entr_mol',
                                    'units': 'J/mol/K'},
                 'visc_d': {'method': '_visc_d', 'units': 'kg/m.s'},
                 'therm_cond': {'method': '_therm_cond', 'units': 'J/m.K.s'},
@@ -944,8 +944,8 @@ class GasPhaseStateBlockData(StateBlockData):
             self.del_component(self.mixture_enthalpy_eqn)
             raise
 
-    def _entropy_calc(self):
-        self.entr_mol = Var(doc='Specific Entropy [J/mol/K]',
+    def _entr_mol(self):
+        self.entr_mol = Var(doc='Specific Entropy [J/mol/K]', initialize=1.0,
                             units=pyunits.J/pyunits.mol/pyunits.K)
         # Specific Entropy
 
@@ -962,17 +962,17 @@ class GasPhaseStateBlockData(StateBlockData):
                 b.pressure,
                 to_units=pyunits.Pa)
             r_gas = pyunits.convert(
-                b._params.gas_const,
+                Constants.gas_constant,
                 to_units=pyunits.J/pyunits.mol/pyunits.K)
             return (
                 (self.entr_mol + r_gas * log(p/1e5)) * b.flow_mol ==
                 sum(b.flow_mol*b.mole_frac_comp[j] * (
-                    self.params.cp_mol_ig_comp_coeff_A[j]*log(t) +
-                    self.params.cp_mol_ig_comp_coeff_B[j]*t +
-                    self.params.cp_mol_ig_comp_coeff_C[j]*t**2 / 2 +
-                    self.params.cp_mol_ig_comp_coeff_D[j]*t**3 / 3 -
-                    self.params.cp_mol_ig_comp_coeff_E[j]/t**2 / 2 +
-                    self.params.cp_mol_ig_comp_coeff_G[j] +
+                    self.params.cp_param_1[j]*log(t) +
+                    self.params.cp_param_2[j]*t +
+                    self.params.cp_param_3[j]*t**2 / 2 +
+                    self.params.cp_param_4[j]*t**3 / 3 -
+                    self.params.cp_param_5[j]/t**2 / 2 +
+                    self.params.cp_param_7[j] +
                     r_gas * log(x[j])) for j in self.params.component_list)
                 )
 
@@ -1087,7 +1087,7 @@ class GasPhaseStateBlockData(StateBlockData):
                 iscale.set_scaling_factor(c, sf1 * sf2)
 
         if self.is_property_constructed("material_density_terms"):
-            for i, c in self.material_flow_terms.items():
+            for i, c in self.material_density_terms.items():
                 sf1 = iscale.get_scaling_factor(self.mole_frac_comp[i])
                 sf2 = iscale.get_scaling_factor(self.dens_mol)
                 iscale.set_scaling_factor(c, sf1 * sf2)

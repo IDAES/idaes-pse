@@ -734,6 +734,10 @@ class SolidPhaseStateBlockData(StateBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
+        # scale some variables
+        # nothing here
+
+        # scale some constraints
         if self.is_property_constructed("material_flow_terms"):
             for i, c in self.material_flow_terms.items():
                 sf1 = iscale.get_scaling_factor(self.mass_frac_comp[i])
@@ -741,7 +745,7 @@ class SolidPhaseStateBlockData(StateBlockData):
                 iscale.set_scaling_factor(c, sf1 * sf2)
 
         if self.is_property_constructed("material_density_terms"):
-            for i, c in self.material_flow_terms.items():
+            for i, c in self.material_density_terms.items():
                 sf1 = iscale.get_scaling_factor(self.mass_frac_comp[i])
                 sf2 = iscale.get_scaling_factor(self.dens_mass_particle)
                 iscale.set_scaling_factor(c, sf1 * sf2)
