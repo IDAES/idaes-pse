@@ -109,6 +109,7 @@ class PipelineNodeData(UnitModelBlockData):
         self.add_flow_balance_con()
         self.add_total_flow_con()
         self.add_component_mixing_con()
+        self.add_enthalpy_mixing_con()
 
         self.n_inlet_pipelines = 0
         self.n_outlet_pipelines = 0
@@ -217,12 +218,15 @@ class PipelineNodeData(UnitModelBlockData):
             b.pressure_eq = self.get_pressure_eq_con(self.state, b.state)
             # This temperature equation will be redundant if we end up adding
             # an enthalpy mixing equation.
-            b.temperature_eq = self.get_temperature_eq_con(self.state, b.state)
+            # TODO: Test and update comments
 
             if outlet:
                 # For inlets, mole fractions are already defined.
                 # (By the mixing rule)
                 b.mole_frac_comp_eq = self.get_mole_frac_comp_eq_con(
+                    self.state, b.state
+                )
+                b.temperature_eq = self.get_temperature_eq_con(
                     self.state, b.state
                 )
 
@@ -269,7 +273,8 @@ class PipelineNodeData(UnitModelBlockData):
 
             # Add equations to link temperature and pressure of this supply
             # to that of the node.
-            b.isothermal_eq = self.get_temperature_eq_con(self.state, b.state)
+            # TODO: Test
+            #b.isothermal_eq = self.get_temperature_eq_con(self.state, b.state)
             b.isobaric_eq = self.get_pressure_eq_con(self.state, b.state)
 
         return block_rule
@@ -361,6 +366,31 @@ class PipelineNodeData(UnitModelBlockData):
 
         self.component_mixing_eq = Constraint(
             time, component_list, rule=component_mixing_rule
+        )
+
+    def add_enthalpy_mixing_con(self):
+        """
+        Adds and equation that calculates temperature of the node from
+        temperatures, heat capacities, and flow rates of the supplies
+        and inlet pipelines.
+
+        """
+        time = self.flowsheet().time
+
+        def get_enthalpy_rate(state):
+            return state.temperature * state.flow_mol * state.cp_mol
+
+        def enthalpy_mixing_rule(b, t):
+            supplies = [self.supplies[i].state[t] for i in self.supply_set]
+            inlets = [self.inlets[i].state[t] for i in self.inlet_set]
+            return (
+                sum(get_enthalpy_rate(supply) for supply in supplies)
+                + sum(get_enthalpy_rate(inlet) for inlet in inlets)
+                == get_enthalpy_rate(self.state[t])
+            )
+
+        self.enthalpy_mixing_eq = Constraint(
+            time, rule=enthalpy_mixing_rule
         )
 
     def add_pipeline_to_inlet(self, pipeline, idx=None):
