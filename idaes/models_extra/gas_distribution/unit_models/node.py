@@ -216,13 +216,10 @@ class PipelineNodeData(UnitModelBlockData):
             # Add equality constraints between the node states and inlet/outlet
             # states for pressure and temperature.
             b.pressure_eq = self.get_pressure_eq_con(self.state, b.state)
-            # This temperature equation will be redundant if we end up adding
-            # an enthalpy mixing equation.
-            # TODO: Test and update comments
 
             if outlet:
-                # For inlets, mole fractions are already defined.
-                # (By the mixing rule)
+                # For inlets, mole fractions and temperatures are already
+                # defined by mixing rules.
                 b.mole_frac_comp_eq = self.get_mole_frac_comp_eq_con(
                     self.state, b.state
                 )
@@ -271,10 +268,8 @@ class PipelineNodeData(UnitModelBlockData):
             # as on demand blocks.
             b.flow_mol = Reference(b.state[:].flow_mol)
 
-            # Add equations to link temperature and pressure of this supply
+            # Add equation to link pressure of this supply
             # to that of the node.
-            # TODO: Test
-            #b.isothermal_eq = self.get_temperature_eq_con(self.state, b.state)
             b.isobaric_eq = self.get_pressure_eq_con(self.state, b.state)
 
         return block_rule
