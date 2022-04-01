@@ -18,6 +18,7 @@ __author__ = "John Eslick"
 import pytest
 import pyomo.environ as pyo
 from pyomo.network import Arc
+import pyomo.dae as pyodae
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models import Heater, Valve
 from idaes.models.properties import iapws95
@@ -264,4 +265,39 @@ def test_petsc_with_pid_model():
     assert (
         pyo.value(vecs[str(m.fs.tank.control_volume.properties_out[24].pressure)][22])
         == pytest.approx(3e5)
+    )
+
+    # Test derivatives.  There is no discretization equation at t=0 and
+    # there is no liquid, so check the calculations of the vapor energy and
+    # material in the tank
+    petsc.calculate_time_derivatives(m, m.fs.time)
+
+    der = (
+        m.fs.tank.control_volume.material_holdup[m.fs.time.last(), "Vap", "H2O"] -
+        m.fs.tank.control_volume.material_holdup[m.fs.time.first(), "Vap", "H2O"]
+    ) / 24.0
+    assert  (
+        pyo.value(
+            m.fs.tank.control_volume.material_accumulation[
+                m.fs.time.last(), "Vap", "H2O"]
+        ) ==
+        pytest.approx(pyo.value(der))
+    )
+    der = (
+        m.fs.tank.control_volume.energy_holdup[m.fs.time.last(), "Vap"] -
+        m.fs.tank.control_volume.energy_holdup[m.fs.time.first(), "Vap"]
+    ) / 24.0
+    assert  (
+        pyo.value(
+            m.fs.tank.control_volume.energy_accumulation[m.fs.time.last(), "Vap"]
+        ) ==
+        pytest.approx(pyo.value(der))
+    )
+    der = (
+        m.fs.ctrl.integral_of_error[m.fs.time.last()] -
+        m.fs.ctrl.integral_of_error[m.fs.time.first()]
+    ) / 24.0
+    assert  (
+        pyo.value(m.fs.ctrl.integral_of_error_dot[m.fs.time.last()]) ==
+        pytest.approx(pyo.value(der))
     )

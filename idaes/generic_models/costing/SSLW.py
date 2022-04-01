@@ -13,6 +13,7 @@
 """
 Deprecation path for renamed module.
 """
+
 from pyomo.common.deprecation import deprecation_warning
 
 deprecation_warning("The generic_models.costing.SSLW module has been "

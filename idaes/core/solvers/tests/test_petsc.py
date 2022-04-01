@@ -335,6 +335,10 @@ def test_car():
     )
 
     assert pyo.value(m.x[1]) == pytest.approx(131.273, rel=1e-2)
+    petsc.calculate_time_derivatives(m, m.tau)
+    assert pyo.value(m.dtime[1]) == pytest.approx(pyo.value(m.time[1] - m.time[0]))
+    assert pyo.value(m.dx[1]) == pytest.approx(pyo.value(m.x[1] - m.x[0]))
+    assert pyo.value(m.dv[1]) == pytest.approx(pyo.value(m.v[1] - m.v[0]))
 
 
 @pytest.mark.unit
