@@ -90,7 +90,7 @@ def assert_flowsheet_costing_block(val):
     '''Domain validator for fowhseet costing block attributes
 
     Args:
-        val : value to be checked
+        val: value to be checked
 
     Returns:
         ConfigurationError if val is not an instance of FlowsheetCostingBlock
@@ -217,12 +217,12 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         a lower bound equal to or greater than 0).
 
         Args:
-            flow_expr - Pyomo Var or expression that represents a material flow
-                        that should be included in the process costing. Units
-                        are expected to be on a per time basis.
-            flow_type - string identifying the material this flow represents.
-                        This string must be registered with the
-                        FlowsheetCostingBlock as a known flow type.
+            flow_expr: Pyomo Var or expression that represents a material flow
+                that should be included in the process costing. Units are
+                expected to be on a per time basis.
+            flow_type: string identifying the material this flow represents.
+                This string must be registered with the FlowsheetCostingBlock
+                as a known flow type.
 
         Raises:
             ValueError if flow_type is not recognized.
@@ -315,8 +315,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         with the FlowsheetCostingBlock for use when costing flows.
 
         Args:
-            flow_type - string name to represent flow type
-            cost - a Pyomo expression with units representing the flow cost
+            flow_type: string name to represent flow type
+            cost: a Pyomo expression with units representing the flow cost
         """
         self.flow_types.add(flow_type)
 
@@ -338,9 +338,10 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         The following costing variables are aggregated from all the registered
         UnitModelCostingBlocks (if they exist):
+
             * capital_cost,
-            *fixed_operating_cost, and
-            *variable_operating_cost
+            * fixed_operating_cost, and
+            * variable_operating_cost
 
         Additionally, aggregate flow variables are created for all registered
         flow types along with aggregate costs associated with each of these.
