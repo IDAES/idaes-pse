@@ -50,13 +50,13 @@ from idaes.core import (ControlVolume1DBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        FlowDirection)
+                        FlowDirection,
+                        DistributedVars)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
                                         BurntToast)
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_abs
 import idaes.logger as idaeslog

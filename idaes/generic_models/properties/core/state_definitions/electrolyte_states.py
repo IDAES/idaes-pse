@@ -22,7 +22,7 @@ from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
 from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.misc import add_object_reference
-from idaes.core.components import IonData, ApparentData
+from idaes.core.base.components import IonData, ApparentData
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 

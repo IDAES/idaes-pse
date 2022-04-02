@@ -100,7 +100,7 @@ jobs:
         run: |
           which python
           cd docs/
-          python build.py
+          python build.py --timeout 600
       - name: Publish built docs
         uses: actions/upload-artifact@v2
         with:

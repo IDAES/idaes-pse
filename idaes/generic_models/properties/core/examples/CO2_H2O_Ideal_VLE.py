@@ -22,8 +22,7 @@ import logging
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
-from idaes.core import LiquidPhase, VaporPhase, Component
-from idaes.core.phases import PhaseType as PT
+from idaes.core import LiquidPhase, VaporPhase, Component, PhaseType as PT
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
