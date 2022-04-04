@@ -120,10 +120,6 @@ def test_scaling(solid_prop):
 
     # Construct property methods to build the constraints
 
-    assert hasattr(solid_prop.fs.unit, "flow_mass")
-    assert hasattr(solid_prop.fs.unit, "particle_porosity")
-    assert hasattr(solid_prop.fs.unit, "temperature")
-    assert hasattr(solid_prop.fs.unit, "mass_frac_comp")
     assert hasattr(solid_prop.fs.unit, "dens_mass_skeletal")
     assert hasattr(solid_prop.fs.unit, "dens_mass_particle")
     assert hasattr(solid_prop.fs.unit, "cp_mol_comp")
@@ -219,10 +215,6 @@ def test_units_consistent(solid_prop):
 
     # Construct property methods to build the constraints
 
-    assert hasattr(solid_prop.fs.unit, "flow_mass")
-    assert hasattr(solid_prop.fs.unit, "particle_porosity")
-    assert hasattr(solid_prop.fs.unit, "temperature")
-    assert hasattr(solid_prop.fs.unit, "mass_frac_comp")
     assert hasattr(solid_prop.fs.unit, "dens_mass_skeletal")
     assert hasattr(solid_prop.fs.unit, "dens_mass_particle")
     assert hasattr(solid_prop.fs.unit, "cp_mol_comp")
