@@ -212,9 +212,44 @@ class TestIronOC(object):
         assert degrees_of_freedom(iron_oc) == 0
 
     @pytest.fixture(scope="class")
-    def iron_oc_unscaled(self, iron_oc):
-        import copy
-        m = copy.deepcopy(iron_oc)
+    def iron_oc_unscaled(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        # Set up thermo props and reaction props
+        m.fs.gas_properties = GasPhaseParameterBlock()
+        m.fs.solid_properties = SolidPhaseParameterBlock()
+        m.fs.hetero_reactions = HeteroReactionParameterBlock(
+                default={"solid_property_package": m.fs.solid_properties,
+                         "gas_property_package": m.fs.gas_properties})
+
+        m.fs.unit = MBR(
+                default={
+                        "gas_phase_config":
+                        {"property_package": m.fs.gas_properties},
+                        "solid_phase_config":
+                        {"property_package": m.fs.solid_properties,
+                         "reaction_package": m.fs.hetero_reactions
+                         }})
+
+        # Fix geometry variables
+        m.fs.unit.bed_diameter.fix(6.5)  # m
+        m.fs.unit.bed_height.fix(5)  # m
+
+        # Fix inlet port variables for gas and solid
+        m.fs.unit.gas_inlet.flow_mol[0].fix(128.20513)  # mol/s
+        m.fs.unit.gas_inlet.temperature[0].fix(298.15)  # K
+        m.fs.unit.gas_inlet.pressure[0].fix(2.00E5)  # Pa = 1E5 bar
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.02499)
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.00001)
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.975)
+
+        m.fs.unit.solid_inlet.flow_mass[0].fix(591.4)  # kg/s
+        m.fs.unit.solid_inlet.particle_porosity[0].fix(0.27)  # (-)
+        m.fs.unit.solid_inlet.temperature[0].fix(1183.15)  # K
+        m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
+        m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
+        m.fs.unit.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.55)
 
         return m
 

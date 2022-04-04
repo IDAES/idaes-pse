@@ -71,9 +71,22 @@ def test_setInputs_state_block(solid_prop):
 
 
 @pytest.fixture(scope="class")
-def solid_prop_unscaled(solid_prop):
-    import copy
-    m = copy.deepcopy(solid_prop)
+def solid_prop_unscaled():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # solid properties and state inlet block
+    m.fs.properties = SolidPhaseParameterBlock()
+    m.fs.unit = m.fs.properties.build_state_block(
+        default={"parameters": m.fs.properties,
+                 "defined_state": True})
+
+    m.fs.unit.flow_mass.fix(1)
+    m.fs.unit.particle_porosity.fix(0.27)
+    m.fs.unit.temperature.fix(1183.15)
+    m.fs.unit.mass_frac_comp["Fe2O3"].fix(0.45)
+    m.fs.unit.mass_frac_comp["Fe3O4"].fix(1e-9)
+    m.fs.unit.mass_frac_comp["Al2O3"].fix(0.55)
 
     return m
 
@@ -203,4 +216,25 @@ def test_solution(solid_prop):
 
 @pytest.mark.component
 def test_units_consistent(solid_prop):
+
+    # Construct property methods to build the constraints
+
+    assert hasattr(solid_prop.fs.unit, "flow_mass")
+    assert hasattr(solid_prop.fs.unit, "particle_porosity")
+    assert hasattr(solid_prop.fs.unit, "temperature")
+    assert hasattr(solid_prop.fs.unit, "mass_frac_comp")
+    assert hasattr(solid_prop.fs.unit, "dens_mass_skeletal")
+    assert hasattr(solid_prop.fs.unit, "dens_mass_particle")
+    assert hasattr(solid_prop.fs.unit, "cp_mol_comp")
+    assert hasattr(solid_prop.fs.unit, "cp_mass")
+    assert hasattr(solid_prop.fs.unit, "enth_mass")
+    assert hasattr(solid_prop.fs.unit, "enth_mol_comp")
+
+    # Call flow and density methods to construct flow and density expressions
+    for i in solid_prop.fs.unit._params.component_list:
+        solid_prop.fs.unit.get_material_flow_terms('Sol', i)
+        solid_prop.fs.unit.get_material_density_terms('Sol', i)
+    solid_prop.fs.unit.get_enthalpy_flow_terms('Sol')
+    solid_prop.fs.unit.get_energy_density_terms('Sol')
+
     assert_units_consistent(solid_prop)

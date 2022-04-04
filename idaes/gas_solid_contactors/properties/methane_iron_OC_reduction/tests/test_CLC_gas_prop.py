@@ -76,9 +76,22 @@ def test_setInputs_state_block(gas_prop):
 
 
 @pytest.fixture(scope="class")
-def gas_prop_unscaled(gas_prop):
-    import copy
-    m = copy.deepcopy(gas_prop)
+def gas_prop_unscaled():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # gas properties and state inlet block
+    m.fs.properties = GasPhaseParameterBlock()
+    m.fs.unit = m.fs.properties.build_state_block(
+        default={"parameters": m.fs.properties,
+                 "defined_state": True})
+
+    m.fs.unit.flow_mol.fix(1)
+    m.fs.unit.temperature.fix(450)
+    m.fs.unit.pressure.fix(1.60E5)
+    m.fs.unit.mole_frac_comp["CO2"].fix(0.4772)
+    m.fs.unit.mole_frac_comp["H2O"].fix(0.0646)
+    m.fs.unit.mole_frac_comp["CH4"].fix(0.4582)
 
     return m
 
@@ -251,4 +264,27 @@ def test_solution(gas_prop):
 
 @pytest.mark.component
 def test_units_consistent(gas_prop):
+
+    # Construct property methods to build the constraints
+    assert hasattr(gas_prop.fs.unit, "mw")
+    assert hasattr(gas_prop.fs.unit, "dens_mol")
+    assert hasattr(gas_prop.fs.unit, "dens_mol_comp")
+    assert hasattr(gas_prop.fs.unit, "dens_mass")
+    assert hasattr(gas_prop.fs.unit, "visc_d")
+    assert hasattr(gas_prop.fs.unit, "therm_cond")
+    assert hasattr(gas_prop.fs.unit, "diffusion_comp")
+    assert hasattr(gas_prop.fs.unit, "cp_mol_comp")
+    assert hasattr(gas_prop.fs.unit, "cp_mol")
+    assert hasattr(gas_prop.fs.unit, "cp_mass")
+    assert hasattr(gas_prop.fs.unit, "enth_mol")
+    assert hasattr(gas_prop.fs.unit, "enth_mol_comp")
+    assert hasattr(gas_prop.fs.unit, "entr_mol")
+
+    # Call flow and density methods to construct flow and density expressions
+    for i in gas_prop.fs.unit._params.component_list:
+        gas_prop.fs.unit.get_material_flow_terms('Vap', i)
+        gas_prop.fs.unit.get_material_density_terms('Vap', i)
+    gas_prop.fs.unit.get_enthalpy_flow_terms('Vap')
+    gas_prop.fs.unit.get_energy_density_terms('Vap')
+
     assert_units_consistent(gas_prop)

@@ -312,7 +312,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.set_default_scaling("cp_mass", 1e-6)
         self.set_default_scaling("entr_mol", 1e-2)
         self.set_default_scaling("entr_mol_phase", 1e-2)
-        # self.set_default_scaling("dens_mol", 1)  # defined later
         self.set_default_scaling("dens_mol_comp", 1)
         self.set_default_scaling("dens_mass", 1e2)
         self.set_default_scaling("visc_d_comp", 1e4)
@@ -965,9 +964,9 @@ class GasPhaseStateBlockData(StateBlockData):
                 Constants.gas_constant,
                 to_units=pyunits.J/pyunits.mol/pyunits.K)
             return (
-                (self.entr_mol + r_gas * log(p/1e5)) * b.flow_mol ==
+                (self.entr_mol + r_gas * log(p/1e5/pyunits.Pa)) * b.flow_mol ==
                 sum(b.flow_mol*b.mole_frac_comp[j] * (
-                    self.params.cp_param_1[j]*log(t) +
+                    self.params.cp_param_1[j]*log(t/pyunits.kK) +
                     self.params.cp_param_2[j]*t +
                     self.params.cp_param_3[j]*t**2 / 2 +
                     self.params.cp_param_4[j]*t**3 / 3 -
