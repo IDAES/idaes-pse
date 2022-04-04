@@ -224,10 +224,10 @@ Below is a simple example of how to add cost correlations to a flowsheet includi
 
     from pyomo.environ import (ConcreteModel, SolverFactory)
     from idaes.core import FlowsheetBlock
-    from idaes.generic_models.unit_models.heat_exchanger import \
+    from idaes.models.unit_models.heat_exchanger import \
         (HeatExchanger, HeatExchangerFlowPattern)
-    from idaes.generic_models.properties import iapws95
-    from idaes.power_generation.costing.power_plant_costing import \
+    from idaes.models.properties import iapws95
+    from idaes.models_extra.power_generation.costing.power_plant_costing import \
         (get_PP_costing, initialize_costing, display_total_plant_costs,
          display_flowsheet_cost)
     

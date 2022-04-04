@@ -200,7 +200,7 @@ export class Paper {
         //     });
         // });
 
-        // Link labels will appear and disapper on right click. Replaces browser context menu
+        // Link labels will appear and disappear on right click. Replaces browser context menu
         self._paper.on("link:contextmenu", function(linkView, evt) {
             if (linkView.model.label(0)["attrs"]["text"]["display"] === 'none') {
                 linkView.model.label(0, {

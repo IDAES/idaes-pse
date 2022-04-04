@@ -10,9 +10,13 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from idaes.generic_models.control.pid_controller import PIDBlock, PIDForm
-from idaes.generic_models.control.controller import (
-    PIDController,
-    ControllerType,
-    ControllerMVBoundType,
-) 
+"""
+Deprecation path for renamed module.
+"""
+from pyomo.common.deprecation import deprecation_warning
+
+deprecation_warning("The generic_models.control package has been moved to "
+                    "idaes.models.control",
+                    version="2.0.0.alpha0")
+
+from idaes.models.control import *

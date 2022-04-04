@@ -23,11 +23,11 @@ import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 # Import Unit Model Modules
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 from idaes.core.util import get_solver
 import idaes.core.util.unit_costing as cs
 from idaes.power_generation.properties import FlueGasParameterBlock
-from idaes.generic_models.unit_models.pressure_changer import (
+from idaes.models.unit_models.pressure_changer import (
     PressureChanger,
     ThermodynamicAssumption,
 )
