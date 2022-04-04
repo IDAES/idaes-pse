@@ -22,13 +22,13 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 import idaes.core.util.constants as iconst
 from idaes.core import UnitModelBlockData, declare_process_block_class
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.core.generic.generic_property import (
     GenericParameterBlock,
 )
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.core.generic.generic_reaction import (
     GenericReactionParameterBlock,
 )
-import idaes.generic_models.unit_models as um  # um = unit models
+import idaes.models.unit_models as um  # um = unit models
 from idaes.core.util.initialization import propagate_state
 import idaes.core.util.scaling as iscale
 import idaes.core.util as iutil

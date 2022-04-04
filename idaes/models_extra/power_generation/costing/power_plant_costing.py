@@ -48,7 +48,7 @@ from pyomo.core.base.units_container import InconsistentUnitsError
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.costing import register_idaes_currency_units
+from idaes.models.costing import register_idaes_currency_units
 from idaes.models_extra.power_generation.costing.costing_dictionaries import (
     BB_costing_exponents,
     BB_costing_params,

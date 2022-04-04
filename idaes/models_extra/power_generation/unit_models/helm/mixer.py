@@ -25,7 +25,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 
 from idaes.core.util.math import smooth_min
-from idaes.generic_models.unit_models import MomentumMixingType
+from idaes.models.unit_models import MomentumMixingType
 from idaes.core.util import from_json, to_json, StoreSpec
 
 import idaes.core.util.scaling as iscale

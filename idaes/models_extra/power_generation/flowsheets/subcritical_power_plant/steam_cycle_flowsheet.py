@@ -47,7 +47,7 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
 
 __author__ = "J. Ma, M. Zamarripa, J. Eslick"

@@ -2,9 +2,9 @@ International Association of the Properties of Water and Steam IAPWS-95
 =======================================================================
 
 .. index::
-  pair: idaes.generic_models.properties.iapws95; Iapws95StateBlock
+  pair: idaes.models.properties.iapws95; Iapws95StateBlock
 
-.. module:: idaes.generic_models.properties.iapws95
+.. module:: idaes.models.properties.iapws95
 
 Accurate and thermodynamically consistent steam properties are provided for the
 IDAES framework by implementing the International Association for the Properties
@@ -28,10 +28,10 @@ provides a simple example for using water properties.
 
 .. testcode::
 
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.properties import iapws95
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, MaterialBalanceType
-  from idaes.generic_models.unit_models import Heater
+  from idaes.models.unit_models import Heater
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()

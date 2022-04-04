@@ -25,8 +25,8 @@ from idaes.core import FlowsheetBlock
 import idaes.logger as idaeslog
 
 # Import IDAES standard unit model
-from idaes.generic_models.unit_models import Mixer
-from idaes.generic_models.properties import iapws95
+from idaes.models.unit_models import Mixer
+from idaes.models.properties import iapws95
 from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 
 # Import IDAES power generation unit models

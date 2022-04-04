@@ -79,7 +79,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
-from idaes.generic_models.unit_models.heat_exchanger import (
+from idaes.models.unit_models.heat_exchanger import (
     HeatExchangerData,
     delta_temperature_lmtd_callback,
     delta_temperature_lmtd2_callback,

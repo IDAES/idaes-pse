@@ -17,7 +17,7 @@ from idaes.models_extra.power_generation.unit_models.helm import (
     HelmMixer,
     MomentumMixingType,
 )
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 
 
 @pytest.mark.component

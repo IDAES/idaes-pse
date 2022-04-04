@@ -16,7 +16,7 @@ import pyomo.environ as pyo
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 from idaes.models_extra.power_generation.unit_models import FWH0D
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver

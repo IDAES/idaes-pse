@@ -212,7 +212,7 @@ List of Parameters
 
 Config Block Documentation
 --------------------------
-.. module:: idaes.generic_models.properties.cubic_eos.cubic_prop_pack
+.. module:: idaes.models.properties.cubic_eos.cubic_prop_pack
 
 .. autoclass:: CubicParameterData
    :members:
