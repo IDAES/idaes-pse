@@ -165,22 +165,22 @@ def test_tag_display_convert(model):
         display_units=pyo.units.g / pyo.units.hr,
     )
 
-    assert str(tf) == "3000000.0 g/hr"
+    assert str(tf) == "3000000.0 " + str(pyo.units.g / pyo.units.hr)
     m.x[1].value = 4
-    assert str(tf) == "2400000.0 g/hr"
-    assert str(tx[1]) == "4000.000 g"
+    assert str(tf) == "2400000.0 " + str(pyo.units.g / pyo.units.hr)
+    assert str(tx[1]) == "4000.000 " + str(pyo.units.g)
     m.x[1].value = 3
-    assert str(tx[1]) == "3000.000 g"
-    assert str(tw[1, "a"]) == "4000.000 g"
+    assert str(tx[1]) == "3000.000 " + str(pyo.units.g)
+    assert str(tw[1, "a"]) == "4000.000 " + str(pyo.units.g)
     assert tw[1, "a"]._index == (1, "a")
     assert tw._cache_display_value[1, "a"] == pytest.approx(4000.0)
     assert tw._cache_validation_value[1, "a"] == 4
     m.w[1, "a"].value = 1
     m.w[2, "a"].value = 2
     m.w[3, "a"].value = 3
-    assert str(tw[1, "a"]) == "1000.000 g"
-    assert str(tw[2, "a"]) == "2000.000 g"
-    assert str(tw[3, "a"]) == "3000.000 g"
+    assert str(tw[1, "a"]) == "1000.000 " + str(pyo.units.g)
+    assert str(tw[2, "a"]) == "2000.000 " + str(pyo.units.g)
+    assert str(tw[3, "a"]) == "3000.000 " + str(pyo.units.g)
     assert tw._cache_display_value[1, "a"] == pytest.approx(1000.0)
     assert tw._cache_validation_value[1, "a"] == 1
 
