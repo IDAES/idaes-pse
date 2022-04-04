@@ -365,7 +365,7 @@ class PipelineNodeData(UnitModelBlockData):
 
     def add_enthalpy_mixing_con(self):
         """
-        Adds and equation that calculates temperature of the node from
+        Adds an equation that calculates temperature of the node from
         temperatures, heat capacities, and flow rates of the supplies
         and inlet pipelines.
 
