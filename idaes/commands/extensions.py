@@ -147,10 +147,12 @@ def get_extensions(
         return
     elif show_platforms:
         click.echo("\nSupported platforms for IDAES binary extensions.")
-        for key, mes in sorted(idaes.config.known_binary_platform.items()):
-            click.echo(f"    {key}: {mes}")
+        platforms = set(idaes.config.binary_platform_map.keys())
+        platforms = platforms.union(set(idaes.config.binary_platform_map.values()))
+        for key in sorted(platforms):
+            click.echo(f"    {key}")
         click.echo("\nBinaries compiled on these platforms:")
-        for k in sorted(idaes.config.basic_platforms()):
+        for k in sorted(idaes.config.base_platforms):
             click.echo(f"    {k}")
         return
     elif show_extras:
@@ -222,7 +224,7 @@ def hash_extensions(release, path):
         hfile = os.path.join(path, hfile)
 
     def _write_hash(fp, pack, plat):
-        f = f"idaes-{pack}-{plat}-64.tar.gz"
+        f = f"idaes-{pack}-{plat}.tar.gz"
         if path is not None:
             h = idaes.util.download_bin.hash_file_sha256(os.path.join(path, f))
         else:
@@ -233,10 +235,10 @@ def hash_extensions(release, path):
         fp.write("\n")
 
     with open(hfile, "w") as f:
-        for plat in idaes.config.basic_platforms():
+        for plat in idaes.config.base_platforms:
             for pack in ["solvers", "lib"]:
                 _write_hash(f, pack, plat)
-        for plat in idaes.config.basic_platforms():
+        for plat in idaes.config.base_platforms:
             for pack, sp in idaes.config.extra_binaries.items():
                 if plat not in sp:
                     continue

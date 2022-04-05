@@ -19,7 +19,7 @@ import importlib
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "2.5.6"
+default_binary_release = "2.6.0"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -27,42 +27,40 @@ release_checksum_url = \
     "https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{}.txt"
 # Map some platform names to others for get-extensions
 binary_platform_map = {
-    "rhel7": "centos7",
-    "rhel8": "centos8",
+    "rhel7": "el7",
+    "centos7": "el7",
+    "rhel8": "el8",
+    "centos8": "el8",
+    "rockylinux8": "el8",
     "ubuntu1810": "ubuntu1804",
     "ubuntu1904": "ubuntu1804",
     "ubuntu1910": "ubuntu1804",
     "ubuntu2010": "ubuntu2004",
     "ubuntu2104": "ubuntu2004",
     "ubuntu2110": "ubuntu2004",
-    "linux": "centos7",
+    "linux": "el7",
+    "windows": "windows", # silly but gets me a complete list for a help message
 }
-# Set of known platforms with available binaries and descriptions of them
-known_binary_platform = {
-    "auto":"Auto-select windows, darwin or linux",
-    "windows":"Microsoft Windows (built on verion 20H2 with MinGW)",
-    "darwin": "OSX (currently not available)",
-    "linux": (
-            f"Linux (auto select distribution or fall back on "
-            f"{binary_platform_map['linux']})"
-        ),
-    "centos7": "CentOS 7",
-    "centos8": "CentOS 8",
-    "rhel7": "Red Hat Enterprise Linux 7",
-    "rhel8": "Red Hat Enterprise Linux 8",
-    "ubuntu1804": "Ubuntu 18.04",
-    "ubuntu1810": "Ubuntu 18.10",
-    "ubuntu1904": "Ubuntu 19.04",
-    "ubuntu1910": "Ubuntu 19.10",
-    "ubuntu2004": "Ubuntu 20.04",
-    "ubuntu2010": "Ubuntu 20.10",
-    "ubuntu2104": "Ubuntu 21.04",
+# Machine map
+binary_machine_map = {
+    "x64": "x86_64",
+    "intel64": "x86_64",
+    "Intel64": "x86_64",
+    "INTEL64": "x86_64",
+    "amd64": "x86_64",
+    "Amd64": "x86_64",
+    "AMD64": "x86_64",
 }
-# Unsupported platforms
-unsupported_binary_platform = ["darwin"]
-# Set of extra binary packages and platforms where they are available
+base_platforms = (
+    "el7-x86_64",
+    "el8-x86_64",
+    "ubuntu1804-x86_64",
+    "ubuntu2004-x86_64",
+    "windows-x86_64",
+)
+# Set of extra binary packages and basic build platforom where available
 extra_binaries = {
-    "petsc": ["centos7", "centos8", "ubuntu1804", "ubuntu2004", "windows"],
+    "petsc": base_platforms,
 }
 
 # Store the original environment variable values so we can revert changes
@@ -71,14 +69,6 @@ orig_environ = {
     "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
     "DYLD_LIBRARY_PATH": os.environ.get("DYLD_LIBRARY_PATH", ""),
 }
-
-def basic_platforms():
-    """Return a set of platforms that binaries should be available for.
-    """
-    kp = set(known_binary_platform.keys()) - set(["auto", "linux"])
-    kp -= set(unsupported_binary_platform)
-    kp -= set([k for k, v in binary_platform_map.items() if k != v])
-    return kp
 
 class ConfigBlockJSONEncoder(json.JSONEncoder):
     """ This class handles non-serializable objects that may appear in the IDAES

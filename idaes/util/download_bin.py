@@ -12,6 +12,7 @@
 #################################################################################
 import os
 import hashlib
+from platform import machine
 import idaes.logger as idaeslog
 import tarfile
 import idaes
@@ -61,18 +62,20 @@ def _get_platform(fd, platform, arch):
     if platform == "auto":
         platform = arch[0]
     if platform == "linux":
-        linux_dist = fd.get_os_version().replace(".", "")
+        platform = fd.get_os_version().replace(".", "")
         _log.debug(f"Detected Linux distribution: {linux_dist}")
-        if linux_dist in idaes.config.known_binary_platform:
-            platform = linux_dist
-        else:
-            raise UnsupportedPlatformError(
-                f"Detected platform {linux_dist} is not recognized as "
-                "supported platform.")
-    if platform not in idaes.config.known_binary_platform:
-        raise UnsupportedPlatformError(f"Unknown platform: {platform}.")
+    # Check if platform (OS) maps to another platform
     if platform in idaes.config.binary_platform_map:
         platform = idaes.config.binary_platform_map[platform]
+    # Get machine type (e.g. x86_64, ...)
+    mach = machine()
+    # See if machine type maps to another (e.g. intel64 -> x86_64, ...)
+    if mach in idaes.config.binary_machine_map:
+        mach = idaes.config.binary_machine_map[mach]
+    platform = f"{platform}-{mach}"
+    # See if machine is supported
+    if platform not in idaes.config.base_platforms:
+        raise UnsupportedPlatformError(f"Unsupported platfrom: {platform}.")
     _log.debug(f"Downloading binaries for {platform}")
     return platform
 
@@ -176,7 +179,7 @@ def download_binaries(
     ftar = []
     furl = []
     def _add_pack(name):
-        f = f"idaes-{name}-{platform}-{arch[1]}.tar.gz"
+        f = f"idaes-{name}-{platform}.tar.gz"
         ftar.append(f)
         ptar.append(os.path.join(to_path, f))
         pname.append(name)
@@ -201,7 +204,6 @@ def download_binaries(
         d = {
             "release": release,
             "platform": platform,
-            "bits": arch[1],
         }
         for n, p, u in zip(pname, ptar, furl):
             d[u] = p
