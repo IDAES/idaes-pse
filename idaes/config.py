@@ -39,7 +39,6 @@ binary_platform_map = {
     "ubuntu2104": "ubuntu2004",
     "ubuntu2110": "ubuntu2004",
     "linux": "el7",
-    "windows": "windows", # silly but gets me a complete list for a help message
 }
 # Machine map
 binary_machine_map = {

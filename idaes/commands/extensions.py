@@ -146,11 +146,6 @@ def get_extensions(
         print_license()
         return
     elif show_platforms:
-        click.echo("\nSupported platforms for IDAES binary extensions.")
-        platforms = set(idaes.config.binary_platform_map.keys())
-        platforms = platforms.union(set(idaes.config.binary_platform_map.values()))
-        for key in sorted(platforms):
-            click.echo(f"    {key}")
         click.echo("\nBinaries compiled on these platforms:")
         for k in sorted(idaes.config.base_platforms):
             click.echo(f"    {k}")
@@ -243,3 +238,13 @@ def hash_extensions(release, path):
                 if plat not in sp:
                     continue
                 _write_hash(f, pack, plat)
+
+@cb.command(name="bin-platform", help="Show the compatible binary build.")
+def bin_platform():
+    fd, arch = idaes.util.download_bin._get_file_downloader(False, None)
+    try:
+        platform = idaes.util.download_bin._get_platform(fd, "auto", arch)
+    except idaes.util.download_bin.UnsupportedPlatformError:
+        click.echo("No compatible binaries found.")
+    else:
+        click.echo(platform)
