@@ -27,7 +27,8 @@ class Design(object):
     This class combines a ``Canvas`` objects and a list of contents.
     It assigns an element (possibly None) to each point in the ``Canvas``.
     This generally works for any type of content, but it is intended
-    to work with ``Atom`` objects and can be used to generate CFG, PDB, POSCAR, and XYZ files.
+    to work with ``Atom`` objects and can be used to generate CFG, PDB, POSCAR,
+    and XYZ files.
     """
 
     # === STANDARD CONSTRUCTOR
@@ -51,15 +52,14 @@ class Design(object):
         Args:
             filename(str): PDB file to read from.
             DefaultNN(int, optional): Optional, the default number of nearest
-        neighbors to initialize the Canvas with.
+                neighbors to initialize the Canvas with.
 
         Returns:
             (Design) A new Design.
 
         """
         Pts, Atoms = readPointsAndAtomsFromPDB(filename)
-        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
-                   Atoms)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN), Atoms)
 
     # === CONSTRUCTOR - From XYZ
     @classmethod
@@ -69,15 +69,14 @@ class Design(object):
         Args:
             filename(str): XYZ file to read from.
             DefaultNN(int, optional): Optional, the default number of nearest
-        neighbors to initialize the Canvas with.
+                neighbors to initialize the Canvas with.
 
         Returns:
             (Design) A new Design.
 
         """
         Pts, Atoms = readPointsAndAtomsFromXYZ(filename)
-        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
-                   Atoms)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN), Atoms)
 
     # === CONSTRUCTOR - From CFG
     @classmethod
@@ -87,15 +86,14 @@ class Design(object):
         Args:
             filename(str): CFG file to read from.
             DefaultNN(int, optional): Optional, the default number of nearest
-        neighbors to initialize the Canvas with.
+                neighbors to initialize the Canvas with.
 
         Returns:
             (Design) A new Design.
 
         """
         Pts, Atoms = readPointsAndAtomsFromCFG(filename)
-        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
-                   Atoms)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN), Atoms)
 
     # === CONSTRUCTOR - From POSCAR/CONTCAR
     @classmethod
@@ -105,15 +103,14 @@ class Design(object):
         Args:
             filename(str): POSCAR file to read from.
             DefaultNN(int, optional): Optional, the default number of nearest
-        neighbors to initialize the Canvas with.
+                neighbors to initialize the Canvas with.
 
         Returns:
             (Design) A new Design.
 
         """
         Pts, Atoms = readPointsAndAtomsFromPOSCAR(filename)
-        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
-                   Atoms)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN), Atoms)
 
     fromCONTCAR = fromPOSCAR
     """Makes a Design by reading from CONTCAR file.
@@ -191,7 +188,8 @@ class Design(object):
         Args:
             other(Design): Design to append.
             blnAssertNotAlreadyInDesign(bool, optional): Optional, flag to enable
-        assertion that all locations were new and unique. (Default value = True)
+                assertion that all locations were new and unique.
+                (Default value = True)
 
         Returns:
             None.
@@ -209,20 +207,18 @@ class Design(object):
         """Compare strict equality of two Designs."""
         return self.Contents == other.Contents and self.Canvas == other.Canvas
 
-    def isEquivalentTo(self, other,
-                       blnPreserveIndexing=False,
-                       blnIgnoreVoid=True):
+    def isEquivalentTo(self, other, blnPreserveIndexing=False, blnIgnoreVoid=True):
         """Compare equivilancy of two Designs.
 
         Args:
             blnIgnoreVoid:
             other(Design): other Design to compare against.
             blnPreserveIndexing(bool, optional): Optional, flag to determine if
-        index order is considered. (Default value = False)
+                index order is considered. (Default value = False)
             blnIgnoreVoid(bool, optional): Optional, flag to determine if void
-        (i.e., None or Atom() contents) should be considered.
-        For example, if all solid atoms are equivalent, but there
-        are void locations that do not match. (Default value = True)
+                (i.e., None or Atom() contents) should be considered.
+                For example, if all solid atoms are equivalent, but there
+                are void locations that do not match. (Default value = True)
 
         Returns:
             bool) True if Designs are considered equivalent.
@@ -299,23 +295,39 @@ class Design(object):
             BBox:
             filename(str): CFG file to write to.
             GS(float, optional): Optional, Global scaling to write to file
-        (see CFG file format). (Default value = None)
+                (see CFG file format). (Default value = None)
             BBox(Parallelepiped, optional): Optional, Bounding box to write to file
-        (see CFG file format). If not provided, calculates a
-        rectangular prism 2x the necesary size to encompass points. (Default value = None)
+                (see CFG file format). If not provided, calculates a
+                rectangular prism 2x the necesary size to encompass points.
+                (Default value = None)
             AuxPropMap(dict<tuple<str, optional): Optional, Auxilliary
-        property map. Example: {('Energy','eV'):[0.0, 1.0, ... ]} (Default value = None)
+                property map. Example: {('Energy','eV'):[0.0, 1.0, ... ]}
+                (Default value = None)
             blnGroupByType(bool, optional): Optional, flag to group atoms by element.
-        (see CFG file format). (Default value = True)
+                (see CFG file format). (Default value = True)
 
         Returns:
             None.
 
         """
-        writeDesignToCFG(self, filename, GS=GS, BBox=BBox, AuxPropMap=AuxPropMap, blnGroupByType=blnGroupByType)
+        writeDesignToCFG(
+            self,
+            filename,
+            GS=GS,
+            BBox=BBox,
+            AuxPropMap=AuxPropMap,
+            blnGroupByType=blnGroupByType,
+        )
 
-    def toPOSCAR(self, filename, CommentLine=None, GS=None, BBox=None,
-                 Elems=None, blnUseDirect=True):
+    def toPOSCAR(
+        self,
+        filename,
+        CommentLine=None,
+        GS=None,
+        BBox=None,
+        Elems=None,
+        blnUseDirect=True,
+    ):
         """Write a Design to CFG file.
 
         Args:
@@ -325,22 +337,31 @@ class Design(object):
             filename(str): CFG file to write to.
             CommentLine(str, optional): Optional, line to write at top of file. (Default value = None)
             GS(float, optional): Optional, Global scaling to write to file
-        (see POSCAR file format). (Default value = None)
+                (see POSCAR file format). (Default value = None)
             BBox(Parallelepiped, optional): Optional, Bounding box to write to file
-        (see POSCAR file format). If not provided, calculates a
-        rectangular prism 2x the necesary size to encompass points. (Default value = None)
+                (see POSCAR file format). If not provided, calculates a
+                rectangular prism 2x the necesary size to encompass points.
+                (Default value = None)
             Elems(list<Atom>, optional): Optional, order of elements to write to file.
-        Only important because they are sometimes implicitly defined
-        in other VASP files and may need to be in a definite order. (Default value = None)
+                Only important because they are sometimes implicitly defined
+                in other VASP files and may need to be in a definite order.
+                (Default value = None)
             blnUseDirect(bool, optional): Optional, flag to switch between direct and
-        cartesian flag of POSCAR file. (Default value = True)
+                cartesian flag of POSCAR file. (Default value = True)
 
         Returns:
             None.
 
         """
-        writeDesignToPOSCAR(self, filename, CommentLine=CommentLine, GS=GS, BBox=BBox,
-                            Elems=Elems, blnUseDirect=blnUseDirect)
+        writeDesignToPOSCAR(
+            self,
+            filename,
+            CommentLine=CommentLine,
+            GS=GS,
+            BBox=BBox,
+            Elems=Elems,
+            blnUseDirect=blnUseDirect,
+        )
 
 
 def loadFromPDBs(filenames, folder=None):
@@ -348,7 +369,7 @@ def loadFromPDBs(filenames, folder=None):
 
     Args:
         filenames (list<str>): List of files to read.
-        folder (str): Optional, folder to prepend to filenames. 
+        folder (str): Optional, folder to prepend to filenames.
             (Default value = None)
 
     Returns:
@@ -368,7 +389,7 @@ def loadFromXYZs(filenames, folder=None):
 
     Args:
         filenames (list<str>): List of files to read.
-        folder (str): Optional, folder to prepend to filenames. 
+        folder (str): Optional, folder to prepend to filenames.
             (Default value = None)
 
     Returns:
@@ -388,7 +409,7 @@ def loadFromCFGs(filenames, folder=None):
 
     Args:
         filenames (list<str>): List of files to read.
-        folder (str): Optional, folder to prepend to filenames. 
+        folder (str): Optional, folder to prepend to filenames.
             (Default value = None)
 
     Returns:

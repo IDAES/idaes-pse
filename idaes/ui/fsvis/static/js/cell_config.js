@@ -49,21 +49,39 @@ export class JointJsCellConfig {
      * that the link will take to connect the unit models (elements).
     */
     routerGapFnFactory(gap) {
+        // Link router functions in JointJS execute automatically when their
+        // elements that they are connected to rotate.
         var router_fn = (vertices, opt, linkView) => {
-            const a = linkView.getEndAnchor('source');
-            const b = linkView.getEndAnchor('target');
-            const p1 = {
-                x: a.x + gap.source.x,
-                y: a.y + + gap.source.y
-            };
-            const p2 = {
-                x: b.x + gap.destination.x,
-                y: b.y + gap.destination.y
-            };
+            const src = linkView.getEndAnchor('source');
+            const tgt = linkView.getEndAnchor('target');
+
+            // Calculates the original points that the link has to go through
+            // to give the effect of having a gap.
+            const p1 = new g.Point(
+                src.x + gap.source.x,
+                src.y + gap.source.y
+            );
+            const p2 = new g.Point(
+                tgt.x + gap.destination.x,
+                tgt.y + gap.destination.y
+            );
+
+            // Getting the current angles of the icons to calculate the right
+            // position for the original points calculated above
+            const src_angle = linkView.getEndView('source').model.angle();
+            const tgt_angle = linkView.getEndView('target').model.angle();
+
+            // Flip direction if perpendicular
+            const src_orth = src_angle % 180 === 0 ? 1 : -1;
+            const tgt_orth = tgt_angle % 180 === 0 ? 1 : -1;
+
+            // Rotate the vector based on the angle of the element
+            const src_rotated = p1.rotate(src, src_orth * src_angle);
+            const tgt_rotated = p2.rotate(tgt, tgt_orth * tgt_angle);
 
             // TODO: Research if there's a better pre-implemented router
             // function than the manhattan function.
-            return joint.routers.manhattan([p1, ...vertices, p2], opt, linkView);
+            return joint.routers.manhattan([src_rotated, ...vertices, tgt_rotated], opt, linkView);
         }
 
         return router_fn;

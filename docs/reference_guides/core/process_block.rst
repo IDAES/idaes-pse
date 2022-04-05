@@ -81,14 +81,14 @@ The core part of any IDAES Block is the build method, which contains the instruc
 ProcessBlock Class
 ------------------
 
-.. module:: idaes.core.process_block
+.. module:: idaes.core.base.process_block
 
 .. autofunction:: declare_process_block_class
 
 .. autoclass:: ProcessBlock
     :members:
 
-.. module:: idaes.core.process_base
+.. module:: idaes.core.base.process_base
 
 .. autoclass:: ProcessBlockData
     :members:

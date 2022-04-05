@@ -23,7 +23,7 @@ from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
 from idaes.core.util.tests.test_initialization import (
         AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock)
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
+from idaes.models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.apps.caprese import nmpc
 from idaes.apps.caprese.nmpc import *
 

@@ -84,27 +84,8 @@ Installing PETSc
 ~~~~~~~~~~~~~~~~
 
 The PETSc solver is an extra binary package, and not installed by default.  If
-you are using a supported Linux distribution, you can use the command
+you are using a supported platform, you can use the command
 ``idaes get-extensions --extra petsc`` to install it.
-
-There is no precompiled PETSc solver for Windows, but here are two options for
-Windows installation. The easiest option is to run the available precompiled
-Linux version via the WSL
-(see :ref:`binary installation <tutorials/getting_started/binaries:Using the WSL>`
-for details). Expert users may wish to compile their own solver. Source code is
-available in the `idaes-ext repo <https://github.com/IDAES/idaes-ext/tree/main/petsc>`_.
-If you can compile PETSc for Windows, compiling the interface is trivial (see
-`PETSc's windows installation documentation <https://petsc.org/main/install/windows/>`_).
-
-The IDAES PETSc package also includes Python modules for reading binary data
-written by the PETSc solver.  On Windows, some manual installation of the Python
-modules is required.  If you are using the WSL method to run PETSc, copy the
-``petscpy`` directory from the Linux package you are using to the IDAES binary
-directory.  You can find the IDAES binary directory by running the command
-``idaes bin-directory`` in the OS command shell (e.g. Bash, Windows CMD,
-PowerShell).  If IDAES is installed in a Python environment, the environment
-must be active. The primary use for these Python modules is to read trajectory
-files saved by the TS solver.
 
 Registered Solvers
 ~~~~~~~~~~~~~~~~~~
@@ -191,6 +172,12 @@ Solving
 The following function can be used to solve the DAE.
 
 .. autofunction:: idaes.core.solvers.petsc.petsc_dae_by_time_element
+
+Derivative values aren't returned by the PETSc solver, but they can be calculated
+from the discretization equations written by Pyomo.DAE. The following function can
+be used to calculate time derivatives.
+
+.. autofunction:: idaes.core.solvers.petsc.calculate_time_derivatives
 
 Reading Trajectory Data
 """""""""""""""""""""""

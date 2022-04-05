@@ -2,18 +2,18 @@ BoilerHeatExchanger
 ===================
 
 .. index::
-   pair: idaes.power_generation.unit_models.boiler_heat_exchanger; BoilerHeatExchanger
+   pair: idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger; BoilerHeatExchanger
 
-.. currentmodule:: idaes.power_generation.unit_models.boiler_heat_exchanger
+.. currentmodule:: idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger
 
 The BoilerHeatExchanger model can be used to represent boiler heat exchangers in
 sub-critical and super critical power plant flowsheets (i.e. economizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).
 The model consists of a shell and tube crossflow heat exchanger, in which the shell is used as the gas side and the tube is used as the water or steam side.
 Rigorous heat transfer calculations (convective heat transfer for shell side, and convective heat transfer for tube side) and shell and tube pressure drop calculations have been included.
 
-The BoilerHeatExchanger model can be imported from :code:`idaes.power_generation.unit_models`,
+The BoilerHeatExchanger model can be imported from :code:`idaes.models_extra.power_generation.unit_models`,
 while additional rules and utility functions can be imported from
-``idaes.power_generation.unit_models.boiler_heat_exchanger``.
+``idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger``.
 
 Example
 -------
@@ -28,11 +28,11 @@ and override the default temperature difference calculation.
     # Import IDAES core
     from idaes.core import FlowsheetBlock
     # Import Unit Model Modules
-    from idaes.generic_models.properties import iapws95
+    from idaes.models.properties import iapws95
     # import ideal flue gas prop pack
-    from idaes.power_generation.properties.IdealProp_FlueGas import FlueGasParameterBlock
+    from idaes.models_extra.power_generation.properties.IdealProp_FlueGas import FlueGasParameterBlock
     # Import Power Plant HX Unit Model
-    from idaes.power_generation.unit_models.boiler_heat_exchanger import (
+    from idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger import (
         BoilerHeatExchanger,
         TubeArrangement,
         HeatExchangerFlowPattern,
@@ -40,7 +40,7 @@ and override the default temperature difference calculation.
     import pyomo.environ as pe # Pyomo environment
     from idaes.core import FlowsheetBlock, StateBlock
     from idaes.unit_models.heat_exchanger import delta_temperature_amtd_callback
-    from idaes.generic_models.properties import iapws95
+    from idaes.models.properties import iapws95
 
     # Create a Concrete Model as the top level object
     m = ConcreteModel()

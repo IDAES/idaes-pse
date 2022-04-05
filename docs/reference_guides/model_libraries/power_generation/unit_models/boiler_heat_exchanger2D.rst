@@ -2,9 +2,9 @@ BoilerHeatExchanger2D
 =====================
 
 .. index::
-   pair: idaes.power_generation.unit_models.boiler_heat_exchanger_2D; HeatExchangerCrossFlow2D_Header
+   pair: idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger_2D; HeatExchangerCrossFlow2D_Header
 
-.. currentmodule:: idaes.power_generation.unit_models.boiler_heat_exchanger_2D
+.. currentmodule:: idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger_2D
 
 The BoilerHeatExchanger2D model can be used to represent boiler heat exchangers in
 sub-critical and super critical power plant flowsheets (i.e. econmizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).
@@ -30,9 +30,9 @@ The transient tube wall temperature T_(w,r)  at each discretized radius r is cal
 
 where, T_(w,r) is the tube metal temperature, t is time, alfa is termal diffusivity of the tube metal, typically steel, and r is the radius. This partial differential equation can be discretized by Pyomo-DAE in the radius direction. The heat accumulation in the tube metal is represented by the solution of the transient temperatures along the radius direction.
 
-The HeatExchangerCrossFlow2D_Header model can be imported from :code:`idaes.power_generation.unit_models`,
+The HeatExchangerCrossFlow2D_Header model can be imported from :code:`idaes.models_extra.power_generation.unit_models`,
 while additional rules and utility functions can be imported from
-``idaes.power_generation.unit_models.boiler_heat_exchanger2D``.
+``idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger2D``.
 
 
 Degrees of Freedom

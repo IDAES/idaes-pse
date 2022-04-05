@@ -14,7 +14,13 @@ from abc import abstractmethod
 from copy import deepcopy
 import numpy as np
 
-from ..transform_func import TransformFunc, ShiftFunc, ScaleFunc, RotateFunc, ReflectFunc
+from ..transform_func import (
+    TransformFunc,
+    ShiftFunc,
+    ScaleFunc,
+    RotateFunc,
+    ReflectFunc,
+)
 
 
 class Lattice(object):

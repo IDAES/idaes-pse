@@ -45,12 +45,12 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        FlowDirection)
+                        FlowDirection,
+                        DistributedVars)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
-from idaes.core.util.exceptions import (ConfigurationError)
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_min, smooth_max
 import idaes.logger as idaeslog
@@ -73,7 +73,7 @@ class BubblingFluidizedBedData(UnitModelBlockData):
 
     # Unit level config arguments
     CONFIG.declare("finite_elements", ConfigValue(
-        default=10,
+        default=5,
         domain=int,
         description="Number of finite elements length domain",
         doc="""Number of finite elements to use when discretizing length
@@ -735,7 +735,7 @@ see reaction package for documentation.}"""))
                       doc='Bulk Gas Permeation Coefficient [m/s]')
         self.Kd.fix()
         self.deltaP_orifice = Var(domain=Reals,
-                                  initialize=3.4E5,
+                                  initialize=3.4E3,
                                   doc='Pressure Drop Across Orifice [Pa]')
         self.deltaP_orifice.fix()
 

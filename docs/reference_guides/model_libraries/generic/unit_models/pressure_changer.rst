@@ -131,8 +131,8 @@ curves. The first does not use a callback the second does.
 
   from pyomo.environ import ConcreteModel, SolverFactory, units, value
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.unit_models.pressure_changer import Turbine
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.unit_models.pressure_changer import Turbine
+  from idaes.models.properties import iapws95
   import pytest
 
   solver = SolverFactory('ipopt')
@@ -175,8 +175,8 @@ The next example shows how to use a callback to add performance curves.
 
   from pyomo.environ import ConcreteModel, SolverFactory, units, value
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.unit_models.pressure_changer import Turbine
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.unit_models.pressure_changer import Turbine
+  from idaes.models.properties import iapws95
   import pytest
 
   solver = SolverFactory('ipopt')
@@ -221,7 +221,7 @@ The next example shows how to use a callback to add performance curves.
 PressureChanger Class
 ----------------------
 
-.. module:: idaes.generic_models.unit_models.pressure_changer
+.. module:: idaes.models.unit_models.pressure_changer
 
 .. autoclass:: PressureChanger
   :members:

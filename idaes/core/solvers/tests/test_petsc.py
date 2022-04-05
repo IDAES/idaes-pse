@@ -335,6 +335,10 @@ def test_car():
     )
 
     assert pyo.value(m.x[1]) == pytest.approx(131.273, rel=1e-2)
+    petsc.calculate_time_derivatives(m, m.tau)
+    assert pyo.value(m.dtime[1]) == pytest.approx(pyo.value(m.time[1] - m.time[0]))
+    assert pyo.value(m.dx[1]) == pytest.approx(pyo.value(m.x[1] - m.x[0]))
+    assert pyo.value(m.dv[1]) == pytest.approx(pyo.value(m.v[1] - m.v[0]))
 
 
 @pytest.mark.unit
@@ -439,7 +443,7 @@ def test_petsc_read_trajectory():
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
     m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
     m.scaling_factor[m.y[180, 1]] = 10 # make sure unscale works
-    
+
     m.y_ref = pyo.Reference(m.y) # make sure references don't get unscaled twice
     petsc.petsc_dae_by_time_element(
         m,
@@ -465,6 +469,7 @@ def test_petsc_read_trajectory():
     assert tj.get_dt()[0] == pytest.approx(0.01) # if small enough shouldn't be cut
     assert tj.get_vec(m.y[180, 1])[-1] == pytest.approx(y1, rel=1e-3)
     assert tj.get_vec("_time")[-1] == pytest.approx(180)
+    os.remove("tj_random_junk_123_1.json.gz")
 
     times = np.linspace(0, 180, 181)
     vecs = tj.interpolate_vecs(times)
