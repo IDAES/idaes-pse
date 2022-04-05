@@ -1,0 +1,9 @@
+GEN UID,Bus ID,Unit Type,Fuel,MW Inj,MVAR Inj,V Setpoint p.u.,PMax MW,PMin MW,QMax MVAR,QMin MVAR,Min Down Time Hr,Min Up Time Hr,Ramp Rate MW/Min,Start Time Cold Hr,Start Time Warm Hr,Start Time Hot Hr,Start Heat Cold MBTU,Start Heat Warm MBTU,Start Heat Hot MBTU,Non Fuel Start Cost $,Fuel Price $/MMBTU,Output_pct_0,Output_pct_1,Output_pct_2,Output_pct_3,Output_pct_4,HR_avg_0,HR_incr_1,HR_incr_2,HR_incr_3,HR_incr_4
+3_CT,3,CT,G,0,0,1,20,8,20,-20,1,1,3,,,1,,,51.75,0,0.75,0.4,0.6,0.8,1,,135722.5,97862.5,98072.5,107135,
+10_STEAM,10,STEAM,C,0,0,1,76,30,76,-76,4,8,2,12,10,4,11383.41,10488.35,7355.42,0,1,0.394736842,0.596052632,0.798684211,1,,30166.66667,14402.61434,17182.46753,18283.66017,
+4_CC,4,CC,G,0,0,1,100,10,55,-55,3,3,3.7,,,3,,,5665.23,0,0.5,0.4,0.6,0.8,1,,51019.54545,26818.18182,29550.90909,30308.18182,
+4_STEAM,4,STEAM,O,0,0,1,12,5,12,-12,2,4,1,12,4,2,703.76,455.37,393.28,0,1.5,0.416666667,0.608333333,0.808333333,1,,179457.9999,124504.3483,125050,133643.478,
+10_PV,10,PV,S,0,0,1,25.9,0,0,0,,,,,,,,,,0,,,,,,,,,,,
+2_RTPV,2,RTPV,S,0,0,1,9.3,0,0,0,,,,,,,,,,0,,,,,,,,,,,
+1_HYDRO,1,HYDRO,H,0,0,1,50,0,16,-10,,,,,,,,,,0,,,,,,,,,,,
+4_WIND,4,WIND,W,0,0,1,120,0,0,0,,,,,,,,,,0,,,,,,,,,,,
