@@ -56,7 +56,6 @@ jobs:
           - python-version: '3.8'
             # only generate coverage report for a single python version in the matrix
             # to avoid overloading Codecov
-            # FIXME: reinstate coverage report before merging PR
             cov-report: true
     steps:
       - uses: actions/checkout@v2
