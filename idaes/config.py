@@ -38,7 +38,6 @@ binary_platform_map = {
     "ubuntu2010": "ubuntu2004",
     "ubuntu2104": "ubuntu2004",
     "ubuntu2110": "ubuntu2004",
-    "linux": "el7",
 }
 # Machine map
 binary_machine_map = {
@@ -61,7 +60,6 @@ base_platforms = (
 extra_binaries = {
     "petsc": base_platforms,
 }
-
 # Store the original environment variable values so we can revert changes
 orig_environ = {
     "PATH": os.environ.get("PATH", ""),
