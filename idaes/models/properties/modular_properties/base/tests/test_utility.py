@@ -19,7 +19,7 @@ import pytest
 
 from types import MethodType
 
-from idaes.models.properties.modular_properties.generic.utility import (
+from idaes.models.properties.modular_properties.base.utility import (
     GenericPropertyPackageError,
     get_method,
     get_phase_method,
@@ -29,7 +29,7 @@ from idaes.models.properties.modular_properties.generic.utility import (
     ConcentrationForm,
 )
 
-from idaes.models.properties.modular_properties.generic.generic_reaction import rxn_config
+from idaes.models.properties.modular_properties.base.generic_reaction import rxn_config
 from pyomo.environ import Block, units as pyunits, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError

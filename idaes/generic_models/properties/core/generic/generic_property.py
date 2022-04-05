@@ -16,7 +16,7 @@ Deprecation path for renamed module.
 from pyomo.common.deprecation import deprecation_warning
 
 deprecation_warning("The generic_models.properties.core.generic.generic_property has been "
-                    "moved to idaes.models.properties.modular_properties.generic.generic_property",
+                    "moved to idaes.models.properties.modular_properties.base.generic_property",
                     version="2.0.0.alpha0")
 
-from idaes.models.properties.modular_properties.generic.generic_property import *
+from idaes.models.properties.modular_properties.base.generic_property import *

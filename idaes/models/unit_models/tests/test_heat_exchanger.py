@@ -52,7 +52,7 @@ from idaes.models.properties import iapws95
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
-from idaes.models.properties.modular_properties.generic.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
 from idaes.models.properties.modular_properties.examples.BT_PR import configuration
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,

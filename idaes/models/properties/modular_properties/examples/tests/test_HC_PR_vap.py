@@ -40,7 +40,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util import get_solver
 
-from idaes.models.properties.modular_properties.generic.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
 
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 

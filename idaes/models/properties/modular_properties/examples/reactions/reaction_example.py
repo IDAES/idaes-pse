@@ -25,7 +25,7 @@ from idaes.core import LiquidPhase, Component
 from idaes.models.properties.modular_properties.state_definitions import FcTP
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
-from idaes.models.properties.modular_properties.generic.utility import ConcentrationForm
+from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
 from idaes.models.properties.modular_properties.reactions.rate_forms import power_law_rate

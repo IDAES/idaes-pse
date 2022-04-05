@@ -25,7 +25,7 @@ from pyomo.environ import (
 )
 
 from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
-from idaes.models.properties.modular_properties.generic.utility import (
+from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
     get_method,
     GenericPropertyPackageError,

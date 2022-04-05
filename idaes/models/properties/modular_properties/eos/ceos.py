@@ -32,7 +32,7 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core import LiquidPhase, VaporPhase
-from idaes.models.properties.modular_properties.generic.utility import (
+from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
 )

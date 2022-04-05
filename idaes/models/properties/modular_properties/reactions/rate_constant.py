@@ -16,7 +16,7 @@ Methods for calculating rate constants
 from pyomo.environ import exp, Var, units as pyunits
 
 from idaes.core import MaterialFlowBasis
-from idaes.models.properties.modular_properties.generic.utility import ConcentrationForm
+from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants as c
 from idaes.core.util.exceptions import BurntToast, ConfigurationError

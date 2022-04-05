@@ -18,7 +18,7 @@ import pytest
 
 from pyomo.environ import Block, ConcreteModel, Var, units as pyunits
 
-from idaes.models.properties.modular_properties.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
     ConcentrationForm,
 )

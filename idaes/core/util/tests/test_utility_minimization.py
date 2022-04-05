@@ -33,7 +33,7 @@ import idaes.models.properties.modular_properties.pure.RPP4 as RPP4
 from idaes.models.unit_models import Heater
 from idaes.core import FlowsheetBlock
 
-from idaes.models.properties.modular_properties.generic.generic_property import \
+from idaes.models.properties.modular_properties.base.generic_property import \
         GenericParameterBlock
 
 from idaes.core.util.utility_minimization import \

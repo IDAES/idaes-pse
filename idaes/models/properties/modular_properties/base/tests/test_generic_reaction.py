@@ -31,10 +31,10 @@ from pyomo.environ import (
     units as pyunits,
 )
 
-from idaes.models.properties.modular_properties.generic.generic_property import GenericParameterBlock
-from idaes.models.properties.modular_properties.generic.tests.dummy_eos import DummyEoS
+from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
-from idaes.models.properties.modular_properties.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
     ConcentrationForm,
 )
@@ -264,7 +264,7 @@ class TestGenericReactionParameterBlock(object):
     def test_rate_build_no_form(self, m, caplog):
         caplog.set_level(
             idaeslog.DEBUG,
-            logger=("idaes.models.properties.modular_properties." "generic.generic_reaction"),
+            logger=("idaes.models.properties.modular_properties.base.generic_reaction"),
         )
 
         m.rxn_params = GenericReactionParameterBlock(

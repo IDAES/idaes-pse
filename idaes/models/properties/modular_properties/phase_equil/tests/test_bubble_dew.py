@@ -23,8 +23,8 @@ from pyomo.environ import ConcreteModel, Constraint, Set, value, Var, units as p
 
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import IdealBubbleDew
 from idaes.core import declare_process_block_class
-from idaes.models.properties.modular_properties.generic.generic_property import GenericParameterData
-from idaes.models.properties.modular_properties.generic.tests.dummy_eos import DummyEoS
+from idaes.models.properties.modular_properties.base.generic_property import GenericParameterData
+from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
 
 # Dummy class to use for Psat calls

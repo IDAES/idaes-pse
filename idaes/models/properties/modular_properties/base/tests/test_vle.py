@@ -29,7 +29,7 @@ from pyomo.environ import (
 
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component
-from idaes.models.properties.modular_properties.generic.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
 from idaes.core.util import get_solver
 
 from idaes.models.properties.modular_properties.state_definitions import FTPx

@@ -15,8 +15,8 @@ Methods for creating additional state variables for electrolyte systems
 """
 from pyomo.environ import Constraint, NonNegativeReals, Reference, units as pyunits, Var
 
-from idaes.models.properties.modular_properties.generic.generic_property import StateIndex
-from idaes.models.properties.modular_properties.generic.utility import get_bounds_from_config
+from idaes.models.properties.modular_properties.base.generic_property import StateIndex
+from idaes.models.properties.modular_properties.base.utility import get_bounds_from_config
 from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.misc import add_object_reference
 from idaes.core.base.components import IonData, ApparentData

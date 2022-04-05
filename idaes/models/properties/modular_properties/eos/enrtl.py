@@ -31,11 +31,11 @@ from pyomo.environ import Expression, exp, log, Set, units as pyunits
 from .ideal import Ideal
 from .enrtl_reference_states import Symmetric
 from .enrtl_parameters import ConstantAlpha, ConstantTau
-from idaes.models.properties.modular_properties.generic.utility import (
+from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
 )
-from idaes.models.properties.modular_properties.generic.generic_property import StateIndex
+from idaes.models.properties.modular_properties.base.generic_property import StateIndex
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog

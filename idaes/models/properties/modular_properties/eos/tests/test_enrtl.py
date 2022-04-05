@@ -32,7 +32,7 @@ from pyomo.util.check_units import assert_units_equivalent
 from idaes.core import AqueousPhase, Solvent, Solute, Apparent, Anion, Cation
 from idaes.core.util.constants import Constants
 from idaes.models.properties.modular_properties.eos.enrtl import ENRTL
-from idaes.models.properties.modular_properties.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
     StateIndex,
 )

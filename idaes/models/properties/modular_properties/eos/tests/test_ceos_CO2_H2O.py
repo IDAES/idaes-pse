@@ -27,7 +27,7 @@ from pyomo.environ import (
 )
 
 from idaes.models.properties.modular_properties.eos.ceos import Cubic
-from idaes.models.properties.modular_properties.generic.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
 from idaes.power_generation.properties.natural_gas_PR import get_prop
 from idaes.core.util.misc import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom

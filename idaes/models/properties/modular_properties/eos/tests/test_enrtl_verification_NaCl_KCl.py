@@ -40,7 +40,7 @@ from pyomo.environ import ConcreteModel, units as pyunits, value
 from idaes.core import AqueousPhase, Solvent, Apparent, Anion, Cation
 from idaes.models.properties.modular_properties.eos.enrtl import ENRTL
 from idaes.models.properties.modular_properties.eos.enrtl_reference_states import Unsymmetric
-from idaes.models.properties.modular_properties.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
     StateIndex,
 )

@@ -27,7 +27,7 @@ from idaes.core import (
     ReactionBlockBase,
     MaterialFlowBasis,
 )
-from idaes.models.properties.modular_properties.generic.utility import ConcentrationForm
+from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
 from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,

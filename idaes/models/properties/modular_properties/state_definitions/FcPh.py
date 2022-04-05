@@ -26,7 +26,7 @@ from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
 
 from idaes.models.properties.modular_properties.state_definitions.FTPx import state_initialization
 from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
-from idaes.models.properties.modular_properties.generic.utility import get_bounds_from_config
+from idaes.models.properties.modular_properties.base.utility import get_bounds_from_config
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale

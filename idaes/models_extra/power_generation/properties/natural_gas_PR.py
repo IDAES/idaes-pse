@@ -52,7 +52,7 @@ from idaes.models.properties.modular_properties.pure import NIST, RPP4, RPP5, Pe
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
 from idaes.models.properties.modular_properties.reactions.rate_forms import power_law_rate
-from idaes.models.properties.modular_properties.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
     ConcentrationForm,
 )

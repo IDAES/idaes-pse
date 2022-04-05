@@ -42,8 +42,8 @@ from idaes.core import (
     EnergyBalanceType,
     declare_process_block_class,
 )
-from idaes.models.properties.modular_properties.generic.generic_property import GenericParameterData
-from idaes.models.properties.modular_properties.generic.tests.dummy_eos import DummyEoS
+from idaes.models.properties.modular_properties.base.generic_property import GenericParameterData
+from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 

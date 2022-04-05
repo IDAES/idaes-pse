@@ -19,7 +19,7 @@ import pytest
 from pyomo.environ import ConcreteModel, Var, units as pyunits, value
 from pyomo.util.check_units import assert_units_equivalent
 
-from idaes.models.properties.modular_properties.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
     ConcentrationForm,
 )

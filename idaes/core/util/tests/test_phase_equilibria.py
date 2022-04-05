@@ -41,7 +41,7 @@ from idaes.models.properties.modular_properties.phase_equil.forms import \
 import idaes.models.properties.modular_properties.pure.NIST as NIST
 import idaes.models.properties.modular_properties.pure.RPP5 as RPP5
 
-from idaes.models.properties.modular_properties.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
         GenericParameterBlock)
 
 from idaes.core.util.phase_equilibria import (TXYDataClass, Txy_data)

@@ -20,7 +20,7 @@ from enum import Enum
 
 from pyomo.environ import log, value, Var
 
-from idaes.models.properties.modular_properties.generic.utility import StateIndex
+from idaes.models.properties.modular_properties.base.utility import StateIndex
 from idaes.core.util.exceptions import ConfigurationError
 
 

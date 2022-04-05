@@ -37,7 +37,7 @@ from idaes.models.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
 from idaes.models.unit_models.heat_exchanger_1D import WallConductionType
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
-from idaes.models.properties.modular_properties.generic.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
 from idaes.models.properties.modular_properties.examples.BT_PR import configuration
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,

@@ -36,7 +36,7 @@ from idaes.core import (
     ControlVolume1DBlock,
 )
 
-from idaes.models.properties.modular_properties.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
     StateIndex,
 )
@@ -46,7 +46,7 @@ from idaes.models.properties.modular_properties.pure import RPP4
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import van_t_hoff
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import power_law_equil
-from idaes.models.properties.modular_properties.generic.utility import ConcentrationForm
+from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
 
 from idaes.models.unit_models import Heater
 from idaes.core.util.model_statistics import degrees_of_freedom

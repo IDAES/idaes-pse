@@ -33,15 +33,15 @@ from idaes.core import AqueousPhase, VaporPhase
 from idaes.core.base.components import *
 
 from idaes.models.properties.modular_properties.state_definitions import FcTP
-from idaes.models.properties.modular_properties.generic.tests.dummy_eos import DummyEoS
+from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import van_t_hoff
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import power_law_equil
-from idaes.models.properties.modular_properties.generic.utility import ConcentrationForm
+from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
 
 from idaes.core import FlowsheetBlock
-from idaes.models.properties.modular_properties.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
     StateIndex,
 )

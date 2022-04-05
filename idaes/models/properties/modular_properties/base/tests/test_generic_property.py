@@ -21,11 +21,11 @@ from types import MethodType
 
 from pyomo.environ import value, Block, ConcreteModel, Param, Set, Var, units as pyunits
 
-from idaes.models.properties.modular_properties.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
     GenericStateBlock,
 )
-from idaes.models.properties.modular_properties.generic.tests.dummy_eos import DummyEoS
+from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
 from idaes.core import (
     declare_process_block_class,
@@ -413,7 +413,7 @@ class TestGenericParameterBlock(object):
 
         caplog.set_level(
             idaeslog.DEBUG,
-            logger=("idaes.models.properties.modular_properties." "generic.generic_property"),
+            logger=("idaes.models.properties.modular_properties.base.generic_property"),
         )
 
         # This will fail, but should set the reference pressure
@@ -460,7 +460,7 @@ class TestGenericParameterBlock(object):
 
         caplog.set_level(
             idaeslog.DEBUG,
-            logger=("idaes.models.properties.modular_properties." "generic.generic_property"),
+            logger=("idaes.models.properties.modular_properties.base.generic_property"),
         )
 
         # This will fail, but should set the reference pressure

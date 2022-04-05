@@ -24,8 +24,8 @@ from pyomo.environ import (
 )
 
 # Import IDAES cores
-from idaes.models.properties.modular_properties.generic.generic_property import GenericParameterBlock
-from idaes.models.properties.modular_properties.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
     ConcentrationForm,
 )

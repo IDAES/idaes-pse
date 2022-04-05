@@ -19,7 +19,7 @@ from pyomo.environ import Expression, log
 
 from idaes.core import Apparent
 from idaes.core.util.exceptions import ConfigurationError, PropertyNotSupportedError
-from idaes.models.properties.modular_properties.generic.utility import (
+from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
 )

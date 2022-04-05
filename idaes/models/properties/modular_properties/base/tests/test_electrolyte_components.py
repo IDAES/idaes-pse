@@ -25,11 +25,11 @@ from idaes.core import AqueousPhase, VaporPhase
 from idaes.core.base.components import *
 
 from idaes.models.properties.modular_properties.state_definitions import FTPx
-from idaes.models.properties.modular_properties.generic.tests.dummy_eos import DummyEoS
+from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 from idaes.core import FlowsheetBlock
-from idaes.models.properties.modular_properties.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
     StateIndex,
 )

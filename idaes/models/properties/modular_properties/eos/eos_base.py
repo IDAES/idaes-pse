@@ -18,7 +18,7 @@ some. EoS developers should overload all these methods.
 """
 from pyomo.environ import units as pyunits
 from idaes.core.util.constants import Constants as const
-from idaes.models.properties.modular_properties.generic.utility import (
+from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
 )
