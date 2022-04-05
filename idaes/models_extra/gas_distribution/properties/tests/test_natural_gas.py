@@ -150,6 +150,17 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
         m.state = m.properties.build_state_block()
         self.assertEqual(m.state.compressibility.value, 0.80)
 
+    def test_temperature_ref(self):
+        m = pyo.ConcreteModel()
+        m.properties = NaturalGasParameterBlock()
+        self.assertEqual(
+            pyo.value(m.properties.temperature_ref), 298.15
+        )
+        assert_units_equivalent(
+            m.properties.temperature_ref,
+            pyo.units.K,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

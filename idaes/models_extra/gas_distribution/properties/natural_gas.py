@@ -83,6 +83,8 @@ class NaturalGasParameterBlockData(PhysicalParameterBlock):
         ng.cv_mol_coef_C = Param(initialize=0.0, units=kJkmolK3)
         ng.cv_mol_coef_D = Param(initialize=0.0, units=kJkmolK4)
 
+        self.temperature_ref = Param(initialize=298.15, units=pyunits.K)
+
     @classmethod
     def define_metadata(cls, obj):
         kghr = pyunits.kg / pyunits.hr
