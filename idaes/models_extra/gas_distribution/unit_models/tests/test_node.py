@@ -34,7 +34,7 @@ from pyomo.util.check_units import assert_units_consistent
 from pyomo.util.subsystems import ParamSweeper
 
 import idaes.core as idaes
-from idaes.models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.generic.generic_property import (
     GenericParameterBlock,
 )
 from idaes.core.util.model_statistics import (

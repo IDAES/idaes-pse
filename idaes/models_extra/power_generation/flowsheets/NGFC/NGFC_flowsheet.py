@@ -51,10 +51,10 @@ from idaes.core.util.exceptions import InitializationError
 
 import idaes.core.util.scaling as iscale
 
-from idaes.models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.generic.generic_property import (
     GenericParameterBlock,
 )
-from idaes.models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.generic.generic_reaction import (
     GenericReactionParameterBlock,
 )
 

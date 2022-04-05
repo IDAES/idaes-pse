@@ -41,6 +41,7 @@ from idaes.core import (
     ProcessBlockData,
     UnitModelBlockData,
     useDefault,
+    UnitModelCostingBlock,  # TODO: Clean up in IDAES 2.0
 )
 from idaes.core.util.exceptions import PropertyNotSupportedError, InitializationError
 from idaes.core.util.config import is_physical_parameter_block
@@ -48,7 +49,6 @@ import idaes.logger as idaeslog
 from idaes.core.util import get_solver, scaling as iscale
 
 # TODO: Clean up in IDAES 2.0
-from idaes.models.costing import UnitModelCostingBlock
 import idaes.core.util.unit_costing as costing
 
 

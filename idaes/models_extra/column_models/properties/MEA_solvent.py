@@ -39,15 +39,15 @@ from pyomo.environ import exp, log, units as pyunits, Var, Expression
 # Import IDAES cores
 from idaes.core import AqueousPhase, Solvent, Solute, Anion, Cation
 
-from idaes.models.properties.core.state_definitions import FTPx
-from idaes.models.properties.core.generic.generic_property import StateIndex
-from idaes.models.properties.core.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.state_definitions import FTPx
+from idaes.models.properties.modular_properties.generic.generic_property import StateIndex
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
-from idaes.models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
-from idaes.models.properties.core.generic.utility import ConcentrationForm
-from idaes.models.properties.core.phase_equil.henry import HenryType
+from idaes.models.properties.modular_properties.generic.utility import ConcentrationForm
+from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
 
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog

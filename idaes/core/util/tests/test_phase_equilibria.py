@@ -29,19 +29,19 @@ from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core import LiquidPhase, VaporPhase, Component, PhaseType as PT
 
-from idaes.models.properties.core.state_definitions import FTPx
-from idaes.models.properties.core.eos.ideal import Ideal
-from idaes.models.properties.core.eos.ceos import Cubic, CubicType
-from idaes.models.properties.core.phase_equil import smooth_VLE
-from idaes.models.properties.core.phase_equil.bubble_dew import \
+from idaes.models.properties.modular_properties.state_definitions import FTPx
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
+from idaes.models.properties.modular_properties.phase_equil import smooth_VLE
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import \
         IdealBubbleDew, LogBubbleDew
-from idaes.models.properties.core.phase_equil.forms import \
+from idaes.models.properties.modular_properties.phase_equil.forms import \
     fugacity, log_fugacity
 
-import idaes.models.properties.core.pure.NIST as NIST
-import idaes.models.properties.core.pure.RPP5 as RPP5
+import idaes.models.properties.modular_properties.pure.NIST as NIST
+import idaes.models.properties.modular_properties.pure.RPP5 as RPP5
 
-from idaes.models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.generic.generic_property import (
         GenericParameterBlock)
 
 from idaes.core.util.phase_equilibria import (TXYDataClass, Txy_data)
