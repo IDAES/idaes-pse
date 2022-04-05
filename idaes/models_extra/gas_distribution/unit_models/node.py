@@ -371,17 +371,16 @@ class PipelineNodeData(UnitModelBlockData):
 
         """
         time = self.flowsheet().time
-
-        def get_enthalpy_rate(state):
-            return state.temperature * state.flow_mol * state.cp_mol
+        # We enforce that phase_list contains only "Vap"
+        p = next(iter(self.config.property_package.phase_list))
 
         def enthalpy_mixing_rule(b, t):
             supplies = [self.supplies[i].state[t] for i in self.supply_set]
             inlets = [self.inlets[i].state[t] for i in self.inlet_set]
             return (
-                sum(get_enthalpy_rate(supply) for supply in supplies)
-                + sum(get_enthalpy_rate(inlet) for inlet in inlets)
-                == get_enthalpy_rate(self.state[t])
+                sum(supply.get_enthalpy_flow_terms(p) for supply in supplies)
+                + sum(inlet.get_enthalpy_flow_terms(p) for inlet in inlets)
+                == self.state[t].get_enthalpy_flow_terms(p)
             )
 
         self.enthalpy_mixing_eq = Constraint(
