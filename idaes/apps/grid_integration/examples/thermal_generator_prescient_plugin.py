@@ -1,11 +1,14 @@
 import pandas as pd
 import pyomo.environ as pyo
+import os
 from pyomo.common.config import ConfigDict, ConfigValue
 from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder
 from idaes.apps.grid_integration import PlaceHolderForecaster
 from idaes.apps.grid_integration import DoubleLoopCoordinator
-from thermal_generator import ThermalGenerator
+from idaes.apps.grid_integration.examples.thermal_generator import ThermalGenerator
+
+this_module_dir = os.path.dirname(__file__)
 
 generator = "102_STEAM_3"
 tracking_horizon = 4
@@ -14,10 +17,12 @@ n_scenario = 10
 n_tracking_hour = 1
 
 # read generator param data
-rts_gmlc_dataframe = pd.read_csv("gen.csv")
+rts_gmlc_dataframe = pd.read_csv(os.path.join(this_module_dir, "gen.csv"))
 
 # create forecaster
-price_forecasts_df = pd.read_csv("lmp_forecasts_concat.csv")
+price_forecasts_df = pd.read_csv(
+    os.path.join(this_module_dir, "lmp_forecasts_concat.csv")
+)
 forecaster = PlaceHolderForecaster(price_forecasts_df=price_forecasts_df)
 
 # create solver
