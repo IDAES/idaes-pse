@@ -1,0 +1,7 @@
+Simulation_Parameters,Description,DAY_AHEAD,REAL_TIME
+Periods_per_Step,the number of discrete periods represented in each simulation step,24,1
+Period_Resolution,seconds per period,3600,300
+Date_From,simulation beginning period,01/01/2020 0:00,12/31/2020 0:00
+Date_To,simulation ending period (must account for lookahed data availability),01/01/2020 0:00,12/31/2020 0:00
+Look_Ahead_Periods_per_Step,the number of look ahead periods included in each optimization step,24,2
+Look_Ahead_Resolution,look-ahead period resolution,3600,300
