@@ -17,26 +17,31 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'MaterialBalanceType',
-    'idaes.core.base.control_volume_base.MaterialBalanceType',
-    version='2.0.0.alpha0')
+    "MaterialBalanceType",
+    "idaes.core.base.control_volume_base.MaterialBalanceType",
+    version="2.0.0.alpha0",
+)
 
 relocated_module_attribute(
-    'EnergyBalanceType',
-    'idaes.core.base.control_volume_base.EnergyBalanceType',
-    version='2.0.0.alpha0')
+    "EnergyBalanceType",
+    "idaes.core.base.control_volume_base.EnergyBalanceType",
+    version="2.0.0.alpha0",
+)
 
 relocated_module_attribute(
-    'MomentumBalanceType',
-    'idaes.core.base.control_volume_base.MomentumBalanceType',
-    version='2.0.0.alpha0')
+    "MomentumBalanceType",
+    "idaes.core.base.control_volume_base.MomentumBalanceType",
+    version="2.0.0.alpha0",
+)
 
 relocated_module_attribute(
-    'CONFIG_Template',
-    'idaes.core.base.control_volume_base.CONFIG_Template',
-    version='2.0.0.alpha0')
+    "CONFIG_Template",
+    "idaes.core.base.control_volume_base.CONFIG_Template",
+    version="2.0.0.alpha0",
+)
 
 relocated_module_attribute(
-    'ControlVolumeBlockData',
-    'idaes.core.base.control_volume_base.ControlVolumeBlockData',
-    version='2.0.0.alpha0')
+    "ControlVolumeBlockData",
+    "idaes.core.base.control_volume_base.ControlVolumeBlockData",
+    version="2.0.0.alpha0",
+)

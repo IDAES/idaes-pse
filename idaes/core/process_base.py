@@ -17,11 +17,13 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'MaterialFlowBasis',
-    'idaes.core.base.process_base.MaterialFlowBasis',
-    version='2.0.0.alpha0')
+    "MaterialFlowBasis",
+    "idaes.core.base.process_base.MaterialFlowBasis",
+    version="2.0.0.alpha0",
+)
 
 relocated_module_attribute(
-    'ProcessBlockData',
-    'idaes.core.base.process_base.ProcessBlockData',
-    version='2.0.0.alpha0')
+    "ProcessBlockData",
+    "idaes.core.base.process_base.ProcessBlockData",
+    version="2.0.0.alpha0",
+)

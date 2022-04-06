@@ -18,6 +18,7 @@ import pytest
 import idaes.ver as ver
 from idaes.core.util.env_info import EnvironmentInfo
 
+
 @pytest.mark.unit
 def test_env_info():
     x = EnvironmentInfo()

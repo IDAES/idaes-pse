@@ -16,7 +16,7 @@ Deprecation path for renamed module.
 from pyomo.common.deprecation import deprecation_warning
 
 deprecation_warning("The generic_models.properties.core.examples.HC_PR_vap has been "
-                    "moved to idaes.models.properties.core.examples.HC_PR_vap",
+                    "moved to idaes.models.properties.modular_properties.examples.HC_PR_vap",
                     version="2.0.0.alpha0")
 
-from idaes.models.properties.core.examples.HC_PR_vap import *
+from idaes.models.properties.modular_properties.examples.HC_PR_vap import *

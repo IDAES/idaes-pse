@@ -31,7 +31,9 @@ from pyomo.util.check_units import assert_units_consistent, assert_units_equival
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.heat_exchanger_ntu import HeatExchangerNTU as HXNTU
 
-from idaes.models.properties.core.generic.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 from idaes.models_extra.column_models.properties.MEA_solvent import (
     configuration as aqueous_mea,
 )

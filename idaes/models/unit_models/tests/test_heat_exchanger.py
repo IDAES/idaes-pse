@@ -52,8 +52,10 @@ from idaes.models.properties import iapws95
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
-from idaes.models.properties.core.generic.generic_property import GenericParameterBlock
-from idaes.models.properties.core.examples.BT_PR import configuration
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
+from idaes.models.properties.modular_properties.examples.BT_PR import configuration
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -67,12 +69,14 @@ from idaes.core.util.exceptions import InitializationError
 
 # Imports to assemble BT-PR with different units
 from idaes.core import LiquidPhase, VaporPhase, Component
-from idaes.models.properties.core.state_definitions import FTPx
-from idaes.models.properties.core.eos.ceos import Cubic, CubicType
-from idaes.models.properties.core.phase_equil import SmoothVLE
-from idaes.models.properties.core.phase_equil.bubble_dew import LogBubbleDew
-from idaes.models.properties.core.phase_equil.forms import log_fugacity
-import idaes.models.properties.core.pure.RPP4 as RPP
+from idaes.models.properties.modular_properties.state_definitions import FTPx
+from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
+from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    LogBubbleDew,
+)
+from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
+import idaes.models.properties.modular_properties.pure.RPP4 as RPP
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
 # -----------------------------------------------------------------------------

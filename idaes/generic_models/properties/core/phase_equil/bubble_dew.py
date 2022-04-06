@@ -16,7 +16,7 @@ Deprecation path for renamed module.
 from pyomo.common.deprecation import deprecation_warning
 
 deprecation_warning("The generic_models.properties.core.phase_equil.bubble_dew module has been "
-                    "moved to idaes.models.properties.core.phase_equil.bubble_dew",
+                    "moved to idaes.models.properties.modular_properties.phase_equil.bubble_dew",
                     version="2.0.0.alpha0")
 
-from idaes.models.properties.core.phase_equil.bubble_dew import *
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import *
