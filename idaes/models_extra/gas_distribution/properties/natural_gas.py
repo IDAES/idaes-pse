@@ -83,6 +83,8 @@ class NaturalGasParameterBlockData(PhysicalParameterBlock):
         ng.cv_mol_coef_C = Param(initialize=0.0, units=kJkmolK3)
         ng.cv_mol_coef_D = Param(initialize=0.0, units=kJkmolK4)
 
+        self.temperature_ref = Param(initialize=298.15, units=pyunits.K)
+
     @classmethod
     def define_metadata(cls, obj):
         kghr = pyunits.kg / pyunits.hr
@@ -424,3 +426,8 @@ class NaturalGasStateBlockData(StateBlockData):
 
     def get_material_flow_basis(self):
         return MaterialFlowBasis.molar
+
+    def get_enthalpy_flow_terms(self, p):
+        return (
+            self.temperature - self.config.parameters.temperature_ref
+        ) * self.cp_mol * self.flow_mol
