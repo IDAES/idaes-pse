@@ -17,8 +17,8 @@ import pyomo.environ as pyo
 from pyomo.network import Arc
 from idaes.power_generation.unit_models.helm import HelmValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
-from idaes.generic_models.unit_models import Heater
-from idaes.generic_models.properties import iapws95
+from idaes.models.unit_models import Heater
+from idaes.models.properties import iapws95
 from idaes.core.util import copy_port_values as _set_port, get_solver
 
 

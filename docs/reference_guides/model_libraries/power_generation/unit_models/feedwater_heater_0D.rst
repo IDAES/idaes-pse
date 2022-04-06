@@ -2,9 +2,9 @@ Feedwater Heater (0D)
 =====================
 
 .. index::
-    pair: idaes.power_generation.unit_models.feedwater_heater_0D;FWH0D
+    pair: idaes.models_extra.power_generation.unit_models.feedwater_heater_0D;FWH0D
 
-.. module:: idaes.power_generation.unit_models.feedwater_heater_0D
+.. module:: idaes.models_extra.power_generation.unit_models.feedwater_heater_0D
   :noindex:
 
 The FWH0D model is a 0D feedwater heater model suitable for steady state modeling.
@@ -33,11 +33,11 @@ are not necessarily realistic.
 
   import pyomo.environ as pyo
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.unit_models.heat_exchanger import (
+  from idaes.models.unit_models.heat_exchanger import (
       delta_temperature_underwood_callback,
       delta_temperature_lmtd_callback)
-  from idaes.generic_models.properties import iapws95
-  from idaes.power_generation.unit_models import FWH0D
+  from idaes.models.properties import iapws95
+  from idaes.models_extra.power_generation.unit_models import FWH0D
 
   def make_fwh_model():
       model = pyo.ConcreteModel()

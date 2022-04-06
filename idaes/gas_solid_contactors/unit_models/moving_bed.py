@@ -19,11 +19,15 @@ the gas-solid interaction between both phases through reaction, mass
 and heat transfer.
 
 Equations written in this model were derived from:
-A. Ostace, A. Lee, C.O. Okoli, A.P. Burgard, D.C. Miller, D. Bhattacharyya,
+(1) A. Ostace, A. Lee, C.O. Okoli, A.P. Burgard, D.C. Miller, D. Bhattacharyya,
 Mathematical modeling of a moving-bed reactor for chemical looping combustion
 of methane, in: M.R. Eden, M. Ierapetritou, G.P. Towler (Eds.),13th Int. Symp.
 Process Syst. Eng. (PSE 2018), Computer-Aided Chemical Engineering 2018,
 pp. 325–330 , San Diego, CA.
+(2) C.O. Okoli, A. Ostace, S. Nadgouda, A. Lee, A. Tong, A.P. Burgard,
+D. Bhattacharyya, D.C. Miller, 2020.
+A framework for the optimization of chemical looping combustion processes,
+Journal of Powder Technology, Vol. 365, pp 149 - 162.
 
 Assumptions:
 Property package contains temperature and pressure variables.
@@ -38,7 +42,7 @@ import matplotlib.pyplot as plt
 # Import Pyomo libraries
 from pyomo.environ import (Var, Param, Reals, value,
                            TransformationFactory, Constraint,
-                           check_optimal_termination)
+                           check_optimal_termination, units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae import ContinuousSet
@@ -55,12 +59,13 @@ from idaes.core import (ControlVolume1DBlock,
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
-                                        BurntToast)
+                                        BurntToast,
+                                        InitializationError)
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_abs
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
 
 __author__ = "Chinedu Okoli", "Anca Ostace"
 
@@ -178,7 +183,7 @@ constructed,
 **default** - "simple_correlation".
 **Valid values:** {
 **"simple_correlation"** - Use a simplified pressure drop correlation,
-**"ergun_correlation"** - Use the ergun equation.}"""))
+**"ergun_correlation"** - Use the Ergun equation.}"""))
 
     # Create template for phase specific config arguments
     _PhaseTemplate = UnitModelBlockData.CONFIG()
@@ -246,7 +251,7 @@ see reaction package for documentation.}"""))
             None
         """
         # Call UnitModel.build to build default attributes
-        super(MBRData, self).build()
+        super().build()
 
         # Consistency check for transformation method and transformation scheme
         if (self.config.transformation_method == "dae.finite_difference" and
@@ -320,6 +325,13 @@ see reaction package for documentation.}"""))
         else:
             has_heat_of_reaction_solid_phase = False
 
+        # local aliases used to shorten object names
+        solid_phase = self.config.solid_phase_config
+
+        # Get units meta data from property packages
+        units_meta_solid = \
+            solid_phase.property_package.get_metadata().get_derived_units
+
         # Create a unit model length domain
         self.length_domain = ContinuousSet(
                                 bounds=(0.0, 1.0),
@@ -327,7 +339,8 @@ see reaction package for documentation.}"""))
                                 doc="Normalized length domain")
 
         self.bed_height = Var(domain=Reals, initialize=1,
-                              doc='Bed length [m]')
+                              doc='Bed length',
+                              units=units_meta_solid('length'))
 
     # =========================================================================
         """ Build Control volume 1D for gas phase and
@@ -508,55 +521,70 @@ see reaction package for documentation.}"""))
         gas_phase = self.config.gas_phase_config
         solid_phase = self.config.solid_phase_config
 
+        # Get units meta data from property packages
+        units_meta_gas = \
+            gas_phase.property_package.get_metadata().get_derived_units
+        units_meta_solid = \
+            solid_phase.property_package.get_metadata().get_derived_units
+
         # Declare Mutable Parameters
         self.eps = Param(mutable=True,
                          default=1e-8,
-                         doc='Smoothing Factor for Smooth IF Statements')
+                         doc='Smoothing Factor for Smooth IF Statements',
+                         units=pyunits.dimensionless)
 
         # Unit Model variables
-        self.bed_diameter = Var(domain=Reals,
-                                initialize=1,
-                                doc='Reactor diameter [m]')
+        self.bed_diameter = Var(initialize=1,
+                                doc='Reactor diameter',
+                                units=units_meta_solid('length'))
         self.bed_area = Var(domain=Reals,
                             initialize=1,
-                            doc='Reactor cross-sectional area [m2]')
+                            doc='Reactor cross-sectional area',
+                            units=units_meta_solid('area'))
 
         # Phase specific variables
         self.velocity_superficial_gas = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals, initialize=0.05,
-                doc='Gas superficial velocity [m/s]')
+                doc='Gas superficial velocity',
+                units=units_meta_gas('velocity'))
         self.velocity_superficial_solid = Var(
                 self.flowsheet().time,
                 domain=Reals, initialize=0.005,
-                doc='Solid superficial velocity [m/s]')
+                doc='Solid superficial velocity',
+                units=units_meta_solid('velocity'))
 
         # Dimensionless numbers, mass and heat transfer coefficients
         self.Re_particle = Var(self.flowsheet().time,
                                self.length_domain,
                                domain=Reals, initialize=1.0,
-                               doc='Particle Reynolds number [-]')
+                               doc='Particle Reynolds number',
+                               units=pyunits.dimensionless)
 
-        self.Pr = Var(self.flowsheet().time,
-                      self.length_domain,
-                      domain=Reals, initialize=1.0,
-                      doc='Prandtl number of gas in bed [-]')
+        self.Pr_particle = Var(self.flowsheet().time,
+                               self.length_domain,
+                               domain=Reals, initialize=1.0,
+                               doc='Prandtl number of gas in bed',
+                               units=pyunits.dimensionless)
 
         self.Nu_particle = Var(self.flowsheet().time,
                                self.length_domain,
                                domain=Reals, initialize=1.0,
-                               doc='Particle Nusselt number [-]')
+                               doc='Particle Nusselt number',
+                               units=pyunits.dimensionless)
         self.gas_solid_htc = Var(self.flowsheet().time,
                                  self.length_domain,
-                                 domain=Reals, initialize=1.0E3,
-                                 doc='Gas-solid heat transfer coefficient'
-                                 '[J/(m2Ks)]')
+                                 domain=Reals, initialize=1.0,
+                                 doc='Gas-solid heat transfer coefficient',
+                                 units=units_meta_gas(
+                                     'heat_transfer_coefficient'))
 
         # Fixed variables (these are parameters that can be estimated)
         self.bed_voidage = Var(domain=Reals,
                                initialize=0.4,
-                               doc="Bed voidage [-]")
+                               doc="Bed voidage",
+                               units=pyunits.dimensionless)
         self.bed_voidage.fix()
 
     # =========================================================================
@@ -577,7 +605,9 @@ see reaction package for documentation.}"""))
                          doc="Gas side area")
         def gas_phase_area(b, t, x):
             return (b.gas_phase.area[t, x] ==
-                    b.bed_area*b.bed_voidage)
+                    pyunits.convert(b.bed_area,
+                                    to_units=units_meta_gas('area')) *
+                    b.bed_voidage)
 
         @self.Constraint(self.flowsheet().time,
                          self.length_domain,
@@ -594,7 +624,9 @@ see reaction package for documentation.}"""))
                          self.length_domain,
                          doc="Gas superficial velocity")
         def gas_super_vel(b, t, x):
-            return (b.velocity_superficial_gas[t, x] * b.bed_area *
+            return (b.velocity_superficial_gas[t, x] *
+                    pyunits.convert(b.bed_area,
+                                    to_units=units_meta_gas('area')) *
                     b.gas_phase.properties[t, x].dens_mol ==
                     b.gas_phase.properties[t, x].flow_mol)
 
@@ -620,9 +652,15 @@ see reaction package for documentation.}"""))
                              doc="Gas side pressure drop calculation -"
                                  "simplified pressure drop")
             def gas_phase_config_pressure_drop(b, t, x):
-                return b.gas_phase.deltaP[t, x] == -0.2*(
+                #  0.2/s is a unitted constant in the correlation
+                return pyunits.convert(
+                    b.gas_phase.deltaP[t, x],
+                    to_units=units_meta_solid('pressure') /
+                    units_meta_solid('length')) == -(0.2/pyunits.s)*(
                         b.velocity_superficial_gas[t, x] *
-                        (b.solid_phase.properties[t, x].dens_mass_particle -
+                        (pyunits.convert(
+                            b.solid_phase.properties[t, x].dens_mass_particle,
+                            to_units=units_meta_solid('density_mass')) -
                          b.gas_phase.properties[t, x].dens_mass))
         elif (self.config.has_pressure_change and
               self.config.pressure_drop_type == "ergun_correlation"):
@@ -630,23 +668,40 @@ see reaction package for documentation.}"""))
             @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Gas side pressure drop calculation -"
-                                 "ergun equation")
+                                 "Ergun equation")
             def gas_phase_config_pressure_drop(b, t, x):
-                return (1e2*-b.gas_phase.deltaP[t, x] ==
-                        1e2*(
-                        150*(1 - b.bed_voidage) ** 2 *
+                return (-pyunits.convert(
+                    b.gas_phase.deltaP[t, x],
+                    to_units=units_meta_solid('pressure') /
+                    units_meta_solid('length')) ==
+                        (
+                        (150 * pyunits.dimensionless) *
+                        (1 - b.bed_voidage) ** 2 *
                         b.gas_phase.properties[t, x].visc_d *
                         (b.velocity_superficial_gas[t, x] +
-                         b.velocity_superficial_solid[t]) /
-                        (b.solid_phase.properties[t, x].
-                         _params.particle_dia ** 2 * b.bed_voidage ** 3)) +
-                        1e2*(
-                        1.75*b.gas_phase.properties[t, x].dens_mass *
+                         pyunits.convert(
+                              b.velocity_superficial_solid[t],
+                              to_units=units_meta_solid('velocity'))
+                         ) /
+                        (pyunits.convert(
+                            b.solid_phase.properties[t, x].
+                            _params.particle_dia,
+                            to_units=units_meta_solid('length')
+                                          ) **
+                         2 * b.bed_voidage ** 3)) +
+                        (
+                        (1.75 * pyunits.dimensionless) *
+                        b.gas_phase.properties[t, x].dens_mass *
                         (1 - b.bed_voidage) *
                         (b.velocity_superficial_gas[t, x] +
-                         b.velocity_superficial_solid[t]) ** 2 /
-                        (b.solid_phase.properties[t, x]._params.particle_dia *
+                         pyunits.convert(b.velocity_superficial_solid[t],
+                                         to_units=units_meta_solid('velocity'))
+                         ) ** 2 /
+                        (pyunits.convert(b.solid_phase.properties[t, x].
+                         _params.particle_dia,
+                         to_units=units_meta_solid('length')) *
                          b.bed_voidage**3)))
+            #             to_units=deltaP_units)
             # The above expression has no absolute values - assumes:
             # (velocity_superficial_gas + velocity_superficial_solid) > 0
         else:
@@ -665,7 +720,7 @@ see reaction package for documentation.}"""))
                              gas_phase.reaction_package.rate_reaction_idx,
                              doc="Gas side rate reaction extent")
             def gas_phase_config_rxn_ext(b, t, x, r):
-                return 1e3*b.gas_phase.rate_reaction_extent[t, x, r] == 1e3*(
+                return b.gas_phase.rate_reaction_extent[t, x, r] == (
                         b.gas_phase.reactions[t, x].reaction_rate[r] *
                         b.gas_phase.area[t, x])
 
@@ -677,7 +732,7 @@ see reaction package for documentation.}"""))
                              solid_phase.reaction_package.rate_reaction_idx,
                              doc="Solid side rate reaction extent")
             def solid_phase_config_rxn_ext(b, t, x, r):
-                return 1e3*b.solid_phase.rate_reaction_extent[t, x, r] == 1e3*(
+                return b.solid_phase.rate_reaction_extent[t, x, r] == (
                         b.solid_phase.reactions[t, x].reaction_rate[r] *
                         b.solid_phase.area[t, x])
 
@@ -689,7 +744,7 @@ see reaction package for documentation.}"""))
                              doc='Gas side heterogeneous'
                              'rate reaction generation')
             def gas_comp_hetero_rxn(b, t, x, p, j):
-                return 1e3*b.gas_phase.mass_transfer_term[t, x, p, j] == 1e3*(
+                return b.gas_phase.mass_transfer_term[t, x, p, j] == (
                         sum(b.solid_phase.reactions[t, x].
                             rate_reaction_stoichiometry[r, p, j] *
                             b.solid_phase.reactions[t, x].reaction_rate[r]
@@ -704,12 +759,20 @@ see reaction package for documentation.}"""))
                              self.length_domain,
                              doc="Solid phase - gas to solid heat transfer")
             def solid_phase_heat_transfer(b, t, x):
-                return (b.solid_phase.heat[t, x] *
-                        b.solid_phase.properties[t, x]._params.particle_dia ==
+                return (pyunits.convert(b.solid_phase.heat[t, x],
+                                        to_units=units_meta_gas('power') /
+                                        units_meta_gas('length')) *
+                        pyunits.convert(b.solid_phase.properties[t, x]
+                                        ._params.particle_dia,
+                                        to_units=units_meta_gas('length')) ==
                         6 * b.gas_solid_htc[t, x] *
                         (b.gas_phase.properties[t, x].temperature -
-                         b.solid_phase.properties[t, x].temperature) *
-                        b.solid_phase.area[t, x])
+                         pyunits.convert(b.solid_phase.properties[t, x]
+                                         .temperature,
+                                         to_units=units_meta_gas('temperature')
+                                         )) *
+                        pyunits.convert(b.solid_phase.area[t, x],
+                                        to_units=units_meta_gas('area')))
 
             # Dimensionless numbers, mass and heat transfer coefficients
             # Particle Reynolds number
@@ -720,7 +783,9 @@ see reaction package for documentation.}"""))
                 return (b.Re_particle[t, x] *
                         b.gas_phase.properties[t, x].visc_d ==
                         b.velocity_superficial_gas[t, x] *
-                        b.solid_phase.properties[t, x]._params.particle_dia *
+                        pyunits.convert(b.solid_phase.properties[t, x]
+                                        ._params.particle_dia,
+                                        to_units=units_meta_gas('length')) *
                         b.gas_phase.properties[t, x].dens_mass)
 
             # Prandtl number
@@ -728,7 +793,7 @@ see reaction package for documentation.}"""))
                              self.length_domain,
                              doc="Prandtl number of gas in bed")
             def prandtl_number(b, t, x):
-                return (b.Pr[t, x] *
+                return (b.Pr_particle[t, x] *
                         b.gas_phase.properties[t, x].therm_cond ==
                         b.gas_phase.properties[t, x].cp_mass *
                         b.gas_phase.properties[t, x].visc_d)
@@ -741,16 +806,18 @@ see reaction package for documentation.}"""))
                 return (b.Nu_particle[t, x] ** 3 ==
                         (2.0 + 1.1 * (smooth_abs(b.Re_particle[t, x], b.eps) **
                                       0.6) ** 3) *
-                        b.Pr[t, x])
+                        b.Pr_particle[t, x])
 
             # Gas-solid heat transfer coefficient
             @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Gas-solid heat transfer coefficient")
             def gas_solid_htc_eqn(b, t, x):
-                return (1e-3*b.gas_solid_htc[t, x] *
-                        b.solid_phase.properties[t, x]._params.particle_dia ==
-                        1e-3 * b.Nu_particle[t, x] *
+                return (b.gas_solid_htc[t, x] *
+                        pyunits.convert(b.solid_phase.properties[t, x]
+                                        ._params.particle_dia,
+                                        to_units=units_meta_gas('length')) ==
+                        b.Nu_particle[t, x] *
                         b.gas_phase.properties[t, x].therm_cond)
 
             # Gas phase - gas to solid heat transfer
@@ -759,14 +826,21 @@ see reaction package for documentation.}"""))
                              doc="Gas phase - gas to solid heat transfer")
             def gas_phase_heat_transfer(b, t, x):
                 return (b.gas_phase.heat[t, x] *
-                        b.solid_phase.properties[t, x]._params.particle_dia ==
+                        pyunits.convert(b.solid_phase.properties[t, x]
+                                        ._params.particle_dia,
+                                        to_units=units_meta_gas('length')) ==
                         -6 * b.gas_solid_htc[t, x] *
                         (b.gas_phase.properties[t, x].temperature -
-                         b.solid_phase.properties[t, x].temperature) *
-                        b.solid_phase.area[t, x])
+                         pyunits.convert(b.solid_phase.properties[t, x]
+                                         .temperature,
+                                         to_units=units_meta_gas('temperature')
+                                         )) *
+                        pyunits.convert(b.solid_phase.area[t, x],
+                                        to_units=units_meta_gas('area')))
 
         elif self.config.energy_balance_type == EnergyBalanceType.none:
-            # If energy balance is none fix gas and solid temperatures to inlet
+            # If energy balance is none fix gas and solid temperatures to
+            # solid inlet temperature
             @self.Constraint(
                     self.flowsheet().time,
                     self.length_domain,
@@ -777,7 +851,7 @@ see reaction package for documentation.}"""))
                 else:
                     return (
                             b.gas_phase.properties[t, x].temperature ==
-                            b.gas_inlet.temperature[t])
+                            b.solid_inlet.temperature[t])
 
             @self.Constraint(
                     self.flowsheet().time,
@@ -794,8 +868,9 @@ see reaction package for documentation.}"""))
     # =========================================================================
     # Model initialization routine
 
-    def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
-                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
+    def initialize_build(blk, gas_phase_state_args=None,
+                         solid_phase_state_args=None,
+                         outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
         Initialization routine for MB unit.
 
@@ -808,7 +883,7 @@ see reaction package for documentation.}"""))
                         property package(s) to provide an initial state for
                         initialization (see documentation of the specific
                         property package) (default = None).
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default=None, use
                      default solver options)
             solver : str indicating which solver to use during
@@ -890,7 +965,7 @@ see reaction package for documentation.}"""))
                         idaeslog.condition(results))
                         )
         else:
-            _log.warning('{} Initialisation Step 2 Failed.'
+            _log.warning('{} Initialization Step 2 Failed.'
                          .format(blk.name))
 
         # ---------------------------------------------------------------------
@@ -947,7 +1022,7 @@ see reaction package for documentation.}"""))
                         idaeslog.condition(results))
                         )
         else:
-            _log.warning('{} Initialisation Step 3a Failed.'
+            _log.warning('{} Initialization Step 3a Failed.'
                          .format(blk.name))
 
         # Initialize mass balance - with reaction and no pressure drop
@@ -1056,7 +1131,7 @@ see reaction package for documentation.}"""))
                             idaeslog.condition(results))
                             )
             else:
-                _log.warning('{} Initialisation Step 3b Failed.'
+                _log.warning('{} Initialization Step 3b Failed.'
                              .format(blk.name))
 
         # Initialize mass balance - with pressure drop
@@ -1068,9 +1143,6 @@ see reaction package for documentation.}"""))
                     blk.gas_phase.properties[t, x].pressure.unfix()
 
         blk.gas_phase.pressure_balance.activate()
-
-        # Set scaling factors for pressure balance equation
-        blk.gas_phase.scaling_factor_pressure = 1e2
 
         if blk.config.has_pressure_change:
             blk.gas_phase_config_pressure_drop.activate()
@@ -1091,7 +1163,7 @@ see reaction package for documentation.}"""))
                             idaeslog.condition(results))
                             )
             else:
-                _log.warning('{} Initialisation Step 3c Failed.'
+                _log.warning('{} Initialization Step 3c Failed.'
                              .format(blk.name))
         # ---------------------------------------------------------------------
         # Initialize energy balance
@@ -1104,7 +1176,7 @@ see reaction package for documentation.}"""))
                         blk.Re_particle[t, x],
                         blk.reynolds_number_particle[t, x])
                     calculate_variable_from_constraint(
-                        blk.Pr[t, x],
+                        blk.Pr_particle[t, x],
                         blk.prandtl_number[t, x])
                     calculate_variable_from_constraint(
                         blk.Nu_particle[t, x],
@@ -1154,8 +1226,9 @@ see reaction package for documentation.}"""))
                             idaeslog.condition(results))
                             )
             else:
-                _log.warning('{} Initialisation Step 4 Failed.'
-                             .format(blk.name))
+                raise InitializationError(
+                    f"{blk.name} failed to initialize successfully. Please "
+                    f"check the output logs for more information.")
 
         # Initialize energy balance
         if blk.config.energy_balance_type == EnergyBalanceType.none:
@@ -1183,8 +1256,254 @@ see reaction package for documentation.}"""))
                             idaeslog.condition(results))
                             )
             else:
-                _log.warning('{} Initialisation Step 4 Failed.'
-                             .format(blk.name))
+                raise InitializationError(
+                    f"{blk.name} failed to initialize successfully. Please "
+                    f"check the output logs for more information.")
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        # local aliases used to shorten object names
+        gas_phase = self.config.gas_phase_config
+
+        # Get units meta data from property packages
+        units_meta_gas = \
+            gas_phase.property_package.get_metadata().get_derived_units
+
+        # scale some variables
+        if hasattr(self, "bed_diameter"):
+            if iscale.get_scaling_factor(self.bed_diameter) is None:
+                sf = 1/value(self.bed_diameter)
+                iscale.set_scaling_factor(self.bed_diameter, 1e-1 * sf)
+
+        if hasattr(self, "bed_area"):
+            if iscale.get_scaling_factor(self.bed_area) is None:
+                sf = 1/value(constants.pi*(0.5*self.bed_diameter)**2)
+                iscale.set_scaling_factor(self.bed_area, 1e-1 * sf)
+
+        if hasattr(self.gas_phase, "area"):
+            if iscale.get_scaling_factor(self.gas_phase.area) is None:
+                sf = iscale.get_scaling_factor(self.bed_area)
+                iscale.set_scaling_factor(self.gas_phase.area, sf)
+
+        if hasattr(self.solid_phase, "area"):
+            if iscale.get_scaling_factor(self.solid_phase.area) is None:
+                sf = iscale.get_scaling_factor(self.bed_area)
+                iscale.set_scaling_factor(self.solid_phase.area, sf)
+
+        if self.config.energy_balance_type != EnergyBalanceType.none:
+            if hasattr(self, "Re_particle"):
+                for (t, x), v in self.Re_particle.items():
+                    if iscale.get_scaling_factor(v) is None:
+                        sf1 = iscale.get_scaling_factor(
+                            self.gas_phase.properties[t, x].dens_mass)
+                        sf2 = 1/value(
+                            pyunits.convert(
+                                self.solid_phase.properties[t, x]
+                                ._params.particle_dia,
+                                to_units=units_meta_gas('length')))
+                        iscale.set_scaling_factor(v, 1e-1 * sf1 * sf2)
+
+            if hasattr(self, "Pr_particle"):
+                for (t, x), v in self.Pr_particle.items():
+                    if iscale.get_scaling_factor(v) is None:
+                        sf1 = iscale.get_scaling_factor(
+                            self.gas_phase.properties[t, x].cp_mass)
+                        sf2 = iscale.get_scaling_factor(
+                            self.gas_phase.properties[t, x].visc_d)
+                        iscale.set_scaling_factor(v, sf1 * sf2)
+
+            if hasattr(self, "Nu_particle"):
+                for (t, x), v in self.Nu_particle.items():
+                    if iscale.get_scaling_factor(v) is None:
+                        sf = 1/(value(
+                            ((2.0 + 1.1 *
+                              (smooth_abs(self.Re_particle[t, x],
+                                          self.eps) ** 0.6
+                               ) ** 3
+                              ) * self.Pr_particle[t, x]) ** (1/3)
+                            )
+                            )
+                        iscale.set_scaling_factor(v, 1e-1 * sf)
+
+            if hasattr(self, "gas_solid_htc"):
+                if iscale.get_scaling_factor(self.gas_solid_htc) is None:
+                    for (t, x), v in self.gas_solid_htc.items():
+                        sf1 = iscale.get_scaling_factor(
+                            self.Nu_particle[t, x])
+                        sf2 = iscale.get_scaling_factor(
+                            self.gas_phase.properties[t, x].therm_cond)
+                        iscale.set_scaling_factor(v, sf1 * sf2)
+
+            # scale heat variables in CV1D
+            for (t, x), v in self.gas_phase.heat.items():
+                sf1 = iscale.get_scaling_factor(
+                    self.gas_phase.properties[t, x].enth_mol)
+                sf2 = iscale.get_scaling_factor(
+                    self.gas_phase.properties[t, x].flow_mol)
+                iscale.set_scaling_factor(v, sf1 * sf2)
+
+            for (t, x), v in self.solid_phase.heat.items():
+                sf1 = iscale.get_scaling_factor(
+                    self.solid_phase.properties[t, x].enth_mass)
+                sf2 = iscale.get_scaling_factor(
+                    self.solid_phase.properties[t, x].flow_mass)
+                iscale.set_scaling_factor(v, sf1 * sf2)
+
+        # Scale some constraints
+        if hasattr(self, "bed_area_eqn"):
+            for c in self.bed_area_eqn.values():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bed_area),
+                    overwrite=False
+                )
+
+        if hasattr(self, "gas_phase_area"):
+            for (t, x), c in self.gas_phase_area.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bed_area),
+                    overwrite=False
+                )
+
+        if hasattr(self, "solid_phase_area"):
+            for (t, x), c in self.solid_phase_area.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.bed_area),
+                    overwrite=False
+                )
+
+        if hasattr(self, "gas_super_vel"):
+            for (t, x), c in self.gas_super_vel.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_phase.properties[t, x].flow_mol),
+                    overwrite=False
+                )
+
+        if hasattr(self, "solid_super_vel"):
+            for (t, x), c in self.solid_super_vel.items():
+                iscale.constraint_scaling_transform(
+                    c, 1e-1 *
+                    iscale.get_scaling_factor(
+                        self.solid_phase.properties[t, x].flow_mass),
+                    overwrite=False
+                )
+
+        if hasattr(self, "gas_phase_config_pressure_drop"):
+            for (t, x), c in self.gas_phase_config_pressure_drop.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_phase.deltaP[t, x]),
+                    overwrite=False
+                )
+
+        if hasattr(self, "gas_phase_config_rxn_ext"):
+            for (t, x, r), c in self.gas_phase_config_rxn_ext.items():
+                sf1 = iscale.get_scaling_factor(
+                    self.gas_phase.reactions[t, x].reaction_rate[r])
+                sf2 = iscale.get_scaling_factor(self.bed_area)
+                iscale.constraint_scaling_transform(
+                    c, sf1 * sf2, overwrite=False
+                )
+
+        if hasattr(self, "solid_phase_config_rxn_ext"):
+            for (t, x, r), c in self.solid_phase_config_rxn_ext.items():
+                sf1 = iscale.get_scaling_factor(
+                    self.solid_phase.reactions[t, x].reaction_rate[r])
+                sf2 = iscale.get_scaling_factor(self.bed_area)
+                iscale.constraint_scaling_transform(
+                    c, sf1 * sf2, overwrite=False
+                )
+
+        if hasattr(self, "gas_comp_hetero_rxn"):
+            for (t, x, p, j), c in self.gas_comp_hetero_rxn.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.gas_phase.mass_transfer_term[t, x, p, j]),
+                    overwrite=False
+                )
+
+        if self.config.energy_balance_type != EnergyBalanceType.none:
+            if hasattr(self, "reynolds_number_particle"):
+                for (t, x), c in self.reynolds_number_particle.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.Re_particle[t, x]),
+                        overwrite=False
+                        )
+
+            if hasattr(self, "prandtl_number"):
+                for (t, x), c in self.prandtl_number.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.Pr_particle[t, x]),
+                        overwrite=False
+                        )
+
+            if hasattr(self, "nusselt_number_particle"):
+                for (t, x), c in self.nusselt_number_particle.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.Nu_particle[t, x]),
+                        overwrite=False
+                        )
+
+            if hasattr(self, "gas_solid_htc_eqn"):
+                for (t, x), c in self.gas_solid_htc_eqn.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_solid_htc[t, x]),
+                        overwrite=False
+                        )
+
+            if hasattr(self, "gas_phase_heat_transfer"):
+                for (t, x), c in self.gas_phase_heat_transfer.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_phase.heat[t, x]),
+                        overwrite=False
+                        )
+
+            if hasattr(self, "solid_phase_heat_transfer"):
+                for (t, x), c in self.solid_phase_heat_transfer.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.solid_phase.heat[t, x]),
+                        overwrite=False
+                        )
+
+        elif self.config.energy_balance_type == EnergyBalanceType.none:
+            if hasattr(self, "isothermal_gas_phase"):
+                for (t, x), c in self.isothermal_gas_phase.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_phase.properties[t, x].temperature),
+                        overwrite=False
+                        )
+
+            if hasattr(self, "isothermal_solid_phase"):
+                for (t, x), c in self.isothermal_solid_phase.items():
+                    iscale.constraint_scaling_transform(
+                        c,
+                        iscale.get_scaling_factor(
+                            self.gas_phase.properties[t, x].temperature),
+                        overwrite=False
+                        )
 
     def results_plot(blk):
         '''

@@ -2,14 +2,14 @@ Heat Exchanger (Lumped Capacitance)
 ===================================
 
 .. index::
-   pair: idaes.generic_models.unit_models.heat_exchanger_lc;HeatExchangerLumpedCapacitance
+   pair: idaes.models.unit_models.heat_exchanger_lc;HeatExchangerLumpedCapacitance
 
-.. currentmodule:: idaes.generic_models.unit_models.heat_exchanger_lc
+.. currentmodule:: idaes.models.unit_models.heat_exchanger_lc
 
 Author: `Rusty Gentile <https://github.com/rustygentile>`_
 
-The ``HeatExchangerLumpedCapacitance`` model can be imported from :code:`idaes.generic_models.unit_models`.
-This model is an extension of ``idaes.generic_models.unit_models.heat_exchanger``,
+The ``HeatExchangerLumpedCapacitance`` model can be imported from :code:`idaes.models.unit_models`.
+This model is an extension of ``idaes.models.unit_models.heat_exchanger``,
 with wall temperature and heat holdup terms added for use in transient simulations. Using the electric 
 circuit analogy, heat stored in the wall material is similar to charge in a capacitor.
 
@@ -113,10 +113,10 @@ variables of the hot and cold sides should also be fixed.
   
   import pyomo.environ as pe
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.unit_models import HeatExchangerLumpedCapacitance, HeatExchangerFlowPattern
-  from idaes.generic_models.unit_models.heat_exchanger import delta_temperature_lmtd_callback
-  from idaes.generic_models.properties import swco2
-  from idaes.power_generation.properties import FlueGasParameterBlock
+  from idaes.models.unit_models import HeatExchangerLumpedCapacitance, HeatExchangerFlowPattern
+  from idaes.models.unit_models.heat_exchanger import delta_temperature_lmtd_callback
+  from idaes.models.properties import swco2
+  from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
   from idaes.core.util.plot import plot_grid_dynamic
   
   m = pe.ConcreteModel()

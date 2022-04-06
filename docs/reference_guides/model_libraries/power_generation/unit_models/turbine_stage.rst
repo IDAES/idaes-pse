@@ -2,9 +2,9 @@ Turbine (Stage)
 ===============
 
 .. index::
-  pair: idaes.power_generation.unit_models.helm.turbine_stage;HelmTurbineStage
+  pair: idaes.models_extra.power_generation.unit_models.helm.turbine_stage;HelmTurbineStage
 
-.. module:: idaes.power_generation.unit_models.helm.turbine_stage
+.. module:: idaes.models_extra.power_generation.unit_models.helm.turbine_stage
 
 This is a steam power generation turbine model for intermediate stages between the
 inlet and outlet.  It inherits `HelmIsentropicTurbine
@@ -18,8 +18,8 @@ Example
     from pyomo.environ import ConcreteModel, SolverFactory
 
     from idaes.core import FlowsheetBlock
-    from idaes.power_generation.unit_models.helm import HelmTurbineStage
-    from idaes.generic_models.properties import iapws95
+    from idaes.models_extra.power_generation.unit_models.helm import HelmTurbineStage
+    from idaes.models.properties import iapws95
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})

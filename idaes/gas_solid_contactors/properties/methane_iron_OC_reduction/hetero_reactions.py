@@ -509,14 +509,7 @@ class ReactionBlockData(ReactionBlockDataBase):
         _set_default_factor(self.k_rxn, 1e3)
         _set_default_factor(self.OC_conv, 1e3)
         _set_default_factor(self.OC_conv_temp, 1e3)
-        _set_default_factor(self.reaction_rate, 1e2)
-
-        if self.is_property_constructed("rate_constant_eqn"):
-            for i, c in self.rate_constant_eqn.items():
-                iscale.constraint_scaling_transform(
-                    c,
-                    iscale.get_scaling_factor(self.k_rxn[i]),
-                    overwrite=False)
+        _set_default_factor(self.reaction_rate, 1e-2)
 
         if self.is_property_constructed("OC_conv_eqn"):
             iscale.constraint_scaling_transform(
@@ -529,6 +522,13 @@ class ReactionBlockData(ReactionBlockDataBase):
                 self.OC_conv_temp_eqn,
                 iscale.get_scaling_factor(self.OC_conv_temp),
                 overwrite=False)
+
+        if self.is_property_constructed("rate_constant_eqn"):
+            for i, c in self.rate_constant_eqn.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(self.k_rxn[i]),
+                    overwrite=False)
 
         if self.is_property_constructed("gen_rate_expression"):
             for i, c in self.gen_rate_expression.items():

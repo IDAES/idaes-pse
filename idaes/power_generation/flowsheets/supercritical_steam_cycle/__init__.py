@@ -10,7 +10,14 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from idaes.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle import (
+from pyomo.common.deprecation import deprecation_warning
+
+deprecation_warning("The supercritical_steam_cycle module has been moved to "
+                    "idaes.models_extra.power_generation.flowsheets."
+                    "supercritical_steam_cycle",
+                    version="2.0.0.alpha0")
+
+from idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle import (
     main,
     pfd_result,
     create_stream_table_dataframe,

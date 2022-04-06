@@ -25,7 +25,7 @@ Variables
 
 Translator blocks add no additional Variables.
 
-.. module:: idaes.generic_models.unit_models.translator
+.. module:: idaes.models.unit_models.translator
 
 Translator Class
 ----------------

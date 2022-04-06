@@ -2,9 +2,9 @@ Heater
 ======
 
 .. index::
-  pair: idaes.generic_models.unit_models.heater;Heater
+  pair: idaes.models.unit_models.heater;Heater
 
-.. module:: idaes.generic_models.unit_models.heater
+.. module:: idaes.models.unit_models.heater
 
 The Heater model is a simple 0D model that adds or removes heat from a
 material stream.
@@ -16,8 +16,8 @@ Example
 
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlock
-  from idaes.generic_models.unit_models import Heater
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.unit_models import Heater
+  from idaes.models.properties import iapws95
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()
