@@ -29,7 +29,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import Unit Model Modules
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 
 from idaes.models_extra.power_generation.unit_models.helm.phase_separator import (
     HelmPhaseSeparator,

@@ -2,9 +2,9 @@ Pure Component Helmholtz EoS
 ============================
 
 .. index::
-  pair: idaes.generic_models.properties.helmholtz.helmholtz; HelmholtzStateBlock
+  pair: idaes.models.properties.helmholtz.helmholtz; HelmholtzStateBlock
 
-.. module:: idaes.generic_models.properties.helmholtz.helmholtz
+.. module:: idaes.models.properties.helmholtz.helmholtz
 
 The Helmholtz Equation of State (EoS) classes serve as a common core for pure
 component property packages where very accurate and thermodynamically consistent

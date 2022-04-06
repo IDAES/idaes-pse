@@ -31,7 +31,7 @@ Variables
 
 FeedFlash blocks add no additional Variables.
 
-.. module:: idaes.generic_models.unit_models.feed_flash
+.. module:: idaes.models.unit_models.feed_flash
 
 FeedFlash Class
 ---------------

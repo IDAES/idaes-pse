@@ -135,7 +135,8 @@ def getUB(e):
 # ==========   GENERIC MODEL ELEMENTS   ==========
 # ================================================
 def makeMyPyomoBaseModel(C, Atoms=None, Confs=None):
-    """Make the Pyomo model for a basic materials design problem.
+    """
+    Make the Pyomo model for a basic materials design problem.
 
     Creates the basic sets and variables that make up the problem.
     All variables are created sparsely, so they are initialized
@@ -144,31 +145,33 @@ def makeMyPyomoBaseModel(C, Atoms=None, Confs=None):
     constraints.
 
     Basic Variables:
-    Yi: Presence of building block at site i
-    Xij: Presence of building blocks at both sites i and j
-    Ci: Count of building block bonds to neighbors to site i
+        Yi: Presence of building block at site i
+        Xij: Presence of building blocks at both sites i and j
+        Ci: Count of building block bonds to neighbors to site i
 
     Common Descriptors:
-    Zi: Presence of target site at i
+        Zi: Presence of target site at i
 
     Atom-Specific Variables:
-    Yik: Presence of building block of type k at site i
-    Xijkl: Presence of type k and l at sites i and j, respectively
-    Cikl: Count of neighbors of type l next to site i with type k
+        Yik: Presence of building block of type k at site i
+        Xijkl: Presence of type k and l at sites i and j, respectively
+        Cikl: Count of neighbors of type l next to site i with type k
 
     Conformation-Specific Descriptors:
-    Zic: Presence of conformation c at site i
+        Zic: Presence of conformation c at site i
 
     The basic variables and atom-specific variables above are
     automatically encoded by calling addConsForGeneralVars.
     The descriptor variables Zi and Zic must be explicitly constrained.
     Some standard approaches are formalized in:
-        addConsBoundDescriptorsWithImpl
-        addConsIndFromDescriptors
-        addConsZicFromYi
-        addConsZicFromYiLifted
-        addConsZicFromYik
-        addConsZicFromYikLifted
+
+    * addConsBoundDescriptorsWithImpl
+    * addConsIndFromDescriptors
+    * addConsZicFromYi
+    * addConsZicFromYiLifted
+    * addConsZicFromYik
+    * addConsZicFromYikLifted
+
     Additional variables and constraints  can be created and managed on
     a model-specific level.
 
@@ -326,13 +329,13 @@ def addConsForGeneralVars(m):
     """Scan over the model and encode constraints for all basic variables present.
 
     Encodes variables in a chain from derived to most basc:
-    Ci   <- Xij   <- Yi
-    Cikl <- Xijkl <- Yik
+        Ci   <- Xij   <- Yi
+        Cikl <- Xijkl <- Yik
 
     Also can bridge from type-specific to type-agnostic variables:
-    Ci  <- Cikl
-    Xij <- Xijkl
-    Yi  <- Yik
+        Ci  <- Cikl
+        Xij <- Xijkl
+        Yi  <- Yik
 
     Args:
         m (ConcreteModel): Model to encode basic constraints.
@@ -1054,9 +1057,9 @@ def addConsIndFromDescriptors(
     """Add indicator constraints to a Pyomo model.
 
     The form of the constraint are:
-    Desc >= UB + Eps - M*(UBInd)
-    Desc <= LB - Eps + M*(LBInd)
-    Ind >= LBInd + UBInd - 1
+        Desc >= UB + Eps - M*(UBInd)
+        Desc <= LB - Eps + M*(LBInd)
+        Ind >= LBInd + UBInd - 1
 
     The descriptors, indication variables, and bounds are assumed to
     be indexed over the Canvas. Big-M values are identified by
@@ -1135,7 +1138,7 @@ def addConsLocalBudgets(m, ConName, Vs, Subsets=None, BudgetLBs=None, BudgetUBs=
     """Add budget constraints to a Pyomo model.
 
     The form of the constraints are:
-    BudgetLB <= sum(Vs[j] for j in Subsets[i]) <= BudgetUB
+        BudgetLB <= sum(Vs[j] for j in Subsets[i]) <= BudgetUB
 
     The variables, subsets, and budget bounds are assumed to be
     indexed over Canvas locations. The budget is written over
@@ -1182,7 +1185,7 @@ def addConGlobalBudget(m, ConName, Vs, Subset=None, BudgetLB=None, BudgetUB=None
     """Add budget constraints to a Pyomo model.
 
     The form of the constraint is:
-    BudgetLB <= sum(Vs[i] for i in Subset) <= BudgetUB
+        BudgetLB <= sum(Vs[i] for i in Subset) <= BudgetUB
 
     The variables are assumed to be indexed over Canvas locations.
     In contrast to addConLocalBudgets, this function applies a single
@@ -1218,7 +1221,7 @@ def addConsLocalBudgetsByTypes(
     """Add budget constraints to a Pyomo model.
 
     The form of the constraints are:
-    BudgetLBs[k] <= sum(Vs[j,k] for j in Subsets[i]) <= BudgetUBs[k]
+        BudgetLBs[k] <= sum(Vs[j,k] for j in Subsets[i]) <= BudgetUBs[k]
 
     The variables, subsets, and budget bounds are assumed to be
     indexed over Canvas locations. The budget is written over
@@ -1270,7 +1273,7 @@ def addConsGlobalBudgetsByTypes(
     """Add budget constraints to a Pyomo model.
 
     The form of the constraint is:
-    BudgetLBs[k] <= sum(Vs[i,k] for i in Subset) <= BudgetUBs[k]
+        BudgetLBs[k] <= sum(Vs[i,k] for i in Subset) <= BudgetUBs[k]
 
     The variables are assumed to be indexed over Canvas locations
     and types.
@@ -1329,7 +1332,8 @@ def addConsZicMutExc(m):
 
 
 def addConsZicColExh(m):
-    """Add constraints for collectively exhaustive conformations.
+    """
+    Add constraints for collectively exhaustive conformations.
 
     Args:
         m (ConcreteModel): Pyomo model to attach constraints to.
@@ -1346,8 +1350,9 @@ def addConsZicColExh(m):
 
 
 def addConsZicMutExcColExh(m):
-    """Add constraints for mutually exclusive, collectively
-       exhaustive of conformations.
+    """
+    Add constraints for mutually exclusive, collectively
+    exhaustive of conformations.
 
     Args:
         m (ConcreteModel): Pyomo model to attach constraints to.
@@ -1364,7 +1369,8 @@ def addConsZicMutExcColExh(m):
 
 
 def addConsZicFromYi(m, blnConfsAreMutExc=True, blnConfsAreColExh=False):
-    """Add constraints for indicating conformations.
+    """
+    Add constraints for indicating conformations.
 
     This function produces indicator constraints for the presence of
     conformation 'c' at location 'i' if building blocks in neighboring
@@ -1383,9 +1389,8 @@ def addConsZicFromYi(m, blnConfsAreMutExc=True, blnConfsAreColExh=False):
         blnConfsAreColExh (bool): Flag to indicate whether to add
             constraints enforcing collectively exhaustive conformations.
             NOTE: Since this function only loops over Zic variables
-                  previously referenced in the model, it is important
-                  to be carefule when using this flag.
-            (Default value = False)
+            previously referenced in the model, it is important
+            to be carefule when using this flag. (Default value = False)
 
     Returns:
         None.
@@ -1432,9 +1437,8 @@ def addConsZicFromYiLifted(m, blnConfsAreMutExc=True, blnConfsAreColExh=False):
         blnConfsAreColExh (bool): Flag to indicate whether to add
             constraints enforcing collectively exhaustive conformations.
             NOTE: Since this function only loops over Zic variables
-                  previously referenced in the model, it is important
-                  to be carefule when using this flag.
-            (Default value = False)
+            previously referenced in the model, it is important
+            to be carefule when using this flag. (Default value = False)
 
     Returns:
         None.
@@ -1505,9 +1509,8 @@ def addConsZicFromYik(m, blnConfsAreMutExc=True, blnConfsAreColExh=False):
         blnConfsAreColExh (bool): Flag to indicate whether to add
             constraints enforcing collectively exhaustive conformations.
             NOTE: Since this function only loops over Zic variables
-                  previously referenced in the model, it is important
-                  to be carefule when using this flag.
-            (Default value = False)
+            previously referenced in the model, it is important
+            to be carefule when using this flag. (Default value = False)
 
     Returns:
         None.
@@ -1555,9 +1558,8 @@ def addConsZicFromYikLifted(m, blnConfsAreMutExc=True, blnConfsAreColExh=False):
         blnConfsAreColExh (bool): Flag to indicate whether to add
             constraints enforcing collectively exhaustive conformations.
             NOTE: Since this function only loops over Zic variables
-                  previously referenced in the model, it is important
-                  to be carefule when using this flag.
-            (Default value = False)
+            previously referenced in the model, it is important
+            to be carefule when using this flag. (Default value = False)
 
     Returns:
         None.

@@ -19,7 +19,7 @@ Example
 
     from idaes.core import FlowsheetBlock
     from idaes.models_extra.power_generation.unit_models.helm import HelmTurbineStage
-    from idaes.generic_models.properties import iapws95
+    from idaes.models.properties import iapws95
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})

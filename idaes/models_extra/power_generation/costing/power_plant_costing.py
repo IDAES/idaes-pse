@@ -19,7 +19,7 @@ developed to calculate the capital cost of power generation plants:
 1. Fossil fueled power plants (from SCPC to IGCC) (get_PP_costing)
 2. Supercritical CO2 power cycles (direct and indirect) (get_sCO2_unit_cost)
 
-other methods:
+Other methods:
 * get_fixed_OM_costs() to cost fixed O&M costs
 * get_variable_OM_costs to cost variable O&M costs
 * get_ASU_cost() to cost air separation units
@@ -48,7 +48,7 @@ from pyomo.core.base.units_container import InconsistentUnitsError
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.costing import register_idaes_currency_units
+from idaes.models.costing import register_idaes_currency_units
 from idaes.models_extra.power_generation.costing.costing_dictionaries import (
     BB_costing_exponents,
     BB_costing_params,
@@ -113,6 +113,7 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B"):
 
     Scaling approach uses one main equation:
         SC = RC*(SP/RP)^Exp
+
     where:
         SC is the scaled cost
         RC is the reference cost
@@ -140,13 +141,13 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B"):
     your main model.
 
     Args:
-    * self: A block or unit model where costing constraints can be added to
-    * accounts: A list of accounts to be included in the total cost,
-    they should all use the same reference parameter
-    * scaled_param: the process parameter for the system(s) being costed
-    * units: the units of the scaled_param, used for verification
-    * tech: int 1-7 representing the above catagories
-    * ccs: 'A' or 'B' representing no CCS or CCS
+        self: A block or unit model where costing constraints can be added to
+        accounts: A list of accounts to be included in the total cost,
+            they should all use the same reference parameter
+        scaled_param: the process parameter for the system(s) being costed
+        units: the units of the scaled_param, used for verification
+        tech: int 1-7 representing the above catagories
+        ccs: 'A' or 'B' representing no CCS or CCS
 
     The appropriate scaling parameters for various cost accounts can be found
     in the QGESS on capital cost scaling (Report #DOE/NETL-341/013113).
@@ -453,13 +454,13 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B"):
 def get_sCO2_unit_cost(self, equipment, scaled_param, temp_C=None, n_equip=1):
     """
     Args:
-    self - pyomo Block where constraints will be made
-    unit_name - the name of the SCO2 equipment to cost
-    scaling_param - the scaling parameter (in appropriate units) for the
-                    selected equipment
-    temp - the maximum temperature of the equipment. Not all types of
-           equipment use a temperature correction factor, so it is optional
-    n_equip - the number of pieces of equipment to cost
+        self: pyomo Block where constraints will be made
+        unit_name: the name of the SCO2 equipment to cost
+        scaling_param: the scaling parameter (in appropriate units) for the
+            elected equipment
+        temp: the maximum temperature of the equipment. Not all types of
+            equipment use a temperature correction factor, so it is optional
+        n_equip: the number of pieces of equipment to cost
 
     Cost is in M$
     """
@@ -794,20 +795,22 @@ def get_fixed_OM_costs(
         5. Other fixed costs
         6. Total fixed O&M cost
         7. Maintenance materials (actually a variable cost, but scales off TPC)
+
     These costs apply to the project as a whole and are scaled based on the
     total TPC.
+
     Args:
         b: pyomo concrete model or flowsheet block
         nameplate_capacity: rated plant output in MW
         labor_rate: hourly rate of plant operators in project dollar year
         labor_burden: a percentage multiplier used to estimate non-salary
-        labor expenses
+            labor expenses
         operators_per_shift: average number of operators per shift
         tech: int 1-7 representing the catagories in get_PP_costing, used to
-        determine maintenance costs
+            determine maintenance costs
         TPC_value: The TPC in $MM that will be used to determine fixed O&M
         costs. If the value is None, the function will try to use the TPC
-        calculated from the individual units.
+            calculated from the individual units.
 
     Returns:
         None
@@ -956,7 +959,7 @@ def get_variable_OM_costs(fs, production_rate, resources, rates, prices={}):
     Args:
         fs: pyomo flowsheet block
         production_rate: pyomo var indexed by fs.time representing the net
-        system power or the hydrogen production rate
+            system power or the hydrogen production rate
         resources: a list of strings for the resorces to be costed
         rates: a list of pyomo vars for resource consumption rates
         prices: a dict of resource prices to be added to the premade dictionary

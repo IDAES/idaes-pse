@@ -26,7 +26,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import Unit Model Modules
-import idaes.generic_models.properties.swco2 as swco2
+import idaes.models.properties.swco2 as swco2
 from idaes.models_extra.carbon_capture.co2_compressor import (
     CompressionStage,
     VaneDiffuserType,

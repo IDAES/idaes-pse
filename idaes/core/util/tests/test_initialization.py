@@ -36,7 +36,7 @@ from idaes.core import (FlowsheetBlock,
                         Phase)
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.generic_models.unit_models import CSTR
+from idaes.models.unit_models import CSTR
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,

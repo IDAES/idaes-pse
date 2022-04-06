@@ -16,7 +16,7 @@ from idaes.models_extra.power_generation.unit_models.helm.valve_steam import (
     ValveFunctionType,
 )
 from idaes.models_extra.power_generation.unit_models.helm.mixer import HelmMixer
-from idaes.generic_models.unit_models import MomentumMixingType
+from idaes.models.unit_models import MomentumMixingType
 from idaes.models_extra.power_generation.unit_models.helm.compressor import (
     HelmIsentropicCompressor,
 )

@@ -26,7 +26,7 @@ from pyomo.environ import ConcreteModel, value
 
 # Import IDAES core modules
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.util import get_solver, scaling as iscale
 
 # Import IDAES logger
 import idaes.logger as idaeslog
@@ -132,7 +132,13 @@ def main():
                     'Fe3O4': blk.solid_inlet.mass_frac_comp[0, 'Fe3O4'].value,
                     'Al2O3': blk.solid_inlet.mass_frac_comp[0, 'Al2O3'].value}}
 
-    m.fs.BFB.initialize(outlvl=idaeslog.INFO,
+    print()
+    print("Apply scaling transformation")
+    # Scale the model by applying scaling transformation
+    # This reduces ill conditioning of the model
+    iscale.calculate_scaling_factors(m)
+
+    m.fs.BFB.initialize(outlvl=idaeslog.DEBUG,
                         gas_phase_state_args=gas_phase_state_args,
                         solid_phase_state_args=solid_phase_state_args)
 

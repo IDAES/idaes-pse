@@ -24,7 +24,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util import get_solver
 
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.core.generic.generic_property import (
     GenericParameterBlock,
 )
 
@@ -135,7 +135,7 @@ class TestStateBlock(object):
             model.props[1].vol_mol_phase["Liq"]
         )
 
-        assert pytest.approx(5.26403457e-4, rel=1e-8) == value(
+        assert pytest.approx(5.58038484e-4, rel=1e-8) == value(
             model.props[1].visc_d_phase["Liq"]
         )
 
@@ -163,9 +163,9 @@ class TestStateBlock(object):
         assert pytest.approx(4.47017415e-09, rel=1e-8) == value(
             model.props[1].diffus_phase_comp_true["Liq", "MEA"]
         )
-        assert pytest.approx(2.27073817e-09, rel=1e-8) == value(
+        assert pytest.approx(2.17984326e-09, rel=1e-8) == value(
             model.props[1].diffus_phase_comp_true["Liq", "MEACOO_-"]
         )
-        assert pytest.approx(2.27073817e-09, rel=1e-8) == value(
+        assert pytest.approx(2.17984326e-09, rel=1e-8) == value(
             model.props[1].diffus_phase_comp_true["Liq", "MEA_+"]
         )

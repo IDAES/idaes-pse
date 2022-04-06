@@ -15,7 +15,7 @@ import pyomo.environ as pyo
 
 import idaes
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.core.generic.generic_property import (
     GenericParameterBlock,
 )
 import idaes.core.util.scaling as iscale

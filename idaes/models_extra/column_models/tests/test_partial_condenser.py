@@ -23,7 +23,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock, MaterialBalanceType, EnergyBalanceType
 from idaes.models_extra.column_models import Condenser
 from idaes.models_extra.column_models.condenser import CondenserType, TemperatureSpec
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
 from idaes.core.util.model_statistics import (
