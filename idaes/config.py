@@ -32,6 +32,7 @@ binary_platform_map = {
     "rhel8": "el8",
     "centos8": "el8",
     "rocky8": "el8",
+    "debian9": "el7",
     "ubuntu1810": "ubuntu1804",
     "ubuntu1904": "ubuntu1804",
     "ubuntu1910": "ubuntu1804",
