@@ -442,7 +442,9 @@ class FlowsheetSerializer:
                 except Exception:
                     self._logger.warning(
                         f"Cannot extract state block from Port: "
-                        f"name={port_name}"
+                        f"name={port_name}. "
+                        f"Please add Feed & Product blocks with Arcs to show "
+                        f"inlet and outlet stream values in the Stream Table"
                     )
             else:
                 self._logger.warning(
