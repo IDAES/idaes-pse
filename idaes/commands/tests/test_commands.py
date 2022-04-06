@@ -570,6 +570,11 @@ def test_print_extensions_version(runner):
     result = runner.invoke(extensions.get_extensions, ["--show-platforms"])
     assert result.exit_code == 0
 
+@pytest.mark.unit
+def test_get_extensions(runner):
+    result = runner.invoke(extensions.bin_platform)
+    assert result.exit_code == 0
+
 #################
 # convergence  #
 ################
