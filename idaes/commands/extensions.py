@@ -184,14 +184,7 @@ def get_extensions(
             click.echo("")
             click.echo(e)
             click.echo("")
-            click.echo(
-                "Specify one of the following platforms with --platform <os>:")
-            for i in sorted(idaes.config.known_binary_platform):
-                if i == platform:
-                    # auto or linux specified, and it didn't work.
-                    # will need to be more specific.
-                    continue
-                click.echo(f"  {i}")
+            click.echo("Specify a platform with --platform <os>:")
             return
         if no_download:
             for k, i in d.items():
