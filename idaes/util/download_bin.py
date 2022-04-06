@@ -63,7 +63,7 @@ def _get_platform(fd, platform, arch):
         platform = arch[0]
     if platform == "linux":
         platform = fd.get_os_version().replace(".", "")
-        _log.debug(f"Detected Linux distribution: {linux_dist}")
+        _log.debug(f"Detected Linux distribution: {platform}")
     # Check if platform (OS) maps to another platform
     if platform in idaes.config.binary_platform_map:
         platform = idaes.config.binary_platform_map[platform]
