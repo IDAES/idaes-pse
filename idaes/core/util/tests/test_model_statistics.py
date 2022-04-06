@@ -16,14 +16,16 @@ This module contains miscalaneous utility functions for use in IDAES models.
 
 import pytest
 
-from pyomo.environ import (Block,
-                           ConcreteModel,
-                           Constraint,
-                           Expression,
-                           Objective,
-                           Set,
-                           Var,
-                           TransformationFactory)
+from pyomo.environ import (
+    Block,
+    ConcreteModel,
+    Constraint,
+    Expression,
+    Objective,
+    Set,
+    Var,
+    TransformationFactory,
+)
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.collections import ComponentSet
 
@@ -42,10 +44,7 @@ def m():
     m.dv = DerivativeVar(m.v)
 
     m.discretizer = TransformationFactory("dae.finite_difference")
-    m.discretizer.apply_to(m,
-                           nfe=10,
-                           wrt=m.cs,
-                           scheme="BACKWARD")
+    m.discretizer.apply_to(m, nfe=10, wrt=m.cs, scheme="BACKWARD")
 
     m.e = Expression(expr=m.v[1])
 
@@ -256,46 +255,71 @@ def test_variables_near_bounds_set(m):
     assert len(tset) == 6
     for i in tset:
         assert i in ComponentSet(
-            [m.b2["a"].v1, m.b2["b"].v1, m.b2["a"].v2["a"],
-             m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
+            [
+                m.b2["a"].v1,
+                m.b2["b"].v1,
+                m.b2["a"].v2["a"],
+                m.b2["a"].v2["b"],
+                m.b2["b"].v2["a"],
+                m.b2["b"].v2["b"],
+            ]
+        )
 
     m.b2["a"].v1.value = 1.001
     tset = variables_near_bounds_set(m)
     assert len(tset) == 5
     for i in tset:
         assert i in ComponentSet(
-            [m.b2["b"].v1, m.b2["a"].v2["a"],
-             m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
+            [
+                m.b2["b"].v1,
+                m.b2["a"].v2["a"],
+                m.b2["a"].v2["b"],
+                m.b2["b"].v2["a"],
+                m.b2["b"].v2["b"],
+            ]
+        )
 
     tset = variables_near_bounds_set(m, tol=1e-3)
     assert len(tset) == 6
     for i in tset:
         assert i in ComponentSet(
-            [m.b2["a"].v1, m.b2["b"].v1, m.b2["a"].v2["a"],
-             m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
+            [
+                m.b2["a"].v1,
+                m.b2["b"].v1,
+                m.b2["a"].v2["a"],
+                m.b2["a"].v2["b"],
+                m.b2["b"].v2["a"],
+                m.b2["b"].v2["b"],
+            ]
+        )
 
     m.b2["a"].v1.setlb(None)
     tset = variables_near_bounds_set(m)
     assert len(tset) == 5
     for i in tset:
         assert i in ComponentSet(
-            [m.b2["b"].v1, m.b2["a"].v2["a"],
-             m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
+            [
+                m.b2["b"].v1,
+                m.b2["a"].v2["a"],
+                m.b2["a"].v2["b"],
+                m.b2["b"].v2["a"],
+                m.b2["b"].v2["b"],
+            ]
+        )
 
     m.b2["a"].v2["a"].setub(None)
     tset = variables_near_bounds_set(m)
     assert len(tset) == 4
     for i in tset:
         assert i in ComponentSet(
-            [m.b2["b"].v1, m.b2["a"].v2["b"],
-             m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
+            [m.b2["b"].v1, m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+        )
 
     m.b2["a"].v2["b"].value = None
     tset = variables_near_bounds_set(m)
     assert len(tset) == 3
     for i in tset:
-        assert i in ComponentSet(
-            [m.b2["b"].v1, m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
+        assert i in ComponentSet([m.b2["b"].v1, m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
 
 
 @pytest.mark.unit
@@ -411,10 +435,7 @@ def test_derivative_variables_set():
     assert len(derivative_variables_set(m)) == 2
 
     m.discretizer = TransformationFactory("dae.finite_difference")
-    m.discretizer.apply_to(m,
-                           nfe=10,
-                           wrt=m.cs,
-                           scheme="BACKWARD")
+    m.discretizer.apply_to(m, nfe=10, wrt=m.cs, scheme="BACKWARD")
 
     assert len(derivative_variables_set(m)) == 0
 
@@ -431,10 +452,7 @@ def test_number_derivative_variables():
     assert number_derivative_variables(m) == 2
 
     m.discretizer = TransformationFactory("dae.finite_difference")
-    m.discretizer.apply_to(m,
-                           nfe=10,
-                           wrt=m.cs,
-                           scheme="BACKWARD")
+    m.discretizer.apply_to(m, nfe=10, wrt=m.cs, scheme="BACKWARD")
 
     assert number_derivative_variables(m) == 0
 

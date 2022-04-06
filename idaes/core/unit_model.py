@@ -17,11 +17,13 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'UnitModelBlock',
-    'idaes.core.base.unit_model.UnitModelBlock',
-    version='2.0.0.alpha0')
+    "UnitModelBlock",
+    "idaes.core.base.unit_model.UnitModelBlock",
+    version="2.0.0.alpha0",
+)
 
 relocated_module_attribute(
-    'UnitModelBlockData',
-    'idaes.core.base.unit_model.UnitModelBlockData',
-    version='2.0.0.alpha0')
+    "UnitModelBlockData",
+    "idaes.core.base.unit_model.UnitModelBlockData",
+    version="2.0.0.alpha0",
+)
