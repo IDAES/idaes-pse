@@ -23,7 +23,9 @@ from pyomo.environ import ConcreteModel, Block, Expression, value, Var, units as
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_equivalent
 
-from idaes.models.properties.modular_properties.pure.electrolyte import relative_permittivity_constant
+from idaes.models.properties.modular_properties.pure.electrolyte import (
+    relative_permittivity_constant,
+)
 from idaes.core.util.misc import add_object_reference
 from idaes.core.base.property_meta import PropertyClassMetadata
 

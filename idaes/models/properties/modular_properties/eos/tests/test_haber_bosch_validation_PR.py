@@ -64,7 +64,9 @@ from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 
 
 from idaes.models.properties.modular_properties.pure import NIST

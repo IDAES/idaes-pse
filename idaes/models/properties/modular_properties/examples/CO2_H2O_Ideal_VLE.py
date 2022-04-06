@@ -27,7 +27,9 @@ from idaes.core import LiquidPhase, VaporPhase, Component, PhaseType as PT
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import IdealBubbleDew
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    IdealBubbleDew,
+)
 from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
 
 from idaes.models.properties.modular_properties.pure.Perrys import Perrys

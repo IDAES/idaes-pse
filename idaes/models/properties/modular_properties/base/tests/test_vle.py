@@ -29,7 +29,9 @@ from pyomo.environ import (
 
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 from idaes.core.util import get_solver
 
 from idaes.models.properties.modular_properties.state_definitions import FTPx
@@ -39,7 +41,9 @@ from idaes.models.properties.modular_properties.phase_equil.forms import fugacit
 from idaes.models.properties.modular_properties.phase_equil.henry import ConstantH
 import idaes.models.properties.modular_properties.pure.Perrys as Perrys
 import idaes.models.properties.modular_properties.pure.RPP4 as RPP4
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import IdealBubbleDew
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    IdealBubbleDew,
+)
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
 
 import idaes.logger as idaeslog

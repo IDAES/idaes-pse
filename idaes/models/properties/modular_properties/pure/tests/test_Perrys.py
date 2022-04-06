@@ -303,7 +303,9 @@ def test_dens_mol_liq_comp_deprecated(caplog):
 
     caplog.set_level(
         idaeslog.WARNING,
-        logger=("idaes.models.properties.modular_properties." "generic.generic_property"),
+        logger=(
+            "idaes.models.properties.modular_properties." "generic.generic_property"
+        ),
     )
 
     assert isinstance(m.params.dens_mol_liq_comp_coeff_eqn_type, Param)

@@ -26,7 +26,9 @@ Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 """
 from pyomo.environ import Expression
 
-from idaes.models.properties.modular_properties.base.utility import get_component_object as cobj
+from idaes.models.properties.modular_properties.base.utility import (
+    get_component_object as cobj,
+)
 import idaes.logger as idaeslog
 
 

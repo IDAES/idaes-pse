@@ -23,18 +23,21 @@ from idaes.core.util import copy_port_values as _set_port, get_solver
 
 
 def create_model_steady_state(f=100, p=5e5, h=5e4):
-    """ Create a steady state heater model.
-    """
+    """Create a steady state heater model."""
     m = pyo.ConcreteModel(name="Dynamic Heater Test")
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # Create a property parameter block
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.MIX})
-    m.fs.heater = Heater(default={
-        "has_holdup": False,
-        "has_pressure_change": True,
-        "material_balance_type": MaterialBalanceType.componentTotal,
-        "property_package": m.fs.prop_water})
+        default={"phase_presentation": iapws95.PhaseType.MIX}
+    )
+    m.fs.heater = Heater(
+        default={
+            "has_holdup": False,
+            "has_pressure_change": True,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "property_package": m.fs.prop_water,
+        }
+    )
 
     m.fs.heater.inlet.enth_mol.fix(50000)
     m.fs.heater.inlet.pressure.fix(5e5)
@@ -49,15 +52,15 @@ def create_model_steady_state(f=100, p=5e5, h=5e4):
 
 
 def create_model_dynamic(
-        p_in=5e5,
-        p_out=101325,
-        h=5e4,
-        time_set=None,
-        nfe=10,
-        dae_transform='dae.collocation',
-        dae_scheme='LAGRANGE-RADAU'
-        ):
-    """ Create a test dynamic heater model and solver.  For dynamic testing
+    p_in=5e5,
+    p_out=101325,
+    h=5e4,
+    time_set=None,
+    nfe=10,
+    dae_transform="dae.collocation",
+    dae_scheme="LAGRANGE-RADAU",
+):
+    """Create a test dynamic heater model and solver.  For dynamic testing
     a valve is added to the heater outlet to set up pressure driven flow.
 
     Args:
@@ -67,44 +70,56 @@ def create_model_dynamic(
         (tuple): (ConcreteModel, Solver)
     """
     if time_set is None:
-        time_set = [0,5]
+        time_set = [0, 5]
 
     m = pyo.ConcreteModel(name="Dynamic Heater Test")
-    m.fs = FlowsheetBlock(default={"dynamic":True, "time_set":time_set})
+    m.fs = FlowsheetBlock(default={"dynamic": True, "time_set": time_set})
     # Create a property parameter block
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation":iapws95.PhaseType.MIX})
+        default={"phase_presentation": iapws95.PhaseType.MIX}
+    )
     # Create the valve and heater models
-    m.fs.pipe = HelmValve(default={
-        "dynamic":False,
-        "has_holdup":False,
-        "material_balance_type":MaterialBalanceType.componentTotal,
-        "property_package":m.fs.prop_water})
-    m.fs.heater = Heater(default={
-        "has_holdup":True,
-        "material_balance_type":MaterialBalanceType.componentTotal,
-        "property_package":m.fs.prop_water})
-    m.fs.valve = HelmValve(default={
-        "dynamic":False,
-        "has_holdup":False,
-        "material_balance_type":MaterialBalanceType.componentTotal,
-        "property_package":m.fs.prop_water})
+    m.fs.pipe = HelmValve(
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "property_package": m.fs.prop_water,
+        }
+    )
+    m.fs.heater = Heater(
+        default={
+            "has_holdup": True,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "property_package": m.fs.prop_water,
+        }
+    )
+    m.fs.valve = HelmValve(
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "property_package": m.fs.prop_water,
+        }
+    )
 
     # Connect the models
     m.fs.v1_to_t = Arc(source=m.fs.pipe.outlet, destination=m.fs.heater.inlet)
     m.fs.t_to_v2 = Arc(source=m.fs.heater.outlet, destination=m.fs.valve.inlet)
 
     # Add the stream constraints and do the DAE transformation
-    pyo.TransformationFactory('network.expand_arcs').apply_to(m.fs)
-    pyo.TransformationFactory('dae.finite_difference').apply_to(
-        m.fs, nfe=nfe, wrt=m.fs.time, scheme='BACKWARD')
+    pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
+    pyo.TransformationFactory("dae.finite_difference").apply_to(
+        m.fs, nfe=nfe, wrt=m.fs.time, scheme="BACKWARD"
+    )
 
     # Fix the derivative variables to zero at time 0 (steady state assumption)
     m.fs.fix_initial_conditions()
 
     # A heater pressure reference that's directly time-indexed
     m.fs.heater_pressure = pyo.Reference(
-        m.fs.heater.control_volume.properties_out[:].pressure)
+        m.fs.heater.control_volume.properties_out[:].pressure
+    )
 
     # Fix the input variables
     m.fs.pipe.inlet.enth_mol.fix(h)
@@ -120,7 +135,7 @@ def create_model_dynamic(
     # Initialize the model
     solver = get_solver(options={"max_iter": 25})
     for t in m.fs.time:
-        m.fs.pipe.inlet.flow_mol = 250 # initial guess on flow
+        m.fs.pipe.inlet.flow_mol = 250  # initial guess on flow
     # simple initialize
     m.fs.pipe.initialize()
     _set_port(m.fs.heater.inlet, m.fs.pipe.outlet)

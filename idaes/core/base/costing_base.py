@@ -358,7 +358,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         The following costing variables are aggregated from all the registered
         UnitModelCostingBlocks (if they exist):
-            
+
         * capital_cost,
         * fixed_operating_cost, and
         * variable_operating_cost

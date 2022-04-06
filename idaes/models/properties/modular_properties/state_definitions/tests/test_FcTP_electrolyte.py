@@ -36,8 +36,12 @@ from idaes.models.properties.modular_properties.state_definitions import FcTP
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant import van_t_hoff
-from idaes.models.properties.modular_properties.reactions.equilibrium_forms import power_law_equil
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
+    van_t_hoff,
+)
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
+    power_law_equil,
+)
 from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
 
 from idaes.core import FlowsheetBlock

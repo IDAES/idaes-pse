@@ -34,7 +34,9 @@ from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
 
 from idaes.core import declare_process_block_class, LiquidPhase, VaporPhase, SolidPhase
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterData
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterData,
+)
 from idaes.core.util.exceptions import PropertyNotSupportedError, ConfigurationError
 from idaes.core.util.constants import Constants as const
 from idaes import bin_directory

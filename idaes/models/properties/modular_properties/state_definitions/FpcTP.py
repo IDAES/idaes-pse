@@ -24,7 +24,9 @@ from pyomo.environ import (
 )
 
 from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
-from idaes.models.properties.modular_properties.base.utility import get_bounds_from_config
+from idaes.models.properties.modular_properties.base.utility import (
+    get_bounds_from_config,
+)
 from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog

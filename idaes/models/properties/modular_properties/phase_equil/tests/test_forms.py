@@ -15,7 +15,9 @@ Library of common forms for phase equilibrium constraints
 """
 from pyomo.environ import ConcreteModel, Var, units as pyunits
 
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 
 from idaes.models.properties.modular_properties.phase_equil.forms import *

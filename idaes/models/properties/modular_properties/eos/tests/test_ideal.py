@@ -31,7 +31,9 @@ from idaes.core import (
     Apparent,
 )
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterData
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterData,
+)
 from idaes.core.util.exceptions import ConfigurationError, PropertyNotSupportedError
 from idaes.core.util.constants import Constants as const
 

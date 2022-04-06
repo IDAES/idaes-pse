@@ -35,7 +35,9 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     StateIndex,
 )
 from idaes.models.properties.modular_properties.state_definitions import FTPx
-from idaes.models.properties.modular_properties.pure.electrolyte import relative_permittivity_constant
+from idaes.models.properties.modular_properties.pure.electrolyte import (
+    relative_permittivity_constant,
+)
 
 
 def rho_H2O(b, *args, **kwargs):

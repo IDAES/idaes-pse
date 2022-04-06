@@ -31,13 +31,17 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 
 
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 
 from idaes.models.unit_models import Flash
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 
-from idaes.models.properties.modular_properties.examples.CO2_bmimPF6_PR import configuration
+from idaes.models.properties.modular_properties.examples.CO2_bmimPF6_PR import (
+    configuration,
+)
 
 
 # -----------------------------------------------------------------------------

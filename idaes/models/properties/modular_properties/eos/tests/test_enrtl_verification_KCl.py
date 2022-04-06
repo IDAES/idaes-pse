@@ -33,13 +33,17 @@ from pyomo.environ import ConcreteModel, units as pyunits, value
 
 from idaes.core import AqueousPhase, Solvent, Apparent, Anion, Cation
 from idaes.models.properties.modular_properties.eos.enrtl import ENRTL
-from idaes.models.properties.modular_properties.eos.enrtl_reference_states import Unsymmetric
+from idaes.models.properties.modular_properties.eos.enrtl_reference_states import (
+    Unsymmetric,
+)
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
     StateIndex,
 )
 from idaes.models.properties.modular_properties.state_definitions import FTPx
-from idaes.models.properties.modular_properties.pure.electrolyte import relative_permittivity_constant
+from idaes.models.properties.modular_properties.pure.electrolyte import (
+    relative_permittivity_constant,
+)
 
 
 def dummy_method(b, *args, **kwargs):

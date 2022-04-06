@@ -18,7 +18,9 @@ from pyomo.environ import Param, units as pyunits
 from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
 
-from idaes.models.properties.modular_properties.base.utility import get_concentration_term
+from idaes.models.properties.modular_properties.base.utility import (
+    get_concentration_term,
+)
 
 
 # ----------------------------------------------------------------------------

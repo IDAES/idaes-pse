@@ -13,7 +13,9 @@
 """
 Methods for defining reaction rates
 """
-from idaes.models.properties.modular_properties.base.utility import get_concentration_term
+from idaes.models.properties.modular_properties.base.utility import (
+    get_concentration_term,
+)
 
 
 # -----------------------------------------------------------------------------

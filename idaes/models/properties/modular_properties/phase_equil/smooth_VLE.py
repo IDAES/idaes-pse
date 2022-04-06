@@ -21,7 +21,9 @@ Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 from pyomo.environ import Constraint, Param, Var, value
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import _valid_VL_component_list
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    _valid_VL_component_list,
+)
 import idaes.core.util.scaling as iscale
 
 

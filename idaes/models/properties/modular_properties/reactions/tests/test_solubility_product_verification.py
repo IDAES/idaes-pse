@@ -24,7 +24,9 @@ from pyomo.environ import (
 )
 
 # Import IDAES cores
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
     ConcentrationForm,
@@ -43,8 +45,12 @@ import idaes.core.util.scaling as iscale
 
 from idaes.models.properties.modular_properties.state_definitions import FTPx, FpcTP
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
-from idaes.models.properties.modular_properties.reactions.equilibrium_forms import solubility_product
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant import ConstantKeq
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
+    solubility_product,
+)
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
+    ConstantKeq,
+)
 
 
 solver = get_solver()

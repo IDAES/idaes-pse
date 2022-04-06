@@ -100,7 +100,7 @@ class ModelTag:
             raise KeyError(
                 f"{k} is not a valid index for tag {self._name}"
             ) from key_err
-        if (self._root is None):  # cache the unit conversion in root object
+        if self._root is None:  # cache the unit conversion in root object
             tag._root = self
         else:
             tag._root = self._root
@@ -585,8 +585,7 @@ class ModelTagGroup(dict):
                     tag_list.append(tag[0])
                     indexes.append(tag[1])
                 else:
-                    raise ValueError(
-                        "Key-index pairs should be a list of length 2")
+                    raise ValueError("Key-index pairs should be a list of length 2")
             else:
                 if not self[tag].is_indexed:
                     tag_list.append(tag)

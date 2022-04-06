@@ -33,12 +33,16 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util import get_solver
 
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 
-from idaes.models.properties.modular_properties.examples.ASU_PR import configuration_Dowling_2015
+from idaes.models.properties.modular_properties.examples.ASU_PR import (
+    configuration_Dowling_2015,
+)
 
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
 

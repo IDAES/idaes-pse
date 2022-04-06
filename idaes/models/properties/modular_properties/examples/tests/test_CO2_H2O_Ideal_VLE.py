@@ -40,12 +40,16 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util import get_solver
 
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 
-from idaes.models.properties.modular_properties.examples.CO2_H2O_Ideal_VLE import configuration
+from idaes.models.properties.modular_properties.examples.CO2_H2O_Ideal_VLE import (
+    configuration,
+)
 
 
 # -----------------------------------------------------------------------------

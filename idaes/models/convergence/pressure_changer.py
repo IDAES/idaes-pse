@@ -21,10 +21,12 @@ from idaes.models.unit_models.pressure_changer import (
 
 # Import property package for testing
 from idaes.models.properties import iapws95 as pp
-'''
+
+"""
 This module contains the code for convergence testing of the
 PressureChanger model
-'''
+"""
+
 
 @cb.register_convergence_class("PressureChanger")
 class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
@@ -40,14 +42,22 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
         s = cb.ConvergenceEvaluationSpecification()
 
         s.add_sampled_input(
-                name='Inlet_Flowrate',
-                pyomo_path='fs.pc.control_volume.properties_in[0].flow_mol',
-                lower=1, upper=1e6, mean=5e3, std=5e3)
+            name="Inlet_Flowrate",
+            pyomo_path="fs.pc.control_volume.properties_in[0].flow_mol",
+            lower=1,
+            upper=1e6,
+            mean=5e3,
+            std=5e3,
+        )
 
         s.add_sampled_input(
-                name='Inlet_Pressure',
-                pyomo_path='fs.pc.control_volume.properties_in[0].pressure',
-                lower=1e5, upper=1e7, mean=1e6, std=3e6)
+            name="Inlet_Pressure",
+            pyomo_path="fs.pc.control_volume.properties_in[0].pressure",
+            lower=1e5,
+            upper=1e7,
+            mean=1e6,
+            std=3e6,
+        )
         return s
 
     def get_initialized_model(self):
@@ -63,20 +73,19 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.props = pp.Iapws95ParameterBlock()
 
-        m.fs.pc = PressureChanger(default={
+        m.fs.pc = PressureChanger(
+            default={
                 "property_package": m.fs.props,
-                "thermodynamic_assumption": ThermodynamicAssumption.isothermal})
+                "thermodynamic_assumption": ThermodynamicAssumption.isothermal,
+            }
+        )
 
         m.fs.pc.deltaP.fix(-1e3)
         m.fs.pc.inlet[:].flow_mol.fix(27.5e3)
         m.fs.pc.inlet[:].enth_mol.fix(4000)
         m.fs.pc.inlet[:].pressure.fix(2e6)
 
-        init_state = {
-                "flow_mol": 27.5e3,
-                "pressure": 2e6,
-                "enth_mol": 4000
-                }
+        init_state = {"flow_mol": 27.5e3, "pressure": 2e6, "enth_mol": 4000}
 
         m.fs.pc.initialize(state_args=init_state)
 
@@ -95,8 +104,6 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
         -------
            Pyomo solver
         """
-        opt = pe.SolverFactory('ipopt')
-        opt.options = {'tol': 1e-6,
-                       'mu_init': 1e-8,
-                       'bound_push': 1e-8}
+        opt = pe.SolverFactory("ipopt")
+        opt.options = {"tol": 1e-6, "mu_init": 1e-8, "bound_push": 1e-8}
         return opt

@@ -29,7 +29,9 @@ from pyomo.environ import (
 
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component, PhaseType as PT
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -41,7 +43,9 @@ from idaes.core.util import get_solver
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import IdealBubbleDew
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    IdealBubbleDew,
+)
 from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
 
 import idaes.models.properties.modular_properties.pure.Perrys as Perrys

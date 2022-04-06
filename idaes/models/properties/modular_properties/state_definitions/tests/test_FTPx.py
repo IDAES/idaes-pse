@@ -51,14 +51,23 @@ from idaes.core import (
     LiquidPhase,
     VaporPhase,
 )
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterData
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterData,
+)
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 from idaes.core.util.exceptions import ConfigurationError, UserModelError
-from idaes.models.properties.modular_properties.phase_equil.henry import ConstantH, HenryType
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import IdealBubbleDew
+from idaes.models.properties.modular_properties.phase_equil.henry import (
+    ConstantH,
+    HenryType,
+)
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    IdealBubbleDew,
+)
 import idaes.logger as idaeslog
 
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 
 from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
 
@@ -122,7 +131,9 @@ class TestInvalidBounds(object):
     def test_mole_frac(self, caplog):
         m = ConcreteModel()
 
-        caplog.set_level(idaeslog.WARNING, logger=("idaes.models.properties.modular_properties."))
+        caplog.set_level(
+            idaeslog.WARNING, logger=("idaes.models.properties.modular_properties.")
+        )
 
         m.params = DummyParameterBlock(
             default={

@@ -31,7 +31,9 @@ from pyomo.environ import (
     units as pyunits,
 )
 
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
 from idaes.models.properties.modular_properties.base.generic_reaction import (
@@ -40,8 +42,12 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
 )
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
-from idaes.models.properties.modular_properties.reactions.rate_forms import power_law_rate
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant import van_t_hoff
+from idaes.models.properties.modular_properties.reactions.rate_forms import (
+    power_law_rate,
+)
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
+    van_t_hoff,
+)
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     power_law_equil,
     log_power_law_equil,

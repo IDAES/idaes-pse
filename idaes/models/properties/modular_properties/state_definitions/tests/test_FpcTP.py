@@ -35,7 +35,9 @@ from idaes.core import (
     EnergyBalanceType,
     declare_process_block_class,
 )
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterData
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterData,
+)
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
@@ -88,7 +90,9 @@ class TestInvalidBounds(object):
     def test_mole_frac(self, caplog):
         m = ConcreteModel()
 
-        caplog.set_level(idaeslog.WARNING, logger=("idaes.models.properties.modular_properties."))
+        caplog.set_level(
+            idaeslog.WARNING, logger=("idaes.models.properties.modular_properties.")
+        )
 
         m.params = DummyParameterBlock(
             default={

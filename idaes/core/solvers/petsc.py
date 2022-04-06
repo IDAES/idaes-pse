@@ -44,6 +44,7 @@ import idaes.config as icfg
 PetscBinaryIOTrajectory = None
 PetscBinaryIO = None
 
+
 def _import_petsc_binary_io():
     global PetscBinaryIOTrajectory
     global PetscBinaryIO
@@ -61,7 +62,9 @@ def _import_petsc_binary_io():
         except ImportError:
             pass
 
+
 _import_petsc_binary_io()
+
 
 class DaeVarTypes(enum.IntEnum):
     """Enum DAE variable type for suffix"""
@@ -307,8 +310,9 @@ def _get_derivative_differential_data_map(m, time):
     # with no attention paid to fixed or active status.
     deriv_diff_list = []
     for var in m.component_objects(pyo.Var):
-        if (isinstance(var, pyodae.DerivativeVar) and
-                time in ComponentSet(var.get_continuousset_list())):
+        if isinstance(var, pyodae.DerivativeVar) and time in ComponentSet(
+            var.get_continuousset_list()
+        ):
             deriv = var
             diffvar = deriv.get_state_var()
             for idx in var:
@@ -466,9 +470,9 @@ def petsc_dae_by_time_element(
     count = 1
     fix_derivs = []
     with TemporarySubsystemManager(
-            to_deactivate=tdisc,
-            to_fix=initial_variables + fix_derivs,
-            ):
+        to_deactivate=tdisc,
+        to_fix=initial_variables + fix_derivs,
+    ):
         # Solver time steps
         deriv_diff_map = _get_derivative_differential_data_map(m, time)
         for t in time:
@@ -512,7 +516,8 @@ def petsc_dae_by_time_element(
                 )
             if trajectory_save_prefix is not None:
                 tj = PetscTrajectory(
-                    stub=vars_stub, delete_on_read=True, unscale=t_block)
+                    stub=vars_stub, delete_on_read=True, unscale=t_block
+                )
                 tj.to_json(f"{trajectory_save_prefix}_{count}.json.gz")
             tprev = t
             count += 1
@@ -541,20 +546,20 @@ def calculate_time_derivatives(m, time):
                         if disc_eq[i].active:
                             calculate_variable_from_constraint(v, disc_eq[i])
                     except KeyError:
-                        pass # discretization equation may not exist at first time
+                        pass  # discretization equation may not exist at first time
 
 
 class PetscTrajectory(object):
     def __init__(
-            self,
-            stub=None,
-            vecs=None,
-            json=None,
-            pth=None,
-            vis_dir="Visualization-data",
-            delete_on_read=False,
-            unscale=None,
-            ):
+        self,
+        stub=None,
+        vecs=None,
+        json=None,
+        pth=None,
+        vis_dir="Visualization-data",
+        delete_on_read=False,
+        unscale=None,
+    ):
         """Class to read PETSc TS solver trajectory data.  This can either read
         PETSc output by providing the ``stub`` argument, a trajectory dict by
         providing ``vecs`` or a json file by providing ``json``.
@@ -593,19 +598,17 @@ class PetscTrajectory(object):
             raise RuntimeError("To read trajectory, either provide stub, vecs, or json")
 
     def _read(self):
-        with open(f'{self.stub}.col') as f:
+        with open(f"{self.stub}.col") as f:
             names = list(map(str.strip, f.readlines()))
-        with open(f'{self.stub}.typ') as f:
-            typ = list(map(int,f.readlines()))
-        self.vars = [name for i, name in enumerate(names) if typ[i] in [0,1]]
-        (t, v, names) = PetscBinaryIOTrajectory.ReadTrajectory(
-            "Visualization-data"
-        )
+        with open(f"{self.stub}.typ") as f:
+            typ = list(map(int, f.readlines()))
+        self.vars = [name for i, name in enumerate(names) if typ[i] in [0, 1]]
+        (t, v, names) = PetscBinaryIOTrajectory.ReadTrajectory("Visualization-data")
         self.time = t
         self.vecs_by_time = v
         self.vecs = dict.fromkeys(self.vars, None)
         for k in self.vecs.keys():
-            self.vecs[k] = [0]*len(self.time)
+            self.vecs[k] = [0] * len(self.time)
         self.vecs["_time"] = list(self.time)
         for i, v in enumerate(self.vars):
             for j, vt in enumerate(self.vecs_by_time):
@@ -645,8 +648,8 @@ class PetscTrajectory(object):
         Returns:
             (list)
         """
-        dt = [None]*(len(self.time) - 1)
-        for i in range(len(self.time)-1):
+        dt = [None] * (len(self.time) - 1)
+        for i in range(len(self.time) - 1):
             dt[i] = self.time[i + 1] - self.time[i]
         return dt
 
@@ -692,7 +695,7 @@ class PetscTrajectory(object):
                     s = m.scaling_factor.get(var, s)
                 if s is not None:
                     for i, x in enumerate(self.vecs[vname]):
-                        self.vecs[vname][i] = x/s
+                        self.vecs[vname][i] = x / s
                 already_scaled.add(vname)
 
     def delete_files(self):
@@ -705,8 +708,8 @@ class PetscTrajectory(object):
             None
         """
         shutil.rmtree(self.vis_dir)
-        os.remove(f'{self.stub}.col')
-        os.remove(f'{self.stub}.typ')
+        os.remove(f"{self.stub}.col")
+        os.remove(f"{self.stub}.typ")
 
     def to_json(self, pth):
         """Dump the trajectory data to a json file in the form of a dictionary

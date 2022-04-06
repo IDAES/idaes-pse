@@ -28,9 +28,15 @@ from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
-from idaes.models.properties.modular_properties.reactions.rate_forms import power_law_rate
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant import van_t_hoff
-from idaes.models.properties.modular_properties.reactions.equilibrium_forms import power_law_equil
+from idaes.models.properties.modular_properties.reactions.rate_forms import (
+    power_law_rate,
+)
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
+    van_t_hoff,
+)
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
+    power_law_equil,
+)
 
 
 # First, create a thermophsyical property definition that will be used

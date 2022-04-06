@@ -71,7 +71,9 @@ from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
-from idaes.models.properties.modular_properties.base.generic_reaction import equil_rxn_config
+from idaes.models.properties.modular_properties.base.generic_reaction import (
+    equil_rxn_config,
+)
 from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_phase_method,

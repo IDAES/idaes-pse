@@ -30,7 +30,9 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     GenericPropertyPackageError,
 )
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import _valid_VL_component_list
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    _valid_VL_component_list,
+)
 from idaes.models.properties.modular_properties.phase_equil.henry import (
     HenryType,
     henry_equilibrium_ratio,

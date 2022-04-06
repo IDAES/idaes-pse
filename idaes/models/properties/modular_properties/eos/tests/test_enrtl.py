@@ -37,7 +37,9 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     StateIndex,
 )
 from idaes.models.properties.modular_properties.state_definitions import FTPx
-from idaes.models.properties.modular_properties.pure.electrolyte import relative_permittivity_constant
+from idaes.models.properties.modular_properties.pure.electrolyte import (
+    relative_permittivity_constant,
+)
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -187,7 +189,9 @@ class TestParameters(object):
     def test_parameters_alpha_symmetry_duplicate(self, caplog):
         caplog.set_level(
             idaeslog.INFO,
-            logger=("idaes.models.properties.modular_properties." "eos.enrtl_parameters"),
+            logger=(
+                "idaes.models.properties.modular_properties." "eos.enrtl_parameters"
+            ),
         )
 
         test_config = dict(configuration)

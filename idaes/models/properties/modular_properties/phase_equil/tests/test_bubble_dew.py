@@ -21,9 +21,13 @@ from sys import modules
 
 from pyomo.environ import ConcreteModel, Constraint, Set, value, Var, units as pyunits
 
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import IdealBubbleDew
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    IdealBubbleDew,
+)
 from idaes.core import declare_process_block_class
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterData
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterData,
+)
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
 
