@@ -361,8 +361,8 @@ class NaturalGasStateBlockData(StateBlockData):
         self.dens_mol_eq = Constraint(
             expr=self.dens_mol == dens_mol_expr,
             doc=(
-                "Equation used to calculate molar density -- ",
-                "ideal gas equation with a\ncompressibility factor",
+                "Equation used to calculate molar density -- "
+                "ideal gas equation with a\ncompressibility factor"
             ),
         )
 
