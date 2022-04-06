@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import pyomo.environ as pyo
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 from idaes.models_extra.power_generation.properties import FlueGasParameterBlock

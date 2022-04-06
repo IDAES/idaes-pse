@@ -33,7 +33,7 @@ from pyomo.network import Arc, Port
 from idaes.core import FlowsheetBlock  # Flowsheet class
 from idaes.core.util import model_serializer as ms  # load/save model state
 from idaes.core.util.misc import svg_tag  # place numbers/text in an SVG
-from idaes.generic_models.properties import iapws95  # steam properties
+from idaes.models.properties import iapws95  # steam properties
 from idaes.models_extra.power_generation.unit_models.helm import (
     HelmTurbineMultistage,
     HelmMixer,
@@ -42,7 +42,7 @@ from idaes.models_extra.power_generation.unit_models.helm import (
     HelmNtuCondenser as Condenser,
 )
 from idaes.models_extra.power_generation.unit_models import FWH0D
-from idaes.generic_models.unit_models import (  # basic IDAES unit models, and enum
+from idaes.models.unit_models import (  # basic IDAES unit models, and enum
     HeatExchanger,
     MomentumMixingType,  # Enum type for mixer pressure calculation selection
 )
@@ -54,12 +54,12 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
 
 # Callback used to construct heat exchangers with the Underwood approx. for LMTD
-from idaes.generic_models.unit_models.heat_exchanger import (
+from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_underwood_callback,
 )
 
 # Pressure changer type (e.g. adiabatic, pump, isentropic...)
-from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
+from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 

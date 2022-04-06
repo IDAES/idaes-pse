@@ -20,10 +20,10 @@ import pyomo.environ as pyo
 from pyomo.network import Arc
 import pyomo.dae as pyodae
 from idaes.core import FlowsheetBlock, MaterialBalanceType
-from idaes.generic_models.unit_models import Heater, Valve
-from idaes.generic_models.properties import iapws95
+from idaes.models.unit_models import Heater, Valve
+from idaes.models.properties import iapws95
 from idaes.core.util.initialization import propagate_state
-from idaes.generic_models.control.controller import (
+from idaes.models.control.controller import (
     PIDController,
     ControllerType,
     ControllerMVBoundType,

@@ -19,7 +19,7 @@ deprecation_warning("The power_generation.unit_models.helm package has been move
 from idaes.models_extra.power_generation.unit_models.helm.splitter import HelmSplitter
 from idaes.models_extra.power_generation.unit_models.helm.valve_steam import HelmValve, ValveFunctionType
 from idaes.models_extra.power_generation.unit_models.helm.mixer import HelmMixer
-from idaes.generic_models.unit_models import MomentumMixingType
+from idaes.models.unit_models import MomentumMixingType
 from idaes.models_extra.power_generation.unit_models.helm.compressor import HelmIsentropicCompressor
 from idaes.models_extra.power_generation.unit_models.helm.turbine import HelmIsentropicTurbine
 from idaes.models_extra.power_generation.unit_models.helm.pump import HelmPump

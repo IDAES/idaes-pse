@@ -16,20 +16,22 @@ Deprecation paths for moving distillation models to column_models
 from pyomo.common.deprecation import relocated_module_attribute
 
 relocated_module_attribute(
-    'Condenser',
-    'idaes.models_extra.column_models.condenser.Condenser',
-    version='2.0.0.alpha0')
+    "Condenser",
+    "idaes.models_extra.column_models.condenser.Condenser",
+    version="2.0.0.alpha0",
+)
 relocated_module_attribute(
-    'Reboiler',
-    'idaes.models_extra.column_models.reboiler.Reboiler',
-    version='2.0.0.alpha0')
+    "Reboiler",
+    "idaes.models_extra.column_models.reboiler.Reboiler",
+    version="2.0.0.alpha0",
+)
 relocated_module_attribute(
-    'Tray',
-    'idaes.models_extra.column_models.tray.Tray',
-    version='2.0.0.alpha0')
+    "Tray", "idaes.models_extra.column_models.tray.Tray", version="2.0.0.alpha0"
+)
 relocated_module_attribute(
-    'TrayColumn',
-    'idaes.models_extra.column_models.tray_column.TrayColumn',
-    version='2.0.0.alpha0')
+    "TrayColumn",
+    "idaes.models_extra.column_models.tray_column.TrayColumn",
+    version="2.0.0.alpha0",
+)
 
 del relocated_module_attribute

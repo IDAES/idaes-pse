@@ -26,14 +26,14 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
 
 from idaes.core import VaporPhase, Component
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ideal import Ideal
-import idaes.generic_models.properties.core.pure.RPP4 as RPP4
+from idaes.models.properties.core.state_definitions import FTPx
+from idaes.models.properties.core.eos.ideal import Ideal
+import idaes.models.properties.core.pure.RPP4 as RPP4
 
-from idaes.generic_models.unit_models import Heater
+from idaes.models.unit_models import Heater
 from idaes.core import FlowsheetBlock
 
-from idaes.generic_models.properties.core.generic.generic_property import \
+from idaes.models.properties.core.generic.generic_property import \
         GenericParameterBlock
 
 from idaes.core.util.utility_minimization import \

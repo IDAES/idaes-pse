@@ -14,13 +14,13 @@ import idaes.core.util.convergence.convergence_base as cb
 import pyomo.environ as pe
 
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models.pressure_changer import (
+from idaes.models.unit_models.pressure_changer import (
     PressureChanger,
     ThermodynamicAssumption,
 )
 
 # Import property package for testing
-from idaes.generic_models.properties import iapws95 as pp
+from idaes.models.properties import iapws95 as pp
 '''
 This module contains the code for convergence testing of the
 PressureChanger model

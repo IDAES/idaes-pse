@@ -2,9 +2,9 @@ Valve
 =====
 
 .. index::
-  pair: idaes.generic_models.unit_models.valve;Valve
+  pair: idaes.models.unit_models.valve;Valve
 
-.. module:: idaes.generic_models.unit_models.valve
+.. module:: idaes.models.unit_models.valve
 
 This section describes the generic adiabatic valve model. By default the model
 is based on molar flow, but the pressure-flow equation and the flow basis is
@@ -21,8 +21,8 @@ Example
   from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.unit_models import Valve
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.unit_models import Valve
+  from idaes.models.properties import iapws95
   import idaes.core.util.scaling as iscale
 
   m = ConcreteModel()
