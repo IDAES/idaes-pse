@@ -135,6 +135,20 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
             pyo.units.kmol / pyo.units.hr,
         )
 
+        enth_flow = m.state.get_enthalpy_flow_terms("Vap")
+        pred_enth_flow = pyo.value(
+            (293.15 - 298.15) * m.state.cp_mol * m.state.flow_mol
+        )
+        self.assertAlmostEqual(
+            pyo.value(enth_flow),
+            pred_enth_flow,
+        )
+        kJhr = pyo.units.kJ/pyo.units.hr
+        assert_units_equivalent(
+            pyo.units.get_units(enth_flow),
+            kJhr,
+        )
+
     def test_nominal_density(self):
         m = pyo.ConcreteModel()
         m.properties = NaturalGasParameterBlock()
@@ -149,6 +163,17 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
         m.properties = NaturalGasParameterBlock()
         m.state = m.properties.build_state_block()
         self.assertEqual(m.state.compressibility.value, 0.80)
+
+    def test_temperature_ref(self):
+        m = pyo.ConcreteModel()
+        m.properties = NaturalGasParameterBlock()
+        self.assertEqual(
+            pyo.value(m.properties.temperature_ref), 298.15
+        )
+        assert_units_equivalent(
+            m.properties.temperature_ref,
+            pyo.units.K,
+        )
 
 
 if __name__ == "__main__":
