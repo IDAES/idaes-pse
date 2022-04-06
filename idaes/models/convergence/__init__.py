@@ -10,5 +10,4 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-import idaes.convergence.power_generation
-import idaes.convergence.generic_models
+import idaes.models.convergence.pressure_changer

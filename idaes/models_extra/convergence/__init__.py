@@ -10,6 +10,6 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-import idaes.convergence.power_generation.compressor
-import idaes.convergence.power_generation.heater
-import idaes.convergence.power_generation.turbine
+import idaes.models_extra.convergence.compressor
+import idaes.models_extra.convergence.heater
+import idaes.models_extra.convergence.turbine
