@@ -1,9 +1,4 @@
 import pytest
-
-pytest.importorskip(
-    "prescient", reason="prescient is a requirement to run grid integration tests"
-)
-
 import pyomo.environ as pyo
 from idaes.apps.grid_integration.bidder import Bidder
 from idaes.apps.grid_integration.tracker import Tracker
