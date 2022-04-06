@@ -31,7 +31,7 @@ binary_platform_map = {
     "centos7": "el7",
     "rhel8": "el8",
     "centos8": "el8",
-    "rockylinux8": "el8",
+    "rocky8": "el8",
     "ubuntu1810": "ubuntu1804",
     "ubuntu1904": "ubuntu1804",
     "ubuntu1910": "ubuntu1804",
