@@ -392,16 +392,17 @@ class PysmoSurrogate(SurrogateBase):
         )
 
     def evaluate_surrogate(self, inputs: pd.DataFrame) -> pd.DataFrame:
-        """Evaluate the surrogate model at a set of user-provided values.
-        Args:
-            inputs: pandas DataFrame
-                The dataframe of input values to be used in the evaluation. The dataframe
-                needs to contain a column corresponding to each of the input labels. Additional
-                columns are fine, but are not used.
-        Returns:
-            output: pandas Dataframe
-                Returns a dataframe of the the output values evaluated at the provided inputs.
-                The index of the output dataframe should match the index of the provided inputs.
+        """
+            Evaluate the surrogate model at a set of user-provided values.
+            Args:
+                inputs: pandas DataFrame
+                    The dataframe of input values to be used in the evaluation. The dataframe
+                    needs to contain a column corresponding to each of the input labels. Additional
+                    columns are fine, but are not used.
+            Returns:
+                output: pandas Dataframe
+                    Returns a dataframe of the the output values evaluated at the provided inputs.
+                    The index of the output dataframe should match the index of the provided inputs.
         """
         inputdata = inputs[self._input_labels].to_numpy()
         outputs = np.zeros(shape=(inputs.shape[0], len(self._output_labels)))
@@ -417,13 +418,14 @@ class PysmoSurrogate(SurrogateBase):
         )
 
     def populate_block(self, block, additional_options=None):
-        """Populate a Pyomo Block with surrogate model constraints.
-        Args:
-            block: Pyomo Block component to be populated with constraints.
-            additional_options: None
-                No additional options are required for this surrogate object
-        Returns:
-            None
+        """
+            Populate a Pyomo Block with surrogate model constraints.
+            Args:
+                block: Pyomo Block component to be populated with constraints.
+                additional_options: None
+                    No additional options are required for this surrogate object
+            Returns:
+                None
         """
 
         # TODO: do we need to add the index_set stuff back in?
@@ -451,13 +453,13 @@ class PysmoSurrogate(SurrogateBase):
     @classmethod
     def load(cls, stream):
         """
-        Create an instance of a surrogate from a stream.
-        Args:
-            stream:
-                This is the python stream containing the data required to load the surrogate.
-                This is often, but does not need to be a string of json data.
-        Returns:
-            An instance of the derived class or None if it failed to load
+            Create an instance of a surrogate from a stream.
+            Args:
+                stream:
+                    This is the python stream containing the data required to load the surrogate.
+                    This is often, but does not need to be a string of json data.
+            Returns:
+                An instance of the derived class or None if it failed to load
         """
         stream.seek(0)
         try:
