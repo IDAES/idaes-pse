@@ -65,7 +65,7 @@ the ``initialize`` method. This is recommended especially when the user wants to
 a different solver instead of ``ipopt``.
 
 
-.. module:: idaes.generic_models.unit_models.skeleton_model
+.. module:: idaes.models.unit_models.skeleton_model
 
 SkeletonUnitModel Class
 -----------------------

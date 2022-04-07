@@ -31,7 +31,7 @@ from idaes.core import (
 from idaes.core.util.exceptions import DynamicError
 from idaes.core.util.testing import PhysicalParameterTestBlock
 
-from idaes.generic_models.unit_models import Heater
+from idaes.models.unit_models import Heater
 
 
 @declare_process_block_class("Flowsheet")

@@ -32,7 +32,7 @@ from pyomo.environ import NonNegativeReals, Var, value, log, sqrt, units as pyun
 from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
 
-from idaes.generic_models.unit_models.pressure_changer import CompressorData
+from idaes.models.unit_models.pressure_changer import CompressorData
 
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver

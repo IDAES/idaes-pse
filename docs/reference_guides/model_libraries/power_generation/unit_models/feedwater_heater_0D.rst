@@ -33,10 +33,10 @@ are not necessarily realistic.
 
   import pyomo.environ as pyo
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.unit_models.heat_exchanger import (
+  from idaes.models.unit_models.heat_exchanger import (
       delta_temperature_underwood_callback,
       delta_temperature_lmtd_callback)
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.properties import iapws95
   from idaes.models_extra.power_generation.unit_models import FWH0D
 
   def make_fwh_model():

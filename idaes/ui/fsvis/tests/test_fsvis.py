@@ -27,10 +27,10 @@ import time
 
 from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
-from idaes.generic_models.unit_models import Flash
+from idaes.models.unit_models import Flash
 from idaes.ui.fsvis import fsvis, errors
 from idaes.ui.flowsheet import validate_flowsheet
 

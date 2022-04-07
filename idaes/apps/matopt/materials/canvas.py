@@ -55,7 +55,7 @@ class Canvas(object):
             filename(str): Name of PDB file to read.
             Lat (Lattice, optional): A lattice to define neighbor connections
             DefaultNN(int, optional): Number of neighbors to allocate
-            in neighborhood. (Default value = 0)
+                in neighborhood. (Default value = 0)
 
         Returns:
             Canvas: A new Canvas object.
@@ -75,7 +75,7 @@ class Canvas(object):
             filename(str): Name of XYZ file to read.
             Lat (Lattice, optional): A lattice to define neighbor connections
             DefaultNN(int, optional): Number of neighbors to allocate
-            in neighborhood. (Default value = 0)
+                in neighborhood. (Default value = 0)
 
         Returns:
             Canvas: A new Canvas object.
@@ -95,7 +95,7 @@ class Canvas(object):
             filename(str): Name of CFG file to read.
             Lat (Lattice, optional): A lattice to define neighbor connections
             DefaultNN(int, optional): Number of neighbors to allocate
-            in neighborhood. (Default value = 0)
+                in neighborhood. (Default value = 0)
 
         Returns:
             Canvas: A new Canvas object.
@@ -125,13 +125,10 @@ class Canvas(object):
             Lat(Lattice): Lattice to provide getNeighbors function.
             S(Shape): Shape to iterate over.
             Seed(numpy.ndarray, optional): Location to begin adding neighbors from.
-        Should be on the Lattice.
-        (Default value = np.array([0,0,0],dtype=float))
+                Should be on the Lattice. (Default value =
+                np.array([0,0,0],dtype=float))
             DefaultNN(int, optional): Number of neighbors to allocate
-        in neighborhood. (Default value = 0)
-            0: param 0]:
-            dtype: Default value = float))
-            0]:
+                in neighborhood. (Default value = 0)
 
         Returns:
             Canvas: A new Canvas object.
@@ -165,12 +162,12 @@ class Canvas(object):
             DefaultNN:
             Lat(Lattice): Lattice with has defined Scan method.
             argPolyhedron(Polyhedron: Polyhedron): Shape to iterate over.
-        NOTE: A Polyhedron is required because there is a
-        complicated step in finding bounds for the Shape
-        in the reference lattice space that is not
-        generally valid for all Shapes.
+                NOTE: A Polyhedron is required because there is a
+                complicated step in finding bounds for the Shape
+                in the reference lattice space that is not
+                generally valid for all Shapes.
             DefaultNN(int, optional): Number of neighbors to allocate
-        in neighborhood. (Default value = 0)
+                in neighborhood. (Default value = 0)
 
         Returns:
             Canvas: A new Canvas object.
@@ -198,13 +195,9 @@ class Canvas(object):
             Lat(Lattice): Lattice to provide getNeighbors function.
             T(Tiling): Tiling which provides a Shape to iterate over.
             Seed(numpy.ndarray, optional): Location to begin adding neighbors from.
-        Should be on the Lattice.
-        (Default value = np.array([0,0,0],dtype=float))
+                Should be on the Lattice. (Default value = np.array([0,0,0],dtype=float))
             DefaultNN(int, optional): Number of neighbors to allocate
-        in neighborhood. (Default value = 0)
-            0: param 0]:
-            dtype: Default value = float))
-            0]:
+                in neighborhood. (Default value = 0)
 
         Returns:
             Canvas: A new Canvas object.
@@ -227,7 +220,7 @@ class Canvas(object):
             Lat(Lattice): Lattice with has defined Scan method.
             T(Tiling): Tiling that provides a Polyhedron shape.
             DefaultNN(int, optional): Number of neighbors to allocate
-        in neighborhood. (Default value = 0)
+                in neighborhood. (Default value = 0)
 
         Returns:
             Canvas: A new Canvas object.
@@ -251,8 +244,8 @@ class Canvas(object):
         Args:
             P(numpy.ndarray): Point to add.
             NNeighbors(int, optional): Number of neighbors to allocate
-        in a neighborhood. If None, use the instance default
-        self.DefaultNN (Default value = None)
+                in a neighborhood. If None, use the instance default
+                self.DefaultNN (Default value = None)
 
         Returns:
             None.
@@ -270,9 +263,9 @@ class Canvas(object):
             P1(numpy.ndarray): Canvas Point to set neighbor for.
             P2(numpy.ndarray): Canvas Point to set as neighbor.
             l(int, optional): Index of neighbor to set. For example, if
-        l=3, then P2 is set to the fourth neighbor of P1.
-        If None, appends to the neighborhood.
-        (Default value = None)
+                l=3, then P2 is set to the fourth neighbor of P1.
+                If None, appends to the neighborhood.
+                (Default value = None)
 
         Returns:
             None.
@@ -292,9 +285,9 @@ class Canvas(object):
             i(int): Index of location to set neighbor for.
             j(int): Index of location to set as neighbor.
             l(int, optional): Index of neighbor to set. For example, if
-        l=3, then j is set to the fourth neighbor of i.
-        If None, appends to the neighborhood.
-        (Default value = None)
+                l=3, then j is set to the fourth neighbor of i.
+                If None, appends to the neighborhood.
+                (Default value = None)
 
         Returns:
             None.
@@ -314,10 +307,10 @@ class Canvas(object):
             i:
             PN(numpy.ndarray): Canvas Point to set as neighbor.
             l(int): Index of neighbor to set. For example, if
-        l=3, then PN is set as the fourth neighbor of i.
+                l=3, then PN is set as the fourth neighbor of i.
             i(int): Index of location to set neighbor for.
             blnSetNoneOtherwise(bool, optional): Flag to control behavior
-        if PN is not found in Canvas. (Default value = True)
+                if PN is not found in Canvas. (Default value = True)
 
         Returns:
             None.
@@ -352,7 +345,7 @@ class Canvas(object):
 
         Args:
             NeighborsFunc(function): Function that takes as input a
-        point (numpy.ndarray) and returns a list of points.
+                point (numpy.ndarray) and returns a list of points.
 
         Returns:
             None.
@@ -367,7 +360,8 @@ class Canvas(object):
         """Get neighbors across the Canvas from a functor.
 
         Args:
-            NeighborsFunc(function): Function that takes as input a point (numpy.ndarray) and returns a list of points.
+            NeighborsFunc(function): Function that takes as input a point
+                (numpy.ndarray) and returns a list of points.
             layer(int): Target layer of neighbors.
 
         Returns:
@@ -387,8 +381,10 @@ class Canvas(object):
         """Get neighbors across the Canvas from a functor and Tiling.
 
         Args:
-            NeighborsFunc(function): Function that takes as input a point (numpy.ndarray) and returns a list of points.
-            argTiling(Tiling): Tiling object that specifies the periodicity of the Canvas.
+            NeighborsFunc(function): Function that takes as input a point
+                (numpy.ndarray) and returns a list of points.
+            argTiling(Tiling): Tiling object that specifies the periodicity
+                of the Canvas.
             layer(int): Target layer of neighbors.
 
         Returns:
@@ -414,7 +410,7 @@ class Canvas(object):
         Args:
             argTiling(Tiling: Tiling): Tiling to provide TilingDirections.
             NeighborsFunc(function): Function that takes as input a
-        point (numpy.ndarray) and returns a list of points.
+                point (numpy.ndarray) and returns a list of points.
 
         Returns:
             None.
@@ -439,7 +435,7 @@ class Canvas(object):
         Args:
             n(int): Number of shells to add.
             NeighborsFunc(function): Function that takes as input a
-        point (numpy.ndarray) and returns a list of points.
+                point (numpy.ndarray) and returns a list of points.
 
         Returns:
             None.
@@ -453,7 +449,7 @@ class Canvas(object):
 
         Args:
             NeighborsFunc(function): Function that takes as input a
-        point (numpy.ndarray) and returns a list of points.
+                point (numpy.ndarray) and returns a list of points.
 
         Returns:
             None.
@@ -497,8 +493,8 @@ class Canvas(object):
         Args:
             other(Canvas): Canvas to append.
             blnAssertNotAlreadyInCanvas(bool, optional): Flag to enable
-        assertion that all locations were new and unique.
-        (Default value = True)
+                assertion that all locations were new and unique.
+                (Default value = True)
 
         Returns:
             None.
@@ -587,7 +583,7 @@ class Canvas(object):
 
         Args:
             NeighborsFunc(function): Function that takes as input a
-        point (numpy.ndarray) and returns a list of points.
+                point (numpy.ndarray) and returns a list of points.
 
         Returns:
             list<numpy.ndarray>: Set of points to consider as

@@ -44,7 +44,7 @@ Stoichiometric reactor units write no additional Constraints beyond those writte
 StoichiometricReactor Class
 ---------------------------
 
-.. module:: idaes.generic_models.unit_models.stoichiometric_reactor
+.. module:: idaes.models.unit_models.stoichiometric_reactor
 
 .. autoclass:: StoichiometricReactor
   :members:

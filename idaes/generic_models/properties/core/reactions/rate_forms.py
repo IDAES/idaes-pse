@@ -11,29 +11,12 @@
 # license information.
 #################################################################################
 """
-Methods for defining reaction rates
+Deprecation path for renamed module.
 """
-from idaes.generic_models.properties.core.generic.utility import \
-    get_concentration_term
+from pyomo.common.deprecation import deprecation_warning
 
+deprecation_warning("The generic_models.properties.core.reactions.rate_forms has been "
+                    "moved to idaes.models.properties.modular_properties.reactions.rate_forms",
+                    version="2.0.0.alpha0")
 
-# -----------------------------------------------------------------------------
-class power_law_rate():
-
-    @staticmethod
-    def build_parameters(rblock, config):
-        pass
-
-    @staticmethod
-    def return_expression(b, rblock, r_idx, T):
-        e = None
-        # Get reaction orders and construct power law expression
-        for p, j in b.phase_component_set:
-            o = rblock.reaction_order[p, j]
-
-            if e is None and o.value != 0:
-                e = get_concentration_term(b, r_idx)[p, j]**o
-            elif e is not None and o.value != 0:
-                e = e*get_concentration_term(b, r_idx)[p, j]**o
-
-        return b.k_rxn[r_idx]*e
+from idaes.models.properties.modular_properties.reactions.rate_forms import *

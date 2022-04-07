@@ -16,8 +16,8 @@ The example model is from the IDAES tutorial,
 https://github.com/IDAES/examples-pse/blob/main/src/Tutorials/Advanced/ParamEst/
 """
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models import Flash
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import BTXParameterBlock
+from idaes.models.unit_models import Flash
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import BTXParameterBlock
 import idaes.logger as idaeslog
 from pyomo.environ import *
 

@@ -15,10 +15,10 @@ import pytest
 
 import pyomo.environ as pyo
 import idaes.core
-import idaes.generic_models.unit_models as cmodels
+import idaes.models.unit_models as cmodels
 import idaes.models_extra.power_generation.unit_models.helm as hmodels
 
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 
 
 @pytest.mark.component

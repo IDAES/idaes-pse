@@ -17,7 +17,7 @@ a sample visualization.
 """
 import sys
 import time
-from idaes.generic_models.flowsheets.demo_flowsheet import build_flowsheet
+from idaes.models.flowsheets.demo_flowsheet import build_flowsheet
 
 
 def main():

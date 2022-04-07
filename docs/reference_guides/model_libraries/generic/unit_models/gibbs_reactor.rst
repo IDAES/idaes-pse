@@ -59,7 +59,7 @@ In cases where inerts are present, the following additional constraint is writte
 GibbsReactor Class
 ------------------
 
-.. module:: idaes.generic_models.unit_models.gibbs_reactor
+.. module:: idaes.models.unit_models.gibbs_reactor
 
 .. autoclass:: GibbsReactor
   :members:

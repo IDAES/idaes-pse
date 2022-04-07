@@ -75,12 +75,12 @@ from pyomo.network import Arc
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Callback used to construct heat exchangers with the Underwood LMTD approx.
-from idaes.generic_models.unit_models.heat_exchanger import (
+from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_underwood_callback,
 )
 
 # Pressure changer type (e.g. adiabatic, pump, isentropic...)
-from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
+from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 import idaes.logger as idaeslog
 
 _log = idaeslog.getModelLogger(__name__, logging.INFO)

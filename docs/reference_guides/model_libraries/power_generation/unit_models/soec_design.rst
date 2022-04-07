@@ -31,7 +31,7 @@ are not necessarily realistic.
   import pyomo.environ as pyo
   import idaes
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.properties.core.generic.generic_property import (
+  from idaes.models.properties.modular_properties.base.generic_property import (
       GenericParameterBlock)
   import idaes.core.util.scaling as iscale
   from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop

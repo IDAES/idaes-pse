@@ -51,14 +51,14 @@ from idaes.core.util.exceptions import InitializationError
 
 import idaes.core.util.scaling as iscale
 
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
 )
 
-from idaes.generic_models.unit_models import (
+from idaes.models.unit_models import (
     Mixer,
     Heater,
     HeatExchanger,
@@ -68,12 +68,12 @@ from idaes.generic_models.unit_models import (
     Separator,
     Translator,
 )
-from idaes.generic_models.unit_models.heat_exchanger import (
+from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_underwood_callback,
 )
-from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
-from idaes.generic_models.unit_models.separator import SplittingType
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
+from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
+from idaes.models.unit_models.separator import SplittingType
+from idaes.models.unit_models.mixer import MomentumMixingType
 
 from idaes.models_extra.power_generation.properties.natural_gas_PR import (
     get_prop,

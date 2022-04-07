@@ -24,7 +24,7 @@ from pyomo.util.check_units import assert_units_consistent
 import idaes
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.column_models.solvent_column import PackedColumn
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.models_extra.column_models.properties.MEA_vapor import flue_gas, wet_co2

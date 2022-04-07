@@ -42,7 +42,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 
 # Import Unit Model Modules
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 
 # Import IDAES standard unit model
 import idaes.logger as idaeslog

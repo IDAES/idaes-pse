@@ -43,7 +43,7 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
   from idaes.core import FlowsheetBlock
   from idaes.unit_models import Heater
   from idaes.models_extra.power_generation.unit_models.helm import HelmTurbineMultistage
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.properties import iapws95
 
   solver = SolverFactory('ipopt')
   solver.options = {'tol': 1e-6}
