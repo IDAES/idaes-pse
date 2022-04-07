@@ -417,8 +417,7 @@ class PysmoSurrogate(SurrogateBase):
         )
 
     def populate_block(self, block, additional_options=None):
-        """
-            Populate a Pyomo Block with surrogate model constraints.
+        """Populate a Pyomo Block with surrogate model constraints.
             Args:
                 block: Pyomo Block component to be populated with constraints.
                 additional_options: None
