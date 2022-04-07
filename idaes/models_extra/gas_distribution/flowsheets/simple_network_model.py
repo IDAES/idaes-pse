@@ -136,6 +136,8 @@ def add_objective_to_model(
     #m.demand_cost_coef = pyo.Param(initialize=1e6, mutable=True)
     # Demand cost coefficient needs to be scaled down for the units
     # of my model. The coefficient in the DAE code is 1e6 ((1e4 SCM)/hr)^-2.
+    #
+    # This needs some information from the property package
     demand_conv_factor = (
         1e4
         * (0.72*pyo.units.kg / pyo.units.m**3)
