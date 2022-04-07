@@ -10,9 +10,13 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from .NIST import NIST
-from .Perrys import Perrys
-from. RPP3 import RPP3
-from. RPP4 import RPP4
-from .RPP5 import RPP5
+"""
+Deprecation path for renamed module.
+"""
+from pyomo.common.deprecation import deprecation_warning
 
+deprecation_warning("The generic_models.properties.core.pure package has been moved to "
+                    "idaes.models.properties.modular_properties.pure",
+                    version="2.0.0.alpha0")
+
+from idaes.models.properties.modular_properties.pure import *

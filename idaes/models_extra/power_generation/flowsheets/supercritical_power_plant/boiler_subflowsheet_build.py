@@ -20,7 +20,7 @@ Inputs:
 
 Main Assumptions:
     Coal flowrate as a function of load, coal HHV is fixed and heat dutty
-    splitt from fire side to water wall and platen superheater is fixed.
+    split from fire side to water wall and platen superheater is fixed.
 
     Boiler heat exchanger network:
         Water Flow:
@@ -29,7 +29,7 @@ Main Assumptions:
             Fire Ball -> Platen SH -> Finishing SH -> Reheater  -> o -> Economizer -> Air Preheater
                                                    -> Primary SH --^
 
-        *HP Turbine, IP Turbine, Air Preheater ==> not included in this release
+        * HP Turbine, IP Turbine, Air Preheater ==> not included in this release
 
     Models used:
         - Mixers: Attemperator, Flue gas mix
@@ -63,19 +63,19 @@ from idaes.core.util.misc import svg_tag
 from idaes.core import FlowsheetBlock
 
 # Import Unit Model Modules
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 
 # Import Property Modules
 from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 
 # Import Unit Model Modules
-from idaes.generic_models.unit_models import Heater, Mixer
+from idaes.models.unit_models import Heater, Mixer
 from idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger import (
     BoilerHeatExchanger,
     TubeArrangement,
     DeltaTMethod,
 )
-from idaes.generic_models.unit_models.separator import (
+from idaes.models.unit_models.separator import (
     Separator,
     SplittingType,
     EnergySplittingType,

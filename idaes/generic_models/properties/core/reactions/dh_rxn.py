@@ -11,45 +11,12 @@
 # license information.
 #################################################################################
 """
-Methods for calculating heat of reaction
+Deprecation path for renamed module.
 """
-from pyomo.environ import Var, value
+from pyomo.common.deprecation import deprecation_warning
 
-from idaes.core import MaterialFlowBasis
-from idaes.core.util.misc import set_param_from_config
+deprecation_warning("The generic_models.properties.core.reactions.dh_rxn has been "
+                    "moved to idaes.models.properties.modular_properties.reactions.dh_rxn",
+                    version="2.0.0.alpha0")
 
-
-# -----------------------------------------------------------------------------
-# Constant dh_rxn
-class constant_dh_rxn():
-
-    @staticmethod
-    def build_parameters(rblock, config):
-        units = rblock.parent_block().get_metadata().derived_units
-
-        rbasis = rblock.parent_block().config.reaction_basis
-        if rbasis == MaterialFlowBasis.molar:
-            basis = "mole"
-        elif rbasis == MaterialFlowBasis.mass:
-            basis = "mass"
-
-        rblock.dh_rxn_ref = Var(
-                doc="Specific heat of reaction at reference state",
-
-                units=units["energy_"+basis])
-
-        set_param_from_config(rblock, param="dh_rxn_ref", config=config)
-
-    @staticmethod
-    def return_expression(b, rblock, r_idx, T):
-        return rblock.dh_rxn_ref
-
-    @staticmethod
-    def calculate_scaling_factors(b, rblock):
-        v = abs(value(rblock.dh_rxn_ref))
-
-        # Need to make sure dh_rxn is not 0 to avoid division by 0
-        if v != 0:
-            return 1/abs(value(rblock.dh_rxn_ref))
-        else:
-            return 1
+from idaes.models.properties.modular_properties.reactions.dh_rxn import *

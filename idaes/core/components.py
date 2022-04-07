@@ -17,41 +17,33 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'Component',
-    'idaes.core.base.components.Component',
-    version='2.0.0.alpha0')
+    "Component", "idaes.core.base.components.Component", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'ComponentData',
-    'idaes.core.base.components.ComponentData',
-    version='2.0.0.alpha0')
+    "ComponentData", "idaes.core.base.components.ComponentData", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'Solute',
-    'idaes.core.base.components.Solute',
-    version='2.0.0.alpha0')
+    "Solute", "idaes.core.base.components.Solute", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'Solvent',
-    'idaes.core.base.components.Solvent',
-    version='2.0.0.alpha0')
+    "Solvent", "idaes.core.base.components.Solvent", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'Ion',
-    'idaes.core.base.components.Ion',
-    version='2.0.0.alpha0')
+    "Ion", "idaes.core.base.components.Ion", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'Anion',
-    'idaes.core.base.components.Anion',
-    version='2.0.0.alpha0')
+    "Anion", "idaes.core.base.components.Anion", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'Cation',
-    'idaes.core.base.components.Cation',
-    version='2.0.0.alpha0')
+    "Cation", "idaes.core.base.components.Cation", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'Apparent',
-    'idaes.core.base.components.Apparent',
-    version='2.0.0.alpha0')
+    "Apparent", "idaes.core.base.components.Apparent", version="2.0.0.alpha0"
+)

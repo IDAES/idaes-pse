@@ -34,7 +34,7 @@ from pyomo.util.check_units import assert_units_consistent
 from pyomo.util.subsystems import ParamSweeper
 
 import idaes.core as idaes
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.core.util.model_statistics import (
@@ -171,7 +171,7 @@ class TestConstructFlowsheets(unittest.TestCase):
             pipeline.control_volume.length.fix()
 
         # Dynamic inputs:
-        pred_dof = 9 * len(m.fs.time)
+        pred_dof = 10 * len(m.fs.time)
         # Initial conditions:
         pred_dof += 2 * (len(m.fs.pipeline[0].control_volume.length_domain) - 1)
         pred_dof += 2 * (len(m.fs.pipeline[1].control_volume.length_domain) - 1)
@@ -187,6 +187,7 @@ class TestConstructFlowsheets(unittest.TestCase):
             m.fs.node[0].state[t].pressure.fix()
             m.fs.node[2].supplies[0].state[t].mole_frac_comp[:].fix()
             m.fs.node[2].supplies[0].state[t].flow_mol.fix()
+            m.fs.node[2].supplies[0].state[t].temperature.fix()
             m.fs.node[1].demands[0].flow_mol[t].fix()
             m.fs.node[3].demands[0].flow_mol[t].fix()
             m.fs.compressor[0].boost_pressure[t].fix()
@@ -316,7 +317,7 @@ class TestConstructFlowsheets(unittest.TestCase):
             pipeline.control_volume.length.fix()
 
         # Predicted degrees of freedom:
-        pred_dof = 7 * len(m.fs.time)
+        pred_dof = 8 * len(m.fs.time)
         pred_dof += 2 * (len(m.fs.pipeline[0].control_volume.length_domain) - 1)
         pred_dof += 2 * (len(m.fs.pipeline[1].control_volume.length_domain) - 1)
         pred_dof += 2 * (len(m.fs.pipeline[2].control_volume.length_domain) - 1)
@@ -331,6 +332,7 @@ class TestConstructFlowsheets(unittest.TestCase):
             m.fs.node[0].state[t].pressure.fix()
             m.fs.node[1].supplies[0].state[t].mole_frac_comp[:].fix()
             m.fs.node[1].supplies[0].state[t].flow_mol.fix()
+            m.fs.node[1].supplies[0].state[t].temperature.fix()
             m.fs.node[3].demands[0].flow_mol[t].fix()
             m.fs.compressor[0].boost_pressure[t].fix()
 

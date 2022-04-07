@@ -173,6 +173,12 @@ The following function can be used to solve the DAE.
 
 .. autofunction:: idaes.core.solvers.petsc.petsc_dae_by_time_element
 
+Derivative values aren't returned by the PETSc solver, but they can be calculated
+from the discretization equations written by Pyomo.DAE. The following function can
+be used to calculate time derivatives.
+
+.. autofunction:: idaes.core.solvers.petsc.calculate_time_derivatives
+
 Reading Trajectory Data
 """""""""""""""""""""""
 

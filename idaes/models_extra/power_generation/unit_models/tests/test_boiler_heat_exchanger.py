@@ -28,7 +28,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 
 # import ideal flue gas prop pack
 from idaes.models_extra.power_generation.properties import (

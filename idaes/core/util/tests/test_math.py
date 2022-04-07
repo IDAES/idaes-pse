@@ -16,16 +16,21 @@ Tests for math util methods.
 
 import pytest
 from pyomo.environ import ConcreteModel, Param, Var, value
-from idaes.core.util.math import (smooth_abs, smooth_minmax,
-                                  smooth_min, smooth_max, safe_sqrt, safe_log)
+from idaes.core.util.math import (
+    smooth_abs,
+    smooth_minmax,
+    smooth_min,
+    smooth_max,
+    safe_sqrt,
+    safe_log,
+)
 
 __author__ = "Andrew Lee"
 
 
 @pytest.fixture(scope="module")
 def simple_model():
-    """Build a simple model for testing.
-    """
+    """Build a simple model for testing."""
     m = ConcreteModel()
     m.a = Var(initialize=4.0)
     m.b = Var(initialize=-4.0)
@@ -54,10 +59,12 @@ def test_smooth_abs_expr(simple_model):
     assert value(smooth_abs(simple_model.a, 0)) == 4.0
     assert value(smooth_abs(simple_model.b, 0)) == 4.0
 
-    assert (value(smooth_abs(simple_model.a, simple_model.e)) ==
-            pytest.approx(4.0, abs=1e-4))
-    assert (value(smooth_abs(simple_model.b, simple_model.e)) ==
-            pytest.approx(4.0, abs=1e-4))
+    assert value(smooth_abs(simple_model.a, simple_model.e)) == pytest.approx(
+        4.0, abs=1e-4
+    )
+    assert value(smooth_abs(simple_model.b, simple_model.e)) == pytest.approx(
+        4.0, abs=1e-4
+    )
 
 
 @pytest.mark.unit
@@ -81,54 +88,49 @@ def test_smooth_abs_eps_errors():
 @pytest.mark.unit
 def test_smooth_minmax_maths():
     # Test basic smooth_minmax functionality
-    assert smooth_minmax(1, 2, 0, sense='max') == 2
-    assert smooth_minmax(1, 2, 0, sense='min') == 1
-    assert smooth_minmax(5.0, 3, 0.0, sense='max') == 5
-    assert smooth_minmax(5.0, 3, 0.0, sense='min') == 3
+    assert smooth_minmax(1, 2, 0, sense="max") == 2
+    assert smooth_minmax(1, 2, 0, sense="min") == 1
+    assert smooth_minmax(5.0, 3, 0.0, sense="max") == 5
+    assert smooth_minmax(5.0, 3, 0.0, sense="min") == 3
 
-    assert (smooth_minmax(2.0, 12.0, 1e-4, 'max') ==
-            pytest.approx(12.0, abs=1e-4))
-    assert (smooth_minmax(2.0, 12.0, 1e-4, 'min') ==
-            pytest.approx(2.0, abs=1e-4))
-    assert (smooth_minmax(32.0, 12.0, sense='max') ==
-            pytest.approx(32.0, abs=1e-4))
-    assert (smooth_minmax(32.0, 12.0, sense='min') ==
-            pytest.approx(12.0, abs=1e-4))
+    assert smooth_minmax(2.0, 12.0, 1e-4, "max") == pytest.approx(12.0, abs=1e-4)
+    assert smooth_minmax(2.0, 12.0, 1e-4, "min") == pytest.approx(2.0, abs=1e-4)
+    assert smooth_minmax(32.0, 12.0, sense="max") == pytest.approx(32.0, abs=1e-4)
+    assert smooth_minmax(32.0, 12.0, sense="min") == pytest.approx(12.0, abs=1e-4)
 
 
 @pytest.mark.unit
 def test_smooth_minmax_default_sense():
     # Test that smooth_minmax defaults to maximise
-    assert smooth_minmax(1, 2, 0,) == 2
+    assert (
+        smooth_minmax(
+            1,
+            2,
+            0,
+        )
+        == 2
+    )
 
 
 @pytest.mark.unit
 def test_smooth_minmax_expr(simple_model):
     # Test that smooth_minmax works with Pyomo components
-    assert value(smooth_minmax(simple_model.a,
-                               simple_model.b,
-                               0,
-                               sense='max')) == 4.0
-    assert value(smooth_minmax(simple_model.a,
-                               simple_model.b,
-                               0,
-                               sense='min')) == -4.0
+    assert value(smooth_minmax(simple_model.a, simple_model.b, 0, sense="max")) == 4.0
+    assert value(smooth_minmax(simple_model.a, simple_model.b, 0, sense="min")) == -4.0
 
-    assert value(smooth_minmax(simple_model.a,
-                               simple_model.b,
-                               sense='max')) == pytest.approx(4.0, abs=1e-4)
-    assert value(smooth_minmax(simple_model.a,
-                               simple_model.b,
-                               sense='min')) == pytest.approx(-4.0, abs=1e-4)
+    assert value(
+        smooth_minmax(simple_model.a, simple_model.b, sense="max")
+    ) == pytest.approx(4.0, abs=1e-4)
+    assert value(
+        smooth_minmax(simple_model.a, simple_model.b, sense="min")
+    ) == pytest.approx(-4.0, abs=1e-4)
 
-    assert value(smooth_minmax(simple_model.a,
-                               simple_model.b,
-                               simple_model.e,
-                               sense='max')) == pytest.approx(4.0, abs=1e-4)
-    assert value(smooth_minmax(simple_model.a,
-                               simple_model.b,
-                               simple_model.e,
-                               sense='min')) == pytest.approx(-4.0, abs=1e-4)
+    assert value(
+        smooth_minmax(simple_model.a, simple_model.b, simple_model.e, sense="max")
+    ) == pytest.approx(4.0, abs=1e-4)
+    assert value(
+        smooth_minmax(simple_model.a, simple_model.b, simple_model.e, sense="min")
+    ) == pytest.approx(-4.0, abs=1e-4)
 
 
 @pytest.mark.unit
@@ -164,18 +166,19 @@ def test_smooth_minmax_sense_errors():
 def test_smooth_max(simple_model):
     # Test that smooth_max gives correct values
     assert smooth_max(3.0, 12.0) == pytest.approx(12.0, abs=1e-4)
-    assert value(smooth_max(simple_model.a,
-                            simple_model.b,
-                            simple_model.e)) == pytest.approx(4.0, abs=1e-4)
+    assert value(
+        smooth_max(simple_model.a, simple_model.b, simple_model.e)
+    ) == pytest.approx(4.0, abs=1e-4)
 
 
 @pytest.mark.unit
 def test_smooth_min(simple_model):
     # Test that smooth_min gives correct values
     assert smooth_min(3.0, 12.0) == pytest.approx(3.0, abs=1e-4)
-    assert value(smooth_min(simple_model.a,
-                            simple_model.b,
-                            simple_model.e)) == pytest.approx(-4.0, abs=1e-4)
+    assert value(
+        smooth_min(simple_model.a, simple_model.b, simple_model.e)
+    ) == pytest.approx(-4.0, abs=1e-4)
+
 
 @pytest.mark.unit
 def test_smooth_min(simple_model):
@@ -183,8 +186,10 @@ def test_smooth_min(simple_model):
     assert safe_sqrt(4) == pytest.approx(2.0, abs=1e-4)
     assert safe_sqrt(0, eps=1e-6) == pytest.approx(0.0, abs=1e-3)
     assert safe_sqrt(-4) == pytest.approx(0.0, abs=1e-4)
-    assert value(safe_sqrt(simple_model.a, simple_model.e)) == \
-        pytest.approx(2.0, abs=1e-4)
+    assert value(safe_sqrt(simple_model.a, simple_model.e)) == pytest.approx(
+        2.0, abs=1e-4
+    )
+
 
 @pytest.mark.unit
 def test_smooth_min(simple_model):
@@ -192,5 +197,6 @@ def test_smooth_min(simple_model):
     assert safe_log(4) == pytest.approx(1.386294, abs=1e-4)
     assert safe_log(0) < -5
     assert safe_log(-4) < -5
-    assert value(safe_log(simple_model.a, simple_model.e)) == \
-        pytest.approx(1.386294, abs=1e-4)
+    assert value(safe_log(simple_model.a, simple_model.e)) == pytest.approx(
+        1.386294, abs=1e-4
+    )

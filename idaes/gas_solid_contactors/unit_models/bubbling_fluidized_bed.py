@@ -73,7 +73,7 @@ class BubblingFluidizedBedData(UnitModelBlockData):
 
     # Unit level config arguments
     CONFIG.declare("finite_elements", ConfigValue(
-        default=10,
+        default=5,
         domain=int,
         description="Number of finite elements length domain",
         doc="""Number of finite elements to use when discretizing length
@@ -735,7 +735,7 @@ see reaction package for documentation.}"""))
                       doc='Bulk Gas Permeation Coefficient [m/s]')
         self.Kd.fix()
         self.deltaP_orifice = Var(domain=Reals,
-                                  initialize=3.4E5,
+                                  initialize=3.4E3,
                                   doc='Pressure Drop Across Orifice [Pa]')
         self.deltaP_orifice.fix()
 

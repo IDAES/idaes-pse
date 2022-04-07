@@ -10,10 +10,13 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
+"""
+Deprecation path for renamed module.
+"""
+from pyomo.common.deprecation import deprecation_warning
 
-from .costing_base import (
-    FlowsheetCostingBlock,
-    FlowsheetCostingBlockData,
-    UnitModelCostingBlock,
-    register_idaes_currency_units
-    )
+deprecation_warning("The generic_models.costing package has been moved to "
+                    "idaes.core",
+                    version="2.0.0.alpha0")
+
+from idaes.core.base.costing_base import *

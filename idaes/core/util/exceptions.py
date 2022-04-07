@@ -24,6 +24,7 @@ class IdaesError(Exception):
     inheritance in derived exceptions to allow catching of all IDAES-related
     exceptions.
     """
+
     pass  # Problem with toaster
 
 
@@ -32,6 +33,7 @@ class BalanceTypeNotSupportedError(NotImplementedError, IdaesError):
     IDAES exception to be used when a control volume does not support a given
     type of balance equation.
     """
+
     pass  # Tried to put bagel in normal toaster
 
 
@@ -40,6 +42,7 @@ class ConfigurationError(ValueError, IdaesError):
     IDAES exception to be used when configuration arguments are incorrect
     or inconsistent.
     """
+
     pass  # Too many buttons, burnt toast
 
 
@@ -48,6 +51,7 @@ class DynamicError(ValueError, IdaesError):
     IDAES exception for cases where settings associated with dynamic models
     are incorrect.
     """
+
     pass  # Incorrect browness setting
 
 
@@ -55,6 +59,7 @@ class BurntToast(IdaesError):
     """
     General exception for when something breaks badly in the core.
     """
+
     pass  # Toaster on fire
 
 
@@ -65,6 +70,7 @@ class PropertyNotSupportedError(AttributeError, IdaesError):
 
     Needs to inherit from AttributeError for Pyomo interactions.
     """
+
     pass  # Could not find bread
 
 
@@ -74,6 +80,7 @@ class PropertyPackageError(AttributeError, IdaesError):
 
     Needs to inherit from AttributeError for Pyomo interactions.
     """
+
     pass  # Bread stuck
 
 
@@ -84,6 +91,7 @@ class InitializationError(ArithmeticError, IdaesError):
     fails to converge, and can raise this exception earlier if the routine
     enters a state from which recovery is impossible.
     """
+
     pass
 
 
@@ -92,4 +100,5 @@ class UserModelError(ValueError, IdaesError):
     IDAES exception for when a user model returns unphysical values that
     prevent further execution of code.
     """
+
     pass

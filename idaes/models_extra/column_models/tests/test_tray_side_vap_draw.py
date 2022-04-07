@@ -21,7 +21,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.column_models import Tray
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
 from idaes.core.util.model_statistics import (
