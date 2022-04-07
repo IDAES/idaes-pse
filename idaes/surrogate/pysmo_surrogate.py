@@ -457,7 +457,7 @@ class PysmoSurrogate(SurrogateBase):
                 This is the python stream containing the data required to load the surrogate.
                 This is often, but does not need to be a string of json data.
         Returns:
-                An instance of the derived class or None if it failed to load
+            An instance of the derived class or None if it failed to load
         """
         stream.seek(0)
         try:
