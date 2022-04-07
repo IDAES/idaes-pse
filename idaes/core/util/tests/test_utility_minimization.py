@@ -25,7 +25,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 from idaes.core import VaporPhase, Component
 from idaes.models.properties.modular_properties.state_definitions import FTPx

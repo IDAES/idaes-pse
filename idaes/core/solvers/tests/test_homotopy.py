@@ -26,9 +26,9 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
-from idaes.core.util.homotopy import homotopy
+from idaes.core.solvers.homotopy import homotopy
 
 # Set module level pyest marker
 pytestmark = pytest.mark.solver

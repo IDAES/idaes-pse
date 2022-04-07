@@ -73,7 +73,7 @@ from idaes.core.util.model_statistics import (
     number_activated_equalities,
 )
 from idaes.core.util.math import safe_log
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale

@@ -14,7 +14,8 @@ import pyomo.environ as pyo
 from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
 from idaes.models_extra.power_generation.unit_models.balance import BalanceBlockData
-from idaes.core.util import from_json, to_json, StoreSpec, get_solver
+from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.solvers import get_solver
 import idaes.models.properties.helmholtz.helmholtz as hltz
 from idaes.models.properties.helmholtz.helmholtz import (
     HelmholtzThermoExpressions as ThermoExpr,

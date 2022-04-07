@@ -32,7 +32,7 @@ import idaes.models.unit_models as um  # um = unit models
 from idaes.core.util.initialization import propagate_state
 import idaes.core.util.scaling as iscale
 import idaes.core.util as iutil
-from idaes.core.util.misc import get_solver
+from idaes.core.solvers import get_solver
 from idaes.models_extra.power_generation.properties.natural_gas_PR import (
     get_prop,
     get_rxn,

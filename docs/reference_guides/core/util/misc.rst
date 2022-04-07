@@ -6,13 +6,6 @@ Miscellaneous Utility Methods
 
 .. module:: idaes.core.util.misc
 
-get_solver
-----------
-
-The `get_solver` method is primarily intended for use when a solver object is required in a general model. The `get_solver` method takes two optional arguments which allow the user to specify a specific solver and/or solver options if required, or to use the default solver specified in the IDAES Configuration if no arguments are provided.
-
-.. autofunction:: get_solver
-
 Variable-Like Expressions
 -------------------------
 

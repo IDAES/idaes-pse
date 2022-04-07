@@ -39,7 +39,7 @@ from idaes.core import (
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.constants import Constants as const
 
 

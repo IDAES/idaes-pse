@@ -49,7 +49,8 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
-from idaes.core.util import constants, get_solver
+from idaes.core.util import constants
+from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 

@@ -25,7 +25,7 @@ from idaes.models_extra.power_generation.unit_models.helm import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.properties import iapws95
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 import pytest
 

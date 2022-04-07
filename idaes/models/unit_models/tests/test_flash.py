@@ -36,7 +36,7 @@ from idaes.core.util.model_statistics import (
     number_unused_variables,
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 
 

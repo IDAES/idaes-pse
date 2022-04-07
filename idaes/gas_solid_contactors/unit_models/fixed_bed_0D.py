@@ -26,7 +26,8 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.constants import Constants as constants
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 __author__ = "Chinedu Okoli, Andrew Lee"
 

@@ -19,7 +19,8 @@ from idaes.power_generation.unit_models.helm import HelmValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models import Heater
 from idaes.models.properties import iapws95
-from idaes.core.util import copy_port_values as _set_port, get_solver
+from idaes.core.util import copy_port_values as _set_port
+from idaes.core.solvers import get_solver
 
 
 def create_model_steady_state(f=100, p=5e5, h=5e4):

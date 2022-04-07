@@ -16,7 +16,7 @@ This module contains miscellaneous utility functions for use in IDAES models.
 """
 from enum import Enum
 
-from pyomo.common.deprecation import deprecated
+from pyomo.common.deprecation import deprecated, relocated_module_attribute
 
 import pyomo.environ as pyo
 from pyomo.core.base.expression import _GeneralExpressionData
@@ -28,35 +28,14 @@ from pyomo.core.base.disable_methods import disable_methods
 from pyomo.common.config import ConfigBlock
 
 import idaes.logger as idaeslog
-import idaes.core.solvers
 from idaes.core.util.tags import svg_tag as svg_tag_new
 
 _log = idaeslog.getLogger(__name__)
 
 
-# Author: Andrew Lee
-def get_solver(solver=None, options=None):
-    """
-    General method for getting a solver object which defaults to the standard
-    IDAES solver (defined in the IDAES configuration).
-
-    Args:
-        solver: string name for desired solver. Default=None, use default solver
-        options: dict of solver options to use, overwrites any settings
-                 provided by IDAES configuration. Default = None, use default
-                 solver options.
-
-    Returns:
-        A Pyomo solver object
-    """
-    if solver is None:
-        solver = "default"
-    solver_obj = idaes.core.solvers.SolverWrapper(solver, register=False)()
-
-    if options is not None:
-        solver_obj.options.update(options)
-
-    return solver_obj
+relocated_module_attribute(
+    "get_solver", "idaes.core.solvers.get_solver", version="2.0.0.alpha0"
+)
 
 
 # Author: Andrew Lee

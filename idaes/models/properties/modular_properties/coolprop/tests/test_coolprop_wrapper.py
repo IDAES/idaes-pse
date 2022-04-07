@@ -38,7 +38,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
 
 

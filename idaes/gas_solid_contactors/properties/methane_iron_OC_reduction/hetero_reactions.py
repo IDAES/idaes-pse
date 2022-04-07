@@ -53,7 +53,8 @@ from idaes.core.util.config import (is_state_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.constants import Constants
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"

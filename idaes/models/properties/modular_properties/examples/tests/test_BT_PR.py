@@ -27,7 +27,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, Objective, value
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
 

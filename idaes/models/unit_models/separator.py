@@ -48,7 +48,7 @@ from idaes.core.util.exceptions import (
     PropertyNotSupportedError,
     InitializationError,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import VarLikeExpression
 from idaes.core.util.model_statistics import degrees_of_freedom

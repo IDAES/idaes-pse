@@ -41,7 +41,7 @@ from idaes.core.util.model_statistics import (
     fixed_variables_set,
     activated_constraints_set,
 )
-from idaes.core.util import get_solver as default_solver
+from idaes.core.solvers import get_solver as default_solver
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
