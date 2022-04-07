@@ -274,10 +274,6 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
             def error_from_integral_eqn(b, t):
                 return b.error[t] == b.integral_of_error_dot[t]
 
-            # deactivate error_from_integral_eqn at time 0, since first time
-            # always exists this should be ok even before transformation
-            self.error_from_integral_eqn[time_set.first()].deactivate()
-
             if self.config.calculate_initial_integral:
                 t0 = time_set.first()
                 @self.Constraint(doc="Calculate initial e_i based on output")
