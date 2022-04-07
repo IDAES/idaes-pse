@@ -233,7 +233,7 @@ jstring_krg = (
 
 class TestSurrogateTrainingResult:
     @pytest.fixture
-    def pysmo_outputs(self):
+    def pysmo_output_pr(self):
         data = {
             "x1": [1, 2, 3, 4, 5],
             "x2": [5, 6, 7, 8, 9],
@@ -247,17 +247,39 @@ class TestSurrogateTrainingResult:
         vars = init_pr.get_feature_vector()
         init_pr.training()
 
+        return init_pr, vars
+
+    @pytest.fixture
+    def pysmo_output_rbf(self):
+        data = {
+            "x1": [1, 2, 3, 4, 5],
+            "x2": [5, 6, 7, 8, 9],
+            "z1": [10, 20, 30, 40, 50],
+        }
+        data = pd.DataFrame(data)
+
         init_rbf = rbf.RadialBasisFunctions(
             data, basis_function="linear", overwrite=True
         )
-        init_rbf.get_feature_vector()
+        vars = init_rbf.get_feature_vector()
         init_rbf.training()
 
+        return init_rbf, vars
+
+    @pytest.fixture
+    def pysmo_output_krg(self):
+        data = {
+            "x1": [1, 2, 3, 4, 5],
+            "x2": [5, 6, 7, 8, 9],
+            "z1": [10, 20, 30, 40, 50],
+        }
+        data = pd.DataFrame(data)
+
         init_krg = krg.KrigingModel(data, numerical_gradients=True, overwrite=True)
-        init_krg.get_feature_vector()
+        vars = init_krg.get_feature_vector()
         init_krg.training()
 
-        return init_pr, init_rbf, init_krg, vars
+        return init_krg, vars
 
     @pytest.mark.unit
     def test_init(self):
@@ -267,10 +289,8 @@ class TestSurrogateTrainingResult:
         assert init_func.expression_str == ""
 
     @pytest.mark.unit
-    def test_model(self, pysmo_outputs):
-
-        out1, out2, out3, vars = pysmo_outputs
-
+    def test_model_poly(self, pysmo_output_pr):
+        out1, vars = pysmo_output_pr
         init_func_poly = SurrogateTrainingResult()
         init_func_poly.model = out1
         assert init_func_poly.expression_str == str(
@@ -280,6 +300,9 @@ class TestSurrogateTrainingResult:
         assert isinstance(init_func_poly._model, pr.PolynomialRegression)
         assert init_func_poly._model == out1
 
+    @pytest.mark.unit
+    def test_model_rbf(self, pysmo_output_rbf):
+        out2, vars = pysmo_output_rbf
         init_func_rbf = SurrogateTrainingResult()
         init_func_rbf.model = out2
         assert init_func_rbf.expression_str == str(
@@ -289,6 +312,9 @@ class TestSurrogateTrainingResult:
         assert isinstance(init_func_rbf._model, rbf.RadialBasisFunctions)
         assert init_func_rbf._model == out2
 
+    @pytest.mark.unit
+    def test_model_krg(self, pysmo_output_krg):
+        out3, vars = pysmo_output_krg
         init_func_krg = SurrogateTrainingResult()
         init_func_krg.model = out3
         assert init_func_krg.expression_str == str(
@@ -297,7 +323,6 @@ class TestSurrogateTrainingResult:
         assert init_func_krg._model is not None
         assert isinstance(init_func_krg._model, krg.KrigingModel)
         assert init_func_krg._model == out3
-
 
 class TestTrainedSurrogate:
     @pytest.fixture
