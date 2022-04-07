@@ -28,17 +28,31 @@ release_checksum_url = \
 # Map some platform names to others for get-extensions
 binary_platform_map = {
     "rhel7": "el7",
-    "centos7": "el7",
     "rhel8": "el8",
+    "centos7": "el7",
     "centos8": "el8",
     "rocky8": "el8",
+    "almalinux8": "el8",
     "debian9": "el7",
+    "debian10": "el8",
     "ubuntu1810": "ubuntu1804",
     "ubuntu1904": "ubuntu1804",
     "ubuntu1910": "ubuntu1804",
     "ubuntu2010": "ubuntu2004",
     "ubuntu2104": "ubuntu2004",
     "ubuntu2110": "ubuntu2004",
+    "kubuntu1810": "ubuntu1804",
+    "kubuntu1904": "ubuntu1804",
+    "kubuntu1910": "ubuntu1804",
+    "kubuntu2010": "ubuntu2004",
+    "kubuntu2104": "ubuntu2004",
+    "kubuntu2110": "ubuntu2004",
+    "xubuntu1810": "ubuntu1804",
+    "xubuntu1904": "ubuntu1804",
+    "xubuntu1910": "ubuntu1804",
+    "xubuntu2010": "ubuntu2004",
+    "xubuntu2104": "ubuntu2004",
+    "xubuntu2110": "ubuntu2004",
 }
 # Machine map
 binary_machine_map = {
