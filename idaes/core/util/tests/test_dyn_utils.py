@@ -15,8 +15,14 @@ Tests for dynamic utility methods.
 """
 
 import pytest
-from pyomo.environ import (ConcreteModel, Block, Constraint, Var, Set,
-                           TransformationFactory)
+from pyomo.environ import (
+    ConcreteModel,
+    Block,
+    Constraint,
+    Var,
+    Set,
+    TransformationFactory,
+)
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.collections import ComponentSet
 import idaes.logger as idaeslog
@@ -30,8 +36,8 @@ def test_fix_and_deactivate():
     m = ConcreteModel()
     m.time = ContinuousSet(bounds=(0, 10))
     m.space = ContinuousSet(bounds=(0, 5))
-    m.set1 = Set(initialize=['a', 'b', 'c'])
-    m.set2 = Set(initialize=['d', 'e', 'f'])
+    m.set1 = Set(initialize=["a", "b", "c"])
+    m.set2 = Set(initialize=["d", "e", "f"])
     m.fs = Block()
 
     m.fs.v0 = Var(m.space, initialize=1)
@@ -41,8 +47,9 @@ def test_fix_and_deactivate():
         b.v = Var(m.time, m.space, initialize=1)
         b.dv = DerivativeVar(b.v, wrt=m.time)
 
-        b.con = Constraint(m.time, m.space,
-                           rule=lambda b, t, x: b.dv[t, x] == 7 - b.v[t, x])
+        b.con = Constraint(
+            m.time, m.space, rule=lambda b, t, x: b.dv[t, x] == 7 - b.v[t, x]
+        )
 
         @b.Block(m.time)
         def b2(b, t):
@@ -58,8 +65,7 @@ def test_fix_and_deactivate():
 
             @b.Constraint(m.set2)
             def con(b, s):
-                return (5*b.v[s] ==
-                        m.fs.b2[m.time.first(), m.space.first()].v[c])
+                return 5 * b.v[s] == m.fs.b2[m.time.first(), m.space.first()].v[c]
 
     @m.fs.Constraint(m.time)
     def con1(fs, t):
@@ -69,9 +75,9 @@ def test_fix_and_deactivate():
     def con2(fs, x):
         return fs.b1.v[m.time.first(), x] == fs.v0[x]
 
-    disc = TransformationFactory('dae.collocation') 
-    disc.apply_to(m, wrt=m.time, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
-    disc.apply_to(m, wrt=m.space, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
+    disc = TransformationFactory("dae.collocation")
+    disc.apply_to(m, wrt=m.time, nfe=5, ncp=2, scheme="LAGRANGE-RADAU")
+    disc.apply_to(m, wrt=m.space, nfe=5, ncp=2, scheme="LAGRANGE-RADAU")
 
     for t in m.time:
         m.fs.b1.v[t, m.space.first()].fix()
@@ -86,10 +92,9 @@ def test_fix_and_deactivate():
     assert m.fs.con2[m.space[1]].active
     assert not m.fs.b1.con[m.time[2], m.space[1]].active
     assert not m.fs.b2[m.time[2], m.space.last()].active
-    assert m.fs.b2[m.time[2], m.space.last()].b3['a'].con['e'].active
+    assert m.fs.b2[m.time[2], m.space.last()].b3["a"].con["e"].active
 
-    deactivate_model_at(m, m.time, [m.time[1], m.time[3]],
-                        outlvl=idaeslog.ERROR)
+    deactivate_model_at(m, m.time, [m.time[1], m.time[3]], outlvl=idaeslog.ERROR)
     # Higher outlvl threshold as will encounter warning trying to deactivate
     # disc equations at time.first()
     assert not m.fs.con1[m.time[1]].active
@@ -104,18 +109,18 @@ def test_fix_and_deactivate():
     assert m.fs.b1.dv[m.time[1], m.space[1]].name in init_deriv_names
 
     deriv_dict = get_derivatives_at(m, m.time, [m.time.first(), m.time.last()])
-    deriv_name_dict = {t: [d.name for d in deriv_dict[t]] 
-                          for t in deriv_dict.keys()}
+    deriv_name_dict = {t: [d.name for d in deriv_dict[t]] for t in deriv_dict.keys()}
     assert m.time.first() in deriv_name_dict.keys()
     assert m.time.last() in deriv_name_dict.keys()
-    assert (m.fs.b1.dv[m.time.last(), m.space[1]].name 
-            in deriv_name_dict[m.time.last()])
-    assert (m.fs.b1.dv[m.time.last(), m.space[1]].name 
-            not in deriv_name_dict[m.time.first()])
+    assert m.fs.b1.dv[m.time.last(), m.space[1]].name in deriv_name_dict[m.time.last()]
+    assert (
+        m.fs.b1.dv[m.time.last(), m.space[1]].name
+        not in deriv_name_dict[m.time.first()]
+    )
 
     vars_unindexed = fix_vars_unindexed_by(m, m.time)
     cons_unindexed = deactivate_constraints_unindexed_by(m, m.time)
-    
+
     unindexed_vars = ComponentSet(vars_unindexed)
     assert m.fs.v0[m.space[1]] in unindexed_vars
     assert m.fs.b1.b2[m.time[1]].v not in unindexed_vars
@@ -124,23 +129,36 @@ def test_fix_and_deactivate():
     assert not m.fs.con2[m.space[1]].active
     assert m.fs.v0[m.space[1]].fixed
 
-    path = path_from_block(m.fs.b2[m.time[1], m.space[1]].b3['a'].v,
-                           m, include_comp=False)
-    assert path == [('fs', None), ('b2', (m.time[1], m.space[1])),
-                    ('b3', 'a')]
-    path = path_from_block(m.fs.b2[m.time[1], m.space[1]].b3['a'].v,
-                           m, include_comp=True)
-    assert path == [('fs', None), ('b2', (m.time[1], m.space[1])),
-                    ('b3', 'a'), ('v', None)]
-    path = path_from_block(m.fs.b2[m.time[1], m.space[1]].b3['a'].v['f'],
-                           m, include_comp=True)
-    assert path == [('fs', None), ('b2', (m.time[1], m.space[1])),
-                    ('b3', 'a'), ('v', 'f')]
-    path = path_from_block(m.fs.b2[m.time[1], m.space[1]].b3['a'].v['f'],
-                           m.fs.b2[m.time[1], m.space[1]], include_comp=True)
-    assert path == [('b3', 'a'), ('v', 'f')]
+    path = path_from_block(
+        m.fs.b2[m.time[1], m.space[1]].b3["a"].v, m, include_comp=False
+    )
+    assert path == [("fs", None), ("b2", (m.time[1], m.space[1])), ("b3", "a")]
+    path = path_from_block(
+        m.fs.b2[m.time[1], m.space[1]].b3["a"].v, m, include_comp=True
+    )
+    assert path == [
+        ("fs", None),
+        ("b2", (m.time[1], m.space[1])),
+        ("b3", "a"),
+        ("v", None),
+    ]
+    path = path_from_block(
+        m.fs.b2[m.time[1], m.space[1]].b3["a"].v["f"], m, include_comp=True
+    )
+    assert path == [
+        ("fs", None),
+        ("b2", (m.time[1], m.space[1])),
+        ("b3", "a"),
+        ("v", "f"),
+    ]
+    path = path_from_block(
+        m.fs.b2[m.time[1], m.space[1]].b3["a"].v["f"],
+        m.fs.b2[m.time[1], m.space[1]],
+        include_comp=True,
+    )
+    assert path == [("b3", "a"), ("v", "f")]
     path = path_from_block(m.fs.b1.con[m.time[1], m.space[1]], m.fs)
-    assert path == [('b1', None)]
+    assert path == [("b1", None)]
 
     m.fs.b1.b2[m.time[1]].v.set_value(-1)
     for x in m.space:
@@ -165,13 +183,15 @@ def test_fix_and_deactivate():
             for c2 in m.set2:
                 assert m.fs.b2[m.time[1], x].b3[c1].v[c2].value == -1
 
+
 @pytest.mark.unit
 def test_copy_non_time_indexed_values():
     m1 = ConcreteModel()
-    m1.time = Set(initialize=[1,2,3,4,5])
+    m1.time = Set(initialize=[1, 2, 3, 4, 5])
     m1.v1 = Var(m1.time, initialize=1)
     m1.v2 = Var(initialize=1)
-    @m1.Block(['a','b'])
+
+    @m1.Block(["a", "b"])
     def b1(b, i):
         b.v3 = Var(initialize=1)
 
@@ -182,16 +202,17 @@ def test_copy_non_time_indexed_values():
         @b.Block()
         def b4(b):
             b.v6 = Var(initialize=1)
-            
+
     @m1.Block(m1.time)
     def b3(b, t):
         b.v5 = Var(initialize=1)
 
     m2 = ConcreteModel()
-    m2.time = Set(initialize=[1,2,3,4,5])
+    m2.time = Set(initialize=[1, 2, 3, 4, 5])
     m2.v1 = Var(m2.time, initialize=2)
     m2.v2 = Var(initialize=2)
-    @m2.Block(['a','b'])
+
+    @m2.Block(["a", "b"])
     def b1(b):
         b.v3 = Var(initialize=2)
 
@@ -210,8 +231,8 @@ def test_copy_non_time_indexed_values():
     copy_non_time_indexed_values(m1, m2)
     assert m1.v1[1].value != m2.v1[1].value
     assert m1.v2.value == m2.v2.value == 2
-    assert m1.b1['a'].v3.value == m2.b1['a'].v3.value == 2
-    assert m1.b1['b'].b4.v6.value == m2.b1['b'].b4.v6.value == 2
+    assert m1.b1["a"].v3.value == m2.b1["a"].v3.value == 2
+    assert m1.b1["b"].b4.v6.value == m2.b1["b"].b4.v6.value == 2
     assert m1.b3[3].v5.value != m2.b3[3].v5.value
 
 
@@ -219,19 +240,19 @@ def test_copy_non_time_indexed_values():
 def test_find_comp_in_block():
     m1 = ConcreteModel()
 
-    @m1.Block([1,2,3])
+    @m1.Block([1, 2, 3])
     def b1(b):
-        b.v = Var([1,2,3])
+        b.v = Var([1, 2, 3])
 
     m2 = ConcreteModel()
 
-    @m2.Block([1,2,3])
+    @m2.Block([1, 2, 3])
     def b1(b):
-        b.v = Var([1,2,3,4])
+        b.v = Var([1, 2, 3, 4])
 
-    @m2.Block([1,2,3])
+    @m2.Block([1, 2, 3])
     def b2(b):
-        b.v = Var([1,2,3])
+        b.v = Var([1, 2, 3])
 
     v1 = m1.b1[1].v[1]
 
@@ -242,9 +263,9 @@ def test_find_comp_in_block():
 
     # These should result in Attribute/KeyErrors
 
-    with pytest.raises(AttributeError, match=r'.*has no attribute.*'):
+    with pytest.raises(AttributeError, match=r".*has no attribute.*"):
         find_comp_in_block(m1, m2, v2)
-    with pytest.raises(KeyError, match=r'.*is not a valid index.*'):
+    with pytest.raises(KeyError, match=r".*is not a valid index.*"):
         find_comp_in_block(m1, m2, v3)
     assert find_comp_in_block(m1, m2, v2, allow_miss=True) is None
     assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
@@ -253,30 +274,30 @@ def test_find_comp_in_block():
 @pytest.mark.unit
 def test_find_comp_in_block_at_time():
     m1 = ConcreteModel()
-    m1.time = Set(initialize=[1,2,3])
+    m1.time = Set(initialize=[1, 2, 3])
 
     @m1.Block(m1.time)
     def b1(b):
         b.v = Var(m1.time)
 
-    @m1.Block([1,2,3])
+    @m1.Block([1, 2, 3])
     def b(bl):
         bl.v = Var(m1.time)
-        bl.v2 = Var(m1.time, ['a','b','c'])
+        bl.v2 = Var(m1.time, ["a", "b", "c"])
 
     m2 = ConcreteModel()
-    m2.time = Set(initialize=[1,2,3,4,5,6])
+    m2.time = Set(initialize=[1, 2, 3, 4, 5, 6])
 
     @m2.Block(m2.time)
     def b1(b):
         b.v = Var(m2.time)
 
-    @m2.Block([1,2,3,4])
+    @m2.Block([1, 2, 3, 4])
     def b(bl):
         bl.v = Var(m2.time)
-        bl.v2 = Var(m2.time, ['a','b','c'])
+        bl.v2 = Var(m2.time, ["a", "b", "c"])
 
-    @m2.Block([1,2,3])
+    @m2.Block([1, 2, 3])
     def b2(b):
         b.v = Var(m2.time)
 
@@ -286,16 +307,16 @@ def test_find_comp_in_block_at_time():
     assert find_comp_in_block_at_time(m2, m1, v1, m2.time, 4) is m2.b1[4].v[4]
     assert find_comp_in_block_at_time(m2, m1, v3, m2.time, 5) is m2.b[3].v[5]
 
-    v = m1.b[1].v2[1, 'a']
-    assert find_comp_in_block_at_time(m2, m1, v, m2.time, 6) is m2.b[1].v2[6, 'a']
+    v = m1.b[1].v2[1, "a"]
+    assert find_comp_in_block_at_time(m2, m1, v, m2.time, 6) is m2.b[1].v2[6, "a"]
 
     v2 = m2.b2[1].v[1]
     v4 = m2.b[4].v[1]
 
     # Should result in exceptions:
-    with pytest.raises(AttributeError, match=r'.*has no attribute.*'):
+    with pytest.raises(AttributeError, match=r".*has no attribute.*"):
         find_comp_in_block_at_time(m1, m2, v2, m1.time, 3)
-    with pytest.raises(KeyError, match=r'.*is not a valid index.*'):
+    with pytest.raises(KeyError, match=r".*is not a valid index.*"):
         find_comp_in_block_at_time(m1, m2, v4, m1.time, 3)
 
     assert find_comp_in_block_at_time(m1, m2, v2, m1.time, 3, allow_miss=True) is None
@@ -305,9 +326,9 @@ def test_find_comp_in_block_at_time():
 @pytest.mark.unit
 def test_get_location_of_coordinate_set():
     m = ConcreteModel()
-    m.s1 = Set(initialize=[1,2,3])
-    m.s2 = Set(initialize=[('a',1), ('b',2)])
-    m.s3 = Set(initialize=[('a',1,0), ('b',2,1)])
+    m.s1 = Set(initialize=[1, 2, 3])
+    m.s2 = Set(initialize=[("a", 1), ("b", 2)])
+    m.s3 = Set(initialize=[("a", 1, 0), ("b", 2, 1)])
     m.v1 = Var(m.s1)
     m.v2 = Var(m.s1, m.s2)
     m.v121 = Var(m.s1, m.s2, m.s1)
@@ -327,9 +348,9 @@ def test_get_location_of_coordinate_set():
 @pytest.mark.unit
 def test_get_index_of_set():
     m = ConcreteModel()
-    m.s1 = Set(initialize=[1,2,3])
-    m.s2 = Set(initialize=[('a',1), ('b',2)])
-    m.s3 = Set(initialize=[('a',1,0), ('b',2,1)])
+    m.s1 = Set(initialize=[1, 2, 3])
+    m.s2 = Set(initialize=[("a", 1), ("b", 2)])
+    m.s3 = Set(initialize=[("a", 1, 0), ("b", 2, 1)])
     m.v0 = Var()
     m.v1 = Var(m.s1)
     m.v2 = Var(m.s1, m.s2)
@@ -337,23 +358,23 @@ def test_get_index_of_set():
     m.v3 = Var(m.s3, m.s1, m.s2)
 
     assert get_index_of_set(m.v1[2], m.s1) == 2
-    assert get_index_of_set(m.v2[2,'a',1], m.s1) == 2
-    assert get_index_of_set(m.v3['b',2,1,3,'b',2], m.s1) == 3
+    assert get_index_of_set(m.v2[2, "a", 1], m.s1) == 2
+    assert get_index_of_set(m.v3["b", 2, 1, 3, "b", 2], m.s1) == 3
 
     with pytest.raises(ValueError) as exc_test:
         get_index_of_set(m.v0, m.s1)
     with pytest.raises(ValueError) as exc_test:
-        get_index_of_set(m.v2[1,'a',1], m.s2)
+        get_index_of_set(m.v2[1, "a", 1], m.s2)
     with pytest.raises(ValueError) as exc_test:
-        get_index_of_set(m.v2[1,'b',2], m.s3)
+        get_index_of_set(m.v2[1, "b", 2], m.s3)
 
 
 @pytest.mark.unit
 def test_get_implicit_index_of_set():
     m = ConcreteModel()
-    m.s1 = Set(initialize=[1,2,3])
-    m.s2 = Set(initialize=['a', 'b', 'c'])
-    m.s3 = Set(initialize=[('d',4), ('e',5)])
+    m.s1 = Set(initialize=[1, 2, 3])
+    m.s2 = Set(initialize=["a", "b", "c"])
+    m.s3 = Set(initialize=[("d", 4), ("e", 5)])
 
     @m.Block()
     def b1(b):
@@ -364,8 +385,8 @@ def test_get_implicit_index_of_set():
                 b.v1 = Var(m.s2)
                 b.v2 = Var(m.s1)
 
-    assert get_implicit_index_of_set(m.b1.b2['d',4,1].b3.v1['a'], m.s1) == 1
-    assert get_implicit_index_of_set(m.b1.b2['d',4,1].b3.v1['a'], m.s2) == 'a'
+    assert get_implicit_index_of_set(m.b1.b2["d", 4, 1].b3.v1["a"], m.s1) == 1
+    assert get_implicit_index_of_set(m.b1.b2["d", 4, 1].b3.v1["a"], m.s2) == "a"
 
     with pytest.raises(ValueError) as exc_test:
-        get_implicit_index_of_set(m.b1.b2['e',5,2].b3.v2[1], m.s1)
+        get_implicit_index_of_set(m.b1.b2["e", 5, 2].b3.v2[1], m.s1)

@@ -47,7 +47,7 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.math import smooth_max
 from idaes.core.util.misc import StrEnum
 
-from idaes.models.costing.costing_base import (
+from idaes.core import (
     FlowsheetCostingBlockData,
     register_idaes_currency_units,
 )

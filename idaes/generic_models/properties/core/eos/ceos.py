@@ -16,7 +16,7 @@ Deprecation path for renamed module.
 from pyomo.common.deprecation import deprecation_warning
 
 deprecation_warning("The generic_models.properties.core.eos.ceos has been "
-                    "moved to idaes.models.properties.core.eos.ceos",
+                    "moved to idaes.models.properties.modular_properties.eos.ceos",
                     version="2.0.0.alpha0")
 
-from idaes.models.properties.core.eos.ceos import *
+from idaes.models.properties.modular_properties.eos.ceos import *

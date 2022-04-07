@@ -27,21 +27,21 @@ _log = idaeslog.getLogger(__name__)
 
 
 @TransformationFactory.register(
-    'simple_equality_eliminator',
-    doc="Eliminate simple equalities in the form a*x + b*y = c or a*x = b")
+    "simple_equality_eliminator",
+    doc="Eliminate simple equalities in the form a*x + b*y = c or a*x = b",
+)
 class SimpleEqualityEliminator(NonIsomorphicTransformation):
-
     def _get_subs(self, instance):
-        subs = {} # Substitute one var for another from a * x + b * y + c = 0
-        subs_map = {} # id -> var
-        fixes = [] # fix a variable from a * x + c = 0
-        cnstr = set() # constraints to deactivate
-        rset = set() # variables used in a sub or fixed
+        subs = {}  # Substitute one var for another from a * x + b * y + c = 0
+        subs_map = {}  # id -> var
+        fixes = []  # fix a variable from a * x + c = 0
+        cnstr = set()  # constraints to deactivate
+        rset = set()  # variables used in a sub or fixed
         for c in instance.component_data_objects(pyo.Constraint, active=True):
             if (
-                pyo.value(c.lower) is not None and
-                pyo.value(c.lower) == pyo.value(c.upper) and
-                c.body.polynomial_degree() == 1
+                pyo.value(c.lower) is not None
+                and pyo.value(c.lower) == pyo.value(c.upper)
+                and c.body.polynomial_degree() == 1
             ):
                 repn = generate_standard_repn(c.body)
                 if len(repn.nonlinear_vars) != 0 or len(repn.quadratic_vars) != 0:
@@ -57,7 +57,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                 if id(v0) in rset:
                     continue
                 elif len(repn.linear_vars) == 1:
-                    fixes.append((v0, -b0/a0))
+                    fixes.append((v0, -b0 / a0))
                     rset.add(id(v0))
                     cnstr.add(c)
                     continue
@@ -88,7 +88,6 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                         v1.setub(ub)
 
         return subs, cnstr, fixes, subs_map
-
 
     def _apply_to(self, instance, max_iter=5, reversible=True):
         """
@@ -138,9 +137,9 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                 break
             nr_tot += nr
 
-            for c in cnstr: # deactivate constraints that aren't needed
+            for c in cnstr:  # deactivate constraints that aren't needed
                 c.deactivate()
-            for v in fixes: # fix variables that can be fixed
+            for v in fixes:  # fix variables that can be fixed
                 v[0].fix(v[1])
 
             # Do replacements in Expressions, Constraints, and Objectives
@@ -152,9 +151,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                 remove_named_expressions=False,
             )
             for c in instance.component_data_objects(
-                (pyo.Constraint, pyo.Objective),
-                descend_into=True,
-                active=True
+                (pyo.Constraint, pyo.Objective), descend_into=True, active=True
             ):
                 if id(c) not in self._original and reversible:
                     self._original[id(c)] = c.expr
@@ -196,8 +193,8 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
             for sid in subs:
                 self._subs_map[sid].value = pyo.value(subs[sid])
 
-        del(self._instance)
-        del(self._all_subs)
-        del(self._all_fixes)
-        del(self._all_deactivate)
-        del(self._original)
+        del self._instance
+        del self._all_subs
+        del self._all_fixes
+        del self._all_deactivate
+        del self._original

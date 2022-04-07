@@ -18,15 +18,12 @@ __author__ = "Andrew Lee"
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           Constraint,
-                           Param,
-                           TerminationCondition,
-                           Var)
+from pyomo.environ import ConcreteModel, Constraint, Param, TerminationCondition, Var
 
 from idaes.core import FlowsheetBlock
-from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver
@@ -285,8 +282,7 @@ def test_basic_step_accel(model):
 @pytest.mark.unit
 def test_basic_step_init(model):
     # With zero acceleration and initial step of 0.05, should take 20 steps
-    tc, prog, ni = homotopy(model, [model.x], [20],
-                            step_init=0.05, step_accel=0)
+    tc, prog, ni = homotopy(model, [model.x], [20], step_init=0.05, step_accel=0)
 
     assert model.y.value == 400
 
@@ -303,8 +299,15 @@ def test_basic_step_cut(model):
 
     # Should take 6 steps
     # 4 steps to reach 14, and 2 to cut back to min_step
-    tc, prog, ni = homotopy(model, [model.x], [20], step_init=0.1,
-                            min_step=0.025, step_cut=0.25, step_accel=0)
+    tc, prog, ni = homotopy(
+        model,
+        [model.x],
+        [20],
+        step_init=0.1,
+        min_step=0.025,
+        step_cut=0.25,
+        step_accel=0,
+    )
 
     assert model.y.value == 196
 
@@ -321,8 +324,15 @@ def test_basic_step_cut_2(model):
 
     # Should take 7 steps
     # 4 steps to reach 14, and 3 to cut back to min_step
-    tc, prog, ni = homotopy(model, [model.x], [20], step_init=0.1,
-                            min_step=0.01, step_cut=0.25, step_accel=0)
+    tc, prog, ni = homotopy(
+        model,
+        [model.x],
+        [20],
+        step_init=0.1,
+        min_step=0.01,
+        step_cut=0.25,
+        step_accel=0,
+    )
 
     assert model.y.value == 196
 
@@ -366,12 +376,15 @@ def model2():
 
     # vapor-liquid (ideal) - FTPz
     m.fs.properties_ideal_vl_FTPz = BTXParameterBlock(
-        default={"valid_phase": ('Liq', 'Vap'),
-                 "activity_coeff_model": "Ideal",
-                 "state_vars": "FTPz"})
-    m.fs.state_block =\
-        m.fs.properties_ideal_vl_FTPz.build_state_block(
-                default={"defined_state": True})
+        default={
+            "valid_phase": ("Liq", "Vap"),
+            "activity_coeff_model": "Ideal",
+            "state_vars": "FTPz",
+        }
+    )
+    m.fs.state_block = m.fs.properties_ideal_vl_FTPz.build_state_block(
+        default={"defined_state": True}
+    )
 
     m.fs.state_block.flow_mol.fix(1)
     m.fs.state_block.temperature.fix(360)
@@ -389,22 +402,25 @@ def model2():
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_ideal_prop(model2):
-    tc, prog, ni = homotopy(
-            model2, [model2.fs.state_block.temperature], [390])
+    tc, prog, ni = homotopy(model2, [model2.fs.state_block.temperature], [390])
 
     assert tc == TerminationCondition.optimal
     assert prog == 1
     assert ni == 5
 
     # Check for VLE results
-    assert model2.fs.state_block.mole_frac_phase_comp["Liq", "benzene"].value \
-        == pytest.approx(0.291, abs=1e-3)
-    assert model2.fs.state_block.mole_frac_phase_comp["Liq", "toluene"].value \
-        == pytest.approx(0.709, abs=1e-3)
-    assert model2.fs.state_block.mole_frac_phase_comp["Vap", "benzene"].value \
-        == pytest.approx(0.5, abs=1e-5)
-    assert model2.fs.state_block.mole_frac_phase_comp["Vap", "toluene"].value \
-        == pytest.approx(0.5, abs=1e-5)
+    assert model2.fs.state_block.mole_frac_phase_comp[
+        "Liq", "benzene"
+    ].value == pytest.approx(0.291, abs=1e-3)
+    assert model2.fs.state_block.mole_frac_phase_comp[
+        "Liq", "toluene"
+    ].value == pytest.approx(0.709, abs=1e-3)
+    assert model2.fs.state_block.mole_frac_phase_comp[
+        "Vap", "benzene"
+    ].value == pytest.approx(0.5, abs=1e-5)
+    assert model2.fs.state_block.mole_frac_phase_comp[
+        "Vap", "toluene"
+    ].value == pytest.approx(0.5, abs=1e-5)
 
 
 # Test max_iter here, as a more complicated model is needed
@@ -412,19 +428,28 @@ def test_ideal_prop(model2):
 @pytest.mark.unit
 def test_ideal_prop_max_iter(model2):
     tc, prog, ni = homotopy(
-            model2, [model2.fs.state_block.temperature], [390],
-            max_solver_iterations=3, min_step=0.01, step_accel=0)
+        model2,
+        [model2.fs.state_block.temperature],
+        [390],
+        max_solver_iterations=3,
+        min_step=0.01,
+        step_accel=0,
+    )
 
     assert tc == TerminationCondition.optimal
     assert prog == 1
     assert ni == 19
 
     # Check for VLE results
-    assert model2.fs.state_block.mole_frac_phase_comp["Liq", "benzene"].value \
-        == pytest.approx(0.291, abs=1e-3)
-    assert model2.fs.state_block.mole_frac_phase_comp["Liq", "toluene"].value \
-        == pytest.approx(0.709, abs=1e-3)
-    assert model2.fs.state_block.mole_frac_phase_comp["Vap", "benzene"].value \
-        == pytest.approx(0.5, abs=1e-5)
-    assert model2.fs.state_block.mole_frac_phase_comp["Vap", "toluene"].value \
-        == pytest.approx(0.5, abs=1e-5)
+    assert model2.fs.state_block.mole_frac_phase_comp[
+        "Liq", "benzene"
+    ].value == pytest.approx(0.291, abs=1e-3)
+    assert model2.fs.state_block.mole_frac_phase_comp[
+        "Liq", "toluene"
+    ].value == pytest.approx(0.709, abs=1e-3)
+    assert model2.fs.state_block.mole_frac_phase_comp[
+        "Vap", "benzene"
+    ].value == pytest.approx(0.5, abs=1e-5)
+    assert model2.fs.state_block.mole_frac_phase_comp[
+        "Vap", "toluene"
+    ].value == pytest.approx(0.5, abs=1e-5)

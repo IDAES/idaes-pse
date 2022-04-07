@@ -17,16 +17,19 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'ReactionParameterBlock',
-    'idaes.core.base.reaction_base.ReactionParameterBlock',
-    version='2.0.0.alpha0')
+    "ReactionParameterBlock",
+    "idaes.core.base.reaction_base.ReactionParameterBlock",
+    version="2.0.0.alpha0",
+)
 
 relocated_module_attribute(
-    'ReactionBlockBase',
-    'idaes.core.base.reaction_base.ReactionBlockBase',
-    version='2.0.0.alpha0')
+    "ReactionBlockBase",
+    "idaes.core.base.reaction_base.ReactionBlockBase",
+    version="2.0.0.alpha0",
+)
 
 relocated_module_attribute(
-    'ReactionBlockDataBase',
-    'idaes.core.base.reaction_base.ReactionBlockDataBase',
-    version='2.0.0.alpha0')
+    "ReactionBlockDataBase",
+    "idaes.core.base.reaction_base.ReactionBlockDataBase",
+    version="2.0.0.alpha0",
+)
