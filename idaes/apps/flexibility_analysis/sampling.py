@@ -14,6 +14,7 @@ from idaes.surrogate.pysmo.sampling import LatinHypercubeSampling
 from .indices import _VarIndex
 from pyomo.common.config import ConfigDict, ConfigValue, InEnum
 import coramin
+from pyomo.common.errors import ApplicationError
 try:
     from tqdm import tqdm
 except ImportError:
@@ -24,6 +25,13 @@ except ImportError:
 class SamplingStrategy(enum.Enum):
     grid = 'grid'
     lhs = 'lhs'
+
+
+class SamplingInitStrategy(enum.Enum):
+    none = 'none'
+    square = 'square'
+    min_control_deviation = 'min_control_deviation'
+    all = 'all'
 
 
 class _GridSamplingState(enum.Enum):
@@ -190,6 +198,12 @@ class SamplingConfig(ConfigDict):
         self.enable_progress_bar: bool = self.declare(
             "enable_progress_bar", ConfigValue(domain=bool, default=True)
         )
+        self.initialization_strategy: SamplingInitStrategy = self.declare(
+            "initialization_strategy",
+            ConfigValue(
+                domain=InEnum(SamplingInitStrategy), default=SamplingInitStrategy.none
+            )
+        )
 
 
 def _deactivate_inequalities(m: _BlockData):
@@ -203,12 +217,19 @@ def _deactivate_inequalities(m: _BlockData):
 
 def _init_with_square_problem(m: _BlockData, controls, solver):
     for v in controls:
+        if v.value is None:
+            raise RuntimeError(
+                'Cannot initialize sampling problem with square problem because the '
+                'control values are not initialized.'
+            )
         v.fix()
+    if m.max_constraint_violation.value is None:
+        m.max_constraint_violation.value = 0
     m.max_constraint_violation.fix()
     deactivated_cons = _deactivate_inequalities(m)
     try:
         res = solver.solve(m, tee=False, load_solutions=False)
-    except:
+    except ApplicationError:
         res = None
     for c in deactivated_cons:
         c.activate()
@@ -236,7 +257,13 @@ def _solve_with_max_viol_fixed(m: _BlockData, controls, solver):
     orig_max_viol_value = m.max_constraint_violation.value
     m.max_constraint_violation.fix(0)
 
-    m.control_setpoints_obj = pe.Objective(expr=sum((v - v.value)**2 for v in controls))
+    obj_expr = 0
+    for v in controls:
+        if v.value is None:
+            obj_expr += v**2
+        else:
+            obj_expr += (v - v.value)**2
+    m.control_setpoints_obj = pe.Objective(expr=obj_expr)
 
     try:
         res = solver.solve(m, tee=False, load_solutions=False)
@@ -248,7 +275,7 @@ def _solve_with_max_viol_fixed(m: _BlockData, controls, solver):
             feasible = False
             control_vals = None
             m.max_constraint_violation.value = orig_max_viol_value
-    except:
+    except ApplicationError:
         feasible = False
         control_vals = None
         m.max_constraint_violation.value = orig_max_viol_value
@@ -270,11 +297,6 @@ def _perform_sampling(
     Sequence[float],
     MutableMapping[_GeneralVarData, Sequence[float]],
 ]:
-    if isinstance(config.solver, PersistentSolver):
-        using_persistent = True
-    else:
-        using_persistent = False
-
     unc_param_vars = list()
     for p in uncertain_params:
         ndx = _VarIndex(p, None)
@@ -283,20 +305,6 @@ def _perform_sampling(
     n_samples, sample_points = _sample_strategy_map[config.strategy](
         unc_param_vars, config.num_points, config.lhs_seed
     )
-
-    if using_persistent:
-        original_update_config = config.solver.update_config()
-        config.solver.update_config.check_for_new_or_removed_constraints = False
-        config.solver.update_config.check_for_new_or_removed_vars = False
-        config.solver.update_config.check_for_new_or_removed_params = False
-        config.solver.update_config.check_for_new_objective = False
-        config.solver.update_config.update_constraints = False
-        config.solver.update_config.update_vars = False
-        config.solver.update_config.update_params = False
-        config.solver.update_config.update_named_expressions = False
-        config.solver.update_config.update_objective = False
-        config.solver.update_config.treat_fixed_vars_as_params = False
-        config.solver.set_instance(m)
 
     max_violation_values = list()
 
@@ -316,13 +324,15 @@ def _perform_sampling(
         for p, p_vals in sample_points.items():
             p.fix(p_vals[sample_ndx])
 
-        if using_persistent:
-            config.solver.update_variables(unc_param_vars)
-
-        max_viol_ub = _init_with_square_problem(m, controls, config.solver)
-        if max_viol_ub is not None:
-            m.max_constraint_violation.setub(max_viol_ub)
-        feasible, control_vals = _solve_with_max_viol_fixed(m, controls, config.solver)
+        if config.initialization_strategy in {SamplingInitStrategy.square, SamplingInitStrategy.all}:
+            max_viol_ub = _init_with_square_problem(m, controls, config.solver)
+            if max_viol_ub is not None:
+                m.max_constraint_violation.setub(max_viol_ub)
+        if config.initialization_strategy in {SamplingInitStrategy.min_control_deviation, SamplingInitStrategy.all}:
+            feasible, control_vals = _solve_with_max_viol_fixed(m, controls, config.solver)
+        else:
+            feasible = False
+            control_vals = None
         if feasible:
             max_violation_values.append(0)
             for v, val in zip(controls, control_vals):
@@ -336,9 +346,6 @@ def _perform_sampling(
                 control_values[v].append(v.value)
 
         m.max_constraint_violation.setub(orig_max_constraint_violation_ub)
-
-    if using_persistent:
-        config.solver.update_config.set_value(original_update_config)
 
     unc_param_var_to_unc_param_map = pe.ComponentMap(
         zip(unc_param_vars, uncertain_params)
