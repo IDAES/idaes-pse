@@ -10,8 +10,12 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-import prescient.plugins as pplugins
-from prescient.simulator.config import PrescientConfig
+from pyomo.common.dependencies import attempt_import
+
+prescient, prescient_avail = attempt_import("prescient")
+if prescient_avail:
+    import prescient.plugins as pplugins
+    from prescient.simulator.config import PrescientConfig
 from pyomo.common.config import ConfigDict, ConfigValue
 import pyomo.environ as pyo
 
@@ -50,9 +54,9 @@ class DoubleLoopCoordinator:
 
     def register_plugins(
         self,
-        context: pplugins.PluginRegistrationContext,
-        options: PrescientConfig,
-        plugin_config: ConfigDict,
+        context,
+        options,
+        plugin_config,
     ):
 
         """
@@ -115,9 +119,9 @@ class DoubleLoopCoordinator:
 
     def _register_initialization_callbacks(
         self,
-        context: pplugins.PluginRegistrationContext,
-        options: PrescientConfig,
-        plugin_config: ConfigDict,
+        context,
+        options,
+        plugin_config,
     ):
 
         """
@@ -139,9 +143,9 @@ class DoubleLoopCoordinator:
 
     def _register_before_ruc_solve_callbacks(
         self,
-        context: pplugins.PluginRegistrationContext,
-        options: PrescientConfig,
-        plugin_config: ConfigDict,
+        context,
+        options,
+        plugin_config,
     ):
 
         """
@@ -163,9 +167,9 @@ class DoubleLoopCoordinator:
 
     def _register_before_operations_solve_callbacks(
         self,
-        context: pplugins.PluginRegistrationContext,
-        options: PrescientConfig,
-        plugin_config: ConfigDict,
+        context,
+        options,
+        plugin_config,
     ):
 
         """
@@ -187,9 +191,9 @@ class DoubleLoopCoordinator:
 
     def _register_after_operations_callbacks(
         self,
-        context: pplugins.PluginRegistrationContext,
-        options: PrescientConfig,
-        plugin_config: ConfigDict,
+        context,
+        options,
+        plugin_config,
     ):
 
         """
@@ -211,9 +215,9 @@ class DoubleLoopCoordinator:
 
     def _register_update_operations_stats_callbacks(
         self,
-        context: pplugins.PluginRegistrationContext,
-        options: PrescientConfig,
-        plugin_config: ConfigDict,
+        context,
+        options,
+        plugin_config,
     ):
 
         """
@@ -235,9 +239,9 @@ class DoubleLoopCoordinator:
 
     def _register_after_ruc_activation_callbacks(
         self,
-        context: pplugins.PluginRegistrationContext,
-        options: PrescientConfig,
-        plugin_config: ConfigDict,
+        context,
+        options,
+        plugin_config,
     ):
 
         """
@@ -259,9 +263,9 @@ class DoubleLoopCoordinator:
 
     def _register_finalization_callbacks(
         self,
-        context: pplugins.PluginRegistrationContext,
-        options: PrescientConfig,
-        plugin_config: ConfigDict,
+        context,
+        options,
+        plugin_config,
     ):
 
         """

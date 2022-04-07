@@ -16,7 +16,12 @@ import pandas as pd
 from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder
 from idaes.apps.grid_integration import PlaceHolderForecaster
-from prescient.simulator import Prescient
+
+from pyomo.common.dependencies import attempt_import
+
+prescient, prescient_avail = attempt_import("prescient")
+if prescient_avail:
+    from prescient.simulator import Prescient
 
 
 class ThermalGenerator:
@@ -715,7 +720,7 @@ if __name__ == "__main__":
         bids = thermal_bidder.compute_bids(date, hour)
         thermal_bidder.write_results(path="./")
 
-    if run_prescient:
+    if run_prescient and prescient_avail:
 
         options = {
             "data_path": "/home/xgao1/DowlingLab/RTS-GMLC/RTS_Data/SourceData",
