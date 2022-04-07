@@ -451,8 +451,7 @@ class PysmoSurrogate(SurrogateBase):
 
     @classmethod
     def load(cls, stream):
-        """
-            Create an instance of a surrogate from a stream.
+        """Create an instance of a surrogate from a stream.
             Args:
                 stream:
                     This is the python stream containing the data required to load the surrogate.
