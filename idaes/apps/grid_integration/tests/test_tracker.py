@@ -104,11 +104,9 @@ class TestingModel:
     Simple model object for testing.
     """
 
-    pmin = 20.00
-    pmax = 100.00
     marginal_cost = 30.00
 
-    def __init__(self, horizon=48):
+    def __init__(self, horizon=48, name="test", pmin=20.00, pmax=100.00):
 
         """
         Initializes the class object by building the thermal generator model.
@@ -122,9 +120,12 @@ class TestingModel:
             None
         """
 
-        self.generator = "test"
+        self.generator = name
         self.horizon = horizon
         self.result_list = []
+        self._bids = None
+        self.pmin = pmin
+        self.pmax = pmax
 
     def populate_model(self, b):
 
@@ -331,7 +332,21 @@ class TestingModel:
 
     @property
     def default_bids(self):
-        return {p: self.marginal_cost for p in [20.00, 40.00, 60.00, 80.00, 100.00]}
+
+        if self._bids is None:
+            bids = {}
+            n_bids = 5
+            step_len = (self.pmax - self.pmin) // n_bids
+
+            for idx in range(n_bids):
+                bids[self.pmin + idx * step_len] = self.marginal_cost
+
+            if self.pmax not in bids:
+                bids[self.pmax] = self.marginal_cost
+
+            self._bids = bids
+
+        return self._bids
 
 
 horizon = 4
