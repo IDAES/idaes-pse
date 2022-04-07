@@ -138,8 +138,7 @@ class PysmoTrainer(SurrogateTrainer):
         self, pysmo_input: pd.DataFrame, output_label: str
     ) -> Union[pr.PolynomialRegression, rbf.RadialBasisFunctions, krg.KrigingModel]:
         """Subclasses must override this and make it return a PySMO model."""
-        pass
-        return
+        raise NotImplementedError("Sub-class fail to implement overload ``_create_model`` method.")
 
     def _get_metrics(self, model) -> Dict:
         """Subclasses should override this to return a dict of metrics for the model."""
