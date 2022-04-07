@@ -392,8 +392,7 @@ class PysmoSurrogate(SurrogateBase):
         )
 
     def evaluate_surrogate(self, inputs: pd.DataFrame) -> pd.DataFrame:
-        """
-            Evaluate the surrogate model at a set of user-provided values.
+        """Evaluate the surrogate model at a set of user-provided values.
             Args:
                 inputs: pandas DataFrame
                     The dataframe of input values to be used in the evaluation. The dataframe
