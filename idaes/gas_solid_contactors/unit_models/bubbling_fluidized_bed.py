@@ -63,6 +63,10 @@ __author__ = "Chinedu Okoli"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+# module-level definitions for smoothing factor values
+EPS_BULK = 1e-8
+EPS_CONV = 1e-8
+
 
 @declare_process_block_class("BubblingFluidizedBed")
 class BubblingFluidizedBedData(UnitModelBlockData):
@@ -561,12 +565,12 @@ see reaction package for documentation.}"""))
 
         # Declare Mutable Parameters
         self.eps_bulk = Param(mutable=True,
-                              default=1e-8,
+                              default=EPS_BULK,
                               doc='Smoothing Factor Bulk Gas Mass Transfer',
                               units=(units_meta_gas('amount') /
                                      units_meta_gas('volume')))
         self.eps_conv = Param(mutable=True,
-                              default=1e-8,
+                              default=EPS_CONV,
                               doc='Smoothing Factor Convective Heat Transfer',
                               units=(units_meta_gas('amount') /
                                      units_meta_gas('mass')))
