@@ -175,6 +175,13 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
             pyo.units.K,
         )
 
+    def test_pprint_noerror(self):
+        m = pyo.ConcreteModel()
+        m.properties = NaturalGasParameterBlock()
+        m.state = m.properties.build_state_block()
+        m.state.dens_mol
+        m.state.pprint()
+
 
 if __name__ == "__main__":
     unittest.main()
