@@ -560,10 +560,16 @@ see reaction package for documentation.}"""))
             solid_phase.property_package.get_metadata().get_derived_units
 
         # Declare Mutable Parameters
-        self.eps = Param(mutable=True,
-                         default=1e-8,
-                         doc='Smoothing Factor for Smooth IF Statements',
-                         units=pyunits.dimensionless)
+        self.eps_bulk = Param(mutable=True,
+                              default=1e-8,
+                              doc='Smoothing Factor Bulk Gas Mass Transfer',
+                              units=(units_meta_gas('amount') /
+                                     units_meta_gas('volume')))
+        self.eps_conv = Param(mutable=True,
+                              default=1e-8,
+                              doc='Smoothing Factor Convective Heat Transfer',
+                              units=(units_meta_gas('amount') /
+                                     units_meta_gas('mass')))
 
         # Vessel dimensions
         self.bed_diameter = Var(domain=Reals,
@@ -706,7 +712,7 @@ see reaction package for documentation.}"""))
                 domain=Reals,
                 initialize=1,
                 doc='Gas Phase Component Bulk Transfer Rate',
-                units=units_meta_gas('flux_mole')*units_meta_gas('length'))
+                units=units_meta_gas('flow_mole')/units_meta_gas('length'))
 
         # Heat transfer coefficients
         self.Hbe = Var(
@@ -715,14 +721,15 @@ see reaction package for documentation.}"""))
                 domain=Reals,
                 initialize=1000,
                 doc='Bubble to Emulsion Gas Heat Transfer Coefficient',
-                units=units_meta_gas('power')/units_meta_gas('temperature'))
+                units=(units_meta_gas('heat_transfer_coefficient') /
+                       units_meta_gas('length')))
         self.Hgbulk = Var(
                 self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 initialize=1000,
                 doc='Gas Phase Bulk Enthalpy Transfer Rate',
-                units=units_meta_gas('power')*units_meta_gas('length')**2)
+                units=units_meta_gas('power')/units_meta_gas('length'))
         self.htc_conv = Var(
                 self.flowsheet().time,
                 self.length_domain,
@@ -739,7 +746,7 @@ see reaction package for documentation.}"""))
                 initialize=1000,
                 doc='Gas to Solid Convective Enthalpy Transfer in'
                     'Emulsion Region',
-                units=units_meta_gas('heat_transfer_coefficient'))
+                units=units_meta_gas('power')/units_meta_gas('volume'))
 
         # Reformulation variables
         self._reform_var_1 = Var(
@@ -774,8 +781,10 @@ see reaction package for documentation.}"""))
                 initialize=1000,
                 doc='Bubble to Emulsion Gas Heat Transfer'
                     'Coefficient Reformulation Variable [reform var 4]',
-                units=units_meta_gas('heat_transfer_coefficient') *
-                units_meta_gas('length')**3.25)
+                units=(units_meta_gas('mass') *
+                       units_meta_gas('length')**0.25 /
+                       units_meta_gas('temperature') /
+                       units_meta_gas('time')**3))
         self._reform_var_5 = Var(
                 self.flowsheet().time,
                 self.length_domain,
@@ -796,7 +805,7 @@ see reaction package for documentation.}"""))
         self.Kd = Var(domain=Reals,
                       initialize=1,
                       doc='Bulk Gas Permeation Coefficient',
-                      units=units_meta_gas('velocity'))
+                      units=units_meta_gas('length')/units_meta_gas('time'))
         self.Kd.fix()
         self.deltaP_orifice = Var(domain=Reals,
                                   initialize=3.4E3,
@@ -906,12 +915,15 @@ see reaction package for documentation.}"""))
                          doc="Bubble Growth Coefficient")
         def bubble_growth_coefficient(b, t, x):
             # 0.0256 m/s^2 is a unitted constant in the correlation
+            bub_grow_const = pyunits.convert(
+                2.56e-2 * pyunits.m/pyunits.s**2,
+                units_meta_gas('length') / units_meta_gas('time')**2)
             return ((b.bubble_growth_coeff[t, x] *
                      pyunits.convert(
                          b.solid_emulsion.properties[t, x]
                          ._params.velocity_mf,
                          to_units=units_meta_gas('velocity')))**2
-                    == ((2.56e-2*pyunits.m/pyunits.s**2)**2) * (
+                    == (bub_grow_const**2) * (
                         pyunits.convert(b.bed_diameter,
                                         to_units=units_meta_gas('length')) /
                         pyunits.convert(constants.acceleration_gravity,
@@ -1125,16 +1137,14 @@ see reaction package for documentation.}"""))
         def bubble_cloud_bulk_mass_trans(b, t, x, j):
             conc_diff = (b.gas_emulsion.properties[t, x].dens_mol -
                          b.bubble.properties[t, x].dens_mol)
-            conc_diff_units = (units_meta_gas('amount') /
-                               units_meta_gas('volume'))
             return (b.Kgbulk_c[t, x, j] * b.bubble_diameter[t, x] ==
                     6 * b.Kd * b.delta[t, x] *
                     pyunits.convert(b.bed_area,
                                     to_units=units_meta_gas('area')) *
                     (b.gas_emulsion.properties[t, x].mole_frac_comp[j] *
-                     smooth_max(value(conc_diff), 0, b.eps)*conc_diff_units +
+                     smooth_max(conc_diff, 0, b.eps_bulk) +
                      b.bubble.properties[t, x].mole_frac_comp[j] *
-                     smooth_min(value(conc_diff), 0, b.eps)*conc_diff_units))
+                     smooth_min(conc_diff, 0, b.eps_bulk)))
         # ---------------------------------------------------------------------
         # Heat transfer constraints
 
@@ -1145,9 +1155,12 @@ see reaction package for documentation.}"""))
                              doc="Bubble to Emulsion Gas Heat Transfer"
                                  "Coeff. Reformulation Eqn [reform eqn 4]")
             def _reformulation_eqn_4(b, t, x):
-                # 34.2225 (m**6/K) is a unitted constant in this correlation
+                # 34.2225 /K is a unitted constant in the correlation
+                reform_var_4_const = pyunits.convert(
+                    34.2225 / pyunits.K,
+                    units_meta_gas('temperature')**(-1))
                 return (b._reform_var_4[t, x]**2 ==
-                        34.2225 * (pyunits.m**6)/(pyunits.K) *
+                        reform_var_4_const *
                         b.bubble.properties[t, x].therm_cond *
                         b.bubble.properties[t, x].enth_mol *
                         b.bubble.properties[t, x].dens_mol *
@@ -1175,10 +1188,13 @@ see reaction package for documentation.}"""))
                              doc="Bubble to Emulsion Gas Heat Transfer"
                                  "Coefficient")
             def bubble_cloud_heat_trans_coeff(b, t, x):
-                # 4.5 m**3/K is a unitted constant in this correlation
+                # 4.5 /K is a unitted constant in the correlation
+                bub_cloud_heat_const = pyunits.convert(
+                    4.5 / pyunits.K,
+                    units_meta_gas('temperature')**(-1))
                 return (
                     b.Hbe[t, x] * b._reform_var_3[t, x] ** 5 ==
-                    4.5 * (pyunits.m**3)/(pyunits.K) *
+                    bub_cloud_heat_const *
                     pyunits.convert(b.solid_emulsion.properties[t, x]
                                     ._params.velocity_mf,
                                     to_units=units_meta_gas('velocity')) *
@@ -1191,19 +1207,20 @@ see reaction package for documentation.}"""))
                              self.length_domain,
                              doc="Convective Heat Transfer Coefficient")
             def convective_heat_trans_coeff(b, t, x):
-                # 0.03 (kg/mol)**1.3 is a unitted constant in this correlation
-                # unit containers moved to the LHS of equation for stability
-                reform_var_5_units = (units_meta_gas('amount') /
-                                      units_meta_gas('mass'))
+                # 0.03 (kg/mol)**1.3 is a unitted constant in the correlation
+                # moved to LHS for Pyomo unit stability (floating point issue
+                # when adding unit container exponents)
+                conv_heat_const_1 = pyunits.convert(
+                    0.03 * pyunits.kg**1.3 / pyunits.mol**1.3,
+                    units_meta_gas('mass')**1.3 /
+                    units_meta_gas('amount')**1.3)
                 return (
-                    b.htc_conv[t, x] *
-                    ((pyunits.mol/pyunits.kg)**1.3) *
+                    b.htc_conv[t, x] / conv_heat_const_1 *
                     pyunits.convert(b.solid_emulsion.properties[t, x]
                                     ._params.particle_dia,
                                     to_units=units_meta_gas('length')) ==
-                    0.03 *
                     b.gas_emulsion.properties[t, x].therm_cond *
-                    ((b._reform_var_5[t, x]**2 + b.eps*reform_var_5_units**2
+                    ((b._reform_var_5[t, x]**2 + b.eps_conv**2
                       )**0.5) ** 1.3)
 
             # Gas to solid convective heat transfer # replaced "ap" with
@@ -1213,14 +1230,12 @@ see reaction package for documentation.}"""))
                              doc="Gas to Solid Convective Enthalpy Transfer"
                                  "in Emulsion Region")
             def convective_heat_transfer(b, t, x):
-                # 6 m/K is a unitted constant in this correlation
                 return (
                     b.ht_conv[t, x] *
                     pyunits.convert(b.solid_emulsion.properties[t, x]
                                     ._params.particle_dia,
                                     to_units=units_meta_gas('length')) ==
-                    6 * pyunits.m/pyunits.K *
-                    b.delta_e[t, x] * (1 - b.voidage_emulsion[t, x]) *
+                    6 * b.delta_e[t, x] * (1 - b.voidage_emulsion[t, x]) *
                     b.htc_conv[t, x] *
                     (b.gas_emulsion.properties[t, x].temperature -
                      pyunits.convert(
@@ -1236,16 +1251,15 @@ see reaction package for documentation.}"""))
                 conc_diff = (
                         b.gas_emulsion.properties[t, x].dens_mol -
                         b.bubble.properties[t, x].dens_mol)
-                conc_diff_units = (units_meta_gas('amount'))
                 return (
                     b.Hgbulk[t, x] * b.bubble_diameter[t, x] ==
                     6 * b.Kd * b.delta[t, x] *
                     pyunits.convert(b.bed_area,
                                     to_units=units_meta_gas('area')) *
                     (b.gas_emulsion.properties[t, x].enth_mol *
-                     smooth_max(value(conc_diff), 0, b.eps)*conc_diff_units +
+                     smooth_max(conc_diff, 0, b.eps_bulk) +
                      b.bubble.properties[t, x].enth_mol *
-                     smooth_min(value(conc_diff), 0, b.eps)*conc_diff_units))
+                     smooth_min(conc_diff, 0, b.eps_bulk)))
         # ---------------------------------------------------------------------
         # Mass and heat transfer terms in control volumes
 
@@ -1290,7 +1304,7 @@ see reaction package for documentation.}"""))
                              self.length_domain,
                              doc="Bubble - Heat Transfer")
             def bubble_heat_transfer(b, t, x):
-                return (b.bubble.heat[t, x] * pyunits.m**3 == b.Hgbulk[t, x] -
+                return (b.bubble.heat[t, x] == b.Hgbulk[t, x] -
                         b.Hbe[t, x] *
                         (b.bubble.properties[t, x].temperature -
                          b.gas_emulsion.properties[t, x].temperature) *
@@ -1301,12 +1315,12 @@ see reaction package for documentation.}"""))
                              self.length_domain,
                              doc="Gas Emulsion - Heat Transfer")
             def gas_emulsion_heat_transfer(b, t, x):
-                return (b.gas_emulsion.heat[t, x]*pyunits.m**3 ==
+                return (b.gas_emulsion.heat[t, x] ==
                         b.Hbe[t, x] *
                         (b.bubble.properties[t, x].temperature -
                          b.gas_emulsion.properties[t, x].temperature) *
                         b.bubble.area[t, x] - b.Hgbulk[t, x] -
-                        b.ht_conv[t, x] * pyunits.m**2*pyunits.K *
+                        b.ht_conv[t, x] *
                         pyunits.convert(b.bed_area,
                                         to_units=units_meta_gas('area')))
 
@@ -1318,7 +1332,7 @@ see reaction package for documentation.}"""))
                 return (pyunits.convert(b.solid_emulsion.heat[t, x],
                                         to_units=units_meta_gas('power') /
                                         units_meta_gas('length')) ==
-                        b.ht_conv[t, x] * pyunits.K/pyunits.m *
+                        b.ht_conv[t, x] *
                         pyunits.convert(b.bed_area,
                                         to_units=units_meta_gas('area')))
 
@@ -2009,7 +2023,7 @@ see reaction package for documentation.}"""))
         init_log.info('Initialize Mass Balances')
         init_log.info_high('initialize mass balances with no reactions')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = opt.solve(blk, tee=True)
+            results = opt.solve(blk, tee=slc.tee)
         if check_optimal_termination(results):
             init_log.info_high(
                 "Initialization Step 4a {}.".format(
@@ -2070,11 +2084,11 @@ see reaction package for documentation.}"""))
                             Constraint, descend_into=False):
                         c.activate()
 
-            blk.bubble.reactions.initialize(outlvl=idaeslog.DEBUG,
+            blk.bubble.reactions.initialize(outlvl=outlvl,
                                             optarg=optarg,
                                             solver=solver)
 
-            blk.gas_emulsion.reactions.initialize(outlvl=idaeslog.DEBUG,
+            blk.gas_emulsion.reactions.initialize(outlvl=outlvl,
                                                   optarg=optarg,
                                                   solver=solver)
 
@@ -2124,7 +2138,7 @@ see reaction package for documentation.}"""))
                             Constraint, descend_into=False):
                         c.activate()
 
-            blk.solid_emulsion.reactions.initialize(outlvl=idaeslog.DEBUG,
+            blk.solid_emulsion.reactions.initialize(outlvl=outlvl,
                                                     optarg=optarg,
                                                     solver=solver)
 
@@ -2132,7 +2146,7 @@ see reaction package for documentation.}"""))
                 solid_phase.reaction_package is not None):
             init_log.info_high('initialize mass balances with reactions')
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                results = opt.solve(blk, tee=True)
+                results = opt.solve(blk, tee=slc.tee)
             if check_optimal_termination(results):
                 init_log.info_high(
                     "Initialization Step 4b {}.".format(
