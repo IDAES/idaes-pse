@@ -33,6 +33,7 @@ from pyomo.common.config import (
     PositiveFloat,
     InEnum,
     MarkImmutable,
+    NonNegativeFloat
 )
 relu_dr, relu_dr_available = attempt_import('idaes.apps.flexibility_analysis.decision_rules.relu_dr',
                                             'The ReLU decision rule requires Tensorflow and OMLT')
@@ -66,7 +67,7 @@ class FlexTestMethod(enum.Enum):
     sampling = enum.auto()
 
 
-class FlexTestConfig(ConfigDict):
+class ActiveConstraintConfig(ConfigDict):
     def __init__(
         self,
         description=None,
@@ -74,6 +75,36 @@ class FlexTestConfig(ConfigDict):
         implicit=False,
         implicit_domain=None,
         visibility=0,
+    ):
+        super().__init__(
+            description=description,
+            doc=doc,
+            implicit=implicit,
+            implicit_domain=implicit_domain,
+            visibility=visibility,
+        )
+        self.use_haar_conditions: bool = self.declare(
+            'use_haar_conditions', ConfigValue(domain=bool, default=True)
+        )
+        self.default_BigM: Optional[float] = self.declare(
+            'default_BigM', ConfigValue(domain=NonNegativeFloat, default=None)
+        )
+        self.enforce_equalities: bool = self.declare(
+            'enforce_equalities', ConfigValue(domain=bool, default=False)
+        )
+        self.skip_scaling_check: bool = self.declare(
+            'skip_scaling_check', ConfigValue(domain=bool, default=False)
+        )
+
+
+class FlexTestConfig(ConfigDict):
+    def __init__(
+            self,
+            description=None,
+            doc=None,
+            implicit=False,
+            implicit_domain=None,
+            visibility=0,
     ):
         super().__init__(
             description=description,
@@ -102,6 +133,9 @@ class FlexTestConfig(ConfigDict):
         )
         self.decision_rule_config = self.declare(
             "decision_rule_config", ConfigValue(default=None)
+        )
+        self.active_constraint_config: ActiveConstraintConfig = self.declare(
+            "active_constraint_config", ActiveConstraintConfig()
         )
 
 
@@ -248,25 +282,28 @@ def build_active_constraint_flextest(
     param_nominal_values: Mapping[Union[_GeneralVarData, _ParamData], float],
     param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Tuple[float, float]],
     valid_var_bounds: MutableMapping[_GeneralVarData, Tuple[float, float]],
-    default_M=None,
+    config: Optional[ActiveConstraintConfig] = None,
 ):
-    enforce_equalities = False
+    if config is None:
+        config = ActiveConstraintConfig()
+
     _replace_uncertain_params(m, uncertain_params, param_nominal_values, param_bounds)
     for v in m.unc_param_vars.values():
         valid_var_bounds[v] = v.bounds
 
     # TODO: make this a context manager or try-finally
-    bounds_manager = BoundsManager(m)
-    bounds_manager.save_bounds()
-    _remove_var_bounds(m)
-    _apply_var_bounds(valid_var_bounds)
-    passed = report_scaling(m)
-    if not passed:
-        raise ValueError(
-            "Please scale the model. If a scaling report was not "
-            "shown, set the logging level to INFO."
-        )
-    bounds_manager.pop_bounds()
+    if not config.skip_scaling_check:
+        bounds_manager = BoundsManager(m)
+        bounds_manager.save_bounds()
+        _remove_var_bounds(m)
+        _apply_var_bounds(valid_var_bounds)
+        passed = report_scaling(m)
+        if not passed:
+            raise ValueError(
+                "Please scale the model. If a scaling report was not "
+                "shown, set the logging level to INFO."
+            )
+        bounds_manager.pop_bounds()
 
     # TODO: constraint.equality does not check for range constraints with equal bounds
     orig_equality_cons = [
@@ -277,7 +314,7 @@ def build_active_constraint_flextest(
 
     _build_inner_problem(
         m=m,
-        enforce_equalities=enforce_equalities,
+        enforce_equalities=config.enforce_equalities,
         unique_constraint_violations=False,
         valid_var_bounds=valid_var_bounds,
     )
@@ -292,13 +329,13 @@ def build_active_constraint_flextest(
         m=m,
         uncertain_params=list(m.unc_param_vars.values()),
         valid_var_bounds=valid_var_bounds,
-        default_M=default_M,
+        default_M=config.default_BigM,
     )
 
     # TODO: to control the namespace and reduce cloning:
     #  take the users model and stick it on a new block as a sub-block
 
-    if not enforce_equalities:
+    if not config.enforce_equalities:
         m.equality_cuts = pe.ConstraintList()
         max_viol_lb, max_viol_ub = valid_var_bounds[m.max_constraint_violation]
         for c in orig_equality_cons:
@@ -311,7 +348,8 @@ def build_active_constraint_flextest(
             m.equality_cuts.add(m.max_constraint_violation <= (1 - y1 * y2) * max_viol_ub)
             m.equality_cuts.add(m.max_constraint_violation >= (1 - y1 * y2) * max_viol_lb)
 
-    m.n_active_ineqs = pe.Constraint(expr=sum(m.active_indicator.values()) == n_dof)
+    if config.use_haar_conditions:
+        m.n_active_ineqs = pe.Constraint(expr=sum(m.active_indicator.values()) == n_dof)
 
     m.max_constraint_violation_obj = pe.Objective(
         expr=m.max_constraint_violation, sense=pe.maximize
@@ -333,6 +371,7 @@ def _solve_flextest_active_constraint(
         param_nominal_values=param_nominal_values,
         param_bounds=param_bounds,
         valid_var_bounds=valid_var_bounds,
+        config=config.active_constraint_config
     )
     opt = config.minlp_solver
     res = opt.solve(m)
