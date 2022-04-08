@@ -77,7 +77,7 @@ from idaes.core.util.initialization import (
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants as const
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 

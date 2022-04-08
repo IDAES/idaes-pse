@@ -44,7 +44,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.constants import Constants as const
 
 import idaes.logger as idaeslog

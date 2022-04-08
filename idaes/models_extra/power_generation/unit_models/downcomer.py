@@ -42,7 +42,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"

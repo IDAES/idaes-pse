@@ -38,7 +38,7 @@ from idaes.models_extra.column_models.properties.MEA_solvent import (
     configuration as aqueous_mea,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.exceptions import InitializationError
 

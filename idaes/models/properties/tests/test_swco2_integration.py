@@ -19,7 +19,7 @@ import idaes.models.properties.swco2 as swco2
 from idaes.models.unit_models import Compressor
 from idaes.core import FlowsheetBlock
 import idaes
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 solver = get_solver()
 

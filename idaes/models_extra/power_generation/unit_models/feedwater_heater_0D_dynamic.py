@@ -47,7 +47,7 @@ from idaes.models_extra.power_generation.unit_models.helm import (
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
 from idaes.models_extra.power_generation.unit_models.helm import HelmMixer as Mixer
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 
 _log = idaeslog.getLogger(__name__)
