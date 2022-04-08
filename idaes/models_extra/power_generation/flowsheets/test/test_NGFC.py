@@ -50,7 +50,7 @@ from idaes.models_extra.power_generation.flowsheets.NGFC.NGFC_flowsheet import (
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util import model_serializer as ms
 
 solver_available = pyo.SolverFactory("ipopt").available()

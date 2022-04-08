@@ -45,7 +45,7 @@ from idaes.core.util.exceptions import (
 from idaes.core.util.math import smooth_min
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 

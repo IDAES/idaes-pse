@@ -25,7 +25,7 @@ from idaes.models.properties.examples.saponification_thermo import (
     SaponificationStateBlock,
 )
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 # -----------------------------------------------------------------------------

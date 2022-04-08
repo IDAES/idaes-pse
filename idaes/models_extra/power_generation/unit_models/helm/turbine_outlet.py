@@ -25,7 +25,8 @@ from idaes.models_extra.power_generation.unit_models.helm.turbine import (
     HelmIsentropicTurbineData,
 )
 from idaes.core import declare_process_block_class
-from idaes.core.util import from_json, to_json, StoreSpec, get_solver
+from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 

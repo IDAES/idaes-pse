@@ -48,7 +48,8 @@ from idaes.models.unit_models.heater import (
 )
 
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
 # TODO: Clean up in IDAES 2.0
