@@ -11,7 +11,12 @@
 # license information.
 #################################################################################
 
-import importlib
+try:
+    # Pyton 3.8+
+    from importlib import resources
+except ImportError:
+    # Python 3.7
+    import importlib_resources as resources
 from numbers import Number
 from pathlib import Path
 from typing import Dict, Union, List
@@ -26,12 +31,6 @@ prescient_simulator = pytest.importorskip(
 )
 
 
-@pytest.fixture(scope="module")
-def base_dir() -> Path:
-    pkg_init_path = Path(importlib.util.find_spec("idaes.tests.prescient").origin)
-    return pkg_init_path.parent
-
-
 # define custom type for type hinting
 PrescientOptions = Dict[str, Union[str, bool, Number, dict]]
 
@@ -40,8 +39,9 @@ class TestDoubleLoopIntegration:
     "Integration test for the double loop using 5bus use case."
 
     @pytest.fixture
-    def data_path(self, base_dir: Path) -> Path:
-        return base_dir / "5bus"
+    def data_path(self) -> Path:
+        with resources.path("idaes.tests.prescient", "") as pkg_dir:
+            return Path(pkg_dir) / "5bus"
 
     @pytest.mark.unit
     def test_data_path_available(self, data_path: Path):
@@ -54,7 +54,16 @@ class TestDoubleLoopIntegration:
         return path
 
     @pytest.fixture
-    def prescient_options(self, data_path: Path, output_dir: Path) -> PrescientOptions:
+    def plugin_path(self) -> Path:
+        with resources.path("idaes.apps.grid_integration.tests", "integration_test_plugin.py") as p:
+            return Path(p)
+
+    @pytest.mark.unit
+    def test_plugin_path_is_existing_file(self, plugin_path):
+        assert plugin_path.is_file()
+
+    @pytest.fixture
+    def prescient_options(self, data_path: Path, output_dir: Path, plugin_path: Path) -> PrescientOptions:
         return {
             "data_path": str(data_path),
             "input_format": "rts-gmlc",
@@ -84,7 +93,7 @@ class TestDoubleLoopIntegration:
             "reserve_price_threshold": 5,
             "plugin": {
                 "doubleloop": {
-                    "module": "integration_test_plugin.py",
+                    "module": str(plugin_path),
                     "bidding_generator": "10_STEAM",
                 }
             },

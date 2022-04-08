@@ -11,7 +11,12 @@
 # license information.
 #################################################################################
 
-import importlib
+try:
+    # Pyton 3.8+
+    from importlib import resources
+except ImportError:
+    # Python 3.7
+    import importlib_resources as resources
 from numbers import Number
 from pathlib import Path
 from typing import Dict, Union, List
@@ -25,8 +30,8 @@ prescient_simulator = pytest.importorskip("prescient.simulator", reason="prescie
 
 @pytest.fixture(scope="module")
 def base_dir() -> Path:
-    pkg_init_path = Path(importlib.util.find_spec("idaes.tests.prescient").origin)
-    return pkg_init_path.parent
+    with resources.path("idaes.tests.prescient", "") as pkg_dir:
+        return Path(pkg_dir)
 
 
 # define custom type for type hinting
