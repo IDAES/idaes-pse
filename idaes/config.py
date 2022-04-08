@@ -35,6 +35,7 @@ binary_platform_map = {
     "almalinux8": "el8",
     "debian9": "el7",
     "debian10": "el8",
+    "debian11": "ubuntu2004",
     "ubuntu1804": "ubuntu1804",
     "ubuntu2004": "ubuntu2004",
     "ubuntu2204": "ubuntu2204",
