@@ -18,7 +18,7 @@ import os
 import click
 import logging
 import idaes
-import idaes.util.download_bin
+import idaes.commands.util.download_bin
 from idaes.commands import cb
 
 _log = logging.getLogger("idaes.commands.extensions")
@@ -237,7 +237,6 @@ def bin_platform():
     fd, arch = idaes.util.download_bin._get_file_downloader(False, None)
     try:
         platform = idaes.util.download_bin._get_platform(fd, "auto", arch)
-    except idaes.util.download_bin.UnsupportedPlatformError:
-        click.echo("No compatible binaries found.")
-    else:
         click.echo(platform)
+    except idaes.util.download_bin.UnsupportedPlatformError:
+        click.echo("No supported binaries found.")
