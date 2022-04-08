@@ -652,7 +652,7 @@ def extreme_jacobian_rows(
         small: <= to this and >= zero is consdered small
 
     Returns:
-        (list of tuples), Jacobian entry, Constraint, Variable
+        (list of tuples), Jacobian entry, Constraint
     """
     if jac is None or nlp is None:
         jac, nlp = get_jacobian(m, scaled)
@@ -660,10 +660,7 @@ def extreme_jacobian_rows(
     for i, c in enumerate(nlp.clist):
         norm = 0
         for j in jac[i].indices:
-            # v = nlp.vlist[j]
             norm += jac[i, j]**2
-            # if (e <= small and e > zero) or e >= large:
-            #     el.append((e, c, v))
         norm = norm**0.5
         if norm <= small or norm >= large:
             el.append((norm, c))
@@ -682,19 +679,16 @@ def extreme_jacobian_columns(
         small: <= to this and >= zero is consdered small
 
     Returns:
-        (list of tuples), Jacobian entry, Constraint, Variable
+        (list of tuples), Jacobian entry, Variable
     """
     if jac is None or nlp is None:
         jac, nlp = get_jacobian(m, scaled)
-    # TODO figure out whether or not I need to make a copy
-    jac = jac.tocsc()#(copy=True)
+    jac = jac.tocsc()
     el = []
     for j, v in enumerate(nlp.vlist):
         norm = 0
         for i in jac.getcol(j).indices:
             norm += jac[i, j]**2
-            # if (e <= small and e > zero) or e >= large:
-            #     el.append((e, c, v))
         norm = norm**0.5
         if norm <= small or norm >= large:
             el.append((norm, v))

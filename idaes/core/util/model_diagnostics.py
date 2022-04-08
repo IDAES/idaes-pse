@@ -30,9 +30,6 @@ from idaes.core.util.model_statistics import (
     variables_near_bounds_set,
 )
 import idaes.core.util.scaling as iscale
-from pyomo.opt import SolverStatus, TerminationCondition
-
-import matplotlib.pyplot as plt
 
 from operator import itemgetter
 
@@ -70,13 +67,14 @@ class DegeneracyHunter():
                                               equality_constraints_only=True)[0]
         
             # Create a list of equality constraint names            
-            self.eq_con_list = PyomoNLP.get_pyomo_equality_constraints(self.nlp)
-        
+            self.eq_con_list = self.nlp.get_pyomo_equality_constraints()
+            self.var_list = self.nlp.get_pyomo_variables()
+            
             self.candidate_eqns = None
         
         elif type(block_or_jac) is np.array:
         
-            raise NotImplementedError("Degeneracy Hunter only currently supports analyzing a Pyomo model")
+            raise NotImplementedError("Degeneracy Hunter currently only supports analyzing a Pyomo model")
         
             # TODO: Need to refactor, document, and test support for Jacobian
             self.jac_eq = block_or_jac
@@ -531,12 +529,14 @@ class DegeneracyHunter():
             
             if dense:
                 u, s, vT = svd(self.jac_eq.todense(),full_matrices=False)
-                u = u[:,-1-n_smallest_sv:]
-                s = s[-1-n_smallest_sv:]
-                vT = vT[-1-n_smallest_sv:,:]
+                u = np.flip(u[:,-1-n_smallest_sv:], axis=0)
+                s = np.flip(s[-1-n_smallest_sv:], axis=0)
+                vT = np.flip(vT[-1-n_smallest_sv:,:], axis=1)
                 v = vT.transpose()
             else:
                 u, s, v = svds(self.jac_eq, k = n_sv, which='SM')#, solver='lobpcg')
+                # TODO svds does not guarantee the order in which singular values/
+                # vectors are returned in---need to figure out what order it usually uses
             
             # Save results
             self.u = u
@@ -547,6 +547,39 @@ class DegeneracyHunter():
             print(
                 "Warning: model must contain at least 2 equality constraints to perform svd_analysis"
             )
+
+    def underdetermined_variables_and_constraints(self, n_calc=1, tol=0.1, dense=False):
+        """
+        Determines constraints and variables associated with the smallest
+        singular values by having large components in the left and right
+        singular vectors, respectively, associated with those singular values.
+        
+        Args:
+            n_calc: The singular value, as ordered from least to greatest
+            starting from 1, to calculate associated constraints and variables
+            tol: Size below which to ignore constraints and variables in
+            the singular vector
+
+        Returns
+        -------
+        None.
+
+        """
+        if self.s is None:
+            self.svd_analysis(n_smallest_sv=max(n_calc,10),dense=dense)
+        n_sv = len(self.s)
+        if n_sv < n_calc:
+            raise ValueError("User wanted constraints and variables associated "
+                             f"with the {n_calc}-th smallest singular value, "
+                             f"but only {n_sv} small singular values have been "
+                             "calculated. Run svd_analysis again and specify "
+                             f"n_smallest_sv>={n_calc}.")
+        for i in np.where(abs(self.v[:, n_calc - 1]) > tol)[0]: 
+            print(str(i) + ": " + self.var_list[i].name)
+        for i in np.where(abs(self.u[:, n_calc - 1]) > tol)[0]: 
+            print(str(i) + ": " + self.eq_con_list[i].name)
+        
+        
 
     def find_candidate_equations(self, verbose=True, tee=False):
         """
