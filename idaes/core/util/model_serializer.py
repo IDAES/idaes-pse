@@ -224,11 +224,13 @@ class StoreSpec(object):
         classes=(
             (Param, ("_mutable",)),
             (Var, ()),
+            (BooleanVar, ()),
             (Expression, ()),
             (Component, ("active",)),
         ),
         data_classes=(
             (pyomo.core.base.var._VarData, ("fixed", "stale", "value", "lb", "ub")),
+            (pyomo.core.base.boolean_var._BooleanVarData, ("fixed", "stale", "value")),
             (pyomo.core.base.param._ParamData, ("value",)),
             (int, ("value",)),
             (float, ("value",)),
