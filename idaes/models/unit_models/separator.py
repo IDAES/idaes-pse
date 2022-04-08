@@ -37,6 +37,7 @@ from idaes.core import (
     useDefault,
     MaterialBalanceType,
     MaterialFlowBasis,
+    VarLikeExpression,
 )
 from idaes.core.util.config import (
     is_physical_parameter_block,
@@ -50,7 +51,6 @@ from idaes.core.util.exceptions import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.misc import VarLikeExpression
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
