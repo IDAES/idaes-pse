@@ -393,11 +393,13 @@ class PysmoSurrogate(SurrogateBase):
 
     def evaluate_surrogate(self, inputs: pd.DataFrame) -> pd.DataFrame:
         """Evaluate the surrogate model at a set of user-provided values.
+
             Args:
                 inputs: pandas DataFrame
                     The dataframe of input values to be used in the evaluation. The dataframe
                     needs to contain a column corresponding to each of the input labels. Additional
                     columns are fine, but are not used.
+
             Returns:
                 output: pandas Dataframe
                     Returns a dataframe of the the output values evaluated at the provided inputs.
@@ -418,10 +420,12 @@ class PysmoSurrogate(SurrogateBase):
 
     def populate_block(self, block, additional_options=None):
         """Populate a Pyomo Block with surrogate model constraints.
+
             Args:
                 block: Pyomo Block component to be populated with constraints.
                 additional_options: None
                     No additional options are required for this surrogate object
+
             Returns:
                 None
         """
@@ -440,8 +444,10 @@ class PysmoSurrogate(SurrogateBase):
 
     def save(self, stream: io.TextIOBase):
         """Save this surrogate to the provided output stream so the model can be used later.
+
         Args:
            stream: Output stream for serialized surrogate object.
+
         Returns:
             None
         """
@@ -451,10 +457,12 @@ class PysmoSurrogate(SurrogateBase):
     @classmethod
     def load(cls, stream):
         """Create an instance of a surrogate from a stream.
+
             Args:
                 stream:
                     This is the python stream containing the data required to load the surrogate.
                     This is often, but does not need to be a string of json data.
+
             Returns:
                 An instance of the derived class or None if it failed to load
         """
