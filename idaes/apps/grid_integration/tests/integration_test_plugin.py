@@ -13,11 +13,11 @@
 import pandas as pd
 import pyomo.environ as pyo
 import os
-from test_tracker import TestingModel
 from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder
 from idaes.apps.grid_integration import PlaceHolderForecaster
 from idaes.apps.grid_integration import DoubleLoopCoordinator
+from idaes.apps.grid_integration.tests.util import TestingModel
 
 this_module_dir = os.path.dirname(__file__)
 

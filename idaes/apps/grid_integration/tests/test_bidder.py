@@ -13,20 +13,9 @@
 import pytest
 import pyomo.environ as pyo
 from idaes.apps.grid_integration.bidder import Bidder
-from test_tracker import TestingModel
+from idaes.apps.grid_integration.tests.util import TestingModel
+from idaes.apps.grid_integration.tests.util import TestingForecaster
 from pyomo.common import unittest as pyo_unittest
-
-
-class TestingForecaster:
-    """
-    A fake forecaster class for testing.
-    """
-    def __init__(self, horizon, n_sample):
-        self.horizon = horizon
-        self.n_sample = n_sample
-
-    def forecast(self, date, hour, prediction):
-        return {i: [prediction] * self.horizon for i in range(self.n_sample)}
 
 
 class TestMissingModel:

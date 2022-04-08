@@ -20,8 +20,8 @@ import pyomo.environ as pyo
 from idaes.apps.grid_integration.bidder import Bidder
 from idaes.apps.grid_integration.tracker import Tracker
 from idaes.apps.grid_integration.coordinator import DoubleLoopCoordinator
-from test_tracker import TestingModel
-from test_bidder import TestingForecaster
+from idaes.apps.grid_integration.tests.util import TestingModel
+from idaes.apps.grid_integration.tests.util import TestingForecaster
 from pyomo.common import unittest as pyo_unittest
 
 tracking_horizon = 4
