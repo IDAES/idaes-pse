@@ -166,7 +166,7 @@ def get_extensions(
     elif url is not None or release is not None:
         click.echo("Getting files...")
         try:
-            d = idaes.util.download_bin.download_binaries(
+            d = idaes.commands.util.download_bin.download_binaries(
                 release,
                 url,
                 insecure,
@@ -180,7 +180,7 @@ def get_extensions(
                 extra,
                 alt_path=to)
             click.echo("Done")
-        except idaes.util.download_bin.UnsupportedPlatformError as e:
+        except idaes.commands.util.download_bin.UnsupportedPlatformError as e:
             click.echo("")
             click.echo(e)
             click.echo("")
@@ -214,9 +214,9 @@ def hash_extensions(release, path):
     def _write_hash(fp, pack, plat):
         f = f"idaes-{pack}-{plat}.tar.gz"
         if path is not None:
-            h = idaes.util.download_bin.hash_file_sha256(os.path.join(path, f))
+            h = idaes.commands.util.download_bin.hash_file_sha256(os.path.join(path, f))
         else:
-            h = idaes.util.download_bin.hash_file_sha256(f)
+            h = idaes.commands.util.download_bin.hash_file_sha256(f)
         fp.write(h)
         fp.write("  ")
         fp.write(f)
@@ -234,9 +234,9 @@ def hash_extensions(release, path):
 
 @cb.command(name="bin-platform", help="Show the compatible binary build.")
 def bin_platform():
-    fd, arch = idaes.util.download_bin._get_file_downloader(False, None)
+    fd, arch = idaes.commands.util.download_bin._get_file_downloader(False, None)
     try:
-        platform = idaes.util.download_bin._get_platform(fd, "auto", arch)
+        platform = idaes.commands.util.download_bin._get_platform(fd, "auto", arch)
         click.echo(platform)
-    except idaes.util.download_bin.UnsupportedPlatformError:
+    except idaes.commands.util.download_bin.UnsupportedPlatformError:
         click.echo("No supported binaries found.")
