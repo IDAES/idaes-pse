@@ -18,7 +18,7 @@ import pytest
 
 # Need to update
 import pyomo.environ as pyo
-
+                           
 # TODO: Add pyomo.dae test case
 """
 from pyomo.environ import TransformationFactory
@@ -47,13 +47,12 @@ def problem1():
 
     return m
 
-
 def example2(with_degenerate_constraint=True):
     """Create the Pyomo model for Example 2
 
     Arguments:
         with_degenerate_constraint: Boolean, if True, include the redundant linear constraint
-
+    
     Returns:
         m2: Pyomo model
     """
@@ -68,31 +67,29 @@ def example2(with_degenerate_constraint=True):
     m2.con2 = pyo.Constraint(expr=m2.x[1] + m2.x[2] + m2.x[3] == 1)
     m2.con3 = pyo.Constraint(expr=m2.x[2] - 2 * m2.x[3] <= 1)
     m2.con4 = pyo.Constraint(expr=m2.x[1] + m2.x[3] >= 1)
-
+    
     if with_degenerate_constraint:
         m2.con5 = pyo.Constraint(expr=m2.x[1] + m2.x[2] + m2.x[3] == 1)
 
     m2.obj = pyo.Objective(expr=sum(m2.x[i] for i in m2.I))
-
+    
     return m2
-
 
 def extract_constraint_names(cs):
     """Get constraint names from ComponentSet
 
     Arguments:
         cs: ComponentSet object
-
+        
     Return:
         constraint_names: list of constraint names (strings)
-
+            
     """
-
+    
     constraint_names = []
     for i in cs:
         constraint_names.append(i.name)
     return constraint_names
-
 
 # Problem 1
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
@@ -100,7 +97,7 @@ def extract_constraint_names(cs):
 def test_problem1():
     # Create test problem
     m = problem1()
-
+    
     # Specify Ipopt as the solver
     opt = pyo.SolverFactory("ipopt")
 
@@ -116,12 +113,12 @@ def test_problem1():
 
     # Find constraints with residuals > 0.1
     initial_point_constraints = dh.check_residuals(tol=0.1)
-
+    
     # Check there are 2 constraints with large residuals
     assert len(initial_point_constraints) == 2
-
+    
     initial_point_constraint_names = extract_constraint_names(initial_point_constraints)
-
+    
     # Check first constraint
     assert initial_point_constraint_names[0] == "con1"
 
@@ -132,19 +129,19 @@ def test_problem1():
 
     # Solve
     opt.solve(m, tee=True)
-
+    
     # Find constraints with residuals > 0.1
     solution_constraints = dh.check_residuals(tol=1e-6)
-
+    
     # Check at the solution no constraints are violated
     assert len(solution_constraints) == 0
-
+    
     # Check no constraints are near their bounds
     solution_bounds = dh.check_variable_bounds(tol=0.1)
-
+    
     # Check at the solution no constraints are violated
     assert len(solution_bounds) == 0
-
+    
 
 # Problem 2 without degenerate constraint
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
@@ -153,7 +150,7 @@ def test_problem2_without_degenerate_constraint():
 
     # Create test problem instance
     m2 = example2(with_degenerate_constraint=False)
-
+    
     # Specify Ipopt as the solver
     opt = pyo.SolverFactory("ipopt")
 
@@ -163,34 +160,36 @@ def test_problem2_without_degenerate_constraint():
     # "Solving" the model with an iteration limit of 0 load the initial point and applies
     # any preprocessors (e.g., enforces bounds)
     opt.solve(m2, tee=True)
-
+    
     # Create Degeneracy Hunter object
     dh2 = DegeneracyHunter(m2)
-
+    
     # Check for violated constraints at the initial point
     initial_point_constraints = dh2.check_residuals(tol=0.1)
-
+    
     # Check there are 1 constraints with large residuals
     assert len(initial_point_constraints) == 1
-
+    
     initial_point_constraint_names = extract_constraint_names(initial_point_constraints)
-
+    
     # Check first constraint
     assert initial_point_constraint_names[0] == "con2"
 
     # Resolve
-    opt.options["max_iter"] = 500
+    opt.options['max_iter'] = 500
     opt.solve(m2, tee=True)
-
+    
     # Check solution
     x_sln = []
-
+    
     for i in m2.I:
         x_sln.append(m2.x[i]())
-
+    
     assert pytest.approx(x_sln[0], abs=1e-6) == 1.0
     assert pytest.approx(x_sln[1], abs=1e-6) == 0.0
     assert pytest.approx(x_sln[2], abs=1e-6) == 0.0
+    
+
 
 
 # Problem 2 with degenerate constraint
@@ -200,7 +199,7 @@ def test_problem2_with_degenerate_constraint():
 
     # Create test problem instance
     m2 = example2(with_degenerate_constraint=True)
-
+    
     # Specify Ipopt as the solver
     opt = pyo.SolverFactory("ipopt")
 
@@ -210,18 +209,18 @@ def test_problem2_with_degenerate_constraint():
     # "Solving" the model with an iteration limit of 0 load the initial point and applies
     # any preprocessors (e.g., enforces bounds)
     opt.solve(m2, tee=True)
-
+    
     # Create Degeneracy Hunter object
     dh2 = DegeneracyHunter(m2)
-
+    
     # Check for violated constraints at the initial point
     initial_point_constraints = dh2.check_residuals(tol=0.1)
-
+    
     # Check there are 2 constraints with large residuals
     assert len(initial_point_constraints) == 2
-
+    
     initial_point_constraint_names = extract_constraint_names(initial_point_constraints)
-
+    
     # Check first constraint
     assert initial_point_constraint_names[0] == "con2"
 
@@ -231,20 +230,26 @@ def test_problem2_with_degenerate_constraint():
     # Resolve
     opt.options["max_iter"] = 500
     opt.solve(m2, tee=True)
-
+    
     # Check solution
     x_sln = []
-
+    
     for i in m2.I:
         x_sln.append(m2.x[i]())
-
+    
     assert pytest.approx(x_sln[0], abs=1e-6) == 1.0
     assert pytest.approx(x_sln[1], abs=1e-6) == 0.0
     assert pytest.approx(x_sln[2], abs=1e-6) == 0.0
-
+    
     # Check the rank
     n_rank_deficient = dh2.check_rank_equality_constraints()
-
+    
+    # Test DH with SVD
+    # Is there any way to test whether the sparse SVD is actually used?
+    # Trying to do an SVD of a 50000x50000 identity matrix would work, but
+    # would produce an extremely slow test failure
+    dh3 = DegeneracyHunter(m2)
+    n_rank_deficient = dh3.check_rank_equality_constraints(dense=False)
     assert n_rank_deficient == 1
-
+    
     # TODO: Add MILP solver to idaes get-extensions and add more tests

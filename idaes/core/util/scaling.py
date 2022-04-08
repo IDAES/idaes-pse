@@ -79,9 +79,24 @@ def scale_arc_constraints(blk):
                 "been applied?"
             )
             continue
-        for c in arc_block.component_data_objects(pyo.Constraint, descend_into=True):
-            sf = min_scaling_factor(identify_variables(c.body))
-            constraint_scaling_transform(c, sf)
+        src = arc.source
+        dest = arc.destination
+        for name in src.vars.keys():
+            if src.is_extensive(name):
+                _log.warning(
+                    f"Variable {name} on Port {src.name} was created with "
+                    "Extensive rule, for which scaling is not supported")
+                continue
+            if dest.is_extensive(name):
+                _log.warning(
+                    f"Variable {name} on Port {dest.name} was created with "
+                    "Extensive rule, for which scaling is not supported")
+                continue
+            con = getattr(arc_block,name+"_equality")
+            for i, c in con.items():
+                sf = min_scaling_factor([src.vars[name][i],
+                                         dest.vars[name][i]])
+                constraint_scaling_transform(c, sf)
 
 
 def map_scaling_factor(iter, default=1, warning=False, func=min, hint=None):
@@ -105,9 +120,8 @@ def map_scaling_factor(iter, default=1, warning=False, func=min, hint=None):
     return func(
         map(
             lambda x: get_scaling_factor(
-                x, default=default, warning=warning, hint=hint
-            ),
-            iter,
+                x, default=default, warning=warning, hint=hint),
+            iter
         )
     )
 
@@ -132,8 +146,10 @@ def min_scaling_factor(iter, default=1, warning=True, hint=None):
 
 
 def propagate_indexed_component_scaling_factors(
-    blk, typ=None, overwrite=False, descend_into=True
-):
+    blk,
+    typ=None,
+    overwrite=False,
+    descend_into=True):
     """Use the parent component scaling factor to set all component data object
     scaling factors.
 
@@ -159,14 +175,12 @@ def calculate_scaling_factors(blk):
     recursive function to execute the subblock calculate_scaling_factors
     methods first.
     """
-
     def cs(blk2):
-        """Recursive function for to do subblocks first"""
+        """ Recursive function for to do subblocks first"""
         for b in blk2.component_data_objects(pyo.Block, descend_into=False):
             cs(b)
         if hasattr(blk2, "calculate_scaling_factors"):
             blk2.calculate_scaling_factors()
-
     # Call recursive function to run calculate_scaling_factors on blocks from
     # the bottom up.
     cs(blk)
@@ -213,16 +227,19 @@ def get_scaling_factor(c, default=None, warning=False, exception=False, hint=Non
         default: value to return if no scale factor exists (default=None)
         warning: whether to log a warning if a scaling factor is not found
                  (default=False)
-        exception: whether to riase an Exception if a scaling factor is not
+        exception: whether to raise an Exception if a scaling factor is not
                    found (default=False)
         hint: (str) a string to add to the warning or exception message to help
-            loacate the source.
+            locate the source.
 
     Returns:
         scaling factor (float)
     """
     try:
-        sf = c.parent_block().scaling_factor[c]
+        if hasattr(c,"referent"):
+            sf = c.referent.parent_block().scaling_factor[c.referent]
+        else:
+            sf = c.parent_block().scaling_factor[c]
     except (AttributeError, KeyError):
         if hint is None:
             h = ""
@@ -436,9 +453,8 @@ def unscaled_constraints_generator(blk, descend_into=True):
         ):
             yield c
 
-
 def constraints_with_scale_factor_generator(blk, descend_into=True):
-    """Generator for constraints scaled by a sclaing factor, may or not have
+    """Generator for constraints scaled by a scaling factor, may or not have
     been transformed.
 
     Args:
@@ -495,6 +511,7 @@ def constraint_autoscale_large_jac(
     max_grad=100,
     min_scale=1e-6,
     no_scale=False,
+    equality_constraints_only=False
 ):
     """Automatically scale constraints based on the Jacobian.  This function
     imitates Ipopt's default constraint scaling.  This scales constraints down
@@ -513,6 +530,8 @@ def constraint_autoscale_large_jac(
             scaled too much.
         no_scale: just calculate the Jacobian and scaled Jacobian, don't scale
             anything
+        equality_constraints_only: Only include the equality constraints in the
+            Jacobian calculated and scaled
 
     Returns:
         unscaled Jacobian CSR from, scaled Jacobian CSR from, Pynumero NLP
@@ -527,10 +546,16 @@ def constraint_autoscale_large_jac(
         setattr(m, dummy_objective_name, pyo.Objective(expr=0))
     # Create NLP and calculate the objective
     nlp = PyomoNLP(m)
-    jac = nlp.evaluate_jacobian().tocsr()
+    if equality_constraints_only:
+        jac = nlp.evaluate_jacobian_eq().tocsr()
+    else:
+        jac = nlp.evaluate_jacobian().tocsr()
     # Get lists of varibles and constraints to translate Jacobian indexes
     # save them on the NLP for later, since genrating them seems to take a while
-    nlp.clist = clist = nlp.get_pyomo_constraints()
+    if equality_constraints_only:
+        nlp.clist = clist = nlp.get_pyomo_equality_constraints()
+    else:
+        nlp.clist = clist = nlp.get_pyomo_constraints()
     nlp.vlist = vlist = nlp.get_pyomo_variables()
     # Create a scaled Jacobian to account for variable scaling, for now ignore
     # constraint scaling
@@ -565,7 +590,7 @@ def constraint_autoscale_large_jac(
     return jac, jac_scaled, nlp
 
 
-def get_jacobian(m, scaled=True):
+def get_jacobian(m, scaled=True, equality_constraints_only=False):
     """
     Get the Jacobian matrix at the current model values. This function also
     returns the Pynumero NLP which can be used to identify the constraints and
@@ -574,11 +599,14 @@ def get_jacobian(m, scaled=True):
     Args:
         m: model to get Jacobian from
         scaled: if True return scaled Jacobian, else get unscaled
+        equality_constraints_only: Only include equality constraints in the
+            Jacobian calculated and scaled
 
     Returns:
         Jacobian matrix in Scipy CSR format, Pynumero nlp
     """
-    jac, jac_scaled, nlp = constraint_autoscale_large_jac(m, no_scale=True)
+    jac, jac_scaled, nlp = constraint_autoscale_large_jac(m, no_scale=True,
+                          equality_constraints_only=equality_constraints_only)
     if scaled:
         return jac_scaled, nlp
     else:
@@ -611,6 +639,66 @@ def extreme_jacobian_entries(
                 el.append((e, c, v))
     return el
 
+def extreme_jacobian_rows(
+        m=None, scaled=True, large=1e4, small=1e-4, jac=None, nlp=None):
+    """
+    Show very large and very small Jacobian rows. Typically indicates a badly-
+    scaled constraint.
+
+    Args:
+        m: model
+        scaled: if true use scaled Jacobian
+        large: >= to this value is consdered large
+        small: <= to this and >= zero is consdered small
+
+    Returns:
+        (list of tuples), Jacobian entry, Constraint, Variable
+    """
+    if jac is None or nlp is None:
+        jac, nlp = get_jacobian(m, scaled)
+    el = []
+    for i, c in enumerate(nlp.clist):
+        norm = 0
+        for j in jac[i].indices:
+            # v = nlp.vlist[j]
+            norm += jac[i, j]**2
+            # if (e <= small and e > zero) or e >= large:
+            #     el.append((e, c, v))
+        norm = norm**0.5
+        if norm <= small or norm >= large:
+            el.append((norm, c))
+    return el
+
+def extreme_jacobian_columns(
+        m=None, scaled=True, large=1e4, small=1e-4, jac=None, nlp=None):
+    """
+    Show very large and very small Jacobian columns. A more reliable indicator
+    of a badly-scaled variable than badly_scaled_var_generator.
+
+    Args:
+        m: model
+        scaled: if true use scaled Jacobian
+        large: >= to this value is consdered large
+        small: <= to this and >= zero is consdered small
+
+    Returns:
+        (list of tuples), Jacobian entry, Constraint, Variable
+    """
+    if jac is None or nlp is None:
+        jac, nlp = get_jacobian(m, scaled)
+    # TODO figure out whether or not I need to make a copy
+    jac = jac.tocsc()#(copy=True)
+    el = []
+    for j, v in enumerate(nlp.vlist):
+        norm = 0
+        for i in jac.getcol(j).indices:
+            norm += jac[i, j]**2
+            # if (e <= small and e > zero) or e >= large:
+            #     el.append((e, c, v))
+        norm = norm**0.5
+        if norm <= small or norm >= large:
+            el.append((norm, v))
+    return el
 
 def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
     """
@@ -645,7 +733,6 @@ class CacheVars(object):
     A class for saving the values of variables then reloading them,
     usually after they have been used to perform some solve or calculation.
     """
-
     def __init__(self, vardata_list):
         self.vars = vardata_list
         self.cache = [None for var in self.vars]
@@ -666,7 +753,6 @@ class FlattenedScalingAssignment(object):
     variable-constraint assignment can be constructed, especially when
     the variables and constraints are all indexed by some common set(s).
     """
-
     def __init__(self, scaling_factor, varconlist=None, nominal_index=()):
         """
         Args:
@@ -796,7 +882,6 @@ class FlattenedScalingAssignment(object):
 ################################################################################
 # DEPRECATED functions below.
 ################################################################################
-
 
 def scale_single_constraint(c):
     """This transforms a constraint with its scaling factor. If there is no
