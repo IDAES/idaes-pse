@@ -46,7 +46,8 @@ from idaes.core import (
 from idaes.core.util.exceptions import PropertyNotSupportedError, InitializationError
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 # TODO: Clean up in IDAES 2.0
 import idaes.core.util.unit_costing as costing

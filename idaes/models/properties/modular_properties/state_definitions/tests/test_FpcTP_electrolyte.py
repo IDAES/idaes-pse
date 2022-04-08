@@ -51,7 +51,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 # -----------------------------------------------------------------------------

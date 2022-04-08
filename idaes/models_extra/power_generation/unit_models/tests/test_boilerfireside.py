@@ -34,7 +34,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.properties import iapws95
 
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 from idaes.models_extra.power_generation.unit_models.boiler_fireside import (
     BoilerFireside,

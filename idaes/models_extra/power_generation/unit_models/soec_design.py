@@ -13,8 +13,6 @@
 
 __author__ = "John Eslick"
 
-import enum
-
 import pyomo.environ as pyo
 from pyomo.network import Arc
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
@@ -31,8 +29,7 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
 import idaes.models.unit_models as um  # um = unit models
 from idaes.core.util.initialization import propagate_state
 import idaes.core.util.scaling as iscale
-import idaes.core.util as iutil
-from idaes.core.util.misc import get_solver
+from idaes.core.solvers import get_solver
 from idaes.models_extra.power_generation.properties.natural_gas_PR import (
     get_prop,
     get_rxn,
@@ -682,7 +679,7 @@ class SoecDesignData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         init_log.info_high("SOEC Initialization Starting")
-        solver_obj = iutil.get_solver(solver, optarg)
+        solver_obj = get_solver(solver, optarg)
 
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)

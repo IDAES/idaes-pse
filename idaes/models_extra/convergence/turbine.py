@@ -15,7 +15,7 @@ import idaes.core as idaes_core
 from idaes.power_generation.unit_models.helm import HelmIsentropicTurbine
 import idaes.core.util.convergence.convergence_base as cb
 from idaes.models.properties import iapws95
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from pyomo.environ import units as pyunits
 import idaes
 

@@ -34,7 +34,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               unused_variables_set)
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.initialization import initialize_by_time_element
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Import FixedBed0D unit model
 from idaes.gas_solid_contactors.unit_models.fixed_bed_0D import FixedBed0D

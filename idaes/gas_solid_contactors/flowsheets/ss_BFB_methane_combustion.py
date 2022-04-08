@@ -26,7 +26,8 @@ from pyomo.environ import ConcreteModel, value
 
 # Import IDAES core modules
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 # Import IDAES logger
 import idaes.logger as idaeslog
