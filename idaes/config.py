@@ -60,6 +60,7 @@ base_platforms = (
     "el8-x86_64",
     "ubuntu1804-x86_64",
     "ubuntu2004-x86_64",
+    "ubuntu2204-x86_64",
     "windows-x86_64",
 )
 # Set of extra binary packages and basic build platforom where available
