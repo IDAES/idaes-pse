@@ -34,7 +34,7 @@ from pyomo.util.check_units import assert_units_consistent, assert_units_equival
 from pyomo.core.base.units_container import InconsistentUnitsError
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError, IdaesError
 
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester

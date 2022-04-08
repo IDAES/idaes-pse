@@ -55,7 +55,7 @@ from idaes.models.properties.modular_properties.base.utility import Concentratio
 from idaes.models.unit_models import Heater
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 configuration = {

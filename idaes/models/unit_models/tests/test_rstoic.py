@@ -36,7 +36,7 @@ from idaes.models.properties.examples.saponification_reactions import (
     SaponificationReactionParameterBlock,
 )
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,

@@ -40,7 +40,7 @@ from idaes.core.util.dyn_utils import (
     get_implicit_index_of_set,
 )
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 __author__ = "Andrew Lee, John Siirola, Robert Parker"
 

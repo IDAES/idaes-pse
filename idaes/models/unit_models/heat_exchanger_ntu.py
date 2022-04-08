@@ -46,7 +46,7 @@ from idaes.core import (
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.math import smooth_min, smooth_max
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.unit_costing as costing
 import idaes.logger as idaeslog

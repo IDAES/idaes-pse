@@ -28,7 +28,7 @@ from pyomo.common.unittest import assertStructuredAlmostEqual
 from idaes.core import Component, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 from idaes.models.properties.modular_properties.base.generic_property import (

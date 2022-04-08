@@ -42,7 +42,7 @@ from idaes.core.util.tests.test_initialization import (
     AqueousEnzymeParameterBlock,
     EnzymeReactionParameterBlock,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 

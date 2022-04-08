@@ -38,7 +38,7 @@ from pyomo.common.errors import ApplicationError
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.config as icfg
 
 PetscBinaryIOTrajectory = None

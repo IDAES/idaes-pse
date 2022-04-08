@@ -29,7 +29,7 @@ from idaes.models.control.controller import (
     ControllerMVBoundType,
 )
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.solvers import petsc
 from idaes.core.util.math import smooth_max, smooth_min
 import numpy as np

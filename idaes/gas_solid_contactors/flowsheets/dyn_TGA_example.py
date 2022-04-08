@@ -28,7 +28,7 @@ from pyomo.environ import (ConcreteModel,
 
 from idaes.core import FlowsheetBlock, EnergyBalanceType
 from idaes.core.util.initialization import initialize_by_time_element
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 from idaes.gas_solid_contactors.unit_models.fixed_bed_0D import FixedBed0D
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \

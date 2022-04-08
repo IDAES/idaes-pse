@@ -59,7 +59,7 @@ from idaes.core.util.initialization import (
     solve_indexed_blocks,
     initialize_by_time_element,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 __author__ = "Andrew Lee"
 

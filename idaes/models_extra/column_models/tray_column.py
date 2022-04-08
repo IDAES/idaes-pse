@@ -37,7 +37,7 @@ from idaes.models_extra.column_models.condenser import CondenserType, Temperatur
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 _log = idaeslog.getLogger(__name__)
 

@@ -78,7 +78,7 @@ from idaes.models_extra.power_generation.unit_models.helm.phase_separator import
 )
 from idaes.models_extra.power_generation.unit_models.helm.mixer import HelmMixer
 from idaes.core.util.constants import Constants as const
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"
