@@ -56,7 +56,8 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_min, smooth_max
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.solvers import get_solver
+from idaes.core.util import scaling as iscale
 
 __author__ = "Chinedu Okoli"
 

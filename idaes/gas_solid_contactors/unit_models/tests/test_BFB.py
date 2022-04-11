@@ -38,7 +38,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables,
                                               unused_variables_set)
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.solvers import get_solver
+from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import InitializationError
 
 from idaes.gas_solid_contactors.unit_models. \
