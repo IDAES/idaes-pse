@@ -52,11 +52,7 @@ _hash = hash_file_sha256
 def _get_file_downloader(insecure, cacert):
     fd = FileDownloader(insecure=insecure, cacert=cacert)
     arch = fd.get_sysinfo()
-    if arch[1] != 64:
-        _log.error("IDAES Extensions only supports 64bit Python.")
-        raise RuntimeError("IDAES Extensions only supports 64bit Python.")
     return fd, arch
-
 
 def _get_platform(fd, platform, arch):
     if platform == "auto":
