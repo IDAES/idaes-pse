@@ -18,6 +18,7 @@ import pytest
 
 # Need to update
 import pyomo.environ as pyo
+import numpy as np
                            
 # TODO: Add pyomo.dae test case
 """
@@ -26,10 +27,96 @@ from pyomo.dae import ContinuousSet, DerivativeVar
 """
 
 # Need to update
-from idaes.core.util.model_diagnostics import *
+from idaes.core.util.model_diagnostics import DegeneracyHunter
 
-# Author: Alex Dowling
+__author__ = "Alex Dowling, Doug Allan"
 
+@pytest.fixture()
+def dummy_problem():
+    m = pyo.ConcreteModel()
+    
+    m.I = pyo.Set(initialize=[i for i in range(5)])
+
+    m.x = pyo.Var(m.I, initialize=1.0)
+    
+    diag = [100, 1, 10, 0.1, 5]
+    out = [1, 1, 1, 1, 1]
+    
+    @m.Constraint(m.I)
+    def dummy_eqn(b,i):
+        return out[i] == diag[i]*m.x[i]
+    
+    m.obj = pyo.Objective(expr=0)
+    return m
+
+@pytest.fixture()
+def u_exp():
+    return np.array([[0,0,0,0],
+                    [0,1,0,0],
+                    [0,0,0,1],
+                    [1,0,0,0],
+                    [0,0,1,0]])
+
+@pytest.fixture()
+def s_exp():
+    return np.array([0.1,1,5,10])
+
+@pytest.fixture()
+def v_exp():
+    return np.array([[0, 0, 0, 1, 0],
+                     [0, 1, 0, 0, 0],
+                     [0, 0, 0, 0, 1],
+                     [0, 0, 1, 0, 0]]).T
+
+@pytest.mark.unit
+def test_dense_svd(dummy_problem, u_exp, s_exp, v_exp):
+    m = dummy_problem
+    dh = DegeneracyHunter(m)
+    dh.svd_analysis(dense=True)
+    assert dh.s == pytest.approx(s_exp,1e-6)
+    assert u_exp == pytest.approx(np.abs(dh.u),1e-6)
+    assert v_exp == pytest.approx(np.abs(dh.v),1e-6)
+    
+@pytest.mark.unit
+def test_sparse_svd(dummy_problem, u_exp, s_exp, v_exp):
+    m = dummy_problem
+    dh = DegeneracyHunter(m)
+    dh.svd_analysis()
+    assert dh.s == pytest.approx(s_exp,1e-6)
+    assert u_exp == pytest.approx(np.abs(dh.u),1e-6)
+    assert v_exp == pytest.approx(np.abs(dh.v),1e-6)
+    
+@pytest.mark.unit
+def test_underdetermined_variables_and_constraints(dummy_problem, capsys):
+    m = dummy_problem
+    dh = DegeneracyHunter(m)
+    
+    dh.svd_analysis(n_smallest_sv=3)
+    captured = capsys.readouterr()
+    assert captured.out == "Computing the 3 smallest singular value(s)\n"
+    
+    dh.underdetermined_variables_and_constraints()
+    captured = capsys.readouterr()
+    assert captured.out == ("Column:    Variable\n3: x[3]\n\nRow:    "
+                            "Constraint\n3: dummy_eqn[3]\n")
+    
+    dh.underdetermined_variables_and_constraints(n_calc=3)
+    captured = capsys.readouterr()
+    assert captured.out == ("Column:    Variable\n4: x[4]\n\nRow:    "
+                            "Constraint\n4: dummy_eqn[4]\n")
+    with pytest.raises(ValueError, 
+               match="User wanted constraints and variables associated "
+                     "with the 4-th smallest singular value, "
+                     "but only 3 small singular values have been "
+                     "calculated. Run svd_analysis again and specify "
+                     "n_smallest_sv>=4."
+                     ):
+        dh.underdetermined_variables_and_constraints(n_calc=4)
+        
+    dh.underdetermined_variables_and_constraints(tol=2)
+    captured = capsys.readouterr()
+    assert captured.out == ("Column:    Variable\n\nRow:    Constraint\n")
+    
 # This was from
 # @pytest.fixture()
 def problem1():
@@ -242,14 +329,13 @@ def test_problem2_with_degenerate_constraint():
     assert pytest.approx(x_sln[2], abs=1e-6) == 0.0
     
     # Check the rank
-    n_rank_deficient = dh2.check_rank_equality_constraints()
-    
-    # Test DH with SVD
     # Is there any way to test whether the sparse SVD is actually used?
     # Trying to do an SVD of a 50000x50000 identity matrix would work, but
     # would produce an extremely slow test failure
-    dh3 = DegeneracyHunter(m2)
-    n_rank_deficient = dh3.check_rank_equality_constraints(dense=False)
+    n_rank_deficient = dh2.check_rank_equality_constraints()
+    
+    # Test DH with SVD
+
     assert n_rank_deficient == 1
     
     # TODO: Add MILP solver to idaes get-extensions and add more tests

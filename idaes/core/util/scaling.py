@@ -79,23 +79,29 @@ def scale_arc_constraints(blk):
                 "been applied?"
             )
             continue
-        src = arc.source
-        dest = arc.destination
-        for name in src.vars.keys():
-            if src.is_extensive(name):
-                _log.warning(
-                    f"Variable {name} on Port {src.name} was created with "
-                    "Extensive rule, for which scaling is not supported")
+        warning = ("Automatic scaling for arc constraints is supported for "
+            "only the Equality rule. Variable {name} on Port {port} was "
+            "created with a different rule, so the corresponding constraint "
+            "on {arc_name} will not be scaled.")
+        port1 = arc.ports[0]
+        port2 = arc.ports[1]
+        for name in port1.vars.keys():
+            if not port1.is_equality(name):
+                _log.warning(warning.format(name=name, port=port1.name,
+                                            arc_name=arc.name))
                 continue
-            if dest.is_extensive(name):
-                _log.warning(
-                    f"Variable {name} on Port {dest.name} was created with "
-                    "Extensive rule, for which scaling is not supported")
+            if not port2.is_equality(name):
+                _log.warning(warning.format(name=name, port=port2.name,
+                                            arc_name=arc.name))
                 continue
             con = getattr(arc_block,name+"_equality")
             for i, c in con.items():
-                sf = min_scaling_factor([src.vars[name][i],
-                                         dest.vars[name][i]])
+                if i is None:
+                    sf = min_scaling_factor([port1.vars[name],
+                                             port2.vars[name]])                    
+                else:
+                    sf = min_scaling_factor([port1.vars[name][i],
+                                             port2.vars[name][i]])
                 constraint_scaling_transform(c, sf)
 
 
@@ -236,8 +242,15 @@ def get_scaling_factor(c, default=None, warning=False, exception=False, hint=Non
         scaling factor (float)
     """
     try:
+        # Call get_scaling_factor recursively to handle references-to-references
         if hasattr(c,"referent"):
-            sf = c.referent.parent_block().scaling_factor[c.referent]
+            sf = get_scaling_factor(
+                c.referent,
+                default=default,
+                warning=warning,
+                exception=exception,
+                hint=hint
+                )
         else:
             sf = c.parent_block().scaling_factor[c]
     except (AttributeError, KeyError):
@@ -649,7 +662,7 @@ def extreme_jacobian_rows(
         m: model
         scaled: if true use scaled Jacobian
         large: >= to this value is consdered large
-        small: <= to this and >= zero is consdered small
+        small: <= to this is consdered small
 
     Returns:
         (list of tuples), Jacobian entry, Constraint
@@ -676,7 +689,7 @@ def extreme_jacobian_columns(
         m: model
         scaled: if true use scaled Jacobian
         large: >= to this value is consdered large
-        small: <= to this and >= zero is consdered small
+        small: <= to this is consdered small
 
     Returns:
         (list of tuples), Jacobian entry, Variable

@@ -215,13 +215,13 @@ class DegeneracyHunter():
         
         print("\nChecking rank of Jacobian of equality constraints...")
         
-        print("Model contains",self.n_eq,"equality constraints and",
-                    self.n_var,"variables.")
+        print("Model contains", self.n_eq,"equality constraints and",
+                    self.n_var, "variables.")
         
         counter = 0
         if self.n_eq > 1:
             if self.s is None:
-                self.svd_analysis()
+                self.svd_analysis(dense=dense)
 
             n = len(self.s)
         
@@ -518,7 +518,7 @@ class DegeneracyHunter():
             # Determine the number of singular values to compute
             # The "-1" is needed to avoid an error with svds
             n_sv = min(n_smallest_sv, min(self.n_eq, self.n_var) - 1)
-            print("Computing the",n_sv,"smallest singular value(s)")
+            print("Computing the", n_sv, "smallest singular value(s)")
         
             # Perform SVD
             # Recall J is a n_eq x n_var matrix
@@ -529,19 +529,20 @@ class DegeneracyHunter():
             
             if dense:
                 u, s, vT = svd(self.jac_eq.todense(),full_matrices=False)
-                u = np.flip(u[:,-1-n_smallest_sv:], axis=0)
-                s = np.flip(s[-1-n_smallest_sv:], axis=0)
-                vT = np.flip(vT[-1-n_smallest_sv:,:], axis=1)
-                v = vT.transpose()
+                u = np.flip(u[:,-n_sv:], axis=1)
+                s = np.flip(s[-n_sv:], axis=0)
+                vT = np.flip(vT[-n_sv:,:], axis=0)
             else:
-                u, s, v = svds(self.jac_eq, k = n_sv, which='SM')#, solver='lobpcg')
-                # TODO svds does not guarantee the order in which singular values/
-                # vectors are returned in---need to figure out what order it usually uses
+                # svds does not guarantee the order in which it generates
+                # singular values, but typically generates them least-to-greatest.
+                # Maybe the warning is for singular values of nearly equal
+                # magnitude or a similar edge case?
+                u, s, vT = svds(self.jac_eq, k = n_sv, which='SM')#, solver='lobpcg')
             
             # Save results
             self.u = u
             self.s = s
-            self.v = v
+            self.v = vT.transpose()
             
         else:
             print(
@@ -566,7 +567,7 @@ class DegeneracyHunter():
 
         """
         if self.s is None:
-            self.svd_analysis(n_smallest_sv=max(n_calc,10),dense=dense)
+            self.svd_analysis(n_smallest_sv=max(n_calc,10), dense=dense)
         n_sv = len(self.s)
         if n_sv < n_calc:
             raise ValueError("User wanted constraints and variables associated "
@@ -574,8 +575,11 @@ class DegeneracyHunter():
                              f"but only {n_sv} small singular values have been "
                              "calculated. Run svd_analysis again and specify "
                              f"n_smallest_sv>={n_calc}.")
+        print("Column:    Variable")
         for i in np.where(abs(self.v[:, n_calc - 1]) > tol)[0]: 
             print(str(i) + ": " + self.var_list[i].name)
+        print("")
+        print("Row:    Constraint")
         for i in np.where(abs(self.u[:, n_calc - 1]) > tol)[0]: 
             print(str(i) + ": " + self.eq_con_list[i].name)
         
