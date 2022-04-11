@@ -2272,6 +2272,16 @@ class GenericStateBlockData(StateBlockData):
                 )
                 iscale.constraint_scaling_transform(v, sf_x, overwrite=False)
 
+        if self.is_property_constructed("log_mole_frac_phase_comp"):
+            for j, v in self.log_mole_frac_phase_comp_eqn.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp[j],
+                    default=1e3,
+                    warning=True,
+                    hint="for log_mole_frac_comp")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
+
         # Activity is generally of similar order to mole fractions
         if self.is_property_constructed("log_act_phase_comp"):
             for (p, j), v in self.log_act_phase_comp_eq.items():
