@@ -35,7 +35,7 @@ from idaes.models_extra.power_generation.unit_models.helm.phase_separator import
     HelmPhaseSeparator,
 )
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

@@ -45,7 +45,7 @@ from idaes.core.util.testing import (
     ReactionParameterTestBlock,
     initialization_tester,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 # -----------------------------------------------------------------------------

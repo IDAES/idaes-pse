@@ -27,7 +27,6 @@ __author__ = "John Eslick"
 
 
 class TestModelSerialize(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.dirname = mkdtemp()
@@ -48,19 +47,20 @@ class TestModelSerialize(unittest.TestCase):
             model = ConcreteModel(name)
         else:
             model = ConcreteModel()
-        model.b = Block([1,2,3])
+        model.b = Block([1, 2, 3])
         a = model.b[1].a = Var(bounds=(-100, 100), initialize=2)
         b = model.b[1].b = Var(bounds=(-100, 100), initialize=20)
-        model.b[1].c = Constraint(expr=b==10*a)
+        x = model.x = BooleanVar(initialize=True)
+        model.b[1].c = Constraint(expr=b == 10 * a)
         a.fix(2)
         return model
 
     def setup_model01b(self):
         model = ConcreteModel()
-        model.b = Block(["1","2","3"])
+        model.b = Block(["1", "2", "3"])
         a = model.b["1"].a = Var(bounds=(-100, 100), initialize=2)
         b = model.b["1"].b = Var(bounds=(-100, 100), initialize=20)
-        model.b["1"].c = Constraint(expr=b==10*a)
+        model.b["1"].c = Constraint(expr=b == 10 * a)
         a.fix(2)
         return model
 
@@ -69,8 +69,8 @@ class TestModelSerialize(unittest.TestCase):
         a = model.a = Param(default=1, mutable=True)
         b = model.b = Param(default=2, mutable=True)
         c = model.c = Param(initialize=4)
-        x = model.x = Var([1,2], initialize={1:1.5, 2:2.5}, bounds=(-10,10))
-        model.f = Objective(expr=(x[1] - a)**2 + (x[2] - b)**2)
+        x = model.x = Var([1, 2], initialize={1: 1.5, 2: 2.5}, bounds=(-10, 10))
+        model.f = Objective(expr=(x[1] - a) ** 2 + (x[2] - b) ** 2)
         model.g = Constraint(expr=x[1] + x[2] - c >= 0)
         model.dual = Suffix(direction=Suffix.IMPORT)
         model.ipopt_zL_out = Suffix(direction=Suffix.IMPORT)
@@ -79,12 +79,12 @@ class TestModelSerialize(unittest.TestCase):
 
     def setup_model02b(self):
         model = ConcreteModel()
-        model.p = Param(["a", "b"], default={"a":1, "b":2}, mutable=True)
+        model.p = Param(["a", "b"], default={"a": 1, "b": 2}, mutable=True)
         a = model.p["a"]
         b = model.p["b"]
         c = model.c = Param(initialize=4)
-        x = model.x = Var(["1","2"], initialize={"1":1.5, "2":2.5}, bounds=(-10,10))
-        model.f = Objective(expr=(x["1"] - a)**2 + (x["2"] - b)**2)
+        x = model.x = Var(["1", "2"], initialize={"1": 1.5, "2": 2.5}, bounds=(-10, 10))
+        model.f = Objective(expr=(x["1"] - a) ** 2 + (x["2"] - b) ** 2)
         model.g = Constraint(expr=x["1"] + x["2"] - c >= 0)
         model.dual = Suffix(direction=Suffix.IMPORT)
         model.ipopt_zL_out = Suffix(direction=Suffix.IMPORT)
@@ -93,15 +93,17 @@ class TestModelSerialize(unittest.TestCase):
 
     def setup_model03(self):
         m = ConcreteModel()
-        m.I = Set(initialize=[1,2])
-        m.J = Set(initialize=[(3,3),(4,4)])
+        m.I = Set(initialize=[1, 2])
+        m.J = Set(initialize=[(3, 3), (4, 4)])
         m.J.display()
+
         @m.Block(m.I)
-        def b(b,i):
-            b.x = Var(b.model().J, bounds=(i,None))
+        def b(b, i):
+            b.x = Var(b.model().J, bounds=(i, None))
+
         m.b[1].x.display()
         m.b[2].x.display()
-        m.r = Reference(m.b[:].x[3,:])
+        m.r = Reference(m.b[:].x[3, :])
         m.r.display()
         return m
 
@@ -115,11 +117,13 @@ class TestModelSerialize(unittest.TestCase):
 
         model2.b[1].a = 0.11
         model2.b[1].b = 0.11
+        model2.x = False
         to_json(model, fname=self.fname, human_read=True)
         from_json(model2, fname=self.fname)
-        #make sure they are right
+        # make sure they are right
         assert pytest.approx(20) == value(model2.b[1].b)
         assert pytest.approx(2) == value(model2.b[1].a)
+        assert value(model2.x) == True
 
     @pytest.mark.unit
     def test01(self):
@@ -139,7 +143,7 @@ class TestModelSerialize(unittest.TestCase):
         b.setub(4)
         # reload values
         from_json(model, fname=self.fname)
-        #make sure they are right
+        # make sure they are right
         assert a.fixed
         assert model.b[1].active
         assert value(b) == 20
@@ -165,7 +169,7 @@ class TestModelSerialize(unittest.TestCase):
         b.setub(4)
         # reload values
         from_json(model, fname=self.fname)
-        #make sure they are right
+        # make sure they are right
         assert a.fixed
         assert model.b["1"].active
         assert value(b) == 20
@@ -305,8 +309,8 @@ class TestModelSerialize(unittest.TestCase):
         model.x[1].value = 3
         model.x[2].value = 6
         from_json(model, fname=self.fname, wts=wts)
-        assert value(model.x[1]) == 3 # should not load since is fixed
-        assert  model.x[1].lb ==  -4
+        assert value(model.x[1]) == 3  # should not load since is fixed
+        assert model.x[1].lb == -4
         assert value(model.x[2]) == pytest.approx(2.5)
         assert not model.g.active
 
@@ -448,7 +452,6 @@ class TestModelSerialize(unittest.TestCase):
         model.ipopt_zU_out[model.x[1]] = 1
         model.ipopt_zU_out[model.x[2]] = 1
 
-
         to_json(model, fname=self.fname, wts=StoreSpec.suffix())
 
         model.dual[model.g] = 10
@@ -475,11 +478,12 @@ class TestModelSerialize(unittest.TestCase):
         d = to_json(model, return_dict=True, human_read=True)
         model.r[1, 3] = 6
         model.r[2, 3] = 8
-        assert value(model.b[1].x[3,3]) == 6
-        assert value(model.b[2].x[3,3]) == 8
+        assert value(model.b[1].x[3, 3]) == 6
+        assert value(model.b[2].x[3, 3]) == 8
         from_json(model, sd=d)
-        assert value(model.b[1].x[3,3]) == 1
-        assert value(model.b[2].x[3,3]) == 3
+        assert value(model.b[1].x[3, 3]) == 1
+        assert value(model.b[2].x[3, 3]) == 3
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

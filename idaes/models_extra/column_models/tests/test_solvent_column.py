@@ -24,7 +24,7 @@ from pyomo.util.check_units import assert_units_consistent
 import idaes
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.column_models.solvent_column import PackedColumn
-from idaes.models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.models_extra.column_models.properties.MEA_vapor import flue_gas, wet_co2
@@ -34,7 +34,8 @@ from idaes.models_extra.column_models.properties.MEA_solvent import (
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 
 # -----------------------------------------------------------------------------

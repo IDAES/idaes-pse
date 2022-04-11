@@ -12,18 +12,27 @@
 #################################################################################
 try:
     from pyomo.core.expr.sympy_tools import (
-        _prod, _sum, _functionMap, _operatorMap, _pyomo_operator_map)
+        _prod,
+        _sum,
+        _functionMap,
+        _operatorMap,
+        _pyomo_operator_map,
+    )
 except ImportError:
     from pyomo.core.base.symbolic import (
-        _prod, _sum, _functionMap, _operatorMap, _pyomo_operator_map)
+        _prod,
+        _sum,
+        _functionMap,
+        _operatorMap,
+        _pyomo_operator_map,
+    )
 
 from pyomo.environ import ExternalFunction, Var, Expression, value
 from pyomo.core.base.constraint import _ConstraintData, Constraint
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.core.base.block import _BlockData
 from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
-from pyomo.core.expr.numeric_expr import (ExternalFunctionExpression,
-                                          ExpressionBase)
+from pyomo.core.expr.numeric_expr import ExternalFunctionExpression, ExpressionBase
 from pyomo.core.expr import current as EXPR, native_types
 from pyomo.common.collections import ComponentMap
 
@@ -32,13 +41,15 @@ from IPython.display import display, Markdown
 
 import re
 
-#TODO<jce> Look into things like sum operator and template expressions
+# TODO<jce> Look into things like sum operator and template expressions
+
 
 def _add_latex_subscripts(x, s):
     if not "_" in x:
         return "{}_{{ {} }}".format(x, s)
     else:
         return re.sub(r"^(.+_)({.+}|.)", "\\1{{ \\2 ,{} }}".format(s), x)
+
 
 def deduplicate_symbol(x, v, used):
     """
@@ -64,12 +75,14 @@ def deduplicate_symbol(x, v, used):
     used[x] = v
     return x
 
+
 class PyomoSympyBimap(object):
     """
     This is based on the class of the same name in pyomo.core.base.symbolic, but
     it adds mapping latex symbols to the sympy symbols. This will get you pretty
     equations when using sympy's LaTeX writer.
     """
+
     def __init__(self):
         self.pyomo2sympy = ComponentMap()
         self.parent_symbol = ComponentMap()
@@ -120,8 +133,7 @@ class PyomoSympyBimap(object):
             x = "{}_{}".format(base_name, i)
             base_latex = getattr(parent_object, "latex_symbol", None)
             if base_latex is not None:
-                latex_symbol = deduplicate_symbol(base_latex, parent_object,
-                                                  self.used)
+                latex_symbol = deduplicate_symbol(base_latex, parent_object, self.used)
             else:
                 latex_symbol = x
         if parent_object.is_indexed():
@@ -146,6 +158,7 @@ class Pyomo2SympyVisitor(StreamBasedExpressionVisitor):
     This is based on the class of the same name in pyomo.core.base.symbolic, but
     it catches ExternalFunctions and does not decend into named expressions.
     """
+
     def __init__(self, object_map):
         super(Pyomo2SympyVisitor, self).__init__()
         self.object_map = object_map
@@ -196,15 +209,16 @@ def sympify_expression(expr):
     object_map = PyomoSympyBimap()
     visitor = Pyomo2SympyVisitor(object_map)
     is_expr, ans = visitor.beforeChild(None, expr)
-    try: # If I explicitly ask for a named expression then descend into it.
+    try:  # If I explicitly ask for a named expression then descend into it.
         if expr.is_named_expression_type():
             is_expr = True
     except:
         pass
-    if not is_expr: # and not expr.is_named_expression_type():
+    if not is_expr:  # and not expr.is_named_expression_type():
         return object_map, ans
 
     return object_map, visitor.walk_expression(expr)
+
 
 def _add_docs(object_map, docs, typ, head):
     """
@@ -218,23 +232,25 @@ def _add_docs(object_map, docs, typ, head):
     Returns:
         A new string markdown table with added doc rows.
     """
-    docked = set() # components already documented, mainly for indexed compoents
+    docked = set()  # components already documented, mainly for indexed compoents
     whead = True  # write heading before adding first item
     for i, sc in enumerate(object_map.sympyVars()):
         c = object_map.getPyomoSymbol(sc)
-        c = c.parent_component() # Document the parent for indexed comps
-        if not isinstance(c, typ): continue
-        if whead: # add heading if is first entry in this section
+        c = c.parent_component()  # Document the parent for indexed comps
+        if not isinstance(c, typ):
+            continue
+        if whead:  # add heading if is first entry in this section
             docs += "**{}** | **Doc** | **Path**\n".format(head)
             whead = False
         if id(c) not in docked:
-            docked.add(id(c)) # make sure we don't get a line for every index
-            try: #just document the parent of indexed vars
+            docked.add(id(c))  # make sure we don't get a line for every index
+            try:  # just document the parent of indexed vars
                 s = object_map.parent_symbol[c][1]
-            except KeyError: # non-indexed vars
+            except KeyError:  # non-indexed vars
                 s = object_map.sympy2latex[sc]
             docs += "${}$|{}|{}\n".format(s, c.doc, c)
     return docs
+
 
 def to_latex(expr):
     """Return a sympy expression for the given Pyomo expression
@@ -256,10 +272,13 @@ def to_latex(expr):
     docs = _add_docs(object_map, docs, Expression, "Expression")
     docs = _add_docs(object_map, docs, ExternalFunction, "Function")
 
-    #probably should break this up, but this will do for now.
-    return {"sympy_expr": sympy_expr,
-            "where":docs,
-            "latex_expr":sympy.latex(sympy_expr, symbol_names=object_map.sympy2latex)}
+    # probably should break this up, but this will do for now.
+    return {
+        "sympy_expr": sympy_expr,
+        "where": docs,
+        "latex_expr": sympy.latex(sympy_expr, symbol_names=object_map.sympy2latex),
+    }
+
 
 def document_constraints(comp, doc=True, descend_into=True):
     """
@@ -290,20 +309,20 @@ def document_constraints(comp, doc=True, descend_into=True):
         d = to_latex(comp.body)
         if doc:
             s = "$${} \le {}\le {}$$\n{}".format(
-                comp.lower, d["latex_expr"], comp.upper, d["where"])
+                comp.lower, d["latex_expr"], comp.upper, d["where"]
+            )
         else:
-            s = "$${} \le {}\le {}$$".format(
-                comp.lower, d["latex_expr"], comp.upper)
+            s = "$${} \le {}\le {}$$".format(comp.lower, d["latex_expr"], comp.upper)
     elif isinstance(comp, _BlockData):
         cs = []
-        for c in comp.component_data_objects(
-            Constraint, descend_into=descend_into):
+        for c in comp.component_data_objects(Constraint, descend_into=descend_into):
             if not c.active:
                 continue
             cs.append("## {}".format(c))
             cs.append(document_constraints(c, doc))
         s = "\n".join(cs)
     return s
+
 
 def ipython_document_constraints(comp, doc=True, descend_into=True):
     """

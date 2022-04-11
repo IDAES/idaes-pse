@@ -13,8 +13,6 @@
 
 __author__ = "John Eslick"
 
-import enum
-
 import pyomo.environ as pyo
 from pyomo.network import Arc
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
@@ -22,17 +20,16 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 import idaes.core.util.constants as iconst
 from idaes.core import UnitModelBlockData, declare_process_block_class
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from idaes.models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
 )
 import idaes.models.unit_models as um  # um = unit models
 from idaes.core.util.initialization import propagate_state
 import idaes.core.util.scaling as iscale
-import idaes.core.util as iutil
-from idaes.core.util.misc import get_solver
+from idaes.core.solvers import get_solver
 from idaes.models_extra.power_generation.properties.natural_gas_PR import (
     get_prop,
     get_rxn,
@@ -682,7 +679,7 @@ class SoecDesignData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         init_log.info_high("SOEC Initialization Starting")
-        solver_obj = iutil.get_solver(solver, optarg)
+        solver_obj = get_solver(solver, optarg)
 
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)

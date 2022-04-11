@@ -16,7 +16,7 @@ Deprecation path for renamed module.
 from pyomo.common.deprecation import deprecation_warning
 
 deprecation_warning("The generic_models.properties.core.reactions.equilibrium_constant has been "
-                    "moved to idaes.models.properties.core.reactions.equilibrium_constant",
+                    "moved to idaes.models.properties.modular_properties.reactions.equilibrium_constant",
                     version="2.0.0.alpha0")
 
-from idaes.models.properties.core.reactions.equilibrium_constant import *
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import *

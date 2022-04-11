@@ -38,7 +38,8 @@ from idaes.core import (
 )
 from idaes.models.unit_models.heat_exchanger import HeatExchangerData
 from idaes.models.unit_models import Mixer, MomentumMixingType, HeatExchanger
-from idaes.core.util import from_json, to_json, StoreSpec, get_solver
+from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
 from idaes.core.util.config import is_physical_parameter_block

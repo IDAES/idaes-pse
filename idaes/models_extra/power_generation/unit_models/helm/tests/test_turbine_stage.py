@@ -26,7 +26,7 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     activated_equalities_generator,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Set up solver
 solver = get_solver()

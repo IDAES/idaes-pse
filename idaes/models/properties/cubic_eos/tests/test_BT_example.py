@@ -27,7 +27,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 # Set module level pyest marker
