@@ -17,6 +17,9 @@ modeling in Pyomo.
 
 __author__ = "Alexander Dowling"
 
+
+from operator import itemgetter
+
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
@@ -31,21 +34,19 @@ from idaes.core.util.model_statistics import (
 )
 import idaes.core.util.scaling as iscale
 
-from operator import itemgetter
-
 
 class DegeneracyHunter():
 
     def __init__(self, block_or_jac, solver=None):
         ''' Initialize Degeneracy Hunter Object
-    
+        
         Arguments:
             block_or_jac: Pyomo model or Jacobian
             solver: Pyomo SolverFactory
             
         Notes:
             Passing a Jacobian to Degeneracy Hunter is current untested.
-        
+
         '''
         
         block_like = False

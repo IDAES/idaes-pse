@@ -71,12 +71,12 @@ def test_scale_arcs(caplog):
     m.y = pyo.Var([1, 2, 3, 4])
     m.z = pyo.Var([1, 2, 3, 4])
     m.w = pyo.Var([1, 2, 3, 4])
-    
+
     # Copied from Pyomo's implementation of Port.Equality
     def rule_schmequality(port, name, index_set):
         for arc in port.arcs(active=True):
             Port._add_equality_constraint(arc, name, index_set)
-            
+
     m.p1 = Port()
     m.p1.add(m.x[1], name="x")
     m.p1.add(m.y[1], name="y")
@@ -112,7 +112,7 @@ def test_scale_arcs(caplog):
     caplog.clear()
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
     sc.scale_arc_constraints(m)
-    
+
     logrec = caplog.records[0]
     assert logrec.levelno == logging.WARNING
     assert "Variable z on Port p1" in logrec.message
@@ -129,7 +129,7 @@ def test_scale_arcs(caplog):
     assert logrec.levelno == logging.WARNING
     assert "Variable w on Port p[3]" in logrec.message
     assert "on arcs[2] will" in logrec.message
-    
+
     m.x[1] = 1
     m.x[2] = 2
     m.x[3] = 3
@@ -1002,18 +1002,18 @@ class TestFlattenedScalingAssignment:
 @pytest.mark.unit
 def test_extreme_jacobian_rows_and_columns():
     m = pyo.ConcreteModel()
-    
+
     m.I = pyo.Set(initialize=[i for i in range(5)])
 
     m.x = pyo.Var(m.I, initialize=1.0)
-    
+
     diag = [1E7, 1, 10, 0.1, 1e-7]
     out = [1, 1, 1, 1, 1]
-    
+
     @m.Constraint(m.I)
     def dummy_eqn(b,i):
         return out[i] == diag[i]*m.x[i]
-    
+
     out = sc.extreme_jacobian_rows(m)
     assert type(out) == list
     assert len(out) == 2
@@ -1021,20 +1021,20 @@ def test_extreme_jacobian_rows_and_columns():
     assert out[0][1] is m.dummy_eqn[0]
     assert out[1][0] == pytest.approx(1e-7)
     assert out[1][1] is m.dummy_eqn[4]
-    
+
     out = sc.extreme_jacobian_rows(m,large=1e8)
     assert len(out) == 1
     assert out[0][0] == pytest.approx(1e-7)
     assert out[0][1] is m.dummy_eqn[4]
-    
+
     out = sc.extreme_jacobian_rows(m,small=1e-8)
     assert len(out) == 1
     assert out[0][0] == pytest.approx(1e7)
     assert out[0][1] is m.dummy_eqn[0]
-    
+
     out = sc.extreme_jacobian_rows(m, large=1e8, small=1e-8)
     assert len(out) == 0
-    
+
     out = sc.extreme_jacobian_columns(m)
     assert type(out) == list
     assert len(out) == 2
@@ -1042,44 +1042,44 @@ def test_extreme_jacobian_rows_and_columns():
     assert out[0][1] is m.x[0]
     assert out[1][0] == pytest.approx(1e-7)
     assert out[1][1] is m.x[4]
-    
+
     out = sc.extreme_jacobian_columns(m,large=1e8)
     assert len(out) == 1
     assert out[0][0] == pytest.approx(1e-7)
     assert out[0][1] is m.x[4]
-    
+
     out = sc.extreme_jacobian_columns(m,small=1e-8)
     assert len(out) == 1
     assert out[0][0] == pytest.approx(1e7)
     assert out[0][1] is m.x[0]
-    
+
     out = sc.extreme_jacobian_columns(m, large=1e8, small=1e-8)
     assert len(out) == 0
 
-    
+
     sc.constraint_scaling_transform(m.dummy_eqn[0],1e-7)
     sc.constraint_scaling_transform(m.dummy_eqn[4],1e7)
-    
+
     out = sc.extreme_jacobian_rows(m)
     assert len(out) == 0
-    
+
     out = sc.extreme_jacobian_columns(m)
     assert len(out) == 0
-    
+
     # Even if scaling factors are ignored, transformed constraints
     # remain transformed
     out = sc.extreme_jacobian_columns(m, scaled=False)
     assert len(out) == 0
-    
+
     out = sc.extreme_jacobian_rows(m, scaled=False)
     assert len(out) == 0
-    
+
     sc.set_scaling_factor(m.x[1], 1e7)
-    sc.set_scaling_factor(m.x[2], 1e-7)  
-    
+    sc.set_scaling_factor(m.x[2], 1e-7)
+
     out = sc.extreme_jacobian_columns(m, scaled=False)
     assert len(out) == 0
-    
+
     out = sc.extreme_jacobian_rows(m, scaled=False)
     assert len(out) == 0
 
@@ -1089,14 +1089,14 @@ def test_extreme_jacobian_rows_and_columns():
     assert out[0][1] is m.x[1]
     assert out[1][0] == pytest.approx(1e8)
     assert out[1][1] is m.x[2]
-    
+
     out = sc.extreme_jacobian_rows(m)
     assert len(out) == 2
     assert out[0][0] == pytest.approx(1e-7)
     assert out[0][1] is m.dummy_eqn[1]
     assert out[1][0] == pytest.approx(1e8)
     assert out[1][1] is m.dummy_eqn[2]
-    
+
     sc.constraint_scaling_transform(m.dummy_eqn[1], 1e7)
     sc.constraint_scaling_transform(m.dummy_eqn[2], 1e-8)
 
@@ -1106,16 +1106,16 @@ def test_extreme_jacobian_rows_and_columns():
     assert out[0][1] is m.x[1]
     assert out[1][0] == pytest.approx(1e-7)
     assert out[1][1] is m.x[2]
-    
+
     out = sc.extreme_jacobian_rows(m, scaled=False)
     assert len(out) == 2
     assert out[0][0] == pytest.approx(1e7)
     assert out[0][1] is m.dummy_eqn[1]
     assert out[1][0] == pytest.approx(1e-7)
     assert out[1][1] is m.dummy_eqn[2]
-    
+
     out = sc.extreme_jacobian_columns(m)
     assert len(out) == 0
-    
+
     out = sc.extreme_jacobian_rows(m)
     assert len(out) == 0
