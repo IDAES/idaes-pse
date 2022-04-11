@@ -65,13 +65,10 @@ def _get_platform(fd, platform, arch):
         platform = fd.get_os_version().replace(".", "")
         _log.debug(f"Detected Linux distribution: {platform}")
     # Check if platform (OS) maps to another platform
-    if platform in idaes.config.binary_platform_map:
-        platform = idaes.config.binary_platform_map[platform]
+    platform = idaes.config.canonical_distro(platform)
     # Get machine type (e.g. x86_64, ...)
-    mach = machine()
-    # See if machine type maps to another (e.g. intel64 -> x86_64, ...)
-    if mach in idaes.config.binary_machine_map:
-        mach = idaes.config.binary_machine_map[mach]
+    mach = idaes.config.canonical_arch(machine())
+    # full platform name
     platform = f"{platform}-{mach}"
     # See if machine is supported
     if platform not in idaes.config.base_platforms:

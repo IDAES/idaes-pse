@@ -25,10 +25,21 @@ release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
 release_checksum_url = \
     "https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{}.txt"
+# This is a list of platforms with builds
+base_platforms = (
+    "el7-x86_64",
+    "el8-x86_64",
+    "ubuntu1804-x86_64",
+    "ubuntu2004-x86_64",
+    "ubuntu2004-aarch64",
+    "ubuntu2204-x86_64",
+    "windows-x86_64",
+)
 # Map some platform names to others for get-extensions
-binary_platform_map = {
+binary_distro_map = {
     "rhel7": "el7",
     "rhel8": "el8",
+    "scientific7": "el7",
     "centos7": "el7",
     "centos8": "el8",
     "rocky8": "el8",
@@ -36,34 +47,21 @@ binary_platform_map = {
     "debian9": "el7",
     "debian10": "el8",
     "debian11": "ubuntu2004",
-    "ubuntu1804": "ubuntu1804",
-    "ubuntu2004": "ubuntu2004",
-    "ubuntu2204": "ubuntu2204",
-    "kubuntu1804": "kubuntu1804",
-    "kubuntu2004": "kubuntu2004",
-    "kubuntu2204": "kubuntu2204",
-    "xubuntu1804": "xubuntu1804",
-    "xubuntu2004": "xubuntu2004",
-    "xubuntu2204": "xubuntu2204",
+    "linuxmint20": "ubuntu2004",
+    "kubuntu1804": "ubuntu1804",
+    "kubuntu2004": "ubuntu2004",
+    "kubuntu2204": "ubuntu2204",
+    "xubuntu1804": "ubuntu1804",
+    "xubuntu2004": "ubuntu2004",
+    "xubuntu2204": "ubuntu2204",
 }
 # Machine map
-binary_machine_map = {
+binary_arch_map = {
     "x64": "x86_64",
     "intel64": "x86_64",
-    "Intel64": "x86_64",
-    "INTEL64": "x86_64",
     "amd64": "x86_64",
-    "Amd64": "x86_64",
-    "AMD64": "x86_64",
+    "arm64": "aarch64",
 }
-base_platforms = (
-    "el7-x86_64",
-    "el8-x86_64",
-    "ubuntu1804-x86_64",
-    "ubuntu2004-x86_64",
-    "ubuntu2204-x86_64",
-    "windows-x86_64",
-)
 # Set of extra binary packages and basic build platforom where available
 extra_binaries = {
     "petsc": base_platforms,
@@ -74,6 +72,33 @@ orig_environ = {
     "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
     "DYLD_LIBRARY_PATH": os.environ.get("DYLD_LIBRARY_PATH", ""),
 }
+
+def canonical_arch(arch):
+    """Get the offical machine type in {x86_64, aarch64} if possible, otherwise
+    just return arch.lower().
+
+    Args:
+        arch (str): machine type string usually from platform.machine()
+
+    Returns (str):
+        Canonical machine type used by the binary package names.
+    """
+    arch = arch.lower()
+    return binary_arch_map.get(arch, arch)
+
+def canonical_distro(dist):
+    """Get the offical distro name if possible, otherwise just return
+    dist.lower(). Distro is used loosely here and includes Windows, Darwin
+    (macOS), and other OSs in addition to Linux.
+
+    Args:
+        arch (str): machine type string usually from platform.machine()
+
+    Returns (str):
+        Canonical machine type used by the binary package names.
+    """
+    dist = dist.lower()
+    return binary_distro_map.get(dist, dist)
 
 class ConfigBlockJSONEncoder(json.JSONEncoder):
     """ This class handles non-serializable objects that may appear in the IDAES
