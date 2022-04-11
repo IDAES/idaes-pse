@@ -98,7 +98,7 @@ def scale_arc_constraints(blk):
             for i, c in con.items():
                 if i is None:
                     sf = min_scaling_factor([port1.vars[name],
-                                             port2.vars[name]])                    
+                                             port2.vars[name]])
                 else:
                     sf = min_scaling_factor([port1.vars[name][i],
                                              port2.vars[name][i]])
@@ -242,17 +242,7 @@ def get_scaling_factor(c, default=None, warning=False, exception=False, hint=Non
         scaling factor (float)
     """
     try:
-        # Call get_scaling_factor recursively to handle references-to-references
-        if hasattr(c,"referent"):
-            sf = get_scaling_factor(
-                c.referent,
-                default=default,
-                warning=warning,
-                exception=exception,
-                hint=hint
-                )
-        else:
-            sf = c.parent_block().scaling_factor[c]
+        sf = c.parent_block().scaling_factor[c]
     except (AttributeError, KeyError):
         if hint is None:
             h = ""
@@ -490,6 +480,10 @@ def badly_scaled_var_generator(
     """This provides a rough check for variables with poor scaling based on
     their current scale factors and values. For each potentially poorly scaled
     variable it returns the var and its current scaled value.
+
+    Note that while this method is a reasonable heuristic for nonnegative
+    variables like (absolute) temperature and pressure, molar flows, etc., it
+    can be misleading for variables like enthalpies and fluxes.
 
     Args:
         blk: pyomo block
