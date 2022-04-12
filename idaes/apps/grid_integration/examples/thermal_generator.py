@@ -110,7 +110,7 @@ class ThermalGenerator:
             model_data["Min Load Cost"] / model_data["PMin MW"]
         )
 
-        for l in range(1, 4):
+        for l in range(1, ThermalGenerator.segment_number):
             model_data["Power Segments"][l] = (
                 model_data["Output_pct_{}".format(l)] * model_data["PMax MW"]
             )
@@ -681,7 +681,9 @@ if __name__ == "__main__":
 
         # create a tracker model
         tracking_model_object = ThermalGenerator(
-            rts_gmlc_dataframe=rts_gmlc_dataframe, horizon=4, generator="102_STEAM_3"
+            rts_gmlc_dataframe=rts_gmlc_dataframe,
+            horizon=horizon,
+            generator="102_STEAM_3",
         )
         # make a tracker
         thermal_tracker = Tracker(
