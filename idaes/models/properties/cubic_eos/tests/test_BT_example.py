@@ -172,7 +172,7 @@ class TestBTExample(object):
             assert check_optimal_termination(results)
 
             while m.fs.state[0].pressure.value <= 1e6:
-                m.fs.state[0].pressure.value = m.fs.state.pressure[0].value + 1e5
+                m.fs.state[0].pressure.value = m.fs.state[0].pressure.value + 1e5
 
                 results = solver.solve(m)
                 assert check_optimal_termination(results)
