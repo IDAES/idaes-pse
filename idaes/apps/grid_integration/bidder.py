@@ -15,7 +15,7 @@ import pyomo.environ as pyo
 from pyomo.opt.base.solvers import OptSolver
 import os
 from itertools import combinations
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 
 
 class AbstractBidder(ABC):
@@ -44,7 +44,8 @@ class AbstractBidder(ABC):
     def record_bids(self, *args, **kwargs):
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def generator(self):
         return "AbstractGenerator"
 
