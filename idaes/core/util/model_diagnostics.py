@@ -513,21 +513,18 @@ class DegeneracyHunter():
             Stores SVD results in object
         
         """
-        
+
         if self.n_eq > 1:
-        
             # Determine the number of singular values to compute
             # The "-1" is needed to avoid an error with svds
             n_sv = min(n_smallest_sv, min(self.n_eq, self.n_var) - 1)
             print("Computing the", n_sv, "smallest singular value(s)")
-        
+
             # Perform SVD
             # Recall J is a n_eq x n_var matrix
             # Thus U is a n_eq x n_eq matrix
             # And V is a n_var x n_var
             # (U or V may be smaller in economy mode)
-            # Thus we really only care about U
-            
             if dense:
                 u, s, vT = svd(self.jac_eq.todense(),full_matrices=False)
                 u = np.flip(u[:,-n_sv:], axis=1)
@@ -639,7 +636,6 @@ class DegeneracyHunter():
         
         # Check if it is empty or None
         if self.candidate_eqns:
-        
             if verbose:
                 print("*** Searching for Irreducible Degenerate Sets ***")
                 print("Building MILP model...")

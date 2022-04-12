@@ -537,8 +537,8 @@ def constraint_autoscale_large_jac(
             scaled too much.
         no_scale: just calculate the Jacobian and scaled Jacobian, don't scale
             anything
-        equality_constraints_only: Only include the equality constraints in the
-            Jacobian calculated and scaled
+        equality_constraints_only: Include only the equality constraints in the
+            Jacobian
 
     Returns:
         unscaled Jacobian CSR from, scaled Jacobian CSR from, Pynumero NLP
