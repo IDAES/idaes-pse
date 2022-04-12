@@ -19,6 +19,7 @@ import pytest
 # Need to update
 import pyomo.environ as pyo
 import numpy as np
+import idaes.core.util.scaling as iscale
                            
 # TODO: Add pyomo.dae test case
 """
@@ -51,15 +52,15 @@ def dummy_problem():
 
 @pytest.fixture()
 def u_exp():
-    return np.array([[0,0,0,0],
-                    [0,1,0,0],
-                    [0,0,0,1],
-                    [1,0,0,0],
-                    [0,0,1,0]])
+    return np.array([[0, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 0, 1],
+                    [1, 0, 0, 0],
+                    [0, 0, 1, 0]])
 
 @pytest.fixture()
 def s_exp():
-    return np.array([0.1,1,5,10])
+    return np.array([0.1, 1, 5, 10])
 
 @pytest.fixture()
 def v_exp():
@@ -73,18 +74,37 @@ def test_dense_svd(dummy_problem, u_exp, s_exp, v_exp):
     m = dummy_problem
     dh = DegeneracyHunter(m)
     dh.svd_analysis(dense=True)
-    assert dh.s == pytest.approx(s_exp,1e-6)
-    assert u_exp == pytest.approx(np.abs(dh.u),1e-6)
-    assert v_exp == pytest.approx(np.abs(dh.v),1e-6)
+    assert dh.s == pytest.approx(s_exp, 1e-6)
+    assert u_exp == pytest.approx(np.abs(dh.u), 1e-6)
+    assert v_exp == pytest.approx(np.abs(dh.v), 1e-6)
     
 @pytest.mark.unit
 def test_sparse_svd(dummy_problem, u_exp, s_exp, v_exp):
     m = dummy_problem
     dh = DegeneracyHunter(m)
     dh.svd_analysis()
-    assert dh.s == pytest.approx(s_exp,1e-6)
-    assert u_exp == pytest.approx(np.abs(dh.u),1e-6)
-    assert v_exp == pytest.approx(np.abs(dh.v),1e-6)
+    assert dh.s == pytest.approx(s_exp, 1e-6)
+    assert u_exp == pytest.approx(np.abs(dh.u), 1e-6)
+    assert v_exp == pytest.approx(np.abs(dh.v), 1e-6)
+    
+@pytest.mark.unit
+def test_scaling(dummy_problem, u_exp, s_exp, v_exp):
+    ssf = iscale.set_scaling_factor
+    cst = iscale.constraint_scaling_transform    
+    m = dummy_problem
+    cst(m.dummy_eqn[0], 1e-2)
+    ssf(m.x[1], 1e3)
+    cst(m.dummy_eqn[1], 1e3)
+    cst(m.dummy_eqn[2], 1e-1)
+    ssf(m.x[3], 1e-3)
+    cst(m.dummy_eqn[3], 1e2)
+    cst(m.dummy_eqn[4], 0.2)
+    
+    dh = DegeneracyHunter(m)
+    dh.svd_analysis(dense=False)
+    assert dh.s == pytest.approx(np.ones((4,)), 1e-6)
+    dh.svd_analysis(dense=True)
+    assert dh.s == pytest.approx(np.ones((4,)), 1e-6)
     
 @pytest.mark.unit
 def test_underdetermined_variables_and_constraints(dummy_problem, capsys):
@@ -302,12 +322,12 @@ def test_problem2_with_degenerate_constraint():
     
     # Check for violated constraints at the initial point
     initial_point_constraints = dh2.check_residuals(tol=0.1)
-    
+
     # Check there are 2 constraints with large residuals
     assert len(initial_point_constraints) == 2
-    
+
     initial_point_constraint_names = extract_constraint_names(initial_point_constraints)
-    
+
     # Check first constraint
     assert initial_point_constraint_names[0] == "con2"
 
@@ -317,7 +337,7 @@ def test_problem2_with_degenerate_constraint():
     # Resolve
     opt.options["max_iter"] = 500
     opt.solve(m2, tee=True)
-    
+
     # Check solution
     x_sln = []
     
@@ -327,15 +347,12 @@ def test_problem2_with_degenerate_constraint():
     assert pytest.approx(x_sln[0], abs=1e-6) == 1.0
     assert pytest.approx(x_sln[1], abs=1e-6) == 0.0
     assert pytest.approx(x_sln[2], abs=1e-6) == 0.0
-    
+
     # Check the rank
-    # Is there any way to test whether the sparse SVD is actually used?
-    # Trying to do an SVD of a 50000x50000 identity matrix would work, but
-    # would produce an extremely slow test failure
     n_rank_deficient = dh2.check_rank_equality_constraints()
-    
+
     # Test DH with SVD
 
     assert n_rank_deficient == 1
-    
+
     # TODO: Add MILP solver to idaes get-extensions and add more tests
