@@ -40,8 +40,8 @@ from idaes.surrogate.pysmo_surrogate import (
     PysmoRBFTrainer,
     PysmoKrigingTrainer,
     PysmoSurrogate,
-    SurrogateTrainingResult,
-    TrainedSurrogate,
+    PysmoSurrogateTrainingResult,
+    PysmoTrainedSurrogate,
 )
 
 from idaes.surrogate.surrogate_block import SurrogateBlock
@@ -283,7 +283,7 @@ class TestSurrogateTrainingResult:
 
     @pytest.mark.unit
     def test_init(self):
-        init_func = SurrogateTrainingResult()
+        init_func = PysmoSurrogateTrainingResult()
         assert init_func.metrics == {}
         assert init_func._model == None
         assert init_func.expression_str == ""
@@ -291,7 +291,7 @@ class TestSurrogateTrainingResult:
     @pytest.mark.unit
     def test_model_poly(self, pysmo_output_pr):
         out1, vars = pysmo_output_pr
-        init_func_poly = SurrogateTrainingResult()
+        init_func_poly = PysmoSurrogateTrainingResult()
         init_func_poly.model = out1
         assert init_func_poly.expression_str == str(
             out1.generate_expression([vars[i] for i in vars.keys()])
@@ -303,7 +303,7 @@ class TestSurrogateTrainingResult:
     @pytest.mark.unit
     def test_model_rbf(self, pysmo_output_rbf):
         out2, vars = pysmo_output_rbf
-        init_func_rbf = SurrogateTrainingResult()
+        init_func_rbf = PysmoSurrogateTrainingResult()
         init_func_rbf.model = out2
         assert init_func_rbf.expression_str == str(
             out2.generate_expression([vars[i] for i in vars.keys()])
@@ -315,7 +315,7 @@ class TestSurrogateTrainingResult:
     @pytest.mark.unit
     def test_model_krg(self, pysmo_output_krg):
         out3, vars = pysmo_output_krg
-        init_func_krg = SurrogateTrainingResult()
+        init_func_krg = PysmoSurrogateTrainingResult()
         init_func_krg.model = out3
         assert init_func_krg.expression_str == str(
             out3.generate_expression([vars[i] for i in vars.keys()])
@@ -355,7 +355,7 @@ class TestTrainedSurrogate:
 
     @pytest.mark.unit
     def test_init(self):
-        init_func = TrainedSurrogate()
+        init_func = PysmoTrainedSurrogate()
         assert init_func._data == {}
         assert init_func.model_type == ""
         assert init_func.num_outputs == 0
@@ -363,7 +363,7 @@ class TestTrainedSurrogate:
         assert init_func.input_labels == None
         assert init_func.input_bounds == None
 
-        init_func1 = TrainedSurrogate(model_type="poly")
+        init_func1 = PysmoTrainedSurrogate(model_type="poly")
         assert init_func1._data == {}
         assert init_func1.model_type == "poly"
         assert init_func1.num_outputs == 0
@@ -376,7 +376,7 @@ class TestTrainedSurrogate:
         # These need to be tested this way to made sure ``add_result`` builds out model object propoerly.
         out1, out2, out3, vars = pysmo_outputs
 
-        init_func = TrainedSurrogate()
+        init_func = PysmoTrainedSurrogate()
 
         outvar = "z1"
         init_func.add_result(outvar, out1)
@@ -397,7 +397,7 @@ class TestTrainedSurrogate:
     def test_get_result(self, pysmo_outputs):
         out1, out2, out3, vars = pysmo_outputs
 
-        init_func = TrainedSurrogate()
+        init_func = PysmoTrainedSurrogate()
 
         outvar = "z1"
         init_func.add_result(outvar, out1)

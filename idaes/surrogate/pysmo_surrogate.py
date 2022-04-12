@@ -48,8 +48,16 @@ _log = idaeslog.getLogger(__name__)
 GLOBAL_FUNCS = {"sin": sin, "cos": cos, "log": log, "exp": exp}
 
 
-class SurrogateTrainingResult:
-    """Result of training a surrogate for a single output."""
+class PysmoSurrogateTrainingResult:
+    """
+    This is an internal helper class for the PysmoTrainer class.
+    
+    It stores the results of a trained PySMO model for a single output.
+    
+    The class attributes stored are the model metrics, the PySMO model 
+    and a string of the surrogate model result.
+
+    """
 
     def __init__(self):
         self.metrics = {}  # Metrics for the fit
@@ -64,8 +72,13 @@ class SurrogateTrainingResult:
 
     @model.setter
     def model(self, value):
-        """This sets the 'expression_str' attribute as a side-effect, so may raise
-        errors related to that operation. If so, the new value is *not* set.
+        """
+
+        This is the internal helper function that sets the 'expression_str' attribute by 
+        calling Pysmo's ``generate_expression()`` function.
+
+        It also sets the model attribute.
+
         """
         # variable_names = list(value.get_feature_vector().values())
         if hasattr(value, "regression_data_columns"):
@@ -84,9 +97,12 @@ class SurrogateTrainingResult:
         self._model = value
 
 
-class TrainedSurrogate:
-    """A surrogate that is trained for one or more outputs.
+class PysmoTrainedSurrogate:
+    """
+    A surrogate that is trained for one or more outputs.
+
     This object is used for saving and loading the surrogate model along with its metrics and expression.
+
     """
 
     def __init__(self, model_type=""):
@@ -101,7 +117,7 @@ class TrainedSurrogate:
         self.output_labels.append(output_name)
         # self.num_outputs += 1
 
-    def get_result(self, output_name) -> SurrogateTrainingResult:
+    def get_result(self, output_name) -> PysmoSurrogateTrainingResult:
         return self._data[output_name]
 
     def display_pysmo_results(self):
@@ -124,9 +140,24 @@ class PysmoTrainer(SurrogateTrainer):
 
     def __init__(self, **settings):
         super().__init__(**settings)
-        self._trained = TrainedSurrogate(model_type=self.model_type)
+        self._trained = PysmoTrainedSurrogate(model_type=self.model_type)
 
-    def train_surrogate(self) -> TrainedSurrogate:
+    def train_surrogate(self) -> PysmoTrainedSurrogate:
+        """
+        General workflow method for training a PySMO surrogate.
+
+        Takes the existing data set and executes the PySMO workflow to create
+        a PysmoTrainedSurrogate object containing the trained model based on the current configuration arguments.
+
+        The PySMOTrainedSurrogate object is the expected input for the PysmoSurrogate class.
+
+        Args:
+            None
+
+        Returns:
+            Python object : an instance of PysmoTrainedSurrogate representing the trained surrogate
+
+        """
         self._trained.num_outputs = len(self._output_labels)
         self._trained.input_labels = self._input_labels
         if hasattr(self, "_input_bounds"):
@@ -160,7 +191,7 @@ class PysmoTrainer(SurrogateTrainer):
             model = self._create_model(pysmo_input, output_label)
             model.training()
             # Store results
-            result = SurrogateTrainingResult()
+            result = PysmoSurrogateTrainingResult()
             result.model = model
             result.metrics = self._get_metrics(model)
             self._trained.add_result(output_label, result)
@@ -169,7 +200,14 @@ class PysmoTrainer(SurrogateTrainer):
 
 
 class PysmoPolyTrainer(PysmoTrainer):
-    """Train a polynomial model."""
+    """
+
+    Standard SurrogateTrainer for PySMO's polynomial models.
+
+    This defines a set of configuration options for PySMO, along with
+    methods to train the polynomial model and return basic metrics (R2, RMSE).
+
+    """
 
     model_type = "poly"
 
@@ -266,9 +304,15 @@ class PysmoPolyTrainer(PysmoTrainer):
 
 
 class PysmoRBFTrainer(PysmoTrainer):
-    """Train a radial basis functional surrogate model."""
+    """
+    
+    Standard SurrogateTrainer for PySMO's RBF models.
 
-    # model_type will be this with the basis function prepended, separated by a space
+    This defines a set of configuration options for PySMO, along with
+    methods to train the polynomial model and return basic metrics (R2, RMSE).
+
+    """
+
     base_model_type = "rbf"
     model_type = "rbf"
 
@@ -322,7 +366,14 @@ class PysmoRBFTrainer(PysmoTrainer):
 
 
 class PysmoKrigingTrainer(PysmoTrainer):
-    """Train a Kriging surrogate model."""
+    """
+    
+    Standard SurrogateTrainer for PySMO's kriging models.
+
+    This defines a set of configuration options for PySMO, along with
+    methods to train the polynomial model and return mbasic metrics (R2, RMSE).
+
+    """
 
     model_type = "kriging"
 
@@ -372,7 +423,7 @@ class PysmoSurrogate(SurrogateBase):
 
     def __init__(
         self,
-        trained_surrogates: TrainedSurrogate,
+        trained_surrogates: PysmoTrainedSurrogate,
         input_labels,
         output_labels,
         input_bounds=None,
@@ -537,7 +588,7 @@ class TrainedSurrogateEncoder(JSONEncoder, TSEBase):
     }
 
     def default(self, obj):
-        if isinstance(obj, TrainedSurrogate):
+        if isinstance(obj, PysmoTrainedSurrogate):
             return self._encode_surrogate(obj)
         return super().default(obj)
 
@@ -638,14 +689,14 @@ class TrainedSurrogateDecoder(TSEBase):
             )
         # decode model
         _log.info(f"Decode surrogate. type={model_type}")
-        trained = TrainedSurrogate(model_type)
+        trained = PysmoTrainedSurrogate(model_type)
         for output_label, model_data in model_json.items():
             surr_mod = model_decoder(
                 model_type,
                 model_data[cls.MODEL_ATTR_KEY],
                 model_data[cls.MODEL_MAP_KEY],
             )
-            result = SurrogateTrainingResult()
+            result = PysmoSurrogateTrainingResult()
             result.model = surr_mod
             # result.metrics = model_data[cls.MODEL_ATTR_KEY][cls.MODEL_METRICS_KEY]
             trained.add_result(output_label, result)
