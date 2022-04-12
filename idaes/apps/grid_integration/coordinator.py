@@ -37,9 +37,10 @@ class DoubleLoopCoordinator:
 
             tracker: an initialized bidder object
 
-            projection_tracker: an initialized bidder object, this object is for
-                                projecting the system states and updating bidder
-                                model
+            projection_tracker: an initialized bidder object, this object is
+                                mimicking the behaviro of the projection SCED in
+                                Prescient and to projecting the system states
+                                and updating bidder model.
 
             self_schedule: whether the resource is participating through self-scheduling
 
@@ -63,9 +64,9 @@ class DoubleLoopCoordinator:
         Register functionalities in Prescient's plugin system.
 
         Arguments:
-            context: Prescient plugin PluginRegistrationContext
+            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
 
-            options: Prescient options
+            options: Prescient options from prescient.simulator.config
 
             plugin_config: Prescient plugin config
 
@@ -112,8 +113,6 @@ class DoubleLoopCoordinator:
                 default=None,
             ),
         ).declare_as_argument("--bidding-generator")
-        ## How to access this option?
-        # options.plugin.{key}.bidding_generator
 
         return config
 
@@ -129,9 +128,9 @@ class DoubleLoopCoordinator:
         begins.
 
         Arguments:
-            context: Prescient plugin PluginRegistrationContext
+            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
 
-            options: Prescient options
+            options: Prescient options from prescient.simulator.config
 
             plugin_config: Prescient plugin config
 
@@ -153,9 +152,9 @@ class DoubleLoopCoordinator:
         Commitment (RUC) problems.
 
         Arguments:
-            context: Prescient plugin PluginRegistrationContext
+            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
 
-            options: Prescient options
+            options: Prescient options from prescient.simulator.config
 
             plugin_config: Prescient plugin config
 
@@ -177,9 +176,9 @@ class DoubleLoopCoordinator:
         Economic Dispatch (SCED), aka "operation", problems.
 
         Arguments:
-            context: Prescient plugin PluginRegistrationContext
+            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
 
-            options: Prescient options
+            options: Prescient options from prescient.simulator.config
 
             plugin_config: Prescient plugin config
 
@@ -201,9 +200,9 @@ class DoubleLoopCoordinator:
         Economic Dispatch (SCED), aka "operation", problems.
 
         Arguments:
-            context: Prescient plugin PluginRegistrationContext
+            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
 
-            options: Prescient options
+            options: Prescient options from prescient.simulator.config
 
             plugin_config: Prescient plugin config
 
@@ -225,9 +224,9 @@ class DoubleLoopCoordinator:
         Dispatch (SCED), aka "operation".
 
         Arguments:
-            context: Prescient plugin PluginRegistrationContext
+            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
 
-            options: Prescient options
+            options: Prescient options from prescient.simulator.config
 
             plugin_config: Prescient plugin config
 
@@ -249,9 +248,9 @@ class DoubleLoopCoordinator:
         Dispatch (SCED), aka "operation".
 
         Arguments:
-            context: Prescient plugin PluginRegistrationContext
+            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
 
-            options: Prescient options
+            options: Prescient options from prescient.simulator.config
 
             plugin_config: Prescient plugin config
 
@@ -273,9 +272,9 @@ class DoubleLoopCoordinator:
         finishes.
 
         Arguments:
-            context: Prescient plugin PluginRegistrationContext
+            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
 
-            options: Prescient options
+            options: Prescient options from prescient.simulator.config
 
             plugin_config: Prescient plugin config
 
@@ -310,7 +309,7 @@ class DoubleLoopCoordinator:
         This method passes the bids into the RUC model for day-ahead market clearing.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             ruc_instance: Prescient RUC object
 
@@ -321,9 +320,14 @@ class DoubleLoopCoordinator:
         """
 
         gen_name = self.bidder.generator
+
+        # fetch the generator's parameter dictionary from Prescient UC instance
         gen_dict = ruc_instance.data["elements"]["generator"][gen_name]
+
+        # assemble the bids
         p_cost = [list(bids[t][gen_name].items()) for t in range(options.ruc_horizon)]
 
+        # update the "p_cost" element in the generator's dict
         gen_dict["p_cost"] = {
             "data_type": "time_series",
             "values": [
@@ -336,7 +340,7 @@ class DoubleLoopCoordinator:
             ],
         }
 
-        # updated p_cost, so delete p_fuel
+        # because the p_cost is updated, so delete p_fuel
         if "p_fuel" in gen_dict:
             gen_dict.pop("p_fuel")
 
@@ -348,7 +352,7 @@ class DoubleLoopCoordinator:
         This method passes the bids into the RUC model for day-ahead market clearing.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             ruc_instance: Prescient RUC object
 
@@ -361,7 +365,11 @@ class DoubleLoopCoordinator:
         """
 
         gen_name = self.bidder.generator
+
+        # fetch the generator's parameter dictionary from Prescient UC instance
         gen_dict = ruc_instance.data["elements"]["generator"][gen_name]
+
+        # update the pmax values in the generator's parameter dictionary
         gen_dict["p_max"]["values"][0 : len(schedule[gen_name])] = schedule[gen_name]
 
         return
@@ -373,7 +381,7 @@ class DoubleLoopCoordinator:
         state of the bidding model at the begining of next RUC.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             simulator: Prescient simulator.
 
@@ -385,6 +393,7 @@ class DoubleLoopCoordinator:
 
         gen_name = self.bidder.generator
 
+        # store the dictionaries that have the current ruc signals
         current_ruc_dispatch_dicts = [
             simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA,
             simulator.data_manager.ruc_market_active.renewable_gen_cleared_DA,
@@ -411,7 +420,7 @@ class DoubleLoopCoordinator:
         the time for the bidding model.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             simulator: Prescient simulator.
 
@@ -460,8 +469,8 @@ class DoubleLoopCoordinator:
         Returns:
             None
         """
-        # self.projection_tracker.model = self.tracker.model.clone()
 
+        # iterate all the variables and params and clone the values
         objects_list = [pyo.Var, pyo.Param]
         for obj in objects_list:
             for tracker_obj, proj_tracker_obj in zip(
@@ -481,7 +490,7 @@ class DoubleLoopCoordinator:
         (DAM).
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             simulator: Prescient simulator.
 
@@ -531,7 +540,7 @@ class DoubleLoopCoordinator:
         clearing.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             simulator: Prescient simulator.
 
@@ -546,8 +555,11 @@ class DoubleLoopCoordinator:
         """
 
         gen_name = self.bidder.generator
+
+        # fetch generator's parameter dictionary from SCED instance
         gen_dict = sced_instance.data["elements"]["generator"][gen_name]
 
+        # update the real-time schedule in the dictionary
         p_cost = list(bids[hour][gen_name].items())
         gen_dict["p_cost"] = {
             "data_type": "cost_curve",
@@ -570,7 +582,7 @@ class DoubleLoopCoordinator:
         clearing.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             simulator: Prescient simulator.
 
@@ -587,7 +599,11 @@ class DoubleLoopCoordinator:
         """
 
         gen_name = self.bidder.generator
+
+        # fetch generator's parameter dictionary from SCED instance
         gen_dict = sced_instance.data["elements"]["generator"][gen_name]
+
+        # update the real-time schedule in the dictionary
         gen_dict["p_max"]["values"] = schedule[gen_name][
             hour : hour + options.sced_horizon
         ]
@@ -601,7 +617,7 @@ class DoubleLoopCoordinator:
         corresponding day-ahead bid here.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             simulator: Prescient simulator.
 
@@ -635,7 +651,7 @@ class DoubleLoopCoordinator:
         This function assembles the signals for the tracking model.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             simulator: Prescient simulator.
 
@@ -648,11 +664,14 @@ class DoubleLoopCoordinator:
         """
 
         gen_name = self.bidder.generator
+
+        # fecth the sced signals for the generation from sced instance
         sced_dispatch = sced_instance.data["elements"]["generator"][gen_name]["pg"][
             "values"
         ]
         tracking_horizon = len(self.tracker.time_set)
 
+        # store the dictionaries that have the current ruc signals
         current_ruc_dispatch_dicts = [
             simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA,
             simulator.data_manager.ruc_market_active.renewable_gen_cleared_DA,
@@ -772,7 +791,7 @@ class DoubleLoopCoordinator:
         signals.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             simulator: Prescient simulator.
 
@@ -811,7 +830,7 @@ class DoubleLoopCoordinator:
         and etc.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             simulator: Prescient simulator.
 
@@ -823,6 +842,7 @@ class DoubleLoopCoordinator:
         """
         g = self.bidder.generator
 
+        # store the dictionaries that the observed/delivered power levels
         observed_dispatch_level_dicts = [
             ops_stats.observed_thermal_dispatch_levels,
             ops_stats.observed_renewables_levels,
@@ -842,7 +862,7 @@ class DoubleLoopCoordinator:
         i.e. the bids for the next day become the bids for the current day.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             simulator: Prescient simulator.
 
@@ -861,10 +881,10 @@ class DoubleLoopCoordinator:
 
         """
         After the simulation is completed, the plugins can write their own customized
-        results. Each plugin will have to have a function named 'write_results'.
+        results. Each plugin will have to have a method named 'write_results'.
 
         Arguments:
-            options: Prescient options.
+            options: Prescient options from prescient.simulator.config.
 
             simulator: Prescient simulator.
 

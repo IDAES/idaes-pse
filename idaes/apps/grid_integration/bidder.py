@@ -272,7 +272,8 @@ class SelfScheduler(AbstractBidder):
 
         """
         This function records the bids (schedule) we computed for the given date into a
-        DataFrame.
+        DataFrame and temporarily stores the DataFrame in an instance attribute
+        list called bids_result_list.
 
         Arguments:
             bids: the obtained bids (schedule) for this date.
@@ -512,7 +513,10 @@ class Bidder(AbstractBidder):
         # declare a constraint list
         self.model.bidding_constraints = pyo.ConstraintList()
 
-        # generate scenarios combinations
+        # generate scenarios combinations between every 2 scenarios
+        # items in scenario_comb will be tuples of combinations of scenarios
+        # first item in the tuple is the first scenario and the second item is
+        # the another scenario in that combination
         scenario_comb = list(combinations(self.model.SCENARIOS, 2))
 
         for k in scenario_comb:
@@ -550,6 +554,9 @@ class Bidder(AbstractBidder):
         for k in self.model.SCENARIOS:
             time_index = self.model.fs[k].power_output_ref.index_set()
 
+            # currently .total_cost is a tuple of 2 items
+            # the first item is the name of the cost expression
+            # the second item is the weight for the cost
             cost_name = self.bidding_model_object.total_cost[0]
             cost = getattr(self.model.fs[k], cost_name)
             weight = self.bidding_model_object.total_cost[1]
@@ -618,6 +625,8 @@ class Bidder(AbstractBidder):
         for i in self.model.SCENARIOS:
             time_index = self.model.fs[i].energy_price.index_set()
             for t, p in zip(time_index, price_forecasts[i]):
+
+                # update the price param (mutable) in the pyomo model
                 self.model.fs[i].energy_price[t] = p
 
         return
@@ -649,6 +658,9 @@ class Bidder(AbstractBidder):
                 power = round(pyo.value(self.model.fs[i].power_output_ref[t]), 2)
                 marginal_cost = round(pyo.value(self.model.fs[i].energy_price[t]), 2)
 
+                # if power lower than pmin, e.g., power = 0, we need to skip this
+                # solution, because Prescient is not expecting any power output lower
+                # than pmin in the bids
                 if power < self.bidding_model_object.pmin:
                     continue
                 elif power in bids[t][gen]:
@@ -713,7 +725,7 @@ class Bidder(AbstractBidder):
              are the corresponding costs. {power: cost}
 
         Returns:
-            bids: the bid we computed. It is a dictionary that has this structure. {t: {gen:{power: cost}}}.
+            boolean: True if the bids are convex, False otherwise.
         """
 
         power = list(bids.keys())
@@ -743,10 +755,12 @@ class Bidder(AbstractBidder):
     def _record_bids(self, bids, date, hour):
 
         """
-        This function records the bids we computed for the given date into a
+        This method records the bids we computed for the given date into a
         DataFrame. This DataFrame has the following columns: gen, date, hour,
         power 1, ..., power n, price 1, ..., price n. And concatenate the
-        DataFrame into a class property 'bids_result_list'.
+        DataFrame into a class property 'bids_result_list'. The methods then
+        temporarily stores the DataFrame in an instance attribute list called
+        bids_result_list.
 
         Arguments:
             bids: the obtained bids for this date.
