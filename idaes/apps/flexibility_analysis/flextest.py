@@ -221,6 +221,9 @@ def build_flextest_with_dr(
     for v in m.unc_param_vars.values():
         valid_var_bounds[v] = (v.lb, v.ub)
         v.fix()  # these should be fixed before we check the degrees of freedom
+    for p, p_bnds in param_bounds.items():
+        if p.is_variable_type():
+            valid_var_bounds[p] = p_bnds
 
     if _get_dof(m) != len(controls):
         raise ValueError(
@@ -290,6 +293,9 @@ def build_active_constraint_flextest(
     _replace_uncertain_params(m, uncertain_params, param_nominal_values, param_bounds)
     for v in m.unc_param_vars.values():
         valid_var_bounds[v] = v.bounds
+    for p, p_bnds in param_bounds.items():
+        if p.is_variable_type():
+            valid_var_bounds[p] = p_bnds
 
     # TODO: make this a context manager or try-finally
     if not config.skip_scaling_check:
