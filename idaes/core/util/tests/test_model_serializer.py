@@ -69,9 +69,11 @@ class TestModelSerialize(unittest.TestCase):
         a = model.a = Param(default=1, mutable=True)
         b = model.b = Param(default=2, mutable=True)
         c = model.c = Param(initialize=4)
+        e = model.e = Expression(expr=a+b)
         x = model.x = Var([1, 2], initialize={1: 1.5, 2: 2.5}, bounds=(-10, 10))
         model.f = Objective(expr=(x[1] - a) ** 2 + (x[2] - b) ** 2)
         model.g = Constraint(expr=x[1] + x[2] - c >= 0)
+        model.suf1 = Suffix()
         model.dual = Suffix(direction=Suffix.IMPORT)
         model.ipopt_zL_out = Suffix(direction=Suffix.IMPORT)
         model.ipopt_zU_out = Suffix(direction=Suffix.IMPORT)
@@ -187,22 +189,25 @@ class TestModelSerialize(unittest.TestCase):
         model.ipopt_zL_out[x[2]] = 0
         model.ipopt_zU_out[x[1]] = 0
         model.ipopt_zU_out[x[2]] = 0
+        model.suf1[model.e] = 222
         to_json(model, fname=self.fname, human_read=True)
         model.x[1].value = 10
         model.x[2].value = 10
+        model.suf1[model.e] = 111
         model.dual[model.g] = 10
         model.ipopt_zL_out[x[1]] = 10
         model.ipopt_zL_out[x[2]] = 10
         model.ipopt_zU_out[x[1]] = 10
         model.ipopt_zU_out[x[2]] = 10
         from_json(model, fname=self.fname)
+        assert model.suf1[model.e] == 222
         assert value(x[1]) == pytest.approx(1.5)
         assert value(x[2]) == pytest.approx(2.5)
-        assert model.dual[model.g] == pytest.approx(1)
-        assert model.ipopt_zL_out[x[1]] == pytest.approx(0)
-        assert model.ipopt_zL_out[x[2]] == pytest.approx(0)
-        assert model.ipopt_zU_out[x[1]] == pytest.approx(0)
-        assert model.ipopt_zU_out[x[2]] == pytest.approx(0)
+        assert model.dual[model.g] == 1
+        assert model.ipopt_zL_out[x[1]] == 0
+        assert model.ipopt_zL_out[x[2]] == 0
+        assert model.ipopt_zU_out[x[1]] == 0
+        assert model.ipopt_zU_out[x[2]] == 0
 
     @pytest.mark.unit
     def test02b(self):

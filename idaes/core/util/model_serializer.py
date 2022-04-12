@@ -205,12 +205,6 @@ class StoreSpec(object):
             classes list, it will follow the UnitModel settings.
         data_classes: This takes the same form as the classes argument.
             This is for component data classes.
-        skip_classes: This is a list of classes to skip.  If a class appears
-            in the skip list, but also appears in the classes argument, the
-            classes argument will override skip_classes. The use for this is to
-            specifically exclude certain classes that would get caught by more
-            general classes (e.g. UnitModel is in the class list, but you want
-            to exclude HeatExchanger which is derived from UnitModel).
         ignore_missing: If True will ignore a component or attribute that exists
             in the model, but not in the stored state. If false an excpetion
             will be raised for things in the model that should be loaded but
@@ -231,6 +225,7 @@ class StoreSpec(object):
             (Expression, ()),
             (Block, ("active",)),
             (Constraint, ("active",)),
+            (Suffix, ()),
         ),
         data_classes=(
             (Var._ComponentDataClass, ("fixed", "stale", "value", "lb", "ub")),
@@ -238,13 +233,13 @@ class StoreSpec(object):
             (pyomo.core.base.param._ParamData, ("value",)),
             (int, ("value",)),
             (float, ("value",)),
+            (str, ("value",)),
             (Expression._ComponentDataClass, ()),
             (Block._ComponentDataClass, ("active",)),
             (Constraint._ComponentDataClass, ("active",)),
         ),
-        skip_classes=(Expression,),
         ignore_missing=True,
-        suffix=True,
+        suffix=None,
         suffix_filter=None,
     ):
         """
@@ -262,26 +257,29 @@ class StoreSpec(object):
             "ub": _set_ub,
             "value": _set_value,
         }
-        # Add skip classes to classes list, with None as attr list to skip
-        skip_classes2 = []  # need to put skips at front of list
-        self.classes = [i[0] for i in classes]
-        for i in skip_classes:
-            if i not in self.classes:
-                skip_classes2.append((i, None))
-        classes = skip_classes2 + list(classes)  # comined classes with skips
-        # Create lists of classes, attribute lists, and filter functions
-        # Can get class index from class list the use it to get associated items
-        self.classes = [i[0] for i in classes]
+        skip_classes = []
+        if suffix is not None and not suffix:
+            skip_classes.append(Suffix)
+        classes = list(classes)
+        data_classes = list(data_classes)
+        if Block in skip_classes:
+            raise RuntimeError("Can't skip Blocks (required for model structure)")
+        if Block not in classes:
+            classes.append((Block, ()))
+        if Block._ComponentDataClass not in data_classes:
+            data_classes.append((Block._ComponentDataClass, ()))
+        self.classes = [i[0] for i in classes if i[0] not in skip_classes]
         self.data_classes = [i[0] for i in data_classes]
-        self.class_attrs = [i[1] for i in classes]
+        self.class_attrs = [i[1] for i in classes if i[0] not in skip_classes]
         self.data_class_attrs = [i[1] for i in data_classes]
         # Create filter function lists, use None if not supplied
         self.class_filter = []
         for i in classes:
-            if len(i) < 3:
-                self.class_filter.append(None)
-            else:
-                self.class_filter.append(i[2])
+            if i[0] not in skip_classes:
+                if len(i) < 3:
+                    self.class_filter.append(None)
+                else:
+                    self.class_filter.append(i[2])
         self.data_class_filter = []
         for i in data_classes:
             if len(i) < 3:
@@ -289,7 +287,6 @@ class StoreSpec(object):
             else:
                 self.data_class_filter.append(i[2])
         self.ignore_missing = ignore_missing
-        self.include_suffix = suffix
         self.suffix_filter = suffix_filter
 
     def set_read_callback(self, attr, cb=None):
@@ -344,7 +341,6 @@ class StoreSpec(object):
         return cls(
             classes=((Var, ()),),
             data_classes=((Var._ComponentDataClass, ("lb", "ub")),),
-            suffix=False,
         )
 
     @classmethod
@@ -357,7 +353,6 @@ class StoreSpec(object):
                     (Var._ComponentDataClass, ("value",), _value_if_not_fixed),
                     (BooleanVar._ComponentDataClass, ("value",), _value_if_not_fixed),
                 ),
-                suffix=False,
             )
         return cls(
             classes=((Var, ()), (BooleanVar, ())),
@@ -365,7 +360,6 @@ class StoreSpec(object):
                 (Var._ComponentDataClass, ("value",)),
                 (BooleanVar._ComponentDataClass, ("value",)),
             ),
-            suffix=False,
         )
 
     @classmethod
@@ -377,15 +371,26 @@ class StoreSpec(object):
                 (Var._ComponentDataClass, ("fixed",)),
                 (BooleanVar._ComponentDataClass, ("fixed",)),
             ),
-            suffix=False,
         )
 
     @classmethod
     def suffix(cls, suffix_filter=None):
+        # need to include classes and data that can have suffixes, but don't
+        # need to store any attributes
         return cls(
-            classes=((Suffix, ()),),
-            data_classes=(),
-            suffix=True,
+            classes=(
+                (Var, ()),
+                (BooleanVar, ()),
+                (Constraint, ()),
+                (Expression, ()),
+                (Suffix, ()),
+            ),
+            data_classes=(
+                (Var._ComponentDataClass, ()),
+                (BooleanVar._ComponentDataClass, ()),
+                (Constraint._ComponentDataClass, ()),
+                (Expression._ComponentDataClass, ()),
+            ),
             suffix_filter=suffix_filter,
         )
 
@@ -404,7 +409,6 @@ class StoreSpec(object):
                     (Var._ComponentDataClass, ("value", "fixed"), _only_fixed),
                     (BooleanVar._ComponentDataClass, ("value", "fixed"), _only_fixed),
                 ),
-                suffix=False,
             )
         else:
             return cls(
@@ -413,7 +417,6 @@ class StoreSpec(object):
                     (Var._ComponentDataClass, ("value", "fixed")),
                     (BooleanVar._ComponentDataClass, ("value", "fixed")),
                 ),
-                suffix=False,
             )
 
     @classmethod
@@ -441,7 +444,6 @@ class StoreSpec(object):
                     (Constraint._ComponentDataClass, ("active",)),
                     (Block._ComponentDataClass, ("active",)),
                 ),
-                suffix=False,
             )
         else:
             return cls(
@@ -459,7 +461,6 @@ class StoreSpec(object):
                     (Constraint._ComponentDataClass, ("active",)),
                     (Block._ComponentDataClass, ("active",)),
                 ),
-                suffix=False,
             )
 
 
@@ -509,7 +510,7 @@ def _write_component(sd, o, wts, count=None, lookup=None, suffixes=None):
     # a sequential id number and create a lookup table that takes the component
     # and returns its id for use later in writing suffix data
     sd[oname] = {"__type__": str(type(o))}
-    if wts.include_suffix:
+    if Suffix in wts.classes:
         sd[oname]["__id__"] = count.count
     lookup[id(o)] = count.count  # used python id() here for efficency
     if count is not None:
@@ -524,11 +525,10 @@ def _write_component(sd, o, wts, count=None, lookup=None, suffixes=None):
             sd[oname][a] = getattr(o, a, None)
     sd[oname]["data"] = {}  # create a dict for compoent data and subcomponents
     if isinstance(o, Suffix):  # if is a suffix, make a list and delay writing
-        if wts.include_suffix:  # data until all compoents have an assigned id
-            if wts.suffix_filter is None or oname in wts.suffix_filter:
-                suffixes.append(
-                    {"sd": sd[oname]["data"], "o": o, "wts": wts, "lookup": lookup}
-                )
+        if wts.suffix_filter is None or oname in wts.suffix_filter:
+            suffixes.append(
+                {"sd": sd[oname]["data"], "o": o, "wts": wts, "lookup": lookup}
+            )
     else:  # if not suffix go ahead and write the data
         _write_component_data(
             sd=sd[oname]["data"],
@@ -563,16 +563,12 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
     if suffixes is None:
         suffixes = []
 
-    if wts.include_suffix and isinstance(o, Suffix):
+    if isinstance(o, Suffix) and Suffix in wts.classes:
         # make special provision for writing suffixes.
         for key in o:
             el = o[key]
             if id(key) not in lookup:
                 # didn't store these compoents so can't write suffix.
-                continue
-            if not _can_serialize(el):
-                # Since I had the bright idea to expressions in suffixes
-                # not everything in a suffix is serializable.
                 continue
             sd[lookup[id(key)]] = el  # Asssume keys are Pyomo model components
     else:  # rest of compoents with normal componet data structure
@@ -592,7 +588,7 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
                     return  # if None then skip writing
             frst = False  # done with first only stuff
             edict = {"__type__": str(type(el))}
-            if wts.include_suffix:  # if writing suffixes give data compoents an id
+            if Suffix in wts.classes:  # if writing suffixes give data compoents an id
                 edict["__id__"] = count.count
                 lookup[id(el)] = count.count  # and add to lookup table
             if count is not None:
@@ -770,7 +766,7 @@ def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
             raise (e)
     if ff is not None:
         alist = ff(o, odict)
-    if wts.include_suffix:
+    if Suffix in wts.classes:
         lookup[odict["__id__"]] = o
     for a in alist:
         try:
@@ -787,9 +783,8 @@ def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
             else:
                 raise (e)
     if isinstance(o, Suffix):
-        if wts.include_suffix:  # make a dict of suffixes to read at the end
-            if wts.suffix_filter is None or oname in wts.suffix_filter:
-                suffixes[odict["__id__"]] = odict["data"]  # is populated
+        if wts.suffix_filter is None or oname in wts.suffix_filter:
+            suffixes[odict["__id__"]] = odict["data"]  # is populated
     else:  # read nonsufix component data
         _read_component_data(odict["data"], o, wts, lookup=lookup, suffixes=suffixes)
 
@@ -841,7 +836,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
             # this lets you contionally load things, for example only load
             # values for unfixed variables.
             alist = ff(el, edict)
-        if wts.include_suffix:  # if loading suffixes make lookup table id to item
+        if Suffix in wts.classes:  # if loading suffixes make lookup table id
             lookup[edict["__id__"]] = el
         for a in alist:  # read in desired attributes
             try:
@@ -878,7 +873,7 @@ def component_data_from_dict(sd, o, wts):
     alist = []  # list of attributes to read
     alist, ff = wts.get_data_class_attr_list(el)  # ff is fileter function
     if alist is None:
-        return  # skip reading this type
+        return
     edict = sd
     if ff is not None:
         alist = ff(o, edict)
