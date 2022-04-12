@@ -79,7 +79,7 @@ Linux
 
       sudo apt-get install libgfortran4 libgomp1 liblapack3 libblas3
 
-   Ubuntu 22.05 and Debian 11::
+   Ubuntu 22.04 and Debian 11::
 
       sudo apt-get install libgfortran5 libgomp1 liblapack3 libblas3
 
