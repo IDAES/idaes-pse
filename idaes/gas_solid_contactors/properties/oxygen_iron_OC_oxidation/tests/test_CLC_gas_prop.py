@@ -22,17 +22,15 @@ from pyomo.environ import (
         ConcreteModel,
         Constraint,
         Var,
-        Reference,
         value,
         units as pyunits,
         )
 from pyomo.contrib.incidence_analysis import (
         solve_strongly_connected_components,
         )
-from pyomo.common.collections import ComponentSet, ComponentMap
+from pyomo.common.collections import ComponentMap
 import pyomo.common.unittest as unittest
 from pyomo.common.unittest import TestCase
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.util.subsystems import ParamSweeper
 from pyomo.util.check_units import assert_units_consistent
 
@@ -41,17 +39,17 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import (
         degrees_of_freedom,
         number_large_residuals,
-        large_residuals_set,
+        fixed_variables_set,
+        activated_constraints_set,
         )
 
-from idaes.core.util.testing import (get_default_solver,
-                                     initialization_tester)
+from idaes.core.solvers import get_solver
 
 from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
     gas_phase_thermo import GasPhaseParameterBlock
 
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -63,43 +61,59 @@ def gas_prop():
     # gas properties and state inlet block
     m.fs.properties = GasPhaseParameterBlock()
     m.fs.unit = m.fs.properties.build_state_block(
+        [0],
         default={"parameters": m.fs.properties,
                  "defined_state": True})
 
-    m.fs.unit.flow_mol.fix(1)
-    m.fs.unit.temperature.fix(450)
-    m.fs.unit.pressure.fix(1.60)
-    m.fs.unit.mole_frac_comp["CO2"].fix(0.0004)
-    m.fs.unit.mole_frac_comp["H2O"].fix(0.0093)
-    m.fs.unit.mole_frac_comp["O2"].fix(0.2095)
-    m.fs.unit.mole_frac_comp["N2"].fix(0.7808)
+    m.fs.unit[0].flow_mol.fix(1)
+    m.fs.unit[0].temperature.fix(450)
+    m.fs.unit[0].pressure.fix(1.60)
+    m.fs.unit[0].mole_frac_comp["CO2"].fix(0.0004)
+    m.fs.unit[0].mole_frac_comp["H2O"].fix(0.0093)
+    m.fs.unit[0].mole_frac_comp["O2"].fix(0.2095)
+    m.fs.unit[0].mole_frac_comp["N2"].fix(0.7808)
 
     return m
 
 
 @pytest.mark.unit
 def test_build_inlet_state_block(gas_prop):
-    assert isinstance(gas_prop.fs.unit.mw, Var)
-    assert isinstance(gas_prop.fs.unit.dens_mol, Var)
-    assert isinstance(gas_prop.fs.unit.dens_mol_comp, Var)
-    assert isinstance(gas_prop.fs.unit.dens_mass, Var)
-    assert isinstance(gas_prop.fs.unit.cp_mol_comp, Var)
-    assert isinstance(gas_prop.fs.unit.cp_mol, Var)
-    assert isinstance(gas_prop.fs.unit.cp_mass, Var)
-    assert isinstance(gas_prop.fs.unit.visc_d, Var)
+    assert isinstance(gas_prop.fs.unit[0].mw, Var)
+    assert isinstance(gas_prop.fs.unit[0].dens_mol, Var)
+    assert isinstance(gas_prop.fs.unit[0].dens_mol_comp, Var)
+    assert isinstance(gas_prop.fs.unit[0].dens_mass, Var)
+    assert isinstance(gas_prop.fs.unit[0].cp_mol_comp, Var)
+    assert isinstance(gas_prop.fs.unit[0].cp_mol, Var)
+    assert isinstance(gas_prop.fs.unit[0].cp_mass, Var)
+    assert isinstance(gas_prop.fs.unit[0].visc_d, Var)
 
 
 @pytest.mark.unit
 def test_setInputs_state_block(gas_prop):
-    assert degrees_of_freedom(gas_prop.fs.unit) == 0
+    assert degrees_of_freedom(gas_prop.fs.unit[0]) == 0
 
 
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_initialize(gas_prop):
-    initialization_tester(
-            gas_prop)
+    orig_fixed_vars = fixed_variables_set(gas_prop)
+    orig_act_consts = activated_constraints_set(gas_prop)
+
+    gas_prop.fs.unit.initialize()
+
+    assert degrees_of_freedom(gas_prop) == 0
+
+    fin_fixed_vars = fixed_variables_set(gas_prop)
+    fin_act_consts = activated_constraints_set(gas_prop)
+
+    assert len(fin_act_consts) == len(orig_act_consts)
+    assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+    for c in fin_act_consts:
+        assert c in orig_act_consts
+    for v in fin_fixed_vars:
+        assert v in orig_fixed_vars
 
 
 @pytest.mark.solver
@@ -107,9 +121,9 @@ def test_initialize(gas_prop):
 @pytest.mark.component
 def test_solve(gas_prop):
 
-    assert hasattr(gas_prop.fs.unit, "mw")
-    assert hasattr(gas_prop.fs.unit, "cp_mol")
-    assert hasattr(gas_prop.fs.unit, "enth_mol")
+    assert hasattr(gas_prop.fs.unit[0], "mw")
+    assert hasattr(gas_prop.fs.unit[0], "cp_mol")
+    assert hasattr(gas_prop.fs.unit[0], "enth_mol")
 
     results = solver.solve(gas_prop)
 
@@ -122,11 +136,11 @@ def test_solve(gas_prop):
 @pytest.mark.component
 def test_solution(gas_prop):
     assert (pytest.approx(1, abs=1e-2) ==
-            gas_prop.fs.unit.mw.value)
+            gas_prop.fs.unit[0].mw.value)
     assert (pytest.approx(1, abs=1e-2) ==
-            gas_prop.fs.unit.cp_mol.value)
+            gas_prop.fs.unit[0].cp_mol.value)
     assert (pytest.approx(1, abs=1e-2) ==
-            gas_prop.fs.unit.enth_mol.value)
+            gas_prop.fs.unit[0].enth_mol.value)
 # -----------------------------------------------------------------------------
 
 
@@ -159,7 +173,7 @@ def test_indexed_state_block():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = GasPhaseParameterBlock()
-    m.fs.state = m.fs.properties.build_state_block([1,2,3])
+    m.fs.state = m.fs.properties.build_state_block([1, 2, 3])
 
     assert len(list(m.component_data_objects(Var))) == 21
     assert len(list(m.component_data_objects(Constraint))) == 3
