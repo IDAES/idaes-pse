@@ -22,6 +22,9 @@ import json
 import datetime
 import time
 import gzip
+import logging
+
+_log = logging.getLogger(__name__)
 
 # Some more inforation about this module
 __author__ = "John Eslick"
@@ -309,7 +312,7 @@ class StoreSpec(object):
         Return:
             A list of attributes and a filter function for object type
         """
-        alist = []  # Attributes to store
+        alist = None  # Attributes to store
         ff = None  # Load filter function
         for i, cl in enumerate(self.classes):
             if isinstance(o, cl):
@@ -326,7 +329,7 @@ class StoreSpec(object):
         Return:
             A list of attributes and a filter function for object type
         """
-        alist = []  # Attributes to store
+        alist = None  # Attributes to store
         ff = None  # Load filter function
         for i, cl in enumerate(self.data_classes):
             if isinstance(o, cl):
@@ -446,7 +449,7 @@ class StoreSpec(object):
                     (Var, ()),
                     (BooleanVar, ()),
                     (Param, ()),
-                    (Constraint, ("active",))
+                    (Constraint, ("active",)),
                     (Block, ("active",))
                 ),
                 data_classes=(
@@ -499,7 +502,7 @@ def _write_component(sd, o, wts, count=None, lookup=None, suffixes=None):
     alist, ff = wts.get_class_attr_list(o)
     if alist is None:
         return  # alist is none means skip this component type
-    # Get the componet name, doesn't need to be fully quified or unique because
+    # Get the componet name, doesn't need to be fully qualified or unique because
     # we are storing the state in a hierarchy structure
     oname = o.getname(fully_qualified=False)
     # Create a dictionary for this component, if storing suffixes assign it
