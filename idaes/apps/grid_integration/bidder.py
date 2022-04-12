@@ -17,6 +17,12 @@ import os
 from itertools import combinations
 from abc import ABC, abstractmethod
 
+from pyomo.common.dependencies import attempt_import
+
+egret, egret_avail = attempt_import("egret")
+if egret_avail:
+    from egret.model_library.transmission import tx_utils
+
 
 class AbstractBidder(ABC):
 
@@ -771,53 +777,21 @@ class Bidder(AbstractBidder):
         # check if bids are convex
         for t in bids:
             for gen in bids[t]:
-                if not self._is_convex_bid(bids[t][gen]):
-                    raise RuntimeError(
-                        f"Bids for generator {gen} at hour {t} is not convex!"
-                    )
+                temp_curve = {
+                    "data_type": "cost_curve",
+                    "cost_curve_type": "piecewise",
+                    "values": list(zip(bids[t][gen].keys(), bids[t][gen].values())),
+                }
+                tx_utils.validate_and_clean_cost_curve(
+                    curve=temp_curve,
+                    curve_type="cost_curve",
+                    p_min=min(bids[t][gen].keys()),
+                    p_max=max(bids[t][gen].keys()),
+                    gen_name=gen,
+                    t=t,
+                )
 
         return bids
-
-    # note: need to check form of input. it will return true with bad inputs
-    @staticmethod
-    def _is_convex_bid(bids):
-
-        """
-        This method checks the convexity of a bid at a single time period from a
-         single generator.
-
-        Arguments:
-            bids: a bids at at a single time period from a single generator,
-            which is a dictionary whose keys are the power outputs and the values
-             are the corresponding costs. {power: cost}
-
-        Returns:
-            boolean: True if the bids are convex, False otherwise.
-        """
-
-        power = list(bids.keys())
-        power.sort()
-
-        idx = 0
-        delta_p = []
-        marginal_cost = []
-
-        # calculate marginal costs (slope)
-        while idx < len(power) - 1:
-            delta_p.append(power[idx + 1] - power[idx])
-            marginal_cost.append(
-                (bids[power[idx + 1]] - bids[power[idx]]) / delta_p[-1]
-            )
-            idx += 1
-
-        # check whether the marginal costs are sorted <=> convex
-        idx = 0
-        while idx < len(marginal_cost) - 1:
-            if round(marginal_cost[idx], 8) > round(marginal_cost[idx + 1], 8):
-                return False
-            idx += 1
-
-        return True
 
     def _record_bids(self, bids, date, hour):
 

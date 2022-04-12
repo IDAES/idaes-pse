@@ -207,15 +207,3 @@ def test_compute_bids(bidder_object):
             pre_cost = expected_bids[t][gen][p]
 
     pyo_unittest.assertStructuredAlmostEqual(first=expected_bids, second=bids)
-
-
-@pytest.mark.component
-def test_is_convex_bid(bidder_object):
-
-    # case 1: convex bid
-    convex_bid = {20.0: 580.0, 40.0: 1180.0, 60.0: 1790.0, 80.0: 2410.0}
-    assert bidder_object._is_convex_bid(convex_bid) == True
-
-    # case 2: nonconvex bid
-    nonconvex_bid = {20.0: 580.0, 40.0: 1180.0, 60.0: 1770.0, 80.0: 2380.0}
-    assert bidder_object._is_convex_bid(nonconvex_bid) == False
