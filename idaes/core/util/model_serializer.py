@@ -226,18 +226,20 @@ class StoreSpec(object):
             (Var, ()),
             (BooleanVar, ()),
             (Expression, ()),
-            (Component, ("active",)),
+            (Block, ("active",)),
+            (Constraint, ("active",)),
         ),
         data_classes=(
-            (pyomo.core.base.var._VarData, ("fixed", "stale", "value", "lb", "ub")),
-            (pyomo.core.base.boolean_var._BooleanVarData, ("fixed", "stale", "value")),
+            (Var._ComponentDataClass, ("fixed", "stale", "value", "lb", "ub")),
+            (BooleanVar._ComponentDataClass, ("fixed", "stale", "value")),
             (pyomo.core.base.param._ParamData, ("value",)),
             (int, ("value",)),
             (float, ("value",)),
-            (pyomo.core.base.expression._ExpressionData, ()),
-            (pyomo.core.base.component.ComponentData, ("active",)),
+            (Expression._ComponentDataClass, ()),
+            (Block._ComponentDataClass, ("active",)),
+            (Constraint._ComponentDataClass, ("active",)),
         ),
-        skip_classes=(ExternalFunction, Set, Port, Expression, RangeSet),
+        skip_classes=(Expression,),
         ignore_missing=True,
         suffix=True,
         suffix_filter=None,
@@ -338,7 +340,7 @@ class StoreSpec(object):
         """Returns a StoreSpec object to store variable bounds only."""
         return cls(
             classes=((Var, ()),),
-            data_classes=((pyomo.core.base.var._VarData, ("lb", "ub")),),
+            data_classes=((Var._ComponentDataClass, ("lb", "ub")),),
             suffix=False,
         )
 
@@ -347,15 +349,19 @@ class StoreSpec(object):
         """Returns a StoreSpec object to store variable values only."""
         if only_not_fixed:
             return cls(
-                classes=((Var, ()),),
+                classes=((Var, ()), (BooleanVar, ())),
                 data_classes=(
-                    (pyomo.core.base.var._VarData, ("value",), _value_if_not_fixed),
+                    (Var._ComponentDataClass, ("value",), _value_if_not_fixed),
+                    (BooleanVar._ComponentDataClass, ("value",), _value_if_not_fixed),
                 ),
                 suffix=False,
             )
         return cls(
-            classes=((Var, ()),),
-            data_classes=((pyomo.core.base.var._VarData, ("value",)),),
+            classes=((Var, ()), (BooleanVar, ())),
+            data_classes=(
+                (Var._ComponentDataClass, ("value",)),
+                (BooleanVar._ComponentDataClass, ("value",)),
+            ),
             suffix=False,
         )
 
@@ -363,8 +369,11 @@ class StoreSpec(object):
     def isfixed(cls):
         """Returns a StoreSpec object to store if variables are fixed."""
         return cls(
-            classes=((Var, ()),),
-            data_classes=((pyomo.core.base.var._VarData, ("fixed",)),),
+            classes=((Var, ()), (BooleanVar, ())),
+            data_classes=(
+                (Var._ComponentDataClass, ("fixed",)),
+                (BooleanVar._ComponentDataClass, ("fixed",)),
+            ),
             suffix=False,
         )
 
@@ -387,16 +396,20 @@ class StoreSpec(object):
         """
         if only_fixed:
             return cls(
-                classes=((Var, ()),),
+                classes=((Var, ()), (BooleanVar, ())),
                 data_classes=(
-                    (pyomo.core.base.var._VarData, ("value", "fixed"), _only_fixed),
+                    (Var._ComponentDataClass, ("value", "fixed"), _only_fixed),
+                    (BooleanVar._ComponentDataClass, ("value", "fixed"), _only_fixed),
                 ),
                 suffix=False,
             )
         else:
             return cls(
-                classes=((Var, ()),),
-                data_classes=((pyomo.core.base.var._VarData, ("value", "fixed")),),
+                classes=((Var, ()), (BooleanVar, ())),
+                data_classes=(
+                    (Var._ComponentDataClass, ("value", "fixed")),
+                    (BooleanVar._ComponentDataClass, ("value", "fixed")),
+                ),
                 suffix=False,
             )
 
@@ -411,21 +424,37 @@ class StoreSpec(object):
         """
         if only_fixed:
             return cls(
-                classes=((Var, ()), (Param, ()), (Component, ("active",))),
+                classes=(
+                    (Var, ()),
+                    (BooleanVar, ()),
+                    (Param, ()),
+                    (Constraint, ("active",)),
+                    (Block, ("active",))
+                ),
                 data_classes=(
-                    (pyomo.core.base.var._VarData, ("value", "fixed"), _only_fixed),
+                    (Var._ComponentDataClass, ("value", "fixed"), _only_fixed),
+                    (BooleanVar._ComponentDataClass, ("value", "fixed"), _only_fixed),
                     (pyomo.core.base.param._ParamData, ("value",)),
-                    (pyomo.core.base.component.ComponentData, ("active",)),
+                    (Constraint._ComponentDataClass, ("active",)),
+                    (Block._ComponentDataClass, ("active",)),
                 ),
                 suffix=False,
             )
         else:
             return cls(
-                classes=((Var, ()), (Param, ()), (Component, ("active",))),
+                classes=(
+                    (Var, ()),
+                    (BooleanVar, ()),
+                    (Param, ()),
+                    (Constraint, ("active",))
+                    (Block, ("active",))
+                ),
                 data_classes=(
-                    (pyomo.core.base.var._VarData, ("value", "fixed")),
+                    (Var._ComponentDataClass, ("value", "fixed")),
+                    (BooleanVar._ComponentDataClass, ("value", "fixed")),
                     (pyomo.core.base.param._ParamData, ("value",)),
-                    (pyomo.core.base.component.ComponentData, ("active",)),
+                    (Constraint._ComponentDataClass, ("active",)),
+                    (Block._ComponentDataClass, ("active",)),
                 ),
                 suffix=False,
             )
