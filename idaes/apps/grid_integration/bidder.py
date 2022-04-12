@@ -25,23 +25,89 @@ class AbstractBidder(ABC):
     """
 
     @abstractmethod
-    def update_model(self, *args, **kwargs):
+    def update_model(self, **kwargs):
+
+        """
+        Update the flowsheets advance timesteps with necessary parameters in kwargs.
+
+        Arguments:
+            kwargs: necessary profiles to update the underlying model. {stat_name: [...]}
+
+        Returns:
+            None
+        """
+
         pass
 
     @abstractmethod
-    def compute_bids(self, *args, **kwargs):
+    def compute_bids(self, date, hour, **kwargs):
+
+        """
+        Solve the model to bid/self-schedule into the markets. After solving, record
+        the schedule from the solve.
+
+        Arguments:
+
+            date: current simulation date
+
+            hour: current simulation hour
+
+        Returns:
+            None
+        """
+
         pass
 
     @abstractmethod
-    def write_results(self, *args, **kwargs):
+    def write_results(self, path):
+
+        """
+        This methods writes the saved results into an csv file.
+
+        Arguments:
+            path: the path to write the results.
+
+        Return:
+            None
+        """
+
         pass
 
     @abstractmethod
-    def formulate_bidding_problem(self, *args, **kwargs):
+    def formulate_bidding_problem(self):
+
+        """
+        Formulate the bidding optimization problem by adding necessary
+        parameters, constraints, and objective function.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+
         pass
 
     @abstractmethod
-    def record_bids(self, *args, **kwargs):
+    def record_bids(self, bids, date, hour):
+
+        """
+        This function records the bids (schedule) and the details in the
+        underlying bidding model.
+
+        Arguments:
+            bids: the obtained bids for this date.
+
+            date: the date we bid into
+
+            hour: the hour we bid into
+
+        Returns:
+            None
+
+        """
+
         pass
 
     @property
