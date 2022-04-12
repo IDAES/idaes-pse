@@ -46,10 +46,8 @@ from idaes.models.unit_models import (  # basic IDAES unit models, and enum
     HeatExchanger,
     MomentumMixingType,  # Enum type for mixer pressure calculation selection
 )
-from idaes.core.util import (
-    get_solver,
-    copy_port_values as _set_port,
-)  # for model intialization
+from idaes.core.util import copy_port_values as _set_port  # for model intialization
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
 

@@ -29,7 +29,7 @@ import idaes.logger as idaeslog
 import os
 import idaes.core.util.tables as tables
 from idaes.core.util.misc import svg_tag
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 _log = idaeslog.getLogger(__name__)
 

@@ -47,7 +47,7 @@ from idaes.core.util.exceptions import (
     PropertyNotSupportedError,
     InitializationError,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 _log = idaeslog.getLogger(__name__)

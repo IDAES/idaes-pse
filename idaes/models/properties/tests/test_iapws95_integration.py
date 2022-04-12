@@ -25,7 +25,7 @@ from idaes.models.unit_models import Heater
 from idaes.models.properties import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import MaterialBalanceType
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Set module level pyest marker
 pytestmark = pytest.mark.iapws

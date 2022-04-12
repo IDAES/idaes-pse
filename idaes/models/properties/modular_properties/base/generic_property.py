@@ -67,7 +67,7 @@ from idaes.core.util.exceptions import (
     InitializationError,
 )
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 

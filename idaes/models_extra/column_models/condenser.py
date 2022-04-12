@@ -55,7 +55,7 @@ from idaes.core.util.exceptions import (
     PropertyNotSupportedError,
     InitializationError,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 _log = idaeslog.getLogger(__name__)
 

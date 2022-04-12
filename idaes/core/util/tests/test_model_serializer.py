@@ -50,6 +50,7 @@ class TestModelSerialize(unittest.TestCase):
         model.b = Block([1, 2, 3])
         a = model.b[1].a = Var(bounds=(-100, 100), initialize=2)
         b = model.b[1].b = Var(bounds=(-100, 100), initialize=20)
+        x = model.x = BooleanVar(initialize=True)
         model.b[1].c = Constraint(expr=b == 10 * a)
         a.fix(2)
         return model
@@ -116,11 +117,13 @@ class TestModelSerialize(unittest.TestCase):
 
         model2.b[1].a = 0.11
         model2.b[1].b = 0.11
+        model2.x = False
         to_json(model, fname=self.fname, human_read=True)
         from_json(model2, fname=self.fname)
         # make sure they are right
         assert pytest.approx(20) == value(model2.b[1].b)
         assert pytest.approx(2) == value(model2.b[1].a)
+        assert value(model2.x) == True
 
     @pytest.mark.unit
     def test01(self):
