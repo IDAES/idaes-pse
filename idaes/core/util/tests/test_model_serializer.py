@@ -241,6 +241,42 @@ class TestModelSerialize(unittest.TestCase):
         assert model.ipopt_zU_out[x["2"]] == pytest.approx(0)
 
     @pytest.mark.unit
+    def test02c(self):
+        """Test with suffixes"""
+        model = self.setup_model02b()
+        model.dual[model.g] = 222
+        wts = StoreSpec(suffix=False)
+        to_json(model, fname=self.fname, human_read=True, wts=wts)
+        model.dual[model.g] = 111
+        from_json(model, fname=self.fname, wts=wts)
+        assert model.dual[model.g] == 111
+
+    @pytest.mark.unit
+    def test02d(self):
+        """Test with suffixes"""
+        model = self.setup_model02b()
+        model.dual[model.g] = 222
+        wts = StoreSpec(suffix=True)
+        to_json(model, fname=self.fname, human_read=True, wts=wts)
+        model.dual[model.g] = 111
+        from_json(model, fname=self.fname)
+        assert model.dual[model.g] == 222
+
+    @pytest.mark.unit
+    def test02e(self):
+        """Test with suffixes"""
+        model = self.setup_model02b()
+        model.ipopt_zL_out[model.x["1"]] = 222
+        model.dual[model.g] = 10
+        wts = StoreSpec(suffix_filter="dual")
+        to_json(model, fname=self.fname, human_read=True, wts=wts)
+        model.ipopt_zL_out[model.x["1"]] = 111
+        model.dual[model.g] = 11
+        from_json(model, fname=self.fname)
+        assert model.ipopt_zL_out[model.x["1"]] == 111
+        assert model.dual[model.g] == 10
+
+    @pytest.mark.unit
     def test03(self):
         """
         This tests a StoreSpec object meant for initialization.  It reloads

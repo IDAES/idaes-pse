@@ -189,33 +189,31 @@ class StoreSpec(object):
     Args:
         classes: A list of classes to save.  Each class is represented by a
             list (or tupple) containing the following elements: (1) class
-            (compared using isinstance) (2) attribute list or None, an emptry
-            list store the object, but none of its attributes, None will not
-            store objects of this class type (3) optional load filter function.
-            The load filter function returns a list of attributes to read based
-            on the state of an object and its saved state. The allows, for
-            example, loading values for unfixed variables, or only loading
-            values whoes current value is less than one. The filter function
-            only applies to load not save. Filter functions take two arguments
-            (a) the object (current state) and (b) the dictionary containing the
-            saved state of an object.  More specific classes should come before
-            more general classes.  For example if an obejct is a HeatExchanger
-            and a UnitModel, and HeatExchanger is listed first, it will follow
-            the HeatExchanger settings.  If UnitModel is listed first in the
-            classes list, it will follow the UnitModel settings.
-        data_classes: This takes the same form as the classes argument.
-            This is for component data classes.
+            (2) attribute list (3) optional read filter function. Filter
+            functions if present only apply to reading components and do not
+            affect writting. The filter function takes two arguments. The first
+            is the object being read to and the second is the state dictionary
+            being read from.  The state dictionary contains keys for the
+            attributes that were written.  Based on the state of the component
+            and the stored state of the component, the filter function returns
+            a list of attribute to read.  For example, a filter function can be
+            used to only read the values of varaibles that were fixed when they
+            where written. The classes list should be in order from specifc
+            components to more general ones.  For example, if a UnitModel is a
+            Block, but you want to store extra attributes for a UnitModel,
+            UnitModel should come before Block in the list.
+        data_classes: This takes the same form as the classes argument, the
+            classes should be compoent data types.
         ignore_missing: If True will ignore a component or attribute that exists
             in the model, but not in the stored state. If false an excpetion
             will be raised for things in the model that should be loaded but
             aren't in the stored state. Extra items in the stored state will not
             raise an exception regaurdless of this argument.
         suffix: If True store suffixes and component ids.  If false, don't store
-            suffixes.
-        suffix_filter: None to store all siffixes if suffix=True, or a list of
-            suffixes to store if suffix=True
+            suffixes. This is a legacy option. The prefered way to store a Suffix
+            of not is just to include Suffix in classes or not.
+        suffix_filter: None to store all suffixes or a list of suffixes to store.
     """
-
     def __init__(
         self,
         classes=(
@@ -242,9 +240,6 @@ class StoreSpec(object):
         suffix=None,
         suffix_filter=None,
     ):
-        """
-        (see above)
-        """
         # Callbacks are used for attributes that cannont be directly get or set
         self.write_cbs = {  # Write callbacks (writing state so get attr)
             "value": _get_value
@@ -258,16 +253,21 @@ class StoreSpec(object):
             "value": _set_value,
         }
         skip_classes = []
-        if suffix is not None and not suffix:
-            skip_classes.append(Suffix)
+        # Convert to lists, so we can add things
         classes = list(classes)
         data_classes = list(data_classes)
-        if Block in skip_classes:
-            raise RuntimeError("Can't skip Blocks (required for model structure)")
+        # Block and BlockData are required for model structure
         if Block not in classes:
             classes.append((Block, ()))
         if Block._ComponentDataClass not in data_classes:
             data_classes.append((Block._ComponentDataClass, ()))
+        # If suffix is None, deside by whether in classes, else add or remove
+        # suffix based on option.  May deprecate the suffix option.
+        if suffix is not None:
+            if not suffix:
+                skip_classes.append(Suffix)
+            else:
+                classes.append((Suffix, ()))
         self.classes = [i[0] for i in classes if i[0] not in skip_classes]
         self.data_classes = [i[0] for i in data_classes]
         self.class_attrs = [i[1] for i in classes if i[0] not in skip_classes]
