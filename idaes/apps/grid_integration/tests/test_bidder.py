@@ -173,7 +173,13 @@ def test_compute_bids(bidder_object):
     bids = bidder_object.compute_bids(date=date, hour=None, prediction=fixed_forecast)
 
     expected_bids = {
-        t: {gen: {p: p * marginal_cost - shift * pmin for p in default_bids}}
+        t: {
+            gen: {
+                "p_min": pmin,
+                "p_max": pmax,
+                "p_cost": [(p, p * marginal_cost - shift * pmin) for p in default_bids],
+            }
+        }
         for t in range(horizon)
     }
 
@@ -188,7 +194,8 @@ def test_compute_bids(bidder_object):
     for t in range(horizon):
 
         expected_bids[t] = {}
-        expected_bids[t][gen] = {}
+        expected_bids[t][gen] = {"p_min": pmin, "p_max": pmax}
+        p_cost = []
 
         pre_p = 0
         pre_cost = 0
@@ -198,12 +205,12 @@ def test_compute_bids(bidder_object):
             # to have highest profit, power output will be pmax
             # and the bidding costs will be computed with the price forecasts
             if p == pmax:
-                expected_bids[t][gen][p] = (p - pre_p) * (
-                    marginal_cost + shift
-                ) + pre_cost
+                p_cost.append((p, (p - pre_p) * (marginal_cost + shift) + pre_cost))
             else:
-                expected_bids[t][gen][p] = (p - pre_p) * marginal_cost + pre_cost
+                p_cost.append((p, (p - pre_p) * marginal_cost + pre_cost))
             pre_p = p
-            pre_cost = expected_bids[t][gen][p]
+            pre_cost = p_cost[-1][1]
+
+        expected_bids[t][gen]["p_cost"] = p_cost
 
     pyo_unittest.assertStructuredAlmostEqual(first=expected_bids, second=bids)

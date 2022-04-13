@@ -26,7 +26,7 @@ class DoubleLoopCoordinator:
     Coordinate Prescient, tracker and bidder.
     """
 
-    def __init__(self, bidder, tracker, projection_tracker, self_schedule=False):
+    def __init__(self, bidder, tracker, projection_tracker):
 
         """
         Initializes the DoubleLoopCoordinator object and registers functionalities
@@ -42,8 +42,6 @@ class DoubleLoopCoordinator:
                                 Prescient and to projecting the system states
                                 and updating bidder model.
 
-            self_schedule: whether the resource is participating through self-scheduling
-
         Returns:
             None
         """
@@ -51,7 +49,6 @@ class DoubleLoopCoordinator:
         self.bidder = bidder
         self.tracker = tracker
         self.projection_tracker = projection_tracker
-        self.self_schedule = self_schedule
 
     def register_plugins(
         self,
@@ -303,6 +300,90 @@ class DoubleLoopCoordinator:
 
         return
 
+    def _update_bids(self, gen_dict, bids, start_hour, horizon):
+
+        """
+        This method takes bids and pass the information in the bids to generator
+        dictionary from Prescient.
+
+        Arguments:
+            gen_dict: a dictionary from Prescient's RUC/SCED instance that stores
+            the generator parameters.
+
+            bids: the bids we want to pass into the market.
+
+            start_hour: the effective start hour of the bid
+
+            horizon: the length of the bids
+
+        Returns:
+            None
+        """
+
+        gen_name = self.bidder.generator
+
+        def _update_p_cost(gen_dict, bids, param_name, start_hour, horizon):
+
+            # update the "p_cost" element in the generator's dict
+            gen_dict["p_cost"] = {
+                "data_type": "time_series",
+                "values": [
+                    {
+                        "data_type": "cost_curve",
+                        "cost_curve_type": "piecewise",
+                        "values": bids[t][gen_name]["p_cost"],
+                    }
+                    for t in range(start_hour, horizon + start_hour)
+                ],
+            }
+
+            # because the p_cost is updated, so delete p_fuel
+            if "p_fuel" in gen_dict:
+                gen_dict.pop("p_fuel")
+
+            return
+
+        def _update_time_series_params(gen_dict, bids, param_name, start_hour, horizon):
+
+            value_list = [
+                bids[t][gen_name].get(param_name, None)
+                for t in range(start_hour, start_hour + horizon)
+            ]
+            if param_name in gen_dict:
+                gen_dict[param_name] = {
+                    "data_type": "time_series",
+                    "values": value_list,
+                }
+
+            return
+
+        def _update_non_time_series_params(
+            gen_dict, bids, param_name, start_hour, horizon
+        ):
+            if param_name in gen_dict:
+                gen_dict[param_name] = bids[0][gen_name].get(param_name, None)
+
+            return
+
+        param_update_func_map = {
+            "p_cost": _update_p_cost,
+            "p_max": _update_time_series_params,
+            "p_min": _update_time_series_params,
+            "fixed_commitment": _update_time_series_params,
+            "min_up_time": _update_non_time_series_params,
+            "min_down_time": _update_non_time_series_params,
+            "startup_capacity": _update_time_series_params,
+            "shutdown_capacity": _update_time_series_params,
+            "startup_fuel": _update_non_time_series_params,
+            "startup_cost": _update_non_time_series_params,
+        }
+
+        for param_name in bids[0][gen_name].keys():
+            update_func = param_update_func_map[param_name]
+            update_func(gen_dict, bids, param_name, start_hour, horizon)
+
+        return
+
     def _pass_DA_bid_to_prescient(self, options, ruc_instance, bids):
 
         """
@@ -313,7 +394,7 @@ class DoubleLoopCoordinator:
 
             ruc_instance: Prescient RUC object
 
-            bids: the bids we want to pass into the day-ahead market. It is a dictionary that has this structure {t: {generator: {power: cost}}}.
+            bids: the bids we want to pass into the day-ahead market.
 
         Returns:
             None
@@ -324,53 +405,7 @@ class DoubleLoopCoordinator:
         # fetch the generator's parameter dictionary from Prescient UC instance
         gen_dict = ruc_instance.data["elements"]["generator"][gen_name]
 
-        # assemble the bids
-        p_cost = [list(bids[t][gen_name].items()) for t in range(options.ruc_horizon)]
-
-        # update the "p_cost" element in the generator's dict
-        gen_dict["p_cost"] = {
-            "data_type": "time_series",
-            "values": [
-                {
-                    "data_type": "cost_curve",
-                    "cost_curve_type": "piecewise",
-                    "values": p_cost[t],
-                }
-                for t in range(options.ruc_horizon)
-            ],
-        }
-
-        # because the p_cost is updated, so delete p_fuel
-        if "p_fuel" in gen_dict:
-            gen_dict.pop("p_fuel")
-
-        return
-
-    def _pass_DA_schedule_to_prescient(self, options, ruc_instance, schedule):
-
-        """
-        This method passes the bids into the RUC model for day-ahead market clearing.
-
-        Arguments:
-            options: Prescient options from prescient.simulator.config.
-
-            ruc_instance: Prescient RUC object
-
-            schedule: the schedule (Pmax) that will be passed to Prescient. It is
-            a dict whose key is the generator name and the values are a list of
-            schedules {gen_name: []}
-
-        Returns:
-            None
-        """
-
-        gen_name = self.bidder.generator
-
-        # fetch the generator's parameter dictionary from Prescient UC instance
-        gen_dict = ruc_instance.data["elements"]["generator"][gen_name]
-
-        # update the pmax values in the generator's parameter dictionary
-        gen_dict["p_max"]["values"][0 : len(schedule[gen_name])] = schedule[gen_name]
+        self._update_bids(gen_dict, bids, start_hour=0, horizon=options.ruc_horizon)
 
         return
 
@@ -524,10 +559,7 @@ class DoubleLoopCoordinator:
         self.next_bids = bids
 
         # pass to prescient
-        if self.self_schedule:
-            self._pass_DA_schedule_to_prescient(options, ruc_instance, bids)
-        else:
-            self._pass_DA_bid_to_prescient(options, ruc_instance, bids)
+        self._pass_DA_bid_to_prescient(options, ruc_instance, bids)
 
         return
 
@@ -544,7 +576,7 @@ class DoubleLoopCoordinator:
 
             sced_instance: Prescient SCED object
 
-            bids: the bids we want to pass into the real-time market. It is a dictionary that has this structure {t: {generator: {power: cost}}}.
+            bids: the bids we want to pass into the real-time market.
 
             hour: the hour of the real-time market.
 
@@ -557,54 +589,7 @@ class DoubleLoopCoordinator:
         # fetch generator's parameter dictionary from SCED instance
         gen_dict = sced_instance.data["elements"]["generator"][gen_name]
 
-        # update the real-time schedule in the dictionary
-        p_cost = list(bids[hour][gen_name].items())
-        gen_dict["p_cost"] = {
-            "data_type": "cost_curve",
-            "cost_curve_type": "piecewise",
-            "values": p_cost,
-        }
-
-        # updated p_cost, so delete p_fuel
-        if "p_fuel" in gen_dict:
-            gen_dict.pop("p_fuel")
-
-        return
-
-    def _pass_RT_schedule_to_prescient(
-        self, options, simulator, sced_instance, schedule, hour
-    ):
-
-        """
-        This method passes the schedules into the SCED model for real-time market
-        clearing.
-
-        Arguments:
-            options: Prescient options from prescient.simulator.config.
-
-            simulator: Prescient simulator.
-
-            sced_instance: Prescient SCED object
-
-            schedule: the schedule (Pmax) that will be passed to Prescient. It is
-            a dict whose key is the generator name and the values are a list of
-            schedules {gen_name: []}
-
-            hour: the hour of the real-time market.
-
-        Returns:
-            None
-        """
-
-        gen_name = self.bidder.generator
-
-        # fetch generator's parameter dictionary from SCED instance
-        gen_dict = sced_instance.data["elements"]["generator"][gen_name]
-
-        # update the real-time schedule in the dictionary
-        gen_dict["p_max"]["values"] = schedule[gen_name][
-            hour : hour + options.sced_horizon
-        ]
+        self._update_bids(gen_dict, bids, start_hour=hour, horizon=options.sced_horizon)
 
         return
 
@@ -630,14 +615,7 @@ class DoubleLoopCoordinator:
         bids = self.current_bids
 
         # pass bids into sced model
-        if self.self_schedule:
-            self._pass_RT_schedule_to_prescient(
-                options, simulator, sced_instance, bids, hour
-            )
-        else:
-            self._pass_RT_bid_to_prescient(
-                options, simulator, sced_instance, bids, hour
-            )
+        self._pass_RT_bid_to_prescient(options, simulator, sced_instance, bids, hour)
 
         return
 

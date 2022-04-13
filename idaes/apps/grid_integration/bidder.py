@@ -192,13 +192,22 @@ class SelfScheduler(AbstractBidder):
     Wrap a model object to self schedule into the market using stochastic programming.
     """
 
-    def __init__(self, bidding_model_object, n_scenario, horizon, solver, forecaster):
+    def __init__(
+        self,
+        bidding_model_object,
+        n_scenario,
+        horizon,
+        solver,
+        forecaster,
+        fixed_to_schedule=False,
+    ):
         self.bidding_model_object = bidding_model_object
         self.n_scenario = n_scenario
         self.horizon = horizon
         self.solver = solver
         self.forecaster = forecaster
         self.generator = self.bidding_model_object.generator
+        self.fixed_to_schedule = fixed_to_schedule
 
         self._check_inputs()
 
@@ -319,13 +328,46 @@ class SelfScheduler(AbstractBidder):
         # update the price forecasts
         self._pass_price_forecasts(price_forecasts)
         self.solver.solve(self.model, tee=True)
-        bids = {
-            self.generator: [
-                round(pyo.value(self.model.fs[0].power_output_ref[t]), 4)
-                for t in range(self.horizon)
-            ]
-        }
+        bids = self._assemble_bids()
         self.record_bids(bids, date=date, hour=hour)
+
+        return bids
+
+    def _assemble_bids(self):
+
+        """
+        This methods extract the bids out of the stochastic programming model and
+        organize them.
+
+        Arguments:
+
+        Returns:
+            bids: the bid we computed.
+        """
+        
+        bids = {}
+
+        for t in range(self.horizon):
+
+            bids[t] = {}
+
+            bids[t][self.generator] = {
+                "p_max": round(pyo.value(self.model.fs[0].power_output_ref[t]), 4),
+                "p_min": self.bidding_model_object.pmin,
+            }
+
+            if self.fixed_to_schedule:
+                bids[t][self.generator]["p_min"] = bids[t][self.generator]["p_max"]
+                bids[t][self.generator]["min_up_time"] = 0
+                bids[t][self.generator]["min_down_time"] = 0
+                bids[t][self.generator]["fixed_commitment"] = (
+                    1 if bids[t][self.generator]["p_min"] > 0 else 0
+                )
+
+            bids[t][self.generator]["p_cost"] = [
+                (bids[t][self.generator]["p_min"], 0),
+                (bids[t][self.generator]["p_max"], 0),
+            ]
 
         return bids
 
@@ -715,7 +757,7 @@ class Bidder(AbstractBidder):
         Arguments:
 
         Returns:
-            bids: the bid we computed. It is a dictionary that has this structure. {t: {gen:{power: cost}}}.
+            bids: the bid we computed.
         """
 
         bids = {}
@@ -782,7 +824,7 @@ class Bidder(AbstractBidder):
                 temp_curve = {
                     "data_type": "cost_curve",
                     "cost_curve_type": "piecewise",
-                    "values": list(zip(bids[t][gen].keys(), bids[t][gen].values())),
+                    "values": list(bids[t][gen].items()),
                 }
                 tx_utils.validate_and_clean_cost_curve(
                     curve=temp_curve,
@@ -793,7 +835,24 @@ class Bidder(AbstractBidder):
                     t=t,
                 )
 
-        return bids
+        # create full bids: this includes info in addition to costs
+        full_bids = {}
+
+        for t in bids:
+            full_bids[t] = {}
+            for gen in bids[t]:
+                full_bids[t][gen] = {}
+                full_bids[t][gen]["p_cost"] = list(bids[t][gen].items())
+                full_bids[t][gen]["p_min"] = min(bids[t][gen].keys())
+                full_bids[t][gen]["p_max"] = max(bids[t][gen].keys())
+
+                fixed_commitment = getattr(
+                    self.bidding_model_object, "fixed_commitment", None
+                )
+                if fixed_commitment is not None:
+                    full_bids[t][gen]["fixed_commitment"] = fixed_commitment
+
+        return full_bids
 
     def _record_bids(self, bids, date, hour):
 
