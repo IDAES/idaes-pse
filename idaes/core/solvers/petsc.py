@@ -376,6 +376,7 @@ def petsc_dae_by_time_element(
     symbolic_solver_labels=True,
     vars_stub=None,
     trajectory_save_prefix=None,
+    between=None,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -414,6 +415,9 @@ def petsc_dae_by_time_element(
             interpret the trajectory data.
         trajectory_save_prefix (str or None): If a string is provided the
             trajectory data will be saved as gzipped json
+        between (list or tuple): List of time points to integrate between.  If
+            None use all time points in the model.  If the first or last time
+            point are not inclued, they will be added.
 
     Returns:
         List of solver results objects from each solve. If there are initial
@@ -421,6 +425,24 @@ def petsc_dae_by_time_element(
         be from the initial condition solve.  Then there should be one for each
         time element for each TS solve.
     """
+    if between is None:
+        between = time
+    else:
+        if between[0] != time.first():
+            between = list(between)
+            between.insert(0, time.first())
+        if between[-1] != time.last():
+            between = list(between)
+            between.append(time.last())
+        between = pyo.Set(initialize=between)
+        between.construct()
+
+    # If you want to load the trajectory, you need symbolic_solver_labels
+    if trajectory_save_prefix is not None:
+        symbolic_solver_labels = True
+        if vars_stub is None:
+            vars_stub = trajectory_save_prefix + "_vars"
+
     solve_log = idaeslog.getSolveLogger("petsc-dae")
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
     regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
@@ -446,7 +468,7 @@ def petsc_dae_by_time_element(
 
     # First calculate the inital conditions and non-time-indexed constraints
     res_list = []
-    t0 = time.first()
+    t0 = between.first()
     if not skip_initial:
         with TemporarySubsystemManager(to_deactivate=tdisc):
             constraints = [
@@ -475,12 +497,14 @@ def petsc_dae_by_time_element(
     ):
         # Solver time steps
         deriv_diff_map = _get_derivative_differential_data_map(m, time)
-        for t in time:
-            if t == time.first():
-                # t == time.first() was handled above
+        for t in between:
+            if t == between.first():
+                # t == between.first() was handled above
                 continue
             constraints = [con[t] for con in time_cons if t in con]
             variables = [var[t] for var in time_vars]
+            for v in variables:
+                print(v)
             # Create a temporary block with references to original constraints
             # and variables so we can integrate this "subsystem" without
             # altering the rest of the model.
@@ -632,6 +656,7 @@ class PetscTrajectory(object):
 
         Args:
             var (str or Var): Variable to get vector for.
+            time (Set): Time index set
 
         Retruns (list):
             vector of variable values at each time point
