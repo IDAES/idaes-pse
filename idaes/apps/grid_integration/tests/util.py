@@ -21,6 +21,7 @@ class TestingModel:
     Simple model object for testing.
     """
 
+    # marginal cost [$/MW]
     marginal_cost = 30.00
 
     def __init__(self, horizon=48, name="test", pmin=20.00, pmax=100.00):
@@ -29,9 +30,11 @@ class TestingModel:
         Initializes the class object by building the thermal generator model.
 
         Arguments:
-            rts_gmlc_dataframe: the RTS-GMLC generator data in Pandas DataFrame
+
             horizon: the length of the planning horizon of the model.
-            generator: a generator in RTS-GMLC
+            name: generator name
+            pmin: the minimal capacity of the generator in MW
+            pmax: the maximal capacity of the generator in MW
 
         Returns:
             None
@@ -270,6 +273,7 @@ class TestingForecaster:
     """
     A fake forecaster class for testing.
     """
+
     def __init__(self, horizon, n_sample):
         self.horizon = horizon
         self.n_sample = n_sample

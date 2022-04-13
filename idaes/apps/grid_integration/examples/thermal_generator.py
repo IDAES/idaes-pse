@@ -26,6 +26,12 @@ if prescient_avail:
 
 class ThermalGenerator:
 
+    """
+    Simple thermal generator model (MIP). Equations models are from Gao, Knueven, 
+    Siirola, Miller, Dowling (2022). Multiscale Simulation of Integrated Energy
+    System and Electricity Market Interactions. Applied Energy.
+    """
+
     # Using 4 segments to be consistent with models in RTS-GMLC dataset
     segment_number = 4
 
@@ -337,7 +343,7 @@ class ThermalGenerator:
 
         b.seg_pow_bnd = pyo.Constraint(b.HOUR, b.SEGMENTS, rule=seg_pow_bnd_fun)
 
-        # start up and shut down logic (Arroyo and Conejo 2000)
+        # start up and shut down logic (Garver 1962)
         def start_up_shut_dw_fun(b, h):
             if h == 0:
                 return b.start_up[h] - b.shut_dw[h] == b.on_off[h] - b.pre_on_off
