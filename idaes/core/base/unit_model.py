@@ -41,7 +41,10 @@ import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import DefaultBool
-
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_activated_constraints,
+)
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -107,8 +110,8 @@ Must be True if dynamic = True,
         """
         super(UnitModelBlockData, self).build()
 
-        # Add a placeholder for initialization order
-        self._initialization_order = []
+        # Create initialization order attribute
+        self._initialization_order = [self]
 
         # Check for overloading of initialize method
         # TODO: Remove in IDAES v2.0
@@ -641,16 +644,16 @@ Must be True if dynamic = True,
                 f"developer to develop a unit specific stream table."
             )
 
-    def initialize(blk, *args, **kwargs):
+    def initialize(self, solver=None, optarg=None, outlvl=idaeslog.NOTSET, **kwargs):
         """
         Initialization routine for Unit Model objects and associated
         components.
 
         This method is intended for initializing IDAES unit models and any
         modeling components attached to them, such as costing blocks. This
-        method iterates through all objects in blk._initialization_order and
-        deactivates them, followed by calling blk.initialize_build. Finally,
-        it iterates through all objects in blk._initialization_order in reverse
+        method iterates through all objects in self._initialization_order and
+        deactivates them, followed by calling self.initialize_build. Finally,
+        it iterates through all objects in self._initialization_order in reverse
         and re-activates these whilst calling the associated initialize method.
 
         Currently, parsing of arguments to the initialize method of attached
@@ -665,40 +668,129 @@ Must be True if dynamic = True,
 
         For other arguments, see the initilize_unit method.
         """
+        # TODO: How to handle state_args, esp. for cases with more than 1 CV.
+        init_order = self._initialization_order
+
+        if optarg is None:
+            optarg = {}
+
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        # TODO: Clean up in IDAES v2.0
         # Get any arguments for costing if provided
         cost_args = kwargs.pop("costing_args", {})
-
-        # Get the costing block if present
-        # TODO: Clean up in IDAES v2.0
-        init_order = blk._initialization_order
-        if hasattr(blk, "costing") and blk.costing not in blk._initialization_order:
+        # Add old-style costing block to init order if present
+        if hasattr(self, "costing") and self.costing not in self._initialization_order:
             # Fallback for older style costing
-            init_order.append(blk.costing)
+            init_order.append(self.costing)
 
-        # If costing block exists, deactivate
+        # Prepare for initialization
+        init_args = {}
         for c in init_order:
-            c.deactivate()
-
-        # Remember to collect flags for fixed vars
-        flags = blk.initialize_build(*args, **kwargs)
-
-        # If costing block exists, activate and initialize
-        for c in init_order:
-            c.activate()
-
-            if hasattr(c, "initialize"):
-                # New type costing block
-                c.initialize(**cost_args)
+            if c is self:
+                # Call self.fix_state
+                flags = self.fix_state()
             else:
-                # TODO: Deprecate in IDAES v2.0
-                # Old style costing package
-                idaes.core.util.unit_costing.initialize(c, **cost_args)
+                init_args[c] = kwargs.pop(c.local_name, {})
+                # Call c.initialize_prepare
+                c.deactivate()
 
-        # Return any flags returned by initialize_build
-        return flags
+        # Check degrees of freedom are zero
+        if degrees_of_freedom(self) != 0:
+            raise InitializationError(
+                f"Degrees of freedom were not zero after preparation for "
+                f"initialization (DoF = {degrees_of_freedom(self)}).")
+
+        # Initialize block and all add-ons
+        for c in init_order:
+            if c is self:
+                # Call self.initialize_build
+                results = self.initialize_build(
+                    solver=solver,
+                    optarg=optarg,
+                    outlvl=outlvl,
+                    **kwargs)
+            else:
+                # Call c.initialize
+                if hasattr(c, "initialize"):
+                    # New type costing block
+                    c.initialize(solver=solver, optarg=optarg, **init_args[c])
+                else:
+                    # TODO: Deprecate in IDAES v2.0
+                    # Old style costing package
+                    idaes.core.util.unit_costing.initialize(c, **cost_args)
+
+        # Revert state to what it was before initialization
+        for c in init_order:
+            if c is self:
+                # Do nothing for self, we will get to it after the final solve
+                pass
+            else:
+                # Call c.initialize_final
+                c.activate()
+
+        # Final solve of full block if required.
+        # This can be skipped under two circumstances:
+        # 1. Model has no active constraints
+        # 2. initialize_build did not return None and no add-ons are present
+        if number_activated_constraints(self) == 0:
+            # No active constraints, so nothing to solve
+            results = None
+            init_log.info_high("Initialization Solve: skipped, no active constraints.")
+        elif results is not None and len(init_order) == 1:
+            # Block was solved during initialize_build and no add-ons are present
+            # Solve from initialize_build is sufficient
+            pass
+        else:
+            # Need to call a solve on the entire Block
+            solver_obj = get_solver(solver, optarg)
+
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                results = solver_obj.solve(self, tee=slc.tee)
+            init_log.info_high(f"Initialization Solve {idaeslog.condition(results)}.")
+
+        # Call self.revert_state to finish clean up now that final solve is done
+        self.revert_state(flags)
+
+        # Check status of final solve and raise error if not optimal
+        if results is not None and not check_optimal_termination(results):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information."
+            )
+
+    def fix_state(self):
+        """
+        This method assumes a single control volume named control_volume and
+        calls fix_state on it.
+
+        Unit models with more than one control volume or non-standard names will
+        need to overload this with a unit-specific method.
+
+        Args:
+            None
+
+        Returns:
+            dict indicating what states were fixed by this method.
+        """
+        return self.control_volume.fix_state()
+
+    def revert_state(self, flags):
+        """
+        This method assumes a single control volume named control_volume and
+        calls revert_state on it.
+
+        Unit models with more than one control volume or non-standard names will
+        need to overload this with a unit-specific method.
+
+        Args:
+            flags: dict indicating which states should be unfixed
+        """
+        self.control_volume.revert_state(flags)
 
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
         This is a general purpose initialization routine for simple unit
@@ -727,14 +819,14 @@ Must be True if dynamic = True,
             optarg = {}
 
         # Set solver options
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
-        flags = blk.control_volume.initialize(
+        self.control_volume.initialize_build(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -746,25 +838,13 @@ Must be True if dynamic = True,
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = opt.solve(blk, tee=slc.tee)
+            results = opt.solve(self, tee=slc.tee)
 
         init_log.info_high(
             "Initialization Step 2 {}.".format(idaeslog.condition(results))
         )
 
-        # ---------------------------------------------------------------------
-        # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl)
-
-        if not check_optimal_termination(results):
-            raise InitializationError(
-                f"{blk.name} failed to initialize successfully. Please check "
-                f"the output logs for more information."
-            )
-
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
-
-        return None
+        return results
 
     def del_component(self, name_or_object):
         """

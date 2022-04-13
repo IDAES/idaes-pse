@@ -36,6 +36,10 @@ from idaes.core.util.exceptions import (
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.util.initialization import (
+    fix_state_vars,
+    revert_state_vars,
+)
 
 _log = idaeslog.getLogger(__name__)
 
@@ -1481,6 +1485,112 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "model_check method to the associated "
                     "ReactionBlock class.".format(blk.name)
                 )
+
+    def fix_state(self):
+        """
+        This method calls the fix_state utiltiy method on self.properties_in.
+
+        Args:
+            None
+
+        Returns:
+            dict indicating what states were fixed by this method.
+        """
+        return fix_state_vars(self.properties_in)
+
+    def revert_state(self, flags):
+        """
+        This method calls the revert_state utiltiy method on self.properties_in.
+
+        Args:
+            flags: dict indicating what states should be unfixed by this method.
+        """
+        return revert_state_vars(self.properties_in, flags)
+
+    def initialize_build(
+        blk,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        optarg=None,
+        solver=None,
+    ):
+        """
+        Initialization routine for 0D control volume.
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output log level of initialization routine
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None)
+            hold_state : flag indicating whether the initialization routine
+                     should unfix any state variables fixed during
+                     initialization, **default** - True. **Valid values:**
+                     **True** - states variables are not unfixed, and a dict of
+                     returned containing flags for which states were fixed
+                     during initialization, **False** - state variables are
+                     unfixed after initialization by calling the release_state
+                     method.
+
+        Returns:
+            If hold_states is True, returns a dict containing flags for which
+            states were fixed during initialization.
+        """
+        # Get inlet state if not provided
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
+        if state_args is None:
+            state_args = {}
+            state_dict = blk.properties_in[
+                blk.flowsheet().time.first()
+            ].define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
+        # Initialize state blocks
+        blk.properties_in.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
+        out_flags = blk.properties_out.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True,
+            state_args=state_args,
+        )
+        try:
+            # TODO: setting state_vars_fixed may not work for heterogeneous
+            # systems where a second control volume is involved, as we cannot
+            # assume those state vars are also fixed. For now, heterogeneous
+            # reactions should ignore the state_vars_fixed argument and always
+            # check their state_vars.
+            blk.reactions.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_vars_fixed=True,
+            )
+        except AttributeError:
+            pass
+
+        # Unfix outlet properties
+        blk.properties_out.release_state(
+            flags=out_flags,
+            outlvl=outlvl,
+        )
+        init_log.info("Control Volume Initialization Complete")
 
     def initialize(
         blk,
