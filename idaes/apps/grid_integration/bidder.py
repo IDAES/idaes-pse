@@ -583,29 +583,24 @@ class Bidder(AbstractBidder):
             None
         """
 
-        # declare a constraint list
-        self.model.bidding_constraints = pyo.ConstraintList()
+        def bidding_constraint_rule(model, s1, s2, t):
+            if s1 == s2:
+                return pyo.Constraint.Skip
+            return (
+                model.fs[s1].power_output_ref[t] - model.fs[s2].power_output_ref[t]
+            ) * (model.fs[s1].energy_price[t] - model.fs[s2].energy_price[t]) >= 0
 
-        # generate scenarios combinations between every 2 scenarios
-        # items in scenario_comb will be tuples of combinations of scenarios
-        # first item in the tuple is the first scenario and the second item is
-        # the another scenario in that combination
-        scenario_comb = list(combinations(self.model.SCENARIOS, 2))
+        time_index = self.model.fs[
+            self.model.SCENARIOS.first()
+        ].power_output_ref.index_set()
 
-        for k in scenario_comb:
-            time_index = self.model.fs[k[0]].power_output_ref.index_set()
-            for t in time_index:
-                self.model.bidding_constraints.add(
-                    (
-                        self.model.fs[k[0]].power_output_ref[t]
-                        - self.model.fs[k[1]].power_output_ref[t]
-                    )
-                    * (
-                        self.model.fs[k[0]].energy_price[t]
-                        - self.model.fs[k[1]].energy_price[t]
-                    )
-                    >= 0
-                )
+        self.model.bidding_constraints = pyo.Constraint(
+            self.model.SCENARIOS,
+            self.model.SCENARIOS,
+            time_index,
+            rule=bidding_constraint_rule,
+        )
+
         return
 
     def _add_bidding_objective(self):
