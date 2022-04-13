@@ -33,12 +33,3 @@ class PlaceHolderForecaster:
     def forecast(self, date, **kwargs):
         date = str(date)
         return self.price_forecasts_df.loc[date].to_dict("list")
-
-
-if __name__ == "__main__":
-
-    price_forecasts_df = pd.read_csv("examples/lmp_forecasts_example.csv")
-    forecaster = PlaceHolderForecaster(price_forecasts_df=price_forecasts_df)
-
-    date = "2021-08-01"
-    forecasts = forecaster.forecast(date=date)

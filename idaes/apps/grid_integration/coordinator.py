@@ -521,9 +521,7 @@ class DoubleLoopCoordinator:
 
         if is_first_day:
             self.current_bids = bids
-            self.next_bids = bids
-        else:
-            self.next_bids = bids
+        self.next_bids = bids
 
         # pass to prescient
         if self.self_schedule:
@@ -769,12 +767,6 @@ class DoubleLoopCoordinator:
                     gen_name, t, next_ruc_dispatch_dicts, market_signals
                 )
 
-            # next ruc is not available: try to fetch the signal from the current ruc
-            elif t > 23 and next_ruc_dispatch_dicts is None:
-                dispatch = get_signals(
-                    gen_name, t, current_ruc_dispatch_dicts, market_signals
-                )
-
             # fetch from the current ruc
             else:
                 dispatch = get_signals(
@@ -871,8 +863,7 @@ class DoubleLoopCoordinator:
         """
 
         # change bids
-        current_bids = self.next_bids
-        self.current_bids = current_bids
+        self.current_bids = self.next_bids
         self.next_bids = None
 
         return

@@ -264,14 +264,21 @@ class SelfScheduler(AbstractBidder):
             )
 
         # nonanticipativity constraints
-        self.model.NonanticipativityConstraints = pyo.ConstraintList()
-        for i in range(self.n_scenario - 1):
-            time_index = self.model.fs[i].power_output_ref.index_set()
-            for t in time_index:
-                self.model.NonanticipativityConstraints.add(
-                    self.model.fs[i].power_output_ref[t]
-                    == self.model.fs[i + 1].power_output_ref[t]
-                )
+        def nonanticipativity_constraint_rule(model, s1, s2, t):
+            if s1 == s2:
+                return pyo.Constraint.Skip
+            return model.fs[s1].power_output_ref[t] == model.fs[s2].power_output_ref[t]
+
+        time_index = self.model.fs[
+            self.model.SCENARIOS.first()
+        ].power_output_ref.index_set()
+
+        self.model.NonanticipativityConstraints = pyo.Constraint(
+            self.model.SCENARIOS,
+            self.model.SCENARIOS,
+            time_index,
+            rule=nonanticipativity_constraint_rule,
+        )
 
         # declare an empty objective
         self.model.obj = pyo.Objective(expr=0, sense=pyo.maximize)
