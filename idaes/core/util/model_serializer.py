@@ -187,7 +187,6 @@ class StoreSpec(object):
     typical attributes required to load/save a model state.
 
     Args:
-<<<<<<< HEAD
         classes: Dictionary of classes to read/write. The class is the dictionary
             key and the value is a list or tuple with two elements 1) a list or
             tuple of attributes to read/write and 2) a filter function. The
@@ -204,23 +203,6 @@ class StoreSpec(object):
             go from specific classes to general ones. For example, if a
             UnitModel is a Block, but you want to store extra attributes for a
             UnitModel, UnitModel should come before Block in the key set.
-=======
-        classes: A list of classes to save.  Each class is represented by a
-            list (or tupple) containing the following elements: (1) class
-            (2) attribute list (3) optional read filter function. Filter
-            functions if present only apply to reading components and do not
-            affect writting. The filter function takes two arguments. The first
-            is the object being read to and the second is the state dictionary
-            being read from.  The state dictionary contains keys for the
-            attributes that were written.  Based on the state of the component
-            and the stored state of the component, the filter function returns
-            a list of attribute to read.  For example, a filter function can be
-            used to only read the values of varaibles that were fixed when they
-            where written. The classes list should be in order from specifc
-            components to more general ones.  For example, if a UnitModel is a
-            Block, but you want to store extra attributes for a UnitModel,
-            UnitModel should come before Block in the list.
->>>>>>> 7c6bb17ddd26b0abf4e8e88b51b8684db2b2a8a5
         data_classes: This takes the same form as the classes argument, the
             classes should be compoent data types.
         ignore_missing: If True will ignore a component or attribute that exists
@@ -235,7 +217,6 @@ class StoreSpec(object):
     """
     def __init__(
         self,
-<<<<<<< HEAD
         classes={
             Param: (("_mutable",), None),
             Var: ((), None),
@@ -256,33 +237,10 @@ class StoreSpec(object):
             Block._ComponentDataClass: (("active",), None),
             Constraint._ComponentDataClass: (("active",), None),
         },
-=======
-        classes=(
-            (Param, ("_mutable",)),
-            (Var, ()),
-            (BooleanVar, ()),
-            (Expression, ()),
-            (Block, ("active",)),
-            (Constraint, ("active",)),
-            (Suffix, ()),
-        ),
-        data_classes=(
-            (Var._ComponentDataClass, ("fixed", "stale", "value", "lb", "ub")),
-            (BooleanVar._ComponentDataClass, ("fixed", "stale", "value")),
-            (pyomo.core.base.param._ParamData, ("value",)),
-            (int, ("value",)),
-            (float, ("value",)),
-            (str, ("value",)),
-            (Expression._ComponentDataClass, ()),
-            (Block._ComponentDataClass, ("active",)),
-            (Constraint._ComponentDataClass, ("active",)),
-        ),
->>>>>>> 7c6bb17ddd26b0abf4e8e88b51b8684db2b2a8a5
         ignore_missing=True,
         suffix=None,
         suffix_filter=None,
     ):
-<<<<<<< HEAD
         # convert old style list/tuple classes arg to dict if needed
         if isinstance(classes, (list, tuple)):
             self.classes = {}
@@ -297,8 +255,6 @@ class StoreSpec(object):
                 self.data_classes[c[0]] = c[1:]
         else:
             self.data_classes = data_classes
-=======
->>>>>>> 7c6bb17ddd26b0abf4e8e88b51b8684db2b2a8a5
         # Callbacks are used for attributes that cannont be directly get or set
         self.write_cbs = {  # Write callbacks (writing state so get attr)
             "value": _get_value
@@ -311,7 +267,6 @@ class StoreSpec(object):
             "ub": _set_ub,
             "value": _set_value,
         }
-<<<<<<< HEAD
         # Block and BlockData are required for model structure
         if Block not in self.classes:
             self.classes[Block] = ((), None)
@@ -333,42 +288,6 @@ class StoreSpec(object):
             if len(c) < 2:
                 print(c)
                 self.data_classes[i] = (c[0], None)
-=======
-        skip_classes = []
-        # Convert to lists, so we can add things
-        classes = list(classes)
-        data_classes = list(data_classes)
-        # Block and BlockData are required for model structure
-        if Block not in classes:
-            classes.append((Block, ()))
-        if Block._ComponentDataClass not in data_classes:
-            data_classes.append((Block._ComponentDataClass, ()))
-        # If suffix is None, deside by whether in classes, else add or remove
-        # suffix based on option.  May deprecate the suffix option.
-        if suffix is not None:
-            if not suffix:
-                skip_classes.append(Suffix)
-            else:
-                classes.append((Suffix, ()))
-        self.classes = [i[0] for i in classes if i[0] not in skip_classes]
-        self.data_classes = [i[0] for i in data_classes]
-        self.class_attrs = [i[1] for i in classes if i[0] not in skip_classes]
-        self.data_class_attrs = [i[1] for i in data_classes]
-        # Create filter function lists, use None if not supplied
-        self.class_filter = []
-        for i in classes:
-            if i[0] not in skip_classes:
-                if len(i) < 3:
-                    self.class_filter.append(None)
-                else:
-                    self.class_filter.append(i[2])
-        self.data_class_filter = []
-        for i in data_classes:
-            if len(i) < 3:
-                self.data_class_filter.append(None)
-            else:
-                self.data_class_filter.append(i[2])
->>>>>>> 7c6bb17ddd26b0abf4e8e88b51b8684db2b2a8a5
         self.ignore_missing = ignore_missing
         self.suffix_filter = suffix_filter
 
@@ -422,13 +341,8 @@ class StoreSpec(object):
     def bound(cls):
         """Returns a StoreSpec object to store variable bounds only."""
         return cls(
-<<<<<<< HEAD
             classes={Var: ((), None)},
             data_classes={Var._ComponentDataClass: (("lb", "ub"), None),},
-=======
-            classes=((Var, ()),),
-            data_classes=((Var._ComponentDataClass, ("lb", "ub")),),
->>>>>>> 7c6bb17ddd26b0abf4e8e88b51b8684db2b2a8a5
         )
 
     @classmethod
@@ -436,7 +350,6 @@ class StoreSpec(object):
         """Returns a StoreSpec object to store variable values only."""
         if only_not_fixed:
             return cls(
-<<<<<<< HEAD
                 classes={Var: ((), None), BooleanVar: ((), None)},
                 data_classes={
                     Var._ComponentDataClass: (
@@ -451,39 +364,17 @@ class StoreSpec(object):
                 Var._ComponentDataClass: (("value",), None),
                 BooleanVar._ComponentDataClass: (("value",), None),
             },
-=======
-                classes=((Var, ()), (BooleanVar, ())),
-                data_classes=(
-                    (Var._ComponentDataClass, ("value",), _value_if_not_fixed),
-                    (BooleanVar._ComponentDataClass, ("value",), _value_if_not_fixed),
-                ),
-            )
-        return cls(
-            classes=((Var, ()), (BooleanVar, ())),
-            data_classes=(
-                (Var._ComponentDataClass, ("value",)),
-                (BooleanVar._ComponentDataClass, ("value",)),
-            ),
->>>>>>> 7c6bb17ddd26b0abf4e8e88b51b8684db2b2a8a5
         )
 
     @classmethod
     def isfixed(cls):
         """Returns a StoreSpec object to store if variables are fixed."""
         return cls(
-<<<<<<< HEAD
             classes={Var: ((), None), BooleanVar: ((), None)},
             data_classes={
                 Var._ComponentDataClass: (("fixed",), None),
                 BooleanVar._ComponentDataClass: (("fixed",), None),
             },
-=======
-            classes=((Var, ()), (BooleanVar, ())),
-            data_classes=(
-                (Var._ComponentDataClass, ("fixed",)),
-                (BooleanVar._ComponentDataClass, ("fixed",)),
-            ),
->>>>>>> 7c6bb17ddd26b0abf4e8e88b51b8684db2b2a8a5
         )
 
     @classmethod
@@ -491,7 +382,6 @@ class StoreSpec(object):
         # need to include classes and data that can have suffixes, but don't
         # need to store any attributes
         return cls(
-<<<<<<< HEAD
             classes={
                 Var: ((), None),
                 BooleanVar: ((), None),
@@ -505,21 +395,6 @@ class StoreSpec(object):
                 Constraint._ComponentDataClass: ((), None),
                 Expression._ComponentDataClass: ((), None),
             },
-=======
-            classes=(
-                (Var, ()),
-                (BooleanVar, ()),
-                (Constraint, ()),
-                (Expression, ()),
-                (Suffix, ()),
-            ),
-            data_classes=(
-                (Var._ComponentDataClass, ()),
-                (BooleanVar._ComponentDataClass, ()),
-                (Constraint._ComponentDataClass, ()),
-                (Expression._ComponentDataClass, ()),
-            ),
->>>>>>> 7c6bb17ddd26b0abf4e8e88b51b8684db2b2a8a5
             suffix_filter=suffix_filter,
         )
 
@@ -533,7 +408,6 @@ class StoreSpec(object):
         """
         if only_fixed:
             return cls(
-<<<<<<< HEAD
                 classes={Var: ((), None), BooleanVar: ((), None)},
                 data_classes={
                     Var._ComponentDataClass: (("value", "fixed"), _only_fixed),
@@ -547,21 +421,6 @@ class StoreSpec(object):
                     Var._ComponentDataClass: (("value", "fixed"), None),
                     BooleanVar._ComponentDataClass: (("value", "fixed"), None),
                 },
-=======
-                classes=((Var, ()), (BooleanVar, ())),
-                data_classes=(
-                    (Var._ComponentDataClass, ("value", "fixed"), _only_fixed),
-                    (BooleanVar._ComponentDataClass, ("value", "fixed"), _only_fixed),
-                ),
-            )
-        else:
-            return cls(
-                classes=((Var, ()), (BooleanVar, ())),
-                data_classes=(
-                    (Var._ComponentDataClass, ("value", "fixed")),
-                    (BooleanVar._ComponentDataClass, ("value", "fixed")),
-                ),
->>>>>>> 7c6bb17ddd26b0abf4e8e88b51b8684db2b2a8a5
             )
 
     @classmethod
@@ -575,7 +434,6 @@ class StoreSpec(object):
         """
         if only_fixed:
             return cls(
-<<<<<<< HEAD
                 classes={
                     Var: ((), None),
                     BooleanVar: ((), None),
@@ -607,39 +465,6 @@ class StoreSpec(object):
                     Constraint._ComponentDataClass: (("active",), None),
                     Block._ComponentDataClass: (("active",), None),
                 },
-=======
-                classes=(
-                    (Var, ()),
-                    (BooleanVar, ()),
-                    (Param, ()),
-                    (Constraint, ("active",)),
-                    (Block, ("active",))
-                ),
-                data_classes=(
-                    (Var._ComponentDataClass, ("value", "fixed"), _only_fixed),
-                    (BooleanVar._ComponentDataClass, ("value", "fixed"), _only_fixed),
-                    (pyomo.core.base.param._ParamData, ("value",)),
-                    (Constraint._ComponentDataClass, ("active",)),
-                    (Block._ComponentDataClass, ("active",)),
-                ),
-            )
-        else:
-            return cls(
-                classes=(
-                    (Var, ()),
-                    (BooleanVar, ()),
-                    (Param, ()),
-                    (Constraint, ("active",)),
-                    (Block, ("active",))
-                ),
-                data_classes=(
-                    (Var._ComponentDataClass, ("value", "fixed")),
-                    (BooleanVar._ComponentDataClass, ("value", "fixed")),
-                    (pyomo.core.base.param._ParamData, ("value",)),
-                    (Constraint._ComponentDataClass, ("active",)),
-                    (Block._ComponentDataClass, ("active",)),
-                ),
->>>>>>> 7c6bb17ddd26b0abf4e8e88b51b8684db2b2a8a5
             )
 
 
