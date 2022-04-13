@@ -37,10 +37,11 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import (
         degrees_of_freedom,
         number_large_residuals,
+        fixed_variables_set,
+        activated_constraints_set,
         )
 
-from idaes.core.util.testing import (get_default_solver,
-                                     initialization_tester)
+from idaes.core.solvers import get_solver
 
 from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
     gas_phase_thermo import GasPhaseParameterBlock
@@ -51,7 +52,7 @@ from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
 
 
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -63,11 +64,13 @@ def rxn_prop():
     # Set up thermo props and reaction props
     m.fs.solid_properties = SolidPhaseParameterBlock()
     m.fs.solid_state_block = m.fs.solid_properties.build_state_block(
+        [0],
         default={"parameters": m.fs.solid_properties,
                  "defined_state": True})
 
     m.fs.gas_properties = GasPhaseParameterBlock()
     m.fs.gas_state_block = m.fs.gas_properties.build_state_block(
+        [0],
         default={"parameters": m.fs.gas_properties,
                  "defined_state": True})
 
@@ -75,45 +78,61 @@ def rxn_prop():
                 default={"solid_property_package": m.fs.solid_properties,
                          "gas_property_package": m.fs.gas_properties})
     m.fs.unit = m.fs.reactions.reaction_block_class(
-            default={"parameters": m.fs.reactions,
-                     "solid_state_block": m.fs.solid_state_block,
-                     "gas_state_block": m.fs.gas_state_block,
-                     "has_equilibrium": False})
+        [0],
+        default={"parameters": m.fs.reactions,
+                 "solid_state_block": m.fs.solid_state_block,
+                 "gas_state_block": m.fs.gas_state_block,
+                 "has_equilibrium": False})
 
     # Fix required variables to make reaction model square
     # (gas mixture and component densities,
     # solid particle porosity, density and component fractions)
-    m.fs.gas_state_block.dens_mol.fix(10)
-    m.fs.gas_state_block.dens_mol_comp.fix(10)
-    m.fs.solid_state_block.particle_porosity.fix(0.23)
-    m.fs.solid_state_block.mass_frac_comp["Fe2O3"].fix(0.244)
-    m.fs.solid_state_block.mass_frac_comp["Fe3O4"].fix(0.202)
-    m.fs.solid_state_block.mass_frac_comp["Al2O3"].fix(0.554)
-    m.fs.solid_state_block.dens_mass_skeletal.fix(3125)
-    m.fs.solid_state_block.temperature.fix(1183.15)  # K
+    m.fs.gas_state_block[0].dens_mol.fix(10)
+    m.fs.gas_state_block[0].dens_mol_comp.fix(10)
+    m.fs.solid_state_block[0].particle_porosity.fix(0.23)
+    m.fs.solid_state_block[0].mass_frac_comp["Fe2O3"].fix(0.244)
+    m.fs.solid_state_block[0].mass_frac_comp["Fe3O4"].fix(0.202)
+    m.fs.solid_state_block[0].mass_frac_comp["Al2O3"].fix(0.554)
+    m.fs.solid_state_block[0].dens_mass_skeletal.fix(3125)
+    m.fs.solid_state_block[0].temperature.fix(1183.15)  # K
 
     return m
 
 
 @pytest.mark.unit
 def test_build_reaction_block(rxn_prop):
-    assert isinstance(rxn_prop.fs.unit.k_rxn, Var)
-    assert isinstance(rxn_prop.fs.unit.OC_conv, Var)
-    assert isinstance(rxn_prop.fs.unit.OC_conv_temp, Var)
-    assert isinstance(rxn_prop.fs.unit.reaction_rate, Var)
+    assert isinstance(rxn_prop.fs.unit[0].k_rxn, Var)
+    assert isinstance(rxn_prop.fs.unit[0].OC_conv, Var)
+    assert isinstance(rxn_prop.fs.unit[0].OC_conv_temp, Var)
+    assert isinstance(rxn_prop.fs.unit[0].reaction_rate, Var)
 
 
 @pytest.mark.unit
 def test_setInputs_reaction_block(rxn_prop):
-    assert degrees_of_freedom(rxn_prop.fs.unit) == 0
+    assert degrees_of_freedom(rxn_prop.fs.unit[0]) == 0
 
 
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_initialize(rxn_prop):
-    initialization_tester(
-            rxn_prop)
+    orig_fixed_vars = fixed_variables_set(rxn_prop)
+    orig_act_consts = activated_constraints_set(rxn_prop)
+
+    rxn_prop.fs.unit.initialize()
+
+    assert degrees_of_freedom(rxn_prop) == 0
+
+    fin_fixed_vars = fixed_variables_set(rxn_prop)
+    fin_act_consts = activated_constraints_set(rxn_prop)
+
+    assert len(fin_act_consts) == len(orig_act_consts)
+    assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+    for c in fin_act_consts:
+        assert c in orig_act_consts
+    for v in fin_fixed_vars:
+        assert v in orig_fixed_vars
 
 
 @pytest.mark.solver
@@ -121,11 +140,11 @@ def test_initialize(rxn_prop):
 @pytest.mark.component
 def test_solve(rxn_prop):
 
-    assert hasattr(rxn_prop.fs.unit, "k_rxn")
-    assert hasattr(rxn_prop.fs.unit, "OC_conv")
-    assert hasattr(rxn_prop.fs.unit, "reaction_rate")
+    assert hasattr(rxn_prop.fs.unit[0], "k_rxn")
+    assert hasattr(rxn_prop.fs.unit[0], "OC_conv")
+    assert hasattr(rxn_prop.fs.unit[0], "reaction_rate")
 
-    results = solver.solve(rxn_prop.fs.unit)
+    results = solver.solve(rxn_prop.fs.unit[0])
 
     # Check for optimal solution
     assert check_optimal_termination(results)
@@ -136,11 +155,11 @@ def test_solve(rxn_prop):
 @pytest.mark.component
 def test_solution(rxn_prop):
     assert (pytest.approx(1, abs=1e-2) ==
-            rxn_prop.fs.unit.k_rxn['R1'].value)
+            rxn_prop.fs.unit[0].k_rxn['R1'].value)
     assert (pytest.approx(0, abs=1e-2) ==
-            rxn_prop.fs.unit.OC_conv.value)
+            rxn_prop.fs.unit[0].OC_conv.value)
     assert (pytest.approx(0, abs=1e-2) ==
-            rxn_prop.fs.unit.reaction_rate['R1'].value)
+            rxn_prop.fs.unit[0].reaction_rate['R1'].value)
 
 
 @pytest.mark.unit
@@ -149,15 +168,19 @@ def test_state_vars():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.solid_properties = SolidPhaseParameterBlock()
-    m.fs.solid_state = m.fs.solid_properties.build_state_block(default={
-        "parameters": m.fs.solid_properties,
-        "defined_state": True,
+    m.fs.solid_state = m.fs.solid_properties.build_state_block(
+        [0],
+        default={
+            "parameters": m.fs.solid_properties,
+            "defined_state": True,
         })
 
     m.fs.gas_properties = GasPhaseParameterBlock()
-    m.fs.gas_state = m.fs.gas_properties.build_state_block(default={
-        "parameters": m.fs.gas_properties,
-        "defined_state": True,
+    m.fs.gas_state = m.fs.gas_properties.build_state_block(
+        [0],
+        default={
+            "parameters": m.fs.gas_properties,
+            "defined_state": True,
         })
 
     m.fs.reaction_properties = HeteroReactionParameterBlock(default={
@@ -165,29 +188,30 @@ def test_state_vars():
         "gas_property_package": m.fs.gas_properties,
         })
     m.fs.reaction_block = m.fs.reaction_properties.reaction_block_class(
-            default={
-                "parameters": m.fs.reaction_properties,
-                "solid_state_block": m.fs.solid_state,
-                "gas_state_block": m.fs.gas_state,
-                "has_equilibrium": False,
-            })
+        [0],
+        default={
+            "parameters": m.fs.reaction_properties,
+            "solid_state_block": m.fs.solid_state,
+            "gas_state_block": m.fs.gas_state,
+            "has_equilibrium": False,
+        })
 
-    for var in m.fs.gas_state.define_state_vars().values():
+    for var in m.fs.gas_state[0].define_state_vars().values():
         var.fix()
-    for var in m.fs.solid_state.define_state_vars().values():
+    for var in m.fs.solid_state[0].define_state_vars().values():
         var.fix()
 
     # Note that these checks are necessary to trigger the construction of
     # the reaction block variables
-    assert isinstance(m.fs.reaction_block.k_rxn, Var)
-    assert isinstance(m.fs.reaction_block.OC_conv, Var)
-    assert isinstance(m.fs.reaction_block.OC_conv_temp, Var)
-    assert isinstance(m.fs.reaction_block.reaction_rate, Var)
+    assert isinstance(m.fs.reaction_block[0].k_rxn, Var)
+    assert isinstance(m.fs.reaction_block[0].OC_conv, Var)
+    assert isinstance(m.fs.reaction_block[0].OC_conv_temp, Var)
+    assert isinstance(m.fs.reaction_block[0].reaction_rate, Var)
 
     assert degrees_of_freedom(m) == 0
 
-    rxn_vars = list(m.fs.reaction_block.component_data_objects(Var))
-    rxn_cons = list(m.fs.reaction_block.component_data_objects(Constraint))
+    rxn_vars = list(m.fs.reaction_block[0].component_data_objects(Var))
+    rxn_cons = list(m.fs.reaction_block[0].component_data_objects(Constraint))
     assert len(rxn_vars) == 4
     assert len(rxn_cons) == 4
 

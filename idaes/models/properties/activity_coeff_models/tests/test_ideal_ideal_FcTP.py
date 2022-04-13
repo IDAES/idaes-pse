@@ -24,275 +24,534 @@ from idaes.core import FlowsheetBlock
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    fixed_variables_set,
+    activated_constraints_set,
+)
 from idaes.core.solvers import get_solver
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
-# Create a flowsheet for test
-m = ConcreteModel()
-m.fs = FlowsheetBlock(default={"dynamic": False})
+class TestFcTP_LV_inlet:
+    @pytest.fixture(scope="class")
+    def model(self):
+        # Create a flowsheet for test
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
-# vapor-liquid (ideal) - FcTP
-m.fs.properties_ideal_vl = BTXParameterBlock(
-    default={
-        "valid_phase": ("Liq", "Vap"),
-        "activity_coeff_model": "Ideal",
-        "state_vars": "FcTP",
-    }
-)
-m.fs.state_block_ideal_vl = m.fs.properties_ideal_vl.build_state_block(
-    default={"defined_state": True}
-)
+        m.fs.properties_ideal_vl = BTXParameterBlock(
+            default={
+                "valid_phase": ("Liq", "Vap"),
+                "activity_coeff_model": "Ideal",
+                "state_vars": "FcTP",
+            }
+        )
+        m.fs.state_block_ideal_vl = m.fs.properties_ideal_vl.build_state_block(
+            [0],
+            default={"defined_state": True}
+        )
 
-# liquid only (ideal)
-m.fs.properties_ideal_l = BTXParameterBlock(
-    default={
-        "valid_phase": "Liq",
-        "activity_coeff_model": "Ideal",
-        "state_vars": "FcTP",
-    }
-)
-m.fs.state_block_ideal_l = m.fs.properties_ideal_l.build_state_block(
-    default={"has_phase_equilibrium": False, "defined_state": True}
-)
+        m.fs.state_block_ideal_vl[0].flow_mol_comp["benzene"].fix(0.5)
+        m.fs.state_block_ideal_vl[0].flow_mol_comp["toluene"].fix(0.5)
+        m.fs.state_block_ideal_vl[0].temperature.fix(368)
+        m.fs.state_block_ideal_vl[0].pressure.fix(101325)
 
-# vapour only (ideal)
-m.fs.properties_ideal_v = BTXParameterBlock(
-    default={
-        "valid_phase": "Vap",
-        "activity_coeff_model": "Ideal",
-        "state_vars": "FcTP",
-    }
-)
-m.fs.state_block_ideal_v = m.fs.properties_ideal_v.build_state_block(
-    default={"has_phase_equilibrium": False, "defined_state": True}
-)
+        return m
 
+    @pytest.mark.unit
+    def test_build(self, model):
+        assert len(model.fs.properties_ideal_vl.config) == 4
 
-@pytest.mark.unit
-def test_build_inlet_state_block():
-    assert len(m.fs.properties_ideal_vl.config) == 4
+        assert model.fs.properties_ideal_vl.config.valid_phase == ("Liq", "Vap")
+        assert len(model.fs.properties_ideal_vl.phase_list) == 2
+        assert model.fs.properties_ideal_vl.phase_list == ["Liq", "Vap"]
 
-    assert m.fs.properties_ideal_vl.config.valid_phase == (
-        "Vap",
-        "Liq",
-    ) or m.fs.properties_ideal_vl.config.valid_phase == ("Liq", "Vap")
-    assert len(m.fs.properties_ideal_vl.phase_list) == 2
-    assert m.fs.properties_ideal_vl.phase_list == ["Liq", "Vap"]
-    assert m.fs.state_block_ideal_vl.config.defined_state
-    assert hasattr(m.fs.state_block_ideal_vl, "eq_phase_equilibrium")
-    assert not hasattr(m.fs.state_block_ideal_vl, "eq_activity_coeff")
-    assert not hasattr(m.fs.state_block_ideal_vl, "eq_mol_frac_out")
+        assert model.fs.state_block_ideal_vl[0].config.defined_state
+        assert hasattr(model.fs.state_block_ideal_vl[0], "eq_phase_equilibrium")
+        assert not hasattr(model.fs.state_block_ideal_vl[0], "eq_activity_coeff")
+        assert not hasattr(model.fs.state_block_ideal_vl[0], "eq_mol_frac_out")
 
-    # # liquid only (ideal)
-    assert len(m.fs.properties_ideal_l.config) == 4
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model.fs.state_block_ideal_vl[0]) == 0
 
-    assert m.fs.properties_ideal_l.config.valid_phase == "Liq"
-    assert len(m.fs.properties_ideal_l.phase_list) == 1
-    assert m.fs.properties_ideal_l.phase_list == ["Liq"]
-    assert m.fs.state_block_ideal_l.config.defined_state
-    assert not hasattr(m.fs.state_block_ideal_l, "eq_phase_equilibrium")
-    assert not hasattr(m.fs.state_block_ideal_l, "eq_activity_coeff")
-    assert not hasattr(m.fs.state_block_ideal_l, "eq_mol_frac_out")
+    @pytest.mark.component
+    def test_units_consistent(self, model):
+        assert_units_consistent(model)
 
-    # vapor only (ideal)
-    assert len(m.fs.properties_ideal_v.config) == 4
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, model):
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
 
-    assert m.fs.properties_ideal_v.config.valid_phase == "Vap"
-    assert len(m.fs.properties_ideal_v.phase_list) == 1
-    assert m.fs.properties_ideal_v.phase_list == ["Vap"]
-    assert m.fs.state_block_ideal_v.config.defined_state
-    assert not hasattr(m.fs.state_block_ideal_v, "eq_phase_equilibrium")
-    assert not hasattr(m.fs.state_block_ideal_v, "eq_activity_coeff")
-    assert not hasattr(m.fs.state_block_ideal_v, "eq_mol_frac_out")
+        model.fs.state_block_ideal_vl.initialize()
 
+        assert degrees_of_freedom(model) == 0
 
-@pytest.mark.unit
-def test_setInputs_inlet_state_block():
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
 
-    # vapor-liquid (ideal)
-    m.fs.state_block_ideal_vl.flow_mol_comp["benzene"].fix(0.5)
-    m.fs.state_block_ideal_vl.flow_mol_comp["toluene"].fix(0.5)
-    m.fs.state_block_ideal_vl.temperature.fix(368)
-    m.fs.state_block_ideal_vl.pressure.fix(101325)
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
 
-    assert degrees_of_freedom(m.fs.state_block_ideal_vl) == 0
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
 
-    # # liquid only (ideal)
-    m.fs.state_block_ideal_l.flow_mol_comp["benzene"].fix(0.5)
-    m.fs.state_block_ideal_l.flow_mol_comp["toluene"].fix(0.5)
-    m.fs.state_block_ideal_l.temperature.fix(368)
-    m.fs.state_block_ideal_l.pressure.fix(101325)
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
 
-    assert degrees_of_freedom(m.fs.state_block_ideal_l) == 0
+        # Check for optimal solution
+        assert check_optimal_termination(results)
 
-    # vapour only (ideal)
-    m.fs.state_block_ideal_v.flow_mol_comp["benzene"].fix(0.5)
-    m.fs.state_block_ideal_v.flow_mol_comp["toluene"].fix(0.5)
-    m.fs.state_block_ideal_v.temperature.fix(368)
-    m.fs.state_block_ideal_v.pressure.fix(101325)
-
-    assert degrees_of_freedom(m.fs.state_block_ideal_v) == 0
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert value(
+            model.fs.state_block_ideal_vl[0].flow_mol_phase_comp["Liq", "benzene"]
+        ) == pytest.approx(0.2488, abs=1e-3)
+        assert value(
+            model.fs.state_block_ideal_vl[0].flow_mol_phase_comp["Vap", "benzene"]
+        ) == pytest.approx(0.2512, abs=1e-3)
 
 
-@pytest.mark.unit
-def test_solve():
-    # vapor-liquid
-    m.fs.state_block_ideal_vl.initialize()
-    results = solver.solve(m.fs.state_block_ideal_vl, tee=False)
+class TestFcTP_L_inlet:
+    @pytest.fixture(scope="class")
+    def model(self):
+        # Create a flowsheet for test
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    # Check for optimal solution
-    assert check_optimal_termination(results)
+        m.fs.properties_ideal_l = BTXParameterBlock(
+            default={
+                "valid_phase": "Liq",
+                "activity_coeff_model": "Ideal",
+                "state_vars": "FcTP",
+            }
+        )
+        m.fs.state_block_ideal_l = m.fs.properties_ideal_l.build_state_block(
+            [0],
+            default={"has_phase_equilibrium": False, "defined_state": True}
+        )
 
-    # Check for VLE results
-    assert value(
-        m.fs.state_block_ideal_vl.flow_mol_phase_comp["Liq", "benzene"]
-    ) == pytest.approx(0.2488, abs=1e-3)
-    assert value(
-        m.fs.state_block_ideal_vl.flow_mol_phase_comp["Vap", "benzene"]
-    ) == pytest.approx(0.2512, abs=1e-3)
+        m.fs.state_block_ideal_l[0].flow_mol_comp["benzene"].fix(0.5)
+        m.fs.state_block_ideal_l[0].flow_mol_comp["toluene"].fix(0.5)
+        m.fs.state_block_ideal_l[0].temperature.fix(368)
+        m.fs.state_block_ideal_l[0].pressure.fix(101325)
 
-    # liquid only
-    m.fs.state_block_ideal_l.initialize()
-    results = solver.solve(m.fs.state_block_ideal_l, tee=False)
+        return m
 
-    # Check for optimal solution
-    assert check_optimal_termination(results)
+    @pytest.mark.unit
+    def test_build(self, model):
+        assert len(model.fs.properties_ideal_l.config) == 4
 
-    # Check for results
-    assert value(
-        m.fs.state_block_ideal_l.flow_mol_phase_comp["Liq", "benzene"]
-    ) == pytest.approx(0.5, abs=1e-3)
-    assert value(
-        m.fs.state_block_ideal_l.flow_mol_phase_comp["Liq", "toluene"]
-    ) == pytest.approx(0.5, abs=1e-3)
+        assert model.fs.properties_ideal_l.config.valid_phase == "Liq"
+        assert len(model.fs.properties_ideal_l.phase_list) == 1
+        assert model.fs.properties_ideal_l.phase_list == ["Liq"]
 
-    # vapor only
-    m.fs.state_block_ideal_v.initialize()
-    results = solver.solve(m.fs.state_block_ideal_v, tee=False)
+        assert model.fs.state_block_ideal_l[0].config.defined_state
+        assert not hasattr(model.fs.state_block_ideal_l[0], "eq_phase_equilibrium")
+        assert not hasattr(model.fs.state_block_ideal_l[0], "eq_activity_coeff")
+        assert not hasattr(model.fs.state_block_ideal_l[0], "eq_mol_frac_out")
 
-    # Check for optimal solution
-    assert check_optimal_termination(results)
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model.fs.state_block_ideal_l[0]) == 0
 
-    # Check for results
-    assert value(
-        m.fs.state_block_ideal_v.flow_mol_phase_comp["Vap", "benzene"]
-    ) == pytest.approx(0.5, abs=1e-3)
-    assert value(
-        m.fs.state_block_ideal_v.flow_mol_phase_comp["Vap", "toluene"]
-    ) == pytest.approx(0.5, abs=1e-3)
+    @pytest.mark.component
+    def test_units_consistent(self, model):
+        assert_units_consistent(model)
 
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, model):
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
 
-# Create a flowsheet object to test outlet state blocks
-m.fs1 = FlowsheetBlock(default={"dynamic": False})
+        model.fs.state_block_ideal_l.initialize()
 
-# vapor-liquid (ideal)
-m.fs1.properties_ideal_vl = BTXParameterBlock(
-    default={
-        "valid_phase": ("Liq", "Vap"),
-        "activity_coeff_model": "Ideal",
-        "state_vars": "FcTP",
-    }
-)
-m.fs1.state_block_ideal_vl = m.fs1.properties_ideal_vl.build_state_block(
-    default={"defined_state": False}
-)
+        assert degrees_of_freedom(model) == 0
 
-# liquid only (ideal)
-m.fs1.properties_ideal_l = BTXParameterBlock(
-    default={
-        "valid_phase": "Liq",
-        "activity_coeff_model": "Ideal",
-        "state_vars": "FcTP",
-    }
-)
-m.fs1.state_block_ideal_l = m.fs1.properties_ideal_l.build_state_block(
-    default={"has_phase_equilibrium": False, "defined_state": False}
-)
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
 
-# vapour only (ideal)
-m.fs1.properties_ideal_v = BTXParameterBlock(
-    default={
-        "valid_phase": "Vap",
-        "activity_coeff_model": "Ideal",
-        "state_vars": "FcTP",
-    }
-)
-m.fs1.state_block_ideal_v = m.fs1.properties_ideal_v.build_state_block(
-    default={"has_phase_equilibrium": False, "defined_state": False}
-)
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
 
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
 
-@pytest.mark.unit
-def test_build_outlet_state_block():
-    assert len(m.fs1.properties_ideal_vl.config) == 4
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
 
-    # vapor-liquid (ideal)
-    assert m.fs1.properties_ideal_vl.config.valid_phase == (
-        "Vap",
-        "Liq",
-    ) or m.fs1.properties_ideal_vl.config.valid_phase == ("Liq", "Vap")
-    assert len(m.fs1.properties_ideal_vl.phase_list) == 2
-    assert m.fs1.properties_ideal_vl.phase_list == ["Liq", "Vap"]
-    assert not m.fs1.state_block_ideal_vl.config.defined_state
-    assert hasattr(m.fs1.state_block_ideal_vl, "eq_phase_equilibrium")
-    assert not hasattr(m.fs1.state_block_ideal_vl, "eq_activity_coeff")
-    assert not hasattr(m.fs1.state_block_ideal_vl, "eq_mol_frac_out")
+        # Check for optimal solution
+        assert check_optimal_termination(results)
 
-    # liquid only (ideal)
-    assert len(m.fs1.properties_ideal_l.config) == 4
-
-    assert m.fs1.properties_ideal_l.config.valid_phase == "Liq"
-    assert len(m.fs1.properties_ideal_l.phase_list) == 1
-    assert m.fs1.properties_ideal_l.phase_list == ["Liq"]
-    assert not m.fs1.state_block_ideal_l.config.defined_state
-    assert not hasattr(m.fs1.state_block_ideal_l, "eq_phase_equilibrium")
-    assert not hasattr(m.fs1.state_block_ideal_l, "eq_activity_coeff")
-    assert not hasattr(m.fs1.state_block_ideal_l, "eq_mol_frac_out")
-
-    # vapour only (ideal)
-    assert len(m.fs1.properties_ideal_v.config) == 4
-
-    assert m.fs1.properties_ideal_v.config.valid_phase == "Vap"
-    assert len(m.fs1.properties_ideal_v.phase_list) == 1
-    assert m.fs1.properties_ideal_v.phase_list == ["Vap"]
-    assert not m.fs1.state_block_ideal_v.config.defined_state
-    assert not hasattr(m.fs1.state_block_ideal_v, "eq_phase_equilibrium")
-    assert not hasattr(m.fs1.state_block_ideal_v, "eq_activity_coeff")
-    assert not hasattr(m.fs1.state_block_ideal_v, "eq_mol_frac_out")
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert value(
+            model.fs.state_block_ideal_l[0].flow_mol_phase_comp["Liq", "benzene"]
+        ) == pytest.approx(0.5, abs=1e-3)
+        assert value(
+            model.fs.state_block_ideal_l[0].flow_mol_phase_comp["Liq", "toluene"]
+        ) == pytest.approx(0.5, abs=1e-3)
 
 
-@pytest.mark.unit
-def test_setInputs_outlet_state_block():
+class TestFcTP_V_inlet:
+    @pytest.fixture(scope="class")
+    def model(self):
+        # Create a flowsheet for test
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    # vapor-liquid (ideal)
-    m.fs1.state_block_ideal_vl.flow_mol_comp["benzene"].fix(0.5)
-    m.fs1.state_block_ideal_vl.flow_mol_comp["toluene"].fix(0.5)
-    m.fs1.state_block_ideal_vl.temperature.fix(368)
-    m.fs1.state_block_ideal_vl.pressure.fix(101325)
+        m.fs.properties_ideal_v = BTXParameterBlock(
+            default={
+                "valid_phase": "Vap",
+                "activity_coeff_model": "Ideal",
+                "state_vars": "FcTP",
+            }
+        )
+        m.fs.state_block_ideal_v = m.fs.properties_ideal_v.build_state_block(
+            [0],
+            default={"has_phase_equilibrium": False, "defined_state": True}
+        )
 
-    assert degrees_of_freedom(m.fs1.state_block_ideal_vl) == 0
+        m.fs.state_block_ideal_v[0].flow_mol_comp["benzene"].fix(0.5)
+        m.fs.state_block_ideal_v[0].flow_mol_comp["toluene"].fix(0.5)
+        m.fs.state_block_ideal_v[0].temperature.fix(368)
+        m.fs.state_block_ideal_v[0].pressure.fix(101325)
 
-    # liquid only (ideal)
-    m.fs1.state_block_ideal_l.flow_mol_comp["benzene"].fix(0.5)
-    m.fs1.state_block_ideal_l.flow_mol_comp["toluene"].fix(0.5)
-    m.fs1.state_block_ideal_l.temperature.fix(368)
-    m.fs1.state_block_ideal_l.pressure.fix(101325)
+        return m
 
-    assert degrees_of_freedom(m.fs1.state_block_ideal_l) == 0
+    @pytest.mark.unit
+    def test_build(self, model):
+        assert len(model.fs.properties_ideal_v.config) == 4
 
-    # vapour only (ideal)
-    m.fs1.state_block_ideal_v.flow_mol_comp["benzene"].fix(0.5)
-    m.fs1.state_block_ideal_v.flow_mol_comp["toluene"].fix(0.5)
-    m.fs1.state_block_ideal_v.temperature.fix(368)
-    m.fs1.state_block_ideal_v.pressure.fix(101325)
+        assert model.fs.properties_ideal_v.config.valid_phase == "Vap"
+        assert len(model.fs.properties_ideal_v.phase_list) == 1
+        assert model.fs.properties_ideal_v.phase_list == ["Vap"]
 
-    assert degrees_of_freedom(m.fs1.state_block_ideal_v) == 0
+        assert model.fs.state_block_ideal_v[0].config.defined_state
+        assert not hasattr(model.fs.state_block_ideal_v[0], "eq_phase_equilibrium")
+        assert not hasattr(model.fs.state_block_ideal_v[0], "eq_activity_coeff")
+        assert not hasattr(model.fs.state_block_ideal_v[0], "eq_mol_frac_out")
+
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model.fs.state_block_ideal_v[0]) == 0
+
+    @pytest.mark.component
+    def test_units_consistent(self, model):
+        assert_units_consistent(model)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, model):
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
+        model.fs.state_block_ideal_v.initialize()
+
+        assert degrees_of_freedom(model) == 0
+
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert value(
+            model.fs.state_block_ideal_v[0].flow_mol_phase_comp["Vap", "benzene"]
+        ) == pytest.approx(0.5, abs=1e-3)
+        assert value(
+            model.fs.state_block_ideal_v[0].flow_mol_phase_comp["Vap", "toluene"]
+        ) == pytest.approx(0.5, abs=1e-3)
 
 
-@pytest.mark.integration
-def test_units_consistent():
-    assert_units_consistent(m.fs)
-    assert_units_consistent(m.fs1)
+class TestFcTP_LV_outlet:
+    @pytest.fixture(scope="class")
+    def model(self):
+        # Create a flowsheet for test
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties_ideal_vl = BTXParameterBlock(
+            default={
+                "valid_phase": ("Liq", "Vap"),
+                "activity_coeff_model": "Ideal",
+                "state_vars": "FcTP",
+            }
+        )
+        m.fs.state_block_ideal_vl = m.fs.properties_ideal_vl.build_state_block(
+            [0],
+            default={"defined_state": False}
+        )
+
+        m.fs.state_block_ideal_vl[0].flow_mol_comp["benzene"].fix(0.5)
+        m.fs.state_block_ideal_vl[0].flow_mol_comp["toluene"].fix(0.5)
+        m.fs.state_block_ideal_vl[0].temperature.fix(368)
+        m.fs.state_block_ideal_vl[0].pressure.fix(101325)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, model):
+        assert len(model.fs.properties_ideal_vl.config) == 4
+
+        assert model.fs.properties_ideal_vl.config.valid_phase == ("Liq", "Vap")
+        assert len(model.fs.properties_ideal_vl.phase_list) == 2
+        assert model.fs.properties_ideal_vl.phase_list == ["Liq", "Vap"]
+
+        assert not model.fs.state_block_ideal_vl[0].config.defined_state
+        assert hasattr(model.fs.state_block_ideal_vl[0], "eq_phase_equilibrium")
+        assert not hasattr(model.fs.state_block_ideal_vl[0], "eq_activity_coeff")
+        assert not hasattr(model.fs.state_block_ideal_vl[0], "eq_mol_frac_out")
+
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model.fs.state_block_ideal_vl[0]) == 0
+
+    @pytest.mark.component
+    def test_units_consistent(self, model):
+        assert_units_consistent(model)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, model):
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
+        model.fs.state_block_ideal_vl.initialize()
+
+        assert degrees_of_freedom(model) == 0
+
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert value(
+            model.fs.state_block_ideal_vl[0].flow_mol_phase_comp["Liq", "benzene"]
+        ) == pytest.approx(0.2488, abs=1e-3)
+        assert value(
+            model.fs.state_block_ideal_vl[0].flow_mol_phase_comp["Vap", "benzene"]
+        ) == pytest.approx(0.2512, abs=1e-3)
+
+
+class TestFcTP_L_outlet:
+    @pytest.fixture(scope="class")
+    def model(self):
+        # Create a flowsheet for test
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties_ideal_l = BTXParameterBlock(
+            default={
+                "valid_phase": "Liq",
+                "activity_coeff_model": "Ideal",
+                "state_vars": "FcTP",
+            }
+        )
+        m.fs.state_block_ideal_l = m.fs.properties_ideal_l.build_state_block(
+            [0],
+            default={"has_phase_equilibrium": False, "defined_state": False}
+        )
+
+        m.fs.state_block_ideal_l[0].flow_mol_comp["benzene"].fix(0.5)
+        m.fs.state_block_ideal_l[0].flow_mol_comp["toluene"].fix(0.5)
+        m.fs.state_block_ideal_l[0].temperature.fix(368)
+        m.fs.state_block_ideal_l[0].pressure.fix(101325)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, model):
+        assert len(model.fs.properties_ideal_l.config) == 4
+
+        assert model.fs.properties_ideal_l.config.valid_phase == "Liq"
+        assert len(model.fs.properties_ideal_l.phase_list) == 1
+        assert model.fs.properties_ideal_l.phase_list == ["Liq"]
+
+        assert not model.fs.state_block_ideal_l[0].config.defined_state
+        assert not hasattr(model.fs.state_block_ideal_l[0], "eq_phase_equilibrium")
+        assert not hasattr(model.fs.state_block_ideal_l[0], "eq_activity_coeff")
+        assert not hasattr(model.fs.state_block_ideal_l[0], "eq_mol_frac_out")
+
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model.fs.state_block_ideal_l[0]) == 0
+
+    @pytest.mark.component
+    def test_units_consistent(self, model):
+        assert_units_consistent(model)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, model):
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
+        model.fs.state_block_ideal_l.initialize()
+
+        assert degrees_of_freedom(model) == 0
+
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert value(
+            model.fs.state_block_ideal_l[0].flow_mol_phase_comp["Liq", "benzene"]
+        ) == pytest.approx(0.5, abs=1e-3)
+        assert value(
+            model.fs.state_block_ideal_l[0].flow_mol_phase_comp["Liq", "toluene"]
+        ) == pytest.approx(0.5, abs=1e-3)
+
+
+class TestFcTP_V_outlet:
+    @pytest.fixture(scope="class")
+    def model(self):
+        # Create a flowsheet for test
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties_ideal_v = BTXParameterBlock(
+            default={
+                "valid_phase": "Vap",
+                "activity_coeff_model": "Ideal",
+                "state_vars": "FcTP",
+            }
+        )
+        m.fs.state_block_ideal_v = m.fs.properties_ideal_v.build_state_block(
+            [0],
+            default={"has_phase_equilibrium": False, "defined_state": False}
+        )
+
+        m.fs.state_block_ideal_v[0].flow_mol_comp["benzene"].fix(0.5)
+        m.fs.state_block_ideal_v[0].flow_mol_comp["toluene"].fix(0.5)
+        m.fs.state_block_ideal_v[0].temperature.fix(368)
+        m.fs.state_block_ideal_v[0].pressure.fix(101325)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, model):
+        assert len(model.fs.properties_ideal_v.config) == 4
+
+        assert model.fs.properties_ideal_v.config.valid_phase == "Vap"
+        assert len(model.fs.properties_ideal_v.phase_list) == 1
+        assert model.fs.properties_ideal_v.phase_list == ["Vap"]
+
+        assert not model.fs.state_block_ideal_v[0].config.defined_state
+        assert not hasattr(model.fs.state_block_ideal_v[0], "eq_phase_equilibrium")
+        assert not hasattr(model.fs.state_block_ideal_v[0], "eq_activity_coeff")
+        assert not hasattr(model.fs.state_block_ideal_v[0], "eq_mol_frac_out")
+
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model.fs.state_block_ideal_v[0]) == 0
+
+    @pytest.mark.component
+    def test_units_consistent(self, model):
+        assert_units_consistent(model)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, model):
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
+        model.fs.state_block_ideal_v.initialize()
+
+        assert degrees_of_freedom(model) == 0
+
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert value(
+            model.fs.state_block_ideal_v[0].flow_mol_phase_comp["Vap", "benzene"]
+        ) == pytest.approx(0.5, abs=1e-3)
+        assert value(
+            model.fs.state_block_ideal_v[0].flow_mol_phase_comp["Vap", "toluene"]
+        ) == pytest.approx(0.5, abs=1e-3)
