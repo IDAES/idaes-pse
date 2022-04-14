@@ -10,14 +10,8 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-"""
-Deprecation path for renamed model.
-"""
-from pyomo.common.deprecation import deprecation_warning
-
-deprecation_warning("The gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions "
-                    "package has been moved to "
-                    "idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions",
-                    version="2.0.0.alpha0")
-
-from idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions import *
+from idaes.models_extra.gas_solid_contactors.unit_models.bubbling_fluidized_bed import (
+    BubblingFluidizedBed,
+)
+from idaes.models_extra.gas_solid_contactors.unit_models.moving_bed import MBR
+from idaes.models_extra.gas_solid_contactors.unit_models.fixed_bed_0D import FixedBed0D
