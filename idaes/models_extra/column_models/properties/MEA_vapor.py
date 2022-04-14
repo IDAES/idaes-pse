@@ -535,7 +535,7 @@ flue_gas = {
     # Specifying state definition
     "state_definition": FTPx,
     "state_bounds": {
-        "flow_mol": (0, 1, 1000, pyunits.mol / pyunits.s),
+        "flow_mol": (0, 1, 1e6, pyunits.mol / pyunits.s),
         "temperature": (273.15, 298.15, 450, pyunits.K),
         "pressure": (5e4, 101325, 1e6, pyunits.Pa),
     },
@@ -601,7 +601,7 @@ wet_co2 = {
     # Specifying state definition
     "state_definition": FTPx,
     "state_bounds": {
-        "flow_mol": (0, 1, 1000, pyunits.mol / pyunits.s),
+        "flow_mol": (0, 1, 1e6, pyunits.mol / pyunits.s),
         "temperature": (273.15, 298.15, 450, pyunits.K),
         "pressure": (5e4, 101325, 1e6, pyunits.Pa),
     },
