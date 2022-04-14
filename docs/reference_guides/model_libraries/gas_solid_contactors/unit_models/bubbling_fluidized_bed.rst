@@ -584,7 +584,7 @@ The initialization routine proceeds as follows:
 BFBR Class
 ----------
 
-.. module:: idaes.gas_solid_contactors.unit_models.bubbling_fluidized_bed
+.. module:: idaes.models_extra.gas_solid_contactors.unit_models.bubbling_fluidized_bed
 
 .. autoclass:: BubblingFluidizedBed
   :members:

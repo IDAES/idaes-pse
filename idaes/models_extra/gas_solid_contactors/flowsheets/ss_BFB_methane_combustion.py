@@ -22,24 +22,26 @@ Author: Chinedu Okoli
 import time
 
 # Import Pyomo libraries
-from pyomo.environ import ConcreteModel, SolverFactory, value
+from pyomo.environ import ConcreteModel, value
 
 # Import IDAES core modules
 from idaes.core import FlowsheetBlock
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 # Import IDAES logger
 import idaes.logger as idaeslog
 
 # Import BFB unit model
-from idaes.gas_solid_contactors.unit_models.bubbling_fluidized_bed \
+from idaes.models_extra.gas_solid_contactors.unit_models.bubbling_fluidized_bed \
     import BubblingFluidizedBed
 
 # Import property packages
-from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     gas_phase_thermo import GasPhaseParameterBlock
-from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     solid_phase_thermo import SolidPhaseParameterBlock
-from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     hetero_reactions import HeteroReactionParameterBlock
 
 
@@ -85,15 +87,14 @@ def main():
     m.fs.BFB.bed_height.fix(5)  # m
 
     # Fix inlet port variables for gas and solid
-    m.fs.BFB.gas_inlet.flow_mol[0].fix(1567.79)  # mol/s
+    m.fs.BFB.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
     m.fs.BFB.gas_inlet.temperature[0].fix(373)  # K
-    m.fs.BFB.gas_inlet.pressure[0].fix(1.86)  # bar
-    m.fs.BFB.gas_inlet.mole_frac_comp[0, "O2"].fix(0.2095)
-    m.fs.BFB.gas_inlet.mole_frac_comp[0, "N2"].fix(0.7808)
-    m.fs.BFB.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.0004)
-    m.fs.BFB.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0093)
+    m.fs.BFB.gas_inlet.pressure[0].fix(1.86E5)  # Pa = 1E5 bar
+    m.fs.BFB.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.4772)
+    m.fs.BFB.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
+    m.fs.BFB.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
 
-    m.fs.BFB.solid_inlet.flow_mass[0].fix(1230.865)  # kg/s
+    m.fs.BFB.solid_inlet.flow_mass[0].fix(1422)  # kg/s
     # Particle porosity:
     # The porosity of the OC particle at the inlet is calculated from the
     # known bulk density of the fresh OC particle (3251.75 kg/m3), and the
@@ -101,10 +102,11 @@ def main():
     # composition of the fresh particle, and the skeletal density of its
     # components [see the solids property package])
     m.fs.BFB.solid_inlet.particle_porosity[0].fix(0.27)
-    m.fs.BFB.solid_inlet.temperature[0].fix(1173.9)  # K
-    m.fs.BFB.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.244162011502)
-    m.fs.BFB.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(0.201998299487)
-    m.fs.BFB.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.553839689011)
+    m.fs.BFB.solid_inlet.temperature[0].fix(1186)  # K
+    m.fs.BFB.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
+    m.fs.BFB.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
+    m.fs.BFB.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.55)
+
     # ---------------------------------------------------------------------
     # Initialize reactor
 
@@ -119,8 +121,7 @@ def main():
             'temperature': blk.solid_inlet.temperature[0].value,
             'pressure': blk.gas_inlet.pressure[0].value,
             'mole_frac': {
-                'O2': blk.gas_inlet.mole_frac_comp[0, 'O2'].value,
-                'N2': blk.gas_inlet.mole_frac_comp[0, 'N2'].value,
+                'CH4': blk.gas_inlet.mole_frac_comp[0, 'CH4'].value,
                 'CO2': blk.gas_inlet.mole_frac_comp[0, 'CO2'].value,
                 'H2O': blk.gas_inlet.mole_frac_comp[0, 'H2O'].value}}
     solid_phase_state_args = {
@@ -132,6 +133,14 @@ def main():
                     'Fe3O4': blk.solid_inlet.mass_frac_comp[0, 'Fe3O4'].value,
                     'Al2O3': blk.solid_inlet.mass_frac_comp[0, 'Al2O3'].value}}
 
+    print()
+    print("Apply scaling transformation")
+    # Scale the model by applying scaling transformation
+    # This reduces ill conditioning of the model
+    iscale.calculate_scaling_factors(m)
+
+    print()
+    print("Initialize the model")
     m.fs.BFB.initialize(outlvl=idaeslog.INFO,
                         gas_phase_state_args=gas_phase_state_args,
                         solid_phase_state_args=solid_phase_state_args)
@@ -141,8 +150,11 @@ def main():
     # ---------------------------------------------------------------------
     # Final solve
 
-    # Create a solver
-    solver = SolverFactory('ipopt')
+    print()
+    print("Solve the model")
+    # Create solver
+    solver = get_solver()
+
     solver.solve(m.fs.BFB, tee=True)
 
     t_simulation = time.time()  # Simulation time

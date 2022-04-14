@@ -30,14 +30,14 @@ from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 # Import MBR unit model
-from idaes.gas_solid_contactors.unit_models.moving_bed import MBR
+from idaes.models_extra.gas_solid_contactors.unit_models.moving_bed import MBR
 
 # Import property packages
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     gas_phase_thermo import GasPhaseParameterBlock
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     solid_phase_thermo import SolidPhaseParameterBlock
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     hetero_reactions import HeteroReactionParameterBlock
 
 

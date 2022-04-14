@@ -45,7 +45,7 @@ from idaes.core.util.model_statistics import (
 
 from idaes.core.solvers import get_solver
 
-from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
+from idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
     gas_phase_thermo import GasPhaseParameterBlock
 
 # Get default solver for testing

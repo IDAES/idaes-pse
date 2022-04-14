@@ -29,11 +29,11 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.solvers import get_solver
 
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     gas_phase_thermo import GasPhaseParameterBlock
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     solid_phase_thermo import SolidPhaseParameterBlock
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     hetero_reactions import HeteroReactionParameterBlock
 
 

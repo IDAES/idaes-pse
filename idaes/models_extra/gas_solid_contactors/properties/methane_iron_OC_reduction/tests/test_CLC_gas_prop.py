@@ -30,7 +30,7 @@ from idaes.core.util.model_statistics import (
     activated_constraints_set,
 )
 
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     gas_phase_thermo import GasPhaseParameterBlock
 
 # Get default solver for testing

@@ -30,7 +30,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     solid_phase_thermo import SolidPhaseParameterBlock
 
 # Get default solver for testing
