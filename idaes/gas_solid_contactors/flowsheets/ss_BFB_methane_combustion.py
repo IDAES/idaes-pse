@@ -139,7 +139,9 @@ def main():
     # This reduces ill conditioning of the model
     iscale.calculate_scaling_factors(m)
 
-    m.fs.BFB.initialize(outlvl=idaeslog.DEBUG,
+    print()
+    print("Initialize the model")
+    m.fs.BFB.initialize(outlvl=idaeslog.INFO,
                         gas_phase_state_args=gas_phase_state_args,
                         solid_phase_state_args=solid_phase_state_args)
 
@@ -148,6 +150,8 @@ def main():
     # ---------------------------------------------------------------------
     # Final solve
 
+    print()
+    print("Solve the model")
     # Create solver
     solver = get_solver()
 

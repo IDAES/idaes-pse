@@ -314,9 +314,6 @@ class TestIronOC(object):
         for (t, x), v in BFB._reform_var_3.items():
             assert (pytest.approx(2.83941, abs=1e-5) ==
                     iscale.get_scaling_factor(v))
-        for (t, x, r), v in BFB.solid_emulsion.rate_reaction_extent.items():
-            assert (pytest.approx(1000.000, abs=1e-5) ==
-                    iscale.get_scaling_factor(v))
         for (t, x), v in BFB.Hbe.items():
             assert (pytest.approx(1.000E-9, abs=1e-11) ==
                     iscale.get_scaling_factor(v))
@@ -373,7 +370,7 @@ class TestIronOC(object):
             assert (pytest.approx(8.619E-10, abs=1e-12) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB._reformulation_eqn_1.items():
-            assert (pytest.approx(65.00000, abs=1e-5) ==
+            assert (pytest.approx(6.50000, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.bubble_diameter_eqn.items():
             assert (pytest.approx(0.01538, abs=1e-5) ==
@@ -400,19 +397,19 @@ class TestIronOC(object):
             assert (pytest.approx(0.00100, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.solid_super_vel.items():
-            assert (pytest.approx(0.00100, abs=1e-5) ==
+            assert (pytest.approx(0.00001, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.gas_emulsion_pressure_drop.items():
             assert (pytest.approx(1e-5, abs=1e-7) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x, j), c in BFB._reformulation_eqn_2.items():
-            assert (pytest.approx(16927.95406, abs=1e-5) ==
+            assert (pytest.approx(169.27954, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB._reformulation_eqn_3.items():
             assert (pytest.approx(2.83941, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x, j), c in BFB.bubble_cloud_mass_trans_coeff.items():
-            assert (pytest.approx(16927.95406, abs=1e-5) ==
+            assert (pytest.approx(2.83941, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x, j), c in BFB.bubble_cloud_bulk_mass_trans.items():
             assert (pytest.approx(3.014e-5, abs=1e-7) ==
@@ -424,10 +421,10 @@ class TestIronOC(object):
             assert (pytest.approx(3.014e-5, abs=1e-7) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x, r), c in BFB.solid_emulsion_rxn_ext_constraint.items():
-            assert (pytest.approx(1000.00000, abs=1e-5) ==
+            assert (pytest.approx(3.01358e-5, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x, j), c in BFB.gas_emulsion_hetero_rxn_eqn.items():
-            assert (pytest.approx(1000.00000, abs=1e-5) ==
+            assert (pytest.approx(3.01358e-5, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.bubble_gas_flowrate.items():
             assert (pytest.approx(0.00100, abs=1e-5) ==
@@ -442,10 +439,10 @@ class TestIronOC(object):
             assert (pytest.approx(0.00100, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for t, c in BFB.particle_porosity_in.items():
-            assert (pytest.approx(1.00000, abs=1e-5) ==
+            assert (pytest.approx(100, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for t, c in BFB.emulsion_gas_velocity_in.items():
-            assert (pytest.approx(0.00100, abs=1e-5) ==
+            assert (pytest.approx(25.23722, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, j), c in BFB.bubble_mole_frac_in.items():
             assert (pytest.approx(10.00000, abs=1e-5) ==
@@ -463,22 +460,22 @@ class TestIronOC(object):
             assert (pytest.approx(1e-5, abs=1e-7) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, p, j), c in BFB.gas_material_balance_out.items():
-            assert (pytest.approx(0.01000, abs=1e-5) ==
+            assert (pytest.approx(0.00100, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, p, j), c in BFB.solid_material_balance_out.items():
-            assert (pytest.approx(0.01000, abs=1e-5) ==
+            assert (pytest.approx(0.00100, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for t, c in BFB.solid_particle_porosity_out.items():
-            assert (pytest.approx(1.00000, abs=1e-5) ==
+            assert (pytest.approx(100.00000, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB._reformulation_eqn_4.items():
-            assert (pytest.approx(1.093E-8, abs=1e-10) ==
+            assert (pytest.approx(0, abs=1e-10) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB._reformulation_eqn_5.items():
-            assert (pytest.approx(6.667E-6, abs=1e-8) ==
+            assert (pytest.approx(0.66666, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.bubble_cloud_heat_trans_coeff.items():
-            assert (pytest.approx(1E-9, abs=1e-11) ==
+            assert (pytest.approx(1E-11, abs=1e-11) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.convective_heat_trans_coeff.items():
             assert (pytest.approx(6.667E-6, abs=1e-8) ==
@@ -490,13 +487,25 @@ class TestIronOC(object):
             assert (pytest.approx(1E-9, abs=1e-11) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.bubble_heat_transfer.items():
-            assert (pytest.approx(1e-9, abs=1e-11) ==
+            assert (pytest.approx(1e-11, abs=1e-11) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.gas_emulsion_heat_transfer.items():
-            assert (pytest.approx(1e-9, abs=1e-11) ==
+            if x == 0:
+                assert (
+                    pytest.approx(1e-11, abs=1e-11) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+            else:
+                assert (
+                    pytest.approx(1e-9, abs=1e-11) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.solid_emulsion_heat_transfer.items():
-            assert (pytest.approx(1e-9, abs=1e-11) ==
+            if x == 0:
+                assert (
+                    pytest.approx(1e-11, abs=1e-11) ==
+                    iscale.get_constraint_transform_applied_scaling_factor(c))
+            else:
+                assert (
+                    pytest.approx(1e-9, abs=1e-11) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, p), c in BFB.gas_energy_balance_in.items():
             assert (pytest.approx(1E-9, abs=1e-11) ==
@@ -554,13 +563,13 @@ class TestIronOC(object):
                 iron_oc.fs.unit.velocity_bubble[0, 0].value)
         assert (pytest.approx(3.24767, abs=1e-5) ==
                 iron_oc.fs.unit.velocity_bubble[0, 1].value)
-        assert (pytest.approx(0.26692, abs=1e-5) ==
+        assert (pytest.approx(0.266906, abs=1e-5) ==
                 iron_oc.fs.unit.delta[0, 0].value)
         assert (pytest.approx(0.30425, abs=1e-5) ==
                 iron_oc.fs.unit.delta[0, 1].value)
-        assert (pytest.approx(123088.22867, abs=1e-5) ==
+        assert (pytest.approx(123088.236424, abs=1e-5) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
-        assert (pytest.approx(62911.77133, abs=1e-5) ==
+        assert (pytest.approx(62911.76357, abs=1e-5) ==
                 iron_oc.fs.unit.gas_inlet.pressure[0].value -
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
 
@@ -789,9 +798,6 @@ class TestIronOC_EnergyBalanceType(object):
         for (t, x), v in BFB._reform_var_3.items():
             assert (pytest.approx(2.83941, abs=1e-5) ==
                     iscale.get_scaling_factor(v))
-        for (t, x, r), v in BFB.solid_emulsion.rate_reaction_extent.items():
-            assert (pytest.approx(1000.00000, abs=1e-5) ==
-                    iscale.get_scaling_factor(v))
 
         for c in BFB.orifice_area.values():
             assert (pytest.approx(3.014e-3, abs=1e-5) ==
@@ -821,7 +827,7 @@ class TestIronOC_EnergyBalanceType(object):
             assert (pytest.approx(8.619E-10, abs=1e-12) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB._reformulation_eqn_1.items():
-            assert (pytest.approx(65.00000, abs=1e-5) ==
+            assert (pytest.approx(6.50000, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.bubble_diameter_eqn.items():
             assert (pytest.approx(0.01538, abs=1e-5) ==
@@ -848,19 +854,19 @@ class TestIronOC_EnergyBalanceType(object):
             assert (pytest.approx(0.00100, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.solid_super_vel.items():
-            assert (pytest.approx(0.00100, abs=1e-5) ==
+            assert (pytest.approx(0.00001, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.gas_emulsion_pressure_drop.items():
             assert (pytest.approx(1e-5, abs=1e-7) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x, j), c in BFB._reformulation_eqn_2.items():
-            assert (pytest.approx(16927.95406, abs=1e-5) ==
+            assert (pytest.approx(169.27954, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB._reformulation_eqn_3.items():
             assert (pytest.approx(2.83941, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x, j), c in BFB.bubble_cloud_mass_trans_coeff.items():
-            assert (pytest.approx(16927.95406, abs=1e-5) ==
+            assert (pytest.approx(2.83941, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x, j), c in BFB.bubble_cloud_bulk_mass_trans.items():
             assert (pytest.approx(3.014e-5, abs=1e-5) ==
@@ -872,10 +878,10 @@ class TestIronOC_EnergyBalanceType(object):
             assert (pytest.approx(3.014e-5, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x, r), c in BFB.solid_emulsion_rxn_ext_constraint.items():
-            assert (pytest.approx(1000.00000, abs=1e-5) ==
+            assert (pytest.approx(3.01358e-5, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x, j), c in BFB.gas_emulsion_hetero_rxn_eqn.items():
-            assert (pytest.approx(1000.00000, abs=1e-5) ==
+            assert (pytest.approx(3.01358e-5, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, x), c in BFB.bubble_gas_flowrate.items():
             assert (pytest.approx(0.00100, abs=1e-5) ==
@@ -890,10 +896,10 @@ class TestIronOC_EnergyBalanceType(object):
             assert (pytest.approx(0.00100, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for t, c in BFB.particle_porosity_in.items():
-            assert (pytest.approx(1.00000, abs=1e-5) ==
+            assert (pytest.approx(100.00000, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for t, c in BFB.emulsion_gas_velocity_in.items():
-            assert (pytest.approx(0.00100, abs=1e-5) ==
+            assert (pytest.approx(25.23722, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, j), c in BFB.bubble_mole_frac_in.items():
             assert (pytest.approx(10.00000, abs=1e-5) ==
@@ -911,28 +917,19 @@ class TestIronOC_EnergyBalanceType(object):
             assert (pytest.approx(1e-5, abs=1e-7) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, p, j), c in BFB.gas_material_balance_out.items():
-            assert (pytest.approx(0.01000, abs=1e-5) ==
+            assert (pytest.approx(0.00100, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for (t, p, j), c in BFB.solid_material_balance_out.items():
-            assert (pytest.approx(0.01000, abs=1e-5) ==
+            assert (pytest.approx(0.00100, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for t, c in BFB.solid_particle_porosity_out.items():
-            assert (pytest.approx(1.00000, abs=1e-5) ==
-                    iscale.get_constraint_transform_applied_scaling_factor(c))
-        for (t, x), c in BFB.isothermal_solid_emulsion.items():
-            assert (pytest.approx(0.01000, abs=1e-5) ==
-                    iscale.get_constraint_transform_applied_scaling_factor(c))
-        for (t, x), c in BFB.isothermal_gas_emulsion.items():
-            assert (pytest.approx(0.01000, abs=1e-5) ==
-                    iscale.get_constraint_transform_applied_scaling_factor(c))
-        for (t, x), c in BFB.isothermal_bubble.items():
-            assert (pytest.approx(0.01000, abs=1e-5) ==
+            assert (pytest.approx(100.00000, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for t, c in BFB.gas_energy_balance_out.items():
-            assert (pytest.approx(0.01000, abs=1e-5) ==
+            assert (pytest.approx(0.01, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
         for t, c in BFB.solid_energy_balance_out.items():
-            assert (pytest.approx(0.01000, abs=1e-5) ==
+            assert (pytest.approx(0.01, abs=1e-5) ==
                     iscale.get_constraint_transform_applied_scaling_factor(c))
 
     @pytest.mark.solver
@@ -979,9 +976,9 @@ class TestIronOC_EnergyBalanceType(object):
                 iron_oc.fs.unit.delta[0, 0].value)
         assert (pytest.approx(0.30244, abs=1e-5) ==
                 iron_oc.fs.unit.delta[0, 1].value)
-        assert (pytest.approx(122577.18761, abs=1e-5) ==
+        assert (pytest.approx(122577.18737, abs=1e-5) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
-        assert (pytest.approx(63422.81239, abs=1e-5) ==
+        assert (pytest.approx(63422.81262, abs=1e-5) ==
                 iron_oc.fs.unit.gas_inlet.pressure[0].value -
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
 
