@@ -734,7 +734,7 @@ def to_json(
     pdict["etime_write_file"] = file_time - dict_time
     if return_dict:
         # In interactive environments returning the dict can cause it to print
-        # an extreemly large amount of stuff.  So added this option to make sure
+        # an extremely large amount of stuff.  So added this option to make sure
         # it's really what you want.
         return sd
     elif return_json_string:
