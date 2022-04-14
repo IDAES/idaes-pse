@@ -51,10 +51,10 @@ GLOBAL_FUNCS = {"sin": sin, "cos": cos, "log": log, "exp": exp}
 class PysmoSurrogateTrainingResult:
     """
     This is an internal helper class for the PysmoTrainer class.
-    
+
     It stores the results of a trained PySMO model for a single output.
-    
-    The class attributes stored are the model metrics, the PySMO model 
+
+    The class attributes stored are the model metrics, the PySMO model
     and a string of the surrogate model result.
 
     """
@@ -74,7 +74,7 @@ class PysmoSurrogateTrainingResult:
     def model(self, value):
         """
 
-        This is the internal helper function that sets the 'expression_str' attribute by 
+        This is the internal helper function that sets the 'expression_str' attribute by
         calling Pysmo's ``generate_expression()`` function.
 
         It also sets the model attribute.
@@ -99,13 +99,22 @@ class PysmoSurrogateTrainingResult:
 
 class PysmoTrainedSurrogate:
     """
-    A surrogate that is trained for one or more outputs.
+    A surrogate that is trained for one or more outputs. Contains internal (helper) functions.
 
     This object is used for saving and loading the surrogate model along with its metrics and expression.
 
     """
 
     def __init__(self, model_type=""):
+        """
+        This function adds and displays the results for a trained PySMO surrogate.
+
+        Args:
+            model_type: string representing the model type ('poly', 'kriging' or 'rbf')
+
+        Returns:
+            self object with additional attributes representing the input models, output labels, number of outputs and model type.
+        """
         self._data = {}
         self.model_type = model_type
         self.num_outputs = 0
@@ -113,14 +122,31 @@ class PysmoTrainedSurrogate:
         self.input_labels, self.input_bounds = None, None
 
     def add_result(self, output_name, result):
+        """
+        This function updates the ``self._data`` and ``self.output_labels`` attributes with the trained model object and output name respectively.
+
+        """
         self._data[output_name] = result
         self.output_labels.append(output_name)
         # self.num_outputs += 1
 
     def get_result(self, output_name) -> PysmoSurrogateTrainingResult:
+        """
+        This function returns the ``PysmoSurrogateTrainingResult`` result object for a apecified output variable.
+
+        Args:
+            output_name: output variable label of interest (string)
+
+        Returns:
+            ``PysmoSurrogateTrainingResult`` result object for output variable.
+
+        """
         return self._data[output_name]
 
     def display_pysmo_results(self):
+        """
+        This function returns a string representation of the surrogate expressions for all output variables
+        """
         for k in self.output_labels:
             print(k, ":", self._data[k].expression_str)
 
@@ -201,7 +227,6 @@ class PysmoTrainer(SurrogateTrainer):
 
 class PysmoPolyTrainer(PysmoTrainer):
     """
-
     Standard SurrogateTrainer for PySMO's polynomial models.
 
     This defines a set of configuration options for PySMO, along with
@@ -305,8 +330,8 @@ class PysmoPolyTrainer(PysmoTrainer):
 
 class PysmoRBFTrainer(PysmoTrainer):
     """
-    
-    Standard SurrogateTrainer for PySMO's RBF models.
+
+    Standard SurrogateTrainer for PySMO's Radial Basis Function (RBF) models.
 
     This defines a set of configuration options for PySMO, along with
     methods to train the polynomial model and return basic metrics (R2, RMSE).
@@ -367,7 +392,7 @@ class PysmoRBFTrainer(PysmoTrainer):
 
 class PysmoKrigingTrainer(PysmoTrainer):
     """
-    
+
     Standard SurrogateTrainer for PySMO's kriging models.
 
     This defines a set of configuration options for PySMO, along with
@@ -445,16 +470,14 @@ class PysmoSurrogate(SurrogateBase):
     def evaluate_surrogate(self, inputs: pd.DataFrame) -> pd.DataFrame:
         """Evaluate the surrogate model at a set of user-provided values.
 
-            Args:
-                inputs: pandas DataFrame
-                    The dataframe of input values to be used in the evaluation. The dataframe
-                    needs to contain a column corresponding to each of the input labels. Additional
-                    columns are fine, but are not used.
+        Args:
+            inputs: The dataframe of input values to be used in the evaluation.
+                The dataframe needs to contain a column corresponding to each of the input labels.
+                Additional columns are fine, but are not used.
 
-            Returns:
-                output: pandas Dataframe
-                    Returns a dataframe of the the output values evaluated at the provided inputs.
-                    The index of the output dataframe should match the index of the provided inputs.
+        Returns:
+            output: A dataframe of the the output values evaluated at the provided inputs.
+                The index of the output dataframe should match the index of the provided inputs.
         """
         inputdata = inputs[self._input_labels].to_numpy()
         outputs = np.zeros(shape=(inputs.shape[0], len(self._output_labels)))
@@ -472,16 +495,15 @@ class PysmoSurrogate(SurrogateBase):
     def populate_block(self, block, additional_options=None):
         """Populate a Pyomo Block with surrogate model constraints.
 
-            Args:
-                block: Pyomo Block component to be populated with constraints.
-                additional_options: None
-                    No additional options are required for this surrogate object
+        Args:
+            block: Pyomo Block component to be populated with constraints.
+            additional_options: None
+                No additional options are required for this surrogate object
 
-            Returns:
-                None
+        Returns:
+            None
         """
 
-        # TODO: do we need to add the index_set stuff back in?
         output_set = Set(initialize=self._output_labels, ordered=True)
 
         def pysmo_rule(b, o):
@@ -509,13 +531,13 @@ class PysmoSurrogate(SurrogateBase):
     def load(cls, stream):
         """Create an instance of a surrogate from a stream.
 
-            Args:
-                stream:
-                    This is the python stream containing the data required to load the surrogate.
-                    This is often, but does not need to be a string of json data.
+        Args:
+            stream: <_io.StringIO>
+                This is the python stream containing the data required to load the surrogate.
+                This is often, but does not need to be a string of json data.
 
-            Returns:
-                An instance of the derived class or None if it failed to load
+        Returns:
+            An instance of the derived class or None if it failed to load
         """
         stream.seek(0)
         try:
@@ -588,6 +610,9 @@ class TrainedSurrogateEncoder(JSONEncoder, TSEBase):
     }
 
     def default(self, obj):
+        """
+        This function conforms to the interface expected by the json package.
+        """
         if isinstance(obj, PysmoTrainedSurrogate):
             return self._encode_surrogate(obj)
         return super().default(obj)
