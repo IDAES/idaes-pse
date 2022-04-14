@@ -429,5 +429,7 @@ class NaturalGasStateBlockData(StateBlockData):
 
     def get_enthalpy_flow_terms(self, p):
         return (
-            self.temperature - self.config.parameters.temperature_ref
-        ) * self.cp_mol * self.flow_mol
+            (self.temperature - self.config.parameters.temperature_ref)
+            * self.cp_mol
+            * self.flow_mol
+        )
