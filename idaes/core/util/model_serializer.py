@@ -282,11 +282,9 @@ class StoreSpec(object):
         # Create filter function lists, use None if not supplied
         for i, c in self.classes.items():
             if len(c) < 2:
-                print(c)
                 self.classes[i] = (c[0], None)
         for i, c in self.data_classes.items():
             if len(c) < 2:
-                print(c)
                 self.data_classes[i] = (c[0], None)
         self.ignore_missing = ignore_missing
         self.suffix_filter = suffix_filter
@@ -735,7 +733,7 @@ def to_json(
     # unfortunatly I can't write how long it took to write the file in the file
     pdict["etime_write_file"] = file_time - dict_time
     if return_dict:
-        # In interactive environments returning the dict can cuase it to print
+        # In interactive environments returning the dict can cause it to print
         # an extreemly large amount of stuff.  So added this option to make sure
         # it's really what you want.
         return sd
