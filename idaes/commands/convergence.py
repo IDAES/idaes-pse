@@ -42,7 +42,8 @@ _log = logging.getLogger("idaes.commands.convergence")
     help="Addtional module that registers ConvergenceEvaluation classes")
 def convergence_sample(
     evaluation_class, sample_file, number_samples, seed, convergence_module):
-    import idaes.convergence
+    import idaes.models.convergence
+    import idaes.models_extra.convergence
     if convergence_module is not None:
         mod = importlib.import_module(convergence_module)
     if evaluation_class in cnv.convergence_classes:
@@ -79,7 +80,8 @@ def convergence_sample(
     help="Run only a single sample with given name")
 def convergence_eval(
     sample_file, dmf, report_file, json_file, convergence_module, single_sample):
-    import idaes.convergence
+    import idaes.models.convergence
+    import idaes.models_extra.convergence
     if convergence_module is not None:
         mod = importlib.import_module(convergence_module)
     if dmf is not None:
@@ -114,7 +116,8 @@ def convergence_eval(
 @click.option('-m', '--convergence_module', default=None, type=str, required=False,
     help="Optional additional module that registers convergence classes")
 def convergence_search(regex, convergence_module):
-    import idaes.convergence
+    import idaes.models.convergence
+    import idaes.models_extra.convergence
     if convergence_module is not None:
         mod = importlib.import_module(convergence_module)
     if regex is not None:

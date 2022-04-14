@@ -57,9 +57,9 @@ Below is a simple example of how to add cost correlations to a flowsheet includi
     from pyomo.environ import (ConcreteModel, SolverFactory)
     from pyomo.util.calc_var_value import calculate_variable_from_constraint
     from idaes.core import FlowsheetBlock
-    from idaes.generic_models.unit_models.heat_exchanger import \
+    from idaes.models.unit_models.heat_exchanger import \
         (HeatExchanger, HeatExchangerFlowPattern)
-    from idaes.generic_models.properties import iapws95
+    from idaes.models.properties import iapws95
     from idaes.core.util.model_statistics import degrees_of_freedom
     
     m = ConcreteModel()

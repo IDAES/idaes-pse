@@ -35,6 +35,7 @@ def model():
 
     return m
 
+
 @pytest.mark.unit
 def test_tag_display(model):
     m = model
@@ -123,13 +124,14 @@ def test_tag_conditional_formatting(model):
         expr=m.x,
         format_string=lambda x: "{:,.0f}" if x >= 100 else "{:.2f}",
         doc="Tag for x",
-        display_units=pyo.units.g
+        display_units=pyo.units.g,
     )
 
-    tx.set(1*pyo.units.g)
+    tx.set(1 * pyo.units.g)
     assert str(tx[1]) == "1.00 g"
-    tx.set(1*pyo.units.kg)
+    tx.set(1 * pyo.units.kg)
     assert str(tx[1]) == "1,000 g"
+
 
 @pytest.mark.unit
 def test_tag_errors(model):
@@ -138,23 +140,24 @@ def test_tag_errors(model):
     tx = ModelTag(
         expr=m.x,
         format_string=lambda x: "{:,.0f}" if x >= 100 else "{:.2f}",
-        display_units=pyo.units.g
+        display_units=pyo.units.g,
     )
-    tg = ModelTag(
-        expr=m.g,
-        format_string="{:,.0f}",
-        display_units=None
-    )
+    tg = ModelTag(expr=m.g, format_string="{:,.0f}", display_units=None)
     m.x.fix(0)
     assert str(tg[1, "a"]) == "ZeroDivisionError"
     m.x.fix(None)
     assert str(tg[1, "a"]) == "None"
 
+
 @pytest.mark.unit
 def test_tag_display_convert(model):
     m = model
-    tw = ModelTag(expr=m.w, format_string="{:.3f}", doc="Tag for w", display_units=pyo.units.g)
-    tx = ModelTag(expr=m.x, format_string="{:.3f}", doc="Tag for x", display_units=pyo.units.g)
+    tw = ModelTag(
+        expr=m.w, format_string="{:.3f}", doc="Tag for w", display_units=pyo.units.g
+    )
+    tx = ModelTag(
+        expr=m.x, format_string="{:.3f}", doc="Tag for x", display_units=pyo.units.g
+    )
     ty = ModelTag(
         expr=m.y, format_string="{:.1f}", doc="Tag for y", display_units=pyo.units.hr
     )
@@ -165,24 +168,25 @@ def test_tag_display_convert(model):
         display_units=pyo.units.g / pyo.units.hr,
     )
 
-    assert str(tf) == "3000000.0 g/hr"
+    assert str(tf) == "3000000.0 " + str(pyo.units.g / pyo.units.hr)
     m.x[1].value = 4
-    assert str(tf) == "2400000.0 g/hr"
-    assert str(tx[1]) == "4000.000 g"
+    assert str(tf) == "2400000.0 " + str(pyo.units.g / pyo.units.hr)
+    assert str(tx[1]) == "4000.000 " + str(pyo.units.g)
     m.x[1].value = 3
-    assert str(tx[1]) == "3000.000 g"
-    assert str(tw[1, "a"]) == "4000.000 g"
+    assert str(tx[1]) == "3000.000 " + str(pyo.units.g)
+    assert str(tw[1, "a"]) == "4000.000 " + str(pyo.units.g)
     assert tw[1, "a"]._index == (1, "a")
     assert tw._cache_display_value[1, "a"] == pytest.approx(4000.0)
     assert tw._cache_validation_value[1, "a"] == 4
     m.w[1, "a"].value = 1
     m.w[2, "a"].value = 2
     m.w[3, "a"].value = 3
-    assert str(tw[1, "a"]) == "1000.000 g"
-    assert str(tw[2, "a"]) == "2000.000 g"
-    assert str(tw[3, "a"]) == "3000.000 g"
+    assert str(tw[1, "a"]) == "1000.000 " + str(pyo.units.g)
+    assert str(tw[2, "a"]) == "2000.000 " + str(pyo.units.g)
+    assert str(tw[3, "a"]) == "3000.000 " + str(pyo.units.g)
     assert tw._cache_display_value[1, "a"] == pytest.approx(1000.0)
     assert tw._cache_validation_value[1, "a"] == 1
+
 
 @pytest.mark.unit
 def test_tag_input(model):
@@ -218,10 +222,13 @@ def test_tag_input(model):
     ty.set(4)
     assert pyo.value(m.y) == 4
 
+
 @pytest.mark.unit
 def test_tag_input_convert(model):
     m = model
-    tw = ModelTag(expr=m.w, format_string="{:.3f}", doc="Tag for w", display_units=pyo.units.g)
+    tw = ModelTag(
+        expr=m.w, format_string="{:.3f}", doc="Tag for w", display_units=pyo.units.g
+    )
     ty = ModelTag(expr=m.y, format_string="{:.2f}", doc="Tag for y")
 
     ty.set(1 * pyo.units.hr)
@@ -232,7 +239,7 @@ def test_tag_input_convert(model):
     assert m.y.fixed
 
     tw[:, "a"].set(3000, in_display_units=True)
-    tw[:, "b"].set(2*pyo.units.kg, in_display_units=True)
+    tw[:, "b"].set(2 * pyo.units.kg, in_display_units=True)
     assert pyo.value(m.w[1, "a"]) == pytest.approx(3.0)
     assert pyo.value(m.w[2, "a"]) == pytest.approx(3.0)
     assert pyo.value(m.w[3, "a"]) == pytest.approx(3.0)
@@ -242,7 +249,7 @@ def test_tag_input_convert(model):
 
     tw.set_in_display_units = True
     tw[:, "a"].set(1000)
-    tw[:, "b"].set(4*pyo.units.kg)
+    tw[:, "b"].set(4 * pyo.units.kg)
     assert pyo.value(m.w[1, "a"]) == pytest.approx(1.0)
     assert pyo.value(m.w[2, "a"]) == pytest.approx(1.0)
     assert pyo.value(m.w[3, "a"]) == pytest.approx(1.0)
@@ -255,6 +262,7 @@ def test_tag_input_convert(model):
     assert pyo.value(m.w[1, "a"]) == pytest.approx(2.0)
     assert pyo.value(m.w[2, "a"]) == pytest.approx(2.0)
     assert pyo.value(m.w[3, "a"]) == pytest.approx(2.0)
+
 
 @pytest.mark.unit
 def test_tag_ref(model):
@@ -271,6 +279,7 @@ def test_tag_ref(model):
 
     ry[:].set(2)
     assert str(ry[None]) == "2.00 s"
+
 
 @pytest.mark.unit
 def test_tag_data_object(model):
@@ -298,7 +307,13 @@ def test_tag_group(model):
     m = model
     g = ModelTagGroup()
     m.rw = pyo.Reference(m.w[:, "a"])
-    g.add("w", expr=m.rw, format_string="{:.3f}", doc="make sure this works", display_units=pyo.units.g)
+    g.add(
+        "w",
+        expr=m.rw,
+        format_string="{:.3f}",
+        doc="make sure this works",
+        display_units=pyo.units.g,
+    )
     g.add("x", expr=m.x, format_string="{:.3f}")
     g.add("y", expr=m.y, format_string="{:.3f}")
     g.add("z", expr=m.z, format_string="{:.3f}")
@@ -332,12 +347,12 @@ def test_tag_group(model):
     assert str(g["w"][2]) == "1000.000"
 
     g.set_in_display_units = True
-    g["w"][:].set(2*pyo.units.kg)
+    g["w"][:].set(2 * pyo.units.kg)
     assert str(g["w"][1]) == "2000.000"
     assert str(g["w"][2]) == "2000.000"
     assert str(g["w"][2]) == "2000.000"
 
-    g["w"][:].fix(3*pyo.units.kg)
+    g["w"][:].fix(3 * pyo.units.kg)
     assert str(g["w"][1]) == "3000.000"
     assert str(g["w"][2]) == "3000.000"
     assert str(g["w"][2]) == "3000.000"
@@ -346,6 +361,7 @@ def test_tag_group(model):
     assert str(g["w"][1]) == "4000.000"
     assert str(g["w"][2]) == "4000.000"
     assert str(g["w"][2]) == "4000.000"
+
 
 @pytest.mark.unit
 def test_tabulate_runs(model):
@@ -371,9 +387,9 @@ def test_tabulate_runs(model):
     assert head[1] == "w[(2, 'a')] (g)"
     assert head[2] == "y (s)"
 
-    g["w"][1, "a"].set(1*pyo.units.g)
-    g["w"][2, "a"].set(2*pyo.units.g)
-    g["y"].set(1*pyo.units.s)
+    g["w"][1, "a"].set(1 * pyo.units.g)
+    g["w"][2, "a"].set(2 * pyo.units.g)
+    g["y"].set(1 * pyo.units.s)
 
     row = g.table_row(tags=columns, units=False)
     assert row[0] == "1.000"
@@ -390,14 +406,14 @@ def test_tabulate_runs(model):
     assert row[1] == pytest.approx(2.000)
     assert row[2] == pytest.approx(1.000)
 
-    g["w"][1, "a"].set(1*pyo.units.g)
-    g["w"][1, "b"].set(2*pyo.units.g)
-    g["w"][2, "a"].set(3*pyo.units.g)
-    g["w"][2, "b"].set(4*pyo.units.g)
-    g["w"][3, "a"].set(5*pyo.units.g)
-    g["w"][3, "b"].set(6*pyo.units.g)
+    g["w"][1, "a"].set(1 * pyo.units.g)
+    g["w"][1, "b"].set(2 * pyo.units.g)
+    g["w"][2, "a"].set(3 * pyo.units.g)
+    g["w"][2, "b"].set(4 * pyo.units.g)
+    g["w"][3, "a"].set(5 * pyo.units.g)
+    g["w"][3, "b"].set(6 * pyo.units.g)
 
-    head = g.table_heading(tags=('w', 'y'), units=True)
+    head = g.table_heading(tags=("w", "y"), units=True)
     assert head[0] == "w[(1, 'a')] (g)"
     assert head[1] == "w[(1, 'b')] (g)"
     assert head[2] == "w[(2, 'a')] (g)"
@@ -406,7 +422,7 @@ def test_tabulate_runs(model):
     assert head[5] == "w[(3, 'b')] (g)"
     assert head[6] == "y (s)"
 
-    row = g.table_row(tags=('w', 'y'), units=True)
+    row = g.table_row(tags=("w", "y"), units=True)
     assert row[0] == "1.000 g"
     assert row[1] == "2.000 g"
     assert row[2] == "3.000 g"
@@ -437,21 +453,22 @@ def test_doc_example_and_bound(model):
     g["x"].setub(3)
 
     assert str(g["x"][1]) == "2.000"
-    assert abs(g["x"][1].expression.lb - 0.001) < 1e-5 # x is in kg
-    assert abs(g["x"][1].expression.ub - 0.003) < 1e-5 # x is in kg
+    assert abs(g["x"][1].expression.lb - 0.001) < 1e-5  # x is in kg
+    assert abs(g["x"][1].expression.ub - 0.003) < 1e-5  # x is in kg
+
 
 @pytest.mark.unit
 def test_tag_slice(model):
     m = model
 
     tw = ModelTag(
-        expr=m.w[1,:],
+        expr=m.w[1, :],
         format_string=lambda x: "{:,.0f}" if x >= 100 else "{:.2f}",
         doc="Tag for x",
-        display_units=pyo.units.g
+        display_units=pyo.units.g,
     )
 
-    tw.set(1*pyo.units.g)
+    tw.set(1 * pyo.units.g)
     assert str(tw["a"]) == "1.00 g"
-    tw.set(1*pyo.units.kg)
+    tw.set(1 * pyo.units.kg)
     assert str(tw["b"]) == "1,000 g"

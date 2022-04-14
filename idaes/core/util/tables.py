@@ -25,7 +25,8 @@ __author__ = "John Eslick, Andrew Lee"
 
 
 def arcs_to_stream_dict(
-    blk, additional=None, descend_into=True, sort=False, prepend=None, s=None):
+    blk, additional=None, descend_into=True, sort=False, prepend=None, s=None
+):
     """
     Creates a stream dictionary from the Arcs in a model, using the Arc names as
     keys. This can be used to automate the creation of the streams dictionary
@@ -81,6 +82,7 @@ def stream_states_dict(streams, time_point=0):
         A pandas DataFrame containing the stream table data.
     """
     stream_dict = OrderedDict()
+
     def _stream_dict_add(sb, n, i=None):
         """add a line to the stream table"""
         if i is None:
@@ -92,10 +94,10 @@ def stream_states_dict(streams, time_point=0):
     for n in streams.keys():
         if isinstance(streams[n], Arc):
             for i, a in streams[n].items():
-                try: 
+                try:
                     # if getting the StateBlock from the destination port
                     # fails for any reason try the source port. This could
-                    # happen if a port does not have an associated 
+                    # happen if a port does not have an associated
                     # StateBlock. For example a surrogate model may not
                     # use state blocks, unit models may handle physical
                     # properties without state blocks, or the port could
@@ -123,7 +125,7 @@ def stream_states_dict(streams, time_point=0):
 
 
 def tag_state_quantities(blocks, attributes, labels, exception=False):
-    """ Take a stream states dictionary, and return a tag dictionary for stream
+    """Take a stream states dictionary, and return a tag dictionary for stream
     quantities.  This takes a dictionary (blk) that has state block labels as
     keys and state blocks as values.  The attributes are a list of attributes to
     tag.  If an element of the attribute list is list-like, the fist element is
@@ -154,7 +156,7 @@ def tag_state_quantities(blocks, attributes, labels, exception=False):
             attributes, usually Pyomo component data objects.
     """
 
-    tags={}
+    tags = {}
     if labels is None:
         lables = attributes
         for a in attributes:
@@ -174,12 +176,12 @@ def tag_state_quantities(blocks, attributes, labels, exception=False):
                 # if a is list or tuple, the first element should be the
                 # attribute and the remaining elements should be indexes.
                 if len(a) == 2:
-                    j = a[1] # catch user supplying list-like of indexes
+                    j = a[1]  # catch user supplying list-like of indexes
                 if len(a) > 2:
                     j = a[1:]
-                #if len(a) == 1, we'll say that's fine here.  Don't know why you
-                #would put the attribute in a list-like if not indexed, but I'll
-                #allow it.
+                # if len(a) == 1, we'll say that's fine here.  Don't know why you
+                # would put the attribute in a list-like if not indexed, but I'll
+                # allow it.
                 a = a[0]
             v = getattr(s, a, None)
             if j is not None and v is not None:
@@ -197,12 +199,12 @@ def tag_state_quantities(blocks, attributes, labels, exception=False):
                 if not exception:
                     v = None
                 else:
-                    _log.error(
-                        f"Cannot calculate value of {a} (may be subscriptable)")
+                    _log.error(f"Cannot calculate value of {a} (may be subscriptable)")
                     raise TypeError(
-                        f"Cannot calculate value of {a} (may be subscriptable)")
+                        f"Cannot calculate value of {a} (may be subscriptable)"
+                    )
             except ZeroDivisionError:
-                pass # this one is okay
+                pass  # this one is okay
             if v is not None:
                 tags[f"{key}{labels[i]}"] = v
     return tags
@@ -240,7 +242,7 @@ def create_stream_table_dataframe(
     full_keys = []  # List of all rows in dataframe to fill in missing data
 
     if add_units and stream_states:
-        stream_attributes['Units'] = {}
+        stream_attributes["Units"] = {}
 
     for key, sb in stream_states.items():
         stream_attributes[key] = {}
@@ -256,13 +258,13 @@ def create_stream_table_dataframe(
                     pyomo_unit = units.get_units(disp_dict[k][i])
                     if pyomo_unit is not None:
                         pint_unit = pyomo_unit._get_pint_unit()
-                        stream_attributes['Units'][stream_key] = {
-                            'raw': str(pyomo_unit),
-                            'html': '{:~H}'.format(pint_unit),
-                            'latex': '{:~L}'.format(pint_unit)
+                        stream_attributes["Units"][stream_key] = {
+                            "raw": str(pyomo_unit),
+                            "html": "{:~H}".format(pint_unit),
+                            "latex": "{:~L}".format(pint_unit),
                         }
                     else:
-                        stream_attributes['Units'][stream_key] = None
+                        stream_attributes["Units"][stream_key] = None
                 if stream_key not in full_keys:
                     full_keys.append(stream_key)
 
@@ -291,7 +293,8 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
         na_rep=na_rep, justify=justify, float_format=float_format, **kwargs
     )
 
-def _get_state_from_port(port,time_point):
+
+def _get_state_from_port(port, time_point):
     """
     Attempt to find a StateBlock-like object connected to a Port. If the
     object is indexed both in space and time, assume that the time index
@@ -317,7 +320,7 @@ def _get_state_from_port(port,time_point):
         raise ValueError(
             f"No block could be retrieved from Port {port.name} "
             f"because it contains no components."
-            )
+        )
     # Check the number of indices of the parent property block. If its indexed
     # both in space and time, keep the second, spatial index and throw out the
     # first, temporal index. If that ordering is changed, this method will
@@ -326,13 +329,13 @@ def _get_state_from_port(port,time_point):
         idx = vlist[0].parent_block().index()
     except AttributeError as err:
         raise AttributeError(
-                f"No block could be retrieved from Port {port.name} "
-                f"because block {vlist[0].parent_block().name} has no index."
-                ) from err
+            f"No block could be retrieved from Port {port.name} "
+            f"because block {vlist[0].parent_block().name} has no index."
+        ) from err
     # Assuming the time index is always first and the spatial indices are all
     # the same
-    if isinstance(idx,tuple):
-        idx = (time_point,vlist[0].parent_block().index()[1:])
+    if isinstance(idx, tuple):
+        idx = (time_point, vlist[0].parent_block().index()[1:])
 
     else:
         idx = (time_point,)
@@ -343,7 +346,7 @@ def _get_state_from_port(port,time_point):
     raise RuntimeError(
         f"No block could be retrieved from Port {port.name} "
         f"because components are derived from multiple blocks."
-        )
+    )
 
 
 def generate_table(blocks, attributes, heading=None, exception=True):
@@ -384,7 +387,8 @@ def generate_table(blocks, attributes, heading=None, exception=True):
                 except AssertionError:
                     _log.error(f"An index must be supplided for attribute {a[0]}")
                     raise AssertionError(
-                        f"An index must be supplided for attribute {a[0]}")
+                        f"An index must be supplided for attribute {a[0]}"
+                    )
                 j = a[1:]
                 a = a[0]
             v = getattr(s, a, None)
@@ -403,10 +407,10 @@ def generate_table(blocks, attributes, heading=None, exception=True):
                 if not exception:
                     v = None
                 else:
-                    _log.error(
-                        f"Cannot calculate value of {a} (may be subscriptable)")
+                    _log.error(f"Cannot calculate value of {a} (may be subscriptable)")
                     raise TypeError(
-                        f"Cannot calculate value of {a} (may be subscriptable)")
+                        f"Cannot calculate value of {a} (may be subscriptable)"
+                    )
             except ZeroDivisionError:
                 v = None
             row[i] = v

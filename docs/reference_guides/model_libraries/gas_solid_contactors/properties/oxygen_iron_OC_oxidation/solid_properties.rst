@@ -2,12 +2,12 @@ Solid properties
 ================
 
 .. index::
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_properties;SolidPhaseParameterBlock
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_properties;SolidPhaseParameterData
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_properties;SolidPhaseStateBlock
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_properties;SolidPhaseStateBlockData
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_properties;SolidPhaseParameterBlock
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_properties;SolidPhaseParameterData
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_properties;SolidPhaseStateBlock
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_properties;SolidPhaseStateBlockData
 
-.. currentmodule:: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_properties
+.. currentmodule:: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_properties
 
 This property package provides the solid phase properties for the chemical looping combustion of an iron-based oxygen carrier.
 The components modeled are Fe2O3, Fe3O4, and Al2O3.

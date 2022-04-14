@@ -1,0 +1,17 @@
+Simulation,Category,Object,Parameter,Data File
+DAY_AHEAD,Generator,1_HYDRO,PMin MW,DAY_AHEAD_renewables.csv
+DAY_AHEAD,Generator,2_RTPV,PMin MW,DAY_AHEAD_renewables.csv
+DAY_AHEAD,Generator,1_HYDRO,PMax MW,DAY_AHEAD_renewables.csv
+DAY_AHEAD,Generator,2_RTPV,PMax MW,DAY_AHEAD_renewables.csv
+DAY_AHEAD,Generator,10_PV,PMax MW,DAY_AHEAD_renewables.csv
+DAY_AHEAD,Generator,4_WIND,PMax MW,DAY_AHEAD_renewables.csv
+DAY_AHEAD,Area,1,MW Load,DAY_AHEAD_load.csv
+DAY_AHEAD,Area,2,MW Load,DAY_AHEAD_load.csv
+REAL_TIME,Generator,1_HYDRO,PMin MW,REAL_TIME_renewables.csv
+REAL_TIME,Generator,2_RTPV,PMin MW,REAL_TIME_renewables.csv
+REAL_TIME,Generator,1_HYDRO,PMax MW,REAL_TIME_renewables.csv
+REAL_TIME,Generator,2_RTPV,PMax MW,REAL_TIME_renewables.csv
+REAL_TIME,Generator,10_PV,PMax MW,REAL_TIME_renewables.csv
+REAL_TIME,Generator,4_WIND,PMax MW,REAL_TIME_renewables.csv
+REAL_TIME,Area,1,MW Load,REAL_TIME_load.csv
+REAL_TIME,Area,2,MW Load,REAL_TIME_load.csv

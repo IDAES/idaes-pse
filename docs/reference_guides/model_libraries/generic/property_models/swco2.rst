@@ -2,9 +2,9 @@ Span-Wager CO2
 ==============
 
 .. index::
-  pair: idaes.generic_models.properties.swco2; SWCO2StateBlock
+  pair: idaes.models.properties.swco2; SWCO2StateBlock
 
-.. module:: idaes.generic_models.properties.swco2
+.. module:: idaes.models.properties.swco2
 
 This implements the Span-Wagner equation of state for CO2   :ref:`"Span-Wagner equation of state for CO2" <span-1996>`
 Please see the :ref:`general Helmholtz documentation <reference_guides/model_libraries/generic/property_models/helmholtz:Pure Component Helmholtz EoS>`
@@ -19,9 +19,9 @@ provides a simple example for using water properties.
 
 .. testcode::
 
-  from idaes.generic_models.properties import swco2
+  from idaes.models.properties import swco2
   from pyomo.environ import ConcreteModel, units as pyunits, SolverFactory # Pyomo environment
-  from idaes.generic_models.unit_models import Compressor
+  from idaes.models.unit_models import Compressor
   from idaes.core import FlowsheetBlock
 
   model = ConcreteModel()

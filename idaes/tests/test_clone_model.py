@@ -21,8 +21,8 @@ import pytest
 
 import pyomo.environ as pe
 import idaes.core
-import idaes.generic_models.unit_models
-import idaes.generic_models.properties.swco2
+import idaes.models.unit_models
+import idaes.models.properties.swco2
 from pyomo.network import Arc
 
 
@@ -31,12 +31,12 @@ def model():
     m = pe.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock()
     m.fs.properties = \
-        idaes.generic_models.properties.swco2.SWCO2ParameterBlock()
-    m.fs.heater = idaes.generic_models.unit_models.Heater(default={
+        idaes.models.properties.swco2.SWCO2ParameterBlock()
+    m.fs.heater = idaes.models.unit_models.Heater(default={
         'dynamic': False,
         'property_package': m.fs.properties,
         'has_pressure_change': True})
-    m.fs.heater2 = idaes.generic_models.unit_models.Heater(default={
+    m.fs.heater2 = idaes.models.unit_models.Heater(default={
         'dynamic': False,
         'property_package': m.fs.properties,
         'has_pressure_change': True})

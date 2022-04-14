@@ -29,26 +29,32 @@ class FCCLattice(UnitCellLattice):
     def __init__(self, IAD):
         RefUnitCellShape = Cube(1, BotBackLeftCorner=np.array([0, 0, 0], dtype=float))
         RefUnitCellTiling = CubicTiling(RefUnitCellShape)
-        RefFracPositions = [np.array([0.0, 0.0, 0.0]),
-                            np.array([0.5, 0.5, 0.0]),
-                            np.array([0.0, 0.5, 0.5]),
-                            np.array([0.5, 0.0, 0.5])]
+        RefFracPositions = [
+            np.array([0.0, 0.0, 0.0]),
+            np.array([0.5, 0.5, 0.0]),
+            np.array([0.0, 0.5, 0.5]),
+            np.array([0.5, 0.0, 0.5]),
+        ]
         RefUnitCell = UnitCell(RefUnitCellTiling, RefFracPositions)
         UnitCellLattice.__init__(self, RefUnitCell)
         self._IAD = FCCLattice.RefIAD  # IAD is set correctly after calling applyTransF
         self.applyTransF(ScaleFunc(IAD / FCCLattice.RefIAD))
-        self._NthNeighbors = [[np.array([0.0, -0.5, 0.5]),
-                               np.array([-0.5, -0.5, 0.0]),
-                               np.array([-0.5, 0.0, 0.5]),
-                               np.array([0.5, -0.5, 0.0]),
-                               np.array([0.0, -0.5, -0.5]),
-                               np.array([-0.5, 0.0, -0.5]),
-                               np.array([-0.5, 0.5, 0.0]),
-                               np.array([0.0, 0.5, 0.5]),
-                               np.array([0.5, 0.0, 0.5]),
-                               np.array([0.5, 0.0, -0.5]),
-                               np.array([0.0, 0.5, -0.5]),
-                               np.array([0.5, 0.5, 0.0])]]
+        self._NthNeighbors = [
+            [
+                np.array([0.0, -0.5, 0.5]),
+                np.array([-0.5, -0.5, 0.0]),
+                np.array([-0.5, 0.0, 0.5]),
+                np.array([0.5, -0.5, 0.0]),
+                np.array([0.0, -0.5, -0.5]),
+                np.array([-0.5, 0.0, -0.5]),
+                np.array([-0.5, 0.5, 0.0]),
+                np.array([0.0, 0.5, 0.5]),
+                np.array([0.5, 0.0, 0.5]),
+                np.array([0.5, 0.0, -0.5]),
+                np.array([0.0, 0.5, -0.5]),
+                np.array([0.5, 0.5, 0.0]),
+            ]
+        ]
 
     # === CONSTRUCTOR - Aligned with FCC {100}
     @classmethod
@@ -61,7 +67,7 @@ class FCCLattice(UnitCellLattice):
         result = cls(IAD)
         thetaX = -np.pi * 0.25
         thetaY = -np.arctan2(-sqrt(2), 2)
-        thetaZ = (np.pi * 0.5 if blnTrianglesAlignedWithX else 0)
+        thetaZ = np.pi * 0.5 if blnTrianglesAlignedWithX else 0
         result.applyTransF(RotateFunc.fromXYZAngles(thetaX, thetaY, thetaZ))
         return result
 
@@ -71,7 +77,7 @@ class FCCLattice(UnitCellLattice):
             if TransF.isIsometric:
                 self._IAD *= TransF.Scale[0]
             else:
-                raise ValueError('FCCLattice applyTransF: Can only scale isometrically')
+                raise ValueError("FCCLattice applyTransF: Can only scale isometrically")
         UnitCellLattice.applyTransF(self, TransF)
 
     # === PROPERTY EVALUATION METHODS

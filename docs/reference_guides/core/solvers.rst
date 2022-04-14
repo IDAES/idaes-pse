@@ -7,6 +7,11 @@ but IDAES provides a few extensions to make working with solvers slightly easier
 Some IDAES solver features are documented in other sections, so references are
 provided as appropriate.
 
+.. toctree::
+    :maxdepth: 1
+
+    homotopy
+
 Default Solver Config
 ---------------------
 
@@ -24,8 +29,7 @@ Getting a Solver
 ----------------
 
 Typically users can use the standard Pyomo SoverFactory to get a solver.  If a
-solver is needed in a general model or utility, a
-:ref:`utility function <reference_guides/core/util/misc:get_solver>` (``idaes.core.util.misc.get_solver``)
+solver is needed in a general model or utility, a utility function (``idaes.core.solvers.get_solver``)
 provides a default or user configured solver at runtime. This is used by IDAES
 core models and tests.
 
@@ -172,6 +176,12 @@ Solving
 The following function can be used to solve the DAE.
 
 .. autofunction:: idaes.core.solvers.petsc.petsc_dae_by_time_element
+
+Derivative values aren't returned by the PETSc solver, but they can be calculated
+from the discretization equations written by Pyomo.DAE. The following function can
+be used to calculate time derivatives.
+
+.. autofunction:: idaes.core.solvers.petsc.calculate_time_derivatives
 
 Reading Trajectory Data
 """""""""""""""""""""""

@@ -71,20 +71,21 @@ Linux
    the commands to install the required libraries may differ. If these libraries
    are already installed, you can skip this and proceed with the next step.
 
-   .. note:: Depending on your distribution, you may need to prepend ``sudo`` to
-            these commands or switch to the "root" user.
+   Debian 9::
 
-   Ubuntu 18.04 and 19.10 and distributions based on them::
+       sudo apt-get install libgfortran3 libgomp1 liblapack3 libblas3
+
+   Ubuntu 18.04, Ubuntu 20.04, and Debian 10::
 
       sudo apt-get install libgfortran4 libgomp1 liblapack3 libblas3
 
-   Ubuntu 20.04 and distributions based on it ::
+   Ubuntu 22.04 and Debian 11::
 
       sudo apt-get install libgfortran5 libgomp1 liblapack3 libblas3
 
    Current RedHat based distributions, including CentOS::
 
-      yum install lapack blas libgfortran libgomp
+      sudo yum install lapack blas libgfortran libgomp
 
 **Complete Generic Install**
 

@@ -17,18 +17,21 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'Condenser',
-    'idaes.generic_models.unit_models.column_models.condenser.Condenser',
-    version='1.12')
+    "Condenser",
+    "idaes.models_extra.column_models.condenser.Condenser",
+    version="2.0.0.alpha0",
+)
 
 
 relocated_module_attribute(
-    'CondenserType',
-    'idaes.generic_models.unit_models.column_models.condenser.CondenserType',
-    version='1.12')
+    "CondenserType",
+    "idaes.models_extra.column_models.condenser.CondenserType",
+    version="2.0.0.alpha0",
+)
 
 
 relocated_module_attribute(
-    'TemperatureSpec',
-    'idaes.generic_models.unit_models.column_models.condenser.TemperatureSpec',
-    version='1.12')
+    "TemperatureSpec",
+    "idaes.models_extra.column_models.condenser.TemperatureSpec",
+    version="2.0.0.alpha0",
+)

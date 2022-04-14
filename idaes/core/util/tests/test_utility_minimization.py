@@ -18,26 +18,33 @@ IDAES models.
 __author__ = "Alejandro Garciadiego"
 
 import pytest
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Objective,
-                           units as pyunits)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Objective,
+    units as pyunits,
+)
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 from idaes.core import VaporPhase, Component
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ideal import Ideal
-import idaes.generic_models.properties.core.pure.RPP4 as RPP4
+from idaes.models.properties.modular_properties.state_definitions import FTPx
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
+import idaes.models.properties.modular_properties.pure.RPP4 as RPP4
 
-from idaes.generic_models.unit_models import Heater
+from idaes.models.unit_models import Heater
 from idaes.core import FlowsheetBlock
 
-from idaes.generic_models.properties.core.generic.generic_property import \
-        GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 
-from idaes.core.util.utility_minimization import \
-        min_utility, PinchDataClass, heat_ex_data, gen_curves
+from idaes.core.util.utility_minimization import (
+    min_utility,
+    PinchDataClass,
+    heat_ex_data,
+    gen_curves,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -52,17 +59,28 @@ solver = get_solver()
 def test_PinchDataClass():
 
     PD = PinchDataClass(100, 80)
-    PD.initQAh = {'fs.H101': 540756, 'fs.H102': 719998,
-                  'fs.H103': 0, 'fs.H104': 59787}
-    PD.initQAc = {'fs.H101': 477515, 'fs.H102': 554999,
-                  'fs.H103': 29875, 'fs.H104': 119502}
+    PD.initQAh = {"fs.H101": 540756, "fs.H102": 719998, "fs.H103": 0, "fs.H104": 59787}
+    PD.initQAc = {
+        "fs.H101": 477515,
+        "fs.H102": 554999,
+        "fs.H103": 29875,
+        "fs.H104": 119502,
+    }
 
     assert PD.initQs == 100
     assert PD.initQw == 80
-    assert PD.initQAh == {'fs.H101': 540756, 'fs.H102': 719998,
-                          'fs.H103': 0, 'fs.H104': 59787}
-    assert PD.initQAc == {'fs.H101': 477515, 'fs.H102': 554999,
-                          'fs.H103': 29875, 'fs.H104': 119502}
+    assert PD.initQAh == {
+        "fs.H101": 540756,
+        "fs.H102": 719998,
+        "fs.H103": 0,
+        "fs.H104": 59787,
+    }
+    assert PD.initQAc == {
+        "fs.H101": 477515,
+        "fs.H102": 554999,
+        "fs.H103": 29875,
+        "fs.H104": 119502,
+    }
 
 
 # Author: Alejandro Garciadiego
@@ -72,43 +90,49 @@ class TestStateBlock(object):
         configuration = {
             # Specifying components
             "components": {
-
-                'A': {"type": Component,
-                      "enth_mol_ig_comp": RPP4,
-                      "entr_mol_ig_comp": RPP4,
-                      "parameter_data": {
-                        "mw": (2.016E-3, pyunits.kg/pyunits.mol),  # [1]
+                "A": {
+                    "type": Component,
+                    "enth_mol_ig_comp": RPP4,
+                    "entr_mol_ig_comp": RPP4,
+                    "parameter_data": {
+                        "mw": (2.016e-3, pyunits.kg / pyunits.mol),  # [1]
                         "pressure_crit": (12.9e5, pyunits.Pa),  # [1]
                         "temperature_crit": (33.2, pyunits.K),  # [1]
                         "omega": -0.218,
                         "cp_mol_ig_comp_coeff": {
-                            "A": (1000000, pyunits.J/pyunits.mol/pyunits.K),
-                            "B": (0, pyunits.J/pyunits.mol/pyunits.K**2),
-                            "C": (0, pyunits.J/pyunits.mol/pyunits.K**3),
-                            "D": (0, pyunits.J/pyunits.mol/pyunits.K**4)},
+                            "A": (1000000, pyunits.J / pyunits.mol / pyunits.K),
+                            "B": (0, pyunits.J / pyunits.mol / pyunits.K**2),
+                            "C": (0, pyunits.J / pyunits.mol / pyunits.K**3),
+                            "D": (0, pyunits.J / pyunits.mol / pyunits.K**4),
+                        },
                         "entr_mol_form_vap_comp_ref": (
-                            0, pyunits.J/pyunits.mol/pyunits.K),
-                        "enth_mol_form_vap_comp_ref": (
-                            0.0, pyunits.J/pyunits.mol)}}},
-
+                            0,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_vap_comp_ref": (0.0, pyunits.J / pyunits.mol),
+                    },
+                }
+            },
             # Specifying phases
-            "phases":  {'Vap': {"type": VaporPhase,
-                                "equation_of_state": Ideal}},
-
+            "phases": {"Vap": {"type": VaporPhase, "equation_of_state": Ideal}},
             # Set base units of measurement
-            "base_units": {"time": pyunits.s,
-                           "length": pyunits.m,
-                           "mass": pyunits.kg,
-                           "amount": pyunits.mol,
-                           "temperature": pyunits.K},
-
+            "base_units": {
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
             # Specifying state definition
             "state_definition": FTPx,
-            "state_bounds": {"flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
-                             "temperature": (273.15, 300, 450, pyunits.K),
-                             "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
+            "state_bounds": {
+                "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),
+                "temperature": (273.15, 300, 450, pyunits.K),
+                "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+            },
             "pressure_ref": (1e5, pyunits.Pa),
-            "temperature_ref": (300, pyunits.K)}
+            "temperature_ref": (300, pyunits.K),
+        }
 
         # Create the ConcreteModel and the FlowsheetBlock, and attach the
         # flowsheet block to it.
@@ -121,21 +145,37 @@ class TestStateBlock(object):
 
         # Create an instance of the units, attaching them to the flowsheet
         # Specify that the property package to be used with with eash unit.
-        model.fs.H101 = Heater(default={"property_package": model.fs.props,
-                                        "has_pressure_change": False,
-                                        "has_phase_equilibrium": False})
+        model.fs.H101 = Heater(
+            default={
+                "property_package": model.fs.props,
+                "has_pressure_change": False,
+                "has_phase_equilibrium": False,
+            }
+        )
 
-        model.fs.H102 = Heater(default={"property_package": model.fs.props,
-                                        "has_pressure_change": False,
-                                        "has_phase_equilibrium": False})
+        model.fs.H102 = Heater(
+            default={
+                "property_package": model.fs.props,
+                "has_pressure_change": False,
+                "has_phase_equilibrium": False,
+            }
+        )
 
-        model.fs.H103 = Heater(default={"property_package": model.fs.props,
-                                        "has_pressure_change": False,
-                                        "has_phase_equilibrium": False})
+        model.fs.H103 = Heater(
+            default={
+                "property_package": model.fs.props,
+                "has_pressure_change": False,
+                "has_phase_equilibrium": False,
+            }
+        )
 
-        model.fs.H104 = Heater(default={"property_package": model.fs.props,
-                                        "has_pressure_change": False,
-                                        "has_phase_equilibrium": False})
+        model.fs.H104 = Heater(
+            default={
+                "property_package": model.fs.props,
+                "has_pressure_change": False,
+                "has_phase_equilibrium": False,
+            }
+        )
 
         model.fs.H101.inlet.mole_frac_comp[0, "A"].fix(1)
         model.fs.H101.inlet.flow_mol[0].fix(1.5)
@@ -173,12 +213,13 @@ class TestStateBlock(object):
     def test_dof(self, model):
 
         # add heat integration constraints
-        min_utility(model.fs, [model.fs.H101, model.fs.H102],
-                    [model.fs.H103, model.fs.H104], 20)
+        min_utility(
+            model.fs, [model.fs.H101, model.fs.H102], [model.fs.H103, model.fs.H104], 20
+        )
 
         assert degrees_of_freedom(model) == 1
 
-        model.fs.objective = Objective(expr=model.fs.Qs+model.fs.Qw)
+        model.fs.objective = Objective(expr=model.fs.Qs + model.fs.Qw)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -194,32 +235,23 @@ class TestStateBlock(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.unit
     def test_solution(self, model):
-        assert model.fs.QAh["fs.H101"].value == \
-            pytest.approx(540, abs=1e-0)
-        assert model.fs.QAh["fs.H102"].value == \
-            pytest.approx(719, abs=1e-0)
-        assert model.fs.QAh["fs.H103"].value == \
-            pytest.approx(0, abs=1e-0)
-        assert model.fs.QAh["fs.H104"].value == \
-            pytest.approx(60, abs=1e-0)
-        assert model.fs.QAc["fs.H101"].value == \
-            pytest.approx(476, abs=1e-0)
-        assert model.fs.QAc["fs.H102"].value == \
-            pytest.approx(554, abs=1e-0)
-        assert model.fs.QAc["fs.H103"].value == \
-            pytest.approx(30, abs=1e-0)
-        assert model.fs.QAc["fs.H104"].value == \
-            pytest.approx(120, abs=1e-0)
-        assert model.fs.Qs.value == \
-            pytest.approx(60, abs=1e-0)
-        assert model.fs.Qw.value == \
-            pytest.approx(225, abs=1e-0)
+        assert model.fs.QAh["fs.H101"].value == pytest.approx(540, abs=1e-0)
+        assert model.fs.QAh["fs.H102"].value == pytest.approx(719, abs=1e-0)
+        assert model.fs.QAh["fs.H103"].value == pytest.approx(0, abs=1e-0)
+        assert model.fs.QAh["fs.H104"].value == pytest.approx(60, abs=1e-0)
+        assert model.fs.QAc["fs.H101"].value == pytest.approx(476, abs=1e-0)
+        assert model.fs.QAc["fs.H102"].value == pytest.approx(554, abs=1e-0)
+        assert model.fs.QAc["fs.H103"].value == pytest.approx(30, abs=1e-0)
+        assert model.fs.QAc["fs.H104"].value == pytest.approx(120, abs=1e-0)
+        assert model.fs.Qs.value == pytest.approx(60, abs=1e-0)
+        assert model.fs.Qw.value == pytest.approx(225, abs=1e-0)
 
     @pytest.mark.unit
     def test_heat_ex_data(self, model):
 
-        CD = heat_ex_data(model.fs, [model.fs.H101, model.fs.H102],
-                          [model.fs.H103, model.fs.H104])
+        CD = heat_ex_data(
+            model.fs, [model.fs.H101, model.fs.H102], [model.fs.H103, model.fs.H104]
+        )
 
         assert CD.Cooling_Tin[0] == 401
         assert CD.Cooling_Tin[1] == 341

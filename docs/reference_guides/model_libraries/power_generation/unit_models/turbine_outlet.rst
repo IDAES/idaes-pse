@@ -2,9 +2,9 @@ Turbine (Outlet Stage)
 ======================
 
 .. index::
-  pair: idaes.power_generation.unit_models.helm.turbine_outlet;HelmTurbineOutletStage
+  pair: idaes.models_extra.power_generation.unit_models.helm.turbine_outlet;HelmTurbineOutletStage
 
-.. module:: idaes.power_generation.unit_models.helm.turbine_outlet
+.. module:: idaes.models_extra.power_generation.unit_models.helm.turbine_outlet
 
 This is a steam power generation turbine model for the outlet stage. The turbine outlet model is based on:
 
@@ -18,8 +18,8 @@ Example
 
     from pyomo.environ import ConcreteModel, SolverFactory
     from idaes.core import FlowsheetBlock
-    from idaes.power_generation.unit_models.helm import HelmTurbineOutletStage
-    from idaes.generic_models.properties import iapws95
+    from idaes.models_extra.power_generation.unit_models.helm import HelmTurbineOutletStage
+    from idaes.models.properties import iapws95
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})

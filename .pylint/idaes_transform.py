@@ -4,6 +4,7 @@ dynamically created through the `declare_process_block_class()` decorator.
 
 See #1159 for more information.
 """
+from dataclasses import dataclass
 import sys
 import functools
 import logging
@@ -11,6 +12,7 @@ import time
 import typing
 
 import astroid
+import pylint
 from astroid.builder import extract_node, parse
 
 
@@ -21,21 +23,53 @@ _logger = logging.getLogger('pylint.ideas_plugin')
 _display = _notify = lambda *a, **kw: None
 
 
-REFERENCE_PYLINT_VERSION = '2.8.3'
+def _suppress_inference_errors(max_inferred=500) -> None:
+    """
+    Increasing this number to suppress inference errors causing false-positives in e.g. pandas.read_csv().
+    The value 500 is a sufficiently high number but otherwise arbitrary.
+    See https://github.com/PyCQA/pylint/issues/4577 for more information.
+    """
+    astroid.context.InferenceContext.max_inferred = int(max_inferred)
 
 
-def _check_version_compatibility():
+_suppress_inference_errors()
 
-    from pylint import __version__
-    if __version__ != REFERENCE_PYLINT_VERSION:
-        cmd_to_install = f"pip install pylint=={REFERENCE_PYLINT_VERSION}"
-        msg = (
-            f"WARNING: this plugin's reference version is {REFERENCE_PYLINT_VERSION}, "
-            f"but the currently installed pylint version is {__version__}. "
-            "This is not necessarily a problem; "
-            f"however, in case of issues, try installing the reference version using {cmd_to_install}"
+
+@dataclass
+class VersionCompat:
+    distr_name: str
+    expected: str
+    actual: str
+
+    @property
+    def cmd_to_install(self) -> str:
+        return f"pip install {self.distr_name}=={self.expected}"
+
+
+def _check_version_compatibility() -> None:
+
+    to_check = [
+        VersionCompat(
+            distr_name="pylint",
+            expected="2.12.2",
+            actual=pylint.__version__,
+        ),
+        VersionCompat(
+            distr_name="astroid",
+            expected="2.9.3",
+            actual=astroid.__version__,
         )
-        print(msg, file=sys.stderr)
+    ]
+    
+    for v in to_check:
+        if v.actual != v.expected:
+            msg = (
+                f"WARNING: this plugin's reference version for {v.distr_name} is {v.expected}, "
+                f"but the currently installed version for is {v.actual}. "
+                "This is not necessarily a problem; "
+                f"however, in case of issues, try installing the reference version using {v.cmd_to_install}"
+            )
+            print(msg, file=sys.stderr)
 
 
 def has_declare_block_class_decorator(cls_node, decorator_name="declare_process_block_class"):
@@ -56,7 +90,16 @@ def has_declare_block_class_decorator(cls_node, decorator_name="declare_process_
 @functools.lru_cache(maxsize=1)
 def get_base_class_node():
     _notify('Getting base class node')
-    import_node = extract_node('from idaes.core.process_block import ProcessBlock; ProcessBlock')
+    pb_def = """
+        import idaes.core.base.process_block.ProcessBlock
+        class ProcessBlock(idaes.core.base.process_block.ProcessBlock):
+            # creating a stub for the __getitem__() method returning the uninferable object
+            # causes pylint to stop further checks on objects returned when calling [] on a derived class
+            # see e.g. https://github.com/PyCQA/astroid/blob/main/astroid/brain/brain_numpy_ndarray.py
+            # for another example of how this can be extended to create "uninferability stubs" for other methods
+            def __getitem__(self, *args): return uninferable
+    """
+    import_node = astroid.extract_node(pb_def)
     cls_node = next(import_node.infer())
     return cls_node
 

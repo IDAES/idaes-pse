@@ -2,9 +2,9 @@ SOEC Simple Design Model
 ========================
 
 .. index::
-    pair: idaes.power_generation.unit_models.soec_design;SoecDesign
+    pair: idaes.models_extra.power_generation.unit_models.soec_design;SoecDesign
 
-.. module:: idaes.power_generation.unit_models.soec_design
+.. module:: idaes.models_extra.power_generation.unit_models.soec_design
   :noindex:
 
 The simple SOEC design model can be used as a design point model during initial
@@ -31,11 +31,11 @@ are not necessarily realistic.
   import pyomo.environ as pyo
   import idaes
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.properties.core.generic.generic_property import (
+  from idaes.models.properties.modular_properties.base.generic_property import (
       GenericParameterBlock)
   import idaes.core.util.scaling as iscale
-  from idaes.power_generation.properties.natural_gas_PR import get_prop
-  from idaes.power_generation.unit_models.soec_design import SoecDesign, EosType
+  from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
+  from idaes.models_extra.power_generation.unit_models.soec_design import SoecDesign, EosType
   import pytest
 
   def soec_example_flowsheet(eos=EosType.PR):
@@ -106,7 +106,7 @@ block to the ``hydrogen_side_property_package`` config option, and must contain 
 hydrogen and water. The oxygen side properties are specified by providing a physical
 property parameter block to the ``oxygen_side_property_package`` config option, and must
 contain at least oxygen and other sweep gas components.  Typical sweep gas choices
-are air or steam. It is recommended that the ``idaes.power_generation.properties.natural_gas_PR``
+are air or steam. It is recommended that the ``idaes.models_extra.power_generation.properties.natural_gas_PR``
 property parameters be used with the generic IDAES property package.  See the example
 above.
 

@@ -20,14 +20,14 @@ from pyomo.environ import (
     TransformationFactory,
     Var,
     value,
-    units as pyunits
+    units as pyunits,
 )
 from pyomo.network import Arc, Port
 from idaes.core import (
     FlowsheetBlock,
     StateBlock,
     StateBlockData,
-    declare_process_block_class
+    declare_process_block_class,
 )
 from idaes.core.util.tables import (
     arcs_to_stream_dict,
@@ -37,14 +37,17 @@ from idaes.core.util.tables import (
     tag_state_quantities,
     stream_states_dict,
 )
-import idaes.generic_models.properties.examples.saponification_thermo as thermo_props
-import idaes.generic_models.properties.examples.saponification_reactions as rxn_props
-from idaes.generic_models.unit_models import CSTR, Flash
-from idaes.generic_models.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
+import idaes.models.properties.examples.saponification_thermo as thermo_props
+import idaes.models.properties.examples.saponification_reactions as rxn_props
+from idaes.models.unit_models import CSTR, Flash
+from idaes.models.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
 from idaes.core.util.testing import PhysicalParameterTestBlock
-from idaes.generic_models.unit_models.column_models import TrayColumn
-from idaes.generic_models.unit_models.column_models.condenser import CondenserType, TemperatureSpec
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import BTXParameterBlock
+from idaes.models_extra.column_models import TrayColumn
+from idaes.models_extra.column_models.condenser import CondenserType, TemperatureSpec
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
+
 
 @pytest.fixture()
 def m():
@@ -52,22 +55,34 @@ def m():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
     m.fs.reaction_params = rxn_props.SaponificationReactionParameterBlock(
-        default={"property_package": m.fs.thermo_params})
+        default={"property_package": m.fs.thermo_params}
+    )
 
-    m.fs.tank1 = CSTR(default={"property_package": m.fs.thermo_params,
-                               "reaction_package": m.fs.reaction_params})
-    m.fs.tank2 = CSTR(default={"property_package": m.fs.thermo_params,
-                               "reaction_package": m.fs.reaction_params})
+    m.fs.tank1 = CSTR(
+        default={
+            "property_package": m.fs.thermo_params,
+            "reaction_package": m.fs.reaction_params,
+        }
+    )
+    m.fs.tank2 = CSTR(
+        default={
+            "property_package": m.fs.thermo_params,
+            "reaction_package": m.fs.reaction_params,
+        }
+    )
     m.fs.tank_array = CSTR(
         range(3),
-        default={"property_package": m.fs.thermo_params,
-                 "reaction_package": m.fs.reaction_params})
+        default={
+            "property_package": m.fs.thermo_params,
+            "reaction_package": m.fs.reaction_params,
+        },
+    )
 
-    m.fs.stream = Arc(source=m.fs.tank1.outlet,
-                      destination=m.fs.tank2.inlet)
+    m.fs.stream = Arc(source=m.fs.tank1.outlet, destination=m.fs.tank2.inlet)
 
     def stream_array_rule(b, i):
-        return (b.tank_array[i].outlet, b.tank_array[i+1].inlet)
+        return (b.tank_array[i].outlet, b.tank_array[i + 1].inlet)
+
     m.fs.stream_array = Arc(range(2), rule=stream_array_rule)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
@@ -83,6 +98,7 @@ def test_create_stream_table_dataframe_from_StateBlock(m):
     assert d["model.stream"] == m.fs.stream
     assert d["model.stream_array"] == m.fs.stream_array
 
+
 @pytest.mark.unit
 def test_stream_states_dict(m):
     d = stream_states_dict(arcs_to_stream_dict(m, descend_into=True))
@@ -91,6 +107,7 @@ def test_stream_states_dict(m):
     assert "stream_array[1]" in d
     assert d["stream_array[0]"] == m.fs.tank_array[1].control_volume.properties_in[0]
     assert d["stream_array[1]"] == m.fs.tank_array[2].control_volume.properties_in[0]
+
 
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock_2(m):
@@ -126,9 +143,9 @@ def test_create_stream_table_dataframe_from_StateBlock_2(m):
 
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock_true_state(m):
-    df = create_stream_table_dataframe({
-            "state": m.fs.tank1.control_volume.properties_out},
-            true_state=True)
+    df = create_stream_table_dataframe(
+        {"state": m.fs.tank1.control_volume.properties_out}, true_state=True
+    )
 
     assert df.loc["pressure"]["state"] == 101325
     assert df.loc["temperature"]["state"] == 298.15
@@ -142,9 +159,9 @@ def test_create_stream_table_dataframe_from_StateBlock_true_state(m):
 
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock_orient(m):
-    df = create_stream_table_dataframe({
-            "state": m.fs.tank1.control_volume.properties_out},
-            orient='index')
+    df = create_stream_table_dataframe(
+        {"state": m.fs.tank1.control_volume.properties_out}, orient="index"
+    )
 
     assert df.loc["state"]["Pressure"] == 101325
     assert df.loc["state"]["Temperature"] == 298.15
@@ -162,20 +179,28 @@ def test_create_stream_table_dataframe_from_StateBlock_time():
     m.fs = FlowsheetBlock(default={"dynamic": False, "time_set": [3]})
     m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
     m.fs.reaction_params = rxn_props.SaponificationReactionParameterBlock(
-        default={"property_package": m.fs.thermo_params})
+        default={"property_package": m.fs.thermo_params}
+    )
 
-    m.fs.tank1 = CSTR(default={"property_package": m.fs.thermo_params,
-                               "reaction_package": m.fs.reaction_params})
-    m.fs.tank2 = CSTR(default={"property_package": m.fs.thermo_params,
-                               "reaction_package": m.fs.reaction_params})
+    m.fs.tank1 = CSTR(
+        default={
+            "property_package": m.fs.thermo_params,
+            "reaction_package": m.fs.reaction_params,
+        }
+    )
+    m.fs.tank2 = CSTR(
+        default={
+            "property_package": m.fs.thermo_params,
+            "reaction_package": m.fs.reaction_params,
+        }
+    )
 
-    m.fs.stream = Arc(source=m.fs.tank1.outlet,
-                      destination=m.fs.tank2.inlet)
+    m.fs.stream = Arc(source=m.fs.tank1.outlet, destination=m.fs.tank2.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
-    df = create_stream_table_dataframe({
-            "state": m.fs.tank1.control_volume.properties_out},
-            time_point=3)
+    df = create_stream_table_dataframe(
+        {"state": m.fs.tank1.control_volume.properties_out}, time_point=3
+    )
 
     assert df.loc["Pressure"]["state"] == 101325
     assert df.loc["Temperature"]["state"] == 298.15
@@ -189,8 +214,7 @@ def test_create_stream_table_dataframe_from_StateBlock_time():
 
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_Port(m):
-    df = create_stream_table_dataframe({
-            "state": m.fs.tank1.outlet})
+    df = create_stream_table_dataframe({"state": m.fs.tank1.outlet})
 
     assert df.loc["Pressure"]["state"] == 101325
     assert df.loc["Temperature"]["state"] == 298.15
@@ -204,8 +228,7 @@ def test_create_stream_table_dataframe_from_Port(m):
 
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_Arc(m):
-    df = create_stream_table_dataframe({
-            "state": m.fs.stream})
+    df = create_stream_table_dataframe({"state": m.fs.stream})
 
     assert df.loc["Pressure"]["state"] == 101325
     assert df.loc["Temperature"]["state"] == 298.15
@@ -225,9 +248,11 @@ def test_create_stream_table_dataframe_wrong_type(m):
 
 @pytest.mark.unit
 def test_create_stream_table_dataframe_ordering(m):
-    state_dict = {"state1": m.fs.stream,
-                  "state3": m.fs.tank1.control_volume.properties_out,
-                  "state2": m.fs.tank1.outlet}
+    state_dict = {
+        "state1": m.fs.stream,
+        "state3": m.fs.tank1.control_volume.properties_out,
+        "state2": m.fs.tank1.outlet,
+    }
     df = create_stream_table_dataframe(state_dict)
 
     columns = list(df)
@@ -238,8 +263,9 @@ def test_create_stream_table_dataframe_ordering(m):
 
 @pytest.mark.unit
 def test_stream_table_dataframe_to_string(m):
-    df = create_stream_table_dataframe({
-            "state": m.fs.tank1.control_volume.properties_out})
+    df = create_stream_table_dataframe(
+        {"state": m.fs.tank1.control_volume.properties_out}
+    )
 
     stream_table_dataframe_to_string(df)
 
@@ -254,9 +280,10 @@ class StateTestBlockData(StateBlockData):
         self.x = Var(initialize=0)
         self.pressure = Var()
         self.enth_mol = Var()
-        self.temperature = Expression(expr=self.enth_mol*2.0)
-        self.div0 = Expression(expr=4.0/self.x)
+        self.temperature = Expression(expr=self.enth_mol * 2.0)
+        self.div0 = Expression(expr=4.0 / self.x)
         self.flow_mol = Var(["CO2", "H2O"])
+
 
 @declare_process_block_class("TestStateBlock2", block_class=StateBlock)
 class StateTestBlockData(StateBlockData):
@@ -266,12 +293,13 @@ class StateTestBlockData(StateBlockData):
         self.flow_mol = Var()
         self.flow_vol = Var()
 
+
 @pytest.fixture
 def gtmodel():
-    time_set = set([0,1])
+    time_set = set([0, 1])
     m = ConcreteModel()
     m.state_a = TestStateBlock(time_set)
-    m.state_b = TestStateBlock(time_set, [1,2,3])
+    m.state_b = TestStateBlock(time_set, [1, 2, 3])
     m.state_c = TestStateBlock2(time_set)
 
     m.state_a[0].pressure = 11000
@@ -279,20 +307,20 @@ def gtmodel():
     m.state_a[0].flow_mol["CO2"] = 110
     m.state_a[0].flow_mol["H2O"] = 111
 
-    m.state_b[0,1].pressure = 10000
-    m.state_b[0,1].enth_mol = 1000
-    m.state_b[0,1].flow_mol["CO2"] = 100
-    m.state_b[0,1].flow_mol["H2O"] = 101
+    m.state_b[0, 1].pressure = 10000
+    m.state_b[0, 1].enth_mol = 1000
+    m.state_b[0, 1].flow_mol["CO2"] = 100
+    m.state_b[0, 1].flow_mol["H2O"] = 101
 
-    m.state_b[0,2].pressure = 20000
-    m.state_b[0,2].enth_mol = 2000
-    m.state_b[0,2].flow_mol["CO2"] = 200
-    m.state_b[0,2].flow_mol["H2O"] = 201
+    m.state_b[0, 2].pressure = 20000
+    m.state_b[0, 2].enth_mol = 2000
+    m.state_b[0, 2].flow_mol["CO2"] = 200
+    m.state_b[0, 2].flow_mol["H2O"] = 201
 
-    m.state_b[0,3].pressure = 30000
-    m.state_b[0,3].enth_mol = 3000
-    m.state_b[0,3].flow_mol["CO2"] = 300
-    m.state_b[0,3].flow_mol["H2O"] = 301
+    m.state_b[0, 3].pressure = 30000
+    m.state_b[0, 3].enth_mol = 3000
+    m.state_b[0, 3].flow_mol["CO2"] = 300
+    m.state_b[0, 3].flow_mol["H2O"] = 301
 
     m.state_c[0].pressure = 1000
     m.state_c[0].flow_mol = 10
@@ -301,41 +329,50 @@ def gtmodel():
 
     return m
 
+
 @pytest.mark.unit
 def test_generate_table(gtmodel):
     m = gtmodel
 
-    sd = {"a": m.state_a[0], "b1": m.state_b[(0,1)]}
+    sd = {"a": m.state_a[0], "b1": m.state_b[(0, 1)]}
     # This tests what happens if one of the requested attributes gives a division
     # by zero error and if one of the attributes doesn't exist.  With flow it
     # tests indexed attributes.
     st = generate_table(
         sd,
-        attributes=["pressure", "temperature", "div0",
-                    ("flow_mol", "CO2"), ("flow_mol", "H2O"),
-                    "not_there", ("not_there_array", "hi")],
-        heading=["P", "T", "ERR", "F_CO2", "F_H2O", "Miss", "Miss[hi]"])
+        attributes=[
+            "pressure",
+            "temperature",
+            "div0",
+            ("flow_mol", "CO2"),
+            ("flow_mol", "H2O"),
+            "not_there",
+            ("not_there_array", "hi"),
+        ],
+        heading=["P", "T", "ERR", "F_CO2", "F_H2O", "Miss", "Miss[hi]"],
+    )
 
     assert st.loc["a"]["P"] == 11000
     assert st.loc["a"]["F_CO2"] == 110
     assert st.loc["a"]["F_H2O"] == 111
-    assert st.loc["a"]["T"] == 1100*2
+    assert st.loc["a"]["T"] == 1100 * 2
     assert isna(st.loc["a"]["ERR"])
     assert isna(st.loc["a"]["Miss"])
 
     assert st.loc["b1"]["P"] == 10000
     assert st.loc["b1"]["F_CO2"] == 100
     assert st.loc["b1"]["F_H2O"] == 101
-    assert st.loc["b1"]["T"] == 1000*2
+    assert st.loc["b1"]["T"] == 1000 * 2
     assert isna(st.loc["b1"]["ERR"])
     assert isna(st.loc["b1"]["Miss"])
+
 
 @pytest.mark.unit
 def test_generate_table_errors(gtmodel):
     m = gtmodel
 
-    sd = {"a": m.state_a[0], "b1": m.state_b[0,1]}
-    heading=["F"]
+    sd = {"a": m.state_a[0], "b1": m.state_b[0, 1]}
+    heading = ["F"]
 
     with pytest.raises(AssertionError):
         st = generate_table(sd, attributes=[("flow_mol",)], heading=heading)
@@ -345,6 +382,7 @@ def test_generate_table_errors(gtmodel):
 
     with pytest.raises(TypeError):
         st = generate_table(sd, attributes=["flow_mol"], heading=heading)
+
 
 @pytest.mark.unit
 def test_mixed_table(gtmodel):
@@ -357,7 +395,6 @@ def test_mixed_table(gtmodel):
         "b[3]": m.state_b[(0, 3)],
         "c": m.state_c[0],
     }
-
 
     st = generate_table(
         sd,
@@ -379,7 +416,7 @@ def test_mixed_table(gtmodel):
             "h",
             "F[CO2]",
             "F[H2O]",
-        )
+        ),
     )
 
     assert st.loc["a"]["P"] == 11000
@@ -387,7 +424,7 @@ def test_mixed_table(gtmodel):
     assert st.loc["a"]["F[H2O]"] == 111
     assert isna(st.loc["a"]["Fvol"])
     assert isna(st.loc["a"]["F"])
-    assert st.loc["a"]["T"] == 1100*2
+    assert st.loc["a"]["T"] == 1100 * 2
 
     assert st.loc["c"]["P"] == 1000
     assert isna(st.loc["c"]["F[CO2]"])
@@ -409,7 +446,6 @@ def test_tag_states(gtmodel):
         "c": m.state_c[0],
     }
 
-
     tags = tag_state_quantities(
         sd,
         attributes=(
@@ -429,12 +465,12 @@ def test_tag_states(gtmodel):
             "_enth_mol_differ",
             "_flow_mol[CO2]",
             "_flow_mol[H2O]",
-        )
+        ),
     )
 
     assert value(tags["a_pressure"]) == 11000
     assert value(tags["a_enth_mol_differ"]) == 1100
-    assert value(tags["a_temperature"]) == 1100*2
+    assert value(tags["a_temperature"]) == 1100 * 2
     assert value(tags["a_flow_mol[CO2]"]) == 110
     assert value(tags["a_flow_mol[H2O]"]) == 111
 
@@ -452,46 +488,56 @@ def test_tag_states(gtmodel):
     # check that I can change things
     tags["a_enth_mol_differ"].value = 1200
     assert value(m.state_a[0].enth_mol) == 1200
-    assert value(m.state_a[0].temperature) == 1200*2
+    assert value(m.state_a[0].temperature) == 1200 * 2
+
 
 @pytest.fixture()
 def HX1D_array_model():
-    # An example of maximum perversity. Dynamics, 1D control volumes, and 
+    # An example of maximum perversity. Dynamics, 1D control volumes, and
     # an indexed unit
     unit_set = range(3)
-    time_set = [0,5]
-    time_units=pyunits.s
-    fs_cfg = {
-        "dynamic": True, "time_set": time_set, "time_units": time_units}
-    
+    time_set = [0, 5]
+    time_units = pyunits.s
+    fs_cfg = {"dynamic": True, "time_set": time_set, "time_units": time_units}
+
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default=fs_cfg)
 
     m.fs.properties = thermo_props.SaponificationParameterBlock()
 
-    m.fs.unit_array = HX1D(unit_set,default={
+    m.fs.unit_array = HX1D(
+        unit_set,
+        default={
             "shell_side": {"property_package": m.fs.properties},
-            "tube_side": {"property_package": m.fs.properties}})
+            "tube_side": {"property_package": m.fs.properties},
+        },
+    )
 
     def tube_stream_array_rule(b, i):
-        return {'source':b.unit_array[i].tube_outlet, 
-                'destination':b.unit_array[i+1].tube_inlet}
+        return {
+            "source": b.unit_array[i].tube_outlet,
+            "destination": b.unit_array[i + 1].tube_inlet,
+        }
+
     m.fs.tube_stream_array = Arc(range(2), rule=tube_stream_array_rule)
-    
+
     def shell_stream_array_rule(b, i):
-        return {'source':b.unit_array[i+1].shell_outlet, 
-                'destination':b.unit_array[i].shell_inlet}
-    m.fs.shell_stream_array = Arc(range(1,-1,-1), rule=shell_stream_array_rule)
+        return {
+            "source": b.unit_array[i + 1].shell_outlet,
+            "destination": b.unit_array[i].shell_inlet,
+        }
+
+    m.fs.shell_stream_array = Arc(range(1, -1, -1), rule=shell_stream_array_rule)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
     return m
 
+
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_Port_HX1D(HX1D_array_model):
     m = HX1D_array_model
-    df = create_stream_table_dataframe({
-            "state": m.fs.unit_array[0].tube_inlet})
-    
+    df = create_stream_table_dataframe({"state": m.fs.unit_array[0].tube_inlet})
+
     assert df.loc["Pressure"]["state"] == pytest.approx(101325)
     assert df.loc["Temperature"]["state"] == pytest.approx(298.15)
     assert df.loc["Volumetric Flowrate"]["state"] == pytest.approx(1.0)
@@ -501,9 +547,8 @@ def test_create_stream_table_dataframe_from_Port_HX1D(HX1D_array_model):
     assert df.loc["Molar Concentration SodiumAcetate"]["state"] == pytest.approx(100.0)
     assert df.loc["Molar Concentration Ethanol"]["state"] == pytest.approx(100.0)
 
-    df = create_stream_table_dataframe({
-            "state": m.fs.unit_array[0].tube_outlet})
-    
+    df = create_stream_table_dataframe({"state": m.fs.unit_array[0].tube_outlet})
+
     assert df.loc["Pressure"]["state"] == pytest.approx(101325)
     assert df.loc["Temperature"]["state"] == pytest.approx(298.15)
     assert df.loc["Volumetric Flowrate"]["state"] == pytest.approx(1.0)
@@ -512,12 +557,12 @@ def test_create_stream_table_dataframe_from_Port_HX1D(HX1D_array_model):
     assert df.loc["Molar Concentration EthylAcetate"]["state"] == pytest.approx(100.0)
     assert df.loc["Molar Concentration SodiumAcetate"]["state"] == pytest.approx(100.0)
     assert df.loc["Molar Concentration Ethanol"]["state"] == pytest.approx(100.0)
+
 
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_Arc_HX1D(HX1D_array_model):
     m = HX1D_array_model
-    df = create_stream_table_dataframe({
-            "state": m.fs.tube_stream_array},time_point=5)
+    df = create_stream_table_dataframe({"state": m.fs.tube_stream_array}, time_point=5)
 
     for i in range(2):
         stg = f"state[{i}]"
@@ -529,16 +574,18 @@ def test_create_stream_table_dataframe_from_Arc_HX1D(HX1D_array_model):
     assert df.loc["Molar Concentration EthylAcetate"][stg] == pytest.approx(100.0)
     assert df.loc["Molar Concentration SodiumAcetate"][stg] == pytest.approx(100.0)
     assert df.loc["Molar Concentration Ethanol"][stg] == pytest.approx(100.0)
-        
+
+
 @pytest.fixture()
 def flash_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = PhysicalParameterTestBlock()#default={"valid_phase": 
-                                                 # ('Liq', 'Vap')})
+    m.fs.properties = PhysicalParameterTestBlock()  # default={"valid_phase":
+    # ('Liq', 'Vap')})
     m.fs.flash = Flash(default={"property_package": m.fs.properties})
-    
+
     return m
+
 
 @pytest.mark.unit
 def test_state_block_retrieval_fail(flash_model):
@@ -546,37 +593,48 @@ def test_state_block_retrieval_fail(flash_model):
     # outlet ports. There is a mixture of references, expressions, and multiple
     # state blocks. Therefore we don't want any state block getting through.
     m = flash_model
-    with pytest.raises(RuntimeError,
-           match="No block could be retrieved from Port fs.flash.liq_outlet "
-           "because components are derived from multiple blocks."
-           ):
+    with pytest.raises(
+        RuntimeError,
+        match="No block could be retrieved from Port fs.flash.liq_outlet "
+        "because components are derived from multiple blocks.",
+    ):
         df = create_stream_table_dataframe({"state": m.fs.flash.liq_outlet})
+
 
 @pytest.mark.unit
 def test_state_block_retrieval_empty_port():
     m = ConcreteModel()
     m.p = Port()
-    with pytest.raises(ValueError,
-           match="No block could be retrieved from Port p because it contains "
-           "no components."
-           ):
+    with pytest.raises(
+        ValueError,
+        match="No block could be retrieved from Port p because it contains "
+        "no components.",
+    ):
         df = create_stream_table_dataframe({"state": m.p})
+
+
 @pytest.fixture()
 def distillation_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = BTXParameterBlock(default={"valid_phase": ('Liq', 'Vap'),
-                                            "activity_coeff_model": "Ideal",
-                                            "state_vars": "FTPz"})
-    m.fs.unit = TrayColumn(default={
-                        "number_of_trays": 3,
-                        "feed_tray_location": 2,
-                        "condenser_type":
-                            CondenserType.totalCondenser,
-                        "condenser_temperature_spec":
-                            TemperatureSpec.atBubblePoint,
-                        "property_package": m.fs.properties})
+    m.fs.properties = BTXParameterBlock(
+        default={
+            "valid_phase": ("Liq", "Vap"),
+            "activity_coeff_model": "Ideal",
+            "state_vars": "FTPz",
+        }
+    )
+    m.fs.unit = TrayColumn(
+        default={
+            "number_of_trays": 3,
+            "feed_tray_location": 2,
+            "condenser_type": CondenserType.totalCondenser,
+            "condenser_temperature_spec": TemperatureSpec.atBubblePoint,
+            "property_package": m.fs.properties,
+        }
+    )
     return m
+
 
 @pytest.mark.unit
 def test_extended_port_retrieval(distillation_model):
