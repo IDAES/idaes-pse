@@ -19,6 +19,7 @@ import os
 
 from pyomo.environ import *
 from idaes.core.util import to_json, from_json, StoreSpec
+from idaes.core.util.model_serializer import _only_fixed
 from idaes.util.system import mkdtemp
 import shutil
 import pytest
@@ -310,6 +311,39 @@ class TestModelSerialize(unittest.TestCase):
         x = model.x
         x[1].fix(1)
         wts = StoreSpec.value_isfixed_isactive(only_fixed=True)
+        to_json(model, fname=self.fname, human_read=True, wts=wts)
+        x[1].unfix()
+        x[1].value = 2
+        x[2].value = 10
+        model.g.deactivate()
+        from_json(model, fname=self.fname, wts=wts)
+        assert x[1].fixed
+        assert value(x[1]) == 1
+        assert value(x[2]) == 10
+        assert model.g.active
+
+    @pytest.mark.unit
+    def test04b(self):
+        # test old style StoreSpec args
+        wts = StoreSpec(
+            classes=(
+                (Var, (), None),
+                (BooleanVar, (), None),
+                (Param, (), None),
+                (Constraint, ("active",), None),
+                (Block, ("active",), None),
+            ),
+            data_classes=(
+                (Var._ComponentDataClass, ("value", "fixed"), _only_fixed),
+                (BooleanVar._ComponentDataClass, ("value", "fixed"), _only_fixed),
+                (pyomo.core.base.param._ParamData, ("value",), None),
+                (Constraint._ComponentDataClass, ("active",), None),
+                (Block._ComponentDataClass, ("active",), None),
+            )
+        )
+        model = self.setup_model02()
+        x = model.x
+        x[1].fix(1)
         to_json(model, fname=self.fname, human_read=True, wts=wts)
         x[1].unfix()
         x[1].value = 2
