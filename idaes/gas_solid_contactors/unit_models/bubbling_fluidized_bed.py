@@ -2172,6 +2172,12 @@ see reaction package for documentation.}"""))
         if blk.config.energy_balance_type != EnergyBalanceType.none:
             # Initialize relevant heat transfer variables
             for t in blk.flowsheet().time:
+                calculate_variable_from_constraint(
+                    blk.gas_emulsion.properties[t, 0].temperature,
+                    blk.gas_emulsion_temperature_in[0])
+                calculate_variable_from_constraint(
+                    blk.bubble._enthalpy_flow[t, 0, 'Vap'],
+                    blk.gas_energy_balance_in[t, 'Vap'])
                 for x in blk.length_domain:
                     calculate_variable_from_constraint(
                         blk._reform_var_4[t, x],

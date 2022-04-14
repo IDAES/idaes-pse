@@ -1088,7 +1088,8 @@ class TestIronOC_TransformationMethod(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, iron_oc):
-        assert iron_oc.fs.unit.config.transformation_method == "dae.collocation"
+        assert (iron_oc.fs.unit.config.transformation_method ==
+                "dae.collocation")
         assert hasattr(iron_oc.fs.unit, "gas_inlet")
         assert len(iron_oc.fs.unit.gas_inlet.vars) == 4
         assert isinstance(iron_oc.fs.unit.gas_inlet.flow_mol, Var)
