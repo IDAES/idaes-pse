@@ -164,7 +164,7 @@ The initialization routine proceeds as follows:
 FixedBed0D Class
 ----------------
 
-.. module:: idaes.gas_solid_contactors.unit_models.fixed_bed_0D
+.. module:: idaes.models_extra.gas_solid_contactors.unit_models.fixed_bed_0D
 
 .. autoclass:: FixedBed0D
    :members:
