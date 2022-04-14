@@ -10,12 +10,15 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-      gas_phase_thermo import (GasPhaseParameterBlock,
-                               GasPhaseStateBlock)
-from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    solid_phase_thermo import (SolidPhaseParameterBlock,
-                               SolidPhaseStateBlock)
-from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    hetero_reactions import (HeteroReactionParameterBlock,
-                             ReactionBlock)
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo import (
+    GasPhaseParameterBlock,
+    GasPhaseStateBlock,
+)
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.solid_phase_thermo import (
+    SolidPhaseParameterBlock,
+    SolidPhaseStateBlock,
+)
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions import (
+    HeteroReactionParameterBlock,
+    ReactionBlock,
+)

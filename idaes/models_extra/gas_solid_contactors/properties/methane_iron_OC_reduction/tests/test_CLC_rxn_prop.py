@@ -29,12 +29,15 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.solvers import get_solver
 
-from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    gas_phase_thermo import GasPhaseParameterBlock
-from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    solid_phase_thermo import SolidPhaseParameterBlock
-from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    hetero_reactions import HeteroReactionParameterBlock
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo import (
+    GasPhaseParameterBlock,
+)
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.solid_phase_thermo import (
+    SolidPhaseParameterBlock,
+)
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions import (
+    HeteroReactionParameterBlock,
+)
 
 
 # Get default solver for testing
@@ -50,25 +53,29 @@ def rxn_prop():
     # Set up thermo props and reaction props
     m.fs.solid_properties = SolidPhaseParameterBlock()
     m.fs.solid_state_block = m.fs.solid_properties.build_state_block(
-        [0],
-        default={"parameters": m.fs.solid_properties,
-                 "defined_state": True})
+        [0], default={"parameters": m.fs.solid_properties, "defined_state": True}
+    )
 
     m.fs.gas_properties = GasPhaseParameterBlock()
     m.fs.gas_state_block = m.fs.gas_properties.build_state_block(
-        [0],
-        default={"parameters": m.fs.gas_properties,
-                 "defined_state": True})
+        [0], default={"parameters": m.fs.gas_properties, "defined_state": True}
+    )
 
     m.fs.reactions = HeteroReactionParameterBlock(
-                default={"solid_property_package": m.fs.solid_properties,
-                         "gas_property_package": m.fs.gas_properties})
+        default={
+            "solid_property_package": m.fs.solid_properties,
+            "gas_property_package": m.fs.gas_properties,
+        }
+    )
     m.fs.unit = m.fs.reactions.reaction_block_class(
         [0],
-        default={"parameters": m.fs.reactions,
-                 "solid_state_block": m.fs.solid_state_block,
-                 "gas_state_block": m.fs.gas_state_block,
-                 "has_equilibrium": False})
+        default={
+            "parameters": m.fs.reactions,
+            "solid_state_block": m.fs.solid_state_block,
+            "gas_state_block": m.fs.gas_state_block,
+            "has_equilibrium": False,
+        },
+    )
 
     # Fix required variables to make reaction model square
     # (gas mixture and component densities,
@@ -140,12 +147,9 @@ def test_solve(rxn_prop):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_solution(rxn_prop):
-    assert (pytest.approx(1, abs=1e-2) ==
-            rxn_prop.fs.unit[0].k_rxn['R1'].value)
-    assert (pytest.approx(0, abs=1e-2) ==
-            rxn_prop.fs.unit[0].OC_conv.value)
-    assert (pytest.approx(0, abs=1e-2) ==
-            rxn_prop.fs.unit[0].reaction_rate['R1'].value)
+    assert pytest.approx(1, abs=1e-2) == rxn_prop.fs.unit[0].k_rxn["R1"].value
+    assert pytest.approx(0, abs=1e-2) == rxn_prop.fs.unit[0].OC_conv.value
+    assert pytest.approx(0, abs=1e-2) == rxn_prop.fs.unit[0].reaction_rate["R1"].value
 
 
 @pytest.mark.component

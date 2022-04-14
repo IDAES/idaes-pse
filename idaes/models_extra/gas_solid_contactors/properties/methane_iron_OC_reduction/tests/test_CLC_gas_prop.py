@@ -30,8 +30,9 @@ from idaes.core.util.model_statistics import (
     activated_constraints_set,
 )
 
-from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    gas_phase_thermo import GasPhaseParameterBlock
+from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo import (
+    GasPhaseParameterBlock,
+)
 
 # Get default solver for testing
 solver = get_solver()
@@ -46,13 +47,12 @@ def gas_prop():
     # gas properties and state inlet block
     m.fs.properties = GasPhaseParameterBlock()
     m.fs.unit = m.fs.properties.build_state_block(
-        [0],
-        default={"parameters": m.fs.properties,
-                 "defined_state": True})
+        [0], default={"parameters": m.fs.properties, "defined_state": True}
+    )
 
     m.fs.unit[0].flow_mol.fix(1)
     m.fs.unit[0].temperature.fix(450)
-    m.fs.unit[0].pressure.fix(1.60E5)
+    m.fs.unit[0].pressure.fix(1.60e5)
     m.fs.unit[0].mole_frac_comp["CO2"].fix(0.4772)
     m.fs.unit[0].mole_frac_comp["H2O"].fix(0.0646)
     m.fs.unit[0].mole_frac_comp["CH4"].fix(0.4582)
@@ -87,13 +87,12 @@ def gas_prop_unscaled():
     # gas properties and state inlet block
     m.fs.properties = GasPhaseParameterBlock()
     m.fs.unit = m.fs.properties.build_state_block(
-        [0],
-        default={"parameters": m.fs.properties,
-                 "defined_state": True})
+        [0], default={"parameters": m.fs.properties, "defined_state": True}
+    )
 
     m.fs.unit[0].flow_mol.fix(1)
     m.fs.unit[0].temperature.fix(450)
-    m.fs.unit[0].pressure.fix(1.60E5)
+    m.fs.unit[0].pressure.fix(1.60e5)
     m.fs.unit[0].mole_frac_comp["CO2"].fix(0.4772)
     m.fs.unit[0].mole_frac_comp["H2O"].fix(0.0646)
     m.fs.unit[0].mole_frac_comp["CH4"].fix(0.4582)
@@ -175,67 +174,83 @@ def test_scaling(gas_prop):
 
     # Call flow and density methods to construct flow and density expressions
     for i in gas_prop.fs.unit[0]._params.component_list:
-        gas_prop.fs.unit[0].get_material_flow_terms('Vap', i)
-        gas_prop.fs.unit[0].get_material_density_terms('Vap', i)
-    gas_prop.fs.unit[0].get_enthalpy_flow_terms('Vap')
-    gas_prop.fs.unit[0].get_energy_density_terms('Vap')
+        gas_prop.fs.unit[0].get_material_flow_terms("Vap", i)
+        gas_prop.fs.unit[0].get_material_density_terms("Vap", i)
+    gas_prop.fs.unit[0].get_enthalpy_flow_terms("Vap")
+    gas_prop.fs.unit[0].get_energy_density_terms("Vap")
 
     # Calculate scaling factors now that constraints/expressions are built
     iscale.calculate_scaling_factors(gas_prop)
 
     # Test scaling
-    assert (pytest.approx(1e-3, abs=1e-2) ==
-            iscale.get_scaling_factor(gas_prop.fs.unit[0].dens_mol))
+    assert pytest.approx(1e-3, abs=1e-2) == iscale.get_scaling_factor(
+        gas_prop.fs.unit[0].dens_mol
+    )
 
     for i, c in gas_prop.fs.unit[0].material_flow_terms.items():
-        assert (pytest.approx(1e-2, abs=1e-2) ==
-                iscale.get_scaling_factor(c))
+        assert pytest.approx(1e-2, abs=1e-2) == iscale.get_scaling_factor(c)
     for i, c in gas_prop.fs.unit[0].material_density_terms.items():
-        assert (pytest.approx(1e-2, abs=1e-3) ==
-                iscale.get_scaling_factor(c))
+        assert pytest.approx(1e-2, abs=1e-3) == iscale.get_scaling_factor(c)
     for i, c in gas_prop.fs.unit[0].energy_density_terms.items():
-        assert (pytest.approx(1e-6, abs=1e-2) ==
-                iscale.get_scaling_factor(c))
+        assert pytest.approx(1e-6, abs=1e-2) == iscale.get_scaling_factor(c)
     for i, c in gas_prop.fs.unit[0].enthalpy_flow_terms.items():
-        assert (pytest.approx(1e-9, abs=1e-2) ==
-                iscale.get_scaling_factor(c))
+        assert pytest.approx(1e-9, abs=1e-2) == iscale.get_scaling_factor(c)
 
-    assert (pytest.approx(1e2, abs=1e-2) ==
-            iscale.get_constraint_transform_applied_scaling_factor(
-                gas_prop.fs.unit[0].mw_eqn))
-    assert (pytest.approx(1e-5, abs=1e-2) ==
-            iscale.get_constraint_transform_applied_scaling_factor(
-                gas_prop.fs.unit[0].ideal_gas))
+    assert pytest.approx(
+        1e2, abs=1e-2
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].mw_eqn
+    )
+    assert pytest.approx(
+        1e-5, abs=1e-2
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].ideal_gas
+    )
     for i, c in gas_prop.fs.unit[0].comp_conc_eqn.items():
-        assert (pytest.approx(1e-2, abs=1e-2) ==
-                iscale.get_constraint_transform_applied_scaling_factor(c))
+        assert pytest.approx(
+            1e-2, abs=1e-2
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
     for i, c in gas_prop.fs.unit[0].visc_d_constraint.items():
-        assert (pytest.approx(1e5, abs=1e-2) ==
-                iscale.get_constraint_transform_applied_scaling_factor(c))
+        assert pytest.approx(
+            1e5, abs=1e-2
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
     for i, c in gas_prop.fs.unit[0].diffusion_comp_constraint.items():
-        assert (pytest.approx(1e5, abs=1e-2) ==
-                iscale.get_constraint_transform_applied_scaling_factor(c))
-    assert (pytest.approx(1, abs=1e-2) ==
-            iscale.get_constraint_transform_applied_scaling_factor(
-                gas_prop.fs.unit[0].therm_cond_constraint))
+        assert pytest.approx(
+            1e5, abs=1e-2
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+    assert pytest.approx(
+        1, abs=1e-2
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].therm_cond_constraint
+    )
     for i, c in gas_prop.fs.unit[0].cp_shomate_eqn.items():
-        assert (pytest.approx(1e-6, abs=1e-2) ==
-                iscale.get_constraint_transform_applied_scaling_factor(c))
-    assert (pytest.approx(1e-6, abs=1e-2) ==
-            iscale.get_constraint_transform_applied_scaling_factor(
-                gas_prop.fs.unit[0].mixture_heat_capacity_eqn))
-    assert (pytest.approx(1e-6, abs=1e-2) ==
-            iscale.get_constraint_transform_applied_scaling_factor(
-                gas_prop.fs.unit[0].cp_mass_basis))
+        assert pytest.approx(
+            1e-6, abs=1e-2
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+    assert pytest.approx(
+        1e-6, abs=1e-2
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].mixture_heat_capacity_eqn
+    )
+    assert pytest.approx(
+        1e-6, abs=1e-2
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].cp_mass_basis
+    )
     for i, c in gas_prop.fs.unit[0].enthalpy_shomate_eqn.items():
-        assert (pytest.approx(1e-6, abs=1e-2) ==
-                iscale.get_constraint_transform_applied_scaling_factor(c))
-    assert (pytest.approx(1e-6, abs=1e-2) ==
-            iscale.get_constraint_transform_applied_scaling_factor(
-                gas_prop.fs.unit[0].mixture_enthalpy_eqn))
-    assert (pytest.approx(1e-2, abs=1e-2) ==
-            iscale.get_constraint_transform_applied_scaling_factor(
-                gas_prop.fs.unit[0].entropy_correlation))
+        assert pytest.approx(
+            1e-6, abs=1e-2
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+    assert pytest.approx(
+        1e-6, abs=1e-2
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].mixture_enthalpy_eqn
+    )
+    assert pytest.approx(
+        1e-2, abs=1e-2
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].entropy_correlation
+    )
 
 
 @pytest.mark.solver
@@ -283,18 +298,12 @@ def test_solve(gas_prop):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_solution(gas_prop):
-    assert (pytest.approx(1, abs=1e-2) ==
-            gas_prop.fs.unit[0].mw.value)
-    assert (pytest.approx(1, abs=1e-2) ==
-            gas_prop.fs.unit[0].dens_mol.value)
-    assert (pytest.approx(1, abs=1e-2) ==
-            gas_prop.fs.unit[0].cp_mol.value)
-    assert (pytest.approx(1e-5, abs=1e-2) ==
-            gas_prop.fs.unit[0].visc_d.value)
-    assert (pytest.approx(1, abs=1e-2) ==
-            gas_prop.fs.unit[0].enth_mol.value)
-    assert (pytest.approx(1, abs=1e-2) ==
-            gas_prop.fs.unit[0].entr_mol.value)
+    assert pytest.approx(1, abs=1e-2) == gas_prop.fs.unit[0].mw.value
+    assert pytest.approx(1, abs=1e-2) == gas_prop.fs.unit[0].dens_mol.value
+    assert pytest.approx(1, abs=1e-2) == gas_prop.fs.unit[0].cp_mol.value
+    assert pytest.approx(1e-5, abs=1e-2) == gas_prop.fs.unit[0].visc_d.value
+    assert pytest.approx(1, abs=1e-2) == gas_prop.fs.unit[0].enth_mol.value
+    assert pytest.approx(1, abs=1e-2) == gas_prop.fs.unit[0].entr_mol.value
 
 
 @pytest.mark.component
@@ -317,9 +326,9 @@ def test_units_consistent(gas_prop):
 
     # Call flow and density methods to construct flow and density expressions
     for i in gas_prop.fs.unit[0]._params.component_list:
-        gas_prop.fs.unit[0].get_material_flow_terms('Vap', i)
-        gas_prop.fs.unit[0].get_material_density_terms('Vap', i)
-    gas_prop.fs.unit[0].get_enthalpy_flow_terms('Vap')
-    gas_prop.fs.unit[0].get_energy_density_terms('Vap')
+        gas_prop.fs.unit[0].get_material_flow_terms("Vap", i)
+        gas_prop.fs.unit[0].get_material_density_terms("Vap", i)
+    gas_prop.fs.unit[0].get_enthalpy_flow_terms("Vap")
+    gas_prop.fs.unit[0].get_energy_density_terms("Vap")
 
     assert_units_consistent(gas_prop)

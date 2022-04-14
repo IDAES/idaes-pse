@@ -31,16 +31,20 @@ from idaes.core import FlowsheetBlock
 import idaes.logger as idaeslog
 
 # Import BFB unit model
-from idaes.models_extra.gas_solid_contactors.unit_models.bubbling_fluidized_bed \
-    import BubblingFluidizedBed
+from idaes.models_extra.gas_solid_contactors.unit_models.bubbling_fluidized_bed import (
+    BubblingFluidizedBed,
+)
 
 # Import property packages
-from idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
-    gas_phase_thermo import GasPhaseParameterBlock
-from idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
-    solid_phase_thermo import SolidPhaseParameterBlock
-from idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
-    hetero_reactions import HeteroReactionParameterBlock
+from idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_phase_thermo import (
+    GasPhaseParameterBlock,
+)
+from idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_phase_thermo import (
+    SolidPhaseParameterBlock,
+)
+from idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions import (
+    HeteroReactionParameterBlock,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -60,21 +64,25 @@ def main():
     m.fs.solid_properties = SolidPhaseParameterBlock()
 
     m.fs.hetero_reactions = HeteroReactionParameterBlock(
-            default={"solid_property_package": m.fs.solid_properties,
-                     "gas_property_package": m.fs.gas_properties})
+        default={
+            "solid_property_package": m.fs.solid_properties,
+            "gas_property_package": m.fs.gas_properties,
+        }
+    )
 
     # Build the BFB in the flowsheet
     m.fs.BFB = BubblingFluidizedBed(
-            default={
-                    "flow_type": "co_current",
-                    "finite_elements": 5,
-                    "transformation_method": "dae.collocation",
-                    "gas_phase_config":
-                    {"property_package": m.fs.gas_properties},
-                    "solid_phase_config":
-                    {"property_package": m.fs.solid_properties,
-                     "reaction_package": m.fs.hetero_reactions
-                     }})
+        default={
+            "flow_type": "co_current",
+            "finite_elements": 5,
+            "transformation_method": "dae.collocation",
+            "gas_phase_config": {"property_package": m.fs.gas_properties},
+            "solid_phase_config": {
+                "property_package": m.fs.solid_properties,
+                "reaction_package": m.fs.hetero_reactions,
+            },
+        }
+    )
 
     # ---------------------------------------------------------------------
     # Set design and operating variables of the BFB model
@@ -115,26 +123,32 @@ def main():
     # temperature because thermal mass of solid >> thermal mass of gas
     blk = m.fs.BFB
     gas_phase_state_args = {
-            'flow_mol': blk.gas_inlet.flow_mol[0].value,
-            'temperature': blk.solid_inlet.temperature[0].value,
-            'pressure': blk.gas_inlet.pressure[0].value,
-            'mole_frac': {
-                'O2': blk.gas_inlet.mole_frac_comp[0, 'O2'].value,
-                'N2': blk.gas_inlet.mole_frac_comp[0, 'N2'].value,
-                'CO2': blk.gas_inlet.mole_frac_comp[0, 'CO2'].value,
-                'H2O': blk.gas_inlet.mole_frac_comp[0, 'H2O'].value}}
+        "flow_mol": blk.gas_inlet.flow_mol[0].value,
+        "temperature": blk.solid_inlet.temperature[0].value,
+        "pressure": blk.gas_inlet.pressure[0].value,
+        "mole_frac": {
+            "O2": blk.gas_inlet.mole_frac_comp[0, "O2"].value,
+            "N2": blk.gas_inlet.mole_frac_comp[0, "N2"].value,
+            "CO2": blk.gas_inlet.mole_frac_comp[0, "CO2"].value,
+            "H2O": blk.gas_inlet.mole_frac_comp[0, "H2O"].value,
+        },
+    }
     solid_phase_state_args = {
-            'flow_mass': blk.solid_inlet.flow_mass[0].value,
-            'particle_porosity': blk.solid_inlet.particle_porosity[0].value,
-            'temperature': blk.solid_inlet.temperature[0].value,
-            'mass_frac': {
-                    'Fe2O3': blk.solid_inlet.mass_frac_comp[0, 'Fe2O3'].value,
-                    'Fe3O4': blk.solid_inlet.mass_frac_comp[0, 'Fe3O4'].value,
-                    'Al2O3': blk.solid_inlet.mass_frac_comp[0, 'Al2O3'].value}}
+        "flow_mass": blk.solid_inlet.flow_mass[0].value,
+        "particle_porosity": blk.solid_inlet.particle_porosity[0].value,
+        "temperature": blk.solid_inlet.temperature[0].value,
+        "mass_frac": {
+            "Fe2O3": blk.solid_inlet.mass_frac_comp[0, "Fe2O3"].value,
+            "Fe3O4": blk.solid_inlet.mass_frac_comp[0, "Fe3O4"].value,
+            "Al2O3": blk.solid_inlet.mass_frac_comp[0, "Al2O3"].value,
+        },
+    }
 
-    m.fs.BFB.initialize(outlvl=idaeslog.INFO,
-                        gas_phase_state_args=gas_phase_state_args,
-                        solid_phase_state_args=solid_phase_state_args)
+    m.fs.BFB.initialize(
+        outlvl=idaeslog.INFO,
+        gas_phase_state_args=gas_phase_state_args,
+        solid_phase_state_args=solid_phase_state_args,
+    )
 
     t_initialize = time.time()  # Initialization time
 
@@ -142,19 +156,19 @@ def main():
     # Final solve
 
     # Create a solver
-    solver = SolverFactory('ipopt')
+    solver = SolverFactory("ipopt")
     solver.solve(m.fs.BFB, tee=True)
 
     t_simulation = time.time()  # Simulation time
 
     print("\n")
     print("----------------------------------------------------------")
-    print('Total initialization time: ', value(t_initialize - t_start), " s")
+    print("Total initialization time: ", value(t_initialize - t_start), " s")
     print("----------------------------------------------------------")
 
     print("\n")
     print("----------------------------------------------------------")
-    print('Total simulation time: ', value(t_simulation - t_start), " s")
+    print("Total simulation time: ", value(t_simulation - t_start), " s")
     print("----------------------------------------------------------")
 
     return m
