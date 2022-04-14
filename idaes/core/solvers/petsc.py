@@ -497,14 +497,13 @@ def petsc_dae_by_time_element(
     ):
         # Solver time steps
         deriv_diff_map = _get_derivative_differential_data_map(m, time)
+        tj = None # trajectory data
         for t in between:
             if t == between.first():
                 # t == between.first() was handled above
                 continue
             constraints = [con[t] for con in time_cons if t in con]
             variables = [var[t] for var in time_vars]
-            for v in variables:
-                print(v)
             # Create a temporary block with references to original constraints
             # and variables so we can integrate this "subsystem" without
             # altering the rest of the model.
@@ -539,13 +538,39 @@ def petsc_dae_by_time_element(
                     options={"--ts_init_time": tprev, "--ts_max_time": t},
                 )
             if trajectory_save_prefix is not None:
+                tj_prev = tj
                 tj = PetscTrajectory(
                     stub=vars_stub, delete_on_read=True, unscale=t_block
                 )
-                tj.to_json(f"{trajectory_save_prefix}_{count}.json.gz")
+                if tj_prev is not None:
+                    # due to the way variables is generated we know varaibles
+                    # have corresponding positions in the list
+                    no_repeat = set()
+                    for i, v in enumerate(variables):
+                        vp = variables_prev[i]
+                        if id(v) in no_repeat:
+                            continue # variables can be repeated in list
+                        if isinstance(v.parent_component(), pyodae.DerivativeVar):
+                            continue # skip derivative vars
+                        no_repeat.add(id(v))
+                        # We'll add fixed vars in case they aren't fixed in
+                        # another section. Fixed vars don't go to the solver
+                        # so they don't show up in the trajectory data
+                        try:
+                            vec = tj.get_vec(v)
+                        except KeyError:
+                            vec = [pyo.value(v)]*len(tj.time)
+                        try:
+                            vec_prev = tj_prev.get_vec(vp)
+                        except KeyError:
+                            vec_prev = [pyo.value(vp)]*len(tj_prev.time)
+                        tj._set_vec(v, vec_prev + vec)
+                    tj._set_time_vec(tj_prev.time + tj.time)
+                variables_prev = variables
             tprev = t
-            count += 1
             res_list.append(res)
+        if tj is not None:
+            tj.to_json(f"{trajectory_save_prefix}_1.json.gz")
     return res_list
 
 
@@ -572,7 +597,6 @@ def calculate_time_derivatives(m, time):
                             calculate_variable_from_constraint(v, disc_eq[i])
                     except KeyError:
                         pass  # discretization equation may not exist at first time
-
 
 class PetscTrajectory(object):
     def __init__(
@@ -651,6 +675,15 @@ class PetscTrajectory(object):
                 raise RuntimeError(f"Variable {name} not found.")
         return vars
 
+    def _set_vec(self, var, vec):
+        var = str(var)
+        self.vecs[var] = vec
+
+    def _set_time_vec(self, vec):
+        self.vecs["_time"] = vec
+        self.time = self.vecs["_time"]
+
+
     def get_vec(self, var):
         """Return the vector of variable values at each time point for var.
 
@@ -713,7 +746,7 @@ class PetscTrajectory(object):
         already_scaled = set()
         for var in m.component_data_objects():
             vname = str(var)
-            if vname in self.vecs and vname not in already_scaled:
+            if vname in self.vecs and id(var) not in already_scaled:
                 s = None
                 if hasattr(var.parent_block(), "scaling_factor"):
                     s = var.parent_block().scaling_factor.get(var, s)
@@ -722,7 +755,7 @@ class PetscTrajectory(object):
                 if s is not None:
                     for i, x in enumerate(self.vecs[vname]):
                         self.vecs[vname][i] = x / s
-                already_scaled.add(vname)
+                already_scaled.add(id(var))
 
     def delete_files(self):
         """Delete the trajectory data and variable information files.

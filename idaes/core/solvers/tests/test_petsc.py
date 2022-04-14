@@ -551,7 +551,7 @@ def test_petsc_read_trajectory_parts():
     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
     assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
 
-    tj = petsc.PetscTrajectory(json="tj_random_junk_123_2.json.gz")
+    tj = petsc.PetscTrajectory(json="tj_random_junk_123_1.json.gz")
     assert tj.get_dt()[0] == pytest.approx(0.01)  # if small enough shouldn't be cut
     assert tj.get_vec(m.y[180, 1])[-1] == pytest.approx(y1, rel=1e-3)
     assert tj.get_vec("_time")[-1] == pytest.approx(180)
