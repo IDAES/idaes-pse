@@ -53,27 +53,48 @@ class TestDoubleLoopIntegration:
 
     @pytest.fixture
     def output_dir(self, tmp_path: Path) -> Path:
-        path = tmp_path / "DoubleLoop_output"
+        path = tmp_path / "bidder_integration_test_output"
         path.mkdir()
         return path
 
     @pytest.fixture
-    def plugin_path(self) -> Path:
-        with resources.path("idaes.apps.grid_integration.tests", "integration_test_plugin.py") as p:
+    def self_scheduler_output_dir(self, tmp_path: Path) -> Path:
+        path = tmp_path / "self_scheduler_integration_test_output"
+        path.mkdir()
+        return path
+
+    @pytest.fixture
+    def bidder_plugin_path(self) -> Path:
+        with resources.path(
+            "idaes.apps.grid_integration.tests", "bidder_integration_test_plugin.py"
+        ) as p:
             return Path(p)
 
     @pytest.mark.unit
-    def test_plugin_path_is_existing_file(self, plugin_path):
-        assert plugin_path.is_file()
+    def test_bidder_plugin_path_is_existing_file(self, bidder_plugin_path):
+        assert bidder_plugin_path.is_file()
 
     @pytest.fixture
-    def prescient_options(self, data_path: Path, output_dir: Path, plugin_path: Path) -> PrescientOptions:
+    def self_scheduler_plugin_path(self) -> Path:
+        with resources.path(
+            "idaes.apps.grid_integration.tests",
+            "self_scheduler_integration_test_plugin.py",
+        ) as p:
+            return Path(p)
+
+    @pytest.mark.unit
+    def test_self_scheduler_plugin_path_is_existing_file(
+        self, self_scheduler_plugin_path
+    ):
+        assert self_scheduler_plugin_path.is_file()
+
+    @pytest.fixture
+    def prescient_options(self, data_path: Path) -> PrescientOptions:
         return {
             "data_path": str(data_path),
             "input_format": "rts-gmlc",
             "simulate_out_of_sample": True,
             "run_sced_with_persistent_forecast_errors": True,
-            "output_directory": str(output_dir),
             "start_date": "07-10-2020",
             "num_days": 2,
             "sced_horizon": 4,
@@ -95,31 +116,74 @@ class TestDoubleLoopIntegration:
             "price_threshold": 1000,
             "contingency_price_threshold": 100,
             "reserve_price_threshold": 5,
-            "plugin": {
-                "doubleloop": {
-                    "module": str(plugin_path),
-                    "bidding_generator": "10_STEAM",
-                }
-            },
         }
 
     @pytest.fixture
-    def run_simulator(self, prescient_options: PrescientOptions) -> None:
+    def bidder_sim_options(
+        self, prescient_options, output_dir: Path, bidder_plugin_path: Path
+    ) -> PrescientOptions:
+        prescient_options["plugin"] = {
+            "doubleloop": {
+                "module": str(bidder_plugin_path),
+                "bidding_generator": "10_STEAM",
+            }
+        }
+        prescient_options["output_directory"] = str(output_dir)
+        return prescient_options
+
+    @pytest.fixture
+    def self_scheduler_sim_options(
+        self,
+        prescient_options,
+        self_scheduler_output_dir: Path,
+        self_scheduler_plugin_path: Path,
+    ) -> PrescientOptions:
+        prescient_options["plugin"] = {
+            "doubleloop": {
+                "module": str(self_scheduler_plugin_path),
+                "bidding_generator": "10_STEAM",
+            }
+        }
+        prescient_options["output_directory"] = str(self_scheduler_output_dir)
+        return prescient_options
+
+    @pytest.fixture
+    def run_bidder_simulator(self, bidder_sim_options: PrescientOptions) -> None:
         from prescient.simulator import Prescient
 
         sim = Prescient()
-        sim.simulate(**prescient_options)
+        sim.simulate(**bidder_sim_options)
 
     @pytest.fixture
-    def simulation_results_dir(self, run_simulator, output_dir):
+    def run_self_scheduler_simulator(
+        self, self_scheduler_sim_options: PrescientOptions
+    ) -> None:
+        from prescient.simulator import Prescient
+
+        sim = Prescient()
+        sim.simulate(**self_scheduler_sim_options)
+
+    @pytest.fixture
+    def simulation_results_dir(self, run_bidder_simulator, output_dir):
         return output_dir
 
+    @pytest.fixture
+    def self_scheduler_simulation_results_dir(
+        self, run_self_scheduler_simulator, self_scheduler_output_dir
+    ):
+        return self_scheduler_output_dir
+
     @pytest.mark.unit
-    def test_output_dir_exist(self, simulation_results_dir):
+    def test_output_dir_exist(
+        self, simulation_results_dir, self_scheduler_simulation_results_dir
+    ):
         assert os.path.isdir(simulation_results_dir)
+        assert os.path.isdir(self_scheduler_simulation_results_dir)
 
     @pytest.mark.component
-    def test_csv_files_saved(self, simulation_results_dir):
+    def test_csv_files_saved(
+        self, simulation_results_dir, self_scheduler_simulation_results_dir
+    ):
 
         file_names = [
             "hourly_gen_summary.csv",
@@ -141,4 +205,7 @@ class TestDoubleLoopIntegration:
 
         for f in file_names:
             file_path = os.path.join(simulation_results_dir, f)
+            assert os.path.isfile(file_path)
+
+            file_path = os.path.join(self_scheduler_simulation_results_dir, f)
             assert os.path.isfile(file_path)
