@@ -13,6 +13,11 @@
 from collections import deque
 import pyomo.environ as pyo
 import pandas as pd
+import os
+from idaes.apps.grid_integration import Tracker
+from idaes.apps.grid_integration import Bidder, SelfScheduler
+from idaes.apps.grid_integration import PlaceHolderForecaster
+from idaes.apps.grid_integration import DoubleLoopCoordinator
 
 
 class TestingModel:
@@ -280,3 +285,115 @@ class TestingForecaster:
 
     def forecast(self, date, hour, prediction):
         return {i: [prediction] * self.horizon for i in range(self.n_sample)}
+
+
+this_module_dir = os.path.dirname(__file__)
+
+generator = "10_STEAM"
+pmin = 30
+pmax = 76
+tracking_horizon = 4
+bidding_horizon = 48
+n_scenario = 10
+n_tracking_hour = 1
+solver = pyo.SolverFactory("cbc")
+
+
+def make_testing_forecaster():
+
+    """
+    Create a forecaster for testing.
+
+    Arguments:
+        None
+
+    Returns:
+        forecaster: a forecaster object for testing.
+    """
+
+    # create forecaster
+    price_forecasts_df = pd.read_csv(
+        os.path.join(this_module_dir, os.pardir, "examples", "lmp_forecasts_concat.csv")
+    )
+    forecaster = PlaceHolderForecaster(price_forecasts_df=price_forecasts_df)
+
+    return forecaster
+
+
+def make_testing_tracker():
+    """
+    Create a tracker for testing.
+
+    Arguments:
+        None
+
+    Returns:
+        thermal_tracker: a tracker object for testing.
+    """
+
+    tracking_model_object = TestingModel(
+        horizon=tracking_horizon, name=generator, pmin=pmin, pmax=pmax
+    )
+    thermal_tracker = Tracker(
+        tracking_model_object=tracking_model_object,
+        n_tracking_hour=n_tracking_hour,
+        solver=solver,
+    )
+
+    return thermal_tracker
+
+
+def make_testing_bidder():
+
+    """
+    Create a bidder for testing.
+
+    Arguments:
+        None
+
+    Returns:
+        thermal_bidder: a bidder object for testing.
+    """
+
+    forecaster = make_testing_forecaster()
+
+    bidding_model_object = TestingModel(
+        horizon=bidding_horizon, name=generator, pmin=pmin, pmax=pmax
+    )
+    thermal_bidder = Bidder(
+        bidding_model_object=bidding_model_object,
+        n_scenario=n_scenario,
+        solver=solver,
+        forecaster=forecaster,
+    )
+
+    return thermal_bidder
+
+
+def make_testing_selfscheduler():
+
+    """
+    Create a self-scheduler for testing.
+
+    Arguments:
+        None
+
+    Returns:
+        self_scheduler: a tracker object for testing.
+    """
+
+    forecaster = make_testing_forecaster()
+
+    bidding_model_object = TestingModel(
+        horizon=bidding_horizon, name=generator, pmin=pmin, pmax=pmax
+    )
+    self_scheduler = SelfScheduler(
+        bidding_model_object=bidding_model_object,
+        n_scenario=n_scenario,
+        horizon=bidding_horizon,
+        solver=solver,
+        forecaster=forecaster,
+        fixed_to_schedule=True,
+    )
+
+    return self_scheduler

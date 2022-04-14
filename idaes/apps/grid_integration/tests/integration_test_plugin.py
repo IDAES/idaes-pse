@@ -10,60 +10,16 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-import pandas as pd
-import pyomo.environ as pyo
-import os
-from idaes.apps.grid_integration import Tracker
-from idaes.apps.grid_integration import Bidder
-from idaes.apps.grid_integration import PlaceHolderForecaster
 from idaes.apps.grid_integration import DoubleLoopCoordinator
-from idaes.apps.grid_integration.tests.util import TestingModel
-
-this_module_dir = os.path.dirname(__file__)
-
-generator = "10_STEAM"
-pmin = 30
-pmax = 76
-tracking_horizon = 4
-bidding_horizon = 48
-n_scenario = 10
-n_tracking_hour = 1
-
-# create forecaster
-price_forecasts_df = pd.read_csv(
-    os.path.join(this_module_dir, os.pardir, "examples", "lmp_forecasts_concat.csv")
+from idaes.apps.grid_integration.tests.util import (
+    make_testing_tracker,
+    make_testing_bidder,
 )
-forecaster = PlaceHolderForecaster(price_forecasts_df=price_forecasts_df)
-
-# create solver
-solver = pyo.SolverFactory("cbc")
 
 ## create trackers
-
-# make a tracker
-tracking_model_object = TestingModel(horizon=tracking_horizon, name=generator, pmin=pmin, pmax=pmax)
-thermal_tracker = Tracker(
-    tracking_model_object=tracking_model_object,
-    n_tracking_hour=n_tracking_hour,
-    solver=solver,
-)
-
-# make a projection tracker
-projection_tracking_model_object = TestingModel(horizon=tracking_horizon, name=generator, pmin=pmin, pmax=pmax)
-thermal_projection_tracker = Tracker(
-    tracking_model_object=projection_tracking_model_object,
-    n_tracking_hour=n_tracking_hour,
-    solver=solver,
-)
-
-# create a bidder
-bidding_model_object = TestingModel(horizon=bidding_horizon, name=generator, pmin=pmin, pmax=pmax)
-thermal_bidder = Bidder(
-    bidding_model_object=bidding_model_object,
-    n_scenario=n_scenario,
-    solver=solver,
-    forecaster=forecaster,
-)
+thermal_tracker = make_testing_tracker()
+thermal_projection_tracker = make_testing_tracker()
+thermal_bidder = make_testing_bidder()
 
 # create coordinator
 coordinator = DoubleLoopCoordinator(
