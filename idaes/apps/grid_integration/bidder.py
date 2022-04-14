@@ -344,7 +344,7 @@ class SelfScheduler(AbstractBidder):
         Returns:
             bids: the bid we computed.
         """
-        
+
         bids = {}
 
         for t in range(self.horizon):
@@ -363,6 +363,18 @@ class SelfScheduler(AbstractBidder):
                 bids[t][self.generator]["fixed_commitment"] = (
                     1 if bids[t][self.generator]["p_min"] > 0 else 0
                 )
+                bids[t][self.generator]["startup_capacity"] = bids[t][self.generator][
+                    "p_max"
+                ]
+                bids[t][self.generator]["shutdown_capacity"] = bids[t][self.generator][
+                    "p_max"
+                ]
+                bids[t][self.generator]["startup_fuel"] = [
+                    (bids[t][self.generator]["min_down_time"], 0)
+                ]
+                bids[t][self.generator]["startup_cost"] = [
+                    (bids[t][self.generator]["min_down_time"], 0)
+                ]
 
             bids[t][self.generator]["p_cost"] = [
                 (bids[t][self.generator]["p_min"], 0),
@@ -410,8 +422,8 @@ class SelfScheduler(AbstractBidder):
         """
 
         df_list = []
-        for g in bids:
-            for t, power in enumerate(bids[g]):
+        for t in bids:
+            for g in bids[t]:
 
                 result_dict = {}
                 result_dict["Generator"] = g
@@ -420,7 +432,8 @@ class SelfScheduler(AbstractBidder):
                     result_dict["Hour"] = hour
 
                 result_dict["Horizon"] = t
-                result_dict["Bid Power [MW]"] = power
+                result_dict["Bid Power [MW]"] = bids[t][g].get("p_max")
+                result_dict["Bid Min Power [MW]"] = bids[t][g].get("p_min")
 
                 result_df = pd.DataFrame.from_dict(result_dict, orient="index")
                 df_list.append(result_df.T)
@@ -885,18 +898,16 @@ class Bidder(AbstractBidder):
                 result_dict["Date"] = date
                 result_dict["Hour"] = t
 
-                pair_cnt = 0
-                for power, cost in bids[t][gen].items():
-                    result_dict["Power {} [MW]".format(pair_cnt)] = power
-                    result_dict["Cost {} [$]".format(pair_cnt)] = cost
+                pair_cnt = len(bids[t][gen]["p_cost"])
 
-                    pair_cnt += 1
+                for idx, (power, cost) in enumerate(bids[t][gen]["p_cost"]):
+                    result_dict[f"Power {idx} [MW]"] = power
+                    result_dict[f"Cost {idx} [$]"] = cost
 
                 # place holder, in case different len of bids
                 while pair_cnt < self.n_scenario:
-
-                    result_dict["Power {} [MW]".format(pair_cnt)] = None
-                    result_dict["Cost {} [$]".format(pair_cnt)] = None
+                    result_dict[f"Power {pair_cnt} [MW]"] = None
+                    result_dict[f"Cost {pair_cnt} [$]"] = None
 
                     pair_cnt += 1
 
