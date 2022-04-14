@@ -2,12 +2,12 @@ Heterogeneous reaction properties
 =================================
 
 .. index::
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionParameterBlock
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionParameterData
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionStateBlock
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionStateBlockData
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionParameterBlock
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionParameterData
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionStateBlock
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionStateBlockData
 
-.. currentmodule:: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions
+.. currentmodule:: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions
 
 Property package for the reaction of air (oxygen) with an iron-based OC. More details of this reaction scheme can be found in reference [1]. 
 The  gas components modeled are O2, N2, CO2, H2O.
