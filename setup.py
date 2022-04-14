@@ -70,6 +70,7 @@ kwargs = dict(
         "bunch",
         "click>=8",
         "colorama",
+        "distro", # help identify linux distros for binary downloads
         "flask",  # for ui/fsvis
         "flask-cors",
         "jupyter",
