@@ -46,6 +46,11 @@ from idaes.core.util.math import smooth_min
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.util.initialization import (
+    fix_state_vars,
+    revert_state_vars,
+)
+
 
 import idaes.logger as idaeslog
 
@@ -788,8 +793,42 @@ objects linked to all inlet states and the mixed state,
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
+    def fix_state(self):
+        """
+        This method iterates throguh all inlet blocks and calls the fix_state_vars
+        utiltiy method on each.
+
+        Args:
+            None
+
+        Returns:
+            dict indexed by inlet indicating what states were fixed in each.
+        """
+        flags = {}
+
+        inlet_list = self.create_inlet_list()
+        for i in inlet_list:
+            i_block = getattr(self, i + "_state")
+            flags[i] = fix_state_vars(i_block)
+
+        return flags
+
+    def revert_state(self, flags):
+        """
+        This method iterates throguh all inlet blocks and calls the revert_state_vars
+        utiltiy method on each.
+
+        Args:
+            flags: dict indexed by inlets indicating which states should be unfixed
+            in each.
+        """
+        inlet_list = self.create_inlet_list()
+        for i in inlet_list:
+            i_block = getattr(self, i + "_state")
+            revert_state_vars(i_block, flags[i])
+
     def initialize_build(
-        blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, hold_state=False
+        blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None,
     ):
         """
         Initialization routine for mixer.
@@ -800,18 +839,6 @@ objects linked to all inlet states and the mixed state,
                      default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
-            hold_state : flag indicating whether the initialization routine
-                     should unfix any state variables fixed during
-                     initialization, **default** - False. **Valid values:**
-                     **True** - states variables are not unfixed, and a dict of
-                     returned containing flags for which states were fixed
-                     during initialization, **False** - state variables are
-                     unfixed after initialization by calling the release_state
-                     method.
-
-        Returns:
-            If hold_states is True, returns a dict containing flags for which
-            states were fixed during initialization.
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
@@ -820,18 +847,15 @@ objects linked to all inlet states and the mixed state,
         opt = get_solver(solver, optarg)
 
         # Initialize inlet state blocks
-        flags = {}
         inlet_list = blk.create_inlet_list()
         i_block_list = []
         for i in inlet_list:
             i_block = getattr(blk, i + "_state")
             i_block_list.append(i_block)
-            flags[i] = {}
-            flags[i] = i_block.initialize(
+            i_block.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                hold_state=True,
             )
 
         # Initialize mixed state block
@@ -913,39 +937,9 @@ objects linked to all inlet states and the mixed state,
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                     res = opt.solve(blk, tee=slc.tee)
 
-            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+            init_log.info(f"Mixer Initialization Complete: {idaeslog.condition(res)}")
         else:
-            init_log.info("Initialization Complete.")
-
-        if res is not None and not check_optimal_termination(res):
-            raise InitializationError(
-                f"{blk.name} failed to initialize successfully. Please check "
-                f"the output logs for more information."
-            )
-
-        if hold_state is True:
-            return flags
-        else:
-            blk.release_state(flags, outlvl=outlvl)
-
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
-        """
-        Method to release state variables fixed during initialization.
-
-        Keyword Arguments:
-            flags : dict containing information of which state variables
-                    were fixed during initialization, and should now be
-                    unfixed. This dict is returned by initialize if
-                    hold_state = True.
-            outlvl : sets output level of logging
-
-        Returns:
-            None
-        """
-        inlet_list = blk.create_inlet_list()
-        for i in inlet_list:
-            i_block = getattr(blk, i + "_state")
-            i_block.release_state(flags[i], outlvl=outlvl)
+            init_log.info("Mixer Initialization Complete.")
 
     def _get_stream_table_contents(self, time_point=0):
         io_dict = {}

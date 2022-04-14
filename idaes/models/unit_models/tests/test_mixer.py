@@ -689,14 +689,12 @@ class TestMixer(object):
         # Change one inlet pressure to check initialization calculations
         m.fs.mix.inlet_1_state[0].pressure = 8e4
 
-        f = m.fs.mix.initialize(hold_state=True)
+        f = m.fs.mix.fix_state()
+        m.fs.mix.initialize_build()
 
         assert m.fs.mix.inlet_1_state[0].init_test is True
         assert m.fs.mix.inlet_2_state[0].init_test is True
         assert m.fs.sb[0].init_test is True
-        assert m.fs.mix.inlet_1_state[0].hold_state is True
-        assert m.fs.mix.inlet_2_state[0].hold_state is True
-        assert m.fs.sb[0].hold_state is False
 
         assert m.fs.sb[0].flow_mol_phase_comp["p1", "c1"].value == 4
         assert m.fs.sb[0].flow_mol_phase_comp["p1", "c2"].value == 4
@@ -707,11 +705,17 @@ class TestMixer(object):
 
         assert m.fs.sb[0].pressure.value == 8e4
 
-        m.fs.mix.release_state(flags=f)
+        m.fs.mix.revert_state(flags=f)
 
-        assert m.fs.mix.inlet_1_state[0].hold_state is False
-        assert m.fs.mix.inlet_2_state[0].hold_state is False
-        assert m.fs.sb[0].hold_state is False
+        for v in m.fs.mix.inlet_1_state[0].flow_mol_phase_comp.values():
+            assert not v.fixed
+        assert not m.fs.mix.inlet_1_state[0].pressure.fixed
+        assert not m.fs.mix.inlet_1_state[0].temperature.fixed
+
+        for v in m.fs.mix.inlet_2_state[0].flow_mol_phase_comp.values():
+            assert not v.fixed
+        assert not m.fs.mix.inlet_2_state[0].pressure.fixed
+        assert not m.fs.mix.inlet_2_state[0].temperature.fixed
 
     @pytest.mark.ui
     @pytest.mark.component

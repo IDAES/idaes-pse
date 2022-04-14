@@ -693,7 +693,7 @@ Must be True if dynamic = True,
                 flags = self.fix_state()
             else:
                 init_args[c] = kwargs.pop(c.local_name, {})
-                # Call c.initialize_prepare
+                # TODO: Call c.initialize_prepare
                 c.deactivate()
 
         # Check degrees of freedom are zero
@@ -727,7 +727,7 @@ Must be True if dynamic = True,
                 # Do nothing for self, we will get to it after the final solve
                 pass
             else:
-                # Call c.initialize_final
+                # TODO: Call c.initialize_final
                 c.activate()
 
         # Final solve of full block if required.
