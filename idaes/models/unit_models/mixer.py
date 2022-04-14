@@ -16,7 +16,6 @@ General purpose mixer block for IDAES models
 from enum import Enum
 
 from pyomo.environ import (
-    check_optimal_termination,
     Param,
     PositiveReals,
     Reals,
@@ -40,7 +39,6 @@ from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
     PropertyNotSupportedError,
-    InitializationError,
 )
 from idaes.core.util.math import smooth_min
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -811,6 +809,15 @@ objects linked to all inlet states and the mixed state,
             i_block = getattr(self, i + "_state")
             flags[i] = fix_state_vars(i_block)
 
+        if (hasattr(self, "pressure_equality_constraints")
+                and self.pressure_equality_constraints.active is True):
+            flags["_pressure_eq"] = True
+
+            # Deactivate pressure equality constraints
+            self.pressure_equality_constraints.deactivate()
+        else:
+            flags["_pressure_eq"] = False
+
         return flags
 
     def revert_state(self, flags):
@@ -826,6 +833,10 @@ objects linked to all inlet states and the mixed state,
         for i in inlet_list:
             i_block = getattr(self, i + "_state")
             revert_state_vars(i_block, flags[i])
+
+        if flags["_pressure_eq"]:
+            # Reactivate pressure equality constraints
+            self.pressure_equality_constraints.activate()
 
     def initialize_build(
         blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None,
@@ -938,8 +949,12 @@ objects linked to all inlet states and the mixed state,
                     res = opt.solve(blk, tee=slc.tee)
 
             init_log.info(f"Mixer Initialization Complete: {idaeslog.condition(res)}")
+
+            return res
         else:
             init_log.info("Mixer Initialization Complete.")
+
+            return None
 
     def _get_stream_table_contents(self, time_point=0):
         io_dict = {}
