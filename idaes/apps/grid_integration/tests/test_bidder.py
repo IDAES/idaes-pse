@@ -17,6 +17,8 @@ from idaes.apps.grid_integration.tests.util import TestingModel
 from idaes.apps.grid_integration.tests.util import TestingForecaster
 from pyomo.common import unittest as pyo_unittest
 
+egret = pytest.importorskip("egret", reason="egret (optional dependency) not available")
+
 
 class TestMissingModel:
 
