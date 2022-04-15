@@ -15,7 +15,7 @@
 modeling in Pyomo.
 """
 
-__author__ = "Alexander Dowling"
+__author__ = "Alexander Dowling, Douglas Allan"
 
 
 from operator import itemgetter
@@ -208,6 +208,8 @@ class DegeneracyHunter():
         
         Args:
             tol: Tolerance for smallest singular value (default=1E-6)
+            dense: If True, use a dense svd to perform singular value analysis,
+            which tends to be slower but more reliable than svds
         
         Returns:
             Number of singular values less than tolerance (-1 means error)
@@ -232,9 +234,8 @@ class DegeneracyHunter():
                 if self.s[i] < tol:
                     counter += 1
         else:
-            # TODO: Make this an exception
-            print("Model needs at least 2 equality constraints to check rank.")
-            counter = -1
+            raise ValueError(
+                "Model needs at least 2 equality constraints to check rank.")
             
         return counter
 
@@ -499,12 +500,14 @@ class DegeneracyHunter():
             return None, None
         
     
-    def svd_analysis(self, n_smallest_sv=10, dense=False):
+    def svd_analysis(self, n_sv=None, dense=False):
         """
         Perform SVD analysis of the constraint Jacobian
         
         Args:
-            n_smallest_sv: number of smallest singular values to compute
+            n_sv: number of smallest singular values to compute
+            dense: If True, use a dense svd to perform singular value analysis,
+            which tends to be slower but more reliable than svds
             
         Returns:
             Nothing
@@ -513,11 +516,20 @@ class DegeneracyHunter():
             Stores SVD results in object
         
         """
-
-        if self.n_eq > 1:
+        if n_sv is None:
             # Determine the number of singular values to compute
             # The "-1" is needed to avoid an error with svds
-            n_sv = min(n_smallest_sv, min(self.n_eq, self.n_var) - 1)
+            n_sv = min(10, min(self.n_eq, self.n_var) - 1)
+
+        if self.n_eq > 1:
+            if n_sv >= min(self.n_eq, self.n_var):
+                raise ValueError(
+                    f"For a {self.n_eq} by {self.n_var} system, svd_analysis "
+                    f"can compute at most {min(self.n_eq, self.n_var) - 1} "
+                    f"singular values and vectors, but {n_sv} were called for."
+                    )
+            if n_sv < 1:
+                raise ValueError(f"Nonsense value for n_sv={n_sv} received.")
             print("Computing the", n_sv, "smallest singular value(s)")
 
             # Perform SVD
@@ -526,7 +538,9 @@ class DegeneracyHunter():
             # And V is a n_var x n_var
             # (U or V may be smaller in economy mode)
             if dense:
-                u, s, vT = svd(self.jac_eq.todense(),full_matrices=False)
+                u, s, vT = svd(self.jac_eq.todense(), full_matrices=False)
+                # Reorder singular values and vectors so that the singular
+                # values are from least to greatest
                 u = np.flip(u[:,-n_sv:], axis=1)
                 s = np.flip(s[-n_sv:], axis=0)
                 vT = np.flip(vT[-n_sv:,:], axis=0)
@@ -543,9 +557,8 @@ class DegeneracyHunter():
             self.v = vT.transpose()
             
         else:
-            print(
-                "Warning: model must contain at least 2 equality constraints to perform svd_analysis"
-            )
+            raise ValueError(
+                "Model needs at least 2 equality constraints to perform svd_analysis.")
 
     def underdetermined_variables_and_constraints(self, n_calc=1, tol=0.1, dense=False):
         """
@@ -558,6 +571,8 @@ class DegeneracyHunter():
             starting from 1, to calculate associated constraints and variables
             tol: Size below which to ignore constraints and variables in
             the singular vector
+            dense: If True, use a dense svd to perform singular value analysis,
+            which tends to be slower but more reliable than svds
 
         Returns
         -------
@@ -565,14 +580,17 @@ class DegeneracyHunter():
 
         """
         if self.s is None:
-            self.svd_analysis(n_smallest_sv=max(n_calc,10), dense=dense)
+            self.svd_analysis(
+                n_smallest_sv=max(n_calc, 10, min(self.n_eq, self.n_var) - 1),
+                dense=dense
+                )
         n_sv = len(self.s)
         if n_sv < n_calc:
             raise ValueError("User wanted constraints and variables associated "
                              f"with the {n_calc}-th smallest singular value, "
                              f"but only {n_sv} small singular values have been "
                              "calculated. Run svd_analysis again and specify "
-                             f"n_smallest_sv>={n_calc}.")
+                             f"n_sv>={n_calc}.")
         print("Column:    Variable")
         for i in np.where(abs(self.v[:, n_calc - 1]) > tol)[0]: 
             print(str(i) + ": " + self.var_list[i].name)

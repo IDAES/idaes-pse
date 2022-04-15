@@ -659,13 +659,15 @@ def extreme_jacobian_rows(
         small: <= to this is consdered small
 
     Returns:
-        (list of tuples), Jacobian entry, Constraint
+        (list of tuples), Row norm, Constraint
     """
+    # Need both jac for the linear algebra and nlp for constraint names
     if jac is None or nlp is None:
         jac, nlp = get_jacobian(m, scaled)
     el = []
     for i, c in enumerate(nlp.clist):
         norm = 0
+        # Calculate L2 norm
         for j in jac[i].indices:
             norm += jac[i, j]**2
         norm = norm**0.5
@@ -686,14 +688,16 @@ def extreme_jacobian_columns(
         small: <= to this is consdered small
 
     Returns:
-        (list of tuples), Jacobian entry, Variable
+        (list of tuples), Column norm, Variable
     """
+    # Need both jac for the linear algebra and nlp for variable names
     if jac is None or nlp is None:
         jac, nlp = get_jacobian(m, scaled)
     jac = jac.tocsc()
     el = []
     for j, v in enumerate(nlp.vlist):
         norm = 0
+        # Calculate L2 norm
         for i in jac.getcol(j).indices:
             norm += jac[i, j]**2
         norm = norm**0.5
