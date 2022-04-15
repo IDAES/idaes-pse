@@ -138,6 +138,17 @@ def test_underdetermined_variables_and_constraints(dummy_problem, capsys):
     assert captured.out == ("Column:    Variable\n\nRow:    Constraint\n")
 
 @pytest.mark.unit
+def test_underdetermined_calls_svd_analysis(dummy_problem, capsys):
+    m = dummy_problem
+    dh = DegeneracyHunter(m)
+    
+    dh.underdetermined_variables_and_constraints(n_calc=1)
+    captured = capsys.readouterr()
+    assert captured.out == ("Computing the 4 smallest singular value(s)\n"
+                            "Column:    Variable\n3: x[3]\n\nRow:    "
+                            "Constraint\n3: dummy_eqn[3]\n")
+
+@pytest.mark.unit
 def test_sv_value_error(dummy_problem):
     m = dummy_problem
     dh = DegeneracyHunter(m)

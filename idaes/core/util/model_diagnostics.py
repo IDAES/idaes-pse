@@ -581,7 +581,7 @@ class DegeneracyHunter():
         """
         if self.s is None:
             self.svd_analysis(
-                n_smallest_sv=max(n_calc, 10, min(self.n_eq, self.n_var) - 1),
+                n_sv=max(n_calc, min(10, min(self.n_eq, self.n_var) - 1)),
                 dense=dense
                 )
         n_sv = len(self.s)
