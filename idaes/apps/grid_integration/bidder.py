@@ -363,12 +363,6 @@ class SelfScheduler(AbstractBidder):
                 bids[t][self.generator]["fixed_commitment"] = (
                     1 if bids[t][self.generator]["p_min"] > 0 else 0
                 )
-                bids[t][self.generator]["startup_capacity"] = bids[t][self.generator][
-                    "p_max"
-                ]
-                bids[t][self.generator]["shutdown_capacity"] = bids[t][self.generator][
-                    "p_max"
-                ]
                 bids[t][self.generator]["startup_fuel"] = [
                     (bids[t][self.generator]["min_down_time"], 0)
                 ]
@@ -379,6 +373,13 @@ class SelfScheduler(AbstractBidder):
             bids[t][self.generator]["p_cost"] = [
                 (bids[t][self.generator]["p_min"], 0),
                 (bids[t][self.generator]["p_max"], 0),
+            ]
+
+            bids[t][self.generator]["startup_capacity"] = bids[t][self.generator][
+                "p_min"
+            ]
+            bids[t][self.generator]["shutdown_capacity"] = bids[t][self.generator][
+                "p_min"
             ]
 
         return bids
@@ -858,6 +859,8 @@ class Bidder(AbstractBidder):
                 full_bids[t][gen]["p_cost"] = list(bids[t][gen].items())
                 full_bids[t][gen]["p_min"] = min(bids[t][gen].keys())
                 full_bids[t][gen]["p_max"] = max(bids[t][gen].keys())
+                bids[t][gen]["startup_capacity"] = full_bids[t][gen]["p_min"]
+                bids[t][gen]["shutdown_capacity"] = full_bids[t][gen]["p_min"]
 
                 fixed_commitment = getattr(
                     self.bidding_model_object, "fixed_commitment", None
