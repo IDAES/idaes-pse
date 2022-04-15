@@ -177,6 +177,8 @@ def test_compute_bids(bidder_object):
             gen: {
                 "p_min": pmin,
                 "p_max": pmax,
+                "startup_capacity": pmin,
+                "shutdown_capacity": pmin,
                 "p_cost": [(p, p * marginal_cost - shift * pmin) for p in default_bids],
             }
         }
@@ -194,7 +196,12 @@ def test_compute_bids(bidder_object):
     for t in range(horizon):
 
         expected_bids[t] = {}
-        expected_bids[t][gen] = {"p_min": pmin, "p_max": pmax}
+        expected_bids[t][gen] = {
+            "p_min": pmin,
+            "p_max": pmax,
+            "startup_capacity": pmin,
+            "shutdown_capacity": pmin,
+        }
         p_cost = []
 
         pre_p = 0
