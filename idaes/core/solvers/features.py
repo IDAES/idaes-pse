@@ -16,6 +16,7 @@ import pyomo.environ as pyo
 import pyomo.dae as pyodae
 from pyomo.common.errors import ApplicationError
 
+
 def lp():
     """This provides a simple LP model for solver testing.
 
@@ -34,6 +35,7 @@ def lp():
     m.c4 = pyo.Constraint(expr=m.y <= 5)
     m.obj = pyo.Objective(expr=m.x + m.y)
     return m, 1
+
 
 def milp():
     """This provides a simple MILP model for solver testing.
@@ -54,6 +56,7 @@ def milp():
     m.obj = pyo.Objective(expr=m.x + m.y)
     return m, 1
 
+
 def nle():
     """This provides a simple system of nonlinear equations model for solver
     testing.
@@ -68,6 +71,7 @@ def nle():
     m.x = pyo.Var(initialize=-0.1)
     m.eq1 = pyo.Constraint(expr=m.x**3 == 1)
     return m, 1
+
 
 def nlp():
     """This provides a simple NLP model for solver testing.
@@ -85,6 +89,7 @@ def nlp():
     m.obj = pyo.Objective(expr=m.x**2 + m.y**2)
     return m, 1
 
+
 def minlp():
     """This provides a simple MINLP model for solver testing.
 
@@ -100,8 +105,10 @@ def minlp():
     m.i = pyo.Var(domain=pyo.Binary, initialize=0)
     m.c = pyo.Constraint(expr=m.x >= 1)
     m.obj = pyo.Objective(
-        expr=m.i * (m.x**2 + m.y**2) + (1 - m.i) * 4 *(m.x**2 + m.y**2))
+        expr=m.i * (m.x**2 + m.y**2) + (1 - m.i) * 4 * (m.x**2 + m.y**2)
+    )
     return m, 1, 1
+
 
 def dae():
     """This provides a DAE model for solver testing.
@@ -118,11 +125,7 @@ def dae():
     model = pyo.ConcreteModel(name="chemakzo")
 
     # Set problem parameter values
-    model.k = pyo.Param([1,2,3,4], initialize={
-        1:18.7,
-        2:0.58,
-        3:0.09,
-        4:0.42})
+    model.k = pyo.Param([1, 2, 3, 4], initialize={1: 18.7, 2: 0.58, 3: 0.09, 4: 0.42})
     model.Ke = pyo.Param(initialize=34.4)
     model.klA = pyo.Param(initialize=3.3)
     model.Ks = pyo.Param(initialize=115.83)
@@ -132,60 +135,70 @@ def dae():
     # Problem variables ydot = dy/dt,
     #    (dy6/dt is not explicitly in the equations, so only 5 ydots i.e.
     #    y6 is an algebraic variable and y1 to y5 are differential variables)
-    model.t = pyodae.ContinuousSet(bounds=(0,180))
-    model.y = pyo.Var(model.t, [1,2,3,4,5], initialize=1.0)  #
+    model.t = pyodae.ContinuousSet(bounds=(0, 180))
+    model.y = pyo.Var(model.t, [1, 2, 3, 4, 5], initialize=1.0)  #
     model.y6 = pyo.Var(model.t, initialize=1.0)  #
-    model.ydot = pyodae.DerivativeVar(model.y, wrt=model.t) # dy/dt
-    model.r = pyo.Var(model.t, [1,2,3,4,5], initialize=1.0)
+    model.ydot = pyodae.DerivativeVar(model.y, wrt=model.t)  # dy/dt
+    model.r = pyo.Var(model.t, [1, 2, 3, 4, 5], initialize=1.0)
     model.Fin = pyo.Var(model.t, initialize=1.0)
 
     # Equations
     @model.Constraint(model.t)
     def eq_ydot1(b, t):
-        return b.ydot[t, 1] == -2.0*b.r[t, 1] + b.r[t, 2] - b.r[t, 3] - b.r[t, 4]
+        return b.ydot[t, 1] == -2.0 * b.r[t, 1] + b.r[t, 2] - b.r[t, 3] - b.r[t, 4]
+
     @model.Constraint(model.t)
     def eq_ydot2(b, t):
-        return b.ydot[t, 2] == -0.5*b.r[t, 1] - b.r[t, 4] - 0.5*b.r[t, 5] + b.Fin[t]
+        return b.ydot[t, 2] == -0.5 * b.r[t, 1] - b.r[t, 4] - 0.5 * b.r[t, 5] + b.Fin[t]
+
     @model.Constraint(model.t)
     def eq_ydot3(b, t):
         return b.ydot[t, 3] == b.r[t, 1] - b.r[t, 2] + b.r[t, 3]
+
     @model.Constraint(model.t)
     def eq_ydot4(b, t):
-        return b.ydot[t, 4] == -b.r[t, 2] + b.r[t, 3] - 2.0*b.r[t, 4]
+        return b.ydot[t, 4] == -b.r[t, 2] + b.r[t, 3] - 2.0 * b.r[t, 4]
+
     @model.Constraint(model.t)
     def eq_ydot5(b, t):
         return b.ydot[t, 5] == b.r[t, 2] - b.r[t, 3] + b.r[t, 5]
+
     @model.Constraint(model.t)
     def eq_y6(b, t):
-        return 0 == b.Ks*b.y[t, 1]*b.y[t, 4] - b.y6[t]
+        return 0 == b.Ks * b.y[t, 1] * b.y[t, 4] - b.y6[t]
 
     @model.Constraint(model.t)
     def eq_r1(b, t):
-        return b.r[t, 1] == b.k[1]*b.y[t, 1]**4*b.y[t, 2]**0.5
+        return b.r[t, 1] == b.k[1] * b.y[t, 1] ** 4 * b.y[t, 2] ** 0.5
+
     @model.Constraint(model.t)
     def eq_r2(b, t):
-        return b.r[t, 2] == b.k[2]*b.y[t, 3]*b.y[t, 4]
+        return b.r[t, 2] == b.k[2] * b.y[t, 3] * b.y[t, 4]
+
     @model.Constraint(model.t)
     def eq_r3(b, t):
-        return b.r[t, 3] == b.k[2]/b.Ke*b.y[t, 1]*b.y[t, 5]
+        return b.r[t, 3] == b.k[2] / b.Ke * b.y[t, 1] * b.y[t, 5]
+
     @model.Constraint(model.t)
     def eq_r4(b, t):
-        return b.r[t, 4] == b.k[3]*b.y[t, 1]*b.y[t, 4]**2
+        return b.r[t, 4] == b.k[3] * b.y[t, 1] * b.y[t, 4] ** 2
+
     @model.Constraint(model.t)
     def eq_r5(b, t):
-        return b.r[t, 5] == b.k[4]*b.y6[t]**2*b.y[t, 2]**0.5
+        return b.r[t, 5] == b.k[4] * b.y6[t] ** 2 * b.y[t, 2] ** 0.5
+
     @model.Constraint(model.t)
     def eq_Fin(b, t):
-        return b.Fin[t] == b.klA*(b.pCO2/b.H - b.y[t, 2])
+        return b.Fin[t] == b.klA * (b.pCO2 / b.H - b.y[t, 2])
 
     # Set initial conditions and solve initial from the values of differential
     # variables.
-    y0 = {1:0.444, 2:0.00123, 3:0.0, 4:0.007, 5:0.0} #initial differential vars
+    y0 = {1: 0.444, 2: 0.00123, 3: 0.0, 4: 0.007, 5: 0.0}  # initial differential vars
     for i in y0:
         model.y[0, i].fix(y0[i])
 
-    discretizer = pyo.TransformationFactory('dae.finite_difference')
-    discretizer.apply_to(model, nfe=1, scheme='BACKWARD')
+    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer.apply_to(model, nfe=1, scheme="BACKWARD")
 
     return (
         model,
@@ -196,6 +209,7 @@ def dae():
         0.1708010885264404e-1,
         0.4873531310307455e-2,
     )
+
 
 @lru_cache(maxsize=10)
 def ipopt_has_linear_solver(linear_solver):
@@ -211,7 +225,7 @@ def ipopt_has_linear_solver(linear_solver):
         if either Ipopt or the linear solver is not available.
     """
     m, x = nlp()
-    solver = pyo.SolverFactory('ipopt', options={"linear_solver": linear_solver})
+    solver = pyo.SolverFactory("ipopt", options={"linear_solver": linear_solver})
     try:
         solver.solve(m)
     except ApplicationError:
@@ -219,5 +233,5 @@ def ipopt_has_linear_solver(linear_solver):
     try:
         assert abs(x - pyo.value(m.x)) < 1e-8
     except AssertionError:
-        return False # solver mysteriously doesn't work right
+        return False  # solver mysteriously doesn't work right
     return True

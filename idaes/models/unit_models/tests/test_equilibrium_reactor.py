@@ -43,7 +43,7 @@ from idaes.core.util.testing import (
     ReactionParameterTestBlock,
     initialization_tester,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 from idaes.core.util.exceptions import InitializationError
 

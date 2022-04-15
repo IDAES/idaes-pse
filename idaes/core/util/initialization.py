@@ -16,7 +16,13 @@ This module contains utility functions for initialization of IDAES models.
 """
 
 from pyomo.environ import (
-    Block, check_optimal_termination, Constraint, Param, Var, value)
+    Block,
+    check_optimal_termination,
+    Constraint,
+    Param,
+    Var,
+    value,
+)
 from pyomo.network import Arc
 from pyomo.dae import ContinuousSet
 from pyomo.core.expr.visitor import identify_variables
@@ -26,11 +32,15 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (
     get_activity_dict,
-    deactivate_model_at, deactivate_constraints_unindexed_by,
-    fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time,
-    get_implicit_index_of_set)
+    deactivate_model_at,
+    deactivate_constraints_unindexed_by,
+    fix_vars_unindexed_by,
+    get_derivatives_at,
+    copy_values_at_time,
+    get_implicit_index_of_set,
+)
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 __author__ = "Andrew Lee, John Siirola, Robert Parker"
 
@@ -73,10 +83,12 @@ def fix_state_vars(blk, state_args=None):
                                 val = state_args[n][i]
                         except KeyError:
                             raise ConfigurationError(
-                                'Indexes in state_args did not agree with '
-                                'those of state variable {}. Please ensure '
-                                'that indexes for initial guesses are correct.'
-                                .format(n))
+                                "Indexes in state_args did not agree with "
+                                "those of state variable {}. Please ensure "
+                                "that indexes for initial guesses are correct.".format(
+                                    n
+                                )
+                            )
                         v[i].fix(val)
                     else:
                         # No guess, try to use current value
@@ -86,12 +98,12 @@ def fix_state_vars(blk, state_args=None):
                             # No initial value - raise Exception before this
                             # gets to a solver.
                             raise ConfigurationError(
-                                'State variable {} does not have a value '
-                                'assigned. This usually occurs when a Var '
-                                'is not assigned an initial value when it is '
-                                'created. Please ensure all variables have '
-                                'valid values before fixing them.'
-                                .format(v.name))
+                                "State variable {} does not have a value "
+                                "assigned. This usually occurs when a Var "
+                                "is not assigned an initial value when it is "
+                                "created. Please ensure all variables have "
+                                "valid values before fixing them.".format(v.name)
+                            )
 
     return flags
 
@@ -118,13 +130,15 @@ def revert_state_vars(blk, flags):
                         v[i].unfix()
                 except KeyError:
                     raise ConfigurationError(
-                        'Indices of flags proved do not match with indices of'
-                        'the StateBlock. Please make sure you are using the '
-                        'correct StateBlock.')
+                        "Indices of flags proved do not match with indices of"
+                        "the StateBlock. Please make sure you are using the "
+                        "correct StateBlock."
+                    )
 
 
-def propagate_state(destination=None, source=None, arc=None,
-        direction="forward", overwrite_fixed=False):
+def propagate_state(
+    destination=None, source=None, arc=None, direction="forward", overwrite_fixed=False
+):
     """
     This method propagates values between Ports along Arcs. Values can be
     propagated in either direction using the direction argument.
@@ -152,17 +166,21 @@ def propagate_state(destination=None, source=None, arc=None,
     # Check that only arc or source and destination are passed
     if arc is None and (destination is None or source is None):
         raise RuntimeError(
-            "In propagate_state(), must provide source and destination or arc")
+            "In propagate_state(), must provide source and destination or arc"
+        )
     if arc is not None:
         if destination is not None or source is not None:
-            raise RuntimeError("In propagate_state(), provide only arc or "
-                    "source and destination")
+            raise RuntimeError(
+                "In propagate_state(), provide only arc or " "source and destination"
+            )
         try:
             source = arc.src
             destination = arc.dest
         except AttributeError:
-            _log.error("In propagate_state(), unexpected type of arc "
-                    "argument. Value must be a Pyomo Arc")
+            _log.error(
+                "In propagate_state(), unexpected type of arc "
+                "argument. Value must be a Pyomo Arc"
+            )
             raise
 
     if direction == "forward":
@@ -170,21 +188,26 @@ def propagate_state(destination=None, source=None, arc=None,
     elif direction == "backward":
         source, destination = destination, source
     else:
-        raise ValueError("Unexpected value for direction argument: ({}). "
-                         "Value must be either 'forward' or 'backward'."
-                         .format(direction))
+        raise ValueError(
+            "Unexpected value for direction argument: ({}). "
+            "Value must be either 'forward' or 'backward'.".format(direction)
+        )
 
     try:
         destination_vars = destination.vars
     except AttributeError:
-        _log.error("In propagate_state(), unexpected type of destination "
-                "port argument. Value must be a Pyomo Port")
+        _log.error(
+            "In propagate_state(), unexpected type of destination "
+            "port argument. Value must be a Pyomo Port"
+        )
         raise
     try:
         source_vars = source.vars
     except AttributeError:
-        _log.error("In propagate_state(), unexpected type of destination "
-                "source argument. Value must be a Pyomo Port")
+        _log.error(
+            "In propagate_state(), unexpected type of destination "
+            "source argument. Value must be a Pyomo Port"
+        )
         raise
 
     # Copy values
@@ -198,10 +221,12 @@ def propagate_state(destination=None, source=None, arc=None,
                         f"propagate_state() is can only change the value of "
                         f"variables and cannot set a {v[i].ctype}.  This "
                         f"likely indicates either a malformed port or a misuse "
-                        f"of propagate_state.")
+                        f"of propagate_state."
+                    )
         except KeyError as e:
             raise KeyError(
-                "In propagate_state, variables have incompatible index sets") from e
+                "In propagate_state, variables have incompatible index sets"
+            ) from e
 
 
 # HACK, courtesy of J. Siirola
@@ -233,18 +258,22 @@ def solve_indexed_blocks(solver, blocks, **kwds):
         for i, b in enumerate(blocks):
             # Check that object is a Block
             if not isinstance(b, Block):
-                raise TypeError("Trying to apply solve_indexed_blocks to "
-                                "object containing non-Block objects")
+                raise TypeError(
+                    "Trying to apply solve_indexed_blocks to "
+                    "object containing non-Block objects"
+                )
             # Append components of BlockData to temporary Block
             try:
                 tmp._decl["block_%s" % i] = i
-                tmp._decl_order.append((b, i+1 if i < nBlocks-1 else None))
+                tmp._decl_order.append((b, i + 1 if i < nBlocks - 1 else None))
             except Exception:
-                raise Exception("solve_indexed_blocks method failed adding "
-                                "components to temporary block.")
+                raise Exception(
+                    "solve_indexed_blocks method failed adding "
+                    "components to temporary block."
+                )
 
         # Set ctypes on temporary Block
-        tmp._ctypes[Block] = [0, nBlocks-1, nBlocks]
+        tmp._ctypes[Block] = [0, nBlocks - 1, nBlocks]
 
         # Solve temporary Block
         results = solver.solve(tmp, **kwds)
@@ -279,47 +308,47 @@ def initialize_by_time_element(fs, time, **kwargs):
         None
     """
     if not isinstance(fs, FlowsheetBlock):
-        raise TypeError('First arg must be a FlowsheetBlock')
+        raise TypeError("First arg must be a FlowsheetBlock")
     if not isinstance(time, ContinuousSet):
-        raise TypeError('Second arg must be a ContinuousSet')
+        raise TypeError("Second arg must be a ContinuousSet")
 
     if time.get_discretization_info() == {}:
-        raise ValueError('ContinuousSet must be discretized')
+        raise ValueError("ContinuousSet must be discretized")
 
-    scheme = time.get_discretization_info()['scheme']
+    scheme = time.get_discretization_info()["scheme"]
     fep_list = time.get_finite_elements()
-    nfe = time.get_discretization_info()['nfe']
+    nfe = time.get_discretization_info()["nfe"]
 
-    if scheme == 'LAGRANGE-RADAU':
-        ncp = time.get_discretization_info()['ncp']
-    elif scheme == 'LAGRANGE-LEGENDRE':
-        msg = 'Initialization does not support collocation with Legendre roots'
+    if scheme == "LAGRANGE-RADAU":
+        ncp = time.get_discretization_info()["ncp"]
+    elif scheme == "LAGRANGE-LEGENDRE":
+        msg = "Initialization does not support collocation with Legendre roots"
         raise NotImplementedError(msg)
-    elif scheme == 'BACKWARD Difference':
+    elif scheme == "BACKWARD Difference":
         ncp = 1
-    elif scheme == 'FORWARD Difference':
+    elif scheme == "FORWARD Difference":
         ncp = 1
-        msg = 'Forward initialization (explicit Euler) has not yet been implemented'
+        msg = "Forward initialization (explicit Euler) has not yet been implemented"
         raise NotImplementedError(msg)
-    elif scheme == 'CENTRAL Difference':
-        msg = 'Initialization does not support central finite difference'
+    elif scheme == "CENTRAL Difference":
+        msg = "Initialization does not support central finite difference"
         raise NotImplementedError(msg)
     else:
-        msg = 'Unrecognized discretization scheme. '
-        'Has the model been discretized along the provided ContinuousSet?'
+        msg = "Unrecognized discretization scheme. "
+        "Has the model been discretized along the provided ContinuousSet?"
         raise ValueError(msg)
     # Disallow Central/Legendre discretizations.
     # Neither of these seem to be square by default for multi-finite element
     # initial value problems.
 
     # Create logger objects
-    outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
+    outlvl = kwargs.pop("outlvl", idaeslog.NOTSET)
     init_log = idaeslog.getInitLogger(__name__, level=outlvl)
     solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
 
-    ignore_dof = kwargs.pop('ignore_dof', False)
-    solver = kwargs.pop('solver', get_solver())
-    fix_diff_only = kwargs.pop('fix_diff_only', True)
+    ignore_dof = kwargs.pop("ignore_dof", False)
+    solver = kwargs.pop("solver", get_solver())
+    fix_diff_only = kwargs.pop("fix_diff_only", True)
     # This option makes the assumption that the only variables that
     # link constraints to previous points in time (which must be fixed)
     # are the derivatives and differential variables. Not true if a controller
@@ -329,11 +358,13 @@ def initialize_by_time_element(fs, time, **kwargs):
 
     if not ignore_dof:
         if degrees_of_freedom(fs) != 0:
-            msg = ('Original model has nonzero degrees of freedom. This was '
-                  'unexpected. Use keyword arg igore_dof=True to skip this '
-                  'check.')
+            msg = (
+                "Original model has nonzero degrees of freedom. This was "
+                "unexpected. Use keyword arg igore_dof=True to skip this "
+                "check."
+            )
             init_log.error(msg)
-            raise ValueError('Nonzero degrees of freedom.')
+            raise ValueError("Nonzero degrees of freedom.")
 
     # Get dict telling which constraints/blocks are already inactive:
     # dict: id(compdata) -> bool (is active?)
@@ -343,29 +374,32 @@ def initialize_by_time_element(fs, time, **kwargs):
     # of initial conditions.
     non_initial_time = [t for t in time]
     non_initial_time.remove(time.first())
-    deactivated = deactivate_model_at(fs, time, non_initial_time,
-            outlvl=idaeslog.ERROR)
+    deactivated = deactivate_model_at(fs, time, non_initial_time, outlvl=idaeslog.ERROR)
 
     if not ignore_dof:
         if degrees_of_freedom(fs) != 0:
-            msg = ('Model has nonzero degrees of freedom at initial conditions.'
-                  ' This was unexpected. Use keyword arg igore_dof=True to skip'
-                  ' this check.')
+            msg = (
+                "Model has nonzero degrees of freedom at initial conditions."
+                " This was unexpected. Use keyword arg igore_dof=True to skip"
+                " this check."
+            )
             init_log.error(msg)
-            raise ValueError('Nonzero degrees of freedom.')
+            raise ValueError("Nonzero degrees of freedom.")
 
     init_log.info(
-    'Model is inactive except at t=0. Solving for consistent initial conditions.')
+        "Model is inactive except at t=0. Solving for consistent initial conditions."
+    )
     with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
         results = solver.solve(fs, tee=slc.tee)
     if check_optimal_termination(results):
-        init_log.info('Successfully solved for consistent initial conditions')
+        init_log.info("Successfully solved for consistent initial conditions")
     else:
-        init_log.error('Failed to solve for consistent initial conditions')
-        raise ValueError('Solver failed in initialization')
+        init_log.error("Failed to solve for consistent initial conditions")
+        raise ValueError("Solver failed in initialization")
 
-    deactivated[time.first()] = deactivate_model_at(fs, time, time.first(),
-                                        outlvl=idaeslog.ERROR)[time.first()]
+    deactivated[time.first()] = deactivate_model_at(
+        fs, time, time.first(), outlvl=idaeslog.ERROR
+    )[time.first()]
 
     # Here, deactivate non-time-indexed components. Do this after solve
     # for initial conditions in case these were used to specify initial
@@ -385,18 +419,21 @@ def initialize_by_time_element(fs, time, **kwargs):
     # This will make use of the following dictionaries mapping
     # time points -> time derivatives and time-differential variables
     derivs_at_time = get_derivatives_at(fs, time, [t for t in time])
-    dvars_at_time = {t: [d.parent_component().get_state_var()[d.index()]
-                         for d in derivs_at_time[t]]
-                         for t in time}
+    dvars_at_time = {
+        t: [d.parent_component().get_state_var()[d.index()] for d in derivs_at_time[t]]
+        for t in time
+    }
 
     # Perform a solve for 1 -> nfe; i is the index of the finite element
-    init_log.info('Flowsheet has been deactivated. Beginning element-wise initialization')
-    for i in range(1, nfe+1):
-        t_prev = time[(i-1)*ncp+1]
+    init_log.info(
+        "Flowsheet has been deactivated. Beginning element-wise initialization"
+    )
+    for i in range(1, nfe + 1):
+        t_prev = time[(i - 1) * ncp + 1]
         # Non-initial time points in the finite element:
-        fe = [time[k] for k in range((i-1)*ncp+2, i*ncp+2)]
+        fe = [time[k] for k in range((i - 1) * ncp + 2, i * ncp + 2)]
 
-        init_log.info(f'Entering step {i}/{nfe} of initialization')
+        init_log.info(f"Entering step {i}/{nfe} of initialization")
 
         # Activate components of model that were active in the presumably
         # square original system
@@ -429,8 +466,7 @@ def initialize_by_time_element(fs, time, **kwargs):
                     dv.fix()
         else:
             for con in fs.component_data_objects(Constraint, active=True):
-                for var in identify_variables(con.expr,
-                                              include_fixed=False):
+                for var in identify_variables(con.expr, include_fixed=False):
                     t_idx = get_implicit_index_of_set(var, time)
                     if t_idx is None:
                         continue
@@ -440,27 +476,30 @@ def initialize_by_time_element(fs, time, **kwargs):
 
         # Initialize finite element from its initial conditions
         for t in fe:
-            copy_values_at_time(fs, fs, t, t_prev, copy_fixed=False,
-                                outlvl=idaeslog.ERROR)
+            copy_values_at_time(
+                fs, fs, t, t_prev, copy_fixed=False, outlvl=idaeslog.ERROR
+            )
 
         # Log that we are solving finite element {i}
-        init_log.info(f'Solving finite element {i}')
+        init_log.info(f"Solving finite element {i}")
 
         if not ignore_dof:
             if degrees_of_freedom(fs) != 0:
-                msg = (f'Model has nonzero degrees of freedom at finite element'
-                      ' {i}. This was unexpected. '
-                      'Use keyword arg igore_dof=True to skip this check.')
+                msg = (
+                    f"Model has nonzero degrees of freedom at finite element"
+                    " {i}. This was unexpected. "
+                    "Use keyword arg igore_dof=True to skip this check."
+                )
                 init_log.error(msg)
-                raise ValueError('Nonzero degrees of freedom')
+                raise ValueError("Nonzero degrees of freedom")
 
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(fs, tee=slc.tee)
         if check_optimal_termination(results):
-           init_log.info(f'Successfully solved finite element {i}')
+            init_log.info(f"Successfully solved finite element {i}")
         else:
-           init_log.error(f'Failed to solve finite element {i}')
-           raise ValueError('Failure in initialization solve')
+            init_log.error(f"Failed to solve finite element {i}")
+            raise ValueError("Failure in initialization solve")
 
         # Deactivate components that may have been activated
         for t in fe:
@@ -472,7 +511,7 @@ def initialize_by_time_element(fs, time, **kwargs):
             var.unfix()
 
         # Log that initialization step {i} has been finished
-        init_log.info(f'Initialization step {i} complete')
+        init_log.info(f"Initialization step {i} complete")
 
     # Reactivate components of the model that were originally active
     for t in time:
@@ -486,4 +525,4 @@ def initialize_by_time_element(fs, time, **kwargs):
         var.unfix()
 
     # Logger message that initialization is finished
-    init_log.info('Initialization completed. Model has been reactivated')
+    init_log.info("Initialization completed. Model has been reactivated")

@@ -34,7 +34,7 @@ file "pid_steam_tank_pressure.pdf."
       ControllerMVBoundType
   )
   import idaes.core.util.scaling as iscale
-  from idaes.core.util import get_solver
+  from idaes.core.solvers import get_solver
   from idaes.core.util.plot import plot_grid_dynamic
 
   def _valve_pressure_flow_cb(b):

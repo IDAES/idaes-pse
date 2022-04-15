@@ -88,7 +88,7 @@ from pyomo.environ import (
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from pyomo.network import Port
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from pyomo.network import Arc
 
 from idaes.models_extra.power_generation.unit_models.helm.phase_separator import (

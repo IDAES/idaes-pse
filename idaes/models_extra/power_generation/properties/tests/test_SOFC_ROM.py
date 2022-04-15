@@ -40,7 +40,7 @@ from idaes.core.util.model_statistics import (
     number_total_constraints,
     number_unused_variables,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, Block, value
 from pyomo.util.check_units import assert_units_consistent

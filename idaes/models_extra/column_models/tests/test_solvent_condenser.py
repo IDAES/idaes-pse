@@ -27,7 +27,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import FlowsheetBlock
-from idaes.models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.core.util.model_statistics import (
@@ -37,7 +37,8 @@ from idaes.core.util.model_statistics import (
     number_unused_variables,
 )
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 from idaes.models_extra.column_models.solvent_condenser import SolventCondenser
 from idaes.models_extra.column_models.properties.MEA_solvent import (

@@ -22,9 +22,9 @@ from idaes.core.util.model_statistics import (
     fixed_variables_set,
     activated_constraints_set,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
-from idaes.models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 
