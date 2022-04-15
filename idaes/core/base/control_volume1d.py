@@ -1925,6 +1925,180 @@ argument).""",
                         "ReactionBlock class.".format(blk.name)
                     )
 
+    def fix_state(self):
+        """
+        This method calls the determines the source index for the control volume and
+        then fixes all the state variables in self.properties at that index.
+
+        Args:
+            None
+
+        Returns:
+            dict indicating the initial state of all state variables.
+        """
+        # Get source block
+        if self._flow_direction == FlowDirection.forward:
+            source_idx = self.length_domain.first()
+        else:
+            source_idx = self.length_domain.last()
+
+        flags = {}
+        for t in self.flowsheet().time:
+            flags[t] = {}
+            source = self.properties[t, source_idx]
+            state_dict = source.define_port_members()
+            for k, v in state_dict.items():
+                flags[t][k] = {}
+                if v.is_indexed():
+                    for i in v.keys():
+                        flags[t][k][v] = v[i].fixed
+                        v[i].fix()
+                else:
+                    flags[t][k] = v.fixed
+                    v.fix()
+
+        return flags
+
+    def revert_state(self, flags):
+        """
+        This method calls the revert_state utiltiy method on self.properties_in.
+
+        Args:
+            flags: dict indicating what the final states of each state variable
+                should be.
+        """
+        # Get source block
+        if self._flow_direction == FlowDirection.forward:
+            source_idx = self.length_domain.first()
+        else:
+            source_idx = self.length_domain.last()
+
+        for t in self.flowsheet().time:
+            source = self.properties[t, source_idx]
+            state_dict = source.define_port_members()
+            for k, v in state_dict.items():
+                if v.is_indexed():
+                    for i in v.keys():
+                        if not flags[t][k][v]:
+                            v[i].unfix()
+                else:
+                    if not flags[t][k]:
+                        v.unfix()
+
+    def initialize_build(
+        blk,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        optarg=None,
+        solver=None,
+    ):
+        """
+        Initialization routine for 1D control volume.
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None)
+
+        Returns:
+            If hold_states is True, returns a dict containing flags for which
+            states were fixed during initialization else the release state is
+            triggered.
+        """
+        if optarg is None:
+            optarg = {}
+
+        # Get inlet state if not provided
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
+
+        # Get source block
+        if blk._flow_direction == FlowDirection.forward:
+            source_idx = blk.length_domain.first()
+        else:
+            source_idx = blk.length_domain.last()
+        source = blk.properties[blk.flowsheet().time.first(), source_idx]
+
+        # Fix source state and get state_args if not provided
+        if state_args is None:
+            # No state args, create whilst fixing vars
+            state_args = {}
+            # Should be checking flow direction
+            state_dict = source.define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        if state_dict[k][m].value is not None:
+                            state_dict[k][m].fix()
+                            state_args[k][m] = state_dict[k][m].value
+                        else:
+                            raise Exception(
+                                "State variables have not been "
+                                "fixed nor have been given "
+                                "initial values."
+                            )
+                else:
+                    if state_dict[k].value is not None:
+                        state_dict[k].fix()
+                        state_args[k] = state_dict[k].value
+                    else:
+                        raise Exception(
+                            "State variables have not been "
+                            "fixed nor have been given "
+                            "initial values."
+                        )
+        else:
+            # State  args provided
+            state_dict = source.define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    for m in state_dict[k].keys():
+                        if not state_dict[k][m].fixed:
+                            state_dict[k][m].fix(state_args[k][m])
+                else:
+                    if state_dict[k].value is not None:
+                        state_dict[k].fix()
+                        if not state_dict[k].fixed:
+                            state_dict[k].fix(state_args[k])
+
+        # Initialize state blocks
+        flags = blk.properties.initialize(
+            state_args=state_args,
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True,
+        )
+
+        try:
+            # TODO: setting state_vars_fixed may not work for heterogeneous
+            # systems where a second control volume is involved, as we cannot
+            # assume those state vars are also fixed. For now, heterogeneous
+            # reactions should ignore the state_vars_fixed argument and always
+            # check their state_vars.
+            blk.reactions.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_vars_fixed=True,
+            )
+        except AttributeError:
+            pass
+
+        # Unfix state variables except for source block
+        blk.properties.release_state(flags)
+
+        init_log.info("Control Volume Initialization Complete")
+
+    # TODO: This method needs to remain until we have fully transitioned to new API
     def initialize(
         blk,
         state_args=None,
@@ -2059,6 +2233,7 @@ argument).""",
         else:
             blk.release_state(source_flags)
 
+    # TODO: This method needs to remain until we have fully transitioned to new API
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialization.

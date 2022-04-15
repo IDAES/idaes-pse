@@ -1132,7 +1132,7 @@ constructed,
             self.energy_accumulation_slag[0].fix(0)
             self.energy_accumulation_metal[0].fix(0)
 
-    def initialize_build(
+    def initialize(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """

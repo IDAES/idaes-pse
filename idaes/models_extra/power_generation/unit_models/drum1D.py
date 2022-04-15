@@ -1262,7 +1262,7 @@ discretizing length domain (default=3)""",
             self.control_volume.energy_accumulation[0, :].fix(0)
             self.dTdt[0, :].fix(0)
 
-    def initialize_build(
+    def initialize(
         blk,
         state_args_feedwater=None,
         state_args_water_steam=None,

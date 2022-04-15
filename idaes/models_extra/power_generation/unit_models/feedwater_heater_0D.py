@@ -169,7 +169,7 @@ class FWHCondensing0DData(HeatExchangerData):
                 == b.shell.properties_out[t].enth_mol_sat_phase["Liq"]
             )
 
-    def initialize_build(self, *args, **kwargs):
+    def initialize(self, *args, **kwargs):
         """
         Use the regular heat exchanger initialization, with the extraction rate
         constraint deactivated; then it activates the constraint and calculates
@@ -193,7 +193,7 @@ class FWHCondensing0DData(HeatExchangerData):
         self.outlet_2.unfix()
 
         # Do regular heat exchanger intialization
-        super().initialize_build(*args, **kwargs)
+        super().initialize(*args, **kwargs)
         self.extraction_rate_constraint.activate()
         self.inlet_1.flow_mol.unfix()
 
@@ -295,7 +295,7 @@ class FWH0DData(UnitModelBlockData):
 
         TransformationFactory("network.expand_arcs").apply_to(self)
 
-    def initialize_build(self, *args, **kwargs):
+    def initialize(self, *args, **kwargs):
         outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")

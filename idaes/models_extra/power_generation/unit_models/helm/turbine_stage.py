@@ -67,7 +67,7 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
         def power_shaft(b, t):
             return b.power_thermo[t] * b.efficiency_mech
 
-    def initialize_build(
+    def initialize(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -83,7 +83,7 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
         """
-        super().initialize_build(outlvl=outlvl, solver=solver, optarg=optarg)
+        super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

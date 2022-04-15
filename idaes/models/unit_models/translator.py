@@ -23,6 +23,10 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
+from idaes.core.util.initialization import (
+    fix_state_vars,
+    revert_state_vars,
+)
 
 __author__ = "Andrew Lee"
 
@@ -186,6 +190,27 @@ see property package for documentation.}""",
         self.add_port(name="inlet", block=self.properties_in, doc="Inlet Port")
         self.add_port(name="outlet", block=self.properties_out, doc="Outlet Port")
 
+    def fix_state(self):
+        """
+        This method calls the fix_state_vars utiltiy method on self.properties_in.
+
+        Args:
+            None
+
+        Returns:
+            dict indicating what states were fixed by this method.
+        """
+        return fix_state_vars(self.properties_in)
+
+    def revert_state(self, flags):
+        """
+        This method calls the revert_state_vars utiltiy method on self.properties_in.
+
+        Args:
+            flags: dict indicating which states should be unfixed
+        """
+        revert_state_vars(self.properties_in, flags)
+
     def initialize_build(
         blk,
         state_args_in=None,
@@ -222,12 +247,11 @@ see property package for documentation.}""",
 
         # ---------------------------------------------------------------------
         # Initialize state block
-        flags = blk.properties_in.initialize(
+        blk.properties_in.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args_in,
-            hold_state=True,
         )
 
         blk.properties_out.initialize(
@@ -237,17 +261,7 @@ see property package for documentation.}""",
             state_args=state_args_out,
         )
 
-        if degrees_of_freedom(blk) == 0:
-            with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(blk, tee=slc.tee)
+        with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
 
-            init_log.info("Initialization Complete {}.".format(idaeslog.condition(res)))
-        else:
-            init_log.warning(
-                "Initialization incomplete. Degrees of freedom "
-                "were not zero. Please provide sufficient number "
-                "of constraints linking the state variables "
-                "between the two state blocks."
-            )
-
-        blk.properties_in.release_state(flags=flags, outlvl=outlvl)
+        return res

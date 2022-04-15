@@ -123,7 +123,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         def power_shaft(b, t):
             return b.power_thermo[t] * b.efficiency_mech
 
-    def initialize_build(
+    def initialize(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -163,7 +163,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
 
         for t in self.flowsheet().time:
             self.efficiency_isentropic[t] = 0.9
-        super().initialize_build(outlvl=outlvl, solver=solver, optarg=optarg)
+        super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
         # Free eff_isen and activate sepcial constarints
         self.inlet_flow_constraint.activate()

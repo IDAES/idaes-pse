@@ -152,7 +152,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         pc = super()._get_performance_contents(time_point=time_point)
         return pc
 
-    def initialize_build(
+    def initialize(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,

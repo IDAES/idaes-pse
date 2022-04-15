@@ -2932,7 +2932,7 @@ tube side flows from 1 to 0""",
             # no accumulation terms for tube and shell side fluids
             # since currently the fluid flows are modeled as steady-state only
 
-    def initialize_build(
+    def initialize(
         blk,
         shell_state_args=None,
         tube_state_args=None,

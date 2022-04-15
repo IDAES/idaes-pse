@@ -566,7 +566,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement""",
                 - b.side_3.properties_out[t].temperature
             )
 
-    def initialize_build(
+    def initialize(
         blk,
         state_args_1=None,
         state_args_2=None,

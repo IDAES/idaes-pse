@@ -143,7 +143,7 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         def work_mechanical(b, t):
             return b.control_volume.work[t]
 
-    def initialize_build(
+    def initialize(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,

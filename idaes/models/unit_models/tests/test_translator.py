@@ -133,7 +133,14 @@ class TestTranslate(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, trans):
-        initialization_tester(trans, dof=5)
+        # Need to fix outlet conditions to meet DoF requiremenets
+        trans.fs.unit.outlet.flow_mol.fix(1.0e-03)
+        trans.fs.unit.outlet.temperature.fix(300)
+        trans.fs.unit.outlet.pressure.fix(1e5)
+        trans.fs.unit.outlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        trans.fs.unit.outlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        initialization_tester(trans, dof=0)
 
     # No solve, as problem has is missing linking constraints
 

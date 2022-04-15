@@ -772,7 +772,7 @@ Must be True if dynamic = True,
             None
 
         Returns:
-            dict indicating what states were fixed by this method.
+            dict indicating the initial state of all state variables.
         """
         return self.control_volume.fix_state()
 
@@ -785,7 +785,7 @@ Must be True if dynamic = True,
         need to overload this with a unit-specific method.
 
         Args:
-            flags: dict indicating which states should be unfixed
+            flags: dict indicating the final state of all state variables.
         """
         self.control_volume.revert_state(flags)
 

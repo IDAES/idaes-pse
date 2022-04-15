@@ -1076,7 +1076,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 + (b.roof_heat[t] if self.config.has_roof_superheater is True else 0)
             )
 
-    def initialize_build(
+    def initialize(
         blk,
         state_args_PA=None,
         state_args_SA=None,

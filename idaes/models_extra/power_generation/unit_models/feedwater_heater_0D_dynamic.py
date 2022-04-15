@@ -187,7 +187,7 @@ class FWHCondensing0DData(CondenserData):
                 * b.shell.properties_out[t].dens_mass_phase["Liq"]
             )
 
-    def initialize_build(self, *args, **kwargs):
+    def initialize(self, *args, **kwargs):
         """
         Use the regular heat exchanger initialization, with the extraction rate
         constraint deactivated; then it activates the constraint and calculates
@@ -217,7 +217,7 @@ class FWHCondensing0DData(CondenserData):
         self.side_1.deltaP.fix(0)
         self.shell_volume_eqn.deactivate()
         self.pressure_change_total_eqn.deactivate()
-        super().initialize_build()
+        super().initialize()
         self.side_1.volume.unfix()
         self.side_1.deltaP.unfix()
         self.shell_volume_eqn.activate()
@@ -341,7 +341,7 @@ class FWH0DDynamicData(UnitModelBlockData):
                     self.cooling.shell.material_accumulation[0, :, :].fix(0)
                     self.cooling.shell.energy_accumulation[0, :].fix(0)
 
-    def initialize_build(self, *args, **kwargs):
+    def initialize(self, *args, **kwargs):
         outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")

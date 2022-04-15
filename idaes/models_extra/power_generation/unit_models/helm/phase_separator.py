@@ -151,7 +151,7 @@ see property package for documentation.}""",
         def liq_pressure_balance(b, t):
             return b.mixed_state[t].pressure * 1e-6 == b.liq_state[t].pressure * 1e-6
 
-    def initialize_build(
+    def initialize(
         blk,
         state_args_water_steam=None,
         outlvl=idaeslog.NOTSET,

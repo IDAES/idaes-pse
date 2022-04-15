@@ -129,7 +129,7 @@ class HelmPumpData(BalanceBlockData):
         def eq_pressure_ratio(b, t):
             return pratio[t] * properties_in[t].pressure == properties_out[t].pressure
 
-    def initialize_build(
+    def initialize(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,

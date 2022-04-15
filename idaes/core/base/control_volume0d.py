@@ -1494,7 +1494,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             None
 
         Returns:
-            dict indicating what states were fixed by this method.
+            dict indicating the initial state of all state variables.
         """
         return fix_state_vars(self.properties_in)
 
@@ -1503,7 +1503,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         This method calls the revert_state utiltiy method on self.properties_in.
 
         Args:
-            flags: dict indicating what states should be unfixed by this method.
+            flags: dict indicating the final state for all stae variables.
         """
         return revert_state_vars(self.properties_in, flags)
 
@@ -1592,6 +1592,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         )
         init_log.info("Control Volume Initialization Complete")
 
+    # TODO: This method needs to remain until we have fully transitioned to new API
     def initialize(
         blk,
         state_args=None,
@@ -1680,6 +1681,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         init_log.info("Initialization Complete")
         return in_flags
 
+    # TODO: This method needs to remain until we have fully transitioned to new API
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialization.

@@ -401,7 +401,7 @@ mixed phase not supported""",
             self.control_volume.material_accumulation[0, :, :].fix(0)
             self.control_volume.energy_accumulation[0, :].fix(0)
 
-    def initialize_build(
+    def initialize(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """

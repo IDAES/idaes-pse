@@ -617,13 +617,13 @@ class HeatExchangerData(UnitModelBlockData):
         # Create solver
         opt = get_solver(solver, optarg)
 
-        hot_side.initialize(
+        hot_side.initialize_build(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1
         )
 
         init_log.info_high("Initialization Step 1a (hot side) Complete.")
 
-        cold_side.initialize(
+        cold_side.initialize_build(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_2
         )
 

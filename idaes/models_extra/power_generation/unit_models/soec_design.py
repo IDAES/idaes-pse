@@ -669,7 +669,7 @@ class SoecDesignData(UnitModelBlockData):
                 ),
             )
 
-    def initialize_build(
+    def initialize(
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,

@@ -359,6 +359,33 @@ constructed,
 
     # TODO : Add scaling methods
 
+    def fix_state(self):
+        """
+        This method calls the fix_state method on each control volume.
+
+        Args:
+            None
+
+        Returns:
+            dict indicating what states were fixed by this method.
+        """
+        flags = {}
+        flags["hot_side"] = self.hot_side.fix_state()
+        flags["cold_side"] = self.cold_side.fix_state()
+
+        return flags
+
+    def revert_state(self, flags):
+        """
+        This method calls the revert_state method on each control volume.
+
+        Args:
+            flags: dict indicating which states should be unfixed
+        """
+
+        self.hot_side.revert_state(flags["hot_side"])
+        self.cold_side.revert_state(flags["cold_side"])
+
     def initialize_build(
         self,
         hot_side_state_args=None,
@@ -401,13 +428,13 @@ constructed,
         # Create solver
         opt = get_solver(solver, optarg)
 
-        flags1 = hot_side.initialize(
+        hot_side.initialize_build(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=hot_side_state_args
         )
 
         init_log.info_high("Initialization Step 1a (hot side) Complete.")
 
-        flags2 = cold_side.initialize(
+        cold_side.initialize_build(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=cold_side_state_args
         )
 
@@ -461,18 +488,7 @@ constructed,
             res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
-        # ---------------------------------------------------------------------
-        # Release Inlet state
-        hot_side.release_state(flags1, outlvl=outlvl)
-        cold_side.release_state(flags2, outlvl=outlvl)
-
-        init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
-
-        if not check_optimal_termination(res):
-            raise InitializationError(
-                f"{self.name} failed to initialize successfully. Please check "
-                f"the output logs for more information."
-            )
+        return res
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(

@@ -611,6 +611,32 @@ thickness of the tube""",
             == c.pi * (self.d_shell**2 - self.N_tubes * self.d_tube_outer**2)
         )
 
+    def fix_state(self):
+        """
+        This method calls the fix_state method on each control volume.
+
+        Args:
+            None
+
+        Returns:
+            dict indicating what states were fixed by this method.
+        """
+        flags = {}
+        flags["shell_side"] = self.shell.fix_state()
+        flags["tube_side"] = self.tube.fix_state()
+
+        return flags
+
+    def revert_state(self, flags):
+        """
+        This method calls the revert_state method on each control volume.
+
+        Args:
+            flags: dict indicating which states should be unfixed
+        """
+        self.shell.revert_state(flags["shell_side"])
+        self.tube.revert_state(flags["tube_side"])
+
     def initialize_build(
         self,
         shell_state_args=None,
@@ -644,14 +670,14 @@ thickness of the tube""",
 
         # ---------------------------------------------------------------------
         # Initialize shell block
-        flags_shell = self.shell.initialize(
+        self.shell.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=shell_state_args,
         )
 
-        flags_tube = self.tube.initialize(
+        self.tube.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -712,16 +738,7 @@ thickness of the tube""",
         else:
             res = None
 
-        self.shell.release_state(flags_shell)
-        self.tube.release_state(flags_tube)
-
-        if res is not None and not check_optimal_termination(res):
-            raise InitializationError(
-                f"{self.name} failed to initialize successfully. Please check "
-                f"the output logs for more information."
-            )
-
-        init_log.info("Initialization Complete.")
+        return res
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}

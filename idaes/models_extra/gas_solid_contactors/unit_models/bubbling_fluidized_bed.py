@@ -1969,7 +1969,7 @@ see reaction package for documentation.}""",
     # =========================================================================
     # Model initialization routine
 
-    def initialize_build(
+    def initialize(
         blk,
         gas_phase_state_args=None,
         solid_phase_state_args=None,
