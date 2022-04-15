@@ -12,8 +12,8 @@
 #################################################################################
 import pandas as pd
 
-class OffsetScaler(object):
 
+class OffsetScaler(object):
     @staticmethod
     def create_normalizing_scaler(dataframe):
         """
@@ -26,13 +26,13 @@ class OffsetScaler(object):
         """
         expected_columns = list(dataframe.columns)
         offset = dataframe.min()
-        factor = dataframe.max()-dataframe.min()
+        factor = dataframe.max() - dataframe.min()
         return OffsetScaler(expected_columns, offset, factor)
 
     @staticmethod
     def create_from_mean_std(dataframe):
         """
-        Creates a scaling object using the mean as the offset and the 
+        Creates a scaling object using the mean as the offset and the
         standard devation as the as the factor
 
         Args:
@@ -44,7 +44,7 @@ class OffsetScaler(object):
         offset = dataframe.mean()
         factor = dataframe.std()
         return OffsetScaler(expected_columns, offset, factor)
-        
+
     def __init__(self, expected_columns, offset_series, factor_series):
         """
         This scaling object shifts by the offset and then scales the result
@@ -55,7 +55,7 @@ class OffsetScaler(object):
 
         Args:
            expected_columns: list of str
-              list of strings indicating the names of the columns in offset_series, 
+              list of strings indicating the names of the columns in offset_series,
               factor_series, and the dataframe passed to scale and unscale.
            offset_series: pandas Series
               Series with columns (or labels) the same as expected_columns and
@@ -68,23 +68,29 @@ class OffsetScaler(object):
         self._offset = offset_series
         self._factor = factor_series
         if list(offset_series.index) != expected_columns:
-            raise ValueError('OffsetScaler was passed an offset series with an index that'
-                             ' does not match expected_columns. Please make sure these labels match.')
+            raise ValueError(
+                "OffsetScaler was passed an offset series with an index that"
+                " does not match expected_columns. Please make sure these labels match."
+            )
         if list(factor_series.index) != expected_columns:
-            raise ValueError('OffsetScaler was passed a factor series with an index that'
-                             ' does not match expected_columns. Please make sure these labels match.')
+            raise ValueError(
+                "OffsetScaler was passed a factor series with an index that"
+                " does not match expected_columns. Please make sure these labels match."
+            )
 
     def _verify_columns_match(self, dataframe):
         if self._expected_columns != list(dataframe.columns):
-            raise ValueError('OffsetScaler was passed a dataframe that did not contain'
-                             ' the same column labels as those used to create the scaler.'
-                             ' Please make sure the column labels match.')
-        
+            raise ValueError(
+                "OffsetScaler was passed a dataframe that did not contain"
+                " the same column labels as those used to create the scaler."
+                " Please make sure the column labels match."
+            )
+
     def scale(self, dataframe):
         """
-        Return a new dataframe where the values are scaled according to the 
+        Return a new dataframe where the values are scaled according to the
         offset and factor
-        
+
         Args:
            dataframe: pandas Dataframe
               The dataframe to be scaled
@@ -98,9 +104,9 @@ class OffsetScaler(object):
 
     def unscale(self, dataframe):
         """
-        Return a new dataframe where the values are unscaled according to the 
+        Return a new dataframe where the values are unscaled according to the
         offset and factor
-        
+
         Args:
            dataframe: pandas Dataframe
               The dataframe to be unscaled
@@ -117,7 +123,7 @@ class OffsetScaler(object):
         Return the expected column names for the scaler series objects
         """
         return self._expected_columns
-    
+
     def offset_series(self):
         """
         Return the offset for the scaler as a pandas Series object
@@ -129,15 +135,15 @@ class OffsetScaler(object):
         Return the factors for the scaler as a pandas Series object
         """
         return self._factor
-        
+
     def to_dict(self):
         """
         Returns a dictionary representation of this scaler
         """
         d = dict()
-        d['expected_columns'] = list(self._expected_columns)
-        d['offset'] = self._offset.to_dict()
-        d['factor'] = self._factor.to_dict()
+        d["expected_columns"] = list(self._expected_columns)
+        d["offset"] = self._offset.to_dict()
+        d["factor"] = self._factor.to_dict()
         return d
 
     @staticmethod
@@ -152,7 +158,7 @@ class OffsetScaler(object):
 
         Returns: new OffsetScaler
         """
-        expected_columns = d['expected_columns']
-        offset = pd.Series(d['offset'])
-        factor = pd.Series(d['factor'])
+        expected_columns = d["expected_columns"]
+        offset = pd.Series(d["offset"])
+        factor = pd.Series(d["factor"])
         return OffsetScaler(expected_columns, offset, factor)

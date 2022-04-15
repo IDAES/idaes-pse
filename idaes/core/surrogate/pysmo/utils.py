@@ -14,8 +14,8 @@
 #
 #  Pyomo: Python Optimization Modeling Objects
 #  Copyright 2017 National Technology and Engineering Solutions of Sandia, LLC
-#  Under the terms of Contract DE-NA0003525 with National Technology and 
-#  Engineering Solutions of Sandia, LLC, the U.S. Government retains certain 
+#  Under the terms of Contract DE-NA0003525 with National Technology and
+#  Engineering Solutions of Sandia, LLC, the U.S. Government retains certain
 #  rights in this software.
 #  This software is distributed under the 3-clause BSD License.
 #  ___________________________________________________________________________
@@ -31,41 +31,44 @@ try:
     import numpy
 
     _functionMap = {
-        'exp': numpy.exp,
-        'log': numpy.log,
-        'log10': numpy.log10,
-        'sin': numpy.sin,
-        'asin': numpy.arcsin,
-        'sinh': numpy.sinh,
-        'asinh': numpy.arcsinh,
-        'cos': numpy.cos,
-        'acos': numpy.arccos,
-        'cosh': numpy.cosh,
-        'acosh': numpy.arccosh,
-        'tan': numpy.tan,
-        'atan': numpy.arctan,
-        'tanh': numpy.tanh,
-        'atanh': numpy.arctanh,
-        'ceil': numpy.ceil,
-        'floor': numpy.floor,
-        'sqrt': numpy.sqrt,
+        "exp": numpy.exp,
+        "log": numpy.log,
+        "log10": numpy.log10,
+        "sin": numpy.sin,
+        "asin": numpy.arcsin,
+        "sinh": numpy.sinh,
+        "asinh": numpy.arcsinh,
+        "cos": numpy.cos,
+        "acos": numpy.arccos,
+        "cosh": numpy.cosh,
+        "acosh": numpy.arccosh,
+        "tan": numpy.tan,
+        "atan": numpy.arctan,
+        "tanh": numpy.tanh,
+        "atanh": numpy.arctanh,
+        "ceil": numpy.ceil,
+        "floor": numpy.floor,
+        "sqrt": numpy.sqrt,
     }
 except ImportError:
     _numpy_available = False
 
 
 class NumpyEvaluator(EXPR.StreamBasedExpressionVisitor):
-
     def __init__(self, object_map):
         super(NumpyEvaluator, self).__init__()
         self.object_map = object_map
 
     def exitNode(self, node, values):
-        if node.__class__ is EXPR.UnaryFunctionExpression or \
-           node.__class__ is EXPR.NPV_UnaryFunctionExpression:
+        if (
+            node.__class__ is EXPR.UnaryFunctionExpression
+            or node.__class__ is EXPR.NPV_UnaryFunctionExpression
+        ):
             return _functionMap[node._name](values[0])
-        if node.__class__ is EXPR.AbsExpression or \
-           node.__class__ is EXPR.NPV_AbsExpression:
+        if (
+            node.__class__ is EXPR.AbsExpression
+            or node.__class__ is EXPR.NPV_AbsExpression
+        ):
             return numpy.abs(values[0])
         return node._apply_operation(values)
 

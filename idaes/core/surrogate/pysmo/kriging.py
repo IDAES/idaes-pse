@@ -16,6 +16,7 @@ __author__ = "Oluwamayowa Amusat"
 # Imports from the python standard library
 import os.path
 import pprint
+
 # Imports from third parties
 from matplotlib import pyplot as plt
 import numpy as np
@@ -24,8 +25,10 @@ import pickle
 from pyomo.core import Param, exp
 from scipy.optimize import basinhopping
 import scipy.optimize as opt
+
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
+
 
 class MyBounds(object):
     """
@@ -33,6 +36,7 @@ class MyBounds(object):
      The class is initialized with the preset valies in __init__; the __call__ function returns Booleans indicating whether the regularization parameter value is acceptable.
      The results of the __call__ function is fed into the Basinhopping algorithm using the accept_test parameter.
     """
+
     def __init__(self, xmax=[1], xmin=[1e-6]):
         self.xmax = np.array(xmax)
         self.xmin = np.array(xmin)
@@ -53,13 +57,13 @@ class KrigingModel:
     **KrigingModel** is able to generate either an interpolating or a regressing Kriging model depending on the settings used during initialization..
 
     **Example:**
-    
+
     .. code-block:: python
-    
-        # Initialize the class 
+
+        # Initialize the class
         >>> d = KrigingModel(training_data, numerical_gradients=True, regularization=True))
         >>> p = d.get_feature_vector()
-        
+
         # Train Kriging model and predict output for an test data x_test
         >>> d.training()
         >>> predictions = d.predict_output(x_test)
@@ -71,7 +75,14 @@ class KrigingModel:
 
     """
 
-    def __init__(self, XY_data, numerical_gradients=True, regularization=True, fname=None, overwrite=False):
+    def __init__(
+        self,
+        XY_data,
+        numerical_gradients=True,
+        regularization=True,
+        fname=None,
+        overwrite=False,
+    ):
         """
         Initialization of **KrigingModel** class.
 
@@ -99,27 +110,49 @@ class KrigingModel:
             Exception:  - regularization is not boolean
 
         **Example:**
-    
+
         .. code-block:: python
-        
+
                 # Initialize Kriging class with no numerical gradients - solution algorithm will be Basinhopping
                 >>> d = KrigingModel(XY_data, numerical_gradients=False)
 
         """
         if not isinstance(overwrite, bool):
-            raise Exception('overwrite must be boolean.')
+            raise Exception("overwrite must be boolean.")
         self.overwrite = overwrite
         if fname is None:
-            fname = 'solution.pickle'
-            self.filename = 'solution.pickle'
-        elif not isinstance(fname, str) or os.path.splitext(fname)[-1].lower() != '.pickle':
-            raise Exception('fname must be a string with extension ".pickle". Please correct.')
-        if os.path.exists(fname) and overwrite is True: # Explicit overwrite done by user
-            print('Warning:', fname, 'already exists; previous file will be overwritten.\n')
+            fname = "solution.pickle"
+            self.filename = "solution.pickle"
+        elif (
+            not isinstance(fname, str)
+            or os.path.splitext(fname)[-1].lower() != ".pickle"
+        ):
+            raise Exception(
+                'fname must be a string with extension ".pickle". Please correct.'
+            )
+        if (
+            os.path.exists(fname) and overwrite is True
+        ):  # Explicit overwrite done by user
+            print(
+                "Warning:",
+                fname,
+                "already exists; previous file will be overwritten.\n",
+            )
             self.filename = fname
-        elif os.path.exists(fname) and overwrite is False: # User is not overwriting
-            self.filename = os.path.splitext(fname)[0]+'_v_'+ pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S") +'.pickle'
-            print('Warning:', fname, 'already exists; results will be saved to "', self.filename,'".\n')
+        elif os.path.exists(fname) and overwrite is False:  # User is not overwriting
+            self.filename = (
+                os.path.splitext(fname)[0]
+                + "_v_"
+                + pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S")
+                + ".pickle"
+            )
+            print(
+                "Warning:",
+                fname,
+                'already exists; results will be saved to "',
+                self.filename,
+                '".\n',
+            )
             # self.filename = 'solution.pickle'
         elif os.path.exists(fname) is False:
             self.filename = fname
@@ -134,21 +167,23 @@ class KrigingModel:
         else:
             raise ValueError('Pandas dataframe or numpy array required for "XY_data".')
 
-        self.x_data = xy_data[:, :-1].reshape(xy_data.shape[0], xy_data.shape[1]-1)
+        self.x_data = xy_data[:, :-1].reshape(xy_data.shape[0], xy_data.shape[1] - 1)
         self.y_data = xy_data[:, -1].reshape(xy_data.shape[0], 1)
         self.num_vars = self.x_data.shape[1] + 1  # thetas and reg parameter only
-        x_data_scaled, self.x_data_min, self.x_data_max = fs.data_scaling_minmax(self.x_data)
+        x_data_scaled, self.x_data_min, self.x_data_max = fs.data_scaling_minmax(
+            self.x_data
+        )
         self.x_data_scaled = x_data_scaled.reshape(self.x_data.shape)
 
         if isinstance(numerical_gradients, bool):
             self.num_grads = numerical_gradients
         else:
-            raise Exception('numerical_gradients must be boolean.')
+            raise Exception("numerical_gradients must be boolean.")
 
         if isinstance(regularization, bool):
             self.regularization = regularization
         else:
-            raise Exception('Choice of regularization must be boolean.')
+            raise Exception("Choice of regularization must be boolean.")
 
         # Results
         self.optimal_weights = None
@@ -162,7 +197,6 @@ class KrigingModel:
         self.output_predictions = None
         self.training_R2 = None
         self.training_rmse = None
-
 
     @staticmethod
     def covariance_matrix_generator(x, theta, reg_param, p):
@@ -181,9 +215,13 @@ class KrigingModel:
         """
         distance_matrix = np.zeros((x.shape[0], x.shape[0]))
         for i in range(0, x.shape[0]):
-            distance_matrix[i, :] = (np.matmul(((np.abs(x[i, :] - x)) ** p), theta)).transpose()
+            distance_matrix[i, :] = (
+                np.matmul(((np.abs(x[i, :] - x)) ** p), theta)
+            ).transpose()
         cov_matrix = np.exp(-1 * distance_matrix)
-        cov_matrix = cov_matrix + reg_param * np.eye(cov_matrix.shape[0])  # Regularization parameter addition, see Forrester book
+        cov_matrix = cov_matrix + reg_param * np.eye(
+            cov_matrix.shape[0]
+        )  # Regularization parameter addition, see Forrester book
         return cov_matrix
 
     @staticmethod
@@ -223,7 +261,9 @@ class KrigingModel:
 
         """
         ones_vec = np.ones((y.shape[0], 1))
-        kriging_mean = np.matmul(np.matmul(ones_vec.transpose(), cov_inv), y) / np.matmul(np.matmul(ones_vec.transpose(), cov_inv), ones_vec)
+        kriging_mean = np.matmul(
+            np.matmul(ones_vec.transpose(), cov_inv), y
+        ) / np.matmul(np.matmul(ones_vec.transpose(), cov_inv), ones_vec)
         # kriging_mean = np.matmul(ones_vec.transpose(), np.matmul(cov_inv, y)) / np.matmul(ones_vec.transpose(), np.matmul(cov_inv, ones_vec))
         return kriging_mean
 
@@ -282,12 +322,14 @@ class KrigingModel:
         """
         theta = var_vector[:-1]
         reg_param = var_vector[-1]
-        theta = 10 ** theta  # Assumes log(theta) provided
+        theta = 10**theta  # Assumes log(theta) provided
         ns = y.shape[0]
         cov_mat = self.covariance_matrix_generator(x, theta, reg_param, p)
         try:  # Check Cholesky factorization
             L = np.linalg.cholesky(cov_mat)
-            lndetcov = 2 * np.sum(np.log(np.abs(np.diag(L))))  # Approximation to 2nd term from Forrester book, making use of the Ch. factorization
+            lndetcov = 2 * np.sum(
+                np.log(np.abs(np.diag(L)))
+            )  # Approximation to 2nd term from Forrester book, making use of the Ch. factorization
             cov_inv = self.covariance_inverse_generator(cov_mat)
             km = self.kriging_mean(cov_inv, y)
             y_mu = self.y_mu_calculation(y, km)
@@ -316,7 +358,9 @@ class KrigingModel:
 
         """
         eps = 1e-6
-        grad_vec = np.zeros(len(var_vector), )
+        grad_vec = np.zeros(
+            len(var_vector),
+        )
         for i in range(0, len(var_vector)):
             var_vector_plus = np.copy(var_vector)
             var_vector_plus[i] = var_vector[i] + eps
@@ -326,9 +370,13 @@ class KrigingModel:
             of_plus = self.objective_function(var_vector_plus, x, y, p)
             of_minus = self.objective_function(var_vector_minus, x, y, p)
             grad_current = (of_plus - of_minus) / (2 * eps)
-            grad_vec[i, ] = grad_current
+            grad_vec[
+                i,
+            ] = grad_current
         if self.regularization is False:
-            grad_vec[-1, ] = 0
+            grad_vec[
+                -1,
+            ] = 0
         return grad_vec
 
     def parameter_optimization(self, p):
@@ -336,7 +384,9 @@ class KrigingModel:
         Parameter (theta) optimization using BFGS or Basinhopping algorithm. This is the core of the Kriging Class.
         Algorithm used will depend on whether the numerical_gradients was set to True or False.
         """
-        initial_value_list = np.random.randn(self.num_vars - 1, )
+        initial_value_list = np.random.randn(
+            self.num_vars - 1,
+        )
         initial_value_list = initial_value_list.tolist()
         initial_value_list.append(1e-4)
         initial_value = np.array(initial_value_list)
@@ -354,21 +404,47 @@ class KrigingModel:
         bounds = tuple(bounds)
 
         if self.num_grads:
-            print('Optimizing kriging parameters using L-BFGS-B algorithm...')
+            print("Optimizing kriging parameters using L-BFGS-B algorithm...")
             other_args = (self.x_data_scaled, self.y_data, p)
-            #opt_results = opt.minimize(self.objective_function, initial_value, args=other_args, method='L-BFGS-B', jac=self.numerical_gradient, bounds=bounds, options={'gtol': 1e-7}) #, 'disp': True})
-            opt_results1 = opt.minimize(self.objective_function, initial_value, args=other_args, method='tnc', jac=self.numerical_gradient, bounds=bounds, options={'gtol': 1e-7})
-            opt_results2 = opt.minimize(self.objective_function, initial_value, args=other_args, method='L-BFGS-B', jac=self.numerical_gradient, bounds=bounds, options={'gtol': 1e-7})  # , 'disp': True})
+            # opt_results = opt.minimize(self.objective_function, initial_value, args=other_args, method='L-BFGS-B', jac=self.numerical_gradient, bounds=bounds, options={'gtol': 1e-7}) #, 'disp': True})
+            opt_results1 = opt.minimize(
+                self.objective_function,
+                initial_value,
+                args=other_args,
+                method="tnc",
+                jac=self.numerical_gradient,
+                bounds=bounds,
+                options={"gtol": 1e-7},
+            )
+            opt_results2 = opt.minimize(
+                self.objective_function,
+                initial_value,
+                args=other_args,
+                method="L-BFGS-B",
+                jac=self.numerical_gradient,
+                bounds=bounds,
+                options={"gtol": 1e-7},
+            )  # , 'disp': True})
             if opt_results1.fun < opt_results2.fun:
                 opt_results = opt_results1
             else:
                 opt_results = opt_results2
         else:
-            print('Optimizing Kriging parameters using Basinhopping algorithm...')
-            other_args = {"args": (self.x_data_scaled, self.y_data, p), 'bounds': bounds}
+            print("Optimizing Kriging parameters using Basinhopping algorithm...")
+            other_args = {
+                "args": (self.x_data_scaled, self.y_data, p),
+                "bounds": bounds,
+            }
             # other_args = {"args": (self.x_data, self.y_data, p)}
             mybounds = MyBounds()  # Bounds on regularization parameter
-            opt_results = basinhopping(self.objective_function, initial_value_list, minimizer_kwargs=other_args, niter=250, disp=True, accept_test=mybounds) # , interval=5)
+            opt_results = basinhopping(
+                self.objective_function,
+                initial_value_list,
+                minimizer_kwargs=other_args,
+                niter=250,
+                disp=True,
+                accept_test=mybounds,
+            )  # , interval=5)
         return opt_results
 
     def optimal_parameter_evaluation(self, var_vector, p):
@@ -397,14 +473,25 @@ class KrigingModel:
         """
         theta = var_vector[:-1]
         reg_param = var_vector[-1]
-        theta = 10 ** theta  # Assumes log(theta) provided. Ensures that theta is always positive
+        theta = (
+            10**theta
+        )  # Assumes log(theta) provided. Ensures that theta is always positive
         ns = self.y_data.shape[0]
-        cov_mat = self.covariance_matrix_generator(self.x_data_scaled, theta, reg_param, p)
+        cov_mat = self.covariance_matrix_generator(
+            self.x_data_scaled, theta, reg_param, p
+        )
         cov_inv = self.covariance_inverse_generator(cov_mat)
         mean = self.kriging_mean(cov_inv, self.y_data)
         y_mu = self.y_mu_calculation(self.y_data, mean)
         variance = self.kriging_sd(cov_inv, y_mu, ns)
-        print('\nFinal results\n================\nTheta:', theta, '\nMean:', mean, '\nRegularization parameter:', reg_param)
+        print(
+            "\nFinal results\n================\nTheta:",
+            theta,
+            "\nMean:",
+            mean,
+            "\nRegularization parameter:",
+            reg_param,
+        )
         return theta, reg_param, mean, variance, cov_mat, cov_inv, y_mu
 
     @staticmethod
@@ -433,7 +520,9 @@ class KrigingModel:
         for i in range(0, x.shape[0]):
             cmt = (np.matmul(((np.abs(x[i, :] - x)) ** p), theta)).transpose()
             cov_matrix_tests = np.exp(-1 * cmt)
-            y_prediction[i, 0] = mean + np.matmul(np.matmul(cov_matrix_tests.transpose(), cov_inv), y_mu)
+            y_prediction[i, 0] = mean + np.matmul(
+                np.matmul(cov_matrix_tests.transpose(), cov_inv), y_mu
+            )
         ss_error = (1 / y_data.shape[0]) * (np.sum((y_data - y_prediction) ** 2))
         rmse_error = np.sqrt(ss_error)
         return ss_error, rmse_error, y_prediction
@@ -470,15 +559,23 @@ class KrigingModel:
              NumPy Array                    : Output variable predictions based on the Kriging model.
 
         """
-        x_pred_scaled = ((x_pred - self.x_data_min) / (self.x_data_max - self.x_data_min))
+        x_pred_scaled = (x_pred - self.x_data_min) / (self.x_data_max - self.x_data_min)
         x_pred = x_pred_scaled.reshape(x_pred.shape)
         if x_pred.ndim == 1:
             x_pred = x_pred.reshape(1, len(x_pred))
         y_pred = np.zeros((x_pred.shape[0], 1))
         for i in range(0, x_pred.shape[0]):
-            cmt = (np.matmul(((np.abs(x_pred[i, :] - self.x_data_scaled)) ** self.optimal_p), self.optimal_weights)).transpose()
+            cmt = (
+                np.matmul(
+                    ((np.abs(x_pred[i, :] - self.x_data_scaled)) ** self.optimal_p),
+                    self.optimal_weights,
+                )
+            ).transpose()
             cov_matrix_tests = np.exp(-1 * cmt)
-            y_pred[i, 0] = self.optimal_mean + np.matmul(np.matmul(cov_matrix_tests.transpose(), self.covariance_matrix_inverse), self.optimal_y_mu)
+            y_pred[i, 0] = self.optimal_mean + np.matmul(
+                np.matmul(cov_matrix_tests.transpose(), self.covariance_matrix_inverse),
+                self.optimal_y_mu,
+            )
         return y_pred
 
     def training(self):
@@ -510,9 +607,25 @@ class KrigingModel:
         # Solve optimization problem
         bh_results = self.parameter_optimization(p)
         # Calculate other variables and parameters
-        optimal_theta, optimal_reg_param, optimal_mean, optimal_variance, optimal_cov_mat, opt_cov_inv, optimal_ymu = self.optimal_parameter_evaluation(bh_results.x, p)
+        (
+            optimal_theta,
+            optimal_reg_param,
+            optimal_mean,
+            optimal_variance,
+            optimal_cov_mat,
+            opt_cov_inv,
+            optimal_ymu,
+        ) = self.optimal_parameter_evaluation(bh_results.x, p)
         # Training performance
-        training_ss_error, rmse_error, y_training_predictions = self.error_calculation(optimal_theta, p, optimal_mean, opt_cov_inv, optimal_ymu, self.x_data_scaled, self.y_data)
+        training_ss_error, rmse_error, y_training_predictions = self.error_calculation(
+            optimal_theta,
+            p,
+            optimal_mean,
+            opt_cov_inv,
+            optimal_ymu,
+            self.x_data_scaled,
+            self.y_data,
+        )
         r2_training = self.r2_calculation(self.y_data, y_training_predictions)
 
         # Return results
@@ -527,7 +640,7 @@ class KrigingModel:
         self.output_predictions = y_training_predictions
         self.training_R2 = r2_training
         self.training_rmse = rmse_error
-        self.pickle_save({'model' : self})
+        self.pickle_save({"model": self})
         return self
 
     def generate_expression(self, variable_list):
@@ -546,16 +659,37 @@ class KrigingModel:
         t1 = np.array([variable_list])
         phi_var = []
         for i in range(0, self.x_data.shape[0]):
-            curr_term = sum(self.optimal_weights[j] * ( ((t1[0, j] - self.x_data_min[0, j])/(self.x_data_max[0, j] - self.x_data_min[0, j])) - self.x_data_scaled[i, j]) ** self.optimal_p for j in range(0, self.x_data.shape[1]))
+            curr_term = sum(
+                self.optimal_weights[j]
+                * (
+                    (
+                        (t1[0, j] - self.x_data_min[0, j])
+                        / (self.x_data_max[0, j] - self.x_data_min[0, j])
+                    )
+                    - self.x_data_scaled[i, j]
+                )
+                ** self.optimal_p
+                for j in range(0, self.x_data.shape[1])
+            )
 
             curr_term = exp(-curr_term)
             phi_var.append(curr_term)
         phi_var_array = np.asarray(phi_var)
 
-        phi_inv_times_y_mu = np.matmul(self.covariance_matrix_inverse, self.optimal_y_mu)
-        phi_inv_times_y_mu = phi_inv_times_y_mu.reshape(phi_inv_times_y_mu.shape[0], )
-        kriging_expr = self.optimal_mean[0,0]
-        kriging_expr += sum(w * t for w, t in zip(np.nditer(phi_inv_times_y_mu), np.nditer(phi_var_array, flags=['refs_ok']) ))
+        phi_inv_times_y_mu = np.matmul(
+            self.covariance_matrix_inverse, self.optimal_y_mu
+        )
+        phi_inv_times_y_mu = phi_inv_times_y_mu.reshape(
+            phi_inv_times_y_mu.shape[0],
+        )
+        kriging_expr = self.optimal_mean[0, 0]
+        kriging_expr += sum(
+            w * t
+            for w, t in zip(
+                np.nditer(phi_inv_times_y_mu),
+                np.nditer(phi_var_array, flags=["refs_ok"]),
+            )
+        )
         return kriging_expr
 
     def get_feature_vector(self):
@@ -578,12 +712,11 @@ class KrigingModel:
         The poly_training method saves the results of the run in a pickle object. It saves an object with two elements: the setup (index[0]) and the results (index[1]).
         """
         try:
-            filehandler = open(self.filename, 'wb')
+            filehandler = open(self.filename, "wb")
             pickle.dump(solutions, filehandler)
-            print('\nResults saved in ', str(self.filename))
+            print("\nResults saved in ", str(self.filename))
         except:
-            raise IOError('File could not be saved.')
-
+            raise IOError("File could not be saved.")
 
     @staticmethod
     def pickle_load(solution_file):
@@ -595,10 +728,10 @@ class KrigingModel:
 
         """
         try:
-            filehandler = open(solution_file, 'rb')
+            filehandler = open(solution_file, "rb")
             return pickle.load(filehandler)
         except:
-            raise Exception('File could not be loaded.')
+            raise Exception("File could not be loaded.")
 
     def parity_residual_plots(self):
         """
@@ -611,18 +744,25 @@ class KrigingModel:
 
         fig1 = plt.figure(figsize=(16, 9), tight_layout=True)
         ax = fig1.add_subplot(121)
-        ax.plot(self.y_data, self.y_data, '-')
-        ax.plot(self.y_data, self.output_predictions, 'o')
-        ax.set_xlabel(r'True data', fontsize=12)
-        ax.set_ylabel(r'Surrogate values', fontsize=12)
-        ax.set_title(r'Parity plot', fontsize=12)
+        ax.plot(self.y_data, self.y_data, "-")
+        ax.plot(self.y_data, self.output_predictions, "o")
+        ax.set_xlabel(r"True data", fontsize=12)
+        ax.set_ylabel(r"Surrogate values", fontsize=12)
+        ax.set_title(r"Parity plot", fontsize=12)
 
         ax2 = fig1.add_subplot(122)
-        ax2.plot(self.y_data, self.y_data - self.output_predictions, 's', mfc='w', mec='m', ms=6)
+        ax2.plot(
+            self.y_data,
+            self.y_data - self.output_predictions,
+            "s",
+            mfc="w",
+            mec="m",
+            ms=6,
+        )
         ax2.axhline(y=0, xmin=0, xmax=1)
-        ax2.set_xlabel(r'True data', fontsize=12)
-        ax2.set_ylabel(r'Residuals', fontsize=12)
-        ax2.set_title(r'Residual plot', fontsize=12)
+        ax2.set_xlabel(r"True data", fontsize=12)
+        ax2.set_ylabel(r"Residuals", fontsize=12)
+        ax2.set_title(r"Residual plot", fontsize=12)
 
         plt.show()
 
@@ -637,25 +777,26 @@ class KrigingModel:
         eqn = self.generate_expression(var_list)
 
         double_line = "=" * 120
-        s = (f"\n{double_line}"
-             f"\nResults of Kriging run:\n"
-             f"\nKriging mean                     : {self.optimal_mean}\n"
-             f"Kriging variance                 : {self.optimal_variance}\n"
-             f"Kriging weights                  : {self.optimal_weights}\n"
-             f"Regularization parameter         : {self.regularization_parameter}\n"
-             f"Number of terms in Kriging model : {self.optimal_y_mu.size + 1}\n"
-             f"\nKriging Expression:\n"
-             f"--------------------\n"
-             f"\n{eqn}\n"
-             f"--------------------------\n"
-             f"\nModel training errors:"
-             f"\n-----------------------\n"
-             f"Mean Squared Error (MSE)         : {self.training_rmse ** 2}\n"
-             f"Root Mean Squared Error (RMSE)   : {self.training_rmse}\n"
-             f"Goodness of fit (R2)             : {self.training_R2}\n"
-             f"\n{double_line}"
-             )
-        return(s)
+        s = (
+            f"\n{double_line}"
+            f"\nResults of Kriging run:\n"
+            f"\nKriging mean                     : {self.optimal_mean}\n"
+            f"Kriging variance                 : {self.optimal_variance}\n"
+            f"Kriging weights                  : {self.optimal_weights}\n"
+            f"Regularization parameter         : {self.regularization_parameter}\n"
+            f"Number of terms in Kriging model : {self.optimal_y_mu.size + 1}\n"
+            f"\nKriging Expression:\n"
+            f"--------------------\n"
+            f"\n{eqn}\n"
+            f"--------------------------\n"
+            f"\nModel training errors:"
+            f"\n-----------------------\n"
+            f"Mean Squared Error (MSE)         : {self.training_rmse ** 2}\n"
+            f"Root Mean Squared Error (RMSE)   : {self.training_rmse}\n"
+            f"Goodness of fit (R2)             : {self.training_R2}\n"
+            f"\n{double_line}"
+        )
+        return s
 
     def print_report(self):
         s = self._report()
@@ -664,4 +805,3 @@ class KrigingModel:
     def _repr_pretty_(self, p, cycle=False):
         s = self._report()
         p.text(s)
-

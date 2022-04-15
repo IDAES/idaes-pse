@@ -36,23 +36,25 @@ def compute_fit_metrics(surrogate, dataframe):
     assert f.columns.to_list() == surrogate.output_labels()
 
     y_mean = y.mean(axis=0)
-    SST = ((y-y_mean)**2).sum(axis=0)
-    SSE = ((y-f)**2).sum(axis=0)
+    SST = ((y - y_mean) ** 2).sum(axis=0)
+    SSE = ((y - f) ** 2).sum(axis=0)
 
-    R2 = 1-SSE/SST
-    MAE = (y-f).abs().mean(axis=0)
-    maxAE = (y-f).abs().max(axis=0)
-    MSE = ((y-f)**2).mean(axis=0)
+    R2 = 1 - SSE / SST
+    MAE = (y - f).abs().mean(axis=0)
+    maxAE = (y - f).abs().max(axis=0)
+    MSE = ((y - f) ** 2).mean(axis=0)
     RMSE = MSE**0.5
 
     # Reorder indices to have output first
     metrics = {}
     for o in surrogate.output_labels():
-        metrics[o] = {"RMSE": RMSE[o],
-                      "MSE": MSE[o],
-                      "MAE": MAE[o],
-                      "maxAE": maxAE[o],
-                      "SSE": SSE[o],
-                      "R2": R2[o]}
+        metrics[o] = {
+            "RMSE": RMSE[o],
+            "MSE": MSE[o],
+            "MAE": MAE[o],
+            "maxAE": maxAE[o],
+            "SSE": SSE[o],
+            "R2": R2[o],
+        }
 
     return metrics

@@ -13,6 +13,7 @@
 import numpy as np
 import math
 
+
 def split_training_validation(dataframe, training_fraction, seed=None):
     """
     Randomly split the dataframe into training and validation data
@@ -32,7 +33,10 @@ def split_training_validation(dataframe, training_fraction, seed=None):
     """
     return split_dataframe(dataframe, [training_fraction], seed)
 
-def split_training_validation_testing(dataframe, training_fraction, validation_fraction, seed=None):
+
+def split_training_validation_testing(
+    dataframe, training_fraction, validation_fraction, seed=None
+):
     """
     Randomly split the dataframe into training, validation, and testing data
 
@@ -56,6 +60,7 @@ def split_training_validation_testing(dataframe, training_fraction, validation_f
     """
     return split_dataframe(dataframe, [training_fraction, validation_fraction], seed)
 
+
 def split_dataframe(dataframe, fractions, seed=None):
     """
     Randomly splits the dataframe into multiple dataframes.
@@ -64,7 +69,7 @@ def split_dataframe(dataframe, fractions, seed=None):
        dataframe: pandas DataFrame
           The dataframe to split
        fractions: list of floats between 0 < 1
-          The fraction of the data to include in each dataframe. The list of fractions 
+          The fraction of the data to include in each dataframe. The list of fractions
           must sum to < 1. If fractions has length N, then N+1 dataframes will be returned
           where the fraction for the last dataframe is 1-sum(fractions).
        seed : None or int
@@ -77,8 +82,10 @@ def split_dataframe(dataframe, fractions, seed=None):
 
     # note seed=None is the default value for random_state (e.g., not seeded)
     shuffled_df = dataframe.sample(frac=1, random_state=seed).reset_index(drop=True)
-    
-    dfs = np.split(shuffled_df, [math.floor(f*len(shuffled_df)) for f in np.cumsum(fractions)])
+
+    dfs = np.split(
+        shuffled_df, [math.floor(f * len(shuffled_df)) for f in np.cumsum(fractions)]
+    )
     # reset all the indices
     for df in dfs:
         df.reset_index(drop=True, inplace=True)

@@ -13,6 +13,7 @@
 
 from __future__ import division, print_function
 from six import string_types
+
 # from builtins import int, str
 import numpy as np
 import pandas as pd
@@ -54,7 +55,9 @@ class FeatureScaling:
         elif isinstance(data, pd.DataFrame):
             input_data = data.values
         else:
-            raise TypeError('original_data_input: Pandas dataframe or numpy array required.')
+            raise TypeError(
+                "original_data_input: Pandas dataframe or numpy array required."
+            )
 
         if input_data.ndim == 1:
             input_data = input_data.reshape(len(input_data), 1)
@@ -62,7 +65,7 @@ class FeatureScaling:
         data_maximum = np.max(input_data, axis=0)
         scale = data_maximum - data_minimum
         scale[scale == 0.0] = 1.0
-        scaled_data = (input_data - data_minimum)/scale
+        scaled_data = (input_data - data_minimum) / scale
         # scaled_data = (input_data - data_minimum) / (data_maximum - data_minimum)
         data_minimum = data_minimum.reshape(1, data_minimum.shape[0])
         data_maximum = data_maximum.reshape(1, data_maximum.shape[0])
@@ -89,7 +92,7 @@ class FeatureScaling:
         if x_scaled.ndim == 1:  # Check if 1D, and convert to 2D if required.
             x_scaled = x_scaled.reshape(len(x_scaled), 1)
         if (x_scaled.shape[1] != x_min.size) or (x_scaled.shape[1] != x_max.size):
-            raise IndexError('Dimensionality problems with data for un-scaling.')
+            raise IndexError("Dimensionality problems with data for un-scaling.")
         unscaled_data = x_min + x_scaled * (x_max - x_min)
         return unscaled_data
 
@@ -115,7 +118,6 @@ class FeatureScaling:
 
 
 class SamplingMethods:
-
     def nearest_neighbour(self, full_data, a):
         """
         Function determines the closest point to a in data_input (user provided data).
@@ -136,7 +138,7 @@ class SamplingMethods:
         """
         no_y_vars = self.x_data.shape[1] - full_data.shape[1]
         dist = full_data[:, :no_y_vars] - a
-        l2_norm = np.sqrt(np.sum((dist ** 2), axis=1))
+        l2_norm = np.sqrt(np.sum((dist**2), axis=1))
         l2_norm = l2_norm.reshape(l2_norm.shape[0], 1)
         distances = np.append(full_data, l2_norm, 1)
         sorted_distances = distances[distances[:, -1].argsort()]
@@ -156,28 +158,40 @@ class SamplingMethods:
             equivalent_points: Array containing the points (in rows) most similar to those in generated_sample_points
         """
 
-        equivalent_points = np.zeros((generated_sample_points.shape[0], len(self.data_headers) ))
+        equivalent_points = np.zeros(
+            (generated_sample_points.shape[0], len(self.data_headers))
+        )
         for i in range(0, generated_sample_points.shape[0]):
-            closest_point = self.nearest_neighbour(full_data, generated_sample_points[i, :])
+            closest_point = self.nearest_neighbour(
+                full_data, generated_sample_points[i, :]
+            )
             equivalent_points[i, :] = closest_point
         return equivalent_points
 
     def sample_point_selection(self, full_data, sample_points, sampling_type):
-        if sampling_type == 'selection':
+        if sampling_type == "selection":
             sd = FeatureScaling()
             scaled_data, data_min, data_max = sd.data_scaling_minmax(full_data)
             points_closest_scaled = self.points_selection(scaled_data, sample_points)
-            points_closest_unscaled = sd.data_unscaling_minmax(points_closest_scaled, data_min, data_max)
+            points_closest_unscaled = sd.data_unscaling_minmax(
+                points_closest_scaled, data_min, data_max
+            )
 
             unique_sample_points = np.unique(points_closest_unscaled, axis=0)
             if unique_sample_points.shape[0] < points_closest_unscaled.shape[0]:
                 warnings.warn(
-                    'The returned number of samples is less than the requested number due to repetitions during nearest neighbour selection.')
-            print('\nNumber of unique samples returned by sampling algorithm:', unique_sample_points.shape[0])
+                    "The returned number of samples is less than the requested number due to repetitions during nearest neighbour selection."
+                )
+            print(
+                "\nNumber of unique samples returned by sampling algorithm:",
+                unique_sample_points.shape[0],
+            )
 
-        elif sampling_type == 'creation':
+        elif sampling_type == "creation":
             sd = FeatureScaling()
-            unique_sample_points = sd.data_unscaling_minmax(sample_points, full_data[0, :], full_data[1, :])
+            unique_sample_points = sd.data_unscaling_minmax(
+                sample_points, full_data[0, :], full_data[1, :]
+            )
 
         return unique_sample_points
 
@@ -243,7 +257,7 @@ class SamplingMethods:
             while a > 0:
                 a, c = (a // b, a % b)
                 string_representation.append(str(c))
-            string_representation = (string_representation[::-1])
+            string_representation = string_representation[::-1]
         return string_representation
 
     def prime_base_to_decimal(self, num, base):
@@ -274,7 +288,7 @@ class SamplingMethods:
         decimal_equivalent = 0
         # Convert fractional part decimal equivalent
         for i in range(1, len(binary)):
-            decimal_equivalent += int(binary[i]) / (base ** i)
+            decimal_equivalent += int(binary[i]) / (base**i)
         return decimal_equivalent
 
     def data_sequencing(self, no_samples, prime_base):
@@ -309,15 +323,19 @@ class SamplingMethods:
             base_rep = self.base_conversion(pure_numbers[i], prime_base)
             bitwise_rep.append(base_rep)
             reversed_bitwise_rep.append(base_rep[::-1])
-            sequence_bitwise.append(['0.'] + reversed_bitwise_rep[i])
-            sequence_decimal[i, 0] = self.prime_base_to_decimal(sequence_bitwise[i], prime_base)
-        sequence_decimal = sequence_decimal.reshape(sequence_decimal.shape[0], )
+            sequence_bitwise.append(["0."] + reversed_bitwise_rep[i])
+            sequence_decimal[i, 0] = self.prime_base_to_decimal(
+                sequence_bitwise[i], prime_base
+            )
+        sequence_decimal = sequence_decimal.reshape(
+            sequence_decimal.shape[0],
+        )
         return sequence_decimal
 
     def selection_columns_preprocessing(self, data_input, xlabels, ylabels):
         """
         Pre-processing data for multiple output selection case.
-        
+
         Args:
             data_input:     data supplied by user (dataframe or numpy array)
             xlabels:        list of input variables
@@ -332,16 +350,20 @@ class SamplingMethods:
                 ylabels = []
             set_of_labels = xlabels + ylabels
 
-            if not set_of_labels: 
+            if not set_of_labels:
                 # Empty list assumes one output in final column - all other variables treated as inputs
-                print('No column information provided. All except last column will be considered as x variables.')
+                print(
+                    "No column information provided. All except last column will be considered as x variables."
+                )
                 self.data = data_input.values
                 self.data_headers = data_input.columns.values.tolist()
                 self.x_data = self.data[:, :-1]
-                self.data_headers_xvars = self.data_headers[:-1] # Last column is y
+                self.data_headers_xvars = self.data_headers[:-1]  # Last column is y
             elif not set(set_of_labels).issubset(data_input.columns):
-                raise IndexError('Invalid column names in "xlabels" or "ylabels": ', 
-                    [k for k in set_of_labels if k not in data_input.columns])
+                raise IndexError(
+                    'Invalid column names in "xlabels" or "ylabels": ',
+                    [k for k in set_of_labels if k not in data_input.columns],
+                )
             elif not ylabels:
                 # When only xlabels are supplied, assume all non-inputs are outputs
                 self.x_data = data_input.filter(xlabels).values
@@ -362,16 +384,17 @@ class SamplingMethods:
                 # Only provided columns are considered - any column not in xlabels and ylabels is dropped completely.
                 dropped_cols = [k for k in data_input.columns if k not in set_of_labels]
                 if len(dropped_cols) > 0:
-                    warn_str = 'The following columns were dropped: ' + str(dropped_cols) 
+                    warn_str = "The following columns were dropped: " + str(
+                        dropped_cols
+                    )
                     warnings.warn(warn_str)
                 self.x_data = data_input.filter(xlabels).values
                 self.data_headers = set_of_labels
                 self.data_headers_xvars = xlabels
                 self.data = data_input.filter(set_of_labels).values
 
-
         elif isinstance(data_input, np.ndarray):
-            self.df_flag = False 
+            self.df_flag = False
 
             if xlabels is None:
                 xlabels = []
@@ -379,21 +402,31 @@ class SamplingMethods:
                 ylabels = []
             set_of_labels = xlabels + ylabels
 
-            if not set_of_labels: 
+            if not set_of_labels:
                 # Empty list assumes one output in final column
-                print('No column information provided. All except last column will be considered as x variables.')
+                print(
+                    "No column information provided. All except last column will be considered as x variables."
+                )
                 self.data = data_input
                 self.data_headers = [i for i in range(0, data_input.shape[1])]
                 self.x_data = self.data[:, :-1]
-                self.data_headers_xvars = self.data_headers[:-1] # Last column is y
+                self.data_headers_xvars = self.data_headers[:-1]  # Last column is y
             elif not set(set_of_labels).issubset(range(0, data_input.shape[1])):
-                raise IndexError('Invalid column names in "xlabels" or "ylabels": ',
-                    [k for k in set_of_labels if k not in range(0, data_input.shape[1])])
+                raise IndexError(
+                    'Invalid column names in "xlabels" or "ylabels": ',
+                    [
+                        k
+                        for k in set_of_labels
+                        if k not in range(0, data_input.shape[1])
+                    ],
+                )
             elif not ylabels:
                 # Assumes all non-inputs are outputs
                 self.x_data = data_input[:, xlabels]
                 self.data_headers_xvars = xlabels
-                non_x_vars = [k for k in range(0, data_input.shape[1]) if k not in xlabels]
+                non_x_vars = [
+                    k for k in range(0, data_input.shape[1]) if k not in xlabels
+                ]
                 y_data = data_input[:, non_x_vars]
                 self.data_headers = self.data_headers_xvars + non_x_vars
                 self.data = np.concatenate((self.x_data, y_data), axis=1)
@@ -407,15 +440,18 @@ class SamplingMethods:
                 self.data = np.concatenate((self.x_data, y_data), axis=1)
             else:
                 # Only provided columns are considered
-                dropped_cols = [k for k in range(0, data_input.shape[1]) if k not in set_of_labels]
+                dropped_cols = [
+                    k for k in range(0, data_input.shape[1]) if k not in set_of_labels
+                ]
                 if len(dropped_cols) > 0:
-                    warn_str = 'The following columns were dropped: ' + str(dropped_cols) 
+                    warn_str = "The following columns were dropped: " + str(
+                        dropped_cols
+                    )
                     warnings.warn(warn_str)
                 self.x_data = data_input[:, xlabels]
                 self.data_headers = set_of_labels
                 self.data_headers_xvars = xlabels
                 self.data = data_input[:, set_of_labels]
-
 
 
 class LatinHypercubeSampling(SamplingMethods):
@@ -427,28 +463,35 @@ class LatinHypercubeSampling(SamplingMethods):
     To use: call class with inputs, and then run ``sample_points`` method.
 
     **Example:**
-    
+
     .. code-block:: python
-    
+
         # To select 10 LHS samples from "data"
         >>> b = rbf.LatinHypercubeSampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
 
     """
 
-    def __init__(self, data_input, number_of_samples=None, sampling_type=None, xlabels=None, ylabels=None):
+    def __init__(
+        self,
+        data_input,
+        number_of_samples=None,
+        sampling_type=None,
+        xlabels=None,
+        ylabels=None,
+    ):
         """
         Initialization of **LatinHypercubeSampling** class. Two inputs are required.
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list) :  The input data set or range to be sampled.
-            
+
                 - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
                 - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information in this case.
 
             number_of_samples (int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
-                   
+
         Keyword Args:
             xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
             ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
@@ -466,51 +509,68 @@ class LatinHypercubeSampling(SamplingMethods):
         """
 
         if sampling_type is None:
-            sampling_type = 'creation'
+            sampling_type = "creation"
             self.sampling_type = sampling_type
-            print('Creation-type sampling will be used.')
+            print("Creation-type sampling will be used.")
         elif not isinstance(sampling_type, string_types):
-            raise Exception('Invalid sampling type entry. Must be of type <str>.')
-        elif (sampling_type.lower() == 'creation') or (sampling_type.lower() == 'selection'):
+            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+        elif (sampling_type.lower() == "creation") or (
+            sampling_type.lower() == "selection"
+        ):
             sampling_type = sampling_type.lower()
             self.sampling_type = sampling_type
         else:
             raise Exception(
-                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.')
-        print('Sampling type: ', self.sampling_type, '\n')
+                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
+            )
+        print("Sampling type: ", self.sampling_type, "\n")
 
-        if self.sampling_type == 'selection':
+        if self.sampling_type == "selection":
             if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
-                raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
+                raise ValueError(
+                    'Pandas dataframe or numpy array required for sampling_type "selection."'
+                )
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
-                print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
+                print(
+                    "\nNo entry for number of samples to be generated. The default value of 5 will be used."
+                )
                 number_of_samples = 5
             elif number_of_samples > self.data.shape[0]:
-                raise Exception('LHS sample size cannot be greater than number of samples in the input data set')
+                raise Exception(
+                    "LHS sample size cannot be greater than number of samples in the input data set"
+                )
             elif not isinstance(number_of_samples, int):
-                raise Exception('number_of_samples must be an integer.')
+                raise Exception("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception('number_of_samples must a positive, non-zero integer.')
+                raise Exception("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
 
-
-        elif self.sampling_type == 'creation':
+        elif self.sampling_type == "creation":
             if not isinstance(data_input, list):
-                raise ValueError('List entry of two elements expected for sampling_type "creation."')
+                raise ValueError(
+                    'List entry of two elements expected for sampling_type "creation."'
+                )
             elif len(data_input) != 2:
-                raise Exception('data_input must contain two lists of equal lengths.')
-            elif not isinstance(data_input[0], list) or not isinstance(data_input[1], list):
-                raise Exception('data_input must contain two lists of equal lengths.')
+                raise Exception("data_input must contain two lists of equal lengths.")
+            elif not isinstance(data_input[0], list) or not isinstance(
+                data_input[1], list
+            ):
+                raise Exception("data_input must contain two lists of equal lengths.")
             elif len(data_input[0]) != len(data_input[1]):
-                raise Exception('data_input must contain two lists of equal lengths.')
+                raise Exception("data_input must contain two lists of equal lengths.")
             elif data_input[0] == data_input[1]:
-                raise Exception('Invalid entry: both lists are equal.')
+                raise Exception("Invalid entry: both lists are equal.")
             else:
-                bounds_array = np.zeros((2, len(data_input[0]),))
+                bounds_array = np.zeros(
+                    (
+                        2,
+                        len(data_input[0]),
+                    )
+                )
                 bounds_array[0, :] = np.array(data_input[0])
                 bounds_array[1, :] = np.array(data_input[1])
                 data_headers = []
@@ -519,12 +579,14 @@ class LatinHypercubeSampling(SamplingMethods):
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
-                print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
+                print(
+                    "\nNo entry for number of samples to be generated. The default value of 5 will be used."
+                )
                 number_of_samples = 5
             elif not isinstance(number_of_samples, int):
-                raise Exception('number_of_samples must be an integer.')
+                raise Exception("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception('number_of_samples must a positive, non-zero integer.')
+                raise Exception("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
             self.x_data = bounds_array  # Only x data will be present in this case
 
@@ -548,7 +610,9 @@ class LatinHypercubeSampling(SamplingMethods):
         for i in range(self.number_of_samples):
             strata_lb = i * strata_size
             sample_point = strata_lb + (np.random.rand() * strata_size)
-            var_samples[i, 0] = (sample_point * (variable_max - variable_min)) + variable_min
+            var_samples[i, 0] = (
+                sample_point * (variable_max - variable_min)
+            ) + variable_min
         return var_samples
 
     def lhs_points_generation(self):
@@ -564,11 +628,14 @@ class LatinHypercubeSampling(SamplingMethods):
 
         ns, nf = np.shape(self.x_data)
         sample_points_vector = np.zeros(
-            (self.number_of_samples, nf))  # Array containing points in each interval for each variable
+            (self.number_of_samples, nf)
+        )  # Array containing points in each interval for each variable
         for i in range(nf):
             variable_min = 0  # np.min(self.x_data[:, i])
             variable_max = 1  # np.max(self.x_data[:, i])
-            var_samples = self.variable_sample_creation(variable_min, variable_max)  # Data generation step
+            var_samples = self.variable_sample_creation(
+                variable_min, variable_max
+            )  # Data generation step
             sample_points_vector[:, i] = var_samples[:, 0]
         return sample_points_vector
 
@@ -606,12 +673,18 @@ class LatinHypercubeSampling(SamplingMethods):
 
         """
 
-        vector_of_points = self.lhs_points_generation()  # Assumes [X, Y] data is supplied.
+        vector_of_points = (
+            self.lhs_points_generation()
+        )  # Assumes [X, Y] data is supplied.
         generated_sample_points = self.random_shuffling(vector_of_points)
-        unique_sample_points = self.sample_point_selection(self.data, generated_sample_points, self.sampling_type)
+        unique_sample_points = self.sample_point_selection(
+            self.data, generated_sample_points, self.sampling_type
+        )
 
-        if len(self.data_headers) > 0 and self.df_flag: 
-            unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
+        if len(self.data_headers) > 0 and self.df_flag:
+            unique_sample_points = pd.DataFrame(
+                unique_sample_points, columns=self.data_headers
+            )
         return unique_sample_points
 
 
@@ -627,16 +700,24 @@ class UniformSampling(SamplingMethods):
     To use: call class with inputs, and then ``sample_points`` function
 
     **Example:**
-    
-    .. code-block:: python 
-    
+
+    .. code-block:: python
+
         # To select 50 samples on a (10 x 5) grid in a 2D space:
         >>> b = rbf.UniformSampling(data, [10, 5], sampling_type="selection")
         >>> samples = b.sample_points()
 
     """
 
-    def __init__(self, data_input, list_of_samples_per_variable, sampling_type=None, xlabels=None, ylabels=None, edges=None):
+    def __init__(
+        self,
+        data_input,
+        list_of_samples_per_variable,
+        sampling_type=None,
+        xlabels=None,
+        ylabels=None,
+        edges=None,
+    ):
         """
         Initialization of UniformSampling class. Three inputs are required.
 
@@ -668,38 +749,52 @@ class UniformSampling(SamplingMethods):
 
         """
         if sampling_type is None:
-            sampling_type = 'creation'
+            sampling_type = "creation"
             self.sampling_type = sampling_type
-            print('Creation-type sampling will be used.')
+            print("Creation-type sampling will be used.")
         elif not isinstance(sampling_type, string_types):
-            raise Exception('Invalid sampling type entry. Must be of type <str>.')
-        elif (sampling_type.lower() == 'creation') or (sampling_type.lower() == 'selection'):
+            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+        elif (sampling_type.lower() == "creation") or (
+            sampling_type.lower() == "selection"
+        ):
             sampling_type = sampling_type.lower()
             self.sampling_type = sampling_type
         else:
             raise Exception(
-                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.')
-        print('Sampling type: ', self.sampling_type, '\n')
+                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
+            )
+        print("Sampling type: ", self.sampling_type, "\n")
 
-        if self.sampling_type == 'selection':
+        if self.sampling_type == "selection":
             if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
-                raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
+                raise ValueError(
+                    'Pandas dataframe or numpy array required for sampling_type "selection."'
+                )
 
-        elif self.sampling_type == 'creation':
+        elif self.sampling_type == "creation":
             if not isinstance(data_input, list):
-                raise ValueError('List entry of two elements expected for sampling_type "creation."')
+                raise ValueError(
+                    'List entry of two elements expected for sampling_type "creation."'
+                )
             elif len(data_input) != 2:
-                raise Exception('data_input must contain two lists of equal lengths.')
-            elif not isinstance(data_input[0], list) or not isinstance(data_input[1], list):
-                raise Exception('data_input must contain two lists of equal lengths.')
+                raise Exception("data_input must contain two lists of equal lengths.")
+            elif not isinstance(data_input[0], list) or not isinstance(
+                data_input[1], list
+            ):
+                raise Exception("data_input must contain two lists of equal lengths.")
             elif len(data_input[0]) != len(data_input[1]):
-                raise Exception('data_input must contain two lists of equal lengths.')
+                raise Exception("data_input must contain two lists of equal lengths.")
             elif data_input[0] == data_input[1]:
-                raise Exception('Invalid entry: both lists are equal.')
+                raise Exception("Invalid entry: both lists are equal.")
             else:
-                bounds_array = np.zeros((2, len(data_input[0]),))
+                bounds_array = np.zeros(
+                    (
+                        2,
+                        len(data_input[0]),
+                    )
+                )
                 bounds_array[0, :] = np.array(data_input[0])
                 bounds_array[1, :] = np.array(data_input[1])
                 data_headers = []
@@ -717,19 +812,28 @@ class UniformSampling(SamplingMethods):
 
         # Check that list_of_samples_per_variable is a list, list length is correct, all dimensions greater than 1 and all list values are integers
         if not isinstance(list_of_samples_per_variable, list):
-            raise TypeError('list_of_samples_per_variable: list required.')
+            raise TypeError("list_of_samples_per_variable: list required.")
         if len(list_of_samples_per_variable) != self.x_data.shape[1]:
-            raise ValueError('Length of list_of_samples_per_variable must equal the number of variables.')
+            raise ValueError(
+                "Length of list_of_samples_per_variable must equal the number of variables."
+            )
         if min(list_of_samples_per_variable) < 2:
-            raise ValueError('All variables must have at least two points per dimension')
+            raise ValueError(
+                "All variables must have at least two points per dimension"
+            )
         if all(isinstance(q, int) for q in list_of_samples_per_variable) is False:
-            raise TypeError('All values in list must be integers')
+            raise TypeError("All values in list must be integers")
 
         self.dim_vector = list_of_samples_per_variable
         self.number_of_samples = int(np.prod(self.dim_vector))
 
-        if self.sampling_type == 'selection' and self.number_of_samples > self.data.shape[0]:
-            raise Exception('Sample size cannot be greater than number of samples in the input data set')
+        if (
+            self.sampling_type == "selection"
+            and self.number_of_samples > self.data.shape[0]
+        ):
+            raise Exception(
+                "Sample size cannot be greater than number of samples in the input data set"
+            )
 
     def sample_points(self):
         """
@@ -748,14 +852,20 @@ class UniformSampling(SamplingMethods):
         elif self.edge is False:
             for i in self.dim_vector:
                 variable_spread = np.arange(i + 1) / i
-                shifted_points = [(variable_spread[i] + variable_spread[i - 1]) / 2 for i in
-                                  range(1, len(variable_spread))]
+                shifted_points = [
+                    (variable_spread[i] + variable_spread[i - 1]) / 2
+                    for i in range(1, len(variable_spread))
+                ]
                 points_spread.append(shifted_points)
         samples_list = list(itertools.product(*points_spread))
         samples_array = np.asarray(samples_list)
-        unique_sample_points = self.sample_point_selection(self.data, samples_array, self.sampling_type)
-        if len(self.data_headers) > 0 and self.df_flag: 
-            unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
+        unique_sample_points = self.sample_point_selection(
+            self.data, samples_array, self.sampling_type
+        )
+        if len(self.data_headers) > 0 and self.df_flag:
+            unique_sample_points = pd.DataFrame(
+                unique_sample_points, columns=self.data_headers
+            )
         return unique_sample_points
 
 
@@ -767,29 +877,36 @@ class HaltonSampling(SamplingMethods):
 
     To generate n samples in a :math:`p`-dimensional space, the first :math:`p` prime numbers are used to generate the samples.
 
-    Note: 
+    Note:
         Use of this method is limited to use in low-dimensionality problems (less than 10 variables). At higher dimensions, the performance of the sampling method has been shown to degrade.
 
     To use: call class with inputs, and then ``sample_points`` function.
 
-    **Example:** 
-    
+    **Example:**
+
     .. code-block:: python
-    
+
         # For the first 10 Halton samples in a 2-D space:
         >>> b = rbf.HaltonSampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
 
     """
 
-    def __init__(self, data_input, number_of_samples=None, sampling_type=None, xlabels=None, ylabels=None):
+    def __init__(
+        self,
+        data_input,
+        number_of_samples=None,
+        sampling_type=None,
+        xlabels=None,
+        ylabels=None,
+    ):
         """
 
         Initialization of **HaltonSampling** class. Two inputs are required.
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list) : The input data set or range to be sampled.
-            
+
                 - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
                 - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information  in this case.
 
@@ -799,7 +916,7 @@ class HaltonSampling(SamplingMethods):
         Keyword Args:
             xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
             ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
-            
+
         Returns:
             **self** function containing the input information.
 
@@ -807,56 +924,73 @@ class HaltonSampling(SamplingMethods):
             ValueError: The **data_input** is the wrong type.
 
             IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
-            
+
             Exception: When the **number_of_samples** is invalid (not an integer, too large, zero or negative.)
-            
+
         """
         if sampling_type is None:
-            sampling_type = 'creation'
+            sampling_type = "creation"
             self.sampling_type = sampling_type
-            print('Creation-type sampling will be used.')
+            print("Creation-type sampling will be used.")
         elif not isinstance(sampling_type, string_types):
-            raise Exception('Invalid sampling type entry. Must be of type <str>.')
-        elif (sampling_type.lower() == 'creation') or (sampling_type.lower() == 'selection'):
+            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+        elif (sampling_type.lower() == "creation") or (
+            sampling_type.lower() == "selection"
+        ):
             sampling_type = sampling_type.lower()
             self.sampling_type = sampling_type
         else:
             raise Exception(
-                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.')
-        print('Sampling type: ', self.sampling_type, '\n')
+                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
+            )
+        print("Sampling type: ", self.sampling_type, "\n")
 
-        if self.sampling_type == 'selection':
+        if self.sampling_type == "selection":
             if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
-                raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
+                raise ValueError(
+                    'Pandas dataframe or numpy array required for sampling_type "selection."'
+                )
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
-                print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
+                print(
+                    "\nNo entry for number of samples to be generated. The default value of 5 will be used."
+                )
                 number_of_samples = 5
             elif number_of_samples > self.data.shape[0]:
-                raise Exception('Sample size cannot be greater than number of samples in the input data set')
+                raise Exception(
+                    "Sample size cannot be greater than number of samples in the input data set"
+                )
             elif not isinstance(number_of_samples, int):
-                raise Exception('number_of_samples must be an integer.')
+                raise Exception("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception('number_of_samples must a positive, non-zero integer.')
+                raise Exception("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
 
-
-        elif self.sampling_type == 'creation':
+        elif self.sampling_type == "creation":
             if not isinstance(data_input, list):
-                raise ValueError('List entry of two elements expected for sampling_type "creation."')
+                raise ValueError(
+                    'List entry of two elements expected for sampling_type "creation."'
+                )
             elif len(data_input) != 2:
-                raise Exception('data_input must contain two lists of equal lengths.')
-            elif not isinstance(data_input[0], list) or not isinstance(data_input[1], list):
-                raise Exception('data_input must contain two lists of equal lengths.')
+                raise Exception("data_input must contain two lists of equal lengths.")
+            elif not isinstance(data_input[0], list) or not isinstance(
+                data_input[1], list
+            ):
+                raise Exception("data_input must contain two lists of equal lengths.")
             elif len(data_input[0]) != len(data_input[1]):
-                raise Exception('data_input must contain two lists of equal lengths.')
+                raise Exception("data_input must contain two lists of equal lengths.")
             elif data_input[0] == data_input[1]:
-                raise Exception('Invalid entry: both lists are equal.')
+                raise Exception("Invalid entry: both lists are equal.")
             else:
-                bounds_array = np.zeros((2, len(data_input[0]),))
+                bounds_array = np.zeros(
+                    (
+                        2,
+                        len(data_input[0]),
+                    )
+                )
                 bounds_array[0, :] = np.array(data_input[0])
                 bounds_array[1, :] = np.array(data_input[1])
                 data_headers = []
@@ -865,18 +999,21 @@ class HaltonSampling(SamplingMethods):
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
-                print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
+                print(
+                    "\nNo entry for number of samples to be generated. The default value of 5 will be used."
+                )
                 number_of_samples = 5
             elif not isinstance(number_of_samples, int):
-                raise Exception('number_of_samples must be an integer.')
+                raise Exception("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception('number_of_samples must a positive, non-zero integer.')
+                raise Exception("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
             self.x_data = bounds_array  # Only x data will be present in this case
 
         if self.x_data.shape[1] > 10:
             raise Exception(
-                'Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions')
+                "Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions"
+            )
 
     def sample_points(self):
         """
@@ -897,11 +1034,17 @@ class HaltonSampling(SamplingMethods):
         prime_list = self.prime_number_generator(no_features)
         sample_points = np.zeros((self.number_of_samples, no_features))
         for i in range(0, no_features):
-            sample_points[:, i] = self.data_sequencing(self.number_of_samples, prime_list[i])
+            sample_points[:, i] = self.data_sequencing(
+                self.number_of_samples, prime_list[i]
+            )
         # Scale input data, then find data points closest in sample space. Unscale before returning points
-        unique_sample_points = self.sample_point_selection(self.data, sample_points, self.sampling_type)
+        unique_sample_points = self.sample_point_selection(
+            self.data, sample_points, self.sampling_type
+        )
         if len(self.data_headers) > 0 and self.df_flag:
-            unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
+            unique_sample_points = pd.DataFrame(
+                unique_sample_points, columns=self.data_headers
+            )
         return unique_sample_points
 
 
@@ -918,23 +1061,30 @@ class HammersleySampling(SamplingMethods):
 
     To use: call class with inputs, and then ``sample_points`` function.
 
-    **Example:** 
-    
+    **Example:**
+
     .. code-block:: python
-    
+
         # For the first 10 Hammersley samples in a 2-D space:
         >>> b = rbf.HammersleySampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
 
     """
 
-    def __init__(self, data_input, number_of_samples=None, sampling_type=None, xlabels=None, ylabels=None):
+    def __init__(
+        self,
+        data_input,
+        number_of_samples=None,
+        sampling_type=None,
+        xlabels=None,
+        ylabels=None,
+    ):
         """
         Initialization of **HammersleySampling** class. Two inputs are required.
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list): The input data set or range to be sampled.
-    
+
                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information  in this case.
 
@@ -950,59 +1100,76 @@ class HammersleySampling(SamplingMethods):
 
             Raises:
                 ValueError: When **data_input** is the wrong type.
-        
+
                 IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
                 Exception: When the **number_of_samples** is invalid (not an integer, too large, zero, negative)
 
         """
         if sampling_type is None:
-            sampling_type = 'creation'
+            sampling_type = "creation"
             self.sampling_type = sampling_type
-            print('Creation-type sampling will be used.')
+            print("Creation-type sampling will be used.")
         elif not isinstance(sampling_type, string_types):
-            raise Exception('Invalid sampling type entry. Must be of type <str>.')
-        elif (sampling_type.lower() == 'creation') or (sampling_type.lower() == 'selection'):
+            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+        elif (sampling_type.lower() == "creation") or (
+            sampling_type.lower() == "selection"
+        ):
             sampling_type = sampling_type.lower()
             self.sampling_type = sampling_type
         else:
             raise Exception(
-                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.')
-        print('Sampling type: ', self.sampling_type, '\n')
+                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
+            )
+        print("Sampling type: ", self.sampling_type, "\n")
 
-        if self.sampling_type == 'selection':
+        if self.sampling_type == "selection":
 
             if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
-                raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
+                raise ValueError(
+                    'Pandas dataframe or numpy array required for sampling_type "selection."'
+                )
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
-                print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
+                print(
+                    "\nNo entry for number of samples to be generated. The default value of 5 will be used."
+                )
                 number_of_samples = 5
             elif number_of_samples > self.data.shape[0]:
-                raise Exception('Sample size cannot be greater than number of samples in the input data set')
+                raise Exception(
+                    "Sample size cannot be greater than number of samples in the input data set"
+                )
             elif not isinstance(number_of_samples, int):
-                raise Exception('number_of_samples must be an integer.')
+                raise Exception("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception('number_of_samples must a positive, non-zero integer.')
+                raise Exception("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
 
-
-        elif self.sampling_type == 'creation':
+        elif self.sampling_type == "creation":
             if not isinstance(data_input, list):
-                raise ValueError('List entry of two elements expected for sampling_type "creation."')
+                raise ValueError(
+                    'List entry of two elements expected for sampling_type "creation."'
+                )
             elif len(data_input) != 2:
-                raise Exception('data_input must contain two lists of equal lengths.')
-            elif not isinstance(data_input[0], list) or not isinstance(data_input[1], list):
-                raise Exception('data_input must contain two lists of equal lengths.')
+                raise Exception("data_input must contain two lists of equal lengths.")
+            elif not isinstance(data_input[0], list) or not isinstance(
+                data_input[1], list
+            ):
+                raise Exception("data_input must contain two lists of equal lengths.")
             elif len(data_input[0]) != len(data_input[1]):
-                raise Exception('data_input must contain two lists of equal lengths.')
+                raise Exception("data_input must contain two lists of equal lengths.")
             elif data_input[0] == data_input[1]:
-                raise Exception('Invalid entry: both lists are equal.')
+                raise Exception("Invalid entry: both lists are equal.")
             else:
-                bounds_array = np.zeros((2, len(data_input[0]),))
+                bounds_array = np.zeros(
+                    (
+                        2,
+                        len(data_input[0]),
+                    )
+                )
                 bounds_array[0, :] = np.array(data_input[0])
                 bounds_array[1, :] = np.array(data_input[1])
                 data_headers = []
@@ -1011,18 +1178,21 @@ class HammersleySampling(SamplingMethods):
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
-                print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
+                print(
+                    "\nNo entry for number of samples to be generated. The default value of 5 will be used."
+                )
                 number_of_samples = 5
             elif not isinstance(number_of_samples, int):
-                raise Exception('number_of_samples must be an integer.')
+                raise Exception("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception('number_of_samples must a positive, non-zero integer.')
+                raise Exception("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
             self.x_data = bounds_array  # Only x data will be present in this case
 
         if self.x_data.shape[1] > 10:
             raise Exception(
-                'Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions')
+                "Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions"
+            )
 
     def sample_points(self):
         """
@@ -1045,13 +1215,21 @@ class HammersleySampling(SamplingMethods):
         else:
             prime_list = self.prime_number_generator(no_features - 1)
         sample_points = np.zeros((self.number_of_samples, no_features))
-        sample_points[:, 0] = (np.arange(0, self.number_of_samples)) / self.number_of_samples
+        sample_points[:, 0] = (
+            np.arange(0, self.number_of_samples)
+        ) / self.number_of_samples
         for i in range(0, len(prime_list)):
-            sample_points[:, i + 1] = self.data_sequencing(self.number_of_samples, prime_list[i])
+            sample_points[:, i + 1] = self.data_sequencing(
+                self.number_of_samples, prime_list[i]
+            )
 
-        unique_sample_points = self.sample_point_selection(self.data, sample_points, self.sampling_type)
+        unique_sample_points = self.sample_point_selection(
+            self.data, sample_points, self.sampling_type
+        )
         if len(self.data_headers) > 0 and self.df_flag:
-            unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
+            unique_sample_points = pd.DataFrame(
+                unique_sample_points, columns=self.data_headers
+            )
         return unique_sample_points
 
 
@@ -1064,16 +1242,24 @@ class CVTSampling(SamplingMethods):
     To use: call class with inputs, and then ``sample_points`` function.
 
     **Example:**
-    
+
     .. code-block:: python
-     
+
         # For the first 10 CVT samples in a 2-D space:
         >>> b = rbf.CVTSampling(data_bounds, 10, tolerance = 1e-5, sampling_type="creation")
         >>> samples = b.sample_points()
 
     """
 
-    def __init__(self, data_input, number_of_samples=None, tolerance=None, sampling_type=None, xlabels=None, ylabels=None):
+    def __init__(
+        self,
+        data_input,
+        number_of_samples=None,
+        tolerance=None,
+        sampling_type=None,
+        xlabels=None,
+        ylabels=None,
+    ):
         """
         Initialization of CVTSampling class. Two inputs are required, while an optional option to control the solution accuracy may be specified.
 
@@ -1110,50 +1296,68 @@ class CVTSampling(SamplingMethods):
 
         """
         if sampling_type is None:
-            sampling_type = 'creation'
+            sampling_type = "creation"
             self.sampling_type = sampling_type
-            print('Creation-type sampling will be used.')
+            print("Creation-type sampling will be used.")
         elif not isinstance(sampling_type, string_types):
-            raise Exception('Invalid sampling type entry. Must be of type <str>.')
-        elif (sampling_type.lower() == 'creation') or (sampling_type.lower() == 'selection'):
+            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+        elif (sampling_type.lower() == "creation") or (
+            sampling_type.lower() == "selection"
+        ):
             sampling_type = sampling_type.lower()
             self.sampling_type = sampling_type
         else:
             raise Exception(
-                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.')
-        print('Sampling type: ', self.sampling_type, '\n')
+                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
+            )
+        print("Sampling type: ", self.sampling_type, "\n")
 
-        if self.sampling_type == 'selection':
+        if self.sampling_type == "selection":
             if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
-                raise ValueError('Pandas dataframe or numpy array required for sampling_type "selection."')
+                raise ValueError(
+                    'Pandas dataframe or numpy array required for sampling_type "selection."'
+                )
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
-                print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
+                print(
+                    "\nNo entry for number of samples to be generated. The default value of 5 will be used."
+                )
                 number_of_samples = 5
             elif number_of_samples > self.data.shape[0]:
-                raise Exception('CVT sample size cannot be greater than number of samples in the input data set')
+                raise Exception(
+                    "CVT sample size cannot be greater than number of samples in the input data set"
+                )
             elif not isinstance(number_of_samples, int):
-                raise Exception('number_of_samples must be an integer.')
+                raise Exception("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception('number_of_samples must a positive, non-zero integer.')
+                raise Exception("number_of_samples must a positive, non-zero integer.")
             self.number_of_centres = number_of_samples
 
-        elif self.sampling_type == 'creation':
+        elif self.sampling_type == "creation":
             if not isinstance(data_input, list):
-                raise ValueError('List entry of two elements expected for sampling_type "creation."')
+                raise ValueError(
+                    'List entry of two elements expected for sampling_type "creation."'
+                )
             elif len(data_input) != 2:
-                raise Exception('data_input must contain two lists of equal lengths.')
-            elif not isinstance(data_input[0], list) or not isinstance(data_input[1], list):
-                raise Exception('data_input must contain two lists of equal lengths.')
+                raise Exception("data_input must contain two lists of equal lengths.")
+            elif not isinstance(data_input[0], list) or not isinstance(
+                data_input[1], list
+            ):
+                raise Exception("data_input must contain two lists of equal lengths.")
             elif len(data_input[0]) != len(data_input[1]):
-                raise Exception('data_input must contain two lists of equal lengths.')
+                raise Exception("data_input must contain two lists of equal lengths.")
             elif data_input[0] == data_input[1]:
-                raise Exception('Invalid entry: both lists are equal.')
+                raise Exception("Invalid entry: both lists are equal.")
             else:
-                bounds_array = np.zeros((2, len(data_input[0]),))
+                bounds_array = np.zeros(
+                    (
+                        2,
+                        len(data_input[0]),
+                    )
+                )
                 bounds_array[0, :] = np.array(data_input[0])
                 bounds_array[1, :] = np.array(data_input[1])
                 data_headers = []
@@ -1162,12 +1366,14 @@ class CVTSampling(SamplingMethods):
 
             # Catch potential errors in number_of_samples
             if number_of_samples is None:
-                print("\nNo entry for number of samples to be generated. The default value of 5 will be used.")
+                print(
+                    "\nNo entry for number of samples to be generated. The default value of 5 will be used."
+                )
                 number_of_samples = 5
             elif not isinstance(number_of_samples, int):
-                raise Exception('number_of_samples must be an integer.')
+                raise Exception("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception('number_of_samples must a positive, non-zero integer.')
+                raise Exception("number_of_samples must a positive, non-zero integer.")
             self.number_of_centres = number_of_samples
 
             x_data = bounds_array  # Only x data will be present in this case
@@ -1179,13 +1385,15 @@ class CVTSampling(SamplingMethods):
         if tolerance is None:
             tolerance = 1e-7
         elif tolerance > 0.1:
-            raise Exception('Tolerance must be less than 0.1 to achieve good results')
+            raise Exception("Tolerance must be less than 0.1 to achieve good results")
         elif tolerance < 1e-9:
-            warnings.warn('Tolerance too tight. CVT algorithm may take long time to converge.')
+            warnings.warn(
+                "Tolerance too tight. CVT algorithm may take long time to converge."
+            )
         elif (tolerance < 0.1) and (tolerance > 1e-9):
             tolerance = tolerance
         else:
-            raise Exception('Invalid tolerance input')
+            raise Exception("Invalid tolerance input")
         self.eps = tolerance
 
     @staticmethod
@@ -1225,12 +1433,14 @@ class CVTSampling(SamplingMethods):
 
         """
         d = u - v
-        d_sq = d ** 2
+        d_sq = d**2
         euc_d = np.sqrt(np.sum(d_sq, axis=1))
         return euc_d
 
     @staticmethod
-    def create_centres(initial_centres, current_random_points, current_centres, counter):
+    def create_centres(
+        initial_centres, current_random_points, current_centres, counter
+    ):
         """
         The function create_centres generates new mass centroids for the design space based on McQueen's method.
         The mass centroids are created based on the previous mass centroids and the mean of random data sampling the design space.
@@ -1281,25 +1491,33 @@ class CVTSampling(SamplingMethods):
         # Iterative optimization process
         cost_old = 0
         cost_new = 0
-        cost_change = float('Inf')
+        cost_change = float("Inf")
         counter = 1
         while (cost_change > self.eps) and (counter <= 1000):
             cost_old = cost_new
-            current_random_points = self.random_sample_selection(self.number_of_centres * size_multiple, n)
+            current_random_points = self.random_sample_selection(
+                self.number_of_centres * size_multiple, n
+            )
             distance_matrix = np.zeros(
-                (current_random_points.shape[0], initial_centres.shape[0]))  # Vector to store distances from centroids
+                (current_random_points.shape[0], initial_centres.shape[0])
+            )  # Vector to store distances from centroids
             current_centres = np.zeros(
-                (current_random_points.shape[0], 1))  # Vector containing the centroid each point belongs to
+                (current_random_points.shape[0], 1)
+            )  # Vector containing the centroid each point belongs to
 
             # Calculate distance between random points and centres, sort and estimate new centres
             for i in range(0, self.number_of_centres):
-                distance_matrix[:, i] = self.eucl_distance(current_random_points, initial_centres[i, :])
-            current_centres = (np.argmin(distance_matrix, axis=1))
-            new_centres = self.create_centres(initial_centres, current_random_points, current_centres, counter)
+                distance_matrix[:, i] = self.eucl_distance(
+                    current_random_points, initial_centres[i, :]
+                )
+            current_centres = np.argmin(distance_matrix, axis=1)
+            new_centres = self.create_centres(
+                initial_centres, current_random_points, current_centres, counter
+            )
 
             # Estimate distance between new and old centres
             distance_btw_centres = self.eucl_distance(new_centres, initial_centres)
-            cost_new = np.sqrt(np.sum(distance_btw_centres ** 2))
+            cost_new = np.sqrt(np.sum(distance_btw_centres**2))
             cost_change = np.abs(cost_old - cost_new)
             counter += 1
             # print(counter, cost_change)
@@ -1308,7 +1526,11 @@ class CVTSampling(SamplingMethods):
 
         sample_points = new_centres
 
-        unique_sample_points = self.sample_point_selection(self.data, sample_points, self.sampling_type)
+        unique_sample_points = self.sample_point_selection(
+            self.data, sample_points, self.sampling_type
+        )
         if len(self.data_headers) > 0 and self.df_flag:
-            unique_sample_points = pd.DataFrame(unique_sample_points, columns=self.data_headers)
+            unique_sample_points = pd.DataFrame(
+                unique_sample_points, columns=self.data_headers
+            )
         return unique_sample_points

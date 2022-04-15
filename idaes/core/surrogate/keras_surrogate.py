@@ -21,7 +21,8 @@ import numpy as np
 import pandas as pd
 
 from pyomo.common.dependencies import attempt_import
-keras, keras_available = attempt_import('tensorflow.keras')
+
+keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
 
 if omlt_available:
@@ -31,7 +32,7 @@ if omlt_available:
         ReducedSpaceContinuousFormulation,
         ReLUBigMFormulation,
         ReLUComplementarityFormulation,
-        load_keras_sequential
+        load_keras_sequential,
     )
 
 from idaes.core.surrogate.base.surrogate_base import SurrogateBase
@@ -39,10 +40,17 @@ from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 
 class KerasSurrogate(SurrogateBase):
-    def __init__(self, keras_model, input_labels, output_labels, input_bounds,
-                 input_scaler=None, output_scaler=None):
+    def __init__(
+        self,
+        keras_model,
+        input_labels,
+        output_labels,
+        input_bounds,
+        input_scaler=None,
+        output_scaler=None,
+    ):
         """
-        Standard SurrogateObject for surrogates based on Keras models. 
+        Standard SurrogateObject for surrogates based on Keras models.
         Utilizes the OMLT framework for importing Keras models to IDAES.
 
         Contains methods to both populate a Pyomo Block with constraints
@@ -69,42 +77,55 @@ class KerasSurrogate(SurrogateBase):
            output_scaler: None of OffsetScaler
               The scaler to be used for the outputs. If None, then no scaler is used
         """
-        super().__init__(input_labels=input_labels, output_labels=output_labels, \
-                         input_bounds=input_bounds)
+        super().__init__(
+            input_labels=input_labels,
+            output_labels=output_labels,
+            input_bounds=input_bounds,
+        )
 
         # make sure we are using the standard scaler
-        if input_scaler is not None and type(input_scaler) is not OffsetScaler or \
-           output_scaler is not None and type(output_scaler) is not OffsetScaler:
-            raise NotImplementedError('KerasSurrogate only supports the OffsetScaler.')
+        if (
+            input_scaler is not None
+            and type(input_scaler) is not OffsetScaler
+            or output_scaler is not None
+            and type(output_scaler) is not OffsetScaler
+        ):
+            raise NotImplementedError("KerasSurrogate only supports the OffsetScaler.")
 
         # check that the input labels match
         if input_scaler is not None and input_scaler.expected_columns() != input_labels:
-            raise ValueError('KerasSurrogate created with input_labels that do not match'
-                             ' the expected columns in the input_scaler.\n'
-                             'input_labels={}\n'
-                             'input_scaler.expected_columns()={}'.format(
-                                 input_labels,
-                                 input_scaler.expected_columns()))
+            raise ValueError(
+                "KerasSurrogate created with input_labels that do not match"
+                " the expected columns in the input_scaler.\n"
+                "input_labels={}\n"
+                "input_scaler.expected_columns()={}".format(
+                    input_labels, input_scaler.expected_columns()
+                )
+            )
 
         # check that the output labels match
-        if output_scaler is not None and output_scaler.expected_columns() != output_labels:
-            raise ValueError('KerasSurrogate created with output_labels that do not match'
-                             ' the expected columns in the output_scaler.\n'
-                             'output_labels={}\n'
-                             'output_scaler.expected_columns()={}'.format(
-                                 output_labels,
-                                 output_scaler.expected_columns()))
+        if (
+            output_scaler is not None
+            and output_scaler.expected_columns() != output_labels
+        ):
+            raise ValueError(
+                "KerasSurrogate created with output_labels that do not match"
+                " the expected columns in the output_scaler.\n"
+                "output_labels={}\n"
+                "output_scaler.expected_columns()={}".format(
+                    output_labels, output_scaler.expected_columns()
+                )
+            )
 
         self._input_scaler = input_scaler
         self._output_scaler = output_scaler
         self._keras_model = keras_model
-        
 
     class Formulation(Enum):
-        FULL_SPACE=1
-        REDUCED_SPACE=2
-        RELU_BIGM=3
-        RELU_COMPLEMENTARITY=4
+        FULL_SPACE = 1
+        REDUCED_SPACE = 2
+        RELU_BIGM = 3
+        RELU_COMPLEMENTARITY = 4
 
     def populate_block(self, block, additional_options=None):
         """
@@ -119,23 +140,35 @@ class KerasSurrogate(SurrogateBase):
                     The formulation to use with OMLT. Possible values are FULL_SPACE,
                     REDUCED_SPACE, RELU_BIGM, or RELU_COMPLEMENTARITY (default is FULL_SPACE)
         """
-        formulation = additional_options.pop('formulation', KerasSurrogate.Formulation.FULL_SPACE)
+        formulation = additional_options.pop(
+            "formulation", KerasSurrogate.Formulation.FULL_SPACE
+        )
         offset_inputs = np.zeros(self.n_inputs())
         factor_inputs = np.ones(self.n_inputs())
         offset_outputs = np.zeros(self.n_outputs())
         factor_outputs = np.ones(self.n_outputs())
         if self._input_scaler:
-            offset_inputs = self._input_scaler.offset_series()[self.input_labels()].to_numpy()
-            factor_inputs = self._input_scaler.factor_series()[self.input_labels()].to_numpy()
+            offset_inputs = self._input_scaler.offset_series()[
+                self.input_labels()
+            ].to_numpy()
+            factor_inputs = self._input_scaler.factor_series()[
+                self.input_labels()
+            ].to_numpy()
         if self._output_scaler:
-            offset_outputs = self._output_scaler.offset_series()[self.output_labels()].to_numpy()
-            factor_outputs = self._output_scaler.factor_series()[self.output_labels()].to_numpy()
+            offset_outputs = self._output_scaler.offset_series()[
+                self.output_labels()
+            ].to_numpy()
+            factor_outputs = self._output_scaler.factor_series()[
+                self.output_labels()
+            ].to_numpy()
 
         # build the OMLT scaler object
-        omlt_scaling = OffsetScaling(offset_inputs=offset_inputs,
-                                     factor_inputs=factor_inputs,
-                                     offset_outputs=offset_outputs,
-                                     factor_outputs=factor_outputs)
+        omlt_scaling = OffsetScaling(
+            offset_inputs=offset_inputs,
+            factor_inputs=factor_inputs,
+            offset_outputs=offset_outputs,
+            factor_outputs=factor_outputs,
+        )
 
         # omlt takes input bounds as a list
         input_bounds = self.input_bounds()
@@ -151,13 +184,17 @@ class KerasSurrogate(SurrogateBase):
         elif formulation == KerasSurrogate.Formulation.RELU_COMPLEMENTARITY:
             formulation_object = ReLUComplementarityFormulation(net)
         else:
-            raise ValueError('An unrecognized formulation "{}" was passed to '
-                             'KerasSurrogate.populate_block. Please pass a valid '
-                             'formulation.'.format(formulation))
-        block.nn=OmltBlock()
-        block.nn.build_formulation(formulation_object,
-                                   input_vars=block._input_vars_as_list(),
-                                   output_vars=block._output_vars_as_list())
+            raise ValueError(
+                'An unrecognized formulation "{}" was passed to '
+                "KerasSurrogate.populate_block. Please pass a valid "
+                "formulation.".format(formulation)
+            )
+        block.nn = OmltBlock()
+        block.nn.build_formulation(
+            formulation_object,
+            input_vars=block._input_vars_as_list(),
+            output_vars=block._output_vars_as_list(),
+        )
 
     def evaluate_surrogate(self, inputs):
         """
@@ -194,19 +231,19 @@ class KerasSurrogate(SurrogateBase):
         """
         self._keras_model.save(keras_folder_name)
         info = dict()
-        info['input_scaler'] = None
+        info["input_scaler"] = None
         if self._input_scaler is not None:
-            info['input_scaler'] = self._input_scaler.to_dict()
-        info['output_scaler'] = None
+            info["input_scaler"] = self._input_scaler.to_dict()
+        info["output_scaler"] = None
         if self._output_scaler is not None:
-            info['output_scaler'] = self._output_scaler.to_dict()
-        
-        # serialize information from the base class
-        info['input_labels'] = self.input_labels()
-        info['output_labels'] = self.output_labels()
-        info['input_bounds'] = self.input_bounds()
+            info["output_scaler"] = self._output_scaler.to_dict()
 
-        with open(os.path.join(keras_folder_name, 'idaes_info.json'), 'w') as fd:
+        # serialize information from the base class
+        info["input_labels"] = self.input_labels()
+        info["output_labels"] = self.output_labels()
+        info["input_bounds"] = self.input_bounds()
+
+        with open(os.path.join(keras_folder_name, "idaes_info.json"), "w") as fd:
             json.dump(info, fd)
 
     @classmethod
@@ -223,33 +260,37 @@ class KerasSurrogate(SurrogateBase):
         Returns: an instance of KerasSurrogate
         """
         keras_model = keras.models.load_model(keras_folder_name)
-        with open(os.path.join(keras_folder_name, 'idaes_info.json')) as fd:
+        with open(os.path.join(keras_folder_name, "idaes_info.json")) as fd:
             info = json.load(fd)
 
         input_scaler = None
-        if info['input_scaler'] is not None:
-            input_scaler = OffsetScaler.from_dict(info['input_scaler'])
+        if info["input_scaler"] is not None:
+            input_scaler = OffsetScaler.from_dict(info["input_scaler"])
 
         output_scaler = None
-        if info['output_scaler'] is not None:
-            output_scaler = OffsetScaler.from_dict(info['output_scaler'])
+        if info["output_scaler"] is not None:
+            output_scaler = OffsetScaler.from_dict(info["output_scaler"])
 
-        return KerasSurrogate(keras_model=keras_model,
-                              input_labels=info['input_labels'],
-                              output_labels=info['output_labels'],
-                              input_bounds=info['input_bounds'],
-                              input_scaler=input_scaler,
-                              output_scaler=output_scaler)
+        return KerasSurrogate(
+            keras_model=keras_model,
+            input_labels=info["input_labels"],
+            output_labels=info["output_labels"],
+            input_bounds=info["input_bounds"],
+            input_scaler=input_scaler,
+            output_scaler=output_scaler,
+        )
+
 
 def save_keras_json_hd5(nn, path, name):
     json_model = nn.to_json()
-    with open(os.path.join(path, '{}.json'.format(name)), 'w') as json_file:
+    with open(os.path.join(path, "{}.json".format(name)), "w") as json_file:
         json_file.write(json_model)
-    nn.save_weights(os.path.join(path, '{}.h5'.format(name)))
+    nn.save_weights(os.path.join(path, "{}.h5".format(name)))
+
 
 def load_keras_json_hd5(path, name):
-    with open(os.path.join(path, '{}.json'.format(name)), 'r') as json_file:
+    with open(os.path.join(path, "{}.json".format(name)), "r") as json_file:
         json_model = json_file.read()
         nn = keras.models.model_from_json(json_model)
-    nn.load_weights(os.path.join(path, '{}.h5'.format(name)))
+    nn.load_weights(os.path.join(path, "{}.h5".format(name)))
     return nn

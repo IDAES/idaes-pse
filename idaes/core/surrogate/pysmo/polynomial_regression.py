@@ -555,7 +555,7 @@ class PolynomialRegression:
         # Generate the constant and pure power terms
         for i in range(2, polynomial_order + 1):
             x_train_data = np.concatenate(
-                (x_train_data, x_input_train_data ** i), axis=1
+                (x_train_data, x_input_train_data**i), axis=1
             )
 
         if multinomials == 1:
@@ -607,7 +607,7 @@ class PolynomialRegression:
         y_prediction = np.matmul(x, theta)
         y_prediction = y_prediction.reshape(y_prediction.shape[0], 1)
         cost_value = (0.5 / x.shape[0]) * (np.sum((y - y_prediction) ** 2))
-        cost_penalty = (reg_parameter * 0.5 / x.shape[0]) * (np.sum(theta ** 2))
+        cost_penalty = (reg_parameter * 0.5 / x.shape[0]) * (np.sum(theta**2))
         cost_value = cost_value + cost_penalty
         return cost_value
 
@@ -949,7 +949,7 @@ class PolynomialRegression:
         """
         This function prints the results of the fitting to the screen.
         """
-        results_df = pd.Series(dtype='float64')
+        results_df = pd.Series(dtype="float64")
         counter = 1
         print("\n------------------------------------------------------------")
         print("The final coefficients of the regression terms are: \n")
@@ -960,14 +960,19 @@ class PolynomialRegression:
                 for j in range(1, self.number_of_x_vars + 1):
                     print("(x_", j, ")^", i, "     |", beta[counter, 0])
                     col_name = "(x_" + str(j) + ")^" + str(i)
-                    results_df = pd.concat([results_df, pd.Series({col_name: beta[counter, 0]})], axis=0)
+                    results_df = pd.concat(
+                        [results_df, pd.Series({col_name: beta[counter, 0]})], axis=0
+                    )
                     counter += 1
             for i in range(1, self.number_of_x_vars + 1):
                 for j in range(1, self.number_of_x_vars + 1):
                     if i > j:
                         print("x_", j, ".x_", i, "     |", beta[counter, 0])
                         col_name = "(x_" + str(j) + ")" + ".(x_" + str(i) + ")"
-                        results_df = pd.concat([results_df, pd.Series({col_name: beta[counter, 0]})], axis=0)
+                        results_df = pd.concat(
+                            [results_df, pd.Series({col_name: beta[counter, 0]})],
+                            axis=0,
+                        )
                         counter += 1
 
         else:
@@ -975,7 +980,9 @@ class PolynomialRegression:
                 for j in range(1, self.number_of_x_vars + 1):
                     print("(x_", j, ")^", i, "     |", beta[counter, 0])
                     col_name = "(x_" + str(j) + ")^" + str(i)
-                    results_df = pd.concat([results_df, pd.Series({col_name: beta[counter, 0]})], axis=0)
+                    results_df = pd.concat(
+                        [results_df, pd.Series({col_name: beta[counter, 0]})], axis=0
+                    )
                     counter += 1
 
         return results_df
@@ -1236,7 +1243,8 @@ class PolynomialRegression:
                 adaptive_samples = sorted_comparison_vector_unique[
                     # PYLINT-WHY: pylint considers self.no_adaptive_samples to be None here
                     # pylint: disable=invalid-unary-operand-type
-                    -self.no_adaptive_samples :, :
+                    -self.no_adaptive_samples :,
+                    :
                     # pylint: enable=invalid-unary-operand-type
                 ]
                 self.regression_data = np.concatenate(
@@ -1444,7 +1452,7 @@ class PolynomialRegression:
             # Print results to screen
             dataframe_coeffs = self.results_generation(beta_vector, order_best)
 
-            extra_terms_coeffs = pd.Series(dtype='float64')
+            extra_terms_coeffs = pd.Series(dtype="float64")
             print(
                 "\nThe coefficients of the extra terms in additional_regression_features are:\n"
             )
@@ -1460,10 +1468,13 @@ class PolynomialRegression:
                     + str(number_additional_features - af + 1)
                     + "]"
                 )
-                extra_terms_coeffs = pd.concat([extra_terms_coeffs,
-                    pd.Series({col_name: beta_vector[len(beta_vector) - af, 0]})
-                 ], axis=0)
-                
+                extra_terms_coeffs = pd.concat(
+                    [
+                        extra_terms_coeffs,
+                        pd.Series({col_name: beta_vector[len(beta_vector) - af, 0]}),
+                    ],
+                    axis=0,
+                )
 
             # Print errors
             print(

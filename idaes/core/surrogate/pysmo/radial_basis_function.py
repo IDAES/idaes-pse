@@ -12,7 +12,6 @@
 #################################################################################
 
 
-
 # Imports from the python standard library
 from __future__ import division, print_function
 from builtins import int, str
@@ -21,6 +20,7 @@ import os.path
 import pprint
 import random
 import warnings
+
 # Imports from third parties
 from matplotlib import pyplot as plt
 import numpy as np
@@ -29,6 +29,7 @@ import pickle
 from pyomo.environ import *
 import scipy.optimize as opt
 from six import string_types
+
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
 
@@ -44,6 +45,7 @@ class FeatureScaling:
 
     A class for scaling and unscaling input and output data. The class contains two main methods: ``data_scaling_minmax`` and ``data_unscaling_minmax``
     """
+
     def __init__(self):
         pass
 
@@ -73,7 +75,9 @@ class FeatureScaling:
             input_data = data.values
             data_headers = data.columns.values.tolist()
         else:
-            raise TypeError('original_data_input: Pandas dataframe or numpy array required.')
+            raise TypeError(
+                "original_data_input: Pandas dataframe or numpy array required."
+            )
 
         if input_data.ndim == 1:
             input_data = input_data.reshape(len(input_data), 1)
@@ -81,7 +85,7 @@ class FeatureScaling:
         data_maximum = np.max(input_data, axis=0)
         scale = data_maximum - data_minimum
         scale[scale == 0.0] = 1.0
-        scaled_data = (input_data - data_minimum)/scale
+        scaled_data = (input_data - data_minimum) / scale
         # scaled_data = (input_data - data_minimum)/(data_maximum - data_minimum)
         data_minimum = data_minimum.reshape(1, data_minimum.shape[0])
         data_maximum = data_maximum.reshape(1, data_maximum.shape[0])
@@ -112,7 +116,7 @@ class FeatureScaling:
         if x_scaled.ndim == 1:  # Check if 1D, and convert to 2D if required.
             x_scaled = x_scaled.reshape(len(x_scaled), 1)
         if (x_scaled.shape[1] != x_min.size) or (x_scaled.shape[1] != x_max.size):
-            raise IndexError('Dimensionality problems with data for un-scaling.')
+            raise IndexError("Dimensionality problems with data for un-scaling.")
         unscaled_data = x_min + x_scaled * (x_max - x_min)
         return unscaled_data
 
@@ -156,13 +160,13 @@ class RadialBasisFunctions:
     It should be noted that the all the training points are treated as centres for the RBF, resulting in a square system.
 
     **Example:**
-    
+
     .. code-block:: python
-    
+
          # Initialize the class
         >>> d = RadialBasisFunctions(training_data, basis_function='gaussian', solution_method='pyomo', regularization=True))
         >>> p = d.get_feature_vector()
-        
+
         # Train RBF model and predict output for an test data x_test
         >>> d.training()
         >>> predictions = d.predict_output(x_test)
@@ -174,7 +178,15 @@ class RadialBasisFunctions:
 
     """
 
-    def __init__(self, XY_data, basis_function=None, solution_method=None, regularization=None, fname=None, overwrite=False):
+    def __init__(
+        self,
+        XY_data,
+        basis_function=None,
+        solution_method=None,
+        regularization=None,
+        fname=None,
+        overwrite=False,
+    ):
         """
 
         Initialization of **RadialBasisFunctions** class.
@@ -221,31 +233,52 @@ class RadialBasisFunctions:
                 - :math:`\lambda` is not boolean.
 
         **Example:**
-        
+
         .. code-block:: python
-        
+
             # Specify the gaussian basis transformation
             >>> d = RadialBasisFunctions(XY_data, basis_function='gaussian')
 
         """
         if not isinstance(overwrite, bool):
-            raise Exception('overwrite must be boolean.')
+            raise Exception("overwrite must be boolean.")
         self.overwrite = overwrite
         if fname is None:
-            fname = 'solution.pickle'
-            self.filename = 'solution.pickle'
-        elif not isinstance(fname, str) or os.path.splitext(fname)[-1].lower() != '.pickle':
-            raise Exception('fname must be a string with extension ".pickle". Please correct.')
-        if os.path.exists(fname) and overwrite is True: # Explicit overwrite done by user
-            print('Warning:', fname, 'already exists; previous file will be overwritten.\n')
+            fname = "solution.pickle"
+            self.filename = "solution.pickle"
+        elif (
+            not isinstance(fname, str)
+            or os.path.splitext(fname)[-1].lower() != ".pickle"
+        ):
+            raise Exception(
+                'fname must be a string with extension ".pickle". Please correct.'
+            )
+        if (
+            os.path.exists(fname) and overwrite is True
+        ):  # Explicit overwrite done by user
+            print(
+                "Warning:",
+                fname,
+                "already exists; previous file will be overwritten.\n",
+            )
             self.filename = fname
-        elif os.path.exists(fname) and overwrite is False: # User is not overwriting
-            self.filename = os.path.splitext(fname)[0]+'_v_'+ pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S") +'.pickle'
-            print('Warning:', fname, 'already exists; results will be saved to "', self.filename,'".\n')
+        elif os.path.exists(fname) and overwrite is False:  # User is not overwriting
+            self.filename = (
+                os.path.splitext(fname)[0]
+                + "_v_"
+                + pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S")
+                + ".pickle"
+            )
+            print(
+                "Warning:",
+                fname,
+                'already exists; results will be saved to "',
+                self.filename,
+                '".\n',
+            )
             # self.filename = 'solution.pickle'
         elif os.path.exists(fname) is False:
             self.filename = fname
-
 
         # Check data types and shapes
         if isinstance(XY_data, pd.DataFrame):
@@ -267,39 +300,54 @@ class RadialBasisFunctions:
         self.centres = xy_data_scaled[:, :-1]
 
         if solution_method is None:
-            solution_method = 'algebraic'
+            solution_method = "algebraic"
             self.solution_method = solution_method
-            print('Default parameter estimation method is used.')
+            print("Default parameter estimation method is used.")
         elif not isinstance(solution_method, string_types):
-            raise Exception('Invalid solution method. Must be of type <str>.')
-        elif (solution_method.lower() == 'algebraic') or (solution_method.lower() == 'pyomo') or (solution_method.lower() == 'bfgs'):
+            raise Exception("Invalid solution method. Must be of type <str>.")
+        elif (
+            (solution_method.lower() == "algebraic")
+            or (solution_method.lower() == "pyomo")
+            or (solution_method.lower() == "bfgs")
+        ):
             solution_method = solution_method.lower()
             self.solution_method = solution_method
         else:
-            raise Exception('Invalid solution method entered. Select one of ALGEBRAIC (solution_method="algebraic") , L-BFGS (solution_method="bfgs") or Pyomo optimization (solution_method="pyomo") methods. ')
-        print('\nParameter estimation method: ', self.solution_method)
+            raise Exception(
+                'Invalid solution method entered. Select one of ALGEBRAIC (solution_method="algebraic") , L-BFGS (solution_method="bfgs") or Pyomo optimization (solution_method="pyomo") methods. '
+            )
+        print("\nParameter estimation method: ", self.solution_method)
 
         if basis_function is None:
-            basis_function = 'gaussian'
+            basis_function = "gaussian"
             self.basis_function = basis_function
-            print('Gaussian basis function is used.')
+            print("Gaussian basis function is used.")
         elif not isinstance(basis_function, string_types):
-            raise Exception('Invalid basis_function. Must be of type <str>.')
-        elif (basis_function.lower() == 'linear') or (basis_function.lower() == 'cubic') or (basis_function.lower() == 'gaussian') or (basis_function.lower() == 'mq') or (basis_function.lower() == 'imq') or (basis_function.lower() == 'spline'):
+            raise Exception("Invalid basis_function. Must be of type <str>.")
+        elif (
+            (basis_function.lower() == "linear")
+            or (basis_function.lower() == "cubic")
+            or (basis_function.lower() == "gaussian")
+            or (basis_function.lower() == "mq")
+            or (basis_function.lower() == "imq")
+            or (basis_function.lower() == "spline")
+        ):
             basis_function = basis_function.lower()
             self.basis_function = basis_function
         else:
-            raise Exception('Invalid basis function entered. See manual for available options. ')
-        print('Basis function: ', self.basis_function)
+            raise Exception(
+                "Invalid basis function entered. See manual for available options. "
+            )
+        print("Basis function: ", self.basis_function)
 
         if regularization is None:
             regularization = True
             self.regularization = regularization
         elif not isinstance(regularization, bool):
-            raise Exception('Invalid basis_function. Must be boolean')
+            raise Exception("Invalid basis_function. Must be boolean")
         elif (regularization is True) or (regularization is False):
             self.regularization = regularization
-        print('Regularization done: ', self.regularization)
+        print("Regularization done: ", self.regularization)
 
         # Results
         self.weights = None
@@ -321,7 +369,7 @@ class RadialBasisFunctions:
 
         """
         dist = self.x_data - c
-        l2_distance = np.sqrt(np.sum((dist ** 2), axis=1))
+        l2_distance = np.sqrt(np.sum((dist**2), axis=1))
         return l2_distance
 
     @staticmethod
@@ -368,7 +416,7 @@ class RadialBasisFunctions:
         https://www.tandfonline.com/doi/full/10.1080/03052150500422294
 
         """
-        x_mod = x ** 1
+        x_mod = x**1
         return x_mod
 
     @staticmethod
@@ -390,7 +438,7 @@ class RadialBasisFunctions:
         For more information, see Hongbing Fang & Mark F. Horstemeyer (2006): Global response approximation with radial basis functions
         https://www.tandfonline.com/doi/full/10.1080/03052150500422294
         """
-        x_mod = x ** 3
+        x_mod = x**3
         return x_mod
 
     @staticmethod
@@ -485,10 +533,14 @@ class RadialBasisFunctions:
         """
         # x_mod = (x ** 2) * np.log(x)
         # x_mod = np.nan_to_num(x_mod)
-        with np.errstate(divide='ignore'): # catch division warnings in log function due to log(0)~=0
+        with np.errstate(
+            divide="ignore"
+        ):  # catch division warnings in log function due to log(0)~=0
             log_x = np.log(x)
-        with np.errstate(invalid='ignore'): # catch invalid warnings due to - Inf * 0 evaluations
-            x_mod = (x ** 2) * log_x
+        with np.errstate(
+            invalid="ignore"
+        ):  # catch invalid warnings due to - Inf * 0 evaluations
+            x_mod = (x**2) * log_x
         x_mod = np.nan_to_num(x_mod)
         return x_mod
 
@@ -516,17 +568,19 @@ class RadialBasisFunctions:
         # Initialization of x_transformed
         x_transformed = np.zeros((basis_functions.shape[0], basis_functions.shape[1]))
 
-        if self.basis_function == 'gaussian':
+        if self.basis_function == "gaussian":
             x_transformed = self.gaussian_basis_transformation(basis_functions, r)
-        elif self.basis_function == 'linear':
+        elif self.basis_function == "linear":
             x_transformed = self.linear_transformation(basis_functions)
-        elif self.basis_function == 'cubic':
+        elif self.basis_function == "cubic":
             x_transformed = self.cubic_transformation(basis_functions)
-        elif self.basis_function == 'mq':
+        elif self.basis_function == "mq":
             x_transformed = self.multiquadric_basis_transformation(basis_functions, r)
-        elif self.basis_function == 'imq':
-            x_transformed = self.inverse_multiquadric_basis_transformation(basis_functions, r)
-        elif self.basis_function == 'spline':
+        elif self.basis_function == "imq":
+            x_transformed = self.inverse_multiquadric_basis_transformation(
+                basis_functions, r
+            )
+        elif self.basis_function == "spline":
             x_transformed = self.thin_plate_spline_transformation(basis_functions)
         return x_transformed
 
@@ -578,7 +632,9 @@ class RadialBasisFunctions:
         y_prediction = y_prediction.reshape(y_prediction.shape[0], 1)
         t1 = (y_prediction - y) * x
         grad_values = (1 / x.shape[0]) * np.sum(t1, axis=0)
-        grad_values = grad_values.reshape(theta.size, )
+        grad_values = grad_values.reshape(
+            theta.size,
+        )
         return grad_values
 
     def bfgs_parameter_optimization(self, x, y):
@@ -600,7 +656,14 @@ class RadialBasisFunctions:
         """
         init_phi = np.zeros((x.shape[1], 1))
         other_args = (x, y)
-        phi = opt.fmin_bfgs(self.cost_function, init_phi, fprime=self.gradient_function, args=other_args, disp=False, gtol=1e-20)
+        phi = opt.fmin_bfgs(
+            self.cost_function,
+            init_phi,
+            fprime=self.gradient_function,
+            args=other_args,
+            disp=False,
+            gtol=1e-20,
+        )
         return phi
 
     @staticmethod
@@ -657,39 +720,54 @@ class RadialBasisFunctions:
         """
         model = ConcreteModel()
 
-        pd.set_option('display.precision', 64)
+        pd.set_option("display.precision", 64)
         x_data = pd.DataFrame(x)
         y_data = pd.DataFrame(y)
 
         model.M = Set(initialize=x_data.index.values)  # Rows indices passed into set
-        model.N = Set(initialize=x_data.columns.values)  # x column indices passed into set
-        model.P = Set(initialize=y_data.columns.values)  # y column index passed into set
+        model.N = Set(
+            initialize=x_data.columns.values
+        )  # x column indices passed into set
+        model.P = Set(
+            initialize=y_data.columns.values
+        )  # y column index passed into set
 
         model.x = Param(model.M, model.N, initialize=x_data.stack().to_dict())
         model.y_real = Param(model.M, model.P, initialize=y_data.stack().to_dict())
 
         # Define variables
         model.theta = Var(model.N, initialize=0, domain=Reals)
-        model.y_predictions = Var(model.M, model.P, initialize=y_data.stack().to_dict(), domain=Reals)
+        model.y_predictions = Var(
+            model.M, model.P, initialize=y_data.stack().to_dict(), domain=Reals
+        )
 
         # constraint y_p = theta.X
         def xy_product(model, i, k):
-            return model.y_predictions[i, k] == sum(model.theta[j] * model.x[i, j] for j in model.N for k in model.P)
+            return model.y_predictions[i, k] == sum(
+                model.theta[j] * model.x[i, j] for j in model.N for k in model.P
+            )
 
-        model.x_theta_product = Constraint(model.M, model.P, rule=xy_product, doc='Predicted value calc: y = hx')
+        model.x_theta_product = Constraint(
+            model.M, model.P, rule=xy_product, doc="Predicted value calc: y = hx"
+        )
 
         # Cost function - RMSE
         def model_rms_error(model):
             cost_value = (1 / len(model.M)) * sum(
-                ((model.y_real[i, k] - model.y_predictions[i, k]) ** 2) for i in model.M for k in model.P)
+                ((model.y_real[i, k] - model.y_predictions[i, k]) ** 2)
+                for i in model.M
+                for k in model.P
+            )
             return cost_value
 
-        model.prediction_error = Objective(rule=model_rms_error, sense=minimize, doc='Minimum RMSE error')
+        model.prediction_error = Objective(
+            rule=model_rms_error, sense=minimize, doc="Minimum RMSE error"
+        )
 
         instance = model
         opt = SolverFactory("ipopt")
-        opt.options['max_iter'] = 10000
-        opt.options['acceptable_tol'] = 1e-30
+        opt.options["max_iter"] = 10000
+        opt.options["acceptable_tol"] = 1e-30
         # model.pprint()
         result = opt.solve(instance)  # , tee=True)
         # model.display()
@@ -779,23 +857,29 @@ class RadialBasisFunctions:
         x_transformed = self.basis_generation(sigma)
         condition_number_pure = np.linalg.cond(x_transformed)
 
-        x_regularized = x_transformed + (lambda_reg * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
+        x_regularized = x_transformed + (
+            lambda_reg * np.eye(x_transformed.shape[0], x_transformed.shape[1])
+        )
         condition_number_regularized = np.linalg.cond(x_regularized)
 
         y_train = self.y_data.reshape(self.y_data.shape[0], 1)
 
         # SOLVE RADIAL WEIGHTS FOR FULL X DATA
-        if self.solution_method == 'algebraic':
-            radial_weights = self.explicit_linear_algebra_solution(x_regularized, y_train)
-        elif self.solution_method == 'pyomo':
+        if self.solution_method == "algebraic":
+            radial_weights = self.explicit_linear_algebra_solution(
+                x_regularized, y_train
+            )
+        elif self.solution_method == "pyomo":
             radial_weights = self.pyomo_optimization(x_regularized, y_train)
-        elif self.solution_method == 'bfgs':
+        elif self.solution_method == "bfgs":
             radial_weights = self.bfgs_parameter_optimization(x_regularized, y_train)
         radial_weights = radial_weights.reshape(radial_weights.shape[0], 1)
 
         # Evaluate loo-estimate with Rippa formula
         inverse_matrix = np.diag(np.linalg.pinv(x_regularized))
-        error_vector = radial_weights.reshape(radial_weights.shape[0], 1) / (inverse_matrix.reshape(inverse_matrix.shape[0], 1))
+        error_vector = radial_weights.reshape(radial_weights.shape[0], 1) / (
+            inverse_matrix.reshape(inverse_matrix.shape[0], 1)
+        )
         loo_error_estimate = np.linalg.norm(error_vector)
         return condition_number_pure, condition_number_regularized, loo_error_estimate
 
@@ -818,14 +902,65 @@ class RadialBasisFunctions:
 
         """
         # Define sigma and lambda ranges
-        if (self.basis_function == 'gaussian') or (self.basis_function == 'mq') or (self.basis_function.lower() == 'imq'):
-            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        if (
+            (self.basis_function == "gaussian")
+            or (self.basis_function == "mq")
+            or (self.basis_function.lower() == "imq")
+        ):
+            r_set = [
+                0.001,
+                0.002,
+                0.005,
+                0.0075,
+                0.01,
+                0.02,
+                0.05,
+                0.075,
+                0.1,
+                0.2,
+                0.5,
+                0.75,
+                1.0,
+                2.0,
+                5.0,
+                7.5,
+                10.0,
+                20.0,
+                50.0,
+                75.0,
+                100.0,
+                200.0,
+                500.0,
+                1000.0,
+            ]
         else:
             r_set = [0]
 
         if self.regularization is True:
             # reg_parameter = [0.000001, 0.000005, 0.00001, 0.00005, 0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1]
-            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+            reg_parameter = [
+                0.00001,
+                0.00002,
+                0.00005,
+                0.000075,
+                0.0001,
+                0.0002,
+                0.0005,
+                0.00075,
+                0.001,
+                0.002,
+                0.005,
+                0.0075,
+                0.01,
+                0.02,
+                0.05,
+                0.075,
+                0.1,
+                0.2,
+                0.5,
+                0.75,
+                1,
+            ]
         elif self.regularization is False:
             reg_parameter = [0]
 
@@ -833,15 +968,35 @@ class RadialBasisFunctions:
 
         error_vector = np.zeros((len(r_set) * len(reg_parameter), 3))
         counter = 0
-        print('===========================================================================================================')
+        print(
+            "==========================================================================================================="
+        )
         for i in range(0, len(r_set)):
             sigma = r_set[i]
             for j in range(0, len(reg_parameter)):
                 lambda_reg = reg_parameter[j]
-                cond_no_pure, cond_no_reg, cv_error = self.loo_error_estimation_with_rippa_method(sigma, lambda_reg)
+                (
+                    cond_no_pure,
+                    cond_no_reg,
+                    cv_error,
+                ) = self.loo_error_estimation_with_rippa_method(sigma, lambda_reg)
                 error_vector[counter, :] = [sigma, lambda_reg, cv_error]
                 counter += 1
-                print(sigma, '   |    ', lambda_reg, '   |    ', cv_error, '   |    ', cond_no_pure, '   |    ',  cond_no_pure * machine_precision, '   |    ', cond_no_reg, '   |    ', cond_no_reg * machine_precision)
+                print(
+                    sigma,
+                    "   |    ",
+                    lambda_reg,
+                    "   |    ",
+                    cv_error,
+                    "   |    ",
+                    cond_no_pure,
+                    "   |    ",
+                    cond_no_pure * machine_precision,
+                    "   |    ",
+                    cond_no_reg,
+                    "   |    ",
+                    cond_no_reg * machine_precision,
+                )
         minimum_value_column = np.argmin(error_vector[:, 2], axis=0)
         r_best = error_vector[minimum_value_column, 0]
         lambda_best = error_vector[minimum_value_column, 1]
@@ -879,20 +1034,36 @@ class RadialBasisFunctions:
 
         # Generate x matrix
         x_transformed = self.basis_generation(best_r_value)
-        x_transformed = x_transformed + (best_lambda_param * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
+        x_transformed = x_transformed + (
+            best_lambda_param * np.eye(x_transformed.shape[0], x_transformed.shape[1])
+        )
         x_condition_number = np.linalg.cond(x_transformed)
 
-        if self.solution_method == 'algebraic':
-            radial_weights = self.explicit_linear_algebra_solution(x_transformed, self.y_data)
-        elif self.solution_method == 'pyomo':
+        if self.solution_method == "algebraic":
+            radial_weights = self.explicit_linear_algebra_solution(
+                x_transformed, self.y_data
+            )
+        elif self.solution_method == "pyomo":
             radial_weights = self.pyomo_optimization(x_transformed, self.y_data)
-        elif self.solution_method == 'bfgs':
-            radial_weights = self.bfgs_parameter_optimization(x_transformed, self.y_data)
+        elif self.solution_method == "bfgs":
+            radial_weights = self.bfgs_parameter_optimization(
+                x_transformed, self.y_data
+            )
         radial_weights = radial_weights.reshape(radial_weights.shape[0], 1)
 
-        training_ss_error, rmse_error, y_training_predictions_scaled = self.error_calculation(radial_weights, self.basis_generation(best_r_value), self.y_data)
+        (
+            training_ss_error,
+            rmse_error,
+            y_training_predictions_scaled,
+        ) = self.error_calculation(
+            radial_weights, self.basis_generation(best_r_value), self.y_data
+        )
         r_square = self.r2_calculation(self.y_data, y_training_predictions_scaled)
-        y_training_predictions = self.data_min[0, -1] + y_training_predictions_scaled * (self.data_max[0, -1] - self.data_min[0, -1])
+        y_training_predictions = self.data_min[
+            0, -1
+        ] + y_training_predictions_scaled * (
+            self.data_max[0, -1] - self.data_min[0, -1]
+        )
 
         # Results
         self.weights = radial_weights
@@ -907,12 +1078,14 @@ class RadialBasisFunctions:
         self.y_data_min = self.data_min[:, -1]
         self.y_data_max = self.data_max[:, -1]
         if x_condition_number < (1 / np.finfo(float).eps):
-            self.solution_status = 'ok'
+            self.solution_status = "ok"
         else:
-            warnings.warn('The parameter matrix A in A.x=B is ill-conditioned (condition number > 1e10). The solution returned may be inaccurate or unstable - inspect rmse error. Regularization (if not already done) may improve solution')
-            self.solution_status = 'unstable solution'
+            warnings.warn(
+                "The parameter matrix A in A.x=B is ill-conditioned (condition number > 1e10). The solution returned may be inaccurate or unstable - inspect rmse error. Regularization (if not already done) may improve solution"
+            )
+            self.solution_status = "unstable solution"
 
-        self.pickle_save({'model':self})
+        self.pickle_save({"model": self})
         return self
 
     def predict_output(self, x_data):
@@ -933,35 +1106,51 @@ class RadialBasisFunctions:
         lambda_reg = self.regularization_parameter
         scale = self.x_data_max - self.x_data_min
         scale[scale == 0.0] = 1.0
-        x_pred_scaled = (x_data - self.x_data_min)/scale
+        x_pred_scaled = (x_data - self.x_data_min) / scale
         x_data = x_pred_scaled.reshape(x_data.shape)
 
         basis_vector = np.zeros((x_data.shape[0], centres_matrix.shape[0]))
         # Calculate distances from centres
         for i in range(0, centres_matrix.shape[0]):
-            basis_vector[:, i] = np.sqrt(np.sum(((x_data - centres_matrix[i, :]) ** 2), axis=1))
+            basis_vector[:, i] = np.sqrt(
+                np.sum(((x_data - centres_matrix[i, :]) ** 2), axis=1)
+            )
         # Initialization of x_transformed
         x_transformed = np.zeros((basis_vector.shape[0], basis_vector.shape[1]))
 
         # Transform X
-        if self.basis_function == 'gaussian':
-            x_transformed = RadialBasisFunctions.gaussian_basis_transformation(basis_vector, r)
-        elif self.basis_function == 'linear':
+        if self.basis_function == "gaussian":
+            x_transformed = RadialBasisFunctions.gaussian_basis_transformation(
+                basis_vector, r
+            )
+        elif self.basis_function == "linear":
             x_transformed = RadialBasisFunctions.linear_transformation(basis_vector)
-        elif self.basis_function == 'cubic':
+        elif self.basis_function == "cubic":
             x_transformed = RadialBasisFunctions.cubic_transformation(basis_vector)
-        elif self.basis_function == 'mq':
-            x_transformed = RadialBasisFunctions.multiquadric_basis_transformation(basis_vector, r)
-        elif self.basis_function == 'imq':
-            x_transformed = RadialBasisFunctions.inverse_multiquadric_basis_transformation(basis_vector, r)
-        elif self.basis_function == 'spline':
-            x_transformed = RadialBasisFunctions.thin_plate_spline_transformation(basis_vector)
+        elif self.basis_function == "mq":
+            x_transformed = RadialBasisFunctions.multiquadric_basis_transformation(
+                basis_vector, r
+            )
+        elif self.basis_function == "imq":
+            x_transformed = (
+                RadialBasisFunctions.inverse_multiquadric_basis_transformation(
+                    basis_vector, r
+                )
+            )
+        elif self.basis_function == "spline":
+            x_transformed = RadialBasisFunctions.thin_plate_spline_transformation(
+                basis_vector
+            )
 
         # Add regularization shifting?
-        x_transformed = x_transformed + (0 * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
+        x_transformed = x_transformed + (
+            0 * np.eye(x_transformed.shape[0], x_transformed.shape[1])
+        )
         # x_transformed = x_transformed + (lambda_reg * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
         y_prediction_scaled = np.matmul(x_transformed, radial_weights)
-        y_prediction_unscaled = self.y_data_min + y_prediction_scaled * (self.y_data_max - self.y_data_min)
+        y_prediction_unscaled = self.y_data_min + y_prediction_scaled * (
+            self.y_data_max - self.y_data_min
+        )
         return y_prediction_unscaled
 
     def generate_expression(self, variable_list):
@@ -983,35 +1172,51 @@ class RadialBasisFunctions:
         for i in range(0, self.centres.shape[0]):
             ans = 0
             for j in range(0, self.centres.shape[1]):
-                ans += (((t1[0, j] - self.x_data_min[0, j])/(self.x_data_max[0, j]- self.x_data_min[0, j])) - self.centres[i, j]) ** 2
-            eucl_d = ans ** 0.5
+                ans += (
+                    (
+                        (t1[0, j] - self.x_data_min[0, j])
+                        / (self.x_data_max[0, j] - self.x_data_min[0, j])
+                    )
+                    - self.centres[i, j]
+                ) ** 2
+            eucl_d = ans**0.5
             basis_vector.append(eucl_d)
         rbf_terms_list = []
-        if self.basis_function == 'linear':
+        if self.basis_function == "linear":
             for k in range(0, len(basis_vector)):
-                rbf_terms_list.append(RadialBasisFunctions.linear_transformation(basis_vector[k]))
-        elif self.basis_function == 'cubic':
+                rbf_terms_list.append(
+                    RadialBasisFunctions.linear_transformation(basis_vector[k])
+                )
+        elif self.basis_function == "cubic":
             for k in range(0, len(basis_vector)):
-                rbf_terms_list.append(RadialBasisFunctions.cubic_transformation(basis_vector[k]))
-        elif self.basis_function == 'gaussian':
+                rbf_terms_list.append(
+                    RadialBasisFunctions.cubic_transformation(basis_vector[k])
+                )
+        elif self.basis_function == "gaussian":
             for k in range(0, len(basis_vector)):
                 rbf_terms_list.append(exp(-1 * ((self.sigma * basis_vector[k]) ** 2)))
-        elif self.basis_function == 'mq':
+        elif self.basis_function == "mq":
             for k in range(0, len(basis_vector)):
-                rbf_terms_list.append((((basis_vector[k] * self.sigma) ** 2) + 1) ** 0.5)
-        elif self.basis_function == 'imq':
+                rbf_terms_list.append(
+                    (((basis_vector[k] * self.sigma) ** 2) + 1) ** 0.5
+                )
+        elif self.basis_function == "imq":
             for k in range(0, len(basis_vector)):
-                rbf_terms_list.append(1 / ((((basis_vector[k] * self.sigma) ** 2) + 1) ** 0.5))
-        elif self.basis_function == 'spline':
+                rbf_terms_list.append(
+                    1 / ((((basis_vector[k] * self.sigma) ** 2) + 1) ** 0.5)
+                )
+        elif self.basis_function == "spline":
             for k in range(0, len(basis_vector)):
                 rbf_terms_list.append(((basis_vector[k] ** 2) * log(basis_vector[k])))
 
         rbf_terms_array = np.asarray(rbf_terms_list)
         rbf_expr = self.y_data_min[0]
-        rbf_expr += (self.y_data_max[0] - self.y_data_min[0]) * sum(w * t for w, t in zip(
-            np.nditer(self.weights),
-            np.nditer(rbf_terms_array, flags=['refs_ok'])
-        ))
+        rbf_expr += (self.y_data_max[0] - self.y_data_min[0]) * sum(
+            w * t
+            for w, t in zip(
+                np.nditer(self.weights), np.nditer(rbf_terms_array, flags=["refs_ok"])
+            )
+        )
         return rbf_expr
 
     def get_feature_vector(self):
@@ -1023,12 +1228,12 @@ class RadialBasisFunctions:
             Pyomo IndexedParam  : An indexed parameter list of the variables supplied in the original data
 
         **Example:**
-            
+
         .. code-block:: python
-        
+
             # Create a small dataframe with three columns ('one', 'two', 'three') and two rows (A, B)
             >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['one', 'two', 'three'])
-            
+
             # Initialize the **RadialBasisFunctions** class with a linear kernel and print the column headers for the variables
             >>> f = RadialBasisFunctions(xy_data, basis_function='linear')
             >>> p = f.get_feature_vector()
@@ -1049,12 +1254,11 @@ class RadialBasisFunctions:
         The pickle_save method saves the results of the run in a pickle object.
         """
         try:
-            filehandler = open(self.filename, 'wb')
+            filehandler = open(self.filename, "wb")
             pickle.dump(solutions, filehandler)
-            print('\nResults saved in ', str(self.filename))
+            print("\nResults saved in ", str(self.filename))
         except:
-            raise IOError('File could not be saved.')
-
+            raise IOError("File could not be saved.")
 
     @staticmethod
     def pickle_load(solution_file):
@@ -1066,10 +1270,10 @@ class RadialBasisFunctions:
 
         """
         try:
-            filehandler = open(solution_file, 'rb')
+            filehandler = open(solution_file, "rb")
             return pickle.load(filehandler)
         except:
-            raise Exception('File could not be loaded.')
+            raise Exception("File could not be loaded.")
 
     def parity_residual_plots(self):
         """
@@ -1082,18 +1286,25 @@ class RadialBasisFunctions:
 
         fig1 = plt.figure(figsize=(16, 9), tight_layout=True)
         ax = fig1.add_subplot(121)
-        ax.plot(self.y_data_unscaled, self.y_data_unscaled, '-')
-        ax.plot(self.y_data_unscaled, self.output_predictions, 'o')
-        ax.set_xlabel(r'True data', fontsize=12)
-        ax.set_ylabel(r'Surrogate values', fontsize=12)
-        ax.set_title(r'Parity plot', fontsize=12)
+        ax.plot(self.y_data_unscaled, self.y_data_unscaled, "-")
+        ax.plot(self.y_data_unscaled, self.output_predictions, "o")
+        ax.set_xlabel(r"True data", fontsize=12)
+        ax.set_ylabel(r"Surrogate values", fontsize=12)
+        ax.set_title(r"Parity plot", fontsize=12)
 
         ax2 = fig1.add_subplot(122)
-        ax2.plot(self.y_data_unscaled, self.y_data_unscaled - self.output_predictions, 's', mfc='w', mec='m', ms=6)
+        ax2.plot(
+            self.y_data_unscaled,
+            self.y_data_unscaled - self.output_predictions,
+            "s",
+            mfc="w",
+            mec="m",
+            ms=6,
+        )
         ax2.axhline(y=0, xmin=0, xmax=1)
-        ax2.set_xlabel(r'True data', fontsize=12)
-        ax2.set_ylabel(r'Residuals', fontsize=12)
-        ax2.set_title(r'Residual plot', fontsize=12)
+        ax2.set_xlabel(r"True data", fontsize=12)
+        ax2.set_ylabel(r"Residuals", fontsize=12)
+        ax2.set_title(r"Residual plot", fontsize=12)
 
         plt.show()
 
@@ -1108,23 +1319,24 @@ class RadialBasisFunctions:
         eqn = self.generate_expression(var_list)
 
         double_line = "=" * 120
-        s = (f"\n{double_line}"
-             f"\nResults of radial basis function run:\n"
-             f"\nBasis function type               : {self.basis_function}\n"
-             f"Shape parameter                    : {self.sigma}\n"
-             f"Regularization parameter           : {self.regularization_parameter}\n"
-             f"Number of terms in RBF model       : {self.weights.size + 1}\n"  # The additional term is y_min
-             f"\nRBF Expression:\n"
-             f"--------------------------\n"
-             f"\n{eqn}\n"
-             f"--------------------------\n"
-             f"\nModel training errors:"
-             f"\n-----------------------\n"
-             f"Mean Squared Error (MSE)         : {self.rmse ** 2}\n"
-             f"Root Mean Squared Error (RMSE)   : {self.rmse}\n"
-             f"Goodness of fit (R2)             : {self.R2}\n"             
-             f"\n{double_line}"
-             )
+        s = (
+            f"\n{double_line}"
+            f"\nResults of radial basis function run:\n"
+            f"\nBasis function type               : {self.basis_function}\n"
+            f"Shape parameter                    : {self.sigma}\n"
+            f"Regularization parameter           : {self.regularization_parameter}\n"
+            f"Number of terms in RBF model       : {self.weights.size + 1}\n"  # The additional term is y_min
+            f"\nRBF Expression:\n"
+            f"--------------------------\n"
+            f"\n{eqn}\n"
+            f"--------------------------\n"
+            f"\nModel training errors:"
+            f"\n-----------------------\n"
+            f"Mean Squared Error (MSE)         : {self.rmse ** 2}\n"
+            f"Root Mean Squared Error (RMSE)   : {self.rmse}\n"
+            f"Goodness of fit (R2)             : {self.R2}\n"
+            f"\n{double_line}"
+        )
         return s
 
     def print_report(self):

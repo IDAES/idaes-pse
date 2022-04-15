@@ -16,7 +16,7 @@ import collections
 from pyomo.core.base.var import ScalarVar, IndexedVar, _GeneralVarData
 
 
-@declare_custom_block(name='SurrogateBlock')
+@declare_custom_block(name="SurrogateBlock")
 class SurrogateBlockData(_BlockData):
     def __init__(self, component):
         """
@@ -52,10 +52,16 @@ class SurrogateBlockData(_BlockData):
         """
         super(SurrogateBlockData, self).__init__(component)
 
-    def build_model(self, surrogate_object, input_vars=None, output_vars=None,
-                    use_surrogate_bounds=True, **kwargs):
+    def build_model(
+        self,
+        surrogate_object,
+        input_vars=None,
+        output_vars=None,
+        use_surrogate_bounds=True,
+        **kwargs
+    ):
         """
-        Build an EO model of the surrogate on the block. This method will build the 
+        Build an EO model of the surrogate on the block. This method will build the
         necessary equations, and will construct inputs and outputs if necessary (i.e.,
         they are not provided)
 
@@ -87,7 +93,8 @@ class SurrogateBlockData(_BlockData):
             input_vars=input_vars,
             input_labels=surrogate_object.input_labels(),
             output_vars=output_vars,
-            output_labels=surrogate_object.output_labels())
+            output_labels=surrogate_object.output_labels(),
+        )
 
         # set the input bounds if desired
         input_bounds = surrogate_object.input_bounds()
@@ -101,7 +108,7 @@ class SurrogateBlockData(_BlockData):
                 ub = bnd[1]
                 if v.ub is not None:
                     ub = min(ub, v.ub)
-                print('Setting bound of {} to {}.'.format(v, (lb, ub)))
+                print("Setting bound of {} to {}.".format(v, (lb, ub)))
                 v.setlb(lb)
                 v.setub(ub)
 
@@ -112,18 +119,27 @@ class SurrogateBlockData(_BlockData):
         # derived classes should call .pop when they use a keyword argument
         if len(kwargs) > 0:
             raise ValueError(
-                'Error in keyword arguments passed to build_model.'
-                ' The following arguments were not used: {}'
-                .format([k for k in kwargs.keys()]))
+                "Error in keyword arguments passed to build_model."
+                " The following arguments were not used: {}".format(
+                    [k for k in kwargs.keys()]
+                )
+            )
 
-    def _setup_inputs_outputs(self, n_inputs, n_outputs,
-                              input_vars=None, input_labels=None,
-                              output_vars=None, output_labels=None):
+    def _setup_inputs_outputs(
+        self,
+        n_inputs,
+        n_outputs,
+        input_vars=None,
+        input_labels=None,
+        output_vars=None,
+        output_labels=None,
+    ):
         if n_inputs < 1 or n_outputs < 1:
             raise ValueError(
-                'Attempting to create a Surrogate block with no inputs '
-                'and/or no outputs. A SurrogateBlock must have at least '
-                'one input and output')
+                "Attempting to create a Surrogate block with no inputs "
+                "and/or no outputs. A SurrogateBlock must have at least "
+                "one input and output"
+            )
 
         # copy or create the labels
         if input_labels is None:
@@ -132,8 +148,9 @@ class SurrogateBlockData(_BlockData):
             self._input_labels = list(input_labels)
             if len(self._input_labels) != n_inputs:
                 raise ValueError(
-                    'Specifying input_labels to a SurrogateBlock, but the '
-                    'length does not match n_inputs')
+                    "Specifying input_labels to a SurrogateBlock, but the "
+                    "length does not match n_inputs"
+                )
 
         # create or extract the variables
         if input_vars is None:
@@ -146,9 +163,10 @@ class SurrogateBlockData(_BlockData):
             self._input_vars = _extract_var_data(input_vars)
             if len(self._input_vars) != n_inputs:
                 raise ValueError(
-                    'Specifying input_vars to a SurrogateBlock, but the'
-                    ' length of the input_vars (after extracting all'
-                    ' the VarData objects) does not match n_inputs')
+                    "Specifying input_vars to a SurrogateBlock, but the"
+                    " length of the input_vars (after extracting all"
+                    " the VarData objects) does not match n_inputs"
+                )
 
         if output_labels is None:
             self._output_labels = list(range(n_outputs))
@@ -156,14 +174,14 @@ class SurrogateBlockData(_BlockData):
             self._output_labels = list(output_labels)
             if len(self._output_labels) != n_outputs:
                 raise ValueError(
-                    'Specifying output_labels to a SurrogateBlock, but the '
-                    'length does not match n_outputs')
+                    "Specifying output_labels to a SurrogateBlock, but the "
+                    "length does not match n_outputs"
+                )
 
         # create or extract the output variables
         if output_vars is None:
             # we need to create our own outputs
-            self.outputs_set = Set(
-                initialize=self._output_labels, ordered=True)
+            self.outputs_set = Set(initialize=self._output_labels, ordered=True)
             self.outputs = Var(self.outputs_set, initialize=0)
             self._output_vars = list(self.outputs.values())
         else:
@@ -171,9 +189,10 @@ class SurrogateBlockData(_BlockData):
             self._output_vars = _extract_var_data(output_vars)
             if len(self._output_vars) != n_outputs:
                 raise ValueError(
-                    'Specifying output_vars to a SurrogateBlock, but the'
-                    ' length of the output_vars (after extracting all'
-                    ' the VarData objects) does not match n_outputs')
+                    "Specifying output_vars to a SurrogateBlock, but the"
+                    " length of the output_vars (after extracting all"
+                    " the VarData objects) does not match n_outputs"
+                )
 
     def _input_vars_as_list(self):
         return self._input_vars
@@ -186,27 +205,27 @@ class SurrogateBlockData(_BlockData):
         Returns a dictionary of the input variables (VarData objects) with
         the labels as the keys
         """
-        return {self._input_labels[i]: v
-                for i, v in enumerate(self._input_vars)}
+        return {self._input_labels[i]: v for i, v in enumerate(self._input_vars)}
 
     def output_vars_as_dict(self):
         """
         Returns a dictionary of the output variables (VarData objects) with
         the labels as the keys
         """
-        return {self._output_labels[i]: v
-                for i, v in enumerate(self._output_vars)}
+        return {self._output_labels[i]: v for i, v in enumerate(self._output_vars)}
 
 
 def _extract_var_data_gen(vars):
     if vars is None:
         return
-    elif getattr(vars, 'ctype', None) is Var:
+    elif getattr(vars, "ctype", None) is Var:
         if vars.is_indexed():
             if not vars.index_set().isordered():
                 raise ValueError(
-                    'Expected IndexedVar: {} to be indexed over an ordered set.'
-                    .format(vars))
+                    "Expected IndexedVar: {} to be indexed over an ordered set.".format(
+                        vars
+                    )
+                )
             yield from vars.values()
         else:
             yield vars
@@ -214,8 +233,7 @@ def _extract_var_data_gen(vars):
         for v in vars:
             yield from _extract_var_data_gen(v)
     else:
-        raise ValueError(
-            "Unknown variable type of {} for {}".format(type(vars), vars))
+        raise ValueError("Unknown variable type of {} for {}".format(type(vars), vars))
 
 
 def _extract_var_data(vars):

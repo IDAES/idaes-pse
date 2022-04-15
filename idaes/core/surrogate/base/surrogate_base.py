@@ -21,9 +21,15 @@ from idaes.core.surrogate.metrics import compute_fit_metrics
 class SurrogateTrainer(object):
     CONFIG = ConfigBlock()
 
-    def __init__(self, input_labels, output_labels,
-                 training_dataframe, validation_dataframe=None,
-                 input_bounds=None, **settings):
+    def __init__(
+        self,
+        input_labels,
+        output_labels,
+        training_dataframe,
+        validation_dataframe=None,
+        input_bounds=None,
+        **settings
+    ):
         """
         This is the base class for IDAES surrogate training objects.
 
@@ -54,12 +60,17 @@ class SurrogateTrainer(object):
         self.config = self.CONFIG(settings)
 
         # We must have at least one input label and one output label
-        if input_labels is None or len(input_labels) < 1 \
-           or output_labels is None or len(output_labels) < 1:
+        if (
+            input_labels is None
+            or len(input_labels) < 1
+            or output_labels is None
+            or len(output_labels) < 1
+        ):
             raise ValueError(
-                'SurrogateTrainer requires a list of input_labels and a list '
-                'of output_labels which must both have a length of at '
-                'least one')
+                "SurrogateTrainer requires a list of input_labels and a list "
+                "of output_labels which must both have a length of at "
+                "least one"
+            )
 
         self._input_labels = list(input_labels)
         self._output_labels = list(output_labels)
@@ -67,51 +78,61 @@ class SurrogateTrainer(object):
         # check that the input and output labels do not overlap
         all_labels = set(self._input_labels)
         all_labels.update(self._output_labels)
-        if len(all_labels) != (
-                len(self._input_labels) + len(self._output_labels)):
+        if len(all_labels) != (len(self._input_labels) + len(self._output_labels)):
             raise ValueError(
-                'Duplicate label found in input_labels and/or output_labels.')
+                "Duplicate label found in input_labels and/or output_labels."
+            )
 
         # create the data members for training and validation data
         self._training_dataframe = training_dataframe
         self._validation_dataframe = validation_dataframe
 
         # check that all input labels and output labels are in the dataframes
-        diff = set(self._input_labels) - set(self._training_dataframe.columns) 
+        diff = set(self._input_labels) - set(self._training_dataframe.columns)
         if diff:
-            raise ValueError('The following input labels were not found in '
-                             'the training data columns: {}.'.format(diff))
+            raise ValueError(
+                "The following input labels were not found in "
+                "the training data columns: {}.".format(diff)
+            )
         if self._validation_dataframe is not None:
             diff = set(self._input_labels) - set(self._validation_dataframe.columns)
             if diff:
-                raise ValueError('The following input labels were not found in '
-                                 'the validation data columns: {}.'.format(diff))
+                raise ValueError(
+                    "The following input labels were not found in "
+                    "the validation data columns: {}.".format(diff)
+                )
 
-        diff = set(self._output_labels) - set(self._training_dataframe.columns) 
+        diff = set(self._output_labels) - set(self._training_dataframe.columns)
         if diff:
-            raise ValueError('The following output labels were not found in '
-                             'the training data columns: {}.'.format(diff))
+            raise ValueError(
+                "The following output labels were not found in "
+                "the training data columns: {}.".format(diff)
+            )
 
         if self._validation_dataframe is not None:
             diff = set(self._output_labels) - set(self._validation_dataframe.columns)
             if diff:
-                raise ValueError('The following output labels were not found in '
-                                 'the validation data columns: {}.'.format(diff))
+                raise ValueError(
+                    "The following output labels were not found in "
+                    "the validation data columns: {}.".format(diff)
+                )
 
         if input_bounds is not None:
             self._input_bounds = dict(input_bounds)
             # check that the labels match the input labels
             if sorted(input_bounds.keys()) != sorted(self._input_labels):
-                raise ValueError('The input_labels did not match the keys in input_bounds.\n' \
-                                 'input_bounds.keys(): {}\n' \
-                                 'input_labels: {}'.format(sorted(input_bounds.keys()),
-                                                             sorted(input_labels)))
+                raise ValueError(
+                    "The input_labels did not match the keys in input_bounds.\n"
+                    "input_bounds.keys(): {}\n"
+                    "input_labels: {}".format(
+                        sorted(input_bounds.keys()), sorted(input_labels)
+                    )
+                )
         else:
             # get the bounds from the data
             mx = self._training_dataframe.max().to_dict()
             mn = self._training_dataframe.min().to_dict()
-            self._input_bounds = {
-                k: (mn[k], mx[k]) for k in self._input_labels}
+            self._input_bounds = {k: (mn[k], mx[k]) for k in self._input_labels}
 
     def n_inputs(self):
         """
@@ -124,7 +145,7 @@ class SurrogateTrainer(object):
     def n_outputs(self):
         """
         The number of outputs for the surrogate
-        
+
         Returns: float
         """
         return len(self._output_labels)
@@ -142,20 +163,20 @@ class SurrogateTrainer(object):
         The ordered list of labels for the outputs
 
         Returns: list of strings
-        """        
+        """
         return list(self._output_labels)
 
     def input_bounds(self):
         """
         The dictionary of input bounds. The keys of the dictionary correspond
         to the labels for the inputs. The values are tuples of (lower_bound, upper_bound)
-        
+
         Returns: dict
         """
         if self._input_bounds:
             return dict(self._input_bounds)
         return None
-    
+
     def train_surrogate(self):
         """
         The ``train_surrogate`` method is used to train a surrogate model
@@ -172,12 +193,12 @@ class SurrogateTrainer(object):
 
         """
         raise NotImplementedError(
-            'train_surrogate called, but not implemented on the derived class')
+            "train_surrogate called, but not implemented on the derived class"
+        )
 
 
-class SurrogateBase():
-    def __init__(
-            self, input_labels=None, output_labels=None, input_bounds=None):
+class SurrogateBase:
+    def __init__(self, input_labels=None, output_labels=None, input_bounds=None):
         """
         Base class for standard IDAES Surrogate object. This class is
         responsible for being able to load/save a surrogate model, evaluate
@@ -201,19 +222,22 @@ class SurrogateBase():
         # check that the input and output labels do not overlap
         all_labels = set(self._input_labels)
         all_labels.update(self._output_labels)
-        if len(all_labels) != (
-                len(self._input_labels) + len(self._output_labels)):
+        if len(all_labels) != (len(self._input_labels) + len(self._output_labels)):
             raise ValueError(
-                'Duplicate label found in input_labels and/or output_labels.')
+                "Duplicate label found in input_labels and/or output_labels."
+            )
 
         if input_bounds is not None:
             self._input_bounds = dict(input_bounds)
             # check that the labels match the input labels
             if sorted(input_bounds.keys()) != sorted(self._input_labels):
-                raise ValueError('The input_labels did not match the keys in input_bounds.\n' \
-                                 'input_bounds.keys(): {}\n' \
-                                 'input_labels: {}'.format(sorted(input_bounds.keys()),
-                                                             sorted(input_labels)))
+                raise ValueError(
+                    "The input_labels did not match the keys in input_bounds.\n"
+                    "input_bounds.keys(): {}\n"
+                    "input_labels: {}".format(
+                        sorted(input_bounds.keys()), sorted(input_labels)
+                    )
+                )
 
     def n_inputs(self):
         """
@@ -244,20 +268,20 @@ class SurrogateBase():
         The ordered list of labels for the outputs
 
         Returns: list of strings
-        """        
+        """
         return list(self._output_labels)
 
     def input_bounds(self):
         """
         The dictionary of input bounds. The keys of the dictionary correspond
         to the labels for the inputs. The values are tuples of (lower_bound, upper_bound)
-        
+
         Returns: dict
         """
         if self._input_bounds:
             return dict(self._input_bounds)
         return None
-    
+
     def populate_block(self, block, additional_options=None):
         """
         Method to populate a Pyomo Block with surrogate model
@@ -275,7 +299,8 @@ class SurrogateBase():
             None
         """
         raise NotImplementedError(
-            "SurrogateModel class has not implemented populate_block method.")
+            "SurrogateModel class has not implemented populate_block method."
+        )
 
     def evaluate_surrogate(self, dataframe):
         """
@@ -296,8 +321,8 @@ class SurrogateBase():
               The index of the output dataframe should match the index of the provided inputs.
         """
         raise NotImplementedError(
-            "SurrogateModel class has not implemented an evaluate_surrogate "
-            "method.")
+            "SurrogateModel class has not implemented an evaluate_surrogate " "method."
+        )
 
     def save_to_file(self, filename, overwrite=False):
         """
@@ -311,9 +336,9 @@ class SurrogateBase():
               If True, this method will overwrite the file if it exists. If False
               and the file already exists, this will throw an error.
         """
-        arg = 'x'
+        arg = "x"
         if overwrite:
-            arg = 'w'
+            arg = "w"
 
         with open(filename, arg) as fd:
             self.save(fd)
@@ -329,8 +354,9 @@ class SurrogateBase():
               to serialize the surrogate object. This methods will often write a string
               of json data to the stream, but hte format for derived classes need not be json.
         """
-        raise NotImplementedError('"save" should be implemented in the'
-                                  ' class derived from SurrogateBase')
+        raise NotImplementedError(
+            '"save" should be implemented in the' " class derived from SurrogateBase"
+        )
 
     @classmethod
     def load_from_file(cls, filename):
@@ -343,7 +369,7 @@ class SurrogateBase():
 
         Returns: an instance of the derived class or None if it failed to load
         """
-        with open(filename, 'r') as fd:
+        with open(filename, "r") as fd:
             return cls.load(fd)
 
     @classmethod
@@ -354,11 +380,12 @@ class SurrogateBase():
 
         Args:
            strm: IO.TextIO
-              This is the python stream like a file object or StringIO containing 
+              This is the python stream like a file object or StringIO containing
               the data required to load the surrogate. This is often, but does not
               need to be json data.
 
         Returns: an instance of the derived class or None if it failed to load
         """
-        raise NotImplementedError('"load" should be implemented in the'
-                                  ' class derived from SurrogateBase')
+        raise NotImplementedError(
+            '"load" should be implemented in the' " class derived from SurrogateBase"
+        )
