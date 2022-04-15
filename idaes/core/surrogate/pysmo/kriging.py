@@ -25,7 +25,7 @@ from pyomo.core import Param, exp
 from scipy.optimize import basinhopping
 import scipy.optimize as opt
 # Imports from IDAES namespace
-from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
+from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
 
 class MyBounds(object):
     """

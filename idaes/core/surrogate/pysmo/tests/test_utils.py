@@ -22,7 +22,7 @@
 
 import pyomo.common.unittest as unittest
 import pytest
-from idaes.surrogate.pysmo.utils import NumpyEvaluator
+from idaes.core.surrogate.pysmo.utils import NumpyEvaluator
 from pyomo.environ import ConcreteModel, Param, Var, value, sin, atan, atanh
 from pyomo.core import ComponentMap
 

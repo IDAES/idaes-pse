@@ -15,7 +15,7 @@ import os
 from unittest.mock import patch
 
 sys.path.append(os.path.abspath('..'))  # current folder is ~/tests\
-from idaes.surrogate.pysmo.radial_basis_function import (
+from idaes.core.surrogate.pysmo.radial_basis_function import (
     RadialBasisFunctions, FeatureScaling
 )
 import numpy as np

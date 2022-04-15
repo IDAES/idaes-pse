@@ -12,7 +12,7 @@
 #################################################################################
 import sys
 
-from idaes.surrogate.pysmo.sampling import LatinHypercubeSampling, UniformSampling, HaltonSampling, HammersleySampling, CVTSampling, SamplingMethods, FeatureScaling
+from idaes.core.surrogate.pysmo.sampling import LatinHypercubeSampling, UniformSampling, HaltonSampling, HammersleySampling, CVTSampling, SamplingMethods, FeatureScaling
 import numpy as np
 import pandas as pd
 import pyomo.common.unittest as unittest

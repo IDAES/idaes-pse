@@ -29,8 +29,8 @@ from pyomo.core.base.param import Param
 from pyomo.environ import Constraint, sin, cos, log, exp, Set, Reals
 from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.common.config import PositiveInt, PositiveFloat
-from idaes.surrogate.base.surrogate_base import SurrogateTrainer, SurrogateBase
-from idaes.surrogate.pysmo import (
+from idaes.core.surrogate.base.surrogate_base import SurrogateTrainer, SurrogateBase
+from idaes.core.surrogate.pysmo import (
     polynomial_regression as pr,
     radial_basis_function as rbf,
     kriging as krg,

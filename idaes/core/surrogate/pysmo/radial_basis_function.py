@@ -30,7 +30,7 @@ from pyomo.environ import *
 import scipy.optimize as opt
 from six import string_types
 # Imports from IDAES namespace
-from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
+from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
 
 __author__ = "Oluwamayowa Amusat"
 

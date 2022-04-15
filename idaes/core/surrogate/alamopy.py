@@ -25,7 +25,7 @@ from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
 
-from idaes.surrogate.base.surrogate_base import SurrogateTrainer, SurrogateBase
+from idaes.core.surrogate.base.surrogate_base import SurrogateTrainer, SurrogateBase
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 

@@ -15,7 +15,7 @@ Common Surrogate interface for IDAES.
 """
 from pyomo.common.config import ConfigBlock
 
-from idaes.surrogate.metrics import compute_fit_metrics
+from idaes.core.surrogate.metrics import compute_fit_metrics
 
 
 class SurrogateTrainer(object):

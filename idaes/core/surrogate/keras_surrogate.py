@@ -34,8 +34,8 @@ if omlt_available:
         load_keras_sequential
     )
 
-from idaes.surrogate.base.surrogate_base import SurrogateBase
-from idaes.surrogate.sampling.scaling import OffsetScaler
+from idaes.core.surrogate.base.surrogate_base import SurrogateBase
+from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 
 class KerasSurrogate(SurrogateBase):

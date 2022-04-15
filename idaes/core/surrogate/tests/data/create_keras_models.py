@@ -21,11 +21,11 @@ from tensorflow.keras.models import Sequential
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import idaes.surrogate.sampling as sampling
-from idaes.surrogate.sampling.scaling import OffsetScaler
-import idaes.surrogate.keras_surrogate as foo
+import idaes.core.surrogate.sampling as sampling
+from idaes.core.surrogate.sampling.scaling import OffsetScaler
+import idaes.core.surrogate.keras_surrogate as foo
 print(dir(foo))
-from idaes.surrogate.keras_surrogate import save_keras_json_hd5
+from idaes.core.surrogate.keras_surrogate import save_keras_json_hd5
 from pyomo.common.fileutils import this_file_dir
 import os
 import json

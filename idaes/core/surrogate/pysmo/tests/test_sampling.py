@@ -17,7 +17,7 @@ import pytest
 import sys, os
 sys.path.append(os.path.abspath('..'))# current folder is ~/tests
 # this
-from idaes.surrogate.pysmo.sampling import (
+from idaes.core.surrogate.pysmo.sampling import (
     LatinHypercubeSampling,
     UniformSampling,
     HaltonSampling,

@@ -16,8 +16,8 @@ Tests for Metrics object
 import pytest
 import pandas as pd
 
-from idaes.surrogate.metrics import compute_fit_metrics
-from idaes.surrogate import AlamoSurrogate
+from idaes.core.surrogate.metrics import compute_fit_metrics
+from idaes.core.surrogate import AlamoSurrogate
 
 # For this test we will use a simple z = x function and calcuate metrics
 # Measured (test) data will include a fixed offset (i.e. z = x + Err)

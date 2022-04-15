@@ -15,7 +15,7 @@ Tests for surrogates/sampling/scaling module
 """
 import pytest
 import pandas as pd
-from idaes.surrogate.sampling.scaling import OffsetScaler
+from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 class TestScaling:
     

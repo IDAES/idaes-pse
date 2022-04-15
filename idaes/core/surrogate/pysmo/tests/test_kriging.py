@@ -15,7 +15,7 @@ import os
 import io
 from unittest.mock import patch
 sys.path.append(os.path.abspath('..')) # current folder is ~/tests
-from idaes.surrogate.pysmo.kriging import (
+from idaes.core.surrogate.pysmo.kriging import (
     KrigingModel, MyBounds
 )
 import numpy as np

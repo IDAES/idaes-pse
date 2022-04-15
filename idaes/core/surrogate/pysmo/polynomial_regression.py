@@ -32,7 +32,7 @@ from scipy.special import comb as comb
 from six import string_types
 
 # Imports from IDAES namespace
-from idaes.surrogate.pysmo.utils import NumpyEvaluator
+from idaes.core.surrogate.pysmo.utils import NumpyEvaluator
 
 
 __author__ = "Oluwamayowa Amusat"

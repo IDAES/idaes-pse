@@ -25,9 +25,9 @@ from pyomo.common.tempfiles import TempfileManager
 from pyomo.environ import (ConcreteModel, Var, SolverFactory,
                            assert_optimal_termination, value,
                            Objective)
-from idaes.surrogate.keras_surrogate import KerasSurrogate, load_keras_json_hd5
-from idaes.surrogate.surrogate_block import SurrogateBlock
-from idaes.surrogate.sampling.scaling import OffsetScaler
+from idaes.core.surrogate.keras_surrogate import KerasSurrogate, load_keras_json_hd5
+from idaes.core.surrogate.surrogate_block import SurrogateBlock
+from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 
 rtol = 1e-4

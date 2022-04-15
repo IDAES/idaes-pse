@@ -14,7 +14,7 @@ import sys, os
 from unittest.mock import patch
 
 sys.path.append(os.path.abspath('..'))  # current folder is ~/tests
-from idaes.surrogate.pysmo.polynomial_regression import (
+from idaes.core.surrogate.pysmo.polynomial_regression import (
     PolynomialRegression, FeatureScaling
 )
 import numpy as np

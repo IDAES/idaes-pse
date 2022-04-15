@@ -25,11 +25,11 @@ from io import StringIO
 from pyomo.environ import Var, Constraint
 from pyomo.common.tempfiles import TempfileManager
 
-from idaes.surrogate.alamopy import \
+from idaes.core.surrogate.alamopy import \
     AlamoTrainer, AlamoSurrogate, Modelers, Screener, alamo
-from idaes.surrogate.surrogate_block import SurrogateBlock
+from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.surrogate.metrics import compute_fit_metrics
+from idaes.core.surrogate.metrics import compute_fit_metrics
 
 
 dirpath = Path(__file__).parent.resolve()

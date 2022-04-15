@@ -17,7 +17,7 @@ import pytest
 
 from pyomo.environ import ConcreteModel, Set, Var
 
-from idaes.surrogate.surrogate_block import SurrogateBlock, _extract_var_data
+from idaes.core.surrogate.surrogate_block import SurrogateBlock, _extract_var_data
 
 
 @pytest.mark.unit
