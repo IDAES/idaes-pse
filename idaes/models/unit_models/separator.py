@@ -54,6 +54,10 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.util.initialization import (
+    fix_state_vars,
+    revert_state_vars,
+)
 
 __author__ = "Andrew Lee"
 
@@ -1289,8 +1293,39 @@ objects linked the mixed state and all outlet states,
                     " method to the associated StateBlock class.".format(blk.name)
                 )
 
+    def fix_state(self):
+        """
+        This method calls the fix_state_vars utiltiy method on self.properties.
+
+        Args:
+            None
+
+        Returns:
+            dict indicating what states were fixed by this method.
+        """
+        if self.config.mixed_state_block is not None:
+            mblock = self.config.mixed_state_block
+        else:
+            mblock = self.mixed_state
+
+        return fix_state_vars(mblock)
+
+    def revert_state(self, flags):
+        """
+        This method calls the revert_state_vars utiltiy method on self.properties.
+
+        Args:
+            flags: dict indicating which states should be unfixed
+        """
+        if self.config.mixed_state_block is not None:
+            mblock = self.config.mixed_state_block
+        else:
+            mblock = self.mixed_state
+
+        revert_state_vars(mblock, flags)
+
     def initialize_build(
-        blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, hold_state=False
+        blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None
     ):
         """
         Initialization routine for separator
@@ -1329,7 +1364,6 @@ objects linked the mixed state and all outlet states,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            hold_state=True,
         )
 
         # Solve for split fractions only
@@ -1576,7 +1610,6 @@ objects linked the mixed state and all outlet states,
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                hold_state=False,
             )
 
             # Revert fixed status of variables to what they were before
@@ -1590,45 +1623,15 @@ objects linked the mixed state and all outlet states,
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
 
-            if not check_optimal_termination(res):
-                raise InitializationError(
-                    f"{blk.name} failed to initialize successfully. Please "
-                    f"check the output logs for more information."
-                )
-
             init_log.info(
-                "Initialization Step 2 Complete: {}".format(idaeslog.condition(res))
+                f"Separator Initialization Step 2 Complete: {idaeslog.condition(res)}"
             )
+
+            return res
         else:
-            init_log.info("Initialization Complete.")
+            init_log.info("Separator Initialization Complete.")
 
-        if hold_state is True:
-            return flags
-        else:
-            blk.release_state(flags, outlvl=outlvl)
-
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
-        """
-        Method to release state variables fixed during initialization.
-
-        Keyword Arguments:
-            flags : dict containing information of which state variables
-                    were fixed during initialization, and should now be
-                    unfixed. This dict is returned by initialize if
-                    hold_state = True.
-            outlvl : sets output level of logging
-
-        Returns:
-            None
-        """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-
-        if blk.config.mixed_state_block is None:
-            mblock = blk.mixed_state
-        else:
-            mblock = blk.config.mixed_state_block
-
-        mblock.release_state(flags, outlvl=outlvl)
+            return None
 
     def calculate_scaling_factors(self):
         mb_type = self.config.material_balance_type

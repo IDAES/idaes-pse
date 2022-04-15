@@ -167,6 +167,7 @@ see property package for documentation.}""",
         Returns:
             None
         """
+        # TODO: Replace this with a call to self.properties.initialize_build()
         # ---------------------------------------------------------------------
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
 

@@ -23,6 +23,10 @@ from idaes.core import declare_process_block_class, UnitModelBlockData, useDefau
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
+from idaes.core.util.initialization import (
+    fix_state_vars,
+    revert_state_vars,
+)
 
 __author__ = "Andrew Lee"
 
@@ -124,6 +128,27 @@ see property package for documentation.}""",
         # Add outlet port
         self.add_port(name="inlet", block=self.properties, doc="Inlet Port")
 
+    def fix_state(self):
+        """
+        This method calls the fix_state_vars utiltiy method on self.properties.
+
+        Args:
+            None
+
+        Returns:
+            dict indicating what states were fixed by this method.
+        """
+        return fix_state_vars(self.properties)
+
+    def revert_state(self, flags):
+        """
+        This method calls the revert_state_vars utiltiy method on self.properties.
+
+        Args:
+            flags: dict indicating which states should be unfixed
+        """
+        revert_state_vars(self.properties, flags)
+
     def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
@@ -146,6 +171,7 @@ see property package for documentation.}""",
         """
         # ---------------------------------------------------------------------
         # Initialize state block
+        # TODO: Replace this with a call to self.properties.initialize_build()
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         blk.properties.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args
