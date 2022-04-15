@@ -73,17 +73,13 @@ class DoubleLoopCoordinator:
 
         self.plugin_config = plugin_config
 
-        self._register_initialization_callbacks(context, options, plugin_config)
-        self._register_before_ruc_solve_callbacks(context, options, plugin_config)
-        self._register_before_operations_solve_callbacks(
-            context, options, plugin_config
-        )
-        self._register_after_operations_callbacks(context, options, plugin_config)
-        self._register_update_operations_stats_callbacks(
-            context, options, plugin_config
-        )
-        self._register_after_ruc_activation_callbacks(context, options, plugin_config)
-        self._register_finalization_callbacks(context, options, plugin_config)
+        context.register_initialization_callback(self.initialize_customized_results)
+        context.register_before_ruc_solve_callback(self.bid_into_DAM)
+        context.register_before_operations_solve_callback(self.bid_into_RTM)
+        context.register_after_operations_callback(self.track_sced_signal)
+        context.register_update_operations_stats_callback(self.update_observed_dispatch)
+        context.register_after_ruc_activation_callback(self.activate_DA_bids)
+        context.register_finalization_callback(self.write_plugin_results)
 
         return
 
@@ -112,174 +108,6 @@ class DoubleLoopCoordinator:
         ).declare_as_argument("--bidding-generator")
 
         return config
-
-    def _register_initialization_callbacks(
-        self,
-        context,
-        options,
-        plugin_config,
-    ):
-
-        """
-        Register initialization plugins, which run before Prescient simulation
-        begins.
-
-        Arguments:
-            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
-
-            options: Prescient options from prescient.simulator.config
-
-            plugin_config: Prescient plugin config
-
-        Returns:
-            None
-        """
-
-        context.register_initialization_callback(self.initialize_customized_results)
-
-    def _register_before_ruc_solve_callbacks(
-        self,
-        context,
-        options,
-        plugin_config,
-    ):
-
-        """
-        Register plugins that run before Prescient solves Reliability Unit
-        Commitment (RUC) problems.
-
-        Arguments:
-            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
-
-            options: Prescient options from prescient.simulator.config
-
-            plugin_config: Prescient plugin config
-
-        Returns:
-            None
-        """
-
-        context.register_before_ruc_solve_callback(self.bid_into_DAM)
-
-    def _register_before_operations_solve_callbacks(
-        self,
-        context,
-        options,
-        plugin_config,
-    ):
-
-        """
-        Register plugins that run before Prescient solves Securitiy Constrained
-        Economic Dispatch (SCED), aka "operation", problems.
-
-        Arguments:
-            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
-
-            options: Prescient options from prescient.simulator.config
-
-            plugin_config: Prescient plugin config
-
-        Returns:
-            None
-        """
-
-        context.register_before_operations_solve_callback(self.bid_into_RTM)
-
-    def _register_after_operations_callbacks(
-        self,
-        context,
-        options,
-        plugin_config,
-    ):
-
-        """
-        Register plugins that run after Prescient solves Securitiy Constrained
-        Economic Dispatch (SCED), aka "operation", problems.
-
-        Arguments:
-            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
-
-            options: Prescient options from prescient.simulator.config
-
-            plugin_config: Prescient plugin config
-
-        Returns:
-            None
-        """
-
-        context.register_after_operations_callback(self.track_sced_signal)
-
-    def _register_update_operations_stats_callbacks(
-        self,
-        context,
-        options,
-        plugin_config,
-    ):
-
-        """
-        Register plugins that update stats of Securitiy Constrained Economic
-        Dispatch (SCED), aka "operation".
-
-        Arguments:
-            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
-
-            options: Prescient options from prescient.simulator.config
-
-            plugin_config: Prescient plugin config
-
-        Returns:
-            None
-        """
-
-        context.register_update_operations_stats_callback(self.update_observed_dispatch)
-
-    def _register_after_ruc_activation_callbacks(
-        self,
-        context,
-        options,
-        plugin_config,
-    ):
-
-        """
-        Register plugins that update stats of Securitiy Constrained Economic
-        Dispatch (SCED), aka "operation".
-
-        Arguments:
-            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
-
-            options: Prescient options from prescient.simulator.config
-
-            plugin_config: Prescient plugin config
-
-        Returns:
-            None
-        """
-
-        context.register_after_ruc_activation_callback(self.activate_DA_bids)
-
-    def _register_finalization_callbacks(
-        self,
-        context,
-        options,
-        plugin_config,
-    ):
-
-        """
-        Register finalization plugins, which run after Prescient simulation
-        finishes.
-
-        Arguments:
-            context: Prescient plugin PluginRegistrationContext from prescient.plugins.plugin_registration
-
-            options: Prescient options from prescient.simulator.config
-
-            plugin_config: Prescient plugin config
-
-        Returns:
-            None
-        """
-
-        context.register_finalization_callback(self.write_plugin_results)
 
     def initialize_customized_results(self, options, simulator):
 
