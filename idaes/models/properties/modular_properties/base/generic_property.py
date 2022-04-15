@@ -2279,7 +2279,7 @@ class GenericStateBlockData(StateBlockData):
                     self.mole_frac_phase_comp[p, j],
                     default=1e-3,
                     warning=True,
-                    hint="for log_act_phase_comp",
+                    hint="for log_mole_frac_phase_comp",
                 )
                 iscale.constraint_scaling_transform(v, sf_x, overwrite=False)
 
@@ -2289,7 +2289,7 @@ class GenericStateBlockData(StateBlockData):
                     self.mole_frac_phase_comp_apparent[p, j],
                     default=1e-3,
                     warning=True,
-                    hint="for log_act_phase_comp_apparent",
+                    hint="for log_mole_frac_phase_comp_apparent",
                 )
                 iscale.constraint_scaling_transform(v, sf_x, overwrite=False)
 
@@ -2299,7 +2299,7 @@ class GenericStateBlockData(StateBlockData):
                     self.mole_frac_phase_comp_true[p, j],
                     default=1e-3,
                     warning=True,
-                    hint="for log_act_phase_comp_true",
+                    hint="for log_mole_frac_phase_comp_true",
                 )
                 iscale.constraint_scaling_transform(v, sf_x, overwrite=False)
 
