@@ -859,8 +859,8 @@ class Bidder(AbstractBidder):
                 full_bids[t][gen]["p_cost"] = list(bids[t][gen].items())
                 full_bids[t][gen]["p_min"] = min(bids[t][gen].keys())
                 full_bids[t][gen]["p_max"] = max(bids[t][gen].keys())
-                bids[t][gen]["startup_capacity"] = full_bids[t][gen]["p_min"]
-                bids[t][gen]["shutdown_capacity"] = full_bids[t][gen]["p_min"]
+                full_bids[t][gen]["startup_capacity"] = full_bids[t][gen]["p_min"]
+                full_bids[t][gen]["shutdown_capacity"] = full_bids[t][gen]["p_min"]
 
                 fixed_commitment = getattr(
                     self.bidding_model_object, "fixed_commitment", None
