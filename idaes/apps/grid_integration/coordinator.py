@@ -18,6 +18,7 @@ if prescient_avail:
     from prescient.simulator.config import PrescientConfig
 from pyomo.common.config import ConfigDict, ConfigValue
 import pyomo.environ as pyo
+from itertools import zip_longest
 
 
 class DoubleLoopCoordinator:
@@ -336,10 +337,18 @@ class DoubleLoopCoordinator:
         # iterate all the variables and params and clone the values
         objects_list = [pyo.Var, pyo.Param]
         for obj in objects_list:
-            for tracker_obj, proj_tracker_obj in zip(
-                self.tracker.model.component_objects(obj),
-                self.projection_tracker.model.component_objects(obj),
+            for tracker_obj, proj_tracker_obj in zip_longest(
+                self.tracker.model.component_objects(
+                    obj, sort=pyo.SortComponents.alphabetizeComponentAndIndex
+                ),
+                self.projection_tracker.model.component_objects(
+                    obj, sort=pyo.SortComponents.alphabetizeComponentAndIndex
+                ),
             ):
+                if tracker_obj.name != proj_tracker_obj.name:
+                    raise ValueError(
+                        f"Trying to copy the value of {tracker_obj} to {proj_tracker_obj}, but they do not have the same name and possibly not the corresponding objects. Please make sure tracker and projection tracker do not diverge. "
+                    )
                 for idx in tracker_obj.index_set():
                     if pyo.value(proj_tracker_obj[idx]) != pyo.value(tracker_obj[idx]):
                         proj_tracker_obj[idx] = round(pyo.value(tracker_obj[idx]), 4)
