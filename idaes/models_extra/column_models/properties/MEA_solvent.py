@@ -517,9 +517,13 @@ class Viscosity:
     def return_expression(blk, phase):
         pobj = blk.params.get_phase(phase)
 
-        r = (blk.mass_frac_phase_comp_apparent["Liq", "MEA"] /
-             (blk.mass_frac_phase_comp_apparent["Liq", "MEA"] +
-              blk.mass_frac_phase_comp_apparent["Liq", "H2O"])) * 100
+        r = (
+            blk.mass_frac_phase_comp_apparent["Liq", "MEA"]
+            / (
+                blk.mass_frac_phase_comp_apparent["Liq", "MEA"]
+                + blk.mass_frac_phase_comp_apparent["Liq", "H2O"]
+            )
+        ) * 100
         T = blk.temperature
         alpha = (
             blk.mole_frac_phase_comp_apparent["Liq", "CO2"]

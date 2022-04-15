@@ -217,7 +217,7 @@ The initialization routine proceeds in as follows:
 MBR Class
 ---------
 
-.. module:: idaes.gas_solid_contactors.unit_models.moving_bed
+.. module:: idaes.models_extra.gas_solid_contactors.unit_models.moving_bed
 
 .. autoclass:: MBR
    :members:
