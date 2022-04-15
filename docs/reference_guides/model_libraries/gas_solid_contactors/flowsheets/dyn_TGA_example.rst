@@ -1,7 +1,7 @@
 Thermogravimetric Analysis in a Fixed Bed (0D dynamic)
 =============================================================
 
-.. currentmodule:: idaes.gas_solid_contactors.flowsheets.dyn_TGA_example
+.. currentmodule:: idaes.models_extra.gas_solid_contactors.flowsheets.dyn_TGA_example
 
 Dynamic flowsheet example of the fixed bed 0D model for thermogravimetric analysis.
 

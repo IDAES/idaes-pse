@@ -26,7 +26,7 @@ import csv
 import os
 import idaes
 from math import log
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Set up solver
 solver = get_solver()

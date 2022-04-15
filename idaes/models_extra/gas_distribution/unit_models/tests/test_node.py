@@ -34,7 +34,7 @@ from pyomo.util.check_units import assert_units_consistent
 from pyomo.util.subsystems import ParamSweeper
 
 import idaes.core as idaes
-from idaes.models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.core.util.model_statistics import (
@@ -101,6 +101,8 @@ class TestConstructNode(unittest.TestCase):
 
         states = [node.state, node.inlets[0].state, node.outlets[0].state]
         for state in states:
+            # Make sure the inlet and outlet blocks have state blocks
+            # with their state variables.
             self.assertTrue(isinstance(state[t0].temperature, pyo.Var))
             self.assertIn(state[t0].temperature, var_set)
             self.assertTrue(isinstance(state[t0].pressure, pyo.Var))
@@ -111,30 +113,32 @@ class TestConstructNode(unittest.TestCase):
             self.assertIn(state[t0].flow_mol, var_set)
 
         con_set = ComponentSet(node.component_data_objects(pyo.Constraint))
-        # Two equalities between the inlet and node, three equalities between
-        # the outlet and node, plus flow balance, component mixing, and total
-        # flow equations.
+        # Pressure equality between inlet and node, temperature, pressure,
+        # and mole fraction equalities between the outlet and node,
+        # plus flow balance, component mixing, and total flow equations.
         self.assertEqual(len(con_set), 8)
 
         blocks = [node.inlets[0], node.outlets[0]]
         for block in blocks:
-            self.assertTrue(isinstance(block.temperature_eq, pyo.Constraint))
-            self.assertIn(block.temperature_eq[t0], con_set)
             self.assertTrue(isinstance(block.pressure_eq, pyo.Constraint))
             self.assertIn(block.pressure_eq[t0], con_set)
 
-            if block is not node.inlets[0]:
-                # Inlet mole fractions are already specified, so we don't have
-                # this equation.
-                self.assertTrue(isinstance(block.mole_frac_comp_eq, pyo.Constraint))
-                self.assertIn(block.mole_frac_comp_eq[t0, j], con_set)
+        # Inlet mole fractions and temperatures are already specified,
+        # so we don't have this equation.
+        block = node.outlets[0]
+        self.assertTrue(isinstance(block.mole_frac_comp_eq, pyo.Constraint))
+        self.assertIn(block.mole_frac_comp_eq[t0, j], con_set)
+        self.assertTrue(isinstance(block.temperature_eq, pyo.Constraint))
+        self.assertIn(block.temperature_eq[t0], con_set)
 
         self.assertTrue(isinstance(node.flow_balance, pyo.Constraint))
         self.assertTrue(isinstance(node.component_mixing_eq, pyo.Constraint))
         self.assertTrue(isinstance(node.total_flow_eq, pyo.Constraint))
+        self.assertTrue(isinstance(node.enthalpy_mixing_eq, pyo.Constraint))
         self.assertIn(node.flow_balance[t0], con_set)
         self.assertIn(node.component_mixing_eq[t0, j], con_set)
         self.assertIn(node.total_flow_eq[t0], con_set)
+        self.assertIn(node.enthalpy_mixing_eq[t0], con_set)
 
         node.add_pipeline_to_inlet(pipeline1)
         node.add_pipeline_to_outlet(pipeline2)
@@ -289,8 +293,7 @@ class TestConstructNode(unittest.TestCase):
         x0 = m.fs.pipeline[0].control_volume.length_domain.first()
         state0 = m.fs.pipeline[0].control_volume.properties[t0, x0]
 
-        # Fix intensive states of one inlet
-        state0.temperature.fix()
+        # Fix pressure of one inlet
         state0.pressure.fix()
 
         # Fix flow rates and mole fractions of all inlets
@@ -298,10 +301,12 @@ class TestConstructNode(unittest.TestCase):
             pipeline.control_volume.flow_mass[t0, x0].fix()
             state = pipeline.control_volume.properties[t0, x0]
             state.mole_frac_comp[j].fix()
+            state.temperature.fix()
 
         # Fix supply flows and mole fractions
         m.fs.node.supplies[:].flow_mol[:].fix()
         m.fs.node.supplies[:].state[:].mole_frac_comp[:].fix()
+        m.fs.node.supplies[:].state[:].temperature.fix()
 
         # Fix demand flows, and all outlet flow rates except one
         m.fs.node.demands[:].flow_mol[:].fix()
@@ -470,19 +475,20 @@ class TestConstructNode(unittest.TestCase):
 
         state0 = m.fs.pipeline[0].control_volume.properties
 
-        # Temperature and pressure of one inlet
-        state0[:, x0].temperature.fix()
+        # Pressure of one inlet
         state0[:, x0].pressure.fix()
 
-        # Flow rates and mole fractions of all inlets
+        # Flow rates, mole fractions, and temperatures of all inlets
         for pipeline in m.fs.node.inlet_pipelines().values():
             pipeline.control_volume.flow_mass[:, x0].fix()
             state = pipeline.control_volume.properties
             state[:, x0].mole_frac_comp[j].fix()
+            state[:, x0].temperature.fix()
 
-        # Supply flows and mole fractions
+        # Supply flows, mole fractions, and temperatures
         m.fs.node.supplies[:].flow_mol[:].fix()
         m.fs.node.supplies[:].state[:].mole_frac_comp[:].fix()
+        m.fs.node.supplies[:].state[:].temperature.fix()
 
         # Demand flows, and all outlet flow rates except one
         m.fs.node.demands[:].flow_mol[:].fix()

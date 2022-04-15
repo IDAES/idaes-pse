@@ -23,6 +23,7 @@ try:
 except ImportError:
     PyomoNLP = None
 
+
 @pytest.fixture
 def model():
     m = pyo.ConcreteModel()
@@ -34,9 +35,11 @@ def model():
     m.x[2].setlb(0.0)
     return m
 
+
 @pytest.mark.unit
 def test_import():
     assert PyomoNLP is not None
+
 
 @pytest.mark.unit
 def test_have_pynumero(model):

@@ -18,8 +18,11 @@ import pytest
 import pyomo.environ as pyo
 import pyomo.dae as dae
 from pyomo.common.collections import ComponentSet
-from pyomo.core.expr.logical_expr import (EqualityExpression,
-        InequalityExpression, RangedExpression)
+from pyomo.core.expr.logical_expr import (
+    EqualityExpression,
+    InequalityExpression,
+    RangedExpression,
+)
 from pyomo.network import Port, Arc
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import number_activated_objectives
@@ -31,15 +34,17 @@ __author__ = "John Eslick, Tim Bartholomew"
 
 @pytest.mark.unit
 def test_none_left_mult():
-    with pytest.raises(TypeError, match=
-            "unsupported operand type\(s\) for \*: 'int' and 'NoneType'"):
+    with pytest.raises(
+        TypeError, match="unsupported operand type\(s\) for \*: 'int' and 'NoneType'"
+    ):
         assert sc.__none_left_mult(4, None) is None
-    with pytest.raises(TypeError, match=
-            "unsupported operand type\(s\) for \*: 'float' and 'NoneType'"):
-        assert sc.__none_left_mult(4., None) is None
+    with pytest.raises(
+        TypeError, match="unsupported operand type\(s\) for \*: 'float' and 'NoneType'"
+    ):
+        assert sc.__none_left_mult(4.0, None) is None
     assert sc.__none_left_mult(None, 4) is None
     assert sc.__none_left_mult(3, 4) == 12
- 
+
 
 @pytest.mark.unit
 def test_scale_constraint():
@@ -47,9 +52,9 @@ def test_scale_constraint():
     m.x = pyo.Var()
     m.y = pyo.Var()
 
-    m.c_eq = pyo.Constraint(expr = m.x == m.y)
-    m.c_ineq = pyo.Constraint(expr = m.x <= m.y)
-    m.c_range = pyo.Constraint(expr = (0, m.x + m.y, 1))
+    m.c_eq = pyo.Constraint(expr=m.x == m.y)
+    m.c_ineq = pyo.Constraint(expr=m.x <= m.y)
+    m.c_range = pyo.Constraint(expr=(0, m.x + m.y, 1))
 
     sc.__scale_constraint(m.c_eq, 2)
     assert isinstance(m.c_eq.expr, EqualityExpression)
@@ -69,7 +74,7 @@ def test_scale_arcs():
     m.p1.add(m.x[1], name="x")
     m.p1.add(m.y[1], name="y")
 
-    m.p = Port([2,3,4])
+    m.p = Port([2, 3, 4])
     m.p[2].add(m.x[2], name="x")
     m.p[2].add(m.y[2], name="y")
     m.p[3].add(m.x[3], name="x")
@@ -83,7 +88,7 @@ def test_scale_arcs():
         elif i == 2:
             return (m.p[3], m.p[4])
 
-    m.arcs = Arc([1,2], rule=arc_rule)
+    m.arcs = Arc([1, 2], rule=arc_rule)
 
     sc.set_scaling_factor(m.x, 10)
     sc.set_scaling_factor(m.y, 20)
@@ -93,7 +98,7 @@ def test_scale_arcs():
     sc.scale_arc_constraints(m)
 
     # expand and make sure it works
-    pyo.TransformationFactory('network.expand_arcs').apply_to(m)
+    pyo.TransformationFactory("network.expand_arcs").apply_to(m)
     sc.scale_arc_constraints(m)
     m.x[1] = 1
     m.x[2] = 2
@@ -111,6 +116,7 @@ def test_scale_arcs():
     assert abs(m.arcs_expanded[2].x_equality.body()) == 10
     assert abs(m.arcs_expanded[1].y_equality.body()) == 20
     assert abs(m.arcs_expanded[2].y_equality.body()) == 20
+
 
 @pytest.mark.unit
 def test_map_scaling_factor(caplog):
@@ -141,18 +147,21 @@ def test_propogate_indexed_scaling():
     m = pyo.ConcreteModel()
     m.b = pyo.Block()
     m.a = pyo.Var()
-    m.x = pyo.Var([1,2,3], initialize=1e6)
-    m.y = pyo.Var([1,2,3], initialize=1e-8)
-    m.z = pyo.Var([1,2,3], initialize=1e-20)
-    @m.Constraint([1,2,3])
+    m.x = pyo.Var([1, 2, 3], initialize=1e6)
+    m.y = pyo.Var([1, 2, 3], initialize=1e-8)
+    m.z = pyo.Var([1, 2, 3], initialize=1e-20)
+
+    @m.Constraint([1, 2, 3])
     def c1(b, i):
         return m.x[i] == 0
-    @m.Constraint([1,2,3])
+
+    @m.Constraint([1, 2, 3])
     def c2(b, i):
         return m.y[i] == 0
-    m.b.w = pyo.Var([1,2,3], initialize=1e10)
-    m.b.c1 = pyo.Constraint(expr=m.b.w[1]==0)
-    m.b.c2 = pyo.Constraint(expr=m.b.w[2]==0)
+
+    m.b.w = pyo.Var([1, 2, 3], initialize=1e10)
+    m.b.c1 = pyo.Constraint(expr=m.b.w[1] == 0)
+    m.b.c2 = pyo.Constraint(expr=m.b.w[2] == 0)
 
     sc.set_scaling_factor(m.a, 104)
     sc.set_scaling_factor(m.b.c1, 14)
@@ -163,7 +172,7 @@ def test_propogate_indexed_scaling():
     m.b.scaling_factor[m.b.w] = 16
     m.scaling_factor[m.c1] = 14
 
-    for i in [1,2,3]:
+    for i in [1, 2, 3]:
         assert sc.get_scaling_factor(m.x[i]) is None
         assert sc.get_scaling_factor(m.y[i]) is None
         assert sc.get_scaling_factor(m.z[i]) is None
@@ -178,13 +187,14 @@ def test_propogate_indexed_scaling():
     assert sc.get_scaling_factor(m.c2) is None
 
     sc.propagate_indexed_component_scaling_factors(m)
-    for i in [1,2,3]:
+    for i in [1, 2, 3]:
         assert sc.get_scaling_factor(m.x[i]) is 11
         assert sc.get_scaling_factor(m.y[i]) is 13
         assert sc.get_scaling_factor(m.z[i]) is None
         assert sc.get_scaling_factor(m.b.w[i]) is 16
         assert sc.get_scaling_factor(m.c1[i]) is 14
         assert sc.get_scaling_factor(m.c2[i]) is None
+
 
 @pytest.mark.unit
 def test_calculate_scaling_factors():
@@ -201,8 +211,8 @@ def test_calculate_scaling_factors():
            / \
           f   g
     """
-    o = [] # list of compoent names in the order their calculate_scaling_factors
-           # method is called
+    o = []  # list of compoent names in the order their calculate_scaling_factors
+    # method is called
     def rule(blk):
         # This rule for building a block just adds a calculate scaling factor
         # function to the block, which adds the block name to the list o.  Then
@@ -210,7 +220,9 @@ def test_calculate_scaling_factors():
         # the calculate_scaling_factors methods where called.
         def ca():
             o.append(blk.name)
+
         blk.calculate_scaling_factors = ca
+
     # Create blocks with the tree structure shown in the docstring
     m = pyo.ConcreteModel(name="m", rule=rule)
     m.a = pyo.Block(rule=rule)
@@ -236,11 +248,13 @@ def test_set_get_unset(caplog):
     """
     m = pyo.ConcreteModel()
     m.x = pyo.Var()
-    m.z = pyo.Var([1,2,3,4])
+    m.z = pyo.Var([1, 2, 3, 4])
     m.c1 = pyo.Constraint(expr=0 == m.x)
-    @m.Constraint([1,2,3,4])
+
+    @m.Constraint([1, 2, 3, 4])
     def c2(b, i):
         return b.z[i] == 0
+
     m.ex = pyo.Expression(expr=m.x)
 
     sc.set_scaling_factor(m.z, 10)
@@ -274,7 +288,7 @@ def test_set_get_unset(caplog):
     caplog.clear()
     assert sc.get_scaling_factor(m.z[1], warning=True) is None
     assert sc.get_scaling_factor(m.z[1], warning=True, default=1) == 1
-    for i in [0, 1]: # two calls should be two log records
+    for i in [0, 1]:  # two calls should be two log records
         logrec = caplog.records[i]
         assert logrec.levelno == logging.WARNING
         assert "scaling factor" in logrec.message
@@ -355,12 +369,12 @@ def test_find_unscaled_vars_and_constraints():
     m.x = pyo.Var(initialize=1e6)
     m.y = pyo.Var(initialize=1e-8)
     m.z = pyo.Var(initialize=1e-20)
-    m.c1 = pyo.Constraint(expr=m.x==0)
-    m.c2 = pyo.Constraint(expr=m.y==0)
-    m.b.w = pyo.Var([1,2,3], initialize=1e10)
-    m.b.c1 = pyo.Constraint(expr=m.b.w[1]==0)
-    m.b.c2 = pyo.Constraint(expr=m.b.w[2]==0)
-    m.c3 = pyo.Constraint(expr=m.z==0)
+    m.c1 = pyo.Constraint(expr=m.x == 0)
+    m.c2 = pyo.Constraint(expr=m.y == 0)
+    m.b.w = pyo.Var([1, 2, 3], initialize=1e10)
+    m.b.c1 = pyo.Constraint(expr=m.b.w[1] == 0)
+    m.b.c2 = pyo.Constraint(expr=m.b.w[2] == 0)
+    m.c3 = pyo.Constraint(expr=m.z == 0)
 
     sc.set_scaling_factor(m.x, 1)
     sc.set_scaling_factor(m.b.w[1], 2)
@@ -376,7 +390,7 @@ def test_find_unscaled_vars_and_constraints():
     assert id(m.b.w[1]) not in a
     assert id(m.b.w[2]) in a
     assert id(m.b.w[3]) in a
-    assert len(a) == 4 #make sure we didn't pick up any other random stuff
+    assert len(a) == 4  # make sure we didn't pick up any other random stuff
 
     a = [id(v) for v in sc.unscaled_constraints_generator(m)]
     assert id(m.c1) not in a
@@ -384,10 +398,10 @@ def test_find_unscaled_vars_and_constraints():
     assert id(m.c2) in a
     assert id(m.b.c2) in a
     assert id(m.c3) not in a
-    assert len(a) == 2 #make sure we didn't pick up any other random stuff
+    assert len(a) == 2  # make sure we didn't pick up any other random stuff
 
 
-class TestSingleConstraintScalingTransform():
+class TestSingleConstraintScalingTransform:
     @pytest.fixture(scope="class")
     def model(self):
         m = pyo.ConcreteModel()
@@ -462,7 +476,7 @@ class TestSingleConstraintScalingTransform():
         assert model.c3.body() == pytest.approx(model.x.value)
 
 
-class TestScaleSingleConstraint():
+class TestScaleSingleConstraint:
     @pytest.fixture(scope="class")
     def model(self):
         m = pyo.ConcreteModel()
@@ -536,17 +550,16 @@ class TestScaleSingleConstraint():
         assert model2.c.upper.value == pytest.approx(1e3)
 
 
-class TestScaleConstraintsPynumero():
+class TestScaleConstraintsPynumero:
     def model(self):
         m = pyo.ConcreteModel()
         x = m.x = pyo.Var(initialize=1e3)
         y = m.y = pyo.Var(initialize=1e6)
         z = m.z = pyo.Var(initialize=1e4)
         m.c1 = pyo.Constraint(expr=0 == -x * y + z)
-        m.c2 = pyo.Constraint(expr=0 == 3*x + 4*y + 2*z)
+        m.c2 = pyo.Constraint(expr=0 == 3 * x + 4 * y + 2 * z)
         m.c3 = pyo.Constraint(expr=0 <= z**3)
         return m
-
 
     @pytest.mark.unit
     def test_jacobian(self):
@@ -646,7 +659,6 @@ class TestScaleConstraintsPynumero():
         assert jac_scaled[c3_row, z_col] == pytest.approx(3e6)
         assert m.scaling_factor[m.c3] == pytest.approx(1e-6)
 
-
     @pytest.mark.unit
     def test_scale_with_ignore_var_scale(self):
         """Make sure the Jacobian from Pynumero matches expectation.  This is
@@ -659,7 +671,8 @@ class TestScaleConstraintsPynumero():
         m.scaling_factor[m.z] = 1e-4
 
         jac, jac_scaled, nlp = sc.constraint_autoscale_large_jac(
-            m, ignore_variable_scaling=True)
+            m, ignore_variable_scaling=True
+        )
 
         c1_row = nlp._condata_to_idx[m.c1]
         c2_row = nlp._condata_to_idx[m.c2]
@@ -681,26 +694,23 @@ class TestScaleConstraintsPynumero():
         assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
         assert m.scaling_factor[m.c3] == pytest.approx(1e-6)
 
-
     @pytest.mark.unit
     def test_scale_with_ignore_constraint_scale(self):
-        """Make sure ignore_constraint_scaling ignores given scaling factors.
-        """
+        """Make sure ignore_constraint_scaling ignores given scaling factors."""
         m = pyo.ConcreteModel()
-        m.a = pyo.Var([1,2], initialize=1)
+        m.a = pyo.Var([1, 2], initialize=1)
         m.c = pyo.Constraint(expr=(0, m.a[1] + m.a[2], 1))
         m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
         m.scaling_factor[m.c] = 1e6
 
         jac, jac_scaled, nlp = sc.constraint_autoscale_large_jac(
-            m, ignore_constraint_scaling=True)
+            m, ignore_constraint_scaling=True
+        )
         assert m.scaling_factor[m.c] == pytest.approx(1)
-
 
     @pytest.mark.unit
     def test_condition_number(self):
-        """Calculate the condition number of the Jacobian
-        """
+        """Calculate the condition number of the Jacobian"""
         m = self.model()
         m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
         m.scaling_factor[m.x] = 1e-3
@@ -715,7 +725,6 @@ class TestScaleConstraintsPynumero():
         n = sc.jacobian_cond(m, scaled=False)
         assert n == pytest.approx(7.5e7, abs=5e6)
 
-
     @pytest.mark.unit
     def test_scale_with_ignore_var_scale_constraint_scale(self):
         """Make sure the Jacobian from Pynumero matches expectation.  This is
@@ -729,7 +738,8 @@ class TestScaleConstraintsPynumero():
         m.scaling_factor[m.z] = 1e-4
 
         jac, jac_scaled, nlp = sc.constraint_autoscale_large_jac(
-            m, ignore_variable_scaling=True)
+            m, ignore_variable_scaling=True
+        )
 
         c1_row = nlp._condata_to_idx[m.c1]
         c2_row = nlp._condata_to_idx[m.c2]
@@ -752,7 +762,7 @@ class TestScaleConstraintsPynumero():
         assert m.scaling_factor[m.c1] == pytest.approx(1e-6)
 
 
-class TestScaleConstraints():
+class TestScaleConstraints:
     @pytest.fixture(scope="class")
     def model(self):
         m = pyo.ConcreteModel()
@@ -798,7 +808,7 @@ class TestScaleConstraints():
         assert model.b1.b2.c1.upper.value == pytest.approx(1)
 
 
-class TestCacheVars():
+class TestCacheVars:
     @pytest.mark.unit
     def test_cache_vars(self):
         m = pyo.ConcreteModel()
@@ -811,7 +821,7 @@ class TestCacheVars():
         varset = ComponentSet(varlist)
 
         with sc.CacheVars(varlist) as cache:
-            assert cache.cache == [1,2]
+            assert cache.cache == [1, 2]
             for var in cache.vars:
                 assert var in varset
             m.v1.set_value(11)
@@ -821,7 +831,7 @@ class TestCacheVars():
         assert m.v2.value == val2
 
 
-class TestFlattenedScalingAssignment():
+class TestFlattenedScalingAssignment:
     def set_initial_scaling_factors(self, m):
         scaling_factor = m.scaling_factor
         for var in m.z.values():
@@ -833,8 +843,8 @@ class TestFlattenedScalingAssignment():
     def model(self):
         m = pyo.ConcreteModel()
         m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        m.time = dae.ContinuousSet(bounds=(0,1))
-        m.space = dae.ContinuousSet(bounds=(0,1))
+        m.time = dae.ContinuousSet(bounds=(0, 1))
+        m.space = dae.ContinuousSet(bounds=(0, 1))
         m.z = pyo.Var(m.time, m.space)
         m.dz = dae.DerivativeVar(m.z, wrt=m.time)
         m.y = pyo.Var(m.time, m.space)
@@ -842,21 +852,27 @@ class TestFlattenedScalingAssignment():
         m.s = pyo.Var()
 
         def de_rule(m, t, x):
-            return m.dz[t,x] == 5*m.y[t,x] - 10*m.z[t,x]
+            return m.dz[t, x] == 5 * m.y[t, x] - 10 * m.z[t, x]
+
         m.de = pyo.Constraint(m.time, m.space, rule=de_rule)
 
         def ae_rule(m, t, x):
-            return m.y[t,x] == 4 + m.z[t,x]**3
+            return m.y[t, x] == 4 + m.z[t, x] ** 3
+
         m.ae = pyo.Constraint(m.time, m.space, rule=ae_rule)
 
         x0 = m.space.first()
+
         def ue_rule(m, t):
-            return m.z[t,x0] == 2*m.u[t]
+            return m.z[t, x0] == 2 * m.u[t]
+
         m.ue = pyo.Constraint(m.time, rule=ue_rule)
 
         tf, xf = m.time.last(), m.space.last()
+
         def se_rule(m):
             return m.z[tf, xf] == m.s
+
         m.se = pyo.Constraint(rule=se_rule)
 
         return m
@@ -868,23 +884,23 @@ class TestFlattenedScalingAssignment():
         self.set_initial_scaling_factors(m)
 
         assignment = [
-                (m.y, m.ae),
-                (m.dz, m.de),
-                ]
-        scaler = sc.FlattenedScalingAssignment(scaling_factor, assignment, (0,0))
+            (m.y, m.ae),
+            (m.dz, m.de),
+        ]
+        scaler = sc.FlattenedScalingAssignment(scaling_factor, assignment, (0, 0))
 
         y = scaler.get_representative_data_object(m.y)
-        assert y is m.y[0,0]
+        assert y is m.y[0, 0]
 
         for var in scaler.varlist:
             scaler.calculate_variable_scaling_factor(var)
 
         for var in m.y.values():
-            assert scaling_factor[var] == pytest.approx(1/(4+10**3))
-        nominal_y = 1/scaling_factor[y]
+            assert scaling_factor[var] == pytest.approx(1 / (4 + 10**3))
+        nominal_y = 1 / scaling_factor[y]
 
         for var in m.dz.values():
-            assert scaling_factor[var] == pytest.approx(1/(5*nominal_y - 100))
+            assert scaling_factor[var] == pytest.approx(1 / (5 * nominal_y - 100))
 
         for con in scaler.conlist:
             scaler.set_constraint_scaling_factor(con)
@@ -909,8 +925,8 @@ class TestFlattenedScalingAssignment():
         self.set_initial_scaling_factors(m)
 
         assignment = [
-                (m.u, m.ue),
-                ]
+            (m.u, m.ue),
+        ]
         scaler = sc.FlattenedScalingAssignment(scaling_factor, assignment, 0)
 
         u = scaler.get_representative_data_object(m.u)
@@ -920,7 +936,7 @@ class TestFlattenedScalingAssignment():
             scaler.calculate_variable_scaling_factor(var)
         for index, var in m.u.items():
             z = m.z[index, 0]
-            assert scaling_factor[var] == pytest.approx(2*scaling_factor[z])
+            assert scaling_factor[var] == pytest.approx(2 * scaling_factor[z])
 
         for con in scaler.conlist:
             scaler.set_constraint_scaling_factor(con)
@@ -935,19 +951,19 @@ class TestFlattenedScalingAssignment():
         self.set_initial_scaling_factors(m)
 
         assignment = [
-                (m.s, m.se),
-                (m.y[0,0], m.ae[0,0]),
-                ]
+            (m.s, m.se),
+            (m.y[0, 0], m.ae[0, 0]),
+        ]
         scaler = sc.FlattenedScalingAssignment(scaling_factor, assignment, None)
 
         s = scaler.get_representative_data_object(m.s)
-        y = scaler.get_representative_data_object(m.y[0,0])
+        y = scaler.get_representative_data_object(m.y[0, 0])
         assert s is m.s
-        assert y is m.y[0,0]
+        assert y is m.y[0, 0]
 
         for var in scaler.varlist:
             scaler.calculate_variable_scaling_factor(var)
         tf, xf = m.time.last(), m.space.last()
-        assert scaling_factor[s] == scaling_factor[m.z[tf,xf]]
+        assert scaling_factor[s] == scaling_factor[m.z[tf, xf]]
 
-        assert scaling_factor[y] == pytest.approx(1/(4+10**3))
+        assert scaling_factor[y] == pytest.approx(1 / (4 + 10**3))

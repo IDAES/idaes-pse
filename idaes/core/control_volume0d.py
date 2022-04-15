@@ -17,11 +17,13 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'ControlVolume0DBlock',
-    'idaes.core.base.control_volume0d.ControlVolume0DBlock',
-    version='2.0.0.alpha0')
+    "ControlVolume0DBlock",
+    "idaes.core.base.control_volume0d.ControlVolume0DBlock",
+    version="2.0.0.alpha0",
+)
 
 relocated_module_attribute(
-    'ControlVolume0DBlockData',
-    'idaes.core.base.control_volume0d.ControlVolume0DBlockData',
-    version='2.0.0.alpha0')
+    "ControlVolume0DBlockData",
+    "idaes.core.base.control_volume0d.ControlVolume0DBlockData",
+    version="2.0.0.alpha0",
+)

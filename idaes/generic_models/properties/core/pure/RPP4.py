@@ -16,7 +16,7 @@ Deprecation path for renamed module.
 from pyomo.common.deprecation import deprecation_warning
 
 deprecation_warning("The generic_models.properties.core.pure.RPP4 has been "
-                    "moved to idaes.models.properties.core.pure.RPP4",
+                    "moved to idaes.models.properties.modular_properties.pure.RPP4",
                     version="2.0.0.alpha0")
 
-from idaes.models.properties.core.pure.RPP4 import *
+from idaes.models.properties.modular_properties.pure.RPP4 import *

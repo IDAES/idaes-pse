@@ -37,7 +37,7 @@ from idaes.core.util import copy_port_values as _set_port
 from idaes.core.util.plot import stitch_dynamic
 from idaes.models.control import PIDBlock, PIDForm
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 def _valve_pressure_flow_cb(b):

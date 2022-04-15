@@ -40,7 +40,7 @@ from idaes.models.properties import iapws95
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
-from idaes.models.properties.core.examples.BT_PR import configuration
+from idaes.models.properties.modular_properties.examples.BT_PR import configuration
 
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -48,9 +48,11 @@ from idaes.core.util.model_statistics import (
     number_total_constraints,
     number_unused_variables,
 )
-from idaes.models.properties.core.generic.generic_property import GenericParameterBlock
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 # -----------------------------------------------------------------------------

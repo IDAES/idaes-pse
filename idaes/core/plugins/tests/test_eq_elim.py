@@ -79,21 +79,22 @@ def test_transform(model):
     assert m.x[2].fixed
     assert m.y.fixed
 
+
 @pytest.mark.unit
 def test_revert_constraint():
     # test that multiple replaced constraints are reverted right
     m = pyo.ConcreteModel()
-    m.x = pyo.Var([1, 2, 3, 4], initialize={1:0, 2:2, 3:3, 4:4})
+    m.x = pyo.Var([1, 2, 3, 4], initialize={1: 0, 2: 2, 3: 3, 4: 4})
     m.x[1].unfix()
     # This constraint should be replaced twice
     # 1.) x[2] and x[3] get written in terms of x[4]
     # 2.) x[1] == 0.5*x[4] + x[3]
     # 3.) x[1] == 0.5*x[4] + 0.75*x[4] (1.25*x4)
     m.c1 = pyo.Constraint(expr=m.x[1] - m.x[2] - m.x[3] == 0)
-    m.c2 = pyo.Constraint(expr=m.x[2]*2 - m.x[4] == 0)
-    m.c3 = pyo.Constraint(expr=m.x[3]*4 - m.x[4]*3 == 0)
-    orig = {id(m.x[1]):1, id(m.x[2]):-1, id(m.x[3]):-1}
-    tf = {id(m.x[1]):1, id(m.x[4]):-1.25}
+    m.c2 = pyo.Constraint(expr=m.x[2] * 2 - m.x[4] == 0)
+    m.c3 = pyo.Constraint(expr=m.x[3] * 4 - m.x[4] * 3 == 0)
+    orig = {id(m.x[1]): 1, id(m.x[2]): -1, id(m.x[3]): -1}
+    tf = {id(m.x[1]): 1, id(m.x[4]): -1.25}
 
     elim = pyo.TransformationFactory("simple_equality_eliminator")
     elim.apply_to(m)
@@ -118,7 +119,6 @@ def test_revert_constraint():
         assert c1_repn.linear_coefs[i] == orig[id(v)]
     assert len(c1_repn.linear_vars) == 3
 
-
     # check again with fixed var
     m.x[4].fix()
     elim.apply_to(m, max_iter=3)
@@ -142,26 +142,28 @@ def test_revert_constraint():
         assert c1_repn.linear_coefs[i] == orig[id(v)]
     assert len(c1_repn.linear_vars) == 3
 
+
 @pytest.mark.unit
 def test_revert_constraint_with_named_expr():
     # test that named Expressions get reverted right.
     m = pyo.ConcreteModel()
-    m.x = pyo.Var([1, 2, 3, 4], initialize={1:0, 2:2, 3:3, 4:4})
+    m.x = pyo.Var([1, 2, 3, 4], initialize={1: 0, 2: 2, 3: 3, 4: 4})
     m.x[1].unfix()
     m.e1 = pyo.Expression(expr=m.x[2])
     m.c1 = pyo.Constraint(expr=m.x[1] - m.e1 - m.x[3] == 0)
-    m.c2 = pyo.Constraint(expr=m.x[2] - m.x[4]/2 == 0)
-    m.c3 = pyo.Constraint(expr=m.x[3]*4 - m.x[4]*3 == 0)
+    m.c2 = pyo.Constraint(expr=m.x[2] - m.x[4] / 2 == 0)
+    m.c3 = pyo.Constraint(expr=m.x[3] * 4 - m.x[4] * 3 == 0)
     elim = pyo.TransformationFactory("simple_equality_eliminator")
     elim.apply_to(m, max_iter=3)
     assert pytest.approx(pyo.value(m.c1.body - m.c1.lower)) == -5
-    assert pytest.approx(pyo.value(m.e1)) == 2 # check that expression gets changed
+    assert pytest.approx(pyo.value(m.e1)) == 2  # check that expression gets changed
     elim.revert()
     m.x[1] = 0.0
     m.x[2] = 0.5
     m.x[3] = 0.75
-    assert pytest.approx(pyo.value(m.e1)) == 0.5 # check that expression gets reverted
+    assert pytest.approx(pyo.value(m.e1)) == 0.5  # check that expression gets reverted
     assert pytest.approx(pyo.value(m.c1.body - m.c1.lower)) == -1.25
+
 
 @pytest.mark.unit
 def test_reverse_var(model):
@@ -181,6 +183,7 @@ def test_reverse_var(model):
     assert not m.x[1].fixed
     assert not m.x[2].fixed
     assert not m.y.fixed
+
 
 @pytest.mark.unit
 def test_bounds(model):

@@ -85,7 +85,7 @@ from collections import OrderedDict
 import os
 from idaes.core.util.model_statistics import degrees_of_freedom
 import logging
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 def main():

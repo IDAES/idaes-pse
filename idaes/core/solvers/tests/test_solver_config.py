@@ -15,7 +15,8 @@ import pytest
 import idaes
 import idaes.core.solvers as isolve
 
-@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
+
+@pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_ipopt_idaes_config():
     """
@@ -25,18 +26,19 @@ def test_ipopt_idaes_config():
         # in this context use idaes default solver options
         isolve.use_idaes_solver_configuration_defaults()
         idaes.cfg.ipopt.options.nlp_scaling_method = "toast-based"
-        solver = pyo.SolverFactory('ipopt')
+        solver = pyo.SolverFactory("ipopt")
         assert solver.options["nlp_scaling_method"] == "toast-based"
-        solver = pyo.SolverFactory('ipopt', options={"tol":1})
+        solver = pyo.SolverFactory("ipopt", options={"tol": 1})
         assert solver.options["tol"] == 1
         idaes.cfg.ipopt.options.tol = 1
-        solver = pyo.SolverFactory('ipopt')
+        solver = pyo.SolverFactory("ipopt")
         assert solver.options["tol"] == 1
 
-@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
+
+@pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_default_solver():
-    """Test that default solver returns the correct solver type
-    """
-    assert type(pyo.SolverFactory("default")) \
-        == type(pyo.SolverFactory(idaes.cfg.default_solver))
+    """Test that default solver returns the correct solver type"""
+    assert type(pyo.SolverFactory("default")) == type(
+        pyo.SolverFactory(idaes.cfg.default_solver)
+    )
