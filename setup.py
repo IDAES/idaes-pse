@@ -84,7 +84,7 @@ kwargs = dict(
         "pandas",
         "pint",
         "psutil",
-        "pyomo>=6.3",
+        "pyomo>=6.4",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
@@ -106,7 +106,6 @@ kwargs = dict(
     },
     # Only installed if [<key>] is added to package name
     extras_require={
-        "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
             "tensorflow",  # idaes.surrogate.keras_surrogate
             "gridx-prescient>=2.1",  # idaes.tests.prescient
