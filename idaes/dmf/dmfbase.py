@@ -183,7 +183,7 @@ def create_configuration(
     if (exists and overwrite) or (not exists):
         try:
             config_path.open("w", encoding="utf-8")
-        except FileNotFoundError:
+        except FileNotFoundError as err:
             raise ValueError(f"Cannot create configuration: {err}")
     elif exists and not overwrite:
         raise KeyError(
