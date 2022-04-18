@@ -20,6 +20,7 @@ import pytest
 
 from pyomo.environ import (
     check_optimal_termination,
+    SolverStatus,
     ConcreteModel,
     TransformationFactory,
     value,
@@ -37,7 +38,9 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.initialization import initialize_by_time_element
+from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import InitializationError
 
 # Import FixedBed0D unit model
 from idaes.models_extra.gas_solid_contactors.unit_models.fixed_bed_0D import FixedBed0D
@@ -176,6 +179,179 @@ class TestIronOC(object):
     def test_dof(self, iron_oc):
         assert degrees_of_freedom(iron_oc) == 0
 
+    @pytest.fixture(scope="class")
+    def iron_oc_unscaled(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(
+            default={"dynamic": True, "time_set": [0, 3600], "time_units": pyunits.s}
+        )
+
+        m.fs.gas_props = GasPhaseParameterBlock()
+        m.fs.solid_props = SolidPhaseParameterBlock()
+        m.fs.solid_rxns = HeteroReactionParameterBlock(
+            default={
+                "solid_property_package": m.fs.solid_props,
+                "gas_property_package": m.fs.gas_props,
+            }
+        )
+
+        m.fs.unit = FixedBed0D(
+            default={
+                "gas_property_package": m.fs.gas_props,
+                "solid_property_package": m.fs.solid_props,
+                "reaction_package": m.fs.solid_rxns,
+            }
+        )
+
+        # Discretize time domain
+        m.discretizer = TransformationFactory("dae.finite_difference")
+        m.discretizer.apply_to(m, nfe=100, wrt=m.fs.time, scheme="BACKWARD")
+
+        # Set reactor design conditions
+        m.fs.unit.bed_diameter.fix(1)  # diameter of the TGA reactor [m]
+        m.fs.unit.bed_height.fix(1)  # height of solids in the TGA reactor [m]
+
+        # Set initial conditions of the solid phase
+        m.fs.unit.solids[0].temperature.fix(1273.15)
+        m.fs.unit.solids[0].particle_porosity.fix(0.20)
+        m.fs.unit.solids[0].mass_frac_comp["Fe2O3"].fix(0.45)
+        m.fs.unit.solids[0].mass_frac_comp["Fe3O4"].fix(0)
+        m.fs.unit.solids[0].mass_frac_comp["Al2O3"].fix(0.55)
+
+        # Set conditions of the gas phase (this is all fixed as gas side
+        # assumption is excess gas flowrate which means all state variables
+        # remain unchanged)
+        for t in m.fs.time:
+            m.fs.unit.gas[t].temperature.fix(1273.15)
+            m.fs.unit.gas[t].pressure.fix(1.01325e5)  # 1atm
+            m.fs.unit.gas[t].mole_frac_comp["CO2"].fix(0.4)
+            m.fs.unit.gas[t].mole_frac_comp["H2O"].fix(0.5)
+            m.fs.unit.gas[t].mole_frac_comp["CH4"].fix(0.1)
+
+        return m
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_unscaled(self, iron_oc_unscaled):
+        optarg = {
+            "bound_push": 1e-8,
+            "halt_on_ampl_error": "yes",
+            "linear_solver": "ma27",
+        }
+
+        initialization_tester(iron_oc_unscaled)
+
+        solver = get_solver("ipopt", optarg)  # create solver
+
+        initialize_by_time_element(iron_oc_unscaled.fs,
+                                   iron_oc_unscaled.fs.time,
+                                   solver=solver)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve_unscaled(self, iron_oc_unscaled):
+        results = solver.solve(iron_oc_unscaled)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_scaling(self, iron_oc):
+
+        # Set scaling gas phase for state variables
+        iron_oc.fs.gas_props.set_default_scaling("flow_mol", 1e-3)
+        iron_oc.fs.gas_props.set_default_scaling("pressure", 1e-5)
+        iron_oc.fs.gas_props.set_default_scaling("temperature", 1e-2)
+        for comp in iron_oc.fs.gas_props.component_list:
+            iron_oc.fs.gas_props.set_default_scaling(
+                "mole_frac_comp", 1e1, index=comp
+            )
+        # Set scaling for gas phase thermophysical and transport properties
+        iron_oc.fs.gas_props.set_default_scaling("enth_mol", 1e-6)
+        iron_oc.fs.gas_props.set_default_scaling("enth_mol_comp", 1e-6)
+        iron_oc.fs.gas_props.set_default_scaling("cp_mol", 1e-6)
+        iron_oc.fs.gas_props.set_default_scaling("cp_mol_comp", 1e-6)
+        iron_oc.fs.gas_props.set_default_scaling("cp_mass", 1e-6)
+        iron_oc.fs.gas_props.set_default_scaling("entr_mol", 1e-2)
+        iron_oc.fs.gas_props.set_default_scaling("entr_mol_phase", 1e-2)
+        iron_oc.fs.gas_props.set_default_scaling("dens_mol", 1)
+        iron_oc.fs.gas_props.set_default_scaling("dens_mol_comp", 1)
+        iron_oc.fs.gas_props.set_default_scaling("dens_mass", 1e2)
+        iron_oc.fs.gas_props.set_default_scaling("visc_d_comp", 1e4)
+        iron_oc.fs.gas_props.set_default_scaling("diffusion_comp", 1e5)
+        iron_oc.fs.gas_props.set_default_scaling("therm_cond_comp", 1e2)
+        iron_oc.fs.gas_props.set_default_scaling("visc_d", 1e5)
+        iron_oc.fs.gas_props.set_default_scaling("therm_cond", 1e0)
+        iron_oc.fs.gas_props.set_default_scaling("mw", 1e2)
+
+        # Set scaling for solid phase state variables
+        iron_oc.fs.solid_props.set_default_scaling("flow_mass", 1e-3)
+        iron_oc.fs.solid_props.set_default_scaling("particle_porosity", 1e2)
+        iron_oc.fs.solid_props.set_default_scaling("temperature", 1e-2)
+        for comp in iron_oc.fs.solid_props.component_list:
+            iron_oc.fs.solid_props.set_default_scaling(
+                "mass_frac_comp", 1e1, index=comp
+            )
+
+        # Set scaling for solid phase thermophysical and transport properties
+        iron_oc.fs.solid_props.set_default_scaling("enth_mass", 1e-6)
+        iron_oc.fs.solid_props.set_default_scaling("enth_mol_comp", 1e-6)
+        iron_oc.fs.solid_props.set_default_scaling("cp_mol_comp", 1e-6)
+        iron_oc.fs.solid_props.set_default_scaling("cp_mass", 1e-6)
+        iron_oc.fs.solid_props.set_default_scaling("dens_mass_particle", 1e-2)
+        iron_oc.fs.solid_props.set_default_scaling("dens_mass_skeletal", 1e-2)
+
+        FB0D = iron_oc.fs.unit  # alias to keep test lines short
+
+        # Calculate scaling factors
+        iscale.calculate_scaling_factors(FB0D)
+
+        assert pytest.approx(0.10000, abs=1e-5) == iscale.get_scaling_factor(
+            FB0D.bed_diameter
+        )
+        assert pytest.approx(0.10000, abs=1e-5) == iscale.get_scaling_factor(
+            FB0D.bed_height
+        )
+        assert pytest.approx(0.12732, abs=1e-5) == iscale.get_scaling_factor(
+            FB0D.volume_bed
+        )
+
+        for c in FB0D.volume_bed_constraint.values():
+            assert pytest.approx(
+                0.12732, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for t, c in FB0D.volume_solid_constraint.items():
+            assert pytest.approx(
+                0.12732, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for (t, j), c in FB0D.solids_material_holdup_constraints.items():
+            assert pytest.approx(
+                0.00127, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for (t, j), c in FB0D.solids_material_accumulation_constraints.items():
+            assert pytest.approx(
+                0.12732, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for t, c in FB0D.mass_solids_constraint.items():
+            assert pytest.approx(
+                0.00127, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for t, c in FB0D.sum_component_constraint.items():
+            assert pytest.approx(
+                10.00000, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for t, c in FB0D.solids_energy_holdup_constraints.items():
+            assert pytest.approx(
+                1.27323E-9, abs=1e-11
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for t, c in FB0D.solids_energy_accumulation_constraints.items():
+            assert pytest.approx(
+                9.32201E-7, abs=1e-9
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -190,7 +366,9 @@ class TestIronOC(object):
 
         solver = get_solver("ipopt", optarg)  # create solver
 
-        initialize_by_time_element(iron_oc.fs, iron_oc.fs.time, solver=solver)
+        initialize_by_time_element(iron_oc.fs,
+                                   iron_oc.fs.time,
+                                   solver=solver)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -200,6 +378,7 @@ class TestIronOC(object):
 
         # Check for optimal solution
         assert check_optimal_termination(results)
+        assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -440,6 +619,176 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.unit
     def test_dof(self, iron_oc):
         assert degrees_of_freedom(iron_oc) == 0
+
+    @pytest.fixture(scope="class")
+    def iron_oc_unscaled(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(
+            default={"dynamic": True, "time_set": [0, 3600], "time_units": pyunits.s}
+        )
+
+        m.fs.gas_props = GasPhaseParameterBlock()
+        m.fs.solid_props = SolidPhaseParameterBlock()
+        m.fs.solid_rxns = HeteroReactionParameterBlock(
+            default={
+                "solid_property_package": m.fs.solid_props,
+                "gas_property_package": m.fs.gas_props,
+            }
+        )
+
+        m.fs.unit = FixedBed0D(
+            default={
+                "energy_balance_type": EnergyBalanceType.none,
+                "gas_property_package": m.fs.gas_props,
+                "solid_property_package": m.fs.solid_props,
+                "reaction_package": m.fs.solid_rxns,
+            }
+        )
+
+        # Discretize time domain
+        m.discretizer = TransformationFactory("dae.finite_difference")
+        m.discretizer.apply_to(m, nfe=100, wrt=m.fs.time, scheme="BACKWARD")
+
+        # Set reactor design conditions
+        m.fs.unit.bed_diameter.fix(1)  # diameter of the TGA reactor [m]
+        m.fs.unit.bed_height.fix(1)  # height of solids in the TGA reactor [m]
+
+        # Set initial conditions of the solid phase
+        m.fs.unit.solids[0].temperature.fix(1273.15)
+        m.fs.unit.solids[0].particle_porosity.fix(0.20)
+        m.fs.unit.solids[0].mass_frac_comp["Fe2O3"].fix(0.45)
+        m.fs.unit.solids[0].mass_frac_comp["Fe3O4"].fix(0)
+        m.fs.unit.solids[0].mass_frac_comp["Al2O3"].fix(0.55)
+
+        # Set conditions of the gas phase (this is all fixed as gas side
+        # assumption is excess gas flowrate which means all state variables
+        # remain unchanged)
+        for t in m.fs.time:
+            m.fs.unit.gas[t].temperature.fix(1273.15)
+            m.fs.unit.gas[t].pressure.fix(1.01325e5)  # 1atm
+            m.fs.unit.gas[t].mole_frac_comp["CO2"].fix(0.4)
+            m.fs.unit.gas[t].mole_frac_comp["H2O"].fix(0.5)
+            m.fs.unit.gas[t].mole_frac_comp["CH4"].fix(0.1)
+
+        return m
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_unscaled(self, iron_oc_unscaled):
+        optarg = {
+            "bound_push": 1e-8,
+            "halt_on_ampl_error": "yes",
+            "linear_solver": "ma27",
+        }
+
+        initialization_tester(iron_oc_unscaled)
+
+        solver = get_solver("ipopt", optarg)  # create solver
+
+        initialize_by_time_element(iron_oc_unscaled.fs,
+                                   iron_oc_unscaled.fs.time,
+                                   solver=solver)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve_unscaled(self, iron_oc_unscaled):
+        results = solver.solve(iron_oc_unscaled)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_scaling(self, iron_oc):
+
+        # Set scaling gas phase for state variables
+        iron_oc.fs.gas_props.set_default_scaling("flow_mol", 1e-3)
+        iron_oc.fs.gas_props.set_default_scaling("pressure", 1e-5)
+        iron_oc.fs.gas_props.set_default_scaling("temperature", 1e-2)
+        for comp in iron_oc.fs.gas_props.component_list:
+            iron_oc.fs.gas_props.set_default_scaling(
+                "mole_frac_comp", 1e1, index=comp
+            )
+        # Set scaling for gas phase thermophysical and transport properties
+        iron_oc.fs.gas_props.set_default_scaling("enth_mol", 1e-6)
+        iron_oc.fs.gas_props.set_default_scaling("enth_mol_comp", 1e-6)
+        iron_oc.fs.gas_props.set_default_scaling("cp_mol", 1e-6)
+        iron_oc.fs.gas_props.set_default_scaling("cp_mol_comp", 1e-6)
+        iron_oc.fs.gas_props.set_default_scaling("cp_mass", 1e-6)
+        iron_oc.fs.gas_props.set_default_scaling("entr_mol", 1e-2)
+        iron_oc.fs.gas_props.set_default_scaling("entr_mol_phase", 1e-2)
+        iron_oc.fs.gas_props.set_default_scaling("dens_mol", 1)
+        iron_oc.fs.gas_props.set_default_scaling("dens_mol_comp", 1)
+        iron_oc.fs.gas_props.set_default_scaling("dens_mass", 1e2)
+        iron_oc.fs.gas_props.set_default_scaling("visc_d_comp", 1e4)
+        iron_oc.fs.gas_props.set_default_scaling("diffusion_comp", 1e5)
+        iron_oc.fs.gas_props.set_default_scaling("therm_cond_comp", 1e2)
+        iron_oc.fs.gas_props.set_default_scaling("visc_d", 1e5)
+        iron_oc.fs.gas_props.set_default_scaling("therm_cond", 1e0)
+        iron_oc.fs.gas_props.set_default_scaling("mw", 1e2)
+
+        # Set scaling for solid phase state variables
+        iron_oc.fs.solid_props.set_default_scaling("flow_mass", 1e-3)
+        iron_oc.fs.solid_props.set_default_scaling("particle_porosity", 1e2)
+        iron_oc.fs.solid_props.set_default_scaling("temperature", 1e-2)
+        for comp in iron_oc.fs.solid_props.component_list:
+            iron_oc.fs.solid_props.set_default_scaling(
+                "mass_frac_comp", 1e1, index=comp
+            )
+
+        # Set scaling for solid phase thermophysical and transport properties
+        iron_oc.fs.solid_props.set_default_scaling("enth_mass", 1e-6)
+        iron_oc.fs.solid_props.set_default_scaling("enth_mol_comp", 1e-6)
+        iron_oc.fs.solid_props.set_default_scaling("cp_mol_comp", 1e-6)
+        iron_oc.fs.solid_props.set_default_scaling("cp_mass", 1e-6)
+        iron_oc.fs.solid_props.set_default_scaling("dens_mass_particle", 1e-2)
+        iron_oc.fs.solid_props.set_default_scaling("dens_mass_skeletal", 1e-2)
+
+        FB0D = iron_oc.fs.unit  # alias to keep test lines short
+
+        # Calculate scaling factors
+        iscale.calculate_scaling_factors(FB0D)
+
+        assert pytest.approx(0.10000, abs=1e-5) == iscale.get_scaling_factor(
+            FB0D.bed_diameter
+        )
+        assert pytest.approx(0.10000, abs=1e-5) == iscale.get_scaling_factor(
+            FB0D.bed_height
+        )
+        assert pytest.approx(0.12732, abs=1e-5) == iscale.get_scaling_factor(
+            FB0D.volume_bed
+        )
+
+        for c in FB0D.volume_bed_constraint.values():
+            assert pytest.approx(
+                0.12732, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for t, c in FB0D.volume_solid_constraint.items():
+            assert pytest.approx(
+                0.12732, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for (t, j), c in FB0D.solids_material_holdup_constraints.items():
+            assert pytest.approx(
+                0.00127, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for (t, j), c in FB0D.solids_material_accumulation_constraints.items():
+            assert pytest.approx(
+                0.12732, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for t, c in FB0D.mass_solids_constraint.items():
+            assert pytest.approx(
+                0.00127, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for t, c in FB0D.sum_component_constraint.items():
+            assert pytest.approx(
+                10.00000, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        for t, c in FB0D.isothermal_solid_phase.items():
+            assert pytest.approx(
+                0.01000, abs=1e-5
+            ) == iscale.get_constraint_transform_applied_scaling_factor(c)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

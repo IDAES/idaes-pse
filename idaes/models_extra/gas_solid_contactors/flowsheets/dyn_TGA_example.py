@@ -25,6 +25,7 @@ from pyomo.environ import ConcreteModel, TransformationFactory, value, units as 
 
 from idaes.core import FlowsheetBlock, EnergyBalanceType
 from idaes.core.util.initialization import initialize_by_time_element
+from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 
 from idaes.models_extra.gas_solid_contactors.unit_models.fixed_bed_0D import FixedBed0D
@@ -92,6 +93,14 @@ def main(m):
 
     t_start = time.time()  # Run start time
 
+    print()
+    print("Apply scaling transformation")
+    # Scale the model by applying scaling transformation
+    # This reduces ill conditioning of the model
+    iscale.calculate_scaling_factors(m)
+
+    print()
+    print("Initialize the model")
     m.fs.TGA.initialize()
 
     t_initialize = time.time()  # Initialization time
