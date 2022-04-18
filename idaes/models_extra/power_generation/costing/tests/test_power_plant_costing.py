@@ -20,7 +20,7 @@ import pyomo.environ as pyo
 from pyomo.environ import units as pyunits
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.models_extra.power_generation.costing.power_plant_costing import (

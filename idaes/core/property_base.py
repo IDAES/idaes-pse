@@ -17,16 +17,17 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'PhysicalParameterBlock',
-    'idaes.core.base.property_base.PhysicalParameterBlock',
-    version='2.0.0.alpha0')
+    "PhysicalParameterBlock",
+    "idaes.core.base.property_base.PhysicalParameterBlock",
+    version="2.0.0.alpha0",
+)
 
 relocated_module_attribute(
-    'StateBlock',
-    'idaes.core.base.property_base.StateBlock',
-    version='2.0.0.alpha0')
+    "StateBlock", "idaes.core.base.property_base.StateBlock", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'StateBlockData',
-    'idaes.core.base.property_base.StateBlockData',
-    version='2.0.0.alpha0')
+    "StateBlockData",
+    "idaes.core.base.property_base.StateBlockData",
+    version="2.0.0.alpha0",
+)

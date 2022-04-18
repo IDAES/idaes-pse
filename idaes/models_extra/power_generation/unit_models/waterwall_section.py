@@ -52,7 +52,7 @@ from idaes.core import (
 
 from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 

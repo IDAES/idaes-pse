@@ -73,12 +73,12 @@ from idaes.core.util.model_statistics import (
     number_activated_equalities,
 )
 from idaes.core.util.math import safe_log
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.functions import functions_lib
-from idaes.models.properties.core.eos.ceos_common import (
+from idaes.models.properties.modular_properties.eos.ceos_common import (
     EoS_param,
     cubic_roots_available,
     CubicThermoExpressions,

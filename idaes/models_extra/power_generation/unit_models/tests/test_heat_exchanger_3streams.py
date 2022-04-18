@@ -25,7 +25,7 @@ from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.models_extra.power_generation.unit_models.heat_exchanger_3streams import (
     HeatExchangerWith3Streams,
 )

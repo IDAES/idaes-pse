@@ -27,9 +27,10 @@ from pyomo.core.base.objective import Objective
 def _is_var(v):
     return isinstance(v, (_GeneralVarData, Var))
 
+
 @TransformationFactory.register(
-    'replace_variables',
-    doc="Replace variables with other variables.")
+    "replace_variables", doc="Replace variables with other variables."
+)
 class ReplaceVariables(NonIsomorphicTransformation):
     """Replace variables in a model or block with other variables.
 
@@ -37,14 +38,18 @@ class ReplaceVariables(NonIsomorphicTransformation):
     method.
 
     """
+
     CONFIG = ConfigBlock()
-    CONFIG.declare("substitute", ConfigValue(
-        default=[],
-        description="List-like of tuples where the first item in a tuple is a "
-                    "Pyomo variable to be replaced and the second item in the "
-                    "tuple is a Pyomo variable to replace it with. This "
-                    "transformation is not reversible."
-    ))
+    CONFIG.declare(
+        "substitute",
+        ConfigValue(
+            default=[],
+            description="List-like of tuples where the first item in a tuple is a "
+            "Pyomo variable to be replaced and the second item in the "
+            "tuple is a Pyomo variable to replace it with. This "
+            "transformation is not reversible.",
+        ),
+    )
 
     __doc__ = add_docstring_list(__doc__, CONFIG)
 
@@ -73,7 +78,7 @@ class ReplaceVariables(NonIsomorphicTransformation):
                 for i in r[0]:
                     d[id(r[0][i])] = r[1][i]
             else:
-                #scalar replace
+                # scalar replace
                 d[id(r[0])] = r[1]
 
         # Replacement Visitor
@@ -85,12 +90,9 @@ class ReplaceVariables(NonIsomorphicTransformation):
 
         # Do replacements in Expressions, Constraints, and Objectives
         for c in instance.component_data_objects(
-            (Constraint, Expression, Objective),
-            descend_into=True,
-            active=True
+            (Constraint, Expression, Objective), descend_into=True, active=True
         ):
             c.set_value(expr=vis.dfs_postorder_stack(c.expr))
-
 
     def _apply_to(self, instance, **kwds):
         """

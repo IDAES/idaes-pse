@@ -19,16 +19,18 @@ plots.
 __author__ = "Alejandro Garciadiego"
 
 # Import objects from pyomo package
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           SolverFactory,
-                           value,
-                           Var,
-                           Constraint,
-                           Expression,
-                           units as pyunits)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    SolverFactory,
+    value,
+    Var,
+    Constraint,
+    Expression,
+    units as pyunits,
+)
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 
@@ -36,10 +38,21 @@ import idaes.logger as idaeslog
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 def Txy_diagram(
-    model, component_1, component_2, pressure, num_points = 20, temperature = 298.15,  figure_name = None,
-    print_legend = True, include_pressure = False, print_level=idaeslog.NOTSET,
-    solver=None, solver_op=None):
+    model,
+    component_1,
+    component_2,
+    pressure,
+    num_points=20,
+    temperature=298.15,
+    figure_name=None,
+    print_legend=True,
+    include_pressure=False,
+    print_level=idaeslog.NOTSET,
+    solver=None,
+    solver_op=None,
+):
 
     """
     This method generates T-x-y plots. Given the components, pressure and property dictionary
@@ -68,15 +81,33 @@ def Txy_diagram(
         Plot
     """
     # Run txy_ data funtion to obtain bubble and dew twmperatures
-    Txy_data_to_plot = Txy_data(model, component_1, component_2, pressure, num_points, temperature,
-                                print_level, solver, solver_op)
+    Txy_data_to_plot = Txy_data(
+        model,
+        component_1,
+        component_2,
+        pressure,
+        num_points,
+        temperature,
+        print_level,
+        solver,
+        solver_op,
+    )
 
     # Run diagrams function to convert t-x-y data into a plot
     build_txy_diagrams(Txy_data_to_plot, figure_name, print_legend, include_pressure)
 
 
-def Txy_data(model, component_1, component_2, pressure, num_points = 20, temperature = 298.15,
-            print_level=idaeslog.NOTSET, solver=None, solver_op=None):
+def Txy_data(
+    model,
+    component_1,
+    component_2,
+    pressure,
+    num_points=20,
+    temperature=298.15,
+    print_level=idaeslog.NOTSET,
+    solver=None,
+    solver_op=None,
+):
     """
     Function to generate T-x-y data. The function builds a state block and extracts
     bubble and dew temperatures at P pressure for N number of compositions.
@@ -106,8 +137,7 @@ def Txy_data(model, component_1, component_2, pressure, num_points = 20, tempera
 
     # Add properties parameter blocks to the flowsheet with specifications
 
-    model.props = model.params.build_state_block(
-        [1], default = {"defined_state": True})
+    model.props = model.params.build_state_block([1], default={"defined_state": True})
 
     # Set intial concentration of component 1 close to 1
     x = 0.99
@@ -150,29 +180,35 @@ def Txy_data(model, component_1, component_2, pressure, num_points = 20, tempera
         model.props[1].mole_frac_comp[component_1].fix(x_d[i])
         model.props[1].mole_frac_comp[component_2].fix(1 - x_d[i] - xs)
         # solve the model
-        status = solver.solve(model, tee = False)
+        status = solver.solve(model, tee=False)
         # If solution is optimal store the concentration, and calculated temperatures in the created arrays
         if check_optimal_termination(status):
 
-            print('Case: ',count,' Optimal. ', component_1, 'x = {:.2f}'.format(x_d[i]))
+            print(
+                "Case: ", count, " Optimal. ", component_1, "x = {:.2f}".format(x_d[i])
+            )
 
-            if hasattr(model.props[1], "_mole_frac_tdew") and hasattr(model.props[1], "_mole_frac_tbub"):
-                Tbubb.append(value(model.props[1].temperature_bubble['Vap', 'Liq']))
-                Tdew.append(value(model.props[1].temperature_dew['Vap', 'Liq']))
+            if hasattr(model.props[1], "_mole_frac_tdew") and hasattr(
+                model.props[1], "_mole_frac_tbub"
+            ):
+                Tbubb.append(value(model.props[1].temperature_bubble["Vap", "Liq"]))
+                Tdew.append(value(model.props[1].temperature_dew["Vap", "Liq"]))
 
             elif hasattr(model.props[1], "_mole_frac_tdew"):
-                print('One of the components only exists in vapor phase.')
-                Tdew.append(value(model.props[1].temperature_dew['Vap', 'Liq']))
+                print("One of the components only exists in vapor phase.")
+                Tdew.append(value(model.props[1].temperature_dew["Vap", "Liq"]))
 
             elif hasattr(model.props[1], "_mole_frac_tbub"):
-                print('One of the components only exists in liquid phase.')
-                Tbubb.append(value(model.props[1].temperature_bubble['Vap', 'Liq']))
+                print("One of the components only exists in liquid phase.")
+                Tbubb.append(value(model.props[1].temperature_bubble["Vap", "Liq"]))
 
             X.append(x_d[i])
 
         # If the solver did not solve to an optimal solution, do not store the data point
         else:
-            print('Case: ',count,' No Result', component_1, 'x = {:.2f}'.format(x_d[i]))
+            print(
+                "Case: ", count, " No Result", component_1, "x = {:.2f}".format(x_d[i])
+            )
         count += 1
 
     # Call TXYData function and store the data in TD class
@@ -184,12 +220,14 @@ def Txy_data(model, component_1, component_2, pressure, num_points = 20, tempera
     # Return the data class with all the information of the calculations
     return TD
 
+
 # Author: Alejandro Garciadiego
 class TXYDataClass:
     """
     Write data needed for build_txy_diagrams() into a class. The class can be
     obtained by running Txy_data() or by assigining values to the class.
     """
+
     def __init__(self, component_1, component_2, Punits, Tunits, pressure):
         """
         Args:
@@ -249,8 +287,11 @@ class TXYDataClass:
         """
         self.x = data_list_3
 
+
 # Author: Alejandro Garciadiego
-def build_txy_diagrams(txy_data, figure_name=None, print_legend=True, include_pressure=False):
+def build_txy_diagrams(
+    txy_data, figure_name=None, print_legend=True, include_pressure=False
+):
     """
     Args:
         txy_data: Txy data class includes components bubble and dew
@@ -266,24 +307,40 @@ def build_txy_diagrams(txy_data, figure_name=None, print_legend=True, include_pr
     """
 
     # Declare a plot and it's size
-    ig, ax = plt.subplots(figsize=(12,8))
+    ig, ax = plt.subplots(figsize=(12, 8))
 
     if len(txy_data.TBubb) and len(txy_data.TDew) > 0:
         if include_pressure == True:
             # Plot results for bubble temperature
 
+            ax.plot(
+                txy_data.x,
+                txy_data.TBubb,
+                "r",
+                label="Bubble Temp P = "
+                + str(txy_data.Press)
+                + " "
+                + str(txy_data.Punits),
+                linewidth=1.5,
+            )
 
-                ax.plot(txy_data.x, txy_data.TBubb,"r", label="Bubble Temp P = "+
-                str(txy_data.Press) + " " +
-                        str(txy_data.Punits), linewidth=1.5)
-
-                # Plot results for dew temperature
-                ax.plot(txy_data.x, txy_data.TDew, "b", label="Dew Temp P = " + str(txy_data.Press) + " " +
-                        str(txy_data.Punits), linewidth=1.5)
+            # Plot results for dew temperature
+            ax.plot(
+                txy_data.x,
+                txy_data.TDew,
+                "b",
+                label="Dew Temp P = "
+                + str(txy_data.Press)
+                + " "
+                + str(txy_data.Punits),
+                linewidth=1.5,
+            )
 
         else:
             # Plot results for bubble temperature
-            ax.plot(txy_data.x, txy_data.TBubb, "r", label="Bubble Temp ", linewidth=1.5)
+            ax.plot(
+                txy_data.x, txy_data.TBubb, "r", label="Bubble Temp ", linewidth=1.5
+            )
 
             # Plot results for dew temperature
             ax.plot(txy_data.x, txy_data.TDew, "b", label="Dew Temp", linewidth=1.5)
@@ -293,9 +350,17 @@ def build_txy_diagrams(txy_data, figure_name=None, print_legend=True, include_pr
         if include_pressure == True:
             # Plot results for bubble temperature
 
-                # Plot results for dew temperature
-                ax.plot(txy_data.x, txy_data.TBubb, "b", label="Dew Temp P = " + str(txy_data.Press) + " " +
-                        str(txy_data.Punits), linewidth=1.5)
+            # Plot results for dew temperature
+            ax.plot(
+                txy_data.x,
+                txy_data.TBubb,
+                "b",
+                label="Dew Temp P = "
+                + str(txy_data.Press)
+                + " "
+                + str(txy_data.Punits),
+                linewidth=1.5,
+            )
 
         else:
             # Plot results for dew temperature
@@ -306,9 +371,17 @@ def build_txy_diagrams(txy_data, figure_name=None, print_legend=True, include_pr
         if include_pressure == True:
             # Plot results for bubble temperature
 
-                # Plot results for dew temperature
-                ax.plot(txy_data.x, txy_data.TDew, "b", label="Bubble Temp P = " + str(txy_data.Press) + " " +
-                        str(txy_data.Punits), linewidth=1.5)
+            # Plot results for dew temperature
+            ax.plot(
+                txy_data.x,
+                txy_data.TDew,
+                "b",
+                label="Bubble Temp P = "
+                + str(txy_data.Press)
+                + " "
+                + str(txy_data.Punits),
+                linewidth=1.5,
+            )
 
         else:
             # Plot results for dew temperature
@@ -318,12 +391,14 @@ def build_txy_diagrams(txy_data, figure_name=None, print_legend=True, include_pr
     ax.grid()
 
     # Declare labels and fontsize
-    plt.xlabel(txy_data.Component_1 + ' concentration (mol/mol)', fontsize=20)
-    plt.ylabel('Temperature [' + str(txy_data.Tunits) + ']', fontsize=20)
+    plt.xlabel(txy_data.Component_1 + " concentration (mol/mol)", fontsize=20)
+    plt.ylabel("Temperature [" + str(txy_data.Tunits) + "]", fontsize=20)
 
     # Declare plot title
-    plt.title('T-x-y diagram ' + txy_data.Component_1 + '-' +
-                txy_data.Component_2, fontsize=24)
+    plt.title(
+        "T-x-y diagram " + txy_data.Component_1 + "-" + txy_data.Component_2,
+        fontsize=24,
+    )
 
     # Set limits of 0-1 mole fraction
     plt.xlim(0.0, 1)

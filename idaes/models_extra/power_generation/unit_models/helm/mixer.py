@@ -29,7 +29,7 @@ from idaes.models.unit_models import MomentumMixingType
 from idaes.core.util import from_json, to_json, StoreSpec
 
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 

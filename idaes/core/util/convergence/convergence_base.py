@@ -66,12 +66,14 @@ import logging
 import numpy as np
 import sys
 from io import StringIO
+
 # pyomo
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.common.tee import capture_output
 from pyomo.core import Param, Var
 from pyomo.opt import TerminationCondition
 from pyomo.common.log import LoggingIntercept
+
 # idaes
 import idaes.core.util.convergence.mpi_utils as mpiu
 from idaes.dmf import resource
@@ -90,6 +92,7 @@ def register_convergence_class(name):
             raise KeyError(f"Convergence class {name} already registered.")
         convergence_classes[name] = ".".join([cls.__module__, cls.__name__])
         return cls
+
     return _register_convergence_class
 
 
@@ -98,14 +101,7 @@ class ConvergenceEvaluationSpecification(object):
         self._inputs = OrderedDict()
 
     def add_sampled_input(
-        self,
-        name,
-        pyomo_path,
-        lower,
-        upper,
-        mean=None,
-        std=None,
-        distribution="normal"
+        self, name, pyomo_path, lower, upper, mean=None, std=None, distribution="normal"
     ):
         """
         Add an input that should be sampled when forming the set of
@@ -142,12 +138,12 @@ class ConvergenceEvaluationSpecification(object):
         # ToDo: already? Can use to check if the pyomo_path is valid? check if
         # ToDo: bounds will be violated?
         spec = OrderedDict()
-        spec['pyomo_path'] = pyomo_path
-        spec['lower'] = lower
-        spec['upper'] = upper
-        spec['mean'] = mean
-        spec['std'] = std
-        spec['distribution'] = distribution
+        spec["pyomo_path"] = pyomo_path
+        spec["lower"] = lower
+        spec["upper"] = upper
+        spec["mean"] = mean
+        spec["std"] = std
+        spec["distribution"] = distribution
         self._inputs[name] = spec
 
     @property
@@ -174,8 +170,10 @@ class ConvergenceEvaluation(object):
         -------
            ConvergenceEvaluationSpecification
         """
-        raise NotImplementedError('Not implemented in the base class. This'
-                                  ' should be overridden in the derived class')
+        raise NotImplementedError(
+            "Not implemented in the base class. This"
+            " should be overridden in the derived class"
+        )
 
     def get_initialized_model(self):
         """
@@ -190,8 +188,10 @@ class ConvergenceEvaluation(object):
                         ready to solve. This is the model object that will be
                         used in the evaluation.
         """
-        raise NotImplementedError('Not implemented in the base class. This'
-                                  ' should be overridden in the derived class')
+        raise NotImplementedError(
+            "Not implemented in the base class. This"
+            " should be overridden in the derived class"
+        )
 
     def get_solver(self):
         """
@@ -206,16 +206,18 @@ class ConvergenceEvaluation(object):
         # ToDo: We may want this to be standardized across all the models
         # within IDAES (should not need different solver options for different
         # unit models)
-        raise NotImplementedError('Not implemented in the base class. This'
-                                  ' should be overridden in the derived class')
+        raise NotImplementedError(
+            "Not implemented in the base class. This"
+            " should be overridden in the derived class"
+        )
 
 
 def _class_import(class_path):
     # Note, this method assumes that everything in front
     # of the last dot is a module, followed by one class
     # I don't think this will work for nested classes
-    tokens = class_path.split('.')
-    modpath = '.'.join(tokens[0:-1])
+    tokens = class_path.split(".")
+    modpath = ".".join(tokens[0:-1])
     mod = il.import_module(modpath)
     ret_class = getattr(mod, tokens[-1])
     return ret_class
@@ -248,12 +250,8 @@ def _run_ipopt_with_stats(model, solver, max_iter=500, max_cpu_time=120):
     # ToDo: Check that the "solver" is, in fact, IPOPT
 
     TempfileManager.push()
-    tempfile = TempfileManager.create_tempfile(
-                        suffix='ipopt_out',
-                        text=True)
-    opts = {'output_file': tempfile,
-            'max_iter': max_iter,
-            'max_cpu_time': max_cpu_time}
+    tempfile = TempfileManager.create_tempfile(suffix="ipopt_out", text=True)
+    opts = {"output_file": tempfile, "max_iter": max_iter, "max_cpu_time": max_cpu_time}
 
     status_obj = solver.solve(model, options=opts, tee=True)
     solved = True
@@ -263,17 +261,19 @@ def _run_ipopt_with_stats(model, solver, max_iter=500, max_cpu_time=120):
     iters = 0
     time = 0
     # parse the output file to get the iteration count, solver times, etc.
-    with open(tempfile, 'r') as f:
+    with open(tempfile, "r") as f:
         for line in f:
-            if line.startswith('Number of Iterations....:'):
+            if line.startswith("Number of Iterations....:"):
                 tokens = line.split()
                 iters = int(tokens[3])
             elif line.startswith(
-                    'Total CPU secs in IPOPT (w/o function evaluations)   ='):
+                "Total CPU secs in IPOPT (w/o function evaluations)   ="
+            ):
                 tokens = line.split()
                 time += float(tokens[9])
             elif line.startswith(
-                    'Total CPU secs in NLP function evaluations           ='):
+                "Total CPU secs in NLP function evaluations           ="
+            ):
                 tokens = line.split()
                 time += float(tokens[8])
 
@@ -283,12 +283,13 @@ def _run_ipopt_with_stats(model, solver, max_iter=500, max_cpu_time=120):
 
 def _progress_bar(fraction, msg, length=20):
     length = length - 2
-    n_complete = int(length*fraction)
+    n_complete = int(length * fraction)
     n_remaining = length - n_complete
-    characters = ['*']*n_complete         # ['*' for i in range(n_complete)]
-    characters.extend(['-']*n_remaining)  # ['-' for i in range(n_remaining)])
-    sys.stdout.write('%5.1f%s [%s] %s\n' % (
-                            fraction*100.0, '%', ''.join(characters), msg))
+    characters = ["*"] * n_complete  # ['*' for i in range(n_complete)]
+    characters.extend(["-"] * n_remaining)  # ['-' for i in range(n_remaining)])
+    sys.stdout.write(
+        "%5.1f%s [%s] %s\n" % (fraction * 100.0, "%", "".join(characters), msg)
+    )
     sys.stdout.flush()
 
 
@@ -314,14 +315,14 @@ def _set_model_parameters_from_sample(model, inputs, sample_point):
        N/A
     """
     for k, v in sample_point.items():
-        if k == '_name':
+        if k == "_name":
             # because parallel task manager does not handle dictionaries,
             # we add an _name entry to the sample point dictionary
             # ToDo: remove this when parallel task manager is fixed
             continue
         # k stores the "name" of the input
         # need to get the pyomo path of the input from the inputs structure
-        pyomo_path = inputs[k]['pyomo_path']
+        pyomo_path = inputs[k]["pyomo_path"]
 
         comp = model.find_component(pyomo_path)
         try:
@@ -332,29 +333,30 @@ def _set_model_parameters_from_sample(model, inputs, sample_point):
         if ctype is Param:
             if comp.is_constant():
                 raise ValueError(
-                        'Convergence testing found an input of type Param that'
-                        'was not mutable. Please make sure all sampled inputs'
-                        ' are either mutable params or fixed vars.')
+                    "Convergence testing found an input of type Param that"
+                    "was not mutable. Please make sure all sampled inputs"
+                    " are either mutable params or fixed vars."
+                )
             comp.set_value(v)
         elif ctype is Var:
             if not comp.is_fixed():
                 raise ValueError(
-                        'Convergence testing found an input of type Var that'
-                        'was not fixed. Please make sure all sampled inputs'
-                        ' are either mutable params or fixed vars.')
+                    "Convergence testing found an input of type Var that"
+                    "was not fixed. Please make sure all sampled inputs"
+                    " are either mutable params or fixed vars."
+                )
             comp.set_value(float(v))
         else:
-            raise ValueError('Failed to find a valid input component (must be'
-                             ' a fixed Var or a mutable Param). Instead,'
-                             ' pyomo_path: {} returned: {}'
-                             .format(pyomo_path, comp))
+            raise ValueError(
+                "Failed to find a valid input component (must be"
+                " a fixed Var or a mutable Param). Instead,"
+                " pyomo_path: {} returned: {}".format(pyomo_path, comp)
+            )
 
 
-def write_sample_file(eval_spec,
-                      filename,
-                      convergence_evaluation_class_str,
-                      n_points,
-                      seed=None):
+def write_sample_file(
+    eval_spec, filename, convergence_evaluation_class_str, n_points, seed=None
+):
     """
     Samples the space of the inputs defined in the eval_spec, and creates a
     json file with all the points to be used in executing a convergence
@@ -386,78 +388,77 @@ def write_sample_file(eval_spec,
     # build the samples
     samples = OrderedDict()
     for i in range(n_points):
-        sample = samples['Sample-{}'.format(i+1)] = OrderedDict()
+        sample = samples["Sample-{}".format(i + 1)] = OrderedDict()
         for k, v in eval_spec.inputs.items():
             if v["distribution"] == "normal":
-                s = np.random.normal(loc=v['mean'], scale=v['std'])
+                s = np.random.normal(loc=v["mean"], scale=v["std"])
                 s = v["lower"] if s < v["lower"] else s
                 s = v["upper"] if s > v["upper"] else s
             elif v["distribution"] == "uniform":
-                s = np.random.uniform(low=v['lower'], high=v['upper'])
+                s = np.random.uniform(low=v["lower"], high=v["upper"])
             sample[k] = s
 
     # create the dictionary storing all the necessary information
     jsondict = OrderedDict()
-    jsondict['inputs'] = OrderedDict(eval_spec.inputs)
-    jsondict['n_points'] = len(samples)
-    jsondict['seed'] = seed
-    jsondict['samples'] = samples
-    jsondict['convergence_evaluation_class_str'] = \
-        convergence_evaluation_class_str
+    jsondict["inputs"] = OrderedDict(eval_spec.inputs)
+    jsondict["n_points"] = len(samples)
+    jsondict["seed"] = seed
+    jsondict["samples"] = samples
+    jsondict["convergence_evaluation_class_str"] = convergence_evaluation_class_str
 
-    with open(filename, 'w') as fd:
+    with open(filename, "w") as fd:
         json.dump(jsondict, fd, indent=3)
 
 
 def run_convergence_evaluation_from_sample_file(sample_file):
     # load the sample file
     try:
-        with open(sample_file, 'r') as fd:
+        with open(sample_file, "r") as fd:
             jsondict = json.load(fd, object_pairs_hook=OrderedDict)
     except Exception as e:
-        _log.exception(f'Error reading json file {sample_file}')
-        raise ValueError(f'Problem reading json file: {sample_file}')
+        _log.exception(f"Error reading json file {sample_file}")
+        raise ValueError(f"Problem reading json file: {sample_file}")
 
     # create the convergence evaluation object
-    convergence_evaluation_class_str = jsondict[
-            'convergence_evaluation_class_str']
+    convergence_evaluation_class_str = jsondict["convergence_evaluation_class_str"]
     try:
-        convergence_evaluation_class = _class_import(
-                                            convergence_evaluation_class_str)
+        convergence_evaluation_class = _class_import(convergence_evaluation_class_str)
         conv_eval = convergence_evaluation_class()
     except Exception as e:
-        _log.exception(f'Error creating class: {convergence_evaluation_class_str}')
+        _log.exception(f"Error creating class: {convergence_evaluation_class_str}")
         raise ValueError(
-                f'Invalid value specified for convergence_evaluation_class_str:'
-                '{convergence_evaluation_class_str} in sample file: {sample_file}')
+            f"Invalid value specified for convergence_evaluation_class_str:"
+            "{convergence_evaluation_class_str} in sample file: {sample_file}"
+        )
     return run_convergence_evaluation(jsondict, conv_eval)
+
 
 def run_single_sample_from_sample_file(sample_file, name):
     # load the sample file
     try:
-        with open(sample_file, 'r') as fd:
+        with open(sample_file, "r") as fd:
             jsondict = json.load(fd, object_pairs_hook=OrderedDict)
     except Exception as e:
-        _log.exception(f'Error reading json file {sample_file}')
-        raise ValueError(f'Problem reading json file: {sample_file}')
+        _log.exception(f"Error reading json file {sample_file}")
+        raise ValueError(f"Problem reading json file: {sample_file}")
 
     # create the convergence evaluation object
-    convergence_evaluation_class_str = jsondict[
-            'convergence_evaluation_class_str']
+    convergence_evaluation_class_str = jsondict["convergence_evaluation_class_str"]
     try:
-        convergence_evaluation_class = _class_import(
-                                            convergence_evaluation_class_str)
+        convergence_evaluation_class = _class_import(convergence_evaluation_class_str)
         conv_eval = convergence_evaluation_class()
     except Exception as e:
-        _log.exception(f'Error creating class: {convergence_evaluation_class_str}')
+        _log.exception(f"Error creating class: {convergence_evaluation_class_str}")
         raise ValueError(
-                f'Invalid value specified for convergence_evaluation_class_str:'
-                '{convergence_evaluation_class_str} in sample file: {sample_file}')
+            f"Invalid value specified for convergence_evaluation_class_str:"
+            "{convergence_evaluation_class_str} in sample file: {sample_file}"
+        )
     return run_single_sample(jsondict, conv_eval, name)
 
+
 def run_single_sample(sample_file_dict, conv_eval, name):
-    inputs = sample_file_dict['inputs']
-    samples = sample_file_dict['samples']
+    inputs = sample_file_dict["inputs"]
+    samples = sample_file_dict["samples"]
     model = conv_eval.get_initialized_model()
     _set_model_parameters_from_sample(model, inputs, sample_file_dict["samples"][name])
     solver = conv_eval.get_solver()
@@ -482,8 +483,8 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
     -------
        N/A
     """
-    inputs = sample_file_dict['inputs']
-    samples = sample_file_dict['samples']
+    inputs = sample_file_dict["inputs"]
+    samples = sample_file_dict["samples"]
 
     # current parallel task manager code does not work with dictionaries, so
     # convert samples to a list
@@ -491,7 +492,7 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
     # this
     samples_list = list()
     for k, v in samples.items():
-        v['_name'] = k
+        v["_name"] = k
         samples_list.append(v)
     n_samples = len(samples_list)
 
@@ -500,32 +501,33 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
 
     results = list()
     for (si, ss) in enumerate(local_samples_list):
-        sample_name = ss['_name']
+        sample_name = ss["_name"]
         # print progress on the rank-0 process
         if task_mgr.is_root():
-            _progress_bar(float(si) / float(len(local_samples_list)),
-                          'Root Process: {}'.format(sample_name))
+            _progress_bar(
+                float(si) / float(len(local_samples_list)),
+                "Root Process: {}".format(sample_name),
+            )
 
         # capture the output
         # ToDo: make this an option and turn off for single sample execution
         output_buffer = StringIO()
-        with LoggingIntercept(output_buffer, 'idaes', logging.ERROR):
+        with LoggingIntercept(output_buffer, "idaes", logging.ERROR):
             with capture_output():  # as str_out:
                 model = conv_eval.get_initialized_model()
                 _set_model_parameters_from_sample(model, inputs, ss)
                 solver = conv_eval.get_solver()
-                (status_obj, solved, iters, time) = \
-                    _run_ipopt_with_stats(model, solver)
+                (status_obj, solved, iters, time) = _run_ipopt_with_stats(model, solver)
 
         if not solved:
-            _log.error(f'Sample: {sample_name} failed to converge.')
+            _log.error(f"Sample: {sample_name} failed to converge.")
 
         results_dict = OrderedDict()
-        results_dict['name'] = sample_name
-        results_dict['sample_point'] = ss
-        results_dict['solved'] = solved
-        results_dict['iters'] = iters
-        results_dict['time'] = time
+        results_dict["name"] = sample_name
+        results_dict["sample_point"] = ss
+        results_dict["solved"] = solved
+        results_dict["iters"] = iters
+        results_dict["time"] = time
         results.append(results_dict)
 
     global_results = task_mgr.gather_global_data(results)
@@ -533,14 +535,9 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
 
 
 def save_convergence_statistics(
-    inputs,
-    results,
-    dmf=None,
-    display=True,
-    json_path=None,
-    report_path=None):
-    """
-    """
+    inputs, results, dmf=None, display=True, json_path=None, report_path=None
+):
+    """ """
     s = Stats(inputs, results)
     if display:
         s.report()
@@ -586,9 +583,9 @@ class Stats(object):
 
         # loop through and gather some data
         for r in results:
-            if r['solved'] is True:
-                self.iters_successful.append(r['iters'])
-                self.time_successful.append(r['time'])
+            if r["solved"] is True:
+                self.iters_successful.append(r["iters"])
+                self.time_successful.append(r["time"])
             else:
                 self.failed_cases.append(r)
         # data for summary table
@@ -612,30 +609,36 @@ class Stats(object):
             self.time_max = float(np.max(self.time_successful))
 
         for r in results:
-            flag = ''
-            if r['solved'] is not True:
-                flag = 'F'
+            flag = ""
+            if r["solved"] is not True:
+                flag = "F"
             else:
-                if r['time'] > self.time_mean + 2.0 * self.time_std and \
-                        r['time'] > self.time_mean + 5.0:
+                if (
+                    r["time"] > self.time_mean + 2.0 * self.time_std
+                    and r["time"] > self.time_mean + 5.0
+                ):
                     # add a more absolute check when s.time_std is small
-                    flag += 'T'
-                if r['iters'] > self.iters_mean + 2.0 * self.iters_std and \
-                        r['iters'] > self.iters_mean + 5:
+                    flag += "T"
+                if (
+                    r["iters"] > self.iters_mean + 2.0 * self.iters_std
+                    and r["iters"] > self.iters_mean + 5
+                ):
                     # add a more absolute check when s.iters_std is small
-                    flag += 'I'
-            r['flag'] = flag
-            if flag != '':
+                    flag += "I"
+            r["flag"] = flag
+            if flag != "":
                 self.notable_cases.append(r)
-
 
     def from_dict(self, d):
         for k, v in d.items():
             setattr(self, k, v)
 
     def to_dict(self):
-        keys = [a for a in dir(self) if not a.startswith("_")
-            and not callable(getattr(self, a))]
+        keys = [
+            a
+            for a in dir(self)
+            if not a.startswith("_") and not callable(getattr(self, a))
+        ]
         d = {}
         for k in keys:
             d[k] = getattr(self, k)
@@ -646,13 +649,17 @@ class Stats(object):
 
     def to_dmf(self, dmf):
         # PYLINT-TODO-FIX fix error due to undefined variable "stats"
-        rsrc = resource.Resource(value={
-            'name': 'convergence_results',
-            'desc': 'statistics returned from run_convergence_evaluation',
-            'creator': {'name': getpass.getuser()},
-            # pylint: disable=undefined-variable
-            'data': stats.to_dict()}, type_=resource.ResourceTypes.data)
-            # pylint: enable=undefined-variable
+        rsrc = resource.Resource(
+            value={
+                "name": "convergence_results",
+                "desc": "statistics returned from run_convergence_evaluation",
+                "creator": {"name": getpass.getuser()},
+                # pylint: disable=undefined-variable
+                "data": stats.to_dict(),
+            },
+            type_=resource.ResourceTypes.data,
+        )
+        # pylint: enable=undefined-variable
         dmf.add(rsrc)
 
     def report(self, fp=sys.stdout):
@@ -660,66 +667,81 @@ class Stats(object):
         res = self.results
         n = len(res)
         fp.write(f"\n{'='*24}{'Scenario Statistics':^24s}{'='*24}\n\n")
-        fp.write(f"{'Parameter':>20s}{'Min':>10s}{'Mean':>10s}"
-                 f"{'Stdev':>10s}{'Max':>10s}\n")
+        fp.write(
+            f"{'Parameter':>20s}{'Min':>10s}{'Mean':>10s}"
+            f"{'Stdev':>10s}{'Max':>10s}\n"
+        )
         fp.write(f"{'-'*60}\n")
         for k, v in self.inputs.items():
-            values = [res[i]['sample_point'][k] for i in range(n)]
-            fp.write(f"{k:>20s}{float(np.min(values)):10.3g}"
-                     f"{float(np.mean(values)):10.3g}"
-                     f"{float(np.std(values)):10.3g}"
-                     f"{float(np.max(values)):10.3}\n")
+            values = [res[i]["sample_point"][k] for i in range(n)]
+            fp.write(
+                f"{k:>20s}{float(np.min(values)):10.3g}"
+                f"{float(np.mean(values)):10.3g}"
+                f"{float(np.std(values)):10.3g}"
+                f"{float(np.max(values)):10.3}\n"
+            )
         fp.write(f"{'-'*60}\n\n")
         fp.write(f"\n{'='*24}{'Summary':^24s}{'='*24}\n\n")
         nsuc = n - len(s.failed_cases)
         fp.write(f"Number of Successful Cases (solved=True): {nsuc}/{n}\n\n")
-        fp.write(f"{'':20s}{'min':>10s}{'-1std':>10s}{'mean':>10s}"
-                 f"{'+1std':>10s}{'max':>10s}\n")
+        fp.write(
+            f"{'':20s}{'min':>10s}{'-1std':>10s}{'mean':>10s}"
+            f"{'+1std':>10s}{'max':>10s}\n"
+        )
         fp.write(f"{'-'*70}\n")
-        fp.write(f"{'Iterations':>20s}{s.iters_min:10.3g}"
-                 f"{(s.iters_mean - s.iters_std):10.3g}"
-                 f"{s.iters_mean:10.3g}{(s.iters_mean + s.iters_std):10.3g}"
-                 f"{s.iters_max:10.3g}\n")
-        fp.write(f"{'Solver Time (s)':>20s}{s.time_min:10.3g}"
-                 f"{(s.time_mean - s.time_std):10.3g}"
-                 f"{s.time_mean:10.3g}{(s.time_mean + s.time_std):10.3g}"
-                 f"{s.time_max:10.3g}\n")
+        fp.write(
+            f"{'Iterations':>20s}{s.iters_min:10.3g}"
+            f"{(s.iters_mean - s.iters_std):10.3g}"
+            f"{s.iters_mean:10.3g}{(s.iters_mean + s.iters_std):10.3g}"
+            f"{s.iters_max:10.3g}\n"
+        )
+        fp.write(
+            f"{'Solver Time (s)':>20s}{s.time_min:10.3g}"
+            f"{(s.time_mean - s.time_std):10.3g}"
+            f"{s.time_mean:10.3g}{(s.time_mean + s.time_std):10.3g}"
+            f"{s.time_max:10.3g}\n"
+        )
         fp.write(f"{'-'*70}\n\n")
         # print the detailed table
         fp.write(f"\n{'='*24}{'Table of Results':^24s}{'='*24}\n\n")
-        fp.write(f"{'Flag':>5s}{'Name':>20s}{'Solved':>10s}"
-                 f"{'Iters':>10s}{'Time':>10s}\n")
+        fp.write(
+            f"{'Flag':>5s}{'Name':>20s}{'Solved':>10s}" f"{'Iters':>10s}{'Time':>10s}\n"
+        )
         fp.write(f"{'-'*55}\n")
         for r in res:
-            fp.write(f"{r['flag']:>5s}{r['name']:>20s}{str(r['solved']):>10s}"
-                     f"{r['iters']:>10d}{r['time']:>10.2f}\n")
+            fp.write(
+                f"{r['flag']:>5s}{r['name']:>20s}{str(r['solved']):>10s}"
+                f"{r['iters']:>10d}{r['time']:>10.2f}\n"
+            )
         fp.write(f"{'-'*55}\n\n")
         fp.write(f"\n{'='*24}{'Notable Cases':^24s}{'='*24}\n\n")
         if len(s.notable_cases) == 0:
             fp.write("... None\n")
         for c in s.notable_cases:
-            msg = ''
-            if c['flag'] == 'F':
-                msg = 'failed solve'
-            elif c['flag'] == 'T':
-                msg = 'long runtime'
-            elif c['flag'] == 'I':
-                msg = 'high iteration count'
-            elif c['flag'] == 'TI':
-                msg = 'high iteration count; long runtime'
+            msg = ""
+            if c["flag"] == "F":
+                msg = "failed solve"
+            elif c["flag"] == "T":
+                msg = "long runtime"
+            elif c["flag"] == "I":
+                msg = "high iteration count"
+            elif c["flag"] == "TI":
+                msg = "high iteration count; long runtime"
 
             fp.write(f"{c['name']} : {msg}\n")
 
-            for k, v in c['sample_point'].items():
-                if k == '_name':
+            for k, v in c["sample_point"].items():
+                if k == "_name":
                     # we need this because the parallel task manager does not
                     # handle dicts  and we add _name to identify the sample name
                     # ToDo: fix this when the parallel task manager is extended to
                     # handle dicts
                     continue
-                if self.inputs[k]['distribution'] == "normal":
-                    mean = self.inputs[k]['mean']
-                    std = self.inputs[k]['std']
+                if self.inputs[k]["distribution"] == "normal":
+                    mean = self.inputs[k]["mean"]
+                    std = self.inputs[k]["std"]
                     alpha = (v - mean) / std
-                    fp.write(f"  {k:20s}: {v:10g} ({alpha:5.2f} standard "
-                             "deviations above/below the mean)\n")
+                    fp.write(
+                        f"  {k:20s}: {v:10g} ({alpha:5.2f} standard "
+                        "deviations above/below the mean)\n"
+                    )

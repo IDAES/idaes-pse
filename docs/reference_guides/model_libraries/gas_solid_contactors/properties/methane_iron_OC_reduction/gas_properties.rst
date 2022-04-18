@@ -2,12 +2,12 @@ Gas properties
 ==============
 
 .. index::
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseParameterBlock
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseParameterData
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseStateBlock
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseStateBlockData
+   pair: idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseParameterBlock
+   pair: idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseParameterData
+   pair: idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseStateBlock
+   pair: idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseStateBlockData
 
-.. currentmodule:: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties
+.. currentmodule:: idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties
 
 This property package provides the gas phase properties for the chemical looping combustion of methane.
 The components modeled are methane, carbon dioxide, and water.
