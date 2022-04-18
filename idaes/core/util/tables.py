@@ -11,10 +11,14 @@
 # license information.
 #################################################################################
 
+from tkinter import Variable
 from pandas import DataFrame
 from collections import OrderedDict
 from pyomo.environ import value
 from pyomo.network import Arc, Port
+from pyomo.core.base.var import _GeneralVarData, Var
+from pyomo.core.base.param import Param
+from pyomo.core.base.expression import Expression
 
 import idaes.logger as idaeslog
 from idaes.core.util.units_of_measurement import report_quantity
@@ -211,7 +215,8 @@ def tag_state_quantities(blocks, attributes, labels, exception=False):
 
 
 def create_stream_table_dataframe(
-    streams, true_state=False, time_point=0, orient="columns"
+    streams, true_state=False, time_point=0, orient="columns",
+    add_variable_type=False, variable_type_suffix='_vartype'
 ):
     """
     Method to create a stream table in the form of a pandas dataframe. Method
@@ -231,10 +236,19 @@ def create_stream_table_dataframe(
         orient : orientation of stream table. Accepted values are 'columns'
             (default) where streams are displayed as columns, or 'index' where
             stream are displayed as rows.
+        add_variable_type : Add columns for each stream to specify the
+            corresponding variable type. (e.g fixed, not-fixed, parameter)
 
     Returns:
         A pandas DataFrame containing the stream table data.
     """
+    # Variable Types:
+    class VariableType():
+        NOTFIXED = 1
+        FIXED = 2
+        PARAMETER = 3
+        EXPRESSION = 4
+
     stream_attributes = OrderedDict()
     stream_states = stream_states_dict(streams=streams, time_point=time_point)
     full_keys = []  # List of all rows in dataframe to fill in missing data
@@ -242,7 +256,15 @@ def create_stream_table_dataframe(
     stream_attributes["Units"] = {}
 
     for key, sb in stream_states.items():
+        var_type_key = f"{key}{variable_type_suffix}"
         stream_attributes[key] = {}
+        stream_attributes[var_type_key] = {}
+        print("*******************************************")
+        print("sb.define_state_vars():")
+        print(sb.define_state_vars())
+        print("\n\nsb.define_display_vars():")
+        print(sb.define_display_vars())
+        print("\n\n")
         if true_state:
             disp_dict = sb.define_state_vars()
         else:
@@ -258,10 +280,27 @@ def create_stream_table_dataframe(
                 # repeatedly overwriting this
                 stream_attributes["Units"][stream_key] = quant.u
 
+                if add_variable_type:
+                    if isinstance(disp_dict[k][i], (_GeneralVarData, Var)):
+                        if disp_dict[k][i].fixed:
+                            stream_attributes[var_type_key][stream_key] = VariableType.FIXED
+                        else:
+                            stream_attributes[var_type_key][stream_key] = VariableType.NOTFIXED
+                    elif isinstance(disp_dict[k][i], Param):
+                        stream_attributes[var_type_key][stream_key] = VariableType.PARAMETER
+                    elif isinstance(disp_dict[k][i], Expression):
+                        stream_attributes[var_type_key][stream_key] = VariableType.EXPRESSION
+                    else:
+                        stream_attributes[var_type_key][stream_key] = None
+
                 if stream_key not in full_keys:
                     full_keys.append(stream_key)
 
     # Check for missing rows in any stream, and fill with "-" if needed
+    print("#################################################")
+    print("stream_attributes:")
+    from pprint import pprint
+    pprint(stream_attributes)
     for k, v in stream_attributes.items():
         for r in full_keys:
             if r not in v.keys():

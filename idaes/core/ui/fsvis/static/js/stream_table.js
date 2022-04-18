@@ -20,6 +20,12 @@ export class StreamTable {
     fillTable(model) {
         // This method fills the table with the streams and information from the model
 
+        // Variable Type Enumerations
+        const NOTFIXED = 1
+        const FIXED = 2
+        const PARAMETER = 3
+        const EXPRESSION = 4
+
         // Get the stream table data from the html
         let stream_table_data = model["model"]["stream_table"];
 
@@ -28,13 +34,14 @@ export class StreamTable {
 
         // Specify the column headers
         let columns = stream_table_data["columns"];
+        console.log("columns:", columns);
         let column_defs = [];
         for (let col in columns) {
             // There is an empty column because of the way that the pandas dataframe was oriented so 
             // only add the columns that don't have an empty column header
             // Also ignore the "Units" column header
             let column_header = columns[col];
-            if (column_header !== "" && column_header !== "Units") {
+            if (column_header !== "" && column_header !== "Units" && !column_header.includes("_vartype")) {
                 // If the column_header is Variable then we don't want the column to be right-aligned and we want the column to be pinned to the left so when the user scrolls the column scrolls with them
                 if (column_header === "Variable") {
                     column_defs.push({
@@ -45,7 +52,7 @@ export class StreamTable {
                         resizable: true,
                         pinned: 'left',
                         cellRenderer: (params) => {
-                            return '<span class="streamtable-variable">' + params.value + '</span>';
+                            return '<span class="streamtable-cell">' + params.value + '</span>';
                         }
                     });
                 }
@@ -57,7 +64,11 @@ export class StreamTable {
                         filter: 'agTextColumnFilter',
                         sortable: true,
                         resizable: true,
-                        cellStyle: {"text-align": "right"}
+                        // cellStyle: {"text-align": "right"}
+                        cellRenderer: (params) => {
+                            console.log("cellRenderer - params:", params);
+                            return '<span class="streamtable-cell">' + params.value + '</span>';
+                        }
                     });
                 }
                 let list_item = document.createElement("li");
@@ -79,6 +90,7 @@ export class StreamTable {
             let row_object = {};
             let data = data_arrays[var_index];
             for (let col_index in columns) {
+                console.log("columns[col_index]:", columns[col_index])
                 if (columns[col_index] === "Units") {
                     if (data[col_index] && data[col_index].html) {
                         row_object[variable_col] = row_object[variable_col] + '<span class="streamtable-units">' + data[col_index].html + '</span>';
@@ -86,6 +98,44 @@ export class StreamTable {
                     else {
                         row_object[variable_col] = row_object[variable_col] + '<span class="streamtable-units">&ndash;</span>';
                     }
+                }
+                else if (columns[col_index].includes("_vartype")) {
+                    const stream_col = columns[col_index].substring(0, columns[col_index].length - 8)
+                    // let cellStyle = {};
+                    let cell_style = "";
+                    console.log("data[col_index]:", data[col_index]);
+                    switch (data[col_index]) {
+                        case FIXED:
+                            // cellStyle = {
+                            //     cellStyle: { 'background-color': 'orange' }
+                            // }
+                            cell_style = '<span class="streamtable-vartype-fixed" title="Fixed"></span>'
+                            break;
+                        case PARAMETER:
+                            // cellStyle = {
+                            //     cellStyle: { 'background-color': 'blue' }
+                            // }
+                            cell_style = '<span class="streamtable-vartype-parameter" title="Parameter"></span>'
+                            break;
+                        case EXPRESSION:
+                            // cellStyle = {
+                            //     cellStyle: { 'background-color': 'greenyellow' }
+                            // }
+                            cell_style = '<span class="streamtable-vartype-expression" title="Expression"></span>'
+                            break;
+                        default:
+                            console.warn(`Warning: Couldn't identify Variable type: ${data[col_index]}`);
+                    };
+                    row_object[stream_col] = cell_style + '<span class="streamtable-variable-value">' + data[col_index-1] + '</span>';
+                    // for (let column_def_index in column_defs) {
+                    //     if (column_defs[column_def_index].headerName === stream_col) {
+                    //         column_defs[column_def_index] = {
+                    //             ...column_defs[column_def_index],
+                    //             ...cellStyle
+                    //         };
+                    //         break;
+                    //     }
+                    // }
                 }
                 else {
                     row_object[columns[col_index]] = data[col_index];
@@ -117,7 +167,7 @@ export class StreamTable {
     };
 
     setupEvents() {
-        // This method sets up the event listeners for the table 
+        // This method sets up the event listeners for the table
 
         // Set up the show/hide checkboxes for the Hide Field dropdown in the nav bar
         let hide_fields_list = document.querySelector("#hide-fields-list")

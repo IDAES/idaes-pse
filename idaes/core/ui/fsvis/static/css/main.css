@@ -340,7 +340,7 @@ input:checked + .slider:before {
 }
 
 /* Styling the Variables column in the Stream Table */
-.streamtable-variable {
+.streamtable-cell {
   display: block;
 }
 
@@ -348,6 +348,38 @@ input:checked + .slider:before {
 .streamtable-units {
   opacity: 0.6;
   float: right;
+}
+
+.streamtable-variable-value {
+  float: right;
+}
+
+.streamtable-vartype-fixed {
+  height: 7px;
+  width:  7px;
+  margin-top: 7%;
+  background-color: #7526f1;
+  border-radius: 50%;
+  /* display: inline-block; */
+  float: left;
+}
+
+.streamtable-vartype-parameter {
+  height: 7px;
+  width:  7px;
+  background-color: #70972f;
+  border-radius: 50%;
+  /* display: inline-block; */
+  float: left;
+}
+
+.streamtable-vartype-expression {
+  height: 7px;
+  width:  7px;
+  background-color: #fcba03;
+  border-radius: 50%;
+  /* display: inline-block; */
+  float: left;
 }
 
 /* Styling the stream table column header that corresponds to the link mouseover event */
