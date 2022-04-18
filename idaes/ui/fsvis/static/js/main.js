@@ -109,6 +109,20 @@ export class App {
                 $.ajax({url: url, dataType: "json"})
                     // If we got the model, save it
                     .done(data => {
+                        // Display views before refreshing
+                        const viewFlowsheet = document.querySelector("#view-flowsheet-btn");
+                        const viewStreamTable = document.querySelector("#view-stream-table-btn");
+
+                        const clickEvent = new MouseEvent('click');
+
+                        if (!viewFlowsheet.checked) {
+                            viewFlowsheet.dispatchEvent(clickEvent);
+                        }
+                        if (!viewStreamTable.checked) {
+                            viewStreamTable.dispatchEvent(clickEvent);
+                        }
+
+                        // Refresh
                         this.renderModel(data);
                         this.stream_table.initTable(data)
                     })
