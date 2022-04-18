@@ -90,11 +90,12 @@ def test_visualize(flash_model, tmp_path):
     expected = {
         "model": {
             "id": "Flash",
-            "stream_table": {"columns": ["", "Variable"], "data": [], "index": []},
+            "stream_table": {"columns": ["Variable"], "data": [], "index": []},
             "unit_models": {},
             "arcs": {},
         },
         "cells": [],
+        "routing_config": {}
     }
     assert data == expected
 
