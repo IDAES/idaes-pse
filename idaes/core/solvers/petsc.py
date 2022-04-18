@@ -129,13 +129,14 @@ class PetscTS(Petsc):
     """
 
     def __init__(self, **kwds):
-        self._ts_vars_stub = kwds.pop("vars_stub", None)
+        self._ts_vars_stub = kwds.pop("vars_stub", "tmp_vars_stub")
         if "options" in kwds and kwds["options"] is not None:
             kwds["options"] = copy.deepcopy(kwds["options"])
         else:
             kwds["options"] = {}
         kwds["options"]["--dae_solve"] = ""
         kwds["options"]["--ts_monitor"] = ""
+        kwds["options"]["--ts_trajectory_type"] = "visualization"
         if "petsc_ts" in idaes.cfg:
             if "options" in idaes.cfg["petsc_ts"]:
                 default_options = dict(idaes.cfg["petsc_ts"]["options"])
@@ -154,7 +155,7 @@ class PetscTS(Petsc):
         # If the vars_stub option was specified, copy the col and typ files to
         # the working directory. These files are needed to get the names and
         # types of variables and to make sense of trajectory data.
-        if self._ts_vars_stub is not None:
+        if self.options.get("--ts_save_trajectory", 0):
             try:
                 shutil.copyfile(f"{stub}.col", f"{self._ts_vars_stub}.col")
             except:
@@ -360,6 +361,19 @@ def _sub_problem_scaling_suffix(m, t_block):
             if c in m.scaling_factor:
                 t_block.scaling_factor[c] = m.scaling_factor[c]
 
+class PetscDAEResults(object):
+    """This class stores the results of ``petsc_dae_by_time_element()``, it has.
+    two attributes ``results`` and ``trajectory``.  Results is a list of pyomo
+    solver results objects.  Since this petsc DAE solver utility solves the
+    initial conditions first then may integrate over the time domain in one or
+    more steps, the results of multiple solves are returned.  The trajectory is
+    a PetscTrajectory object which gives the full trajectory of the solution
+    for all time steps taken by the PETSc solver. This is generally finner than
+    the PyomoDAE discretization.
+    """
+    def __init__(self, results=None, trajectory=None):
+        self.results = results
+        self.trajectory = trajectory
 
 def petsc_dae_by_time_element(
     m,
@@ -371,12 +385,11 @@ def petsc_dae_by_time_element(
     skip_initial=False,
     snes_options=None,
     ts_options=None,
-    wsl=None,
     keepfiles=False,
     symbolic_solver_labels=True,
-    vars_stub=None,
-    trajectory_save_prefix=None,
     between=None,
+    interpolate=True,
+    calculate_derivaties=True,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -404,27 +417,28 @@ def petsc_dae_by_time_element(
             otherwise know the initial conditions.
         snes_options (dict): PETSc nonlinear equation solver options
         ts_options (dict): PETSc time-stepping solver options
-        wsl (bool): if True use WSL to run PETSc, if False don't use WSL to run
-            PETSc, if None automatic. The WSL is only for Windows.
         keepfiles (bool): pass to keepfiles arg for solvers
         symbolic_solver_labels (bool): pass to symbolic_solver_labels argument
             for solvers. If you want to read trajectory data from the
             time-stepping solver, this should be True.
-        vars_stub (str or None): Copy the `*.col` and `*.typ` files to the
-            working directory using this stub if not None.  These are needed to
-            interpret the trajectory data.
-        trajectory_save_prefix (str or None): If a string is provided the
-            trajectory data will be saved as gzipped json
-        between (list or tuple): List of time points to integrate between.  If
-            None use all time points in the model.  If the first or last time
-            point are not inclued, they will be added.
+        between (list or tuple): List of time points to integrate between. If
+            None use all time points in the model. Generally the list should
+            start with the first time point and end with the last time point;
+            however, this is not a requirement and the are situations where you
+            may not want to include them. If you are not including the first
+            time point, you should take extra care with the initial conditions.
+            If the initial conditions are already correct consider using the
+            ``skip_initial`` option if the first time point is not included.
+        interpolate (bool): if True and trajectory is read, interpolate model
+            values from the trajectory
+        calculate_derivaties: (bool) if True, calculate the derivative values
+            based on the values of the differential varaibles in the discretized
+            Pyomo model.
 
-    Returns:
-        List of solver results objects from each solve. If there are initial
-        condition constraints and they are not skipped, the first object will
-        be from the initial condition solve.  Then there should be one for each
-        time element for each TS solve.
+    Returns (PetscDAEResults):
+        See PetscDAEResults documentation for more informations.
     """
+    tj = None
     if between is None:
         between = time
     else:
@@ -437,21 +451,14 @@ def petsc_dae_by_time_element(
         between = pyo.Set(initialize=between)
         between.construct()
 
-    # If you want to load the trajectory, you need symbolic_solver_labels
-    if trajectory_save_prefix is not None:
-        symbolic_solver_labels = True
-        if vars_stub is None:
-            vars_stub = trajectory_save_prefix + "_vars"
-
     solve_log = idaeslog.getSolveLogger("petsc-dae")
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
     regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
     tdisc = find_discretization_equations(m, time)
 
-    solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options, wsl=wsl)
-    solver_dae = pyo.SolverFactory(
-        "petsc_ts", options=ts_options, wsl=wsl, vars_stub=vars_stub
-    )
+    solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options)
+    solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
+    save_trajectory = solver_dae.options.get("--ts_save_trajectory", 0)
 
     if initial_variables is None:
         initial_variables = []
@@ -519,9 +526,7 @@ def petsc_dae_by_time_element(
             # mistake.
             if len(differential_vars) < 1:
                 raise RuntimeError(
-                    "No differential equations found at t = %s, "
-                    "you do not need a DAE solver." % t
-                )
+                    f"No differential equations found at t = {t}, not a DAE")
             if timevar is not None:
                 t_block.dae_suffix[timevar[t]] = int(DaeVarTypes.TIME)
             # Set up the scaling factor suffix
@@ -537,10 +542,13 @@ def petsc_dae_by_time_element(
                     export_nonlinear_variables=differential_vars,
                     options={"--ts_init_time": tprev, "--ts_max_time": t},
                 )
-            if trajectory_save_prefix is not None:
+            if save_trajectory:
                 tj_prev = tj
                 tj = PetscTrajectory(
-                    stub=vars_stub, delete_on_read=True, unscale=t_block
+                    stub="tmp_vars_stub",
+                    delete_on_read=True,
+                    unscale=True,
+                    model=t_block,
                 )
                 if tj_prev is not None:
                     # due to the way variables is generated we know varaibles
@@ -569,10 +577,37 @@ def petsc_dae_by_time_element(
                 variables_prev = variables
             tprev = t
             res_list.append(res)
-        if tj is not None:
-            tj.to_json(f"{trajectory_save_prefix}_1.json.gz")
-    return res_list
-
+        if interpolate and tj is not None:
+            t0 = between.first()
+            tlast = between.last()
+            itime = [t for t in time if not (t < t0 or t > tlast)]
+            no_repeat = set()
+            if timevar is not None:
+                for t in itime:
+                    timevar[t] = t
+                no_repeat.add(id(timevar[tlast]))
+            for var in time_vars:
+                if id(var[tlast]) in no_repeat:
+                    continue
+                no_repeat.add(id(var[tlast]))
+                if isinstance(var[t0].parent_component(), pyodae.DerivativeVar):
+                    continue # skip derivative vars
+                try:
+                    vec = tj.interpolate_vec(itime, var[tlast])
+                except KeyError:
+                    # variable not in trajectroy probably
+                    # because it is always fixed
+                    continue
+                i = 0
+                for t, v in var.items():
+                    if t < t0 or t > tlast:
+                        continue
+                    if not v.fixed:
+                        v.value = vec[i]
+                    i += 1
+        if calculate_derivaties:
+            calculate_time_derivatives(m, time)
+    return PetscDAEResults(results=res_list, trajectory=tj)
 
 def calculate_time_derivatives(m, time):
     """Calculate the derivative values from the discretization equations.
@@ -598,6 +633,7 @@ def calculate_time_derivatives(m, time):
                     except KeyError:
                         pass  # discretization equation may not exist at first time
 
+
 class PetscTrajectory(object):
     def __init__(
         self,
@@ -608,6 +644,8 @@ class PetscTrajectory(object):
         vis_dir="Visualization-data",
         delete_on_read=False,
         unscale=None,
+        model=None,
+        no_read=False,
     ):
         """Class to read PETSc TS solver trajectory data.  This can either read
         PETSc output by providing the ``stub`` argument, a trajectory dict by
@@ -619,11 +657,21 @@ class PetscTrajectory(object):
                 if None, use current working directory
             vis_dir (str): subdirectory where visualization data is stored
             delete_on_read (bool): if true delete trajectory data after reading
-            unscale (Block): if not None this is a block to read scale factors
-                to unscale the trajectory
+            unscale (bool or Block): if True and model is specified, use model
+                to obtain scale factors and unscale the trajectory. If a Block
+                is specified use the specified block to unscale the model. If
+                False or None do not unscale.
+            model (Block): if specified use for unscaling
         """
-        if PetscBinaryIOTrajectory is None:
+        if no_read:
+            return
+        if PetscBinaryIOTrajectory is None and stub is not None:
             raise RuntimeError("PetscBinaryIOTrajectory could not be imported")
+        # if unscale is True, use model as scale factor source
+        if model is not None and unscale is True:
+            unscale = model
+        self.model = model
+        self.id_map = {}
         if pth is not None:
             stub = os.path.join(pth, stub)
             vis_dir = os.path.join(pth, vis_dir)
@@ -637,14 +685,16 @@ class PetscTrajectory(object):
                 self.delete_files()
             if unscale is not None:
                 self._unscale(unscale)
+            self.vars = list(self.vecs.keys())
         elif vecs is not None:
             self.vecs = vecs
             self.time = vecs["_time"]
             self.vars = list(vecs.keys())
         elif json is not None:
             self.from_json(json)
+            self.vars = list(self.vecs.keys())
         else:
-            raise RuntimeError("To read trajectory, either provide stub, vecs, or json")
+            raise RuntimeError("To read trajectory, provide stub, vecs, or json")
 
     def _read(self):
         with open(f"{self.stub}.col") as f:
@@ -663,20 +713,13 @@ class PetscTrajectory(object):
             for j, vt in enumerate(self.vecs_by_time):
                 self.vecs[v][j] = vt[i]
 
-    def _var_name_list(self, vars):
-        if isinstance(vars, str):
-            vars = [vars]
-        if hasattr(vars, "ctype"):
-            if issubclass(vars.ctype, pyo.Var):
-                vars = [vars]
-        vars = list(map(str, vars))
-        for name in vars:
-            if name not in self.vars:
-                raise RuntimeError(f"Variable {name} not found.")
-        return vars
-
     def _set_vec(self, var, vec):
-        var = str(var)
+        try:
+            var = self.id_map[id(var)]
+        except KeyError:
+            var_str = str(var)
+            self.id_map[id(var)] = var_str
+            var = var_str
         self.vecs[var] = vec
 
     def _set_time_vec(self, vec):
@@ -695,7 +738,12 @@ class PetscTrajectory(object):
             vector of variable values at each time point
 
         """
-        var = str(var)
+        try:
+            var = self.id_map[id(var)]
+        except KeyError:
+            var_str = str(var)
+            self.id_map[id(var)] = var_str
+            var = var_str
         return self.vecs[var]
 
     def get_dt(self):
@@ -712,7 +760,7 @@ class PetscTrajectory(object):
             dt[i] = self.time[i + 1] - self.time[i]
         return dt
 
-    def interpolate_vecs(self, times):
+    def interpolate(self, times):
         """Create a new vector dictionary interpolated at times. This method
         will also extraplote values outside the original time range, so care
         should be taken not to specify times too far outside the range.
@@ -724,11 +772,28 @@ class PetscTrajectory(object):
         Returns (dict):
             Dictionary of vectors for values at interpolated points
         """
-        vecs = dict.fromkeys(self.vars, None)
-        vecs["_time"] = copy.copy(times)
-        for var in vecs:
-            vecs[var] = np.interp(vecs["_time"], self.vecs["_time"], self.vecs[var])
-        return vecs
+        tj = PetscTrajectory(no_read=True)
+        tj.id_map = copy.copy(self.id_map)
+        tj.vecs = dict.fromkeys(self.vars, None)
+        tj.vecs["_time"] = copy.copy(times)
+        tj.time = tj.vecs["_time"]
+        for var in self.vars:
+            tj.vecs[var] = np.interp(tj.time, self.time, self.vecs[var])
+        return tj
+
+    def interpolate_vec(self, times, var):
+        """Create a new vector dictionary interpolated at times. This method
+        will also extraplote values outside the original time range, so care
+        should be taken not to specify times too far outside the range.
+
+        Args:
+            times (list): list of times to interpolate. These must be in
+                increasing order.
+
+        Returns (dict):
+            Dictionary of vectors for values at interpolated points
+        """
+        return np.interp(times, self.time, self.get_vec(var))
 
     def _unscale(self, m):
         """If variable scale factors are used, the solver will see scaled
@@ -745,17 +810,22 @@ class PetscTrajectory(object):
         # Variables might show up more than once because of References
         already_scaled = set()
         for var in m.component_data_objects():
-            vname = str(var)
-            if vname in self.vecs and id(var) not in already_scaled:
-                s = None
-                if hasattr(var.parent_block(), "scaling_factor"):
-                    s = var.parent_block().scaling_factor.get(var, s)
-                if hasattr(m, "scaling_factor"):
-                    s = m.scaling_factor.get(var, s)
-                if s is not None:
-                    for i, x in enumerate(self.vecs[vname]):
-                        self.vecs[vname][i] = x / s
-                already_scaled.add(id(var))
+            try:
+                vec = self.get_vec(var)
+            except KeyError:
+                continue
+            vid = id(var)
+            if vid in already_scaled:
+                continue
+            s = None
+            if hasattr(var.parent_block(), "scaling_factor"):
+                s = var.parent_block().scaling_factor.get(var, s)
+            if hasattr(m, "scaling_factor"):
+                s = m.scaling_factor.get(var, s)
+            if s is not None:
+                for i, x in enumerate(vec):
+                    vec[i] = x / s
+            already_scaled.add(vid)
 
     def delete_files(self):
         """Delete the trajectory data and variable information files.

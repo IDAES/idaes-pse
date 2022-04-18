@@ -235,35 +235,34 @@ def test_petsc_with_pid_model():
             "--ts_dt": 0.1,
             "--ts_monitor": "",  # set initial step to 0.1
             "--ts_save_trajectory": 1,
-            "--ts_trajectory_type": "visualization",
         },
-        vars_stub="tj_vars",
     )
+    assert isinstance(res.results, list)
 
     # read the trajectory data, and make it easy by interpolating a time point
     # every second
-    tj = petsc.PetscTrajectory(stub="tj_vars", delete_on_read=True)
-    vecs = tj.interpolate_vecs(np.linspace(0, 24, 25))
+    tj = res.trajectory
+    tj2 = tj.interpolate(np.linspace(0, 24, 25))
 
     # For more details about the problem behavior see the PETSc examples in the
     # examples repo.
 
     # make sure the inlet pressure is initially 5e5 Pa
     assert pyo.value(
-        vecs[str(m.fs.valve_1.control_volume.properties_in[24].pressure)][5]
+        tj2.get_vec(m.fs.valve_1.control_volume.properties_in[24].pressure)[5]
     ) == pytest.approx(5e5)
     # make sure the inlet pressure ramped up to 6e5 Pa
     assert pyo.value(
-        vecs[str(m.fs.valve_1.control_volume.properties_in[24].pressure)][20]
+        tj2.get_vec(m.fs.valve_1.control_volume.properties_in[24].pressure)[20]
     ) == pytest.approx(6e5)
     # make sure after the controller comes on the presure goes to the set point
     assert pyo.value(
-        vecs[str(m.fs.tank.control_volume.properties_out[24].pressure)][9]
+        tj2.get_vec(m.fs.tank.control_volume.properties_out[24].pressure)[9]
     ) == pytest.approx(3e5)
     # make sure after ramping inlet pressure the tank pressure gets back to the
     # setpoint
     assert pyo.value(
-        vecs[str(m.fs.tank.control_volume.properties_out[24].pressure)][22]
+        tj2.get_vec(m.fs.tank.control_volume.properties_out[24].pressure)[22]
     ) == pytest.approx(3e5)
 
     # Test derivatives.  There is no discretization equation at t=0 and

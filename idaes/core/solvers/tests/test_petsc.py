@@ -472,7 +472,7 @@ def test_petsc_read_trajectory():
     m.scaling_factor[m.y[180, 1]] = 10  # make sure unscale works
 
     m.y_ref = pyo.Reference(m.y)  # make sure references don't get unscaled twice
-    petsc.petsc_dae_by_time_element(
+    res = petsc.petsc_dae_by_time_element(
         m,
         time=m.t,
         ts_options={
@@ -482,8 +482,6 @@ def test_petsc_read_trajectory():
             "--ts_save_trajectory": 1,
             "--ts_trajectory_type": "visualization",
         },
-        vars_stub="tj_random_junk_123",
-        trajectory_save_prefix="tj_random_junk_123",
     )
     assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
     assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
@@ -492,16 +490,15 @@ def test_petsc_read_trajectory():
     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
     assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
 
-    tj = petsc.PetscTrajectory(json="tj_random_junk_123_1.json.gz")
+    tj = res.trajectory
     assert tj.get_dt()[0] == pytest.approx(0.01)  # if small enough shouldn't be cut
     assert tj.get_vec(m.y[180, 1])[-1] == pytest.approx(y1, rel=1e-3)
     assert tj.get_vec("_time")[-1] == pytest.approx(180)
-    os.remove("tj_random_junk_123_1.json.gz")
 
     times = np.linspace(0, 180, 181)
-    vecs = tj.interpolate_vecs(times)
-    assert vecs[str(m.y[180, 1])][180] == pytest.approx(y1, rel=1e-3)
-    assert vecs["_time"][180] == pytest.approx(180)
+    tj2 = tj.interpolate(times)
+    assert tj2.get_vec(m.y[180, 1])[180] == pytest.approx(y1, rel=1e-3)
+    assert tj2.time[180] == pytest.approx(180)
 
     tj.to_json("some_testy_json.json")
     with open("some_testy_json.json", "r") as fp:
@@ -531,18 +528,16 @@ def test_petsc_read_trajectory_parts():
     m.scaling_factor[m.y[180, 1]] = 10  # make sure unscale works
 
     m.y_ref = pyo.Reference(m.y)  # make sure references don't get unscaled twice
-    petsc.petsc_dae_by_time_element(
+    res = petsc.petsc_dae_by_time_element(
         m,
         time=m.t,
-        between=[m.t.at(4), m.t.last()],
+        between=[m.t.first(), m.t.at(4), m.t.last()],
         ts_options={
             "--ts_type": "cn",  # Crank–Nicolson
             "--ts_adapt_type": "basic",
             "--ts_dt": 0.01,
             "--ts_save_trajectory": 1,
-            "--ts_trajectory_type": "visualization",
         },
-        trajectory_save_prefix="tj_random_junk_123",
     )
     assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
     assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
@@ -551,33 +546,15 @@ def test_petsc_read_trajectory_parts():
     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
     assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
 
-    tj = petsc.PetscTrajectory(json="tj_random_junk_123_1.json.gz")
-    assert tj.get_dt()[0] == pytest.approx(0.01)  # if small enough shouldn't be cut
+    tj = res.trajectory
     assert tj.get_vec(m.y[180, 1])[-1] == pytest.approx(y1, rel=1e-3)
     assert tj.get_vec("_time")[-1] == pytest.approx(180)
-    os.remove("tj_random_junk_123_1.json.gz")
+    y1_trj = tj.interpolate_vec(m.t, m.y[180, 1])
+    y4_trj = tj.interpolate_vec(m.t, m.y[180, 4])
+    for i, t in enumerate(m.t):
+        assert y1_trj[i] == pytest.approx(pyo.value(m.y[t, 1]))
+        assert y4_trj[i] == pytest.approx(pyo.value(m.y[t, 4]))
 
-    times = np.linspace(0, 180, 181)
-    vecs = tj.interpolate_vecs(times)
-    assert vecs[str(m.y[180, 1])][180] == pytest.approx(y1, rel=1e-3)
-    assert vecs["_time"][180] == pytest.approx(180)
-
-    tj.to_json("some_testy_json.json")
-    with open("some_testy_json.json", "r") as fp:
-        vecs = json.load(fp)
-    assert vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
-    assert vecs["_time"][-1] == pytest.approx(180)
-    os.remove("some_testy_json.json")
-
-    tj.to_json("some_testy_json.json.gz")
-    tj2 = petsc.PetscTrajectory(json="some_testy_json.json.gz")
-    assert tj2.vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
-    assert tj2.vecs["_time"][-1] == pytest.approx(180)
-    os.remove("some_testy_json.json.gz")
-
-    tj2 = petsc.PetscTrajectory(vecs=vecs)
-    assert tj2.vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
-    assert tj2.vecs["_time"][-1] == pytest.approx(180)
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
