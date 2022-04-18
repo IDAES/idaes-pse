@@ -9,7 +9,7 @@ through reaction, mass and heat transfer.
 
 **Assumptions:**
 
-* Cloud-wake region effects are negligigble and are not modelled.
+* Cloud-wake region effects are negligible and are not modelled.
 * Gas emulsion is at minimum fluidization conditions.
 * Gas feeds into emulsion region before the excess enters into the bubble region.
 * Gas and solids are well mixed in the radial direction but vary axially.
@@ -584,7 +584,7 @@ The initialization routine proceeds as follows:
 BFBR Class
 ----------
 
-.. module:: idaes.gas_solid_contactors.unit_models.bubbling_fluidized_bed
+.. module:: idaes.models_extra.gas_solid_contactors.unit_models.bubbling_fluidized_bed
 
 .. autoclass:: BubblingFluidizedBed
   :members:

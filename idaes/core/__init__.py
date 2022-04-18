@@ -39,3 +39,10 @@ from .base.phases import (
     AqueousPhase,
 )
 from .base.components import Component, Solvent, Solute, Ion, Cation, Anion, Apparent
+from .base.costing_base import (
+    FlowsheetCostingBlock,
+    FlowsheetCostingBlockData,
+    UnitModelCostingBlock,
+    register_idaes_currency_units,
+)
+from .base.var_like_expression import VarLikeExpression

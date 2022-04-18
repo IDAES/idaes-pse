@@ -17,11 +17,13 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'FlowsheetBlock',
-    'idaes.core.base.flowsheet_model.FlowsheetBlock',
-    version='2.0.0.alpha0')
+    "FlowsheetBlock",
+    "idaes.core.base.flowsheet_model.FlowsheetBlock",
+    version="2.0.0.alpha0",
+)
 
 relocated_module_attribute(
-    'FlowsheetBlockData',
-    'idaes.core.base.flowsheet_model.FlowsheetBlockData',
-    version='2.0.0.alpha0')
+    "FlowsheetBlockData",
+    "idaes.core.base.flowsheet_model.FlowsheetBlockData",
+    version="2.0.0.alpha0",
+)

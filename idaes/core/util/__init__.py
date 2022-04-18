@@ -11,5 +11,11 @@
 # license information.
 #################################################################################
 from .model_serializer import to_json, from_json, StoreSpec
-from .misc import svg_tag, copy_port_values, TagReference, get_solver
+from .misc import svg_tag, copy_port_values, TagReference
 from .tags import ModelTag, ModelTagGroup
+
+from pyomo.common.deprecation import relocated_module_attribute
+
+relocated_module_attribute(
+    "get_solver", "idaes.core.solvers.get_solver", version="2.0.0.alpha0"
+)

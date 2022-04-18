@@ -1,7 +1,7 @@
 Oxygen Carrier Oxidation in a Bubbling Fluidized Bed (steady-state)
 ===================================================================
 
-.. currentmodule:: idaes.gas_solid_contactors.flowsheets.ss_BFB_OC_oxidation
+.. currentmodule:: idaes.models_extra.gas_solid_contactors.flowsheets.ss_BFB_OC_oxidation
 
 Steady-state flowsheet example of the bubbling fluidized bed model for oxidation of an iron-oxide based oxygen carrier with oxygen (air).
 
