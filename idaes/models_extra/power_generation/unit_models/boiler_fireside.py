@@ -84,7 +84,7 @@ import idaes.logger as idaeslog
 from pyomo.environ import Var, Param, exp, RangeSet, Constraint, log
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 __author__ = "Boiler Team (J. Ma, M. Zamarripa)"
 __version__ = "1.0.0"

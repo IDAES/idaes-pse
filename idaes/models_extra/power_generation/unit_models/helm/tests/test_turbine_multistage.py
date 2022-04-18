@@ -28,7 +28,7 @@ from idaes.core.util.model_statistics import (
     activated_equalities_generator,
 )
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Set up solver
 solver = get_solver()

@@ -5,7 +5,6 @@
     :maxdepth: 1
 
     dyn_utils
-    homotopy
     initialization
     misc
     model_serializer

@@ -17,36 +17,29 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'PhaseType',
-    'idaes.core.base.phases.PhaseType',
-    version='2.0.0.alpha0')
+    "PhaseType", "idaes.core.base.phases.PhaseType", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'Phase',
-    'idaes.core.base.phases.Phase',
-    version='2.0.0.alpha0')
+    "Phase", "idaes.core.base.phases.Phase", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'PhaseData',
-    'idaes.core.base.phases.PhaseData',
-    version='2.0.0.alpha0')
+    "PhaseData", "idaes.core.base.phases.PhaseData", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'LiquidPhase',
-    'idaes.core.base.phases.LiquidPhase',
-    version='2.0.0.alpha0')
+    "LiquidPhase", "idaes.core.base.phases.LiquidPhase", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'SolidPhase',
-    'idaes.core.base.phases.SolidPhase',
-    version='2.0.0.alpha0')
+    "SolidPhase", "idaes.core.base.phases.SolidPhase", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'VaporPhase',
-    'idaes.core.base.phases.VaporPhase',
-    version='2.0.0.alpha0')
+    "VaporPhase", "idaes.core.base.phases.VaporPhase", version="2.0.0.alpha0"
+)
 
 relocated_module_attribute(
-    'AqueousPhase',
-    'idaes.core.base.phases.AqueousPhase',
-    version='2.0.0.alpha0')
+    "AqueousPhase", "idaes.core.base.phases.AqueousPhase", version="2.0.0.alpha0"
+)

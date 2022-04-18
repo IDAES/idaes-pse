@@ -16,7 +16,7 @@ Deprecation path for renamed module.
 from pyomo.common.deprecation import deprecation_warning
 
 deprecation_warning("The generic_models.properties.core.state_definitions.FPhx has been "
-                    "moved to idaes.models.properties.core.state_definitions.FPhx",
+                    "moved to idaes.models.properties.modular_properties.state_definitions.FPhx",
                     version="2.0.0.alpha0")
 
-from idaes.models.properties.core.state_definitions.FPhx import *
+from idaes.models.properties.modular_properties.state_definitions.FPhx import *

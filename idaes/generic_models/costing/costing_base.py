@@ -16,7 +16,7 @@ Deprecation path for renamed module.
 from pyomo.common.deprecation import deprecation_warning
 
 deprecation_warning("The generic_models.costing.costing_base module has been "
-                    "moved to idaes.models.costing.costing_base",
+                    "moved to idaes.core.base.costing_base",
                     version="2.0.0.alpha0")
 
-from idaes.models.costing.costing_base import *
+from idaes.core.base.costing_base import *

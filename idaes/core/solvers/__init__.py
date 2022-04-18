@@ -13,3 +13,4 @@
 
 from .config import SolverWrapper, use_idaes_solver_configuration_defaults
 from .features import ipopt_has_linear_solver
+from .get_solver import get_solver

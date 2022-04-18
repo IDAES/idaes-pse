@@ -203,7 +203,7 @@ export class Toolbar {
 
         // Zoom to fit event listener
         document.querySelector("#zoom-fit-btn").addEventListener("click", () => {
-            this._paper.paperScroller.zoomToFit();
+            this._paper.zoomToFit();
         });
     }
 
