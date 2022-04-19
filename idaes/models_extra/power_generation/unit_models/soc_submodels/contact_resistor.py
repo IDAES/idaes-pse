@@ -1,0 +1,141 @@
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
+
+__author__ = "John Eslick, Douglas Allan"
+
+import copy
+
+from pyomo.common.config import ConfigBlock, ConfigValue, In
+import pyomo.environ as pyo
+
+
+from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
+from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
+    _constR, _constF, _set_if_unfixed, _species_list, _element_list, _element_dict
+)
+import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
+
+import idaes.logger as idaeslog
+
+@declare_process_block_class("SocContactResistor")
+class SocContactResistorData(UnitModelBlockData):
+    CONFIG = ConfigBlock()
+    CONFIG.declare(
+        "dynamic",
+        ConfigValue(
+            domain=In([False]),
+            default=False,
+            description="Dynamic model flag",
+            doc="No capacities or holdups, so no internal dynamics",
+        ),
+    )
+    CONFIG.declare(
+        "has_holdup",
+        ConfigValue(domain=In([False]), default=False),
+    )
+    common._submodel_boilerplate_config(CONFIG)
+    common._thermal_boundary_conditions_config(CONFIG, thin=True)
+
+    def build(self):
+        super().build()
+
+        # Set up some sets for the space and time indexing
+        dynamic = self.config.dynamic
+        tset = self.flowsheet().config.time
+        # z coordinates for nodes and faces
+        zfaces = self.config.cv_zfaces
+        self.znodes = pyo.Set(
+            initialize=[
+                (zfaces[i] + zfaces[i + 1]) / 2.0 for i in range(len(zfaces) - 1)
+            ]
+        )
+        # This sets provide an integer index for nodes and faces
+        iznodes = self.iznodes = pyo.Set(initialize=range(1, len(self.znodes) + 1))
+
+        common._submodel_boilerplate_create_if_none(self)
+        common._create_thermal_boundary_conditions_if_none(self, thin=True)
+
+        # Preexponential factor needs to be given in units of  omh*m**2
+        self.log_preexponential_factor = pyo.Var(
+            initialize=-50, units=pyo.units.dimensionless
+        )
+        # units=pyo.units.ohm*pyo.units.m**2,)
+        self.thermal_exponent_dividend = pyo.Var(initialize=0, units=pyo.units.K)
+        self.contact_fraction = pyo.Var(
+            initialize=1, units=pyo.units.dimensionless, bounds=(0, 1)
+        )
+
+        @self.Expression(tset, iznodes)
+        def contact_resistance(b, t, iz):
+            return (
+                1
+                * pyo.units.ohm
+                * pyo.units.m**2
+                / b.contact_fraction
+                * pyo.exp(
+                    b.log_preexponential_factor
+                    + b.thermal_exponent_dividend / (b.temperature[t, iz])
+                )
+            )
+
+        @self.Expression(tset, iznodes)
+        def voltage_drop(b, t, iz):
+            return b.contact_resistance[t, iz] * b.current_density[t, iz]
+
+        @self.Expression(tset, iznodes)
+        def joule_heating_flux(b, t, iz):
+            return b.voltage_drop[t, iz] * b.current_density[t, iz]
+
+        @self.Constraint(tset, iznodes)
+        def qflux_eqn(b, t, iz):
+            return b.qflux_x1[t, iz] == b.qflux_x0[t, iz] + b.joule_heating_flux[t, iz]
+
+    def initialize_build(
+        self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, fix_qflux_x0=True
+    ):
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        self.Dtemp.fix()
+        if fix_qflux_x0:
+            self.qflux_x0.fix()
+        else:
+            self.qflux_x1.fix()
+
+        slvr = get_solver(solver, optarg)
+        common._init_solve_block(self, slvr, solve_log)
+
+        self.Dtemp.unfix()
+        if fix_qflux_x0:
+            self.qflux_x0.unfix()
+        else:
+            self.qflux_x1.unfix()
+
+    def calculate_scaling_factors(self):
+        pass
+
+    def recursive_scaling(self):
+        gsf = iscale.get_scaling_factor
+        for i, c in self.qflux_eqn.items():
+            if self.qflux_x0[i].is_reference():
+                sq0 = gsf(self.qflux_x0[i].referent)
+            else:
+                sq0 = gsf(self.qflux_x0[i], warning=True)
+            if self.qflux_x1[i].is_reference():
+                sq1 = gsf(self.qflux_x1[i].referent)
+            else:
+                sq1 = gsf(self.qflux_x1[i], warning=True)
+            sq = min(sq0, sq1)
+            iscale.constraint_scaling_transform(c, sq, overwrite=False)
