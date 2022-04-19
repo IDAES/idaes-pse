@@ -13,7 +13,7 @@ The Halton sampling method is only available for low-dimensional problems :math:
 Available Methods
 ------------------
 
-.. autoclass:: idaes.surrogate.pysmo.sampling.HaltonSampling
+.. autoclass:: idaes.core.surrogate.pysmo.sampling.HaltonSampling
     :members: __init__, sample_points
 
 References

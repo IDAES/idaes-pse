@@ -9,7 +9,7 @@ The ``pysmo.sampling.UniformSampling`` method carries out Uniform (full-factoria
 Available Methods
 ------------------
 
-.. autoclass:: idaes.surrogate.pysmo.sampling.UniformSampling
+.. autoclass:: idaes.core.surrogate.pysmo.sampling.UniformSampling
     :members: __init__, sample_points
 
 References

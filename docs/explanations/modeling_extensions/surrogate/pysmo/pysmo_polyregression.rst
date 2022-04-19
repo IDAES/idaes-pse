@@ -27,7 +27,7 @@ and then the method ``training`` is called on the initialized object:
 .. code:: python
 
    # Required imports
-   >>> from idaes.surrogate.pysmo import polynomial_regression
+   >>> from idaes.core.surrogate.pysmo import polynomial_regression
    >>> import pandas as pd
 
    # Load dataset from a csv file
@@ -86,7 +86,7 @@ an objective:
 
    # Required imports
    >>> import pyomo.environ as pyo
-   >>> from idaes.surrogate.pysmo import polynomial_regression
+   >>> from idaes.core.surrogate.pysmo import polynomial_regression
    >>> import pandas as pd
 
    # Create a Pyomo model
@@ -115,15 +115,15 @@ an objective:
 
 Further details about *pysmo.polynomial_regression* may be found by consulting the examples or reading the paper [...]
 
-.. module:: idaes.surrogate.pysmo.polynomial_regression
+.. module:: idaes.core.surrogate.pysmo.polynomial_regression
 
 Available Methods
 ------------------
 
-.. autoclass:: idaes.surrogate.pysmo.polynomial_regression.FeatureScaling
+.. autoclass:: idaes.core.surrogate.pysmo.polynomial_regression.FeatureScaling
     :members:
 
-.. autoclass:: idaes.surrogate.pysmo.polynomial_regression.PolynomialRegression
+.. autoclass:: idaes.core.surrogate.pysmo.polynomial_regression.PolynomialRegression
     :members: __init__, get_feature_vector, set_additional_terms, training, predict_output, generate_expression, confint_regression 
 	
 References:

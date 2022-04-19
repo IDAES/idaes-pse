@@ -215,6 +215,7 @@ class StoreSpec(object):
             of not is just to include Suffix in classes or not.
         suffix_filter: None to store all suffixes or a list of suffixes to store.
     """
+
     def __init__(
         self,
         classes={
@@ -276,17 +277,15 @@ class StoreSpec(object):
         # suffix based on option.  May deprecate the suffix option.
         if suffix is not None:
             if not suffix and Suffix in classes:
-                del(self.classes[Suffix])
+                del self.classes[Suffix]
             elif suffix and Suffix not in classes:
                 self.classes[Suffix] = ((), None)
         # Create filter function lists, use None if not supplied
         for i, c in self.classes.items():
             if len(c) < 2:
-                print(c)
                 self.classes[i] = (c[0], None)
         for i, c in self.data_classes.items():
             if len(c) < 2:
-                print(c)
                 self.data_classes[i] = (c[0], None)
         self.ignore_missing = ignore_missing
         self.suffix_filter = suffix_filter
@@ -342,7 +341,9 @@ class StoreSpec(object):
         """Returns a StoreSpec object to store variable bounds only."""
         return cls(
             classes={Var: ((), None)},
-            data_classes={Var._ComponentDataClass: (("lb", "ub"), None),},
+            data_classes={
+                Var._ComponentDataClass: (("lb", "ub"), None),
+            },
         )
 
     @classmethod
@@ -352,10 +353,8 @@ class StoreSpec(object):
             return cls(
                 classes={Var: ((), None), BooleanVar: ((), None)},
                 data_classes={
-                    Var._ComponentDataClass: (
-                        ("value",), _value_if_not_fixed),
-                    BooleanVar._ComponentDataClass: (
-                        ("value",), _value_if_not_fixed),
+                    Var._ComponentDataClass: (("value",), _value_if_not_fixed),
+                    BooleanVar._ComponentDataClass: (("value",), _value_if_not_fixed),
                 },
             )
         return cls(
@@ -735,8 +734,8 @@ def to_json(
     # unfortunatly I can't write how long it took to write the file in the file
     pdict["etime_write_file"] = file_time - dict_time
     if return_dict:
-        # In interactive environments returning the dict can cuase it to print
-        # an extreemly large amount of stuff.  So added this option to make sure
+        # In interactive environments returning the dict can cause it to print
+        # an extremely large amount of stuff.  So added this option to make sure
         # it's really what you want.
         return sd
     elif return_json_string:
