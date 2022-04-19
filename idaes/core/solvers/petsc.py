@@ -546,6 +546,15 @@ def petsc_dae_by_time_element(
                     unscale=True,
                     model=t_block,
                 )
+                # add fixed vars to the trajectory. this does two things 1)
+                # helps users looking for fixed var trajectory and 2) lets
+                # us concatonate trajectories with section that are mixed fixed
+                # and unfixed
+                for i, v in enumerate(variables):
+                    try:
+                        vec = tj.get_vec(v)
+                    except KeyError:
+                        tj._set_vec(v,[pyo.value(v)]*len(tj.time))
                 if tj_prev is not None:
                     # due to the way variables is generated we know varaibles
                     # have corresponding positions in the list
@@ -560,14 +569,8 @@ def petsc_dae_by_time_element(
                         # We'll add fixed vars in case they aren't fixed in
                         # another section. Fixed vars don't go to the solver
                         # so they don't show up in the trajectory data
-                        try:
-                            vec = tj.get_vec(v)
-                        except KeyError:
-                            vec = [pyo.value(v)]*len(tj.time)
-                        try:
-                            vec_prev = tj_prev.get_vec(vp)
-                        except KeyError:
-                            vec_prev = [pyo.value(vp)]*len(tj_prev.time)
+                        vec = tj.get_vec(v)
+                        vec_prev = tj_prev.get_vec(vp)
                         tj._set_vec(v, vec_prev + vec)
                     tj._set_time_vec(tj_prev.time + tj.time)
                 variables_prev = variables
@@ -593,8 +596,7 @@ def petsc_dae_by_time_element(
                 try:
                     vec = tj.interpolate_vec(itime, var[tlast])
                 except KeyError:
-                    # variable not in trajectory probably
-                    # because it is always fixed
+                    # variable not in trajectory, this happens if the problem
                     continue
                 for i, (t, v) in enumerate(var.items()):
                     if t < t0 or t > tlast or t in between:
