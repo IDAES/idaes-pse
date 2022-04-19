@@ -39,7 +39,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import model_serializer as ms
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Import Unit Model Modules
 from idaes.models.properties import iapws95

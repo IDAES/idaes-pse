@@ -361,8 +361,8 @@ class NaturalGasStateBlockData(StateBlockData):
         self.dens_mol_eq = Constraint(
             expr=self.dens_mol == dens_mol_expr,
             doc=(
-                "Equation used to calculate molar density -- ",
-                "ideal gas equation with a\ncompressibility factor",
+                "Equation used to calculate molar density -- "
+                "ideal gas equation with a\ncompressibility factor"
             ),
         )
 
@@ -429,5 +429,7 @@ class NaturalGasStateBlockData(StateBlockData):
 
     def get_enthalpy_flow_terms(self, p):
         return (
-            self.temperature - self.config.parameters.temperature_ref
-        ) * self.cp_mol * self.flow_mol
+            (self.temperature - self.config.parameters.temperature_ref)
+            * self.cp_mol
+            * self.flow_mol
+        )

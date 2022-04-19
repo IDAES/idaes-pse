@@ -73,7 +73,7 @@ from idaes.core import (
 from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog

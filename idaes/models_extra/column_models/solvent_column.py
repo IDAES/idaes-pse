@@ -43,7 +43,8 @@ from idaes.core import (
     useDefault,
     DistributedVars,
 )
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
@@ -411,7 +412,11 @@ and used when constructing these
 
         # TODO : Consider making this a Var & Constraint
         def rule_holdup_vap(blk, t, x):
-            return blk.eps_ref - blk.holdup_liq[t, x]
+            if x == self.vapor_phase.length_domain.first():
+                return Expression.Skip
+            else:
+                zb = self.vapor_phase.length_domain.prev(x)
+                return blk.eps_ref - blk.holdup_liq[t, zb]
 
         self.holdup_vap = Expression(
             self.flowsheet().time,
@@ -427,9 +432,13 @@ and used when constructing these
             doc="Vapor phase cross-sectional area constraint",
         )
         def vapor_phase_area(blk, t, x):
-            return blk.vapor_phase.area[t, x] == (
-                blk.area_column * blk.holdup_vap[t, x]
-            )
+            if x == self.vapor_phase.length_domain.first():
+                return blk.vapor_phase.area[t, x] == (
+                    blk.eps_ref * blk.area_column)
+            else:
+                return blk.vapor_phase.area[t, x] == (
+                    blk.area_column * blk.holdup_vap[t, x]
+                )
 
         @self.Constraint(
             self.flowsheet().time,
@@ -437,9 +446,13 @@ and used when constructing these
             doc="Liquid phase cross-sectional area constraint",
         )
         def liquid_phase_area(blk, t, x):
-            return blk.liquid_phase.area[t, x] == (
-                blk.area_column * blk.holdup_liq[t, x]
-            )
+            if x == self.liquid_phase.length_domain.last():
+                return blk.liquid_phase.area[t, x] == (
+                    blk.eps_ref * blk.area_column)
+            else:
+                return blk.liquid_phase.area[t, x] == (
+                    blk.area_column * blk.holdup_liq[t, x]
+                )
 
         # =====================================================================
         # Add performance equations

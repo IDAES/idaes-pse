@@ -38,7 +38,7 @@ from pyomo.common.errors import ApplicationError
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.config as icfg
 
 PetscBinaryIOTrajectory = None
@@ -544,6 +544,7 @@ def calculate_time_derivatives(m, time):
                 for i, v in var.items():
                     try:
                         if disc_eq[i].active:
+                            v.value = 0  # Make sure there is a value
                             calculate_variable_from_constraint(v, disc_eq[i])
                     except KeyError:
                         pass  # discretization equation may not exist at first time

@@ -45,3 +45,4 @@ from .base.costing_base import (
     UnitModelCostingBlock,
     register_idaes_currency_units,
 )
+from .base.var_like_expression import VarLikeExpression

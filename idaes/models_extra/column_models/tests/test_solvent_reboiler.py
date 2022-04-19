@@ -37,7 +37,8 @@ from idaes.core.util.model_statistics import (
     number_unused_variables,
 )
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 from idaes.models_extra.column_models.solvent_reboiler import SolventReboiler
 from idaes.models_extra.column_models.properties.MEA_solvent import (

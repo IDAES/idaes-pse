@@ -143,7 +143,7 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
             pyo.value(enth_flow),
             pred_enth_flow,
         )
-        kJhr = pyo.units.kJ/pyo.units.hr
+        kJhr = pyo.units.kJ / pyo.units.hr
         assert_units_equivalent(
             pyo.units.get_units(enth_flow),
             kJhr,
@@ -167,13 +167,18 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
     def test_temperature_ref(self):
         m = pyo.ConcreteModel()
         m.properties = NaturalGasParameterBlock()
-        self.assertEqual(
-            pyo.value(m.properties.temperature_ref), 298.15
-        )
+        self.assertEqual(pyo.value(m.properties.temperature_ref), 298.15)
         assert_units_equivalent(
             m.properties.temperature_ref,
             pyo.units.K,
         )
+
+    def test_pprint_noerror(self):
+        m = pyo.ConcreteModel()
+        m.properties = NaturalGasParameterBlock()
+        m.state = m.properties.build_state_block()
+        m.state.dens_mol
+        m.state.pprint()
 
 
 if __name__ == "__main__":

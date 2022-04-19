@@ -19,6 +19,7 @@ import os
 
 from pyomo.environ import *
 from idaes.core.util import to_json, from_json, StoreSpec
+from idaes.core.util.model_serializer import _only_fixed
 from idaes.util.system import mkdtemp
 import shutil
 import pytest
@@ -50,6 +51,7 @@ class TestModelSerialize(unittest.TestCase):
         model.b = Block([1, 2, 3])
         a = model.b[1].a = Var(bounds=(-100, 100), initialize=2)
         b = model.b[1].b = Var(bounds=(-100, 100), initialize=20)
+        x = model.x = BooleanVar(initialize=True)
         model.b[1].c = Constraint(expr=b == 10 * a)
         a.fix(2)
         return model
@@ -68,9 +70,11 @@ class TestModelSerialize(unittest.TestCase):
         a = model.a = Param(default=1, mutable=True)
         b = model.b = Param(default=2, mutable=True)
         c = model.c = Param(initialize=4)
+        e = model.e = Expression(expr=a + b)
         x = model.x = Var([1, 2], initialize={1: 1.5, 2: 2.5}, bounds=(-10, 10))
         model.f = Objective(expr=(x[1] - a) ** 2 + (x[2] - b) ** 2)
         model.g = Constraint(expr=x[1] + x[2] - c >= 0)
+        model.suf1 = Suffix()
         model.dual = Suffix(direction=Suffix.IMPORT)
         model.ipopt_zL_out = Suffix(direction=Suffix.IMPORT)
         model.ipopt_zU_out = Suffix(direction=Suffix.IMPORT)
@@ -116,11 +120,13 @@ class TestModelSerialize(unittest.TestCase):
 
         model2.b[1].a = 0.11
         model2.b[1].b = 0.11
+        model2.x = False
         to_json(model, fname=self.fname, human_read=True)
         from_json(model2, fname=self.fname)
         # make sure they are right
         assert pytest.approx(20) == value(model2.b[1].b)
         assert pytest.approx(2) == value(model2.b[1].a)
+        assert value(model2.x) == True
 
     @pytest.mark.unit
     def test01(self):
@@ -184,22 +190,25 @@ class TestModelSerialize(unittest.TestCase):
         model.ipopt_zL_out[x[2]] = 0
         model.ipopt_zU_out[x[1]] = 0
         model.ipopt_zU_out[x[2]] = 0
+        model.suf1[model.e] = 222
         to_json(model, fname=self.fname, human_read=True)
         model.x[1].value = 10
         model.x[2].value = 10
+        model.suf1[model.e] = 111
         model.dual[model.g] = 10
         model.ipopt_zL_out[x[1]] = 10
         model.ipopt_zL_out[x[2]] = 10
         model.ipopt_zU_out[x[1]] = 10
         model.ipopt_zU_out[x[2]] = 10
         from_json(model, fname=self.fname)
+        assert model.suf1[model.e] == 222
         assert value(x[1]) == pytest.approx(1.5)
         assert value(x[2]) == pytest.approx(2.5)
-        assert model.dual[model.g] == pytest.approx(1)
-        assert model.ipopt_zL_out[x[1]] == pytest.approx(0)
-        assert model.ipopt_zL_out[x[2]] == pytest.approx(0)
-        assert model.ipopt_zU_out[x[1]] == pytest.approx(0)
-        assert model.ipopt_zU_out[x[2]] == pytest.approx(0)
+        assert model.dual[model.g] == 1
+        assert model.ipopt_zL_out[x[1]] == 0
+        assert model.ipopt_zL_out[x[2]] == 0
+        assert model.ipopt_zU_out[x[1]] == 0
+        assert model.ipopt_zU_out[x[2]] == 0
 
     @pytest.mark.unit
     def test02b(self):
@@ -231,6 +240,42 @@ class TestModelSerialize(unittest.TestCase):
         assert model.ipopt_zL_out[x["2"]] == pytest.approx(0)
         assert model.ipopt_zU_out[x["1"]] == pytest.approx(0)
         assert model.ipopt_zU_out[x["2"]] == pytest.approx(0)
+
+    @pytest.mark.unit
+    def test02c(self):
+        """Test with suffixes"""
+        model = self.setup_model02b()
+        model.dual[model.g] = 222
+        wts = StoreSpec(suffix=False)
+        to_json(model, fname=self.fname, human_read=True, wts=wts)
+        model.dual[model.g] = 111
+        from_json(model, fname=self.fname, wts=wts)
+        assert model.dual[model.g] == 111
+
+    @pytest.mark.unit
+    def test02d(self):
+        """Test with suffixes"""
+        model = self.setup_model02b()
+        model.dual[model.g] = 222
+        wts = StoreSpec(suffix=True)
+        to_json(model, fname=self.fname, human_read=True, wts=wts)
+        model.dual[model.g] = 111
+        from_json(model, fname=self.fname)
+        assert model.dual[model.g] == 222
+
+    @pytest.mark.unit
+    def test02e(self):
+        """Test with suffixes"""
+        model = self.setup_model02b()
+        model.ipopt_zL_out[model.x["1"]] = 222
+        model.dual[model.g] = 10
+        wts = StoreSpec(suffix_filter="dual")
+        to_json(model, fname=self.fname, human_read=True, wts=wts)
+        model.ipopt_zL_out[model.x["1"]] = 111
+        model.dual[model.g] = 11
+        from_json(model, fname=self.fname)
+        assert model.ipopt_zL_out[model.x["1"]] == 111
+        assert model.dual[model.g] == 10
 
     @pytest.mark.unit
     def test03(self):
@@ -266,6 +311,39 @@ class TestModelSerialize(unittest.TestCase):
         x = model.x
         x[1].fix(1)
         wts = StoreSpec.value_isfixed_isactive(only_fixed=True)
+        to_json(model, fname=self.fname, human_read=True, wts=wts)
+        x[1].unfix()
+        x[1].value = 2
+        x[2].value = 10
+        model.g.deactivate()
+        from_json(model, fname=self.fname, wts=wts)
+        assert x[1].fixed
+        assert value(x[1]) == 1
+        assert value(x[2]) == 10
+        assert model.g.active
+
+    @pytest.mark.unit
+    def test04b(self):
+        # test old style StoreSpec args
+        wts = StoreSpec(
+            classes=(
+                (Var, (), None),
+                (BooleanVar, (), None),
+                (Param, (), None),
+                (Constraint, ("active",), None),
+                (Block, ("active",), None),
+            ),
+            data_classes=(
+                (Var._ComponentDataClass, ("value", "fixed"), _only_fixed),
+                (BooleanVar._ComponentDataClass, ("value", "fixed"), _only_fixed),
+                (pyomo.core.base.param._ParamData, ("value",), None),
+                (Constraint._ComponentDataClass, ("active",), None),
+                (Block._ComponentDataClass, ("active",), None),
+            ),
+        )
+        model = self.setup_model02()
+        x = model.x
+        x[1].fix(1)
         to_json(model, fname=self.fname, human_read=True, wts=wts)
         x[1].unfix()
         x[1].value = 2
