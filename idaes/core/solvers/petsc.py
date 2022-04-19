@@ -81,7 +81,6 @@ class Petsc(ASL):
     alternative executable batch file to run the solver through the WSL."""
 
     def __init__(self, **kwds):
-        self._wsl = kwds.pop("wsl", None)
         super().__init__(**kwds)
         self.options.solver = "petsc"
 
@@ -90,13 +89,7 @@ class Petsc(ASL):
         a WSL batch file on Windows. Users could potentially also compile a
         cygwin exectable on Windows, so WSL isn't the only option, but it is the
         easiest for Windows."""
-        executable = False
-        if not self._wsl or self._wsl is None:
-            executable = Executable("petsc")
-        if sys.platform.startswith("win32") and (not executable):
-            # On Windows, if wsl was requested or a normal petsc solver
-            # executable was not found, look for a batch file to run it with WSL
-            executable = Executable("petsc_wsl.bat")
+        executable = Executable("petsc")
         if not executable:
             raise RuntimeError("No PETSc executable found.")
         return executable.path()
@@ -134,9 +127,13 @@ class PetscTS(Petsc):
             kwds["options"] = copy.deepcopy(kwds["options"])
         else:
             kwds["options"] = {}
-        kwds["options"]["--dae_solve"] = ""
-        kwds["options"]["--ts_monitor"] = ""
+        # Force some options.
+        kwds["options"]["--dae_solve"] = "" # is DAE solver
+        kwds["options"]["--ts_monitor"] = "" # show TS solver progress
+        # We're assuming trajectory will be written in the visualization
+        # style, so just set that here.
         kwds["options"]["--ts_trajectory_type"] = "visualization"
+        # Get the options set in the IDAES config
         if "petsc_ts" in idaes.cfg:
             if "options" in idaes.cfg["petsc_ts"]:
                 default_options = dict(idaes.cfg["petsc_ts"]["options"])
@@ -152,7 +149,7 @@ class PetscTS(Petsc):
         # with other tmp files
         typ_file = stub + ".typ"
         TempfileManager.add_tempfile(typ_file)
-        # If the vars_stub option was specified, copy the col and typ files to
+        # If trajectory is saved, copy the col and typ files to
         # the working directory. These files are needed to get the names and
         # types of variables and to make sense of trajectory data.
         if self.options.get("--ts_save_trajectory", 0):
@@ -177,17 +174,16 @@ class PetscTAO(Petsc):
         )
 
 
-def petsc_available(wsl=None):
+def petsc_available():
     """Check if the IDAES AMPL solver wrapper for PETSc is available.
 
     Args:
-        wsl (bool): If True force WSL version, if False force not WSL version,
-            if None, try non-WSL version then try WSL version
+        None
 
     Returns (bool):
         True if PETSc is available
     """
-    solver = pyo.SolverFactory("petsc", wsl=wsl)
+    solver = pyo.SolverFactory("petsc")
     if solver is not None:
         try:
             return solver.available()
@@ -368,7 +364,7 @@ class PetscDAEResults(object):
     initial conditions first then may integrate over the time domain in one or
     more steps, the results of multiple solves are returned.  The trajectory is
     a PetscTrajectory object which gives the full trajectory of the solution
-    for all time steps taken by the PETSc solver. This is generally finner than
+    for all time steps taken by the PETSc solver. This is generally finer than
     the PyomoDAE discretization.
     """
     def __init__(self, results=None, trajectory=None):
@@ -577,6 +573,8 @@ def petsc_dae_by_time_element(
                 variables_prev = variables
             tprev = t
             res_list.append(res)
+        # If the interpolation option is True and the trajectory is available
+        # interpoate the values any skipped time points from the trajectory
         if interpolate and tj is not None:
             t0 = between.first()
             tlast = between.last()
@@ -595,18 +593,24 @@ def petsc_dae_by_time_element(
                 try:
                     vec = tj.interpolate_vec(itime, var[tlast])
                 except KeyError:
-                    # variable not in trajectroy probably
+                    # variable not in trajectory probably
                     # because it is always fixed
                     continue
-                i = 0
-                for t, v in var.items():
-                    if t < t0 or t > tlast:
+                for i, (t, v) in enumerate(var.items()):
+                    if t < t0 or t > tlast or t in between:
+                        # Time is outside the range or already set
                         continue
                     if not v.fixed:
+                        # May not have trajectory from fixed varaibles and they
+                        # shouldn't change anyway, so only set not fixed vars
                         v.value = vec[i]
-                    i += 1
         if calculate_derivaties:
+            # the petsc solver interface does not currently return time
+            # derivatives, and if it did, they whould be estimated based on a
+            # smaller time step.  This option uses PyomoDAE's discretization
+            # equations to calculate the time derivative values
             calculate_time_derivatives(m, time)
+        # return the solver results and trajectory if available
     return PetscDAEResults(results=res_list, trajectory=tj)
 
 def calculate_time_derivatives(m, time):
@@ -631,7 +635,7 @@ def calculate_time_derivatives(m, time):
                             v.value = 0 # Make sure there is a value
                             calculate_variable_from_constraint(v, disc_eq[i])
                     except KeyError:
-                        pass  # discretization equation may not exist at first time
+                        pass # discretization equation may not exist at first time
 
 
 class PetscTrajectory(object):
@@ -662,6 +666,7 @@ class PetscTrajectory(object):
                 is specified use the specified block to unscale the model. If
                 False or None do not unscale.
             model (Block): if specified use for unscaling
+            no_read (bool): if True make an uninitialized trajectory object
         """
         if no_read:
             return
