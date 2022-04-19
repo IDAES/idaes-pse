@@ -14,11 +14,10 @@
 Tests for Keras Sparsification Utils
 """
 
-import numpy as np
 import pytest
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.models import Sequential
-from idaes.surrogate.keras.sparsify import *
+from idaes.core.surrogate.keras.sparsify import *
 
 @pytest.mark.unit
 def test_sparsification():

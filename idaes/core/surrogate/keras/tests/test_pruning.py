@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Input
-from idaes.surrogate.keras.prune import count_nodes, prune_sequential
+from idaes.core.surrogate.keras.prune import count_nodes, prune_sequential
 
 @pytest.mark.unit
 def test_node_count_helper():
