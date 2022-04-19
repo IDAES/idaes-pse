@@ -788,7 +788,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -903,7 +903,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1097,7 +1097,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1212,7 +1212,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1406,7 +1406,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1521,7 +1521,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1636,7 +1636,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Flow_mol 1.0\nMole_frac_comp benzene 0.5\nMole_frac_comp toluene 0.5\nTemperature 298.15\nPressure 10132",
                             "text-anchor": "left"
                         }
                     },
@@ -1751,7 +1751,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Flow_mol 1.0\nMole_frac_comp benzene 0.5\nMole_frac_comp toluene 0.5\nTemperature 298.15\nPressure 10132",
                             "text-anchor": "left"
                         }
                     },
@@ -1945,7 +1945,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -2060,7 +2060,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -2250,7 +2250,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -2365,7 +2365,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -2555,7 +2555,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -2670,7 +2670,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -2864,7 +2864,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -2979,7 +2979,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -3169,7 +3169,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -3284,7 +3284,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -3331,52 +3331,52 @@
             },
             "s_inlet_1": {
                 "dest": "FG_cooler",
-                "label": "feed info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "inlet_1"
             },
             "s_inlet_1_1": {
                 "dest": "M01",
-                "label": "feed info",
+                "label": "Flow_mol 1.0\nMole_frac_comp benzene 0.5\nMole_frac_comp toluene 0.5\nTemperature 298.15\nPressure 10132",
                 "source": "inlet_1_1"
             },
             "s_inlet_2": {
                 "dest": "HTR_pseudo_tube",
-                "label": "feed info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "inlet_2"
             },
             "s_inlet_2_1": {
                 "dest": "M01",
-                "label": "feed info",
+                "label": "Flow_mol 1.0\nMole_frac_comp benzene 0.5\nMole_frac_comp toluene 0.5\nTemperature 298.15\nPressure 10132",
                 "source": "inlet_2_1"
             },
             "s_inlet_3": {
                 "dest": "LTR_pseudo_tube",
-                "label": "feed info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "inlet_3"
             },
             "s_inlet_4": {
                 "dest": "boiler",
-                "label": "feed info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "inlet_4"
             },
             "s_inlet_5": {
                 "dest": "bypass_compressor",
-                "label": "feed info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "inlet_5"
             },
             "s_inlet_6": {
                 "dest": "main_compressor",
-                "label": "feed info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "inlet_6"
             },
             "s_inlet_7": {
                 "dest": "pre_boiler",
-                "label": "feed info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "inlet_7"
             },
             "s_inlet_8": {
                 "dest": "turbine",
-                "label": "feed info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "inlet_8"
             },
             "s_liq_outlet_1": {
@@ -3386,42 +3386,42 @@
             },
             "s_outlet_1": {
                 "dest": "outlet_1",
-                "label": "product info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "FG_cooler"
             },
             "s_outlet_2": {
                 "dest": "outlet_2",
-                "label": "product info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "HTR_pseudo_tube"
             },
             "s_outlet_3": {
                 "dest": "outlet_3",
-                "label": "product info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "LTR_pseudo_tube"
             },
             "s_outlet_4": {
                 "dest": "outlet_4",
-                "label": "product info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "boiler"
             },
             "s_outlet_5": {
                 "dest": "outlet_5",
-                "label": "product info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "bypass_compressor"
             },
             "s_outlet_6": {
                 "dest": "outlet_6",
-                "label": "product info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "main_compressor"
             },
             "s_outlet_7": {
                 "dest": "outlet_7",
-                "label": "product info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "pre_boiler"
             },
             "s_outlet_8": {
                 "dest": "outlet_8",
-                "label": "product info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.04401\nT (k) 325.52764\nP (pa) 100000.0\nVapor fraction 1.0\nMolar enthalpy (j/mol) Vap 1000.0\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "turbine"
             },
             "s_vap_outlet_1": {
@@ -3433,59 +3433,304 @@
         "id": "demo",
         "stream_table": {
             "columns": [
-                "",
                 "Variable",
-                "Units",
+                "s_inlet_8",
+                "s_inlet_7",
+                "s_inlet_6",
+                "s_inlet_5",
+                "s_inlet_4",
+                "s_inlet_2_1",
+                "s_inlet_1_1",
+                "s_inlet_3",
+                "s_inlet_2",
+                "s_inlet_1",
                 "s01",
-                "s02"
+                "s02",
+                "s_outlet_1",
+                "s_outlet_2",
+                "s_outlet_3",
+                "s_outlet_4",
+                "s_outlet_5",
+                "s_outlet_6",
+                "s_outlet_7",
+                "s_outlet_8"
             ],
             "data": [
                 [
-                    0,
                     "flow_mol",
-                    {
-                        "html": "mol/s",
-                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                        "raw": "mol/s"
-                    },
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    1.0,
+                    1.0,
+                    "-",
+                    "-",
+                    "-",
+                    1.0,
+                    1.0,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    "mole_frac_comp benzene",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    0.5,
+                    0.5,
+                    "-",
+                    "-",
+                    "-",
+                    0.5,
+                    0.5,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    "mole_frac_comp toluene",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    0.5,
+                    0.5,
+                    "-",
+                    "-",
+                    "-",
+                    0.5,
+                    0.5,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    "temperature",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    298.15,
+                    298.15,
+                    "-",
+                    "-",
+                    "-",
+                    298.15,
+                    298.15,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    "pressure",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    101325,
+                    101325,
+                    "-",
+                    "-",
+                    "-",
+                    101325,
+                    101325,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    "Molar Flow (mol/s)",
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    "-",
+                    "-",
+                    1,
+                    1,
+                    1,
+                    "-",
+                    "-",
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ],
+                [
+                    "Mass Flow (kg/s)",
+                    0.04401,
+                    0.04401,
+                    0.04401,
+                    0.04401,
+                    0.04401,
+                    "-",
+                    "-",
+                    0.04401,
+                    0.04401,
+                    0.04401,
+                    "-",
+                    "-",
+                    0.04401,
+                    0.04401,
+                    0.04401,
+                    0.04401,
+                    0.04401,
+                    0.04401,
+                    0.04401,
+                    0.04401
+                ],
+                [
+                    "T (K)",
+                    325.52764,
+                    325.52764,
+                    325.52764,
+                    325.52764,
+                    325.52764,
+                    "-",
+                    "-",
+                    325.52764,
+                    325.52764,
+                    325.52764,
+                    "-",
+                    "-",
+                    325.52764,
+                    325.52764,
+                    325.52764,
+                    325.52764,
+                    325.52764,
+                    325.52764,
+                    325.52764,
+                    325.52764
+                ],
+                [
+                    "P (Pa)",
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    "-",
+                    "-",
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    "-",
+                    "-",
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    100000.0
+                ],
+                [
+                    "Vapor Fraction",
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    "-",
+                    "-",
+                    1.0,
+                    1.0,
+                    1.0,
+                    "-",
+                    "-",
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
                     1.0,
                     1.0
                 ],
                 [
-                    1,
-                    "mole_frac_comp benzene",
-                    null,
-                    0.5,
-                    0.5
+                    "Molar Enthalpy (J/mol) Vap",
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    "-",
+                    "-",
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    "-",
+                    "-",
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0
                 ],
                 [
-                    2,
-                    "mole_frac_comp toluene",
-                    null,
-                    0.5,
-                    0.5
-                ],
-                [
-                    3,
-                    "temperature",
-                    {
-                        "html": "K",
-                        "latex": "\\mathrm{K}",
-                        "raw": "K"
-                    },
-                    298.15,
-                    298.15
-                ],
-                [
-                    4,
-                    "pressure",
-                    {
-                        "html": "Pa",
-                        "latex": "\\mathrm{Pa}",
-                        "raw": "Pa"
-                    },
-                    101325.0,
-                    101325.0
+                    "Molar Enthalpy (J/mol) Liq",
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    "-",
+                    "-",
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    "-",
+                    "-",
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0
                 ]
             ],
             "index": [
@@ -3493,7 +3738,14 @@
                 1,
                 2,
                 3,
-                4
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11
             ]
         },
         "unit_models": {

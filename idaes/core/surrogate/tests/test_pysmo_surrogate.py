@@ -28,13 +28,13 @@ import pyomo as pyo
 from pyomo.environ import ConcreteModel, Var, Constraint
 from pyomo.common.tempfiles import TempfileManager
 
-from idaes.surrogate.pysmo import (
+from idaes.core.surrogate.pysmo import (
     polynomial_regression as pr,
     radial_basis_function as rbf,
     kriging as krg,
 )
 
-from idaes.surrogate.pysmo_surrogate import (
+from idaes.core.surrogate.pysmo_surrogate import (
     PysmoTrainer,
     PysmoPolyTrainer,
     PysmoRBFTrainer,
@@ -44,9 +44,9 @@ from idaes.surrogate.pysmo_surrogate import (
     PysmoTrainedSurrogate,
 )
 
-from idaes.surrogate.surrogate_block import SurrogateBlock
+from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.surrogate.metrics import compute_fit_metrics
+from idaes.core.surrogate.metrics import compute_fit_metrics
 
 
 dirpath = Path(__file__).parent.resolve()

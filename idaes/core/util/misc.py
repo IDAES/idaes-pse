@@ -34,7 +34,7 @@ relocated_module_attribute(
 relocated_module_attribute(
     "VarLikeExpression",
     "idaes.core.base.var_like_expression.VarLikeExpression",
-    version="2.0.0.alpha0"
+    version="2.0.0.alpha0",
 )
 
 

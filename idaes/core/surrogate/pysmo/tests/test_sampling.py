@@ -15,9 +15,10 @@ import numpy as np
 import pandas as pd
 import pytest
 import sys, os
-sys.path.append(os.path.abspath('..'))# current folder is ~/tests
+
+sys.path.append(os.path.abspath(".."))  # current folder is ~/tests
 # this
-from idaes.surrogate.pysmo.sampling import (
+from idaes.core.surrogate.pysmo.sampling import (
     LatinHypercubeSampling,
     UniformSampling,
     HaltonSampling,
@@ -27,11 +28,12 @@ from idaes.surrogate.pysmo.sampling import (
     FeatureScaling,
 )
 
+
 class TestFeatureScaling:
     test_data_1d = [[x] for x in range(10)]
-    test_data_2d = [[x, (x + 1)**2] for x in range(10)]
-    test_data_3d = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(10)]
-    test_data_3d_constant = [[x, 10, (x + 1)**2 + 10] for x in range(10)]
+    test_data_2d = [[x, (x + 1) ** 2] for x in range(10)]
+    test_data_3d = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(10)]
+    test_data_3d_constant = [[x, 10, (x + 1) ** 2 + 10] for x in range(10)]
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -45,7 +47,9 @@ class TestFeatureScaling:
         )
         np.testing.assert_array_equal(output_3, expected_output_3)
         np.testing.assert_array_equal(output_2, expected_output_2)
-        np.testing.assert_array_equal(output_1, np.array(expected_output_1).reshape(10, 1))
+        np.testing.assert_array_equal(
+            output_1, np.array(expected_output_1).reshape(10, 1)
+        )
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -99,7 +103,9 @@ class TestFeatureScaling:
     def test_data_unscaling_minmax_01(self):
         input_array = np.array(self.test_data_1d)
         output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
-        output_1 = output_1.reshape(output_1.shape[0],)
+        output_1 = output_1.reshape(
+            output_1.shape[0],
+        )
         un_output_1 = FeatureScaling.data_unscaling_minmax(output_1, output_2, output_3)
         np.testing.assert_array_equal(un_output_1, input_array.reshape(10, 1))
 
@@ -142,10 +148,11 @@ class TestFeatureScaling:
         with pytest.raises(IndexError):
             FeatureScaling.data_unscaling_minmax(output_1, min_array, max_array)
 
+
 class TestSamplingMethods:
     test_data_1d = [[x] for x in range(10)]
     test_data_2d = [[x, x + 10] for x in range(10)]
-    test_data_3d = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(10)]
+    test_data_3d = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(10)]
 
     def _create_sampling(self, input_array, sample_points):
         sampling = SamplingMethods()
@@ -195,7 +202,6 @@ class TestSamplingMethods:
                 self, input_array, [0.5, 0.9, 10]
             )
 
-
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array])
     def test_points_selection_01(self, array_type):
@@ -237,7 +243,7 @@ class TestSamplingMethods:
     def test_points_selection_04(self, array_type):
         input_array = array_type(self.test_data_3d)
         generated_sample_points = np.array([[0.5], [10]])
-        sampling_methods = self._create_sampling(input_array, generated_sample_points)   
+        sampling_methods = self._create_sampling(input_array, generated_sample_points)
         with pytest.raises(ValueError):
             equivalent_points = sampling_methods.points_selection(
                 input_array, generated_sample_points
@@ -253,6 +259,7 @@ class TestSamplingMethods:
             equivalent_points = sampling_methods.points_selection(
                 input_array, generated_sample_points
             )
+
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array])
     def test_sample_point_selection_01(self, array_type):
@@ -270,7 +277,7 @@ class TestSamplingMethods:
     def test_sample_point_selection_02(self, array_type):
         input_array = array_type(self.test_data_2d)
         generated_sample_points = np.array([[0], [7]])
-        sampling_methods = self._create_sampling(input_array, generated_sample_points) 
+        sampling_methods = self._create_sampling(input_array, generated_sample_points)
         unique_sample_points = sampling_methods.sample_point_selection(
             input_array, generated_sample_points, sampling_type="selection"
         )
@@ -282,7 +289,7 @@ class TestSamplingMethods:
     def test_sample_point_selection_03(self, array_type):
         input_array = array_type(self.test_data_1d)
         generated_sample_points = np.array([[], []])
-        sampling_methods = self._create_sampling(input_array, generated_sample_points)  
+        sampling_methods = self._create_sampling(input_array, generated_sample_points)
         unique_sample_points = sampling_methods.sample_point_selection(
             input_array, generated_sample_points, sampling_type="selection"
         )
@@ -410,7 +417,7 @@ class TestSamplingMethods:
     def test_base_conversion_03(self):
         string_representation = SamplingMethods.base_conversion(self, 10, -1)
         assert string_representation == ["0"]
-    
+
     @pytest.mark.unit
     def test_base_conversion_04(self):
         with pytest.raises(ZeroDivisionError):
@@ -447,15 +454,22 @@ class TestSamplingMethods:
         sampling_methods = SamplingMethods()
         sequence_decimal = sampling_methods.data_sequencing(3, 2)
 
+
 class TestLatinHypercubeSampling:
-    input_array = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(10)]
-    input_array_list = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(2)]
-    y = np.array([[i, j, ((i + 1) ** 2) + ((j + 1) ** 2)] for i in np.linspace(0, 10, 21) for j in np.linspace(0, 10, 21)])
+    input_array = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(10)]
+    input_array_list = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(2)]
+    y = np.array(
+        [
+            [i, j, ((i + 1) ** 2) + ((j + 1) ** 2)]
+            for i in np.linspace(0, 10, 21)
+            for j in np.linspace(0, 10, 21)
+        ]
+    )
     full_data = {"x1": y[:, 0], "x2": y[:, 1], "y": y[:, 2]}
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test__init__selection_01(self,array_type):
+    def test__init__selection_01(self, array_type):
         input_array = array_type(self.input_array)
         LHSClass = LatinHypercubeSampling(
             input_array, number_of_samples=None, sampling_type="selection"
@@ -463,10 +477,10 @@ class TestLatinHypercubeSampling:
         np.testing.assert_array_equal(LHSClass.data, input_array)
         np.testing.assert_array_equal(LHSClass.number_of_samples, 5)
         np.testing.assert_array_equal(LHSClass.x_data, np.array(input_array)[:, :-1])
-    
+
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test__init__selection_02(self,array_type):
+    def test__init__selection_02(self, array_type):
         input_array = array_type(self.input_array)
         LHSClass = LatinHypercubeSampling(
             input_array, number_of_samples=6, sampling_type="selection"
@@ -477,7 +491,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test__init__selection_03(self,array_type):
+    def test__init__selection_03(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling(
@@ -486,7 +500,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test__init__selection_04(self,array_type):
+    def test__init__selection_04(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling(
@@ -495,7 +509,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test__init__selection_05(self,array_type):
+    def test__init__selection_05(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling(
@@ -504,7 +518,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test__init__selection_06(self,array_type):
+    def test__init__selection_06(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling(
@@ -513,7 +527,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
-    def test__init__selection_07(self,array_type):
+    def test__init__selection_07(self, array_type):
         input_array = array_type(self.input_array_list)
         with pytest.raises(ValueError):
             LHSClass = LatinHypercubeSampling(
@@ -522,7 +536,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
-    def test__init__creation_01(self,array_type):
+    def test__init__creation_01(self, array_type):
         input_array = array_type(self.input_array_list)
         LHSClass = LatinHypercubeSampling(
             input_array, number_of_samples=None, sampling_type=None
@@ -532,7 +546,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
-    def test__init__creation_02(self,array_type):
+    def test__init__creation_02(self, array_type):
         input_array = array_type(self.input_array_list)
         LHSClass = LatinHypercubeSampling(
             input_array, number_of_samples=None, sampling_type="creation"
@@ -542,7 +556,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
-    def test__init__creation_03(self,array_type):
+    def test__init__creation_03(self, array_type):
         input_array = array_type(self.input_array_list)
         LHSClass = LatinHypercubeSampling(
             input_array, number_of_samples=100, sampling_type="creation"
@@ -552,7 +566,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
-    def test__init__creation_04(self,array_type):
+    def test__init__creation_04(self, array_type):
         input_array = array_type(self.input_array_list)
         with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling(
@@ -561,7 +575,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
-    def test__init__creation_05(self,array_type):
+    def test__init__creation_05(self, array_type):
         input_array = array_type(self.input_array_list)
         with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling(
@@ -570,7 +584,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
-    def test__init__creation_06(self,array_type):
+    def test__init__creation_06(self, array_type):
         input_array = array_type(self.input_array_list)
         with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling(
@@ -579,7 +593,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test__init__creation_07(self,array_type):
+    def test__init__creation_07(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(ValueError):
             LHSClass = LatinHypercubeSampling(
@@ -588,7 +602,7 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [pd.DataFrame])
-    def test__init__creation_08(self,array_type):
+    def test__init__creation_08(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(ValueError):
             LHSClass = LatinHypercubeSampling(
@@ -634,8 +648,9 @@ class TestLatinHypercubeSampling:
             LHSClass = LatinHypercubeSampling(
                 input_array, number_of_samples=None, sampling_type="creation"
             )
+
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])    
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__creation_selection_01(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
@@ -644,7 +659,7 @@ class TestLatinHypercubeSampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])    
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__creation_selection_02(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
@@ -771,7 +786,8 @@ class TestLatinHypercubeSampling:
             )
             unique_sample_points = np.array(unique_sample_points)
             out_testing = [
-                unique_sample_points[i, :] in np.array(input_array) for i in range(unique_sample_points.shape[0])
+                unique_sample_points[i, :] in np.array(input_array)
+                for i in range(unique_sample_points.shape[0])
             ]
 
             np.testing.assert_array_equal(
@@ -781,9 +797,15 @@ class TestLatinHypercubeSampling:
 
 
 class TestUniformSampling:
-    input_array = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(10)]
-    input_array_list = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(2)]
-    y = np.array([[i, j, ((i + 1) ** 2) + ((j + 1) ** 2)] for i in np.linspace(0, 10, 21) for j in np.linspace(0, 10, 21)])
+    input_array = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(10)]
+    input_array_list = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(2)]
+    y = np.array(
+        [
+            [i, j, ((i + 1) ** 2) + ((j + 1) ** 2)]
+            for i in np.linspace(0, 10, 21)
+            for j in np.linspace(0, 10, 21)
+        ]
+    )
     full_data = {"x1": y[:, 0], "x2": y[:, 1], "y": y[:, 2]}
 
     @pytest.mark.unit
@@ -794,7 +816,7 @@ class TestUniformSampling:
         np.testing.assert_array_equal(UniClass.data, input_array)
         np.testing.assert_array_equal(UniClass.number_of_samples, 10)
         np.testing.assert_array_equal(UniClass.x_data, np.array(input_array)[:, :-1])
-    
+
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_02(self, array_type):
@@ -896,7 +918,7 @@ class TestUniformSampling:
         input_array = array_type(self.input_array_list)
         with pytest.raises(ValueError):
             UniClass = UniformSampling(input_array, [2, 5], sampling_type="selection")
-    
+
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_01(self, array_type):
@@ -945,14 +967,12 @@ class TestUniformSampling:
         with pytest.raises(ValueError):
             UniClass = UniformSampling(input_array, [2, 5], sampling_type="creation")
 
-   
-
     @pytest.mark.unit
     def test__init__creation_08(self):
         input_array = [[2, 11, 4.5]]
         with pytest.raises(Exception):
             UniClass = UniformSampling(input_array, [2, 7, 5], sampling_type=None)
-    
+
     @pytest.mark.unit
     def test__init__creation_09(self):
         input_array = [np.array([1, 10, 3]), [2, 11, 4.5]]
@@ -964,7 +984,7 @@ class TestUniformSampling:
         input_array = [[1, 10, 3], np.array([2, 11, 4.5])]
         with pytest.raises(Exception):
             UniClass = UniformSampling(input_array, [2, 7, 5], sampling_type=None)
-    
+
     @pytest.mark.unit
     def test__init__creation_11(self):
         input_array = [[1, 10], [2, 11, 4.5]]
@@ -1080,11 +1100,49 @@ class TestUniformSampling:
 
 
 class TestHaltonSampling:
-    input_array = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(10)]
-    input_array_large = [[x, x + 10, (x + 1)**2 + x + 10,x, x + 10, (x + 1)**2 + x + 10,x, x + 10, (x + 1)**2 + x + 10,x, x + 10, (x + 1)**2 + x + 10] for x in range(10)]
-    input_array_high = [[x, x * 2, x ** 2, x ** 3, x ** 4, x ** 5, x ** 6, x ** 7, x ** 8, x ** 9, x ** 10, x ** 11] for x in range(10)]
-    input_array_list = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(2)]
-    y = np.array([[i, j, ((i + 1) ** 2) + ((j + 1) ** 2)] for i in np.linspace(0, 10, 21) for j in np.linspace(0, 10, 21)])
+    input_array = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(10)]
+    input_array_large = [
+        [
+            x,
+            x + 10,
+            (x + 1) ** 2 + x + 10,
+            x,
+            x + 10,
+            (x + 1) ** 2 + x + 10,
+            x,
+            x + 10,
+            (x + 1) ** 2 + x + 10,
+            x,
+            x + 10,
+            (x + 1) ** 2 + x + 10,
+        ]
+        for x in range(10)
+    ]
+    input_array_high = [
+        [
+            x,
+            x * 2,
+            x**2,
+            x**3,
+            x**4,
+            x**5,
+            x**6,
+            x**7,
+            x**8,
+            x**9,
+            x**10,
+            x**11,
+        ]
+        for x in range(10)
+    ]
+    input_array_list = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(2)]
+    y = np.array(
+        [
+            [i, j, ((i + 1) ** 2) + ((j + 1) ** 2)]
+            for i in np.linspace(0, 10, 21)
+            for j in np.linspace(0, 10, 21)
+        ]
+    )
     full_data = {"x1": y[:, 0], "x2": y[:, 1], "y": y[:, 2]}
 
     @pytest.mark.unit
@@ -1180,7 +1238,7 @@ class TestHaltonSampling:
             HaltonClass = HaltonSampling(
                 input_array, number_of_samples=None, sampling_type="selection"
             )
-    
+
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_01(self, array_type):
@@ -1363,15 +1421,53 @@ class TestHaltonSampling:
 
 
 class TestHammersleySampling:
-    input_array = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(10)]
-    input_array_large = [[x, x + 10, (x + 1)**2 + x + 10,x, x + 10, (x + 1)**2 + x + 10,x, x + 10, (x + 1)**2 + x + 10,x, x + 10, (x + 1)**2 + x + 10] for x in range(10)]
-    input_array_high = [[x, x * 2, x ** 2, x ** 3, x ** 4, x ** 5, x ** 6, x ** 7, x ** 8, x ** 9, x ** 10, x ** 11] for x in range(10)]
-    input_array_list = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(2)]
-    y = np.array([[i, j, ((i + 1) ** 2) + ((j + 1) ** 2)] for i in np.linspace(0, 10, 21) for j in np.linspace(0, 10, 21)])
+    input_array = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(10)]
+    input_array_large = [
+        [
+            x,
+            x + 10,
+            (x + 1) ** 2 + x + 10,
+            x,
+            x + 10,
+            (x + 1) ** 2 + x + 10,
+            x,
+            x + 10,
+            (x + 1) ** 2 + x + 10,
+            x,
+            x + 10,
+            (x + 1) ** 2 + x + 10,
+        ]
+        for x in range(10)
+    ]
+    input_array_high = [
+        [
+            x,
+            x * 2,
+            x**2,
+            x**3,
+            x**4,
+            x**5,
+            x**6,
+            x**7,
+            x**8,
+            x**9,
+            x**10,
+            x**11,
+        ]
+        for x in range(10)
+    ]
+    input_array_list = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(2)]
+    y = np.array(
+        [
+            [i, j, ((i + 1) ** 2) + ((j + 1) ** 2)]
+            for i in np.linspace(0, 10, 21)
+            for j in np.linspace(0, 10, 21)
+        ]
+    )
     full_data = {"x1": y[:, 0], "x2": y[:, 1], "y": y[:, 2]}
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_01(self, array_type):
         input_array = array_type(self.input_array)
         HammersleyClass = HammersleySampling(
@@ -1379,11 +1475,12 @@ class TestHammersleySampling:
         )
         np.testing.assert_array_equal(HammersleyClass.data, input_array)
         np.testing.assert_array_equal(HammersleyClass.number_of_samples, 5)
-        np.testing.assert_array_equal(HammersleyClass.x_data, np.array(input_array)[:, :-1])
-
+        np.testing.assert_array_equal(
+            HammersleyClass.x_data, np.array(input_array)[:, :-1]
+        )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_02(self, array_type):
         input_array = array_type(self.input_array)
         HammersleyClass = HammersleySampling(
@@ -1391,10 +1488,12 @@ class TestHammersleySampling:
         )
         np.testing.assert_array_equal(HammersleyClass.data, input_array)
         np.testing.assert_array_equal(HammersleyClass.number_of_samples, 6)
-        np.testing.assert_array_equal(HammersleyClass.x_data, np.array(input_array)[:, :-1])
+        np.testing.assert_array_equal(
+            HammersleyClass.x_data, np.array(input_array)[:, :-1]
+        )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_03(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
@@ -1403,7 +1502,7 @@ class TestHammersleySampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_04(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
@@ -1412,7 +1511,7 @@ class TestHammersleySampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_05(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
@@ -1421,7 +1520,7 @@ class TestHammersleySampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_06(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
@@ -1439,7 +1538,7 @@ class TestHammersleySampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_08(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
@@ -1448,7 +1547,7 @@ class TestHammersleySampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_09(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
@@ -1457,7 +1556,7 @@ class TestHammersleySampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_10(self, array_type):
         input_array = array_type(self.input_array_high)
         with pytest.raises(Exception):
@@ -1530,7 +1629,7 @@ class TestHammersleySampling:
             HammersleyClass = HammersleySampling(
                 input_array, number_of_samples=None, sampling_type="creation"
             )
-    
+
     @pytest.mark.unit
     def test__init__creation_09(self):
         input_array = [[2, 11, 4.5]]
@@ -1572,7 +1671,7 @@ class TestHammersleySampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection(self, array_type):
         input_array = array_type(self.input_array_large)
         with pytest.raises(Exception):
@@ -1647,8 +1746,9 @@ class TestHammersleySampling:
 
 
 class TestCVTSampling:
-    input_array = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(10)]
-    input_array_list = [[x, x + 10, (x + 1)**2 + x + 10] for x in range(2)]
+    input_array = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(10)]
+    input_array_list = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(2)]
+
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_01(self, array_type):
@@ -1675,7 +1775,6 @@ class TestCVTSampling:
         np.testing.assert_array_equal(CVTClass.number_of_centres, 6)
         np.testing.assert_array_equal(CVTClass.x_data, np.array(input_array)[:, :-1])
         np.testing.assert_array_equal(CVTClass.eps, 1e-7)
-
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -1786,7 +1885,7 @@ class TestCVTSampling:
         np.testing.assert_array_equal(CVTClass.eps, -0.09)
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [list])   
+    @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_01(self, array_type):
         input_array = array_type(self.input_array_list)
         CVTClass = CVTSampling(
@@ -1796,7 +1895,7 @@ class TestCVTSampling:
         np.testing.assert_array_equal(CVTClass.number_of_centres, 5)
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [list])   
+    @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_02(self, array_type):
         input_array = array_type(self.input_array_list)
         CVTClass = CVTSampling(
@@ -1809,7 +1908,7 @@ class TestCVTSampling:
         np.testing.assert_array_equal(CVTClass.number_of_centres, 5)
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [list])   
+    @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_03(self, array_type):
         input_array = array_type(self.input_array_list)
         CVTClass = CVTSampling(
@@ -1819,7 +1918,7 @@ class TestCVTSampling:
         np.testing.assert_array_equal(CVTClass.number_of_centres, 100)
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [list])   
+    @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_04(self, array_type):
         input_array = array_type(self.input_array_list)
         with pytest.raises(Exception):
@@ -1831,7 +1930,7 @@ class TestCVTSampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [list])   
+    @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_05(self, array_type):
         input_array = array_type(self.input_array_list)
         with pytest.raises(Exception):
@@ -1843,7 +1942,7 @@ class TestCVTSampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [list])   
+    @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_06(self, array_type):
         input_array = array_type(self.input_array_list)
         with pytest.raises(Exception):
@@ -1855,7 +1954,7 @@ class TestCVTSampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])   
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__creation_07(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(ValueError):
@@ -1866,9 +1965,8 @@ class TestCVTSampling:
                 sampling_type="creation",
             )
 
-
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [list])   
+    @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_08(self, array_type):
         input_array = array_type(self.input_array_list)
         with pytest.raises(Exception):
@@ -1880,7 +1978,7 @@ class TestCVTSampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [list])   
+    @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_09(self, array_type):
         input_array = array_type(self.input_array_list)
         with pytest.warns(Warning):
@@ -1892,7 +1990,7 @@ class TestCVTSampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [list])   
+    @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_10(self, array_type):
         input_array = array_type(self.input_array_list)
         CVTClass = CVTSampling(
@@ -1904,7 +2002,7 @@ class TestCVTSampling:
         np.testing.assert_array_equal(CVTClass.eps, 0.09)
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [list])   
+    @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_11(self, array_type):
         input_array = array_type(self.input_array_list)
         CVTClass = CVTSampling(
@@ -1956,7 +2054,7 @@ class TestCVTSampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])   
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__creation_selection_01(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
@@ -1965,7 +2063,7 @@ class TestCVTSampling:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])   
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__creation_selection_02(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(Exception):
@@ -2018,7 +2116,7 @@ class TestCVTSampling:
     def test_eucl_distance_02(self):
         u = np.array([[1, 2]])
         v = np.array([[3, 4]])
-        expected_output = 8 ** 0.5
+        expected_output = 8**0.5
         output = CVTSampling.eucl_distance(u, v)
         assert expected_output == output
 
@@ -2026,7 +2124,7 @@ class TestCVTSampling:
     def test_eucl_distance_03(self):
         u = np.array([[1, 2], [3, 4]])
         v = np.array([[5, 6], [7, 8]])
-        expected_output = np.array([32 ** 0.5, 32 ** 0.5])
+        expected_output = np.array([32**0.5, 32**0.5])
         output = CVTSampling.eucl_distance(u, v)
         np.testing.assert_array_equal(expected_output, output)
 
@@ -2034,7 +2132,7 @@ class TestCVTSampling:
     def test_eucl_distance_04(self):
         u = np.array([[1, 2]])
         v = np.array([[5, 6], [7, 8]])
-        expected_output = np.array([32 ** 0.5, 72 ** 0.5])
+        expected_output = np.array([32**0.5, 72**0.5])
         output = CVTSampling.eucl_distance(u, v)
         np.testing.assert_array_equal(expected_output, output)
 
@@ -2096,9 +2194,8 @@ class TestCVTSampling:
         )
         np.testing.assert_array_equal(expected_output, output)
 
-
     @pytest.mark.unit
-    @pytest.mark.parametrize("array_type", [np.array])   
+    @pytest.mark.parametrize("array_type", [np.array])
     def test_sample_points_01(self, array_type):
         for num_samples in [None, 10, 1]:
             input_array = array_type(self.input_array)

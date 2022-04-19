@@ -70,7 +70,7 @@ class TestModelSerialize(unittest.TestCase):
         a = model.a = Param(default=1, mutable=True)
         b = model.b = Param(default=2, mutable=True)
         c = model.c = Param(initialize=4)
-        e = model.e = Expression(expr=a+b)
+        e = model.e = Expression(expr=a + b)
         x = model.x = Var([1, 2], initialize={1: 1.5, 2: 2.5}, bounds=(-10, 10))
         model.f = Objective(expr=(x[1] - a) ** 2 + (x[2] - b) ** 2)
         model.g = Constraint(expr=x[1] + x[2] - c >= 0)
@@ -339,7 +339,7 @@ class TestModelSerialize(unittest.TestCase):
                 (pyomo.core.base.param._ParamData, ("value",), None),
                 (Constraint._ComponentDataClass, ("active",), None),
                 (Block._ComponentDataClass, ("active",), None),
-            )
+            ),
         )
         model = self.setup_model02()
         x = model.x

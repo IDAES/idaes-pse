@@ -632,7 +632,7 @@ def calculate_time_derivatives(m, time):
                 for i, v in var.items():
                     try:
                         if disc_eq[i].active:
-                            v.value = 0 # Make sure there is a value
+                            v.value = 0  # Make sure there is a value
                             calculate_variable_from_constraint(v, disc_eq[i])
                     except KeyError:
                         pass # discretization equation may not exist at first time

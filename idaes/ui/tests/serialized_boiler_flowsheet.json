@@ -1463,7 +1463,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1578,7 +1578,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
                             "text-anchor": "left"
                         }
                     },
@@ -1693,7 +1693,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1808,7 +1808,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
                             "text-anchor": "left"
                         }
                     },
@@ -1923,7 +1923,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -2038,7 +2038,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "product info",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -2125,32 +2125,32 @@
             },
             "s_outlet_1": {
                 "dest": "outlet_1",
-                "label": "product info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "ATMP1"
             },
             "s_shell_inlet_1": {
                 "dest": "FSH",
-                "label": "feed info",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
                 "source": "shell_inlet_1"
             },
             "s_shell_outlet_1": {
                 "dest": "shell_outlet_1",
-                "label": "product info",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
                 "source": "ECON"
             },
             "s_tube_inlet_1": {
                 "dest": "ECON",
-                "label": "feed info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "tube_inlet_1"
             },
             "s_tube_inlet_2": {
                 "dest": "RH",
-                "label": "feed info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "tube_inlet_2"
             },
             "s_tube_outlet_1": {
                 "dest": "tube_outlet_1",
-                "label": "product info",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "RH"
             },
             "ww2prsh": {
@@ -2162,9 +2162,10 @@
         "id": "boiler",
         "stream_table": {
             "columns": [
-                "",
                 "Variable",
-                "Units",
+                "s_tube_inlet_2",
+                "s_shell_inlet_1",
+                "s_tube_inlet_1",
                 "econ2ww",
                 "ww2prsh",
                 "prsh2plsh",
@@ -2175,17 +2176,17 @@
                 "fg_fsh2PrSH",
                 "fg_rhtomix",
                 "fg_prsh2mix",
-                "fg_mix2econ"
+                "fg_mix2econ",
+                "s_outlet_1",
+                "s_shell_outlet_1",
+                "s_tube_outlet_1"
             ],
             "data": [
                 [
-                    0,
                     "Molar Flow (mol/s)",
-                    {
-                        "html": "mol/s",
-                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                        "raw": "mol/s"
-                    },
+                    1,
+                    "-",
+                    1,
                     1,
                     1,
                     1,
@@ -2196,16 +2197,16 @@
                     "-",
                     "-",
                     "-",
-                    "-"
+                    "-",
+                    1,
+                    "-",
+                    1
                 ],
                 [
-                    1,
                     "Mass Flow (kg/s)",
-                    {
-                        "html": "kg/s",
-                        "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
-                        "raw": "kg/s"
-                    },
+                    0.01802,
+                    "-",
+                    0.01802,
                     0.01802,
                     0.01802,
                     0.01802,
@@ -2216,16 +2217,16 @@
                     "-",
                     "-",
                     "-",
-                    "-"
+                    "-",
+                    0.01802,
+                    "-",
+                    0.01802
                 ],
                 [
-                    2,
                     "T (K)",
-                    {
-                        "html": "K",
-                        "latex": "\\mathrm{K}",
-                        "raw": "K"
-                    },
+                    286.34379,
+                    "-",
+                    286.34379,
                     286.34379,
                     286.34379,
                     286.34379,
@@ -2236,16 +2237,16 @@
                     "-",
                     "-",
                     "-",
-                    "-"
+                    "-",
+                    286.34379,
+                    "-",
+                    286.34379
                 ],
                 [
-                    3,
                     "P (Pa)",
-                    {
-                        "html": "Pa",
-                        "latex": "\\mathrm{Pa}",
-                        "raw": "Pa"
-                    },
+                    100000.0,
+                    "-",
+                    100000.0,
                     100000.0,
                     100000.0,
                     100000.0,
@@ -2256,12 +2257,16 @@
                     "-",
                     "-",
                     "-",
-                    "-"
+                    "-",
+                    100000.0,
+                    "-",
+                    100000.0
                 ],
                 [
-                    4,
                     "Vapor Fraction",
-                    null,
+                    0.0,
+                    "-",
+                    0.0,
                     0.0,
                     0.0,
                     0.0,
@@ -2272,16 +2277,16 @@
                     "-",
                     "-",
                     "-",
-                    "-"
+                    "-",
+                    0.0,
+                    "-",
+                    0.0
                 ],
                 [
-                    5,
                     "Molar Enthalpy (J/mol) Vap",
-                    {
-                        "html": "J/mol",
-                        "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
-                        "raw": "J/mol"
-                    },
+                    2168.59605,
+                    "-",
+                    2168.59605,
                     2168.59605,
                     2168.59605,
                     2168.59605,
@@ -2292,16 +2297,16 @@
                     "-",
                     "-",
                     "-",
-                    "-"
+                    "-",
+                    2168.59605,
+                    "-",
+                    2168.59605
                 ],
                 [
-                    6,
                     "Molar Enthalpy (J/mol) Liq",
-                    {
-                        "html": "J/mol",
-                        "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
-                        "raw": "J/mol"
-                    },
+                    1000.0,
+                    "-",
+                    1000.0,
                     1000.0,
                     1000.0,
                     1000.0,
@@ -2312,36 +2317,36 @@
                     "-",
                     "-",
                     "-",
+                    "-",
+                    1000.0,
+                    "-",
+                    1000.0
+                ],
+                [
+                    "flow_mol_comp N2",
+                    "-",
+                    1.0,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    "-",
+                    1.0,
                     "-"
                 ],
                 [
-                    7,
-                    "flow_mol_comp N2",
-                    {
-                        "html": "mol/s",
-                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                        "raw": "mol/s"
-                    },
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                [
-                    8,
                     "flow_mol_comp O2",
-                    {
-                        "html": "mol/s",
-                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                        "raw": "mol/s"
-                    },
+                    "-",
+                    1.0,
+                    "-",
                     "-",
                     "-",
                     "-",
@@ -2352,16 +2357,16 @@
                     1.0,
                     1.0,
                     1.0,
-                    1.0
+                    1.0,
+                    "-",
+                    1.0,
+                    "-"
                 ],
                 [
-                    9,
                     "flow_mol_comp NO",
-                    {
-                        "html": "mol/s",
-                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                        "raw": "mol/s"
-                    },
+                    "-",
+                    1.0,
+                    "-",
                     "-",
                     "-",
                     "-",
@@ -2372,16 +2377,16 @@
                     1.0,
                     1.0,
                     1.0,
-                    1.0
+                    1.0,
+                    "-",
+                    1.0,
+                    "-"
                 ],
                 [
-                    10,
                     "flow_mol_comp CO2",
-                    {
-                        "html": "mol/s",
-                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                        "raw": "mol/s"
-                    },
+                    "-",
+                    1.0,
+                    "-",
                     "-",
                     "-",
                     "-",
@@ -2392,16 +2397,16 @@
                     1.0,
                     1.0,
                     1.0,
-                    1.0
+                    1.0,
+                    "-",
+                    1.0,
+                    "-"
                 ],
                 [
-                    11,
                     "flow_mol_comp H2O",
-                    {
-                        "html": "mol/s",
-                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                        "raw": "mol/s"
-                    },
+                    "-",
+                    1.0,
+                    "-",
                     "-",
                     "-",
                     "-",
@@ -2412,16 +2417,16 @@
                     1.0,
                     1.0,
                     1.0,
-                    1.0
+                    1.0,
+                    "-",
+                    1.0,
+                    "-"
                 ],
                 [
-                    12,
                     "flow_mol_comp SO2",
-                    {
-                        "html": "mol/s",
-                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                        "raw": "mol/s"
-                    },
+                    "-",
+                    1.0,
+                    "-",
                     "-",
                     "-",
                     "-",
@@ -2432,16 +2437,16 @@
                     1.0,
                     1.0,
                     1.0,
-                    1.0
+                    1.0,
+                    "-",
+                    1.0,
+                    "-"
                 ],
                 [
-                    13,
                     "temperature",
-                    {
-                        "html": "K",
-                        "latex": "\\mathrm{K}",
-                        "raw": "K"
-                    },
+                    "-",
+                    500,
+                    "-",
                     "-",
                     "-",
                     "-",
@@ -2452,16 +2457,16 @@
                     500,
                     500,
                     500,
-                    500
+                    500,
+                    "-",
+                    500,
+                    "-"
                 ],
                 [
-                    14,
                     "pressure",
-                    {
-                        "html": "Pa",
-                        "latex": "\\mathrm{Pa}",
-                        "raw": "Pa"
-                    },
+                    "-",
+                    101325.0,
+                    "-",
                     "-",
                     "-",
                     "-",
@@ -2472,7 +2477,10 @@
                     101325.0,
                     101325.0,
                     101325.0,
-                    101325.0
+                    101325.0,
+                    "-",
+                    101325.0,
+                    "-"
                 ]
             ],
             "index": [

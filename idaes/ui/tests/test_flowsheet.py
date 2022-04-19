@@ -34,8 +34,15 @@ from .shared import dict_diff
 
 test_dir = Path(__file__).parent
 
-base_model = {"model": {"id": "Model1", "unit_models": {}, "arcs": {}}, "cells": {}}
-
+base_model = {
+    "model": {
+        "id": "Model1",
+        "unit_models": {},
+        "arcs": {}
+    },
+    "cells": {},
+    "routing_config": {}
+}
 
 @pytest.fixture
 def models():

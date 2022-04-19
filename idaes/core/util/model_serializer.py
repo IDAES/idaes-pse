@@ -215,6 +215,7 @@ class StoreSpec(object):
             of not is just to include Suffix in classes or not.
         suffix_filter: None to store all suffixes or a list of suffixes to store.
     """
+
     def __init__(
         self,
         classes={
@@ -276,7 +277,7 @@ class StoreSpec(object):
         # suffix based on option.  May deprecate the suffix option.
         if suffix is not None:
             if not suffix and Suffix in classes:
-                del(self.classes[Suffix])
+                del self.classes[Suffix]
             elif suffix and Suffix not in classes:
                 self.classes[Suffix] = ((), None)
         # Create filter function lists, use None if not supplied
@@ -340,7 +341,9 @@ class StoreSpec(object):
         """Returns a StoreSpec object to store variable bounds only."""
         return cls(
             classes={Var: ((), None)},
-            data_classes={Var._ComponentDataClass: (("lb", "ub"), None),},
+            data_classes={
+                Var._ComponentDataClass: (("lb", "ub"), None),
+            },
         )
 
     @classmethod
@@ -350,10 +353,8 @@ class StoreSpec(object):
             return cls(
                 classes={Var: ((), None), BooleanVar: ((), None)},
                 data_classes={
-                    Var._ComponentDataClass: (
-                        ("value",), _value_if_not_fixed),
-                    BooleanVar._ComponentDataClass: (
-                        ("value",), _value_if_not_fixed),
+                    Var._ComponentDataClass: (("value",), _value_if_not_fixed),
+                    BooleanVar._ComponentDataClass: (("value",), _value_if_not_fixed),
                 },
             )
         return cls(
