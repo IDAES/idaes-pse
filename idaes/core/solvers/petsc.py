@@ -551,6 +551,8 @@ def petsc_dae_by_time_element(
                 # us concatonate trajectories with section that are mixed fixed
                 # and unfixed
                 for i, v in enumerate(variables):
+                    if isinstance(v.parent_component(), pyodae.DerivativeVar):
+                        continue # skip derivative vars
                     try:
                         vec = tj.get_vec(v)
                     except KeyError:
@@ -692,14 +694,11 @@ class PetscTrajectory(object):
                 self.delete_files()
             if unscale is not None:
                 self._unscale(unscale)
-            self.vars = list(self.vecs.keys())
         elif vecs is not None:
             self.vecs = vecs
             self.time = vecs["_time"]
-            self.vars = list(vecs.keys())
         elif json is not None:
             self.from_json(json)
-            self.vars = list(self.vecs.keys())
         else:
             raise RuntimeError("To read trajectory, provide stub, vecs, or json")
 
@@ -708,15 +707,15 @@ class PetscTrajectory(object):
             names = list(map(str.strip, f.readlines()))
         with open(f"{self.stub}.typ") as f:
             typ = list(map(int, f.readlines()))
-        self.vars = [name for i, name in enumerate(names) if typ[i] in [0, 1]]
+        vars = [name for i, name in enumerate(names) if typ[i] in [0, 1]]
         (t, v, names) = PetscBinaryIOTrajectory.ReadTrajectory("Visualization-data")
         self.time = t
         self.vecs_by_time = v
-        self.vecs = dict.fromkeys(self.vars, None)
+        self.vecs = dict.fromkeys(vars, None)
         for k in self.vecs.keys():
             self.vecs[k] = [0] * len(self.time)
         self.vecs["_time"] = list(self.time)
-        for i, v in enumerate(self.vars):
+        for i, v in enumerate(vars):
             for j, vt in enumerate(self.vecs_by_time):
                 self.vecs[v][j] = vt[i]
 
@@ -781,10 +780,12 @@ class PetscTrajectory(object):
         """
         tj = PetscTrajectory(no_read=True)
         tj.id_map = copy.copy(self.id_map)
-        tj.vecs = dict.fromkeys(self.vars, None)
+        tj.vecs = dict.fromkeys(self.vecs.keys(), None)
         tj.vecs["_time"] = copy.copy(times)
         tj.time = tj.vecs["_time"]
-        for var in self.vars:
+        for var in self.vecs:
+            if var == "_time":
+                continue
             tj.vecs[var] = np.interp(tj.time, self.time, self.vecs[var])
         return tj
 
@@ -880,4 +881,3 @@ class PetscTrajectory(object):
             with open(pth, "r") as fp:
                 self.vecs = json.load(fp)
         self.time = self.vecs["_time"]
-        self.vars = list(self.vecs.keys())
