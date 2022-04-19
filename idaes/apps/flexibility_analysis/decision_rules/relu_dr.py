@@ -66,13 +66,17 @@ def construct_relu_decision_rule(
     for layer_ndx in range(config.n_layers - 1):
         nn.add(layers.Dense(config.n_nodes_per_layer, activation="relu"))
     nn.add(layers.Dense(len(outputs)))
-    nn.compile(optimizer=keras.optimizers.Adam(), loss="mse")
+    if config.learning_rate is None:
+        opt = keras.optimizers.Adam()
+    else:
+        opt = keras.optimizers.Adam(learning_rate=config.learning_rate)
+    nn.compile(optimizer=opt, loss="mse")
     history = nn.fit(
         training_input,
         training_output,
         batch_size=config.batch_size,
         epochs=config.epochs,
-        verbose=0,
+        #verbose=0,
     )
 
     if config.plot_history:

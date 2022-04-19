@@ -204,6 +204,9 @@ class SamplingConfig(ConfigDict):
                 domain=InEnum(SamplingInitStrategy), default=SamplingInitStrategy.none
             )
         )
+        self.total_violation: bool = self.declare(
+            "total_violation", ConfigValue(domain=bool, default=False)
+        )
 
 
 def _deactivate_inequalities(m: _BlockData):
@@ -306,14 +309,16 @@ def _perform_sampling(
         unc_param_vars, config.num_points, config.lhs_seed
     )
 
-    max_violation_values = list()
+    obj_values = list()
+    obj = coramin.utils.get_objective(m)
 
     control_values = pe.ComponentMap()
     for v in controls:
         control_values[v] = list()
 
-    m.max_constraint_violation.value = 0
-    orig_max_constraint_violation_ub = m.max_constraint_violation.ub
+    if not config.total_violation:
+        m.max_constraint_violation.value = 0
+        orig_max_constraint_violation_ub = m.max_constraint_violation.ub
 
     for sample_ndx in tqdm(
         list(range(n_samples)),
@@ -324,28 +329,29 @@ def _perform_sampling(
         for p, p_vals in sample_points.items():
             p.fix(p_vals[sample_ndx])
 
-        if config.initialization_strategy in {SamplingInitStrategy.square, SamplingInitStrategy.all}:
+        if not config.total_violation and config.initialization_strategy in {SamplingInitStrategy.square, SamplingInitStrategy.all}:
             max_viol_ub = _init_with_square_problem(m, controls, config.solver)
             if max_viol_ub is not None:
                 m.max_constraint_violation.setub(max_viol_ub)
-        if config.initialization_strategy in {SamplingInitStrategy.min_control_deviation, SamplingInitStrategy.all}:
+        if not config.total_violation and config.initialization_strategy in {SamplingInitStrategy.min_control_deviation, SamplingInitStrategy.all}:
             feasible, control_vals = _solve_with_max_viol_fixed(m, controls, config.solver)
         else:
             feasible = False
             control_vals = None
         if feasible:
-            max_violation_values.append(0)
+            obj_values.append(0)
             for v, val in zip(controls, control_vals):
                 control_values[v].append(val)
         else:
             res = config.solver.solve(m, tee=False)
             pe.assert_optimal_termination(res)
-            max_violation_values.append(m.max_constraint_violation.value)
+            obj_values.append(pe.value(obj.expr))
 
             for v in controls:
                 control_values[v].append(v.value)
 
-        m.max_constraint_violation.setub(orig_max_constraint_violation_ub)
+        if not config.total_violation:
+            m.max_constraint_violation.setub(orig_max_constraint_violation_ub)
 
     unc_param_var_to_unc_param_map = pe.ComponentMap(
         zip(unc_param_vars, uncertain_params)
@@ -354,7 +360,7 @@ def _perform_sampling(
         (unc_param_var_to_unc_param_map[p], vals) for p, vals in sample_points.items()
     )
 
-    return sample_points, max_violation_values, control_values
+    return sample_points, obj_values, control_values
 
 
 def perform_sampling(
@@ -388,8 +394,10 @@ def perform_sampling(
         enforce_equalities=True,
         unique_constraint_violations=False,
         valid_var_bounds=None,
+        total_violation=config.total_violation,
+        total_violation_disjunctions=False,
     )
-    sample_points, max_violation_values, control_values = _perform_sampling(
+    sample_points, obj_values, control_values = _perform_sampling(
         m=m, uncertain_params=uncertain_params, controls=controls, config=config
     )
 
@@ -400,4 +408,4 @@ def perform_sampling(
         (original_model.find_component(v), vals) for v, vals in control_values.items()
     )
 
-    return sample_points, max_violation_values, control_values
+    return sample_points, obj_values, control_values

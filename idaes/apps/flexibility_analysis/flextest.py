@@ -95,6 +95,9 @@ class ActiveConstraintConfig(ConfigDict):
         self.skip_scaling_check: bool = self.declare(
             'skip_scaling_check', ConfigValue(domain=bool, default=False)
         )
+        self.total_violation: bool = self.declare(
+            "total_violation", ConfigValue(domain=bool, default=False)
+        )
 
 
 class FlexTestConfig(ConfigDict):
@@ -136,6 +139,9 @@ class FlexTestConfig(ConfigDict):
         )
         self.active_constraint_config: ActiveConstraintConfig = self.declare(
             "active_constraint_config", ActiveConstraintConfig()
+        )
+        self.total_violation: bool = self.declare(
+            "total_violation", ConfigValue(domain=bool, default=False)
         )
 
 
@@ -196,6 +202,8 @@ def build_flextest_with_dr(
     valid_var_bounds: MutableMapping[_GeneralVarData, Tuple[float, float]],
     config: FlexTestConfig,
 ):
+    config.sampling_config.total_violation = config.total_violation
+
     # this has to be here in case tensorflow or omlt are not installed
     dr_construction_map[
         FlexTestMethod.relu_decision_rule] = relu_dr.construct_relu_decision_rule
@@ -262,11 +270,17 @@ def build_flextest_with_dr(
         config=config.decision_rule_config,
     )
 
+    if config.total_violation:
+        total_violation_disjunctions = True
+    else:
+        total_violation_disjunctions = False
     _build_inner_problem(
         m=m,
         enforce_equalities=True,
         unique_constraint_violations=True,
         valid_var_bounds=valid_var_bounds,
+        total_violation=config.total_violation,
+        total_violation_disjunctions=total_violation_disjunctions
     )
     _apply_var_bounds(valid_var_bounds)
     m.decision_rule = dr
@@ -274,9 +288,14 @@ def build_flextest_with_dr(
     obj = coramin.utils.get_objective(m)
     obj.deactivate()
 
-    m.max_constraint_violation_obj = pe.Objective(
-        expr=m.max_constraint_violation, sense=pe.maximize
-    )
+    if config.total_violation:
+        m.max_total_violation_obj = pe.Objective(
+            expr=sum(m.constraint_violation.values()), sense=pe.maximize
+        )
+    else:
+        m.max_constraint_violation_obj = pe.Objective(
+            expr=m.max_constraint_violation, sense=pe.maximize
+        )
 
 
 def build_active_constraint_flextest(
@@ -323,6 +342,8 @@ def build_active_constraint_flextest(
         enforce_equalities=config.enforce_equalities,
         unique_constraint_violations=False,
         valid_var_bounds=valid_var_bounds,
+        total_violation=config.total_violation,
+        total_violation_disjunctions=False,
     )
 
     for v in m.unc_param_vars.values():
@@ -341,7 +362,7 @@ def build_active_constraint_flextest(
     # TODO: to control the namespace and reduce cloning:
     #  take the users model and stick it on a new block as a sub-block
 
-    if not config.enforce_equalities:
+    if not config.enforce_equalities and not config.total_violation:
         m.equality_cuts = pe.ConstraintList()
         max_viol_lb, max_viol_ub = valid_var_bounds[m.max_constraint_violation]
         for c in orig_equality_cons:
@@ -354,12 +375,17 @@ def build_active_constraint_flextest(
             m.equality_cuts.add(m.max_constraint_violation <= (1 - y1 * y2) * max_viol_ub)
             m.equality_cuts.add(m.max_constraint_violation >= (1 - y1 * y2) * max_viol_lb)
 
-    if config.use_haar_conditions:
+    if config.use_haar_conditions and not config.total_violation:
         m.n_active_ineqs = pe.Constraint(expr=sum(m.active_indicator.values()) == n_dof)
 
-    m.max_constraint_violation_obj = pe.Objective(
-        expr=m.max_constraint_violation, sense=pe.maximize
-    )
+    if config.total_violation:
+        m.max_total_violation_obj = pe.Objective(
+            expr=sum(m.constraint_violation.values()), sense=pe.maximize
+        )
+    else:
+        m.max_constraint_violation_obj = pe.Objective(
+            expr=m.max_constraint_violation, sense=pe.maximize
+        )
 
 
 def _solve_flextest_active_constraint(
@@ -414,7 +440,7 @@ def _solve_flextest_decision_rule(
         config=config,
     )
     opt = config.minlp_solver
-    res = opt.solve(m)
+    res = opt.solve(m, tee=True)
     pe.assert_optimal_termination(res)
 
     results = FlexTestResults()
@@ -438,6 +464,7 @@ def _solve_flextest_sampling(
     valid_var_bounds: MutableMapping[_GeneralVarData, Tuple[float, float]],
     config: Optional[FlexTestConfig] = None,
 ) -> FlexTestResults:
+    config.sampling_config.total_violation = config.total_violation
     tmp = perform_sampling(
         m=m,
         uncertain_params=uncertain_params,
@@ -474,6 +501,7 @@ def _solve_flextest_vertex_enumeration(
     config: FlexTestConfig = config()
     config.sampling_config.num_points = 2
     config.sampling_config.strategy = SamplingStrategy.grid
+    config.sampling_config.total_violation = config.total_violation
     tmp = perform_sampling(
         m=m,
         uncertain_params=uncertain_params,

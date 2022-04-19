@@ -37,6 +37,9 @@ class ReluDRConfig(DRConfig):
         self.batch_size: int = self.declare(
             "batch_size", ConfigValue(domain=int, default=20)
         )
+        self.learning_rate = self.declare(
+            "learning_rate", ConfigValue(default=None)
+        )
         self.plot_history: bool = self.declare(
             "plot_history", ConfigValue(domain=bool, default=False)
         )
