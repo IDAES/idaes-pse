@@ -10,13 +10,9 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-"""
-Deprecation path for renamed module.
-"""
-from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The idaes.surrogate.pysmo_surrogate module has been "
-                    "moved to idaes.core.surrogate.pysmo_surrogate",
-                    version="2.0.0.alpha0")
-
-from idaes.core.surrogate.pysmo_surrogate import *
+from .data_utils import (
+    split_training_validation,
+    split_training_validation_testing,
+    split_dataframe,
+)
