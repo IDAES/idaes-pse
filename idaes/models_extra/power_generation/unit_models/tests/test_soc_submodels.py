@@ -1,9 +1,17 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Jan 28 09:27:52 2022
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
-@author: Doug
-"""
+__author__ = "Douglas Allan"
 
 import numpy as np
 import pytest
@@ -22,11 +30,6 @@ import idaes.core.plugins
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 
 
-use_idaes_solver_configuration_defaults()
-idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
-idaes.cfg.ipopt["options"]["linear_solver"] = "ma27"
-idaes.cfg.ipopt["options"]["max_iter"] = 100
-idaes.cfg.ipopt["options"]["halt_on_ampl_error"] = "yes"
 solver = pyo.SolverFactory("ipopt")
 
 time_set = [0]
@@ -682,7 +685,10 @@ class TestTPB(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialization(self, model):
-        model.fs.fuel_tpb.initialize(fix_x0=True)
+        model.fs.fuel_tpb.initialize(
+            fix_x0=True,
+            optarg={"nlp_scaling_method": "user-scaling"}
+        )
         
 class TestContactResistor(object):
     @pytest.fixture(scope="class")
@@ -769,10 +775,15 @@ class TestContactResistor(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialization(self, model):
-        model.fs.contact.initialize()
+        model.fs.contact.initialize_build(
+            optarg={"nlp_scaling_method": "user-scaling"}
+        )
         model.fs.qflux_x0.unfix()
         model.fs.contact.qflux_x1.fix()
-        model.fs.contact.initialize(fix_qflux_x0=False)
+        model.fs.contact.initialize_build(
+            fix_qflux_x0=False,
+            optarg={"nlp_scaling_method": "user-scaling"}
+        )
 
 # Class for the electrolyte and interconnect
 class TestConductiveSlab(object):

@@ -15,8 +15,6 @@ Test SolidOxideCell model using parameters from the literature. Compare to both
 literature data and cached data from the SolidOxideCell model (to detect model
 changes having a significant effect on the model outputs)
 
-Author: Douglas Allan
-
 This test is based on two papers. The first is Herring et al., in which results
 of a series of water electrolysis experiments on a ten cell stack is reported.
 Current-voltage curves for the stack are reported at a variety of flow rates,
@@ -61,6 +59,8 @@ of Hydrogen Energy, Volume 39, Issue 6, 2014, Pages 2669-2684, ISSN 0360-3199,
 https://doi.org/10.1016/j.ijhydene.2013.12.010.
 (https://www.sciencedirect.com/science/article/pii/S036031991302908X)
 """
+
+__author__ = "Douglas Allan"
 
 import os
 import numpy as np
