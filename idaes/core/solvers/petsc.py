@@ -451,27 +451,33 @@ def petsc_dae_by_time_element(
     regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
     tdisc = find_discretization_equations(m, time)
 
-    solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options)
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
     save_trajectory = solver_dae.options.get("--ts_save_trajectory", 0)
-
-    if initial_variables is None:
-        initial_variables = []
-    if initial_constraints is None:
-        initial_constraints = []
-
-    if detect_initial:
-        rvset = ComponentSet(regular_vars)
-        rcset = ComponentSet(regular_cons)
-        icset = ComponentSet(initial_constraints)
-        ivset = ComponentSet(initial_variables)
-        initial_variables = list(ivset | rvset)
-        initial_constraints = list(icset | rcset)
 
     # First calculate the inital conditions and non-time-indexed constraints
     res_list = []
     t0 = between.first()
+
     if not skip_initial:
+        # Nonlinear equation solver for initial conditions
+        solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options)
+        # list of varaibles to add to initial condition problem
+        if initial_variables is None:
+            initial_variables = []
+        # list of constraints to add to the initial condition problem
+        if initial_constraints is None:
+            initial_constraints = []
+
+        if detect_initial:
+            # If detect_initial, solve the non-time-indexed varaibles and
+            # constraints with the initial conditions
+            rvset = ComponentSet(regular_vars)
+            rcset = ComponentSet(regular_cons)
+            icset = ComponentSet(initial_constraints)
+            ivset = ComponentSet(initial_variables)
+            initial_variables = list(ivset | rvset)
+            initial_constraints = list(icset | rcset)
+
         with TemporarySubsystemManager(to_deactivate=tdisc):
             constraints = [
                 con[t0] for con in time_cons if t0 in con

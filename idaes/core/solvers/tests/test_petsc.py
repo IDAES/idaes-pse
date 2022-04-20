@@ -613,7 +613,3 @@ def test_rp_example4():
     )
     assert pyo.value(m.u[10]) == pytest.approx(398)
     assert pyo.value(m.x[10]) == pytest.approx(20)
-
-
-if __name__ == "__main__":
-    test_petsc_read_trajectory_parts()
