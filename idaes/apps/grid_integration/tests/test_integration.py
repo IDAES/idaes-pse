@@ -19,16 +19,10 @@ except ImportError:
     import importlib_resources as resources
 from numbers import Number
 from pathlib import Path
-from typing import Dict, Union, List
+from typing import Dict, Union
 import os
 
 import pytest
-import pandas as pd
-
-
-prescient_simulator = pytest.importorskip(
-    "prescient.simulator", reason="prescient (optional dependency) not available"
-)
 
 
 # define custom type for type hinting
@@ -149,9 +143,11 @@ class TestDoubleLoopIntegration:
 
     @pytest.fixture
     def run_bidder_simulator(self, bidder_sim_options: PrescientOptions) -> None:
-        from prescient.simulator import Prescient
+        prescient = pytest.importorskip(
+            "prescient.simulator.Prescient",
+            reason="Prescient (optional dependency) not available")
 
-        sim = Prescient()
+        sim = prescient()
         sim.simulate(**bidder_sim_options)
 
     @pytest.fixture

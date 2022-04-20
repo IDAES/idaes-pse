@@ -19,9 +19,7 @@ from idaes.apps.grid_integration import PlaceHolderForecaster
 
 from pyomo.common.dependencies import attempt_import
 
-prescient, prescient_avail = attempt_import("prescient")
-if prescient_avail:
-    from prescient.simulator import Prescient
+prescient, prescient_avail = attempt_import("prescient.simulator.Prescient")
 
 
 class ThermalGenerator:
