@@ -358,14 +358,14 @@ def _sub_problem_scaling_suffix(m, t_block):
                 t_block.scaling_factor[c] = m.scaling_factor[c]
 
 class PetscDAEResults(object):
-    """This class stores the results of ``petsc_dae_by_time_element()``, it has.
-    two attributes ``results`` and ``trajectory``.  Results is a list of pyomo
-    solver results objects.  Since this petsc DAE solver utility solves the
+    """This class stores the results of ``petsc_dae_by_time_element()`` it has
+    two attributes ``results`` and ``trajectory``.  Results is a list of Pyomo
+    solver results objects.  Since this PETSc DAE solver utility solves the
     initial conditions first then may integrate over the time domain in one or
     more steps, the results of multiple solves are returned.  The trajectory is
-    a PetscTrajectory object which gives the full trajectory of the solution
+    a ``PetscTrajectory`` object which gives the full trajectory of the solution
     for all time steps taken by the PETSc solver. This is generally finer than
-    the PyomoDAE discretization.
+    the Pyomo.DAE discretization.
     """
     def __init__(self, results=None, trajectory=None):
         self.results = results
@@ -385,7 +385,7 @@ def petsc_dae_by_time_element(
     symbolic_solver_labels=True,
     between=None,
     interpolate=True,
-    calculate_derivaties=True,
+    calculate_derivatives=True,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -420,14 +420,14 @@ def petsc_dae_by_time_element(
         between (list or tuple): List of time points to integrate between. If
             None use all time points in the model. Generally the list should
             start with the first time point and end with the last time point;
-            however, this is not a requirement and the are situations where you
+            however, this is not a requirement and there are situations where you
             may not want to include them. If you are not including the first
             time point, you should take extra care with the initial conditions.
             If the initial conditions are already correct consider using the
             ``skip_initial`` option if the first time point is not included.
         interpolate (bool): if True and trajectory is read, interpolate model
             values from the trajectory
-        calculate_derivaties: (bool) if True, calculate the derivative values
+        calculate_derivatives: (bool) if True, calculate the derivative values
             based on the values of the differential variables in the discretized
             Pyomo model.
 
@@ -435,14 +435,20 @@ def petsc_dae_by_time_element(
         See PetscDAEResults documentation for more informations.
     """
     tj = None
+    if interpolate:
+        if ts_options is None:
+            ts_options = {}
+        ts_options["--ts_save_trajectory"] = 1
+    if timevar:
+        for t in time:
+            timevar[t].set_value(t)
     if between is None:
         between = time
     else:
-        for t in between:
-            try:
-                assert t in time
-            except AssertionError:
-                raise RuntimeError("Elements of between must be in the time set")
+        bad_times = between - time
+        if bad_times:
+            raise RuntimeError(
+                    "Elements of the 'between' argument must be in the time set")
         between = pyo.Set(initialize=sorted(between))
         between.construct()
 
@@ -553,7 +559,7 @@ def petsc_dae_by_time_element(
                 )
                 # add fixed vars to the trajectory. this does two things 1)
                 # helps users looking for fixed var trajectory and 2) lets
-                # us concatonate trajectories with section that are mixed fixed
+                # us concatenate trajectories with section that are mixed fixed
                 # and unfixed
                 for i, v in enumerate(variables):
                     if isinstance(v.parent_component(), pyodae.DerivativeVar):
@@ -584,7 +590,7 @@ def petsc_dae_by_time_element(
             tprev = t
             res_list.append(res)
         # If the interpolation option is True and the trajectory is available
-        # interpoate the values any skipped time points from the trajectory
+        # interpolate the values any skipped time points from the trajectory
         if interpolate and tj is not None:
             t0 = between.first()
             tlast = between.last()
@@ -600,11 +606,7 @@ def petsc_dae_by_time_element(
                 no_repeat.add(id(var[tlast]))
                 if isinstance(var[t0].parent_component(), pyodae.DerivativeVar):
                     continue # skip derivative vars
-                try:
-                    vec = tj.interpolate_vec(itime, var[tlast])
-                except KeyError:
-                    # variable not in trajectory, this happens if the problem
-                    continue
+                vec = tj.interpolate_vec(itime, var[tlast])
                 for i, (t, v) in enumerate(var.items()):
                     if t < t0 or t > tlast or t in between:
                         # Time is outside the range or already set
@@ -613,10 +615,10 @@ def petsc_dae_by_time_element(
                         # May not have trajectory from fixed variables and they
                         # shouldn't change anyway, so only set not fixed vars
                         v.value = vec[i]
-        if calculate_derivaties:
+        if calculate_derivatives:
             # the petsc solver interface does not currently return time
-            # derivatives, and if it did, they whould be estimated based on a
-            # smaller time step.  This option uses PyomoDAE's discretization
+            # derivatives, and if it did, they would be estimated based on a
+            # smaller time step.  This option uses Pyomo.DAE's discretization
             # equations to calculate the time derivative values
             calculate_time_derivatives(m, time)
         # return the solver results and trajectory if available
@@ -773,7 +775,7 @@ class PetscTrajectory(object):
 
     def interpolate(self, times):
         """Create a new vector dictionary interpolated at times. This method
-        will also extraplote values outside the original time range, so care
+        will also extrapolate values outside the original time range, so care
         should be taken not to specify times too far outside the range.
 
         Args:
@@ -796,7 +798,7 @@ class PetscTrajectory(object):
 
     def interpolate_vec(self, times, var):
         """Create a new vector dictionary interpolated at times. This method
-        will also extraplote values outside the original time range, so care
+        will also extrapolate values outside the original time range, so care
         should be taken not to specify times too far outside the range.
 
         Args:

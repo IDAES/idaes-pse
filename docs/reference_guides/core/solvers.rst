@@ -134,7 +134,7 @@ Discretization
 """"""""""""""
 
 The utility for solving Pyomo.DAE problems uses the PETSc TS solvers to integrate
-between select time point in the Pyomo.DAE discretization. The results for each
+between selected time points in the Pyomo.DAE discretization. The results for each
 time point integrated between are stored in the Pyomo model. Optionally the
 skipped time points can be interpolated from the PETSc solver trajectory data.
 This can be used to initialize and verify the results of the full time-discretized
