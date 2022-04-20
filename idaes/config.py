@@ -72,7 +72,7 @@ orig_environ = {
     "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
     "DYLD_LIBRARY_PATH": os.environ.get("DYLD_LIBRARY_PATH", ""),
 }
-# Define set of default units of measurmenet for common derived quantities
+# Define set of default units of measurement for common derived quantities
 default_uom = {
     "pressure": "Pa",
     "energy": "J",

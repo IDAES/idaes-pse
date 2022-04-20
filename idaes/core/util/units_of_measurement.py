@@ -15,8 +15,14 @@
 This module contains utility functions for converting units of measurement and
 reporting model outputs.
 """
-from pyomo.environ import units
+from pyomo.environ import as_quantity, units
 import idaes
+
+
+def report_quantity(c):
+    q = as_quantity(c)
+
+    return convert_quantity_to_reporting_units(q)
 
 
 def convert_quantity_to_reporting_units(q):
@@ -27,9 +33,9 @@ def convert_quantity_to_reporting_units(q):
         q: pint quantity to be converted
 
     Returns:
-        A new pint quantity in the untis defined by the IDAES config block.
+        A new pint quantity in the units defined by the IDAES config block.
     """
-    # First, cehck if quantity is dimensionless
+    # First, check if quantity is dimensionless
     if q.dimensionless:
         # No need to do anything here
         return q
