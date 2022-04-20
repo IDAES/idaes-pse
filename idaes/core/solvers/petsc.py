@@ -428,7 +428,7 @@ def petsc_dae_by_time_element(
         interpolate (bool): if True and trajectory is read, interpolate model
             values from the trajectory
         calculate_derivaties: (bool) if True, calculate the derivative values
-            based on the values of the differential varaibles in the discretized
+            based on the values of the differential variables in the discretized
             Pyomo model.
 
     Returns (PetscDAEResults):
@@ -461,7 +461,7 @@ def petsc_dae_by_time_element(
     if not skip_initial:
         # Nonlinear equation solver for initial conditions
         solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options)
-        # list of varaibles to add to initial condition problem
+        # list of variables to add to initial condition problem
         if initial_variables is None:
             initial_variables = []
         # list of constraints to add to the initial condition problem
@@ -469,7 +469,7 @@ def petsc_dae_by_time_element(
             initial_constraints = []
 
         if detect_initial:
-            # If detect_initial, solve the non-time-indexed varaibles and
+            # If detect_initial, solve the non-time-indexed variables and
             # constraints with the initial conditions
             rvset = ComponentSet(regular_vars)
             rcset = ComponentSet(regular_cons)
@@ -563,7 +563,7 @@ def petsc_dae_by_time_element(
                     except KeyError:
                         tj._set_vec(v,[pyo.value(v)]*len(tj.time))
                 if tj_prev is not None:
-                    # due to the way variables is generated we know varaibles
+                    # due to the way variables is generated we know variables
                     # have corresponding positions in the list
                     no_repeat = set()
                     for i, v in enumerate(variables):
@@ -610,7 +610,7 @@ def petsc_dae_by_time_element(
                         # Time is outside the range or already set
                         continue
                     if not v.fixed:
-                        # May not have trajectory from fixed varaibles and they
+                        # May not have trajectory from fixed variables and they
                         # shouldn't change anyway, so only set not fixed vars
                         v.value = vec[i]
         if calculate_derivaties:
