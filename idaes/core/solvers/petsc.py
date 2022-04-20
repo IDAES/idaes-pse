@@ -438,13 +438,12 @@ def petsc_dae_by_time_element(
     if between is None:
         between = time
     else:
-        if between[0] != time.first():
-            between = list(between)
-            between.insert(0, time.first())
-        if between[-1] != time.last():
-            between = list(between)
-            between.append(time.last())
-        between = pyo.Set(initialize=between)
+        for t in between:
+            try:
+                assert t in time
+            except AssertionError:
+                raise RuntimeError("Elements of between must be in the time set")
+        between = pyo.Set(initialize=sorted(between))
         between.construct()
 
     solve_log = idaeslog.getSolveLogger("petsc-dae")
