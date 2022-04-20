@@ -123,7 +123,7 @@ def modelNoHoldup():
             "has_holdup": False,
             "cv_zfaces": np.linspace(0, 1, 4).tolist(),
             "cv_xfaces": np.linspace(0, 1, 5).tolist(),
-            "comp_list": ["O2", "N2"],
+            "component_list": ["O2", "N2"],
         }
     )
     electrode = m.fs.oxygen_electrode
@@ -187,7 +187,7 @@ def modelHoldupNotDynamic():
             "has_holdup": True,
             "cv_zfaces": zfaces,
             "cv_xfaces": xfaces_electrode,
-            "comp_list": ["H2", "H2O", "N2"],
+            "component_list": ["H2", "H2O", "N2"],
             "length_z": m.fs.length_z,
             "length_y": m.fs.length_y,
             "conc_ref": m.fs.conc_ref,
@@ -220,7 +220,7 @@ def test_build_modelNoHoldup(modelNoHoldup):
     nt = len(electrode.flowsheet().time)
     nz = len(electrode.iznodes)
     nx = len(electrode.xfaces) - 1
-    ncomp = len(electrode.comps)
+    ncomp = len(electrode.component_list)
 
     comp_dict = common_components(nt, nz, nx, ncomp)
     comp_dict[pyo.Param] = {}
@@ -243,7 +243,7 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
     nt = len(electrode.flowsheet().time)
     nz = len(electrode.iznodes)
     nx = len(electrode.xfaces) - 1
-    ncomp = len(electrode.comps)
+    ncomp = len(electrode.component_list)
 
     comp_dict = common_components(nt, nz, nx, ncomp)
     comp_dict[pyo.Var]["int_energy_mol"] = nx * nz * nt

@@ -30,25 +30,7 @@ import idaes.logger as idaeslog
 
 @declare_process_block_class("SocConductiveSlab")
 class SocConductiveSlabData(UnitModelBlockData):
-    CONFIG = ConfigBlock()
-    CONFIG.declare(
-        "dynamic",
-        ConfigValue(
-            domain=In([useDefault, True, False]),
-            default=useDefault,
-            description="Dynamic model flag",
-            doc="""Indicates whether this model will be dynamic,
-                **default** = useDefault.
-                **Valid values:** {
-                **useDefault** - get flag from parent (default = False),
-                **True** - set as a dynamic model,
-                **False** - set as a steady-state model.}""",
-        ),
-    )
-    CONFIG.declare(
-        "has_holdup",
-        ConfigValue(domain=In([useDefault, True, False]), default=useDefault),
-    )
+    CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
         "cv_xfaces",
         ConfigValue(

@@ -33,25 +33,7 @@ import idaes.logger as idaeslog
 
 @declare_process_block_class("SolidOxideCell")
 class SolidOxideCellData(UnitModelBlockData):
-    CONFIG = ConfigBlock()
-    CONFIG.declare(
-        "dynamic",
-        ConfigValue(
-            domain=In([useDefault, True, False]),
-            default=useDefault,
-            description="Dynamic model flag",
-            doc="""Indicates whether this model will be dynamic,
-                **default** = useDefault.
-                **Valid values:** {
-                **useDefault** - get flag from parent (default = False),
-                **True** - set as a dynamic model,
-                **False** - set as a steady-state model.}""",
-        ),
-    )
-    CONFIG.declare(
-        "has_holdup",
-        ConfigValue(domain=In([useDefault, True, False]), default=useDefault),
-    )
+    CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
         "cv_zfaces",
         ConfigValue(
@@ -80,13 +62,13 @@ class SolidOxideCellData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-        "fuel_comps",
+        "fuel_component_list",
         ConfigValue(
             default=["H2", "H2O"], description="List of components in fuel stream"
         ),
     )
     CONFIG.declare(
-        "oxygen_comps",
+        "oxygen_component_list",
         ConfigValue(
             default=["O2", "H2O"], description="List of components in the oxygen stream"
         ),
@@ -127,13 +109,6 @@ class SolidOxideCellData(UnitModelBlockData):
             "to model flux through interconnect.",
         ),
     )
-    CONFIG.declare(
-        "interpolation_scheme",
-        ConfigValue(
-            default=common.CV_Interpolation.UDS,
-            description="Method used to interpolate face values",
-        ),
-    )
     # Setting this to false caused initialization issues, so I'm forcing it to
     # be true until I figure out whether those issues can be fixed ---Doug
     CONFIG.declare(
@@ -153,8 +128,16 @@ class SolidOxideCellData(UnitModelBlockData):
         tset = self.flowsheet().config.time
         t0 = tset.first()
 
-        self.fuel_comps = pyo.Set(initialize=self.config.fuel_comps)
-        self.oxygen_comps = pyo.Set(initialize=self.config.oxygen_comps)
+        self.fuel_component_list = pyo.Set(
+            initialize=self.config.fuel_component_list,
+            ordered=True,
+            doc="Set of all gas-phase components present on fuel side of cell",
+        )
+        self.oxygen_component_list = pyo.Set(
+            initialize=self.config.oxygen_component_list,
+            ordered=True,
+            doc="Set of all gas-phase components present on oxygen side of cell",
+        )
         zfaces = self.zfaces = self.config.cv_zfaces
 
         iznodes = self.iznodes = pyo.Set(initialize=range(1, len(zfaces)))
@@ -206,10 +189,9 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "temperature_z": self.temperature_z,
-                "interpolation_scheme": common.CV_Interpolation.UDS,
                 "opposite_flow": False,
                 "below_electrode": True,
-                "comp_list": self.fuel_comps,
+                "component_list": self.fuel_component_list,
                 "include_temperature_x_thermo": include_temp_x_thermo,
             }
         )
@@ -249,10 +231,9 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "temperature_z": self.temperature_z,
-                "interpolation_scheme": common.CV_Interpolation.UDS,
                 "below_electrode": False,
                 "opposite_flow": opposite_flow,
-                "comp_list": self.oxygen_comps,
+                "component_list": self.oxygen_component_list,
                 "include_temperature_x_thermo": include_temp_x_thermo,
             }
         )
@@ -290,7 +271,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "dynamic": dynamic,
                 "cv_zfaces": zfaces,
                 "cv_xfaces": self.config.cv_xfaces_fuel_electrode,
-                "comp_list": self.fuel_comps,
+                "component_list": self.fuel_chan.component_list,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "conc_ref": self.fuel_chan.conc,
@@ -310,7 +291,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "dynamic": dynamic,
                 "cv_zfaces": zfaces,
                 "cv_xfaces": self.config.cv_xfaces_oxygen_electrode,
-                "comp_list": self.oxygen_chan.comps,
+                "component_list": self.oxygen_chan.component_list,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "conc_ref": self.oxygen_chan.conc,
@@ -331,7 +312,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "cv_zfaces": zfaces,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
-                "comp_list": self.fuel_comps,
+                "component_list": self.fuel_component_list,
                 "tpb_stoich_dict": self.config.fuel_tpb_stoich_dict,
                 "current_density": self.current_density,
                 "temperature_z": self.temperature_z,
@@ -351,7 +332,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "cv_zfaces": zfaces,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
-                "comp_list": self.oxygen_comps,
+                "component_list": self.oxygen_component_list,
                 "tpb_stoich_dict": self.config.oxygen_tpb_stoich_dict,
                 "current_density": self.current_density,
                 "temperature_z": self.temperature_z,
@@ -422,7 +403,7 @@ class SolidOxideCellData(UnitModelBlockData):
 
         if self.config.flux_through_interconnect:
             raise NotImplementedError(
-                "Flux through interconnect has not been " "implemented yet"
+                "Flux through interconnect has not yet been implemented"
             )
         else:
             self.contact_interconnect_fuel_flow_mesh.qflux_x0.value = 0
@@ -483,7 +464,7 @@ class SolidOxideCellData(UnitModelBlockData):
 
         # Save fixedness status of inlet variables and fix them for initialization
         for chan, comps in zip(
-            ["fuel", "oxygen"], [self.fuel_comps, self.oxygen_comps]
+            ["fuel", "oxygen"], [self.fuel_component_list, self.oxygen_component_list]
         ):
             pname = chan + "_inlet"
             p = getattr(self, pname)
@@ -558,9 +539,9 @@ class SolidOxideCellData(UnitModelBlockData):
         for t in self.flowsheet().time:
             for iz in self.fuel_tpb.iznodes:
                 denom = pyo.value(
-                    sum(self.fuel_tpb.conc[t, iz, j] for j in self.fuel_tpb.comps)
+                    sum(self.fuel_tpb.conc[t, iz, j] for j in self.fuel_tpb.component_list)
                 )
-                for j in self.fuel_tpb.comps:
+                for j in self.fuel_tpb.component_list:
                     self.fuel_tpb.mole_frac_comp[t, iz, j].value = pyo.value(
                         self.fuel_tpb.conc[t, iz, j] / denom
                     )
@@ -582,9 +563,9 @@ class SolidOxideCellData(UnitModelBlockData):
         for t in self.flowsheet().time:
             for iz in self.oxygen_tpb.iznodes:
                 denom = pyo.value(
-                    sum(self.oxygen_tpb.conc[t, iz, j] for j in self.oxygen_tpb.comps)
+                    sum(self.oxygen_tpb.conc[t, iz, j] for j in self.oxygen_tpb.component_list)
                 )
-                for j in self.oxygen_tpb.comps:
+                for j in self.oxygen_tpb.component_list:
                     self.oxygen_tpb.mole_frac_comp[t, iz, j].value = pyo.value(
                         self.oxygen_tpb.conc[t, iz, j] / denom
                     )
@@ -667,7 +648,7 @@ class SolidOxideCellData(UnitModelBlockData):
         # Unfix any inlet variables that were fixed by initialization
         # To be honest, using a state block would probably have been less work
         for chan, comps in zip(
-            ["fuel", "oxygen"], [self.fuel_comps, self.oxygen_comps]
+            ["fuel", "oxygen"], [self.fuel_component_list, self.oxygen_component_list]
         ):
             pname = chan + "_inlet"
             p = getattr(self, pname)
@@ -708,8 +689,8 @@ class SolidOxideCellData(UnitModelBlockData):
                 assert pyo.value(T) / 1000 > common._safe_log_eps * 100
         print("No problems with safe_math functions in electrochemistry.")
 
-        comp_set = set(self.fuel_comps)
-        comp_set = comp_set.union(self.oxygen_comps)
+        comp_set = set(self.fuel_component_list)
+        comp_set = comp_set.union(self.oxygen_component_list)
         elements_present = set()
 
         for element in _element_list:
@@ -732,7 +713,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 sum_out = 0
                 for chan, comps in zip(
                     [self.fuel_chan, self.oxygen_chan],
-                    [self.fuel_comps, self.oxygen_comps],
+                    [self.fuel_component_list, self.oxygen_component_list],
                 ):
                     sum_in += sum(
                         _element_dict[element][j] * chan.flow_mol_comp_inlet[t, j]
@@ -805,14 +786,14 @@ class SolidOxideCellData(UnitModelBlockData):
 
         for t in self.flowsheet().time:
             sy_in_fuel = {}
-            for j in self.fuel_comps:
+            for j in self.fuel_component_list:
                 sy_in_fuel[j] = gsf(self.fuel_inlet.mole_frac_comp[t, j], sy_def)
             sy_in_oxygen = {}
-            for j in self.oxygen_comps:
+            for j in self.oxygen_component_list:
                 sy_in_oxygen[j] = gsf(self.oxygen_inlet.mole_frac_comp[t, j], sy_def)
             for iz in self.iznodes:
                 s_react_flux = gsf(self.current_density[t, iz]) * pyo.value(_constF)
-                for j in self.fuel_comps:
+                for j in self.fuel_component_list:
                     if abs(self.fuel_tpb.tpb_stoich[j]) > 1e-3:
                         s_flux_j = sy_in_fuel[j] * s_react_flux
                     else:
@@ -821,7 +802,7 @@ class SolidOxideCellData(UnitModelBlockData):
                         if gsf(var[t, iz, j]) is None:
                             ssf(var[t, iz, j], s_flux_j)
                     ssf(self.fuel_tpb.mole_frac_comp[t, iz, j], sy_in_fuel[j])
-                for j in self.oxygen_comps:
+                for j in self.oxygen_component_list:
                     if abs(self.oxygen_tpb.tpb_stoich[j]) > 1e-3:
                         s_flux_j = sy_in_oxygen[j] * s_react_flux
                     else:

@@ -46,7 +46,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         ConfigValue(domain=In([False]), default=False),
     )
     CONFIG.declare(
-        "comp_list",
+        "component_list",
         ConfigValue(default=["H2", "H2O"], description="List of components"),
     )
     CONFIG.declare(
@@ -87,15 +87,33 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                 (zfaces[i] + zfaces[i + 1]) / 2.0 for i in range(len(zfaces) - 1)
             ]
         )
-        comps = self.comps = pyo.Set(initialize=self.config.comp_list)
+        comps = self.component_list = pyo.Set(
+            initialize=self.config.component_list,
+            ordered=True,
+            doc="Set of all gas-phase components present in submodel",
+        )
         self.tpb_stoich = copy.copy(self.config.tpb_stoich_dict)
         # TODO maybe let user specify inert species directly? Floating point
         # equalities make me nervous---Doug
-        self.inert_comps = {j for j, coeff in self.tpb_stoich.items() if coeff == 0}
-        self.reacting_comps = {
-            j for j, coeff in self.tpb_stoich.items() if j not in self.inert_comps
-        }
-        self.reacting_gases = {j for j in comps if j not in self.inert_comps}
+        self.inert_component_list = pyo.Set(
+            initialize=[j for j, coeff in self.tpb_stoich.items() if coeff == 0],
+            ordered=True,
+            doc="Set of components that do not react at triple phase boundary"
+        )
+        self.reacting_component_list =pyo.Set(
+            initialize=[
+                j for j, coeff in self.tpb_stoich.items() 
+                if j not in self.inert_component_list
+            ],
+            ordered=True,
+            doc="Set of components (gas-phase and solid) that react at triple "
+            "phase boundary"
+        )
+        self.reacting_gas_list = pyo.Set(
+            initialize=[j for j in comps if j not in self.inert_component_list],
+            ordered=True,
+            doc="Set of gas-phase components that react at triple phase boundary"
+        )
 
         iznodes = self.iznodes = pyo.Set(initialize=range(1, len(self.znodes) + 1))
 
@@ -146,7 +164,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         )
 
         self.exchange_current_exponent_comp = pyo.Var(
-            self.reacting_gases,
+            self.reacting_gas_list,
             initialize=1,
             units=pyo.units.dimensionless,
             bounds=(0, None),
@@ -188,18 +206,19 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             log_y_j = b.log_mole_frac_comp
             nu_j = b.tpb_stoich
             # Any j not in comps is assumed to not be vapor phase
-            pressure_exponent = sum(nu_j[j] for j in b.reacting_gases)
+            pressure_exponent = sum(nu_j[j] for j in b.reacting_gas_list)
             if abs(pressure_exponent) < 1e-6:
                 out_expr = 0
             else:
                 out_expr = -_constR * pressure_exponent * pyo.log(P / P_ref)
             return out_expr + (
-                sum(nu_j[j] * common._comp_entropy_expr(T, j) for j in b.reacting_comps)
+                sum(nu_j[j] * common._comp_entropy_expr(T, j)
+                    for j in b.reacting_component_list)
                 - _constR
                 * sum(
                     nu_j[j] * log_y_j[t, iz, j]
-                    for j in b.comps
-                    if j not in b.inert_comps
+                    for j in b.reacting_gas_list
+                    # TODO verify that excluding solids is correct
                 )
             )
 
@@ -207,7 +226,8 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         def dh_rxn(b, t, iz):
             T = b.temperature[t, iz]
             nu_j = b.tpb_stoich
-            return sum(nu_j[j] * common._comp_enthalpy_expr(T, j) for j in b.reacting_comps)
+            return sum(nu_j[j] * common._comp_enthalpy_expr(T, j) 
+                       for j in b.reacting_component_list)
 
         @self.Expression(tset, iznodes)
         def dg_rxn(b, t, iz):
@@ -224,7 +244,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             expo = b.exchange_current_exponent_comp
             E_A = b.exchange_current_activation_energy[None]
             out = log_k - E_A / (_constR * T)
-            for j in b.reacting_gases:
+            for j in b.reacting_gas_list:
                 out += expo[j] * b.log_mole_frac_comp[t, iz, j]
             return out
 
@@ -294,8 +314,8 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
 
         for t in self.flowsheet().time:
             for iz in self.iznodes:
-                denom = pyo.value(sum(self.conc[t, iz, j] for j in self.comps))
-                for j in self.comps:
+                denom = pyo.value(sum(self.conc[t, iz, j] for j in self.component_list))
+                for j in self.component_list:
                     self.mole_frac_comp[t, iz, j].value = pyo.value(
                         self.conc[t, iz, j] / denom
                     )
@@ -348,7 +368,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                     sqx1 = sgsf(self.qflux_x1[t, iz], 1e-2)
                 sqx = min(sqx0, sqx1)
                 cst(self.qflux_eqn[t, iz], sqx)
-                for j in self.comps:
+                for j in self.component_list:
                     # TODO Come back with good formulation for trace components
                     # and scale DConc and Cref
                     sy = sgsf(self.mole_frac_comp[t, iz, j], sy_def)

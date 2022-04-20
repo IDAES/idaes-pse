@@ -30,25 +30,7 @@ import idaes.logger as idaeslog
 
 @declare_process_block_class("SocElectrode")
 class SocElectrodeData(UnitModelBlockData):
-    CONFIG = ConfigBlock()
-    CONFIG.declare(
-        "dynamic",
-        ConfigValue(
-            domain=In([useDefault, True, False]),
-            default=useDefault,
-            description="Dynamic model flag",
-            doc="""Indicates whether this model will be dynamic,
-                    **default** = useDefault.
-                    **Valid values:** {
-                    **useDefault** - get flag from parent (default = False),
-                    **True** - set as a dynamic model,
-                    **False** - set as a steady-state model.}""",
-        ),
-    )
-    CONFIG.declare(
-        "has_holdup",
-        ConfigValue(domain=In([useDefault, True, False]), default=useDefault),
-    )
+    CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
         "cv_xfaces",
         ConfigValue(
@@ -56,7 +38,7 @@ class SocElectrodeData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-        "comp_list",
+        "component_list",
         ConfigValue(default=["H2", "H2O"], description="List of components"),
     )
     CONFIG.declare(
@@ -84,7 +66,11 @@ class SocElectrodeData(UnitModelBlockData):
         # Set up some sets for the space and time indexing
         dynamic = self.config.dynamic
         tset = self.flowsheet().config.time
-        self.comps = pyo.Set(initialize=self.config.comp_list)
+        self.component_list = pyo.Set(
+            initialize=self.config.component_list,
+            ordered=True,
+            doc="Set of all gas-phase components present in submodel",
+        )
         # z coordinates for nodes and faces
         self.zfaces = pyo.Set(initialize=self.config.cv_zfaces)
         self.znodes = pyo.Set(
@@ -107,7 +93,7 @@ class SocElectrodeData(UnitModelBlockData):
         self.ixnodes = pyo.Set(initialize=range(1, len(self.xnodes) + 1))
 
         # Space saving aliases
-        comps = self.comps
+        comps = self.component_list
         izfaces = self.izfaces
         iznodes = self.iznodes
         ixfaces = self.ixfaces
@@ -670,7 +656,7 @@ class SocElectrodeData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        comps = self.config.comp_list
+        comps = self.component_list
         # Use conc_x0 and the temperature guess to start filling in initial
         # guess values.
         for t in self.flowsheet().time:
@@ -739,7 +725,7 @@ class SocElectrodeData(UnitModelBlockData):
         pass
 
     def model_check(self, steady_state=True):
-        comp_set = set(self.comps)
+        comp_set = set(self.component_list)
         elements_present = set()
 
         for element in _element_list:
@@ -765,13 +751,13 @@ class SocElectrodeData(UnitModelBlockData):
                         _element_dict[element][j]
                         * self.xflux_x0[t, iz, j]
                         * self.xface_area[iz]
-                        for j in self.comps
+                        for j in self.component_list
                     )
                     sum_out += sum(
                         _element_dict[element][j]
                         * self.xflux_x1[t, iz, j]
                         * self.xface_area[iz]
-                        for j in self.comps
+                        for j in self.component_list
                     )
                 normal = max(
                     pyo.value(sum_in), pyo.value(sum_out), 1e-8
@@ -791,7 +777,7 @@ class SocElectrodeData(UnitModelBlockData):
                     + sum(
                         common._comp_enthalpy_expr(self.temperature_x0[t, iz], j)
                         * self.xflux_x0[t, iz, j]
-                        for j in self.comps
+                        for j in self.component_list
                     )
                 )
                 enth_out += self.xface_area[iz] * (
@@ -799,7 +785,7 @@ class SocElectrodeData(UnitModelBlockData):
                     + sum(
                         common._comp_enthalpy_expr(self.temperature_x1[t, iz], j)
                         * self.xflux_x1[t, iz, j]
-                        for j in self.comps
+                        for j in self.component_list
                     )
                 )
             total_joule_heating = sum(
@@ -862,7 +848,7 @@ class SocElectrodeData(UnitModelBlockData):
                 sqz = 10 * sqx  # Heuristic
 
                 sxflux = {}
-                for j in self.comps:
+                for j in self.component_list:
                     # ssf(self.conc_ref[t,iz,j],sy_def*1e-4/(sR*sT))
 
                     if self.xflux_x0[t, iz, j].is_reference():
@@ -913,7 +899,7 @@ class SocElectrodeData(UnitModelBlockData):
                     cst(self.mole_frac_eqn[t, ix, iz], 1)
                     cst(self.energy_balance_solid_eqn[t, ix, iz], sqx * sLy * sLz)
 
-                    for j in self.comps:
+                    for j in self.component_list:
                         sy = sgsf(self.mole_frac_comp[t, ix, iz, j], sy_def)
                         cst(self.conc_eqn[t, ix, iz, j], sy * sP)
                         ssf(self.Dconc[t, ix, iz, j], sxflux[j] * sLx / sD)

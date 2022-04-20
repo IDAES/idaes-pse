@@ -104,7 +104,7 @@ def modelFuel():
             "cv_zfaces": zfaces,
             "length_z": m.fs.length_z,
             "length_y": m.fs.length_y,
-            "comp_list": fuel_comps,
+            "component_list": fuel_comps,
             "tpb_stoich_dict": {"H2": -0.5, "H2O": 0.5, "N2": 0, "Vac": 0.5, "O^2-": -0.5},
             "current_density": m.fs.current_density,
             "temperature_z": m.fs.temperature_z,
@@ -146,7 +146,7 @@ def modelOxygen():
     m.fs.oxygen_tpb = soc.SocTriplePhaseBoundary(
         default={
             "cv_zfaces": zfaces,
-            "comp_list": o2_comps,
+            "component_list": o2_comps,
             "tpb_stoich_dict": {"O2": -0.25, "N2": 0, "Vac": -0.5, "O^2-": 0.5},
         }
     )
@@ -173,7 +173,7 @@ def test_build_fuel(modelFuel):
     tpb = modelFuel.fs.fuel_tpb
     nz = len(modelFuel.fs.iznodes)
     nt = len(modelFuel.fs.time)
-    ncomp = len(tpb.comps)
+    ncomp = len(tpb.component_list)
     nreact = 2
     soc_testing._build_test_utility(
         block=tpb,
@@ -198,7 +198,7 @@ def test_build_oxygen(modelOxygen):
     tpb = modelOxygen.fs.oxygen_tpb
     nz = len(tpb.iznodes)
     nt = len(modelOxygen.fs.time)
-    ncomp = len(tpb.comps)
+    ncomp = len(tpb.component_list)
     nreact = 1
     soc_testing._build_test_utility(
         block=tpb,

@@ -43,41 +43,73 @@ class CV_Bound(enum.Enum):
     NODE_VALUE = 2
 
 
-class CV_Interpolation(enum.Enum):
-    UDS = 1  # Upwind difference scheme, exit face same as node center
-    CDS = 2  # Linear interpolation from upstream and downstream node centers
-    QUICK = 3  # Quadratic upwind interpolation, quadratic from two upwind
-    # centers and one downwind
-
-
 def _set_default_factor(c, s):
+    """Iterate over an indexed component, and set individual scaling factors
+    if there is not an existing scaling factor
+
+    Args:
+        c: indexed component to be scaled
+        s: scaling factor
+    """
     for i in c:
         if iscale.get_scaling_factor(c[i]) is None:
             iscale.set_scaling_factor(c[i], s)
 
 
 def _set_scaling_factor_if_none(c, s):
+    """Set a component's scaling factor if no scaling factor exists
+
+    Args:
+        c: (scalar) component to be scaled
+        s: scaling factor
+    """
     if iscale.get_scaling_factor(c) is None:
         iscale.set_scaling_factor(c, s)
 
 
 def _set_and_get_scaling_factor(c, s):
+    """Set a component's scaling factor if no scaling factor exists, then
+    return the scaling factor assigned to it
+
+    Args:
+        c: (scalar) component to be scaled
+        s: scaling factor
+        
+    Returns:
+        Scaling factor assigned to c
+    """
     _set_scaling_factor_if_none(c, s)
     return iscale.get_scaling_factor(c)
 
 
 def _set_if_unfixed(v, val):
+    """Set a variable's value so long as it isn't fixed
+
+    Args:
+        v: scalar variable
+        val: value to be assigned to v
+    """
     if not v.fixed:
         v.set_value(pyo.value(val))
 
 
-def _create_if_none(blk, var, idx_set, units):
-    attr = getattr(blk.config, var)
+def _create_if_none(blk, var_name, idx_set, units):
+    """Looks in a block's config to see whether or not a variable has been
+    supplied. If it has been, creates a Reference to that variable. If it
+    has not been supplied, creates a local variable.
+
+    Args:
+        blk: Pyomo block
+        var_name: variable name as string
+        idx_set: index set of variable var. If scalar, pass None
+        units: variable units
+    """
+    attr = getattr(blk.config, var_name)
     if attr is None:
         if idx_set is None:
             setattr(
                 blk,
-                var,
+                var_name,
                 pyo.Var(
                     initialize=0,
                     units=units,
@@ -86,7 +118,7 @@ def _create_if_none(blk, var, idx_set, units):
         else:
             setattr(
                 blk,
-                var,
+                var_name,
                 pyo.Var(
                     *idx_set,
                     initialize=0,
@@ -94,9 +126,19 @@ def _create_if_none(blk, var, idx_set, units):
                 ),
             )
     else:
-        setattr(blk, var, pyo.Reference(attr))
+        setattr(blk, var_name, pyo.Reference(attr))
 
 def _init_solve_block(blk, solver, log):
+    """Checks whether solving a block is a square problem. If not, raise
+    InitializationError. If it is, solve block while redirecting output to
+    IDAES log. Then check whether solve was successful. If not successful,
+    raise InitializationError
+
+    Args:
+        blk: Pyomo block to solve
+        solver: solver object (NOT name string)
+        log: IDAES solver log
+    """
     if not mstat.degrees_of_freedom(blk) == 0:
         raise InitializationError(
             f"{blk.name} encountered a nonsquare problem during "
@@ -115,7 +157,7 @@ def _init_solve_block(blk, solver, log):
 
 
 def _interpolate_channel(
-    iz, ifaces, nodes, faces, phi_func, phi_inlet, method, opposite_flow
+    iz, ifaces, nodes, faces, phi_func, phi_inlet, opposite_flow
 ):
     """PRIVATE Function: Interpolate faces of control volumes in 1D
 
@@ -147,18 +189,7 @@ def _interpolate_channel(
         return phi_inlet
     if iz == ifaces.last() and opposite_flow:
         return phi_inlet
-    if method == CV_Interpolation.UDS:
-        return phi_func(izu)
-    if method == CV_Interpolation.CDS:
-        zu = nodes.at(izu)
-        if (opposite_flow and iz == ifaces.first()) or (
-            not opposite_flow and iz == ifaces.last()
-        ):
-            izd = izuu
-        zd = nodes.at(izd)
-        zf = faces.at(iz)
-        lambf = (zd - zf) / (zd - zu)
-        return (1 - lambf) * phi_func(izu) + lambf * phi_func(izd)
+    return phi_func(izu)
 
 
 def _interpolate_2D(
@@ -170,7 +201,6 @@ def _interpolate_2D(
     phi_bound_0,
     phi_bound_1,
     derivative=False,
-    method=CV_Interpolation.CDS,
 ):
     """PRIVATE Function: Interpolate faces of control volumes in 1D
 
@@ -192,11 +222,6 @@ def _interpolate_2D(
     Returns:
         expression for phi at face
     """
-    if method != CV_Interpolation.CDS:
-        raise RuntimeError(
-            "SOFC/SOEC sections modeled in 2D do not have bulk "
-            "flow, so currently only CDS interpolation is supported"
-        )
     icu = ic - 1
     icd = ic
     if ic == ifaces.first():
@@ -246,6 +271,7 @@ _element_dict = {
     "S": {"H2S": 1, "SO2": 1},
 }
 
+# If a molecule is not listed under an element, it has zero atoms of that element
 for value in _element_dict.values():
     for species in _species_list:
         if species not in value.keys():
@@ -494,14 +520,14 @@ def _comp_enthalpy_expr(temperature, comp):
 
 
 def _comp_int_energy_expr(temperature, comp):
-    # ideal gas enthalpy
+    # ideal gas internal energy
     d = h_params[comp]
     t = temperature / 1000.0
     return _comp_enthalpy_expr(temperature, comp) - _constR * temperature
 
 
 def _comp_entropy_expr(temperature, comp):
-    # ideal gas enthalpy
+    # ideal gas entropy
     d = h_params[comp]
     t = temperature / 1000.0 / pyo.units.K
     return (
@@ -520,6 +546,7 @@ def _comp_entropy_expr(temperature, comp):
 
 
 def _submodel_boilerplate_config(CONFIG):
+    # Add common fields to submodel CONFIG dict
     CONFIG.declare(
         "cv_zfaces",
         ConfigValue(description="CV boundary set, should start with 0 and end with 1."),
@@ -549,6 +576,8 @@ def _submodel_boilerplate_config(CONFIG):
 
 
 def _submodel_boilerplate_create_if_none(unit):
+    # Check for certain common variables on unit block. If they were provided
+    # in CONFIG, create references, otherwise create them new on unit block
     tset = unit.flowsheet().config.time
     iznodes = unit.iznodes
     _create_if_none(unit, "length_z", idx_set=None, units=pyo.units.m)
@@ -562,6 +591,9 @@ def _submodel_boilerplate_create_if_none(unit):
 
 
 def _thermal_boundary_conditions_config(CONFIG, thin):
+    # Add fieldnames relating to thermal boundary conditions to submodel
+    # CONFIG dict. If submodel is thin, there is only a single temperature,
+    # otherwise there is one at both ends
     CONFIG.declare(
         "temperature_z",
         ConfigValue(
@@ -606,6 +638,9 @@ def _thermal_boundary_conditions_config(CONFIG, thin):
 
 
 def _create_thermal_boundary_conditions_if_none(unit, thin):
+    # Check for variables relating to thermal boundary conditions on unit
+    # block. If they were provided in CONFIG, create references, otherwise
+    # create them new on unit block
     tset = unit.flowsheet().config.time
     include_temp_x_thermo = unit.config.include_temperature_x_thermo
     iznodes = unit.iznodes
@@ -651,6 +686,9 @@ def _create_thermal_boundary_conditions_if_none(unit, thin):
 
 
 def _material_boundary_conditions_config(CONFIG, thin):
+    # Add fieldnames relating to material boundary conditions to submodel
+    # CONFIG dict. If submodel is thin, there is only a single concentration,
+    # otherwise either end of unit have different concentrations
     if thin:
         CONFIG.declare(
             "xflux",
@@ -692,9 +730,12 @@ def _material_boundary_conditions_config(CONFIG, thin):
 
 
 def _create_material_boundary_conditions_if_none(unit, thin):
+    # Check for variables relating to material boundary conditions on unit
+    # block. If they were provided in CONFIG, create references, otherwise
+    # create them new on unit block
     tset = unit.flowsheet().config.time
     iznodes = unit.iznodes
-    comps = unit.comps
+    comps = unit.component_list
     if thin:
         _create_if_none(
             unit,

@@ -32,27 +32,9 @@ import idaes.logger as idaeslog
 
 @declare_process_block_class("SocChannel")
 class SocChannelData(UnitModelBlockData):
-    CONFIG = ConfigBlock()
+    CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
-        "dynamic",
-        ConfigValue(
-            domain=In([useDefault, True, False]),
-            default=useDefault,
-            description="Dynamic model flag",
-            doc="""Indicates whether this model will be dynamic,
-                **default** = useDefault.
-                **Valid values:** {
-                **useDefault** - get flag from parent (default = False),
-                **True** - set as a dynamic model,
-                **False** - set as a steady-state model.}""",
-        ),
-    )
-    CONFIG.declare(
-        "has_holdup",
-        ConfigValue(domain=In([useDefault, True, False]), default=useDefault),
-    )
-    CONFIG.declare(
-        "comp_list",
+        "component_list",
         ConfigValue(default=["H2", "H2O"], description="List of components"),
     )
 
@@ -91,13 +73,6 @@ class SocChannelData(UnitModelBlockData):
             "flux terms above or below the channel.",
         ),
     )
-    CONFIG.declare(
-        "interpolation_scheme",
-        ConfigValue(
-            default=common.CV_Interpolation.UDS,
-            description="Method used to interpolate face values",
-        ),
-    )
 
     def build(self):
         super().build()
@@ -105,7 +80,11 @@ class SocChannelData(UnitModelBlockData):
         # Set up some sets for the space and time indexing
         dynamic = self.config.dynamic
         tset = self.flowsheet().config.time
-        self.comps = pyo.Set(initialize=self.config.comp_list)
+        self.component_list = pyo.Set(
+            initialize=self.config.component_list,
+            ordered=True,
+            doc="Set of all components present in submodel",
+        )
         # z coordinates for nodes and faces
         self.zfaces = pyo.Set(initialize=self.config.cv_zfaces)
         self.znodes = pyo.Set(
@@ -119,7 +98,7 @@ class SocChannelData(UnitModelBlockData):
         self.iznodes = pyo.Set(initialize=range(1, len(self.znodes) + 1))
 
         # Space saving aliases
-        comps = self.comps
+        comps = self.component_list
         izfaces = self.izfaces
         iznodes = self.iznodes
         zfaces = self.zfaces
@@ -476,7 +455,6 @@ class SocChannelData(UnitModelBlockData):
                 faces=zfaces,
                 phi_func=lambda iface: b.velocity[t, iface] * b.conc[t, iface, i],
                 phi_inlet=b.zflux_inlet[t, i],
-                method=self.config.interpolation_scheme,
                 opposite_flow=self.config.opposite_flow,
             )
 
@@ -491,7 +469,6 @@ class SocChannelData(UnitModelBlockData):
                 / b.volume_molar[t, iface]
                 * b.enth_mol[t, iface],
                 phi_inlet=b.zflux_enth_inlet[t],
-                method=self.config.interpolation_scheme,
                 opposite_flow=self.config.opposite_flow,
             )
 
@@ -508,7 +485,6 @@ class SocChannelData(UnitModelBlockData):
                 faces=zfaces,
                 phi_func=lambda iface: b.pressure[t, iface],
                 phi_inlet=b.pressure_inlet[t],
-                method=self.config.interpolation_scheme,
                 opposite_flow=self.config.opposite_flow,
             )
 
@@ -631,7 +607,7 @@ class SocChannelData(UnitModelBlockData):
                 _set_if_unfixed(self.Dtemp_x1[t, iz], 0)
                 _set_if_unfixed(self.pressure[t, iz], self.pressure_inlet[t])
                 _set_if_unfixed(self.flow_mol[t, iz], self.flow_mol_inlet[t])
-                for i in self.config.comp_list:
+                for i in self.component_list:
                     _set_if_unfixed(
                         self.mole_frac_comp[t, iz, i], self.mole_frac_comp_inlet[t, i]
                     )
@@ -651,7 +627,7 @@ class SocChannelData(UnitModelBlockData):
                     sum(
                         common._comp_enthalpy_expr(self.temperature[t, iz], i)
                         * self.mole_frac_comp[t, iz, i]
-                        for i in self.config.comp_list
+                        for i in self.component_list
                     ),
                 )
                 if self.config.has_holdup:
@@ -660,7 +636,7 @@ class SocChannelData(UnitModelBlockData):
                         sum(
                             common._comp_int_energy_expr(self.temperature[t, iz], i)
                             * self.mole_frac_comp[t, iz, i]
-                            for i in self.config.comp_list
+                            for i in self.component_list
                         ),
                     )
                     _set_if_unfixed(
@@ -678,7 +654,7 @@ class SocChannelData(UnitModelBlockData):
             # Mass and energy conservation equations steady state only at present
             return
 
-        comp_set = set(self.comps)
+        comp_set = set(self.component_list)
         elements_present = set()
 
         for element in _element_list:
@@ -696,24 +672,24 @@ class SocChannelData(UnitModelBlockData):
                     continue
                 sum_in = sum(
                     _element_dict[element][j] * self.flow_mol_comp_inlet[t, j]
-                    for j in self.comps
+                    for j in self.component_list
                 )
                 sum_out = sum(
                     _element_dict[element][j] * self.flow_mol_comp_outlet[t, j]
-                    for j in self.comps
+                    for j in self.component_list
                 )
                 for iz in self.iznodes:
                     sum_in += sum(
                         _element_dict[element][j]
                         * self.xflux_x0[t, iz, j]
                         * self.xface_area[iz]
-                        for j in self.comps
+                        for j in self.component_list
                     )
                     sum_out += sum(
                         _element_dict[element][j]
                         * self.xflux_x1[t, iz, j]
                         * self.xface_area[iz]
-                        for j in self.comps
+                        for j in self.component_list
                     )
                 normal = max(
                     pyo.value(sum_in), pyo.value(sum_out), 1e-9
@@ -733,7 +709,7 @@ class SocChannelData(UnitModelBlockData):
                     + sum(
                         common._comp_enthalpy_expr(self.temperature_x0[t, iz], j)
                         * self.xflux_x0[t, iz, j]
-                        for j in self.comps
+                        for j in self.component_list
                     )
                 )
                 enth_out += self.xface_area[iz] * (
@@ -741,7 +717,7 @@ class SocChannelData(UnitModelBlockData):
                     + sum(
                         common._comp_enthalpy_expr(self.temperature_x1[t, iz], j)
                         * self.xflux_x1[t, iz, j]
-                        for j in self.comps
+                        for j in self.component_list
                     )
                 )
 
@@ -778,7 +754,7 @@ class SocChannelData(UnitModelBlockData):
 
             s_flow_mol = sgsf(self.flow_mol_inlet[t], 1e3)
             sy_in = {}
-            for j in self.comps:
+            for j in self.component_list:
                 sy_in[j] = sgsf(self.mole_frac_comp_inlet[t, j], sy_def)
 
             for iz in self.iznodes:
@@ -824,7 +800,7 @@ class SocChannelData(UnitModelBlockData):
                 # is well-scaled by default
                 cst(self.mole_frac_eqn[t, iz], 1)
 
-                for j in self.comps:
+                for j in self.component_list:
                     # These should have been scaled by the cell-level method, so
                     # notify the user if they're using a standalone channel
                     # and forgot to scale these

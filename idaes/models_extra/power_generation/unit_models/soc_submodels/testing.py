@@ -77,7 +77,7 @@ def _build_test_utility(block, comp_dict, references=None):
                 if not comp in references:
                     raise AssertionError(
                         f"Unexpected Reference {comp.name} encountered "
-                        "in block {block.name}."
+                        f"in block {block.name}."
                     )
     for ctype, sub_dict in comp_dict.items():
         for attr, length in sub_dict.items():

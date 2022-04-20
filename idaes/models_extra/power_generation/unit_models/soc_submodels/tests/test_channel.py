@@ -117,10 +117,9 @@ def modelNoHoldup():
         default={
             "has_holdup": False,
             "cv_zfaces": zfaces,
-            "interpolation_scheme": common.CV_Interpolation.UDS,
             "opposite_flow": True,
             "below_electrode": False,
-            "comp_list": ["O2","H2O"],
+            "component_list": ["O2","H2O"],
         }
     )
     m.fs.oxygen_chan.length_x.fix(0.002)
@@ -148,10 +147,9 @@ def modelHoldupNotDynamic():
             "length_z": m.fs.length_z,
             "length_y": m.fs.length_y,
             "temperature_z": m.fs.temperature_z,
-            "interpolation_scheme": common.CV_Interpolation.UDS,
             "opposite_flow": False,
             "below_electrode": True,
-            "comp_list": ["H2", "H2O", "N2"],
+            "component_list": ["H2", "H2O", "N2"],
         }
     )
     m.fs.fuel_chan.length_x.fix(0.002)
@@ -165,7 +163,7 @@ def test_build_modelNoHoldup(modelNoHoldup):
     channel = modelNoHoldup.fs.oxygen_chan
     nz = len(channel.znodes)
     nt = len(channel.flowsheet().time)
-    ncomp = len(channel.comps)
+    ncomp = len(channel.component_list)
 
     comp_dict = common_components(nt, nz, ncomp)
     comp_dict[pyo.Var]["Dconc_x0"] = nt * nz * ncomp
@@ -189,7 +187,7 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
     channel = modelHoldupNotDynamic.fs.fuel_chan
     nz = len(channel.znodes)
     nt = len(channel.flowsheet().time)
-    ncomp = len(channel.comps)
+    ncomp = len(channel.component_list)
 
     comp_dict = common_components(nt, nz, ncomp)
     comp_dict[pyo.Expression]["Dconc_x0"] = nt * nz * ncomp

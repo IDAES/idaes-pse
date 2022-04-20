@@ -91,9 +91,9 @@ def model():
             "cv_xfaces_fuel_electrode": xfaces_electrode,
             "cv_xfaces_oxygen_electrode": xfaces_electrode,
             "cv_xfaces_electrolyte": xfaces_electrolyte,
-            "fuel_comps": fuel_comps,
+            "fuel_component_list": fuel_comps,
             "fuel_tpb_stoich_dict": fuel_tpb_stoich_dict,
-            "oxygen_comps": oxygen_comps,
+            "oxygen_component_list": oxygen_comps,
             "oxygen_tpb_stoich_dict": oxygen_tpb_stoich_dict,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
         }
