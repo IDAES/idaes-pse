@@ -70,17 +70,15 @@ import pandas as pd
 import pyomo.environ as pyo
 from pyomo.common.fileutils import this_file_dir
 
-import idaes
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import use_idaes_solver_configuration_defaults
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
-import idaes.core.plugins
-from idaes.models_extra.power_generation.unit_models.soc_submodels import (
-    comp_enthalpy_expr,
-    comp_entropy_expr,
-    SolidOxideCell,
+from idaes.models_extra.power_generation.unit_models.soc_submodels import SolidOxideCell
+from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
+    _comp_enthalpy_expr,
+    _comp_entropy_expr,
 )
+
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
 data_cache = os.sep.join([this_file_dir(), "data_cache"])
@@ -164,10 +162,10 @@ def model_func():
         pyo.log(0.55e-4)
     )
     m.fs.cell.contact_interconnect_fuel_flow_mesh.log_preexponential_factor.fix(
-        pyo.log(0.18e-4)
+        pyo.log(0.15e-4)
     )
     m.fs.cell.contact_interconnect_oxygen_flow_mesh.log_preexponential_factor.fix(
-        pyo.log(0.18e-4)
+        pyo.log(0.15e-4)
     )
 
     m.fs.cell.contact_flow_mesh_fuel_electrode.thermal_exponent_dividend.fix(0)
@@ -271,24 +269,24 @@ def test_initialization(model):
     assert degrees_of_freedom(m.fs.cell) == 0
 
     approx = lambda x: pytest.approx(x, 1e-4)
-    assert cell.current_density[0, 1].value == approx(-2439.30)
-    assert cell.current_density[0, 3].value == approx(-2369.63)
-    assert cell.current_density[0, 5].value == approx(-2309.77)
-    assert cell.current_density[0, 8].value == approx(-2231.09)
-    assert cell.current_density[0, 10].value == approx(-2183.42)
+    assert cell.current_density[0, 1].value == approx(-2394.77)
+    assert cell.current_density[0, 3].value == approx(-2326.71)
+    assert cell.current_density[0, 5].value == approx(-2268.31)
+    assert cell.current_density[0, 8].value == approx(-2191.66)
+    assert cell.current_density[0, 10].value == approx(-2145.27)
 
-    assert cell.fuel_outlet.temperature[0].value == approx(1103.42)
+    assert cell.fuel_outlet.temperature[0].value == approx(1103.40)
     assert pyo.value(cell.fuel_outlet.pressure[0]) == approx(85910)
-    assert approx(484.862e-6) == pyo.value(cell.fuel_outlet.flow_mol[0])
-    assert approx(0.469917) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "H2O"])
-    assert approx(0.220513) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "H2"])
+    assert approx(484.863e-6) == pyo.value(cell.fuel_outlet.flow_mol[0])
+    assert approx(0.472735) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "H2O"])
+    assert approx(0.217695) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "H2"])
     assert approx(0.309570) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "N2"])
 
-    assert cell.oxygen_outlet.temperature[0].value == approx(1103.45)
+    assert cell.oxygen_outlet.temperature[0].value == approx(1103.42)
     assert pyo.value(cell.oxygen_outlet.pressure[0]) == approx(85910)
-    assert approx(298.504e-6) == pyo.value(cell.oxygen_outlet.flow_mol[0])
-    assert approx(0.3110294) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "O2"])
-    assert approx(0.688971) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "N2"])
+    assert approx(297.821e-6) == pyo.value(cell.oxygen_outlet.flow_mol[0])
+    assert approx(0.3094487) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "O2"])
+    assert approx(0.690551) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "N2"])
 
     # Test whether unfixed degrees of freedom remain unfixed
     cell.potential.unfix()
@@ -371,14 +369,14 @@ def kazempoor_braun_replication(model):
         assert abs(y_H2O * N_tot - N_H2O) < 1e-15
 
         dHrxn = (
-            comp_enthalpy_expr(T_in, "H2")
-            + 0.5 * comp_enthalpy_expr(T_in, "O2")
-            - comp_enthalpy_expr(T_in, "H2O")
+            _comp_enthalpy_expr(T_in, "H2")
+            + 0.5 * _comp_enthalpy_expr(T_in, "O2")
+            - _comp_enthalpy_expr(T_in, "H2O")
         )
         dSrxn = (
-            comp_entropy_expr(T_in, "H2")
-            + 0.5 * comp_entropy_expr(T_in, "O2")
-            - comp_entropy_expr(T_in, "H2O")
+            _comp_entropy_expr(T_in, "H2")
+            + 0.5 * _comp_entropy_expr(T_in, "O2")
+            - _comp_entropy_expr(T_in, "H2O")
         )
         dGrxn = dHrxn - T_in * dSrxn
 
@@ -489,5 +487,5 @@ if __name__ == "__main__":
     out = kazempoor_braun_replication(m)
 
     # Uncomment to recreate cached data
-    # for i, df in enumerate(out):
-    #     df.to_csv(os.sep.join([data_cache, f"case_{i+1}.csv"]))
+    for i, df in enumerate(out):
+        df.to_csv(os.sep.join([data_cache, f"case_{i+1}.csv"]))

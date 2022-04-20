@@ -27,7 +27,7 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.common import
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 
-from idaes.core.util.misc import VarLikeExpression
+from idaes.core.base.var_like_expression import VarLikeExpression
 import idaes.logger as idaeslog
 
 @declare_process_block_class("SocChannel")
