@@ -162,7 +162,7 @@ def test_sv_value_error(dummy_problem):
         dh.svd_analysis(n_sv=-1)
 
 @pytest.mark.unit
-def test_single_eq_error():
+def test_single_eq_error(capsys):
     m = pyo.ConcreteModel()
     m.x = pyo.Var(initialize=1)
     m.con = pyo.Constraint(expr=(2*m.x == 1))
@@ -173,9 +173,14 @@ def test_single_eq_error():
         match="Model needs at least 2 equality constraints to "
         "perform svd_analysis."):
         dh.svd_analysis()   
-    with pytest.raises(ValueError,
-        match="Model needs at least 2 equality constraints to check rank."):
-        dh.check_rank_equality_constraints()
+    
+    dh.check_rank_equality_constraints()
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "\nChecking rank of Jacobian of equality constraints...\n"
+        "Model contains 1 equality constraints and 1 variables.\n"
+        "Only singular value: 2.0\n"
+    )
 
 
 # This was from

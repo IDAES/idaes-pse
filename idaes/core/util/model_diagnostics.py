@@ -25,7 +25,7 @@ from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 import numpy as np
 from scipy.linalg  import svd
-from scipy.sparse.linalg import svds
+from scipy.sparse.linalg import svds, norm
 from scipy.sparse import issparse, find
 
 from idaes.core.util.model_statistics import (
@@ -234,9 +234,8 @@ class DegeneracyHunter():
                 if self.s[i] < tol:
                     counter += 1
         else:
-            raise ValueError(
-                "Model needs at least 2 equality constraints to check rank.")
-            
+            print(f"Only singular value: {norm(self.jac_eq,'fro')}")
+
         return counter
 
     # TODO: Refactor, this should not be a staticmethod
