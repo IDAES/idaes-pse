@@ -164,6 +164,51 @@ def rp_example4():
 
     return m
 
+def rp_example5():
+    """This example is used to test ramping only in a subset of time.
+    """
+    m = pyo.ConcreteModel()
+
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+    m.ramp = pyo.Var(m.time)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+    def diff_eq_rule(m, t):
+        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
+
+    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+
+    def diff_eq2_rule(m, t):
+        return m.dxdt[t] == m.ramp[t]
+
+    m.diff_eq2 = pyo.Constraint(m.time, rule=diff_eq2_rule)
+
+    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer.apply_to(m, nfe=10, scheme="BACKWARD")
+
+    m.x[0].fix(0.0)
+    for t, v in m.ramp.items():
+        if t > 3 and t <= 5:
+            v.fix(4)
+        else:
+            v.fix(0)
+
+    assert pyo.value(m.ramp[0]) == 0
+    assert pyo.value(m.ramp[1]) == 0
+    assert pyo.value(m.ramp[2]) == 0
+    assert pyo.value(m.ramp[3]) == 0
+    assert pyo.value(m.ramp[4]) == 4
+    assert pyo.value(m.ramp[5]) == 4
+    assert pyo.value(m.ramp[6]) == 0
+    assert pyo.value(m.ramp[7]) == 0
+    assert pyo.value(m.ramp[8]) == 0
+    assert pyo.value(m.ramp[9]) == 0
+    assert pyo.value(m.ramp[10]) == 0
+
+    return m
+
 
 def car_example():
     """This is to test problems where a differential variable doesn't appear in
@@ -613,3 +658,61 @@ def test_rp_example4():
     )
     assert pyo.value(m.u[10]) == pytest.approx(398)
     assert pyo.value(m.x[10]) == pytest.approx(20)
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_rp_example5a():
+
+    m = rp_example5()
+    petsc.petsc_dae_by_time_element(
+        m,
+        time=m.time,
+        between=[0, 3, 5, 10],
+        ts_options={
+            "--ts_dt": 1,
+            "--ts_adapt_type": "none",
+            "--ts_save_trajectory": 1,
+        },
+    )
+
+    assert pyo.value(m.x[0]) == pytest.approx(0)
+    assert pyo.value(m.x[1]) == pytest.approx(0)
+    assert pyo.value(m.x[2]) == pytest.approx(0)
+    assert pyo.value(m.x[3]) == pytest.approx(0)
+    assert pyo.value(m.x[4]) == pytest.approx(4)
+    assert pyo.value(m.x[5]) == pytest.approx(8)
+    assert pyo.value(m.x[6]) == pytest.approx(8)
+    assert pyo.value(m.x[7]) == pytest.approx(8)
+    assert pyo.value(m.x[8]) == pytest.approx(8)
+    assert pyo.value(m.x[9]) == pytest.approx(8)
+    assert pyo.value(m.x[10]) == pytest.approx(8)
+
+    assert pyo.value(m.u[0]) == pytest.approx(0)
+    assert pyo.value(m.u[1]) == pytest.approx(0)
+    assert pyo.value(m.u[2]) == pytest.approx(0)
+    assert pyo.value(m.u[3]) == pytest.approx(0)
+    assert pyo.value(m.u[4]) == pytest.approx(12)
+    assert pyo.value(m.u[5]) == pytest.approx(60)
+    assert pyo.value(m.u[6]) == pytest.approx(64)
+    assert pyo.value(m.u[7]) == pytest.approx(64)
+    assert pyo.value(m.u[8]) == pytest.approx(64)
+    assert pyo.value(m.u[9]) == pytest.approx(64)
+    assert pyo.value(m.u[10]) == pytest.approx(64)
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_rp_example5b():
+    m = rp_example5()
+    with pytest.raises(RuntimeError):
+        petsc.petsc_dae_by_time_element(
+            m,
+            time=m.time,
+            between=[0, 3.5, 5, 10],
+            ts_options={
+                "--ts_dt": 1,
+                "--ts_adapt_type": "none",
+                "--ts_save_trajectory": 1,
+            },
+        )
