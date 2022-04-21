@@ -1023,12 +1023,12 @@ def test_extreme_jacobian_rows_and_columns():
 
     m.x = pyo.Var(m.I, initialize=1.0)
 
-    diag = [1E7, 1, 10, 0.1, 1e-7]
+    diag = [1e7, 1, 10, 0.1, 1e-7]
     out = [1, 1, 1, 1, 1]
 
     @m.Constraint(m.I)
-    def dummy_eqn(b,i):
-        return out[i] == diag[i]*m.x[i]
+    def dummy_eqn(b, i):
+        return out[i] == diag[i] * m.x[i]
 
     out = sc.extreme_jacobian_rows(m)
     assert type(out) == list
@@ -1038,12 +1038,12 @@ def test_extreme_jacobian_rows_and_columns():
     assert out[1][0] == pytest.approx(1e-7)
     assert out[1][1] is m.dummy_eqn[4]
 
-    out = sc.extreme_jacobian_rows(m,large=1e8)
+    out = sc.extreme_jacobian_rows(m, large=1e8)
     assert len(out) == 1
     assert out[0][0] == pytest.approx(1e-7)
     assert out[0][1] is m.dummy_eqn[4]
 
-    out = sc.extreme_jacobian_rows(m,small=1e-8)
+    out = sc.extreme_jacobian_rows(m, small=1e-8)
     assert len(out) == 1
     assert out[0][0] == pytest.approx(1e7)
     assert out[0][1] is m.dummy_eqn[0]
@@ -1059,12 +1059,12 @@ def test_extreme_jacobian_rows_and_columns():
     assert out[1][0] == pytest.approx(1e-7)
     assert out[1][1] is m.x[4]
 
-    out = sc.extreme_jacobian_columns(m,large=1e8)
+    out = sc.extreme_jacobian_columns(m, large=1e8)
     assert len(out) == 1
     assert out[0][0] == pytest.approx(1e-7)
     assert out[0][1] is m.x[4]
 
-    out = sc.extreme_jacobian_columns(m,small=1e-8)
+    out = sc.extreme_jacobian_columns(m, small=1e-8)
     assert len(out) == 1
     assert out[0][0] == pytest.approx(1e7)
     assert out[0][1] is m.x[0]
@@ -1072,9 +1072,8 @@ def test_extreme_jacobian_rows_and_columns():
     out = sc.extreme_jacobian_columns(m, large=1e8, small=1e-8)
     assert len(out) == 0
 
-
-    sc.constraint_scaling_transform(m.dummy_eqn[0],1e-7)
-    sc.constraint_scaling_transform(m.dummy_eqn[4],1e7)
+    sc.constraint_scaling_transform(m.dummy_eqn[0], 1e-7)
+    sc.constraint_scaling_transform(m.dummy_eqn[4], 1e7)
 
     out = sc.extreme_jacobian_rows(m)
     assert len(out) == 0
