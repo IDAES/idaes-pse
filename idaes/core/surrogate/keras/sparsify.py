@@ -16,9 +16,7 @@ Utility function for the creation of custom sparsification loops for keras model
 import numpy as np
 from pyomo.common.dependencies import attempt_import
 
-tensorflow, tensorflow_available = attempt_import("tensorflow")
-if tensorflow_available:
-    from tensorflow.keras.models import clone_model
+keras, keras_available = attempt_import("tensorflow.keras")
 
 # Takes an N dimensional array and finds the kth lowest magnitude elements
 def get_indices_smallest_weights(w, k):
@@ -72,6 +70,6 @@ def sparsify_sequential(model, sparsity, inplace=True):
         model.set_weights(w)
         return model
     else:
-        new_model = clone_model(model)
+        new_model = keras.clone_model(model)
         new_model.set_weights(w)
         return new_model

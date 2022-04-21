@@ -17,9 +17,7 @@ Utility functions to prune nodes from keras models
 from pyomo.common.dependencies import attempt_import
 import numpy as np
 
-tensorflow, tensorflow_available = attempt_import("tensorflow")
-if tensorflow_available:
-    from tensorflow.keras.models import Sequential
+keras, keras_available = attempt_import("tensorflow.keras")
 
 """
 Finds all nodes which have constant output in a layer.
@@ -100,7 +98,7 @@ def build_new_NN(model_old, w_new):
             layer_config['config']['units'] = neurons
             config['layers'][i] = layer_config
 
-    model = Sequential.from_config(config)
+    model = keras.models.Sequential.from_config(config)
 
     # Set the weights of the model
     model.set_weights(w_new)
