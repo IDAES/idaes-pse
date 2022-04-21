@@ -40,7 +40,7 @@ However, Kazempoor and Braun use a cocurrent and (probably?) adiabatic model to
 partially replicate the Herring et al. experimental data. As a result, the
 SolidOxideCell can replicate their replication dataset more closely than the
 actual experimental data. Because that model has a slightly different structure
-than the SolidOxideCell and the open loop potential it reports agrees with the
+than the SolidOxideCell and the open circuit potential it reports agrees with the
 experimental data instead of the Nernst potential calculated both by the thermo
 model used by the SolidOxideCell, which agrees with the theoretical open cell
 potential reported by Herring et al., there is not a perfect match between
