@@ -14,8 +14,12 @@
 Utility functions to prune nodes from keras models
 """
 
-from tensorflow.keras.models import Sequential
+from pyomo.common.dependencies import attempt_import
 import numpy as np
+
+tensorflow, tensorflow_available = attempt_import("tensorflow")
+if tensorflow_available:
+    from tensorflow.keras.models import Sequential
 
 """
 Finds all nodes which have constant output in a layer.
@@ -130,33 +134,10 @@ def pruning_step(model):
         # Get an array of indexes for the nodes that must be removed and append to the main list
         nodes_to_remove[l] = get_constant_nodes(l_w, l_w_forward)
 
-        # Check for removal of input layer nodes (l=0, non-empty nodes_to_remove)
-        """if l == 0 and nodes_to_remove:
-            print(f"Warning: input nodes {nodes_to_remove} have constant output and are being removed."
-                  f"The returned NN will have a different input shape.")
-
-        # Check for the removal of output layer nodes (l=len(w)-2, non-empty nodes_to_remove)
-        if l == len(w) - 2 and nodes_to_remove:
-            # Get bias value for removed nodes as this is the constant value of the output
-            biases_removed_nodes = [l_b[idx] for idx in nodes_to_remove]
-
-            print(
-                f"Warning: output nodes {nodes_to_remove} have constant output and are being removed from the NN."
-                f"This indicates the output is constant with the given input variables and is equal to the bias.\n"
-                f"The constant value for these outputs was: {biases_removed_nodes}")"""
 
     w_new = rebuild_weights(w, nodes_to_remove)
 
     return build_new_NN(model, w_new)
-
-# Helper function for the user to compare nodes in the pruned vs unpruned models
-def count_nodes(model):
-    cfg = model.get_config()
-    N_nodes = 0
-    for i, layer_config in enumerate(cfg['layers']):
-        if 'config' in layer_config and 'units' in layer_config['config']:
-            N_nodes += layer_config['config']['units']
-    return N_nodes
 
 
 """
