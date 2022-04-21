@@ -39,8 +39,12 @@ class SocChannelData(UnitModelBlockData):
     )
 
     CONFIG.declare(
-        "cv_zfaces",
-        ConfigValue(description="CV boundary set, should start with 0 and end with 1."),
+        "control_volume_zfaces",
+        ConfigValue(
+            description="List containing coordinates of control volume faces "
+            "in z direction. Coordinates must start with zero, be strictly "
+            "increasing, and end with one"
+        ),
     )
     CONFIG.declare(
         "length_z",
@@ -85,24 +89,14 @@ class SocChannelData(UnitModelBlockData):
             ordered=True,
             doc="Set of all components present in submodel",
         )
-        # z coordinates for nodes and faces
-        self.zfaces = pyo.Set(initialize=self.config.cv_zfaces)
-        self.znodes = pyo.Set(
-            initialize=[
-                (self.zfaces.at(i) + self.zfaces.at(i + 1)) / 2.0
-                for i in range(1, len(self.zfaces))
-            ]
+        # Set up node and face sets and get integer indices for them
+        izfaces, iznodes = common._face_initializer(
+            self, 
+            self.config.control_volume_zfaces,
+            "z"
         )
-        # This sets provide an integer index for nodes and faces
-        self.izfaces = pyo.Set(initialize=range(1, len(self.zfaces) + 1))
-        self.iznodes = pyo.Set(initialize=range(1, len(self.znodes) + 1))
-
         # Space saving aliases
         comps = self.component_list
-        izfaces = self.izfaces
-        iznodes = self.iznodes
-        zfaces = self.zfaces
-        znodes = self.znodes
         include_temp_x_thermo = self.config.include_temperature_x_thermo
 
         common._create_if_none(self, "length_z", idx_set=None, units=pyo.units.m)
@@ -451,8 +445,8 @@ class SocChannelData(UnitModelBlockData):
             return common._interpolate_channel(
                 iz=iz,
                 ifaces=izfaces,
-                nodes=znodes,
-                faces=zfaces,
+                nodes=b.znodes,
+                faces=b.zfaces,
                 phi_func=lambda iface: b.velocity[t, iface] * b.conc[t, iface, i],
                 phi_inlet=b.zflux_inlet[t, i],
                 opposite_flow=self.config.opposite_flow,
@@ -463,8 +457,8 @@ class SocChannelData(UnitModelBlockData):
             return common._interpolate_channel(
                 iz=iz,
                 ifaces=izfaces,
-                nodes=znodes,
-                faces=zfaces,
+                nodes=b.znodes,
+                faces=b.zfaces,
                 phi_func=lambda iface: b.velocity[t, iface]
                 / b.volume_molar[t, iface]
                 * b.enth_mol[t, iface],
@@ -481,8 +475,8 @@ class SocChannelData(UnitModelBlockData):
             return common._interpolate_channel(
                 iz=iz,
                 ifaces=izfaces,
-                nodes=znodes,
-                faces=zfaces,
+                nodes=b.znodes,
+                faces=b.zfaces,
                 phi_func=lambda iface: b.pressure[t, iface],
                 phi_inlet=b.pressure_inlet[t],
                 opposite_flow=self.config.opposite_flow,

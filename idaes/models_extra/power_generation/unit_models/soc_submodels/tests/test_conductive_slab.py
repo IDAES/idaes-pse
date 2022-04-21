@@ -84,8 +84,8 @@ def modelNoHoldup():
     m.fs.slab = soc.SocConductiveSlab(
         default={
             "has_holdup": False,
-            "cv_zfaces": np.linspace(0, 1, 4).tolist(),
-            "cv_xfaces": np.linspace(0, 1, 5).tolist(),
+            "control_volume_zfaces": np.linspace(0, 1, 4).tolist(),
+            "control_volume_xfaces": np.linspace(0, 1, 5).tolist(),
         }
     )
     slab = m.fs.slab
@@ -130,8 +130,8 @@ def modelHoldupNotDynamic():
     m.fs.slab = soc.SocConductiveSlab(
         default={
             "has_holdup": True,
-            "cv_zfaces": zfaces,
-            "cv_xfaces": xfaces,
+            "control_volume_zfaces": zfaces,
+            "control_volume_xfaces": xfaces,
             "length_z": m.fs.length_z,
             "length_y": m.fs.length_y,
             "current_density": m.fs.current_density,

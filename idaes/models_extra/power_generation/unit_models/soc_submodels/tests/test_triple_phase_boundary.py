@@ -101,7 +101,7 @@ def modelFuel():
     )
     m.fs.fuel_tpb = soc.SocTriplePhaseBoundary(
         default={
-            "cv_zfaces": zfaces,
+            "control_volume_zfaces": zfaces,
             "length_z": m.fs.length_z,
             "length_y": m.fs.length_y,
             "component_list": fuel_comps,
@@ -145,7 +145,7 @@ def modelOxygen():
     )
     m.fs.oxygen_tpb = soc.SocTriplePhaseBoundary(
         default={
-            "cv_zfaces": zfaces,
+            "control_volume_zfaces": zfaces,
             "component_list": o2_comps,
             "tpb_stoich_dict": {"O2": -0.25, "N2": 0, "Vac": -0.5, "O^2-": 0.5},
         }

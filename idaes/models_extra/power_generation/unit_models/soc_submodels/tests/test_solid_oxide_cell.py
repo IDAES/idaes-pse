@@ -87,10 +87,10 @@ def model():
     m.fs.cell = soc.SolidOxideCell(
         default={
             "has_holdup": True,
-            "cv_zfaces": zfaces,
-            "cv_xfaces_fuel_electrode": xfaces_electrode,
-            "cv_xfaces_oxygen_electrode": xfaces_electrode,
-            "cv_xfaces_electrolyte": xfaces_electrolyte,
+            "control_volume_zfaces": zfaces,
+            "control_volume_xfaces_fuel_electrode": xfaces_electrode,
+            "control_volume_xfaces_oxygen_electrode": xfaces_electrode,
+            "control_volume_xfaces_electrolyte": xfaces_electrolyte,
             "fuel_component_list": fuel_comps,
             "fuel_tpb_stoich_dict": fuel_tpb_stoich_dict,
             "oxygen_component_list": oxygen_comps,

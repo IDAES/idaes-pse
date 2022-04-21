@@ -17,6 +17,7 @@ import pytest
 import numpy as np
 
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
@@ -116,7 +117,7 @@ def modelNoHoldup():
     m.fs.oxygen_chan = soc.SocChannel(
         default={
             "has_holdup": False,
-            "cv_zfaces": zfaces,
+            "control_volume_zfaces": zfaces,
             "opposite_flow": True,
             "below_electrode": False,
             "component_list": ["O2","H2O"],
@@ -143,7 +144,7 @@ def modelHoldupNotDynamic():
     m.fs.fuel_chan = soc.SocChannel(
         default={
             "has_holdup": True,
-            "cv_zfaces": zfaces,
+            "control_volume_zfaces": zfaces,
             "length_z": m.fs.length_z,
             "length_y": m.fs.length_y,
             "temperature_z": m.fs.temperature_z,
@@ -213,3 +214,7 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
         ],
     )
     assert degrees_of_freedom(channel) == 0
+
+# @pytest.mark.component
+# def test_units(modelHoldupNotDynamic):
+#     assert_units_consistent(modelHoldupNotDynamic)

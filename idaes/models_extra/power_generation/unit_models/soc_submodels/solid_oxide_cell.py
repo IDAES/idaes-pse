@@ -35,30 +35,35 @@ import idaes.logger as idaeslog
 class SolidOxideCellData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
-        "cv_zfaces",
+        "control_volume_zfaces",
         ConfigValue(
-            description="CV z-boundary set, should start with 0 and end with 1."
+            description="List containing coordinates of control volume faces "
+            "in z direction. Coordinates must start with zero, be strictly "
+            "increasing, and end with one"
         ),
     )
     CONFIG.declare(
-        "cv_xfaces_fuel_electrode",
+        "control_volume_xfaces_fuel_electrode",
         ConfigValue(
-            description="CV x-boundary set for electrode producing or consuming"
-            "fuel, should start with 0 and end with 1."
+            description="List containing coordinates of control volume faces "
+            "in x direction for fuel electrode. Coordinates must start with "
+            "zero, be strictly increasing, and end with one"
         ),
     )
     CONFIG.declare(
-        "cv_xfaces_oxygen_electrode",
+        "control_volume_xfaces_oxygen_electrode",
         ConfigValue(
-            description="CV x-boundary set for electrode producing or consuming"
-            "oxygen, should start with 0 and end with 1."
+            description="List containing coordinates of control volume faces "
+            "in x direction for oxygen electrode. Coordinates must start with "
+            "zero, be strictly increasing, and end with one"
         ),
     )
     CONFIG.declare(
-        "cv_xfaces_electrolyte",
+        "control_volume_xfaces_electrolyte",
         ConfigValue(
-            description="CV x-boundary set for electrolyte, should start with "
-            "0 and end with 1."
+            description="List containing coordinates of control volume faces "
+            "in x direction for electrolyte. Coordinates must start with "
+            "zero, be strictly increasing, and end with one"
         ),
     )
     CONFIG.declare(
@@ -138,9 +143,12 @@ class SolidOxideCellData(UnitModelBlockData):
             ordered=True,
             doc="Set of all gas-phase components present on oxygen side of cell",
         )
-        zfaces = self.zfaces = self.config.cv_zfaces
-
-        iznodes = self.iznodes = pyo.Set(initialize=range(1, len(zfaces)))
+        # Set up node and face sets and get integer indices for them
+        izfaces, iznodes = common._face_initializer(
+            self,
+            self.config.control_volume_zfaces,
+            "z"
+        )
         self.current_density = pyo.Var(
             tset, iznodes, initialize=0, units=pyo.units.A / pyo.units.m**2
         )
@@ -185,7 +193,7 @@ class SolidOxideCellData(UnitModelBlockData):
             default={
                 "has_holdup": has_holdup,
                 "dynamic": dynamic,
-                "cv_zfaces": zfaces,
+                "control_volume_zfaces": self.config.control_volume_zfaces,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "temperature_z": self.temperature_z,
@@ -199,7 +207,7 @@ class SolidOxideCellData(UnitModelBlockData):
             default={
                 "has_holdup": False,
                 "dynamic": False,
-                "cv_zfaces": zfaces,
+                "control_volume_zfaces": self.config.control_volume_zfaces,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "temperature_z": self.temperature_z,
@@ -213,7 +221,7 @@ class SolidOxideCellData(UnitModelBlockData):
             default={
                 "has_holdup": False,
                 "dynamic": False,
-                "cv_zfaces": zfaces,
+                "control_volume_zfaces": self.config.control_volume_zfaces,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "temperature_z": self.temperature_z,
@@ -227,7 +235,7 @@ class SolidOxideCellData(UnitModelBlockData):
             default={
                 "has_holdup": has_holdup,
                 "dynamic": dynamic,
-                "cv_zfaces": zfaces,
+                "control_volume_zfaces": self.config.control_volume_zfaces,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "temperature_z": self.temperature_z,
@@ -241,7 +249,7 @@ class SolidOxideCellData(UnitModelBlockData):
             default={
                 "has_holdup": False,
                 "dynamic": False,
-                "cv_zfaces": zfaces,
+                "control_volume_zfaces": self.config.control_volume_zfaces,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "temperature_z": self.temperature_z,
@@ -255,7 +263,7 @@ class SolidOxideCellData(UnitModelBlockData):
             default={
                 "has_holdup": False,
                 "dynamic": False,
-                "cv_zfaces": zfaces,
+                "control_volume_zfaces": self.config.control_volume_zfaces,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "temperature_z": self.temperature_z,
@@ -269,8 +277,8 @@ class SolidOxideCellData(UnitModelBlockData):
             default={
                 "has_holdup": has_holdup,
                 "dynamic": dynamic,
-                "cv_zfaces": zfaces,
-                "cv_xfaces": self.config.cv_xfaces_fuel_electrode,
+                "control_volume_zfaces": self.config.control_volume_zfaces,
+                "control_volume_xfaces": self.config.control_volume_xfaces_fuel_electrode,
                 "component_list": self.fuel_chan.component_list,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
@@ -289,8 +297,8 @@ class SolidOxideCellData(UnitModelBlockData):
             default={
                 "has_holdup": has_holdup,
                 "dynamic": dynamic,
-                "cv_zfaces": zfaces,
-                "cv_xfaces": self.config.cv_xfaces_oxygen_electrode,
+                "control_volume_zfaces": self.config.control_volume_zfaces,
+                "control_volume_xfaces": self.config.control_volume_xfaces_oxygen_electrode,
                 "component_list": self.oxygen_chan.component_list,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
@@ -309,7 +317,7 @@ class SolidOxideCellData(UnitModelBlockData):
             default={
                 "has_holdup": False,
                 "dynamic": False,
-                "cv_zfaces": zfaces,
+                "control_volume_zfaces": self.config.control_volume_zfaces,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "component_list": self.fuel_component_list,
@@ -329,7 +337,7 @@ class SolidOxideCellData(UnitModelBlockData):
             default={
                 "has_holdup": False,
                 "dynamic": False,
-                "cv_zfaces": zfaces,
+                "control_volume_zfaces": self.config.control_volume_zfaces,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "component_list": self.oxygen_component_list,
@@ -349,8 +357,8 @@ class SolidOxideCellData(UnitModelBlockData):
             default={
                 "has_holdup": has_holdup,
                 "dynamic": dynamic,
-                "cv_zfaces": zfaces,
-                "cv_xfaces": self.config.cv_xfaces_electrolyte,
+                "control_volume_zfaces": self.config.control_volume_zfaces,
+                "control_volume_xfaces": self.config.control_volume_xfaces_electrolyte,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "temperature_z": self.temperature_z,

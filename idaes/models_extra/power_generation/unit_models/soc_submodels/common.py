@@ -42,6 +42,9 @@ class CV_Bound(enum.Enum):
     EXTRAPOLATE = 1
     NODE_VALUE = 2
 
+def _set_and_get_attr(obj, name, val):
+    setattr(obj, name, val)
+    return getattr(obj, name)
 
 def _set_default_factor(c, s):
     """Iterate over an indexed component, and set individual scaling factors
@@ -474,7 +477,7 @@ def _binary_diffusion_coefficient_expr(temperature, p, c1, c2):
     mab = 2 * (1.0 / bin_diff_M[c1] + 1.0 / bin_diff_M[c2]) ** (-1)
     sab = (bin_diff_sigma[c1] + bin_diff_sigma[c2]) / 2.0
     epsok = (bin_diff_epsok[c1] * bin_diff_epsok[c2]) ** 0.5
-    tr = temperature / epsok
+    tr = temperature / (epsok * pyo.units.K)
     a = 1.06036
     b = 0.15610
     c = 0.19300
@@ -492,12 +495,12 @@ def _binary_diffusion_coefficient_expr(temperature, p, c1, c2):
         0.002666
         * cm2_to_m2
         * temperature ** (3 / 2)
-        / p
+        / (p / pyo.units.Pa)
         / Pa_to_bar
         / mab**0.5
         / sab**2
         / omega
-    )
+    ) * pyo.units.m**2 / pyo.units.s
 
 
 def _comp_enthalpy_expr(temperature, comp):
@@ -548,8 +551,12 @@ def _comp_entropy_expr(temperature, comp):
 def _submodel_boilerplate_config(CONFIG):
     # Add common fields to submodel CONFIG dict
     CONFIG.declare(
-        "cv_zfaces",
-        ConfigValue(description="CV boundary set, should start with 0 and end with 1."),
+        "control_volume_zfaces",
+        ConfigValue(
+            description="List containing coordinates of control volume faces "
+            "in z direction. Coordinates must start with zero, be strictly "
+            "increasing, and end with one"
+        ),
     )
     CONFIG.declare(
         "length_z",
@@ -774,3 +781,55 @@ def _create_material_boundary_conditions_if_none(unit, thin):
             idx_set=(tset, iznodes, comps),
             units=pyo.units.mol / (pyo.units.s * pyo.units.m**2),
         )
+
+def _face_initializer(blk, faces, direction):
+    dfaces = direction + "faces"
+    dnodes = direction + "nodes"
+    if faces[0] != 0:
+        raise ConfigurationError(
+            f"Smallest control volume face provided in "
+            f"{dfaces} to block {blk.name} is not zero."
+        )
+    if faces[-1] != 1:
+        raise ConfigurationError(
+            f"Largest control volume face provided in "
+            f"{dfaces} to block {blk.name} is not one."
+        )
+    for i in range(len(faces)-1):
+        if not faces[i+1] - faces[i] > 0:
+            raise ConfigurationError(
+                f"Sequence of control volume face distances in {dfaces} "
+                "is not strictly increasing."
+            )
+    
+    face_set = _set_and_get_attr(blk, dfaces,
+         pyo.Set(initialize=faces,
+                 ordered=True,
+                 doc = f"{direction} coordinates for control volume faces"
+        )
+    )
+    node_set = _set_and_get_attr(blk, dnodes, pyo.Set(
+            initialize=[
+                (face_set.at(i) + face_set.at(i + 1)) / 2.0
+                for i in range(1, len(faces))
+            ],
+            ordered=True,
+            doc = f"{direction} coordinates for control volume centers"
+        )
+    )
+    # This sets provide an integer index for nodes and faces
+    iface_set = _set_and_get_attr(blk, "i"+dfaces,
+        pyo.Set(
+            initialize=range(1, len(face_set) + 1),
+            ordered=True,
+            doc = f"Integer index set for {dfaces}"
+        )
+    )
+    inode_set = _set_and_get_attr(blk, "i"+dnodes,
+        pyo.Set(
+            initialize=range(1, len(node_set) + 1),
+            ordered=True,
+            doc = f"Integer index set for {dnodes}"
+        )
+    )
+    return iface_set, inode_set

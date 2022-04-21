@@ -52,18 +52,13 @@ class SocContactResistorData(UnitModelBlockData):
         super().build()
 
         # Set up some sets for the space and time indexing
-        dynamic = self.config.dynamic
         tset = self.flowsheet().config.time
-        # z coordinates for nodes and faces
-        zfaces = self.config.cv_zfaces
-        self.znodes = pyo.Set(
-            initialize=[
-                (zfaces[i] + zfaces[i + 1]) / 2.0 for i in range(len(zfaces) - 1)
-            ]
+        # Set up node and face sets and get integer indices for them
+        izfaces, iznodes = common._face_initializer(
+            self, 
+            self.config.control_volume_zfaces,
+            "z"
         )
-        # This sets provide an integer index for nodes and faces
-        iznodes = self.iznodes = pyo.Set(initialize=range(1, len(self.znodes) + 1))
-
         common._submodel_boilerplate_create_if_none(self)
         common._create_thermal_boundary_conditions_if_none(self, thin=True)
 

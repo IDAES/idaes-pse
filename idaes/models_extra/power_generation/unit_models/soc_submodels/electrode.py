@@ -32,9 +32,11 @@ import idaes.logger as idaeslog
 class SocElectrodeData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
-        "cv_xfaces",
+        "control_volume_xfaces",
         ConfigValue(
-            description="CV x-boundary set, should start with 0 and end with 1."
+            description="List containing coordinates of control volume faces "
+            "in x direction. Coordinates must start with zero, be strictly "
+            "increasing, and end with one"
         ),
     )
     CONFIG.declare(
@@ -71,37 +73,20 @@ class SocElectrodeData(UnitModelBlockData):
             ordered=True,
             doc="Set of all gas-phase components present in submodel",
         )
-        # z coordinates for nodes and faces
-        self.zfaces = pyo.Set(initialize=self.config.cv_zfaces)
-        self.znodes = pyo.Set(
-            initialize=[
-                (self.zfaces.at(i) + self.zfaces.at(i + 1)) / 2.0
-                for i in range(1, len(self.zfaces))
-            ]
+        # Set up node and face sets and get integer indices for them
+        izfaces, iznodes = common._face_initializer(
+            self, 
+            self.config.control_volume_zfaces,
+            "z"
         )
-        self.xfaces = pyo.Set(initialize=self.config.cv_xfaces)
-        self.xnodes = pyo.Set(
-            initialize=[
-                (self.xfaces.at(i) + self.xfaces.at(i + 1)) / 2.0
-                for i in range(1, len(self.xfaces))
-            ]
+        ixfaces, ixnodes = common._face_initializer(
+            self,
+            self.config.control_volume_xfaces,
+            "x"
         )
-        # This sets provide an integer index for nodes and faces
-        self.izfaces = pyo.Set(initialize=range(1, len(self.zfaces) + 1))
-        self.iznodes = pyo.Set(initialize=range(1, len(self.znodes) + 1))
-        self.ixfaces = pyo.Set(initialize=range(1, len(self.xfaces) + 1))
-        self.ixnodes = pyo.Set(initialize=range(1, len(self.xnodes) + 1))
 
         # Space saving aliases
         comps = self.component_list
-        izfaces = self.izfaces
-        iznodes = self.iznodes
-        ixfaces = self.ixfaces
-        ixnodes = self.ixnodes
-        zfaces = self.zfaces
-        znodes = self.znodes
-        xfaces = self.xfaces
-        xnodes = self.xnodes
         include_temp_x_thermo = self.config.include_temperature_x_thermo
 
         # Electrode thickness AKA length in the x direction is specific to the
@@ -407,14 +392,14 @@ class SocElectrodeData(UnitModelBlockData):
             return common._interpolate_2D(
                 ic=ix,
                 ifaces=ixfaces,
-                nodes=xnodes,
-                faces=xfaces,
+                nodes=b.xnodes,
+                faces=b.xfaces,
                 phi_func=lambda ixf: b.Dconc[t, ixf, iz, i] / b.length_x,
                 phi_bound_0=(b.Dconc[t, ixnodes.first(), iz, i] - b.Dconc_x0[t, iz, i])
-                / (xnodes.first() - xfaces.first())
+                / (b.xnodes.first() - b.xfaces.first())
                 / b.length_x,
                 phi_bound_1=(b.Dconc_x1[t, iz, i] - b.Dconc[t, ixnodes.last(), iz, i])
-                / (xfaces.last() - xnodes.last())
+                / (b.xfaces.last() - b.xnodes.last())
                 / b.length_x,
                 derivative=True,
             )
@@ -424,8 +409,8 @@ class SocElectrodeData(UnitModelBlockData):
             return common._interpolate_2D(
                 ic=iz,
                 ifaces=izfaces,
-                nodes=znodes,
-                faces=zfaces,
+                nodes=b.znodes,
+                faces=b.zfaces,
                 phi_func=lambda izf: b.conc[t, ix, izf, i] / b.length_z[None],
                 phi_bound_0=0,  # solid wall no flux
                 phi_bound_1=0,  # solid wall no flux
@@ -437,14 +422,14 @@ class SocElectrodeData(UnitModelBlockData):
             return common._interpolate_2D(
                 ic=ix,
                 ifaces=ixfaces,
-                nodes=xnodes,
-                faces=xfaces,
+                nodes=b.xnodes,
+                faces=b.xfaces,
                 phi_func=lambda ixf: b.Dtemp[t, ixf, iz] / b.length_x,
                 phi_bound_0=(b.Dtemp[t, ixnodes.first(), iz] - b.Dtemp_x0[t, iz])
-                / (xnodes.first() - xfaces.first())
+                / (b.xnodes.first() - b.xfaces.first())
                 / b.length_x,
                 phi_bound_1=(b.Dtemp_x1[t, iz] - b.Dtemp[t, ixnodes.last(), iz])
-                / (xfaces.last() - xnodes.last())
+                / (b.xfaces.last() - b.xnodes.last())
                 / b.length_x,
                 derivative=True,
             )
@@ -454,8 +439,8 @@ class SocElectrodeData(UnitModelBlockData):
             return common._interpolate_2D(
                 ic=iz,
                 ifaces=izfaces,
-                nodes=znodes,
-                faces=zfaces,
+                nodes=b.znodes,
+                faces=b.zfaces,
                 phi_func=lambda izf: b.temperature[t, ix, izf] / b.length_z[None],
                 phi_bound_0=0,
                 phi_bound_1=0,
@@ -467,8 +452,8 @@ class SocElectrodeData(UnitModelBlockData):
             return common._interpolate_2D(
                 ic=ix,
                 ifaces=ixfaces,
-                nodes=xnodes,
-                faces=xfaces,
+                nodes=b.xnodes,
+                faces=b.xfaces,
                 phi_func=lambda ixf: b.diff_eff_coeff[t, ixf, iz, i],
                 # TODO we can probably use conc_x0 and conc_x1 now
                 phi_bound_0=b.diff_eff_coeff[
@@ -485,8 +470,8 @@ class SocElectrodeData(UnitModelBlockData):
             return common._interpolate_2D(
                 ic=iz,
                 ifaces=izfaces,
-                nodes=znodes,
-                faces=zfaces,
+                nodes=b.znodes,
+                faces=b.zfaces,
                 phi_func=lambda izf: b.diff_eff_coeff[t, ix, izf, i],
                 phi_bound_0=0,  # solid wall no flux
                 phi_bound_1=0,  # solid wall no flux
@@ -498,8 +483,8 @@ class SocElectrodeData(UnitModelBlockData):
             return common._interpolate_2D(
                 ic=ix,
                 ifaces=ixfaces,
-                nodes=xnodes,
-                faces=xfaces,
+                nodes=b.xnodes,
+                faces=b.xfaces,
                 phi_func=lambda ixf: b.temperature[t, ixf, iz],
                 phi_bound_0=b.temperature_x0[t, iz],
                 phi_bound_1=b.temperature_x1[t, iz],
@@ -511,8 +496,8 @@ class SocElectrodeData(UnitModelBlockData):
             return common._interpolate_2D(
                 ic=iz,
                 ifaces=izfaces,
-                nodes=znodes,
-                faces=zfaces,
+                nodes=b.znodes,
+                faces=b.zfaces,
                 phi_func=lambda izf: b.temperature[t, ix, izf],
                 phi_bound_0=b.temperature[t, ix, iznodes.first()],
                 phi_bound_1=b.temperature[t, ix, iznodes.last()],

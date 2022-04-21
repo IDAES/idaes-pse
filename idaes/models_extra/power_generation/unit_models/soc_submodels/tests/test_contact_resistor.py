@@ -43,7 +43,7 @@ def model():
 
     m.fs.contact = soc.SocContactResistor(
         default={
-            "cv_zfaces": zfaces,
+            "control_volume_zfaces": zfaces,
             "length_z": m.fs.length_z,
             "length_y": m.fs.length_y,
             "current_density": m.fs.current_density,
@@ -75,7 +75,7 @@ def model2():
     )
     m.fs.contact = soc.SocContactResistor(
         default={
-            "cv_zfaces": zfaces,
+            "control_volume_zfaces": zfaces,
         }
     )
     m.fs.contact.current_density.fix(0)

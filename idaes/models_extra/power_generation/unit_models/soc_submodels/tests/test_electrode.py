@@ -121,8 +121,8 @@ def modelNoHoldup():
     m.fs.oxygen_electrode = soc.SocElectrode(
         default={
             "has_holdup": False,
-            "cv_zfaces": np.linspace(0, 1, 4).tolist(),
-            "cv_xfaces": np.linspace(0, 1, 5).tolist(),
+            "control_volume_zfaces": np.linspace(0, 1, 4).tolist(),
+            "control_volume_xfaces": np.linspace(0, 1, 5).tolist(),
             "component_list": ["O2", "N2"],
         }
     )
@@ -185,8 +185,8 @@ def modelHoldupNotDynamic():
     m.fs.fuel_electrode = soc.SocElectrode(
         default={
             "has_holdup": True,
-            "cv_zfaces": zfaces,
-            "cv_xfaces": xfaces_electrode,
+            "control_volume_zfaces": zfaces,
+            "control_volume_xfaces": xfaces_electrode,
             "component_list": ["H2", "H2O", "N2"],
             "length_z": m.fs.length_z,
             "length_y": m.fs.length_y,
