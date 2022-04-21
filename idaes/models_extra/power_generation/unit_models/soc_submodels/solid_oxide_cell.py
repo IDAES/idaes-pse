@@ -13,7 +13,7 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool, ListOf
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
 from pyomo.network import Port
@@ -75,7 +75,7 @@ class SolidOxideCellData(UnitModelBlockData):
     CONFIG.declare(
         "oxygen_component_list",
         ConfigValue(
-            default=["O2", "H2O"], description="List of components in the oxygen stream"
+            default=["O2"], description="List of components in the oxygen stream"
         ),
     )
     # TODO do we want them to provide an electron term in stoich dict?
@@ -90,13 +90,32 @@ class SolidOxideCellData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
+        "inert_fuel_species_triple_phase_boundary",
+        ConfigValue(
+            default=[],
+            domain=ListOf(str),
+            description="List of fuel-side species that do not participate in "
+            "reactions at the triple phase boundary."
+            # But may be involved in reforming
+        )
+    )
+    CONFIG.declare(
         "oxygen_tpb_stoich_dict",
         ConfigValue(
-            default={"O2": -0.25, "H2O": 0.0},
+            default={"O2": -0.25},
             description="Dictionary describing the stoichiometry of a "
             "reaction to consume one electron in the oxygen "
             "electrode.",
         ),
+    )
+    CONFIG.declare(
+        "inert_oxygen_species_triple_phase_boundary",
+        ConfigValue(
+            default=[],
+            domain=ListOf(str),
+            description="List of oxygen-side species that do not participate in "
+            "reactions at the triple phase boundary."
+        )
     )
     CONFIG.declare(
         "flow_pattern",
@@ -341,6 +360,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_y": self.length_y,
                 "component_list": self.fuel_component_list,
                 "tpb_stoich_dict": self.config.fuel_tpb_stoich_dict,
+                "inert_species": self.config.inert_fuel_species_triple_phase_boundary,
                 "current_density": self.current_density,
                 "temperature_z": self.temperature_z,
                 "Dtemp": self.fuel_electrode.Dtemp_x1,
@@ -361,6 +381,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_y": self.length_y,
                 "component_list": self.oxygen_component_list,
                 "tpb_stoich_dict": self.config.oxygen_tpb_stoich_dict,
+                "inert_species": self.config.inert_oxygen_species_triple_phase_boundary,
                 "current_density": self.current_density,
                 "temperature_z": self.temperature_z,
                 "Dtemp": self.oxygen_electrode.Dtemp_x0,
@@ -791,11 +812,12 @@ class SolidOxideCellData(UnitModelBlockData):
         cst = iscale.constraint_scaling_transform
         sdf = common._set_default_factor
 
-        # TODO why are electrodes missing?
         submodels = [
             self.fuel_chan,
+            self.fuel_electrode,
             self.fuel_tpb,
             self.oxygen_chan,
+            self.oxygen_electrode,
             self.oxygen_tpb,
             self.electrolyte,
         ]
@@ -838,19 +860,19 @@ class SolidOxideCellData(UnitModelBlockData):
             for iz in self.iznodes:
                 s_react_flux = gsf(self.current_density[t, iz]) * pyo.value(_constF)
                 for j in self.fuel_component_list:
-                    if abs(self.fuel_tpb.tpb_stoich[j]) > 1e-3:
-                        s_flux_j = sy_in_fuel[j] * s_react_flux
-                    else:
+                    if j in self.config.inert_fuel_species_triple_phase_boundary:
                         s_flux_j = sy_in_fuel[j] * s_inert_flux
+                    else:
+                        s_flux_j = sy_in_fuel[j] * s_react_flux
                     for var in [self.fuel_chan.xflux_x1, self.fuel_electrode.xflux_x1]:
                         if gsf(var[t, iz, j]) is None:
                             ssf(var[t, iz, j], s_flux_j)
                     ssf(self.fuel_tpb.mole_frac_comp[t, iz, j], sy_in_fuel[j])
                 for j in self.oxygen_component_list:
-                    if abs(self.oxygen_tpb.tpb_stoich[j]) > 1e-3:
-                        s_flux_j = sy_in_oxygen[j] * s_react_flux
-                    else:
+                    if j in self.config.inert_oxygen_species_triple_phase_boundary:
                         s_flux_j = sy_in_oxygen[j] * s_inert_flux
+                    else:
+                        s_flux_j = sy_in_oxygen[j] * s_react_flux
                     # s_flux_j = sy_in_oxygen[j]*s_mat_flux / max(abs(self.oxygen_tpb.tpb_stoich[j]),0.25)
                     for var in [
                         self.oxygen_chan.xflux_x0,
@@ -899,7 +921,5 @@ class SolidOxideCellData(UnitModelBlockData):
         for idx, con in self.mean_temperature_eqn.items():
             cst(con, 1, overwrite=False)
 
-        submodels.append(self.fuel_electrode)
-        submodels.append(self.oxygen_electrode)
         for submodel in submodels:
             submodel.recursive_scaling()

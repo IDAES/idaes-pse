@@ -19,6 +19,7 @@ import numpy as np
 import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as soc_testing
@@ -106,6 +107,7 @@ def modelFuel():
             "length_y": m.fs.length_y,
             "component_list": fuel_comps,
             "tpb_stoich_dict": {"H2": -0.5, "H2O": 0.5, "N2": 0, "Vac": 0.5, "O^2-": -0.5},
+            "inert_species": ["N2"],
             "current_density": m.fs.current_density,
             "temperature_z": m.fs.temperature_z,
             "Dtemp": m.fs.Dtemp,
@@ -147,7 +149,8 @@ def modelOxygen():
         default={
             "control_volume_zfaces": zfaces,
             "component_list": o2_comps,
-            "tpb_stoich_dict": {"O2": -0.25, "N2": 0, "Vac": -0.5, "O^2-": 0.5},
+            "tpb_stoich_dict": {"O2": -0.25, "Vac": -0.5, "O^2-": 0.5},
+            "inert_species": ["N2"],
         }
     )
     m.fs.oxygen_tpb.temperature_z.fix(0)
@@ -214,3 +217,29 @@ def test_initialization_fuel(modelFuel):
     modelFuel.fs.fuel_tpb.initialize(
         fix_x0=True, optarg={"nlp_scaling_method": "user-scaling"}
     )
+@pytest.mark.unit
+def test_extra_inert():
+    time_set = [0, 1, 2]
+    zfaces = np.linspace(0, 1, 8).tolist()
+    o2_comps = ["O2","N2"]
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(
+        default={
+            "dynamic": False,
+            "time_set": time_set,
+            "time_units": pyo.units.s,
+        }
+    )
+    with pytest.raises(
+            ConfigurationError,
+            match = "fs.oxygen_tpb invalid component in inert_species "
+            "argument. H2O is not in the provided component list."
+    ):
+        m.fs.oxygen_tpb = soc.SocTriplePhaseBoundary(
+            default={
+                "control_volume_zfaces": zfaces,
+                "component_list": o2_comps,
+                "tpb_stoich_dict": {"O2": -0.25, "Vac": -0.5, "O^2-": 0.5},
+                "inert_species": ["N2", "H2O"],
+            }
+        )

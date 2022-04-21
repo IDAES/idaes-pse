@@ -15,7 +15,7 @@ __author__ = "John Eslick, Douglas Allan"
 
 import copy
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 import pyomo.environ as pyo
 
 
@@ -25,6 +25,7 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.common import
     _constR, _constF, _set_if_unfixed, _species_list, _element_list, _element_dict
 )
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
@@ -57,6 +58,15 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
+        "inert_species",
+        ConfigValue(
+            default=[],
+            domain=ListOf(str),
+            description="List of species that do not participate in "
+            "reactions at the triple phase boundary."
+        )
+    )
+    CONFIG.declare(
         "conc_ref",
         ConfigValue(
             default=None,
@@ -67,7 +77,8 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         "below_electrolyte",
         ConfigValue(
             domain=In([True, False]),
-            description="Variable for the component concentration in bulk channel ",
+            description="Whether the triple phase boundary is located below or "
+            "above the electrolyte. This flag determines the sign of xflux.",
         ),
     )
 
@@ -92,24 +103,35 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             doc="Set of all gas-phase components present in submodel",
         )
         self.tpb_stoich = copy.copy(self.config.tpb_stoich_dict)
-        # TODO maybe let user specify inert species directly? Floating point
-        # equalities make me nervous---Doug
-        self.inert_component_list = pyo.Set(
-            initialize=[j for j, coeff in self.tpb_stoich.items() if coeff == 0],
+        
+        # Copy and pasted from the Gibbs reactor
+        for j in self.config.inert_species:
+            if j not in comps:
+                raise ConfigurationError(
+                    "{} invalid component in inert_species argument. {} is "
+                    "not in the provided component list.".format(self.name, j)
+                )
+                
+        self.inert_species_list = pyo.Set(
+            initialize=self.config.inert_species,
             ordered=True,
             doc="Set of components that do not react at triple phase boundary"
         )
+        # Ensure all inerts have been assigned a zero in the stoich
+        for j in self.inert_species_list:
+            self.tpb_stoich[j] = 0
+
         self.reacting_component_list =pyo.Set(
             initialize=[
                 j for j, coeff in self.tpb_stoich.items() 
-                if j not in self.inert_component_list
+                if j not in self.inert_species_list
             ],
             ordered=True,
             doc="Set of components (gas-phase and solid) that react at triple "
             "phase boundary"
         )
         self.reacting_gas_list = pyo.Set(
-            initialize=[j for j in comps if j not in self.inert_component_list],
+            initialize=[j for j in comps if j not in self.inert_species_list],
             ordered=True,
             doc="Set of gas-phase components that react at triple phase boundary"
         )

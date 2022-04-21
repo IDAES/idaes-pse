@@ -129,7 +129,7 @@ def model_func():
     fuel_comps = ["H2", "H2O", "N2"]
     fuel_stoich_dict = {"H2": -0.5, "H2O": 0.5, "N2": 0, "Vac": 0.5, "O^2-": -0.5}
     oxygen_comps = ["O2", "N2"]
-    oxygen_stoich_dict = {"O2": -0.25, "N2": 0, "Vac": -0.5, "O^2-": 0.5}
+    oxygen_stoich_dict = {"O2": -0.25, "Vac": -0.5, "O^2-": 0.5}
 
     m.fs.cell = SolidOxideCell(
         default={
@@ -140,8 +140,10 @@ def model_func():
             "control_volume_xfaces_electrolyte": xfaces_electrolyte,
             "fuel_component_list": fuel_comps,
             "fuel_tpb_stoich_dict": fuel_stoich_dict,
+            "inert_fuel_species_triple_phase_boundary": ["N2"],
             "oxygen_component_list": oxygen_comps,
             "oxygen_tpb_stoich_dict": oxygen_stoich_dict,
+            "inert_oxygen_species_triple_phase_boundary": ["N2"],
             "flow_pattern": HeatExchangerFlowPattern.cocurrent,
             "include_temperature_x_thermo": True,
             "include_contact_resistance": True
