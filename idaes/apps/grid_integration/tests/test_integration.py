@@ -143,11 +143,11 @@ class TestDoubleLoopIntegration:
 
     @pytest.fixture
     def run_bidder_simulator(self, bidder_sim_options: PrescientOptions) -> None:
-        prescient = pytest.importorskip(
+        Prescient = pytest.importorskip(
             "prescient.simulator.Prescient",
             reason="Prescient (optional dependency) not available")
 
-        sim = prescient()
+        sim = Prescient()
         sim.simulate(**bidder_sim_options)
 
     @pytest.fixture

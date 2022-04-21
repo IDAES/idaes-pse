@@ -79,11 +79,11 @@ class Test5Bus:
 
     @pytest.fixture
     def run_simulator(self, prescient_options: PrescientOptions) -> None:
-        prescient = pytest.importorskip(
+        Prescient = pytest.importorskip(
             "prescient.simulator.Prescient", 
             reason="Prescient (optional dependency) not available")
 
-        sim = prescient()
+        sim = Prescient()
         sim.simulate(**prescient_options)
 
     @pytest.fixture
