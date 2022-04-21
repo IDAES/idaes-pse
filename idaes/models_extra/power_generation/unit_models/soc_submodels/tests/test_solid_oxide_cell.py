@@ -48,19 +48,6 @@ def build_tester(cell, nt, nz):
                 "eta_ohm": nz * nt,
                 "electrical_work": 1,
             },
-            UnitModelBlock: {
-                "fuel_chan": 1,
-                "oxygen_chan": 1,
-                "contact_interconnect_fuel_flow_mesh": 1,
-                "contact_interconnect_oxygen_flow_mesh": 1,
-                "contact_flow_mesh_fuel_electrode": 1,
-                "contact_flow_mesh_oxygen_electrode": 1,
-                "fuel_electrode": 1,
-                "oxygen_electrode": 1,
-                "fuel_tpb": 1,
-                "oxygen_tpb": 1,
-                "electrolyte": 1,
-            },
         },
     )
 
@@ -96,6 +83,44 @@ def model():
             "oxygen_component_list": oxygen_comps,
             "oxygen_tpb_stoich_dict": oxygen_tpb_stoich_dict,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
+            "include_contact_resistance": True
+        }
+    )
+    return m
+
+@pytest.fixture
+def model_no_contact_resistance():
+    time_set = [0]
+    zfaces = np.linspace(0, 1, 6).tolist()
+    xfaces_electrode = np.linspace(0, 1, 4).tolist()
+    xfaces_electrolyte = np.linspace(0, 1, 12).tolist()
+
+    fuel_comps = ["H2", "H2O"]
+    fuel_tpb_stoich_dict = {"H2": -0.5, "H2O": 0.5, "Vac": 0.5, "O^2-": -0.5}
+    oxygen_comps = ["O2", "N2", "H2O"]
+    oxygen_tpb_stoich_dict = {"O2": -0.25, "N2": 0, "H2O":0, "Vac": -0.5, "O^2-": 0.5}
+    
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(
+        default={
+            "dynamic": False,
+            "time_set": time_set,
+            "time_units": pyo.units.s,
+        }
+    )
+    m.fs.cell = soc.SolidOxideCell(
+        default={
+            "has_holdup": False,
+            "control_volume_zfaces": zfaces,
+            "control_volume_xfaces_fuel_electrode": xfaces_electrode,
+            "control_volume_xfaces_oxygen_electrode": xfaces_electrode,
+            "control_volume_xfaces_electrolyte": xfaces_electrolyte,
+            "fuel_component_list": fuel_comps,
+            "fuel_tpb_stoich_dict": fuel_tpb_stoich_dict,
+            "oxygen_component_list": oxygen_comps,
+            "oxygen_tpb_stoich_dict": oxygen_tpb_stoich_dict,
+            "flow_pattern": HeatExchangerFlowPattern.cocurrent,
+            "include_contact_resistance": False
         }
     )
     return m
@@ -219,4 +244,72 @@ def test_build(model):
     assert cell.fuel_tpb.qflux_x1 is cell.electrolyte.qflux_x0.referent
     assert cell.oxygen_tpb.qflux_x0 is cell.electrolyte.qflux_x1.referent
 
+@pytest.mark.build
+@pytest.mark.unit
+def test_build_no_contact_resistance(model_no_contact_resistance):
+    cell = model_no_contact_resistance.fs.cell
+    nt = len(model_no_contact_resistance.fs.time)
+    nz = len(cell.zfaces) - 1
+    build_tester(cell, nt, nz)
 
+    channels = [cell.fuel_chan, cell.oxygen_chan]
+
+    for chan in channels:
+        assert cell.temperature_z is chan.temperature_z.referent
+        assert cell.length_y is chan.length_y.referent
+        assert cell.length_z is chan.length_z.referent
+
+    electrodes = [cell.fuel_electrode, cell.oxygen_electrode]
+
+    for trode in electrodes:
+        assert cell.temperature_z is trode.temperature_z.referent
+        assert cell.current_density is trode.current_density.referent
+        assert cell.length_y is trode.length_y.referent
+        assert cell.length_z is trode.length_z.referent
+
+    assert cell.fuel_chan.Dtemp_x1 is cell.fuel_electrode.Dtemp_x0.referent
+    assert (
+        cell.fuel_chan.qflux_x1
+        is cell.fuel_electrode.qflux_x0.referent
+    )
+    assert cell.fuel_chan.conc is cell.fuel_electrode.conc_ref.referent
+    assert cell.fuel_chan.Dconc_x1 is cell.fuel_electrode.Dconc_x0.referent
+    assert cell.fuel_chan.dcdt is cell.fuel_electrode.dconc_refdt.referent
+    assert cell.fuel_chan.xflux_x1 is cell.fuel_electrode.xflux_x0.referent
+
+    assert cell.oxygen_chan.Dtemp_x0 is cell.oxygen_electrode.Dtemp_x1.referent
+    assert (
+        cell.oxygen_chan.qflux_x0
+        is cell.oxygen_electrode.qflux_x1.referent
+    )
+    assert cell.oxygen_chan.conc is cell.oxygen_electrode.conc_ref.referent
+    assert cell.oxygen_chan.Dconc_x0 is cell.oxygen_electrode.Dconc_x1.referent
+    assert cell.oxygen_chan.dcdt is cell.oxygen_electrode.dconc_refdt.referent
+    assert cell.oxygen_chan.xflux_x0 is cell.oxygen_electrode.xflux_x1.referent
+
+    tpb_list = [cell.fuel_tpb, cell.oxygen_tpb]
+
+    for tpb in tpb_list:
+        assert cell.temperature_z is tpb.temperature_z.referent
+        assert cell.current_density is tpb.current_density.referent
+        assert cell.length_y is tpb.length_y.referent
+        assert cell.length_z is tpb.length_z.referent
+
+    assert cell.fuel_tpb.Dtemp.referent is cell.fuel_electrode.Dtemp_x1
+    assert cell.fuel_tpb.qflux_x0.referent is cell.fuel_electrode.qflux_x1
+    assert cell.fuel_tpb.conc_ref.referent is cell.fuel_chan.conc
+    assert cell.fuel_tpb.Dconc.referent is cell.fuel_electrode.Dconc_x1
+
+    assert cell.oxygen_tpb.Dtemp.referent is cell.oxygen_electrode.Dtemp_x0
+    assert cell.oxygen_tpb.qflux_x1.referent is cell.oxygen_electrode.qflux_x0
+    assert cell.oxygen_tpb.conc_ref.referent is cell.oxygen_chan.conc
+    assert cell.oxygen_tpb.Dconc.referent is cell.oxygen_electrode.Dconc_x0
+
+    assert cell.temperature_z is cell.electrolyte.temperature_z.referent
+    assert cell.current_density is cell.electrolyte.current_density.referent
+    assert cell.length_y is cell.electrolyte.length_y.referent
+    assert cell.length_z is cell.electrolyte.length_z.referent
+    assert cell.fuel_electrode.Dtemp_x1 is cell.electrolyte.Dtemp_x0.referent
+    assert cell.oxygen_electrode.Dtemp_x0 is cell.electrolyte.Dtemp_x1.referent
+    assert cell.fuel_tpb.qflux_x1 is cell.electrolyte.qflux_x0.referent
+    assert cell.oxygen_tpb.qflux_x0 is cell.electrolyte.qflux_x1.referent

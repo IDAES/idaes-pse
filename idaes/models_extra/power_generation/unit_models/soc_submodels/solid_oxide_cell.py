@@ -13,7 +13,7 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
 from pyomo.network import Port
@@ -114,6 +114,15 @@ class SolidOxideCellData(UnitModelBlockData):
             "to model flux through interconnect.",
         ),
     )
+    CONFIG.declare(
+        "include_contact_resistance",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="If True write periodic constraint "
+            "to model flux through interconnect.",
+        ),
+    )
     # Setting this to false caused initialization issues, so I'm forcing it to
     # be true until I figure out whether those issues can be fixed ---Doug
     CONFIG.declare(
@@ -203,34 +212,6 @@ class SolidOxideCellData(UnitModelBlockData):
                 "include_temperature_x_thermo": include_temp_x_thermo,
             }
         )
-        self.contact_interconnect_fuel_flow_mesh = soc.SocContactResistor(
-            default={
-                "has_holdup": False,
-                "dynamic": False,
-                "control_volume_zfaces": self.config.control_volume_zfaces,
-                "length_z": self.length_z,
-                "length_y": self.length_y,
-                "temperature_z": self.temperature_z,
-                "Dtemp": self.fuel_chan.Dtemp_x0,
-                "qflux_x1": self.fuel_chan.qflux_x0,
-                "current_density": self.current_density,
-                "include_temperature_x_thermo": include_temp_x_thermo,
-            }
-        )
-        self.contact_flow_mesh_fuel_electrode = soc.SocContactResistor(
-            default={
-                "has_holdup": False,
-                "dynamic": False,
-                "control_volume_zfaces": self.config.control_volume_zfaces,
-                "length_z": self.length_z,
-                "length_y": self.length_y,
-                "temperature_z": self.temperature_z,
-                "Dtemp": self.fuel_chan.Dtemp_x1,
-                "qflux_x0": self.fuel_chan.qflux_x1,
-                "current_density": self.current_density,
-                "include_temperature_x_thermo": include_temp_x_thermo,
-            }
-        )
         self.oxygen_chan = soc.SocChannel(
             default={
                 "has_holdup": has_holdup,
@@ -245,34 +226,72 @@ class SolidOxideCellData(UnitModelBlockData):
                 "include_temperature_x_thermo": include_temp_x_thermo,
             }
         )
-        self.contact_interconnect_oxygen_flow_mesh = soc.SocContactResistor(
-            default={
-                "has_holdup": False,
-                "dynamic": False,
-                "control_volume_zfaces": self.config.control_volume_zfaces,
-                "length_z": self.length_z,
-                "length_y": self.length_y,
-                "temperature_z": self.temperature_z,
-                "Dtemp": self.oxygen_chan.Dtemp_x1,
-                "qflux_x0": self.oxygen_chan.qflux_x1,
-                "current_density": self.current_density,
-                "include_temperature_x_thermo": include_temp_x_thermo,
-            }
-        )
-        self.contact_flow_mesh_oxygen_electrode = soc.SocContactResistor(
-            default={
-                "has_holdup": False,
-                "dynamic": False,
-                "control_volume_zfaces": self.config.control_volume_zfaces,
-                "length_z": self.length_z,
-                "length_y": self.length_y,
-                "temperature_z": self.temperature_z,
-                "Dtemp": self.oxygen_chan.Dtemp_x0,
-                "qflux_x1": self.oxygen_chan.qflux_x0,
-                "current_density": self.current_density,
-                "include_temperature_x_thermo": include_temp_x_thermo,
-            }
-        )
+        if self.config.include_contact_resistance:
+            self.contact_interconnect_fuel_flow_mesh = soc.SocContactResistor(
+                default={
+                    "has_holdup": False,
+                    "dynamic": False,
+                    "control_volume_zfaces": self.config.control_volume_zfaces,
+                    "length_z": self.length_z,
+                    "length_y": self.length_y,
+                    "temperature_z": self.temperature_z,
+                    "Dtemp": self.fuel_chan.Dtemp_x0,
+                    "qflux_x1": self.fuel_chan.qflux_x0,
+                    "current_density": self.current_density,
+                    "include_temperature_x_thermo": include_temp_x_thermo,
+                }
+            )
+            self.contact_flow_mesh_fuel_electrode = soc.SocContactResistor(
+                default={
+                    "has_holdup": False,
+                    "dynamic": False,
+                    "control_volume_zfaces": self.config.control_volume_zfaces,
+                    "length_z": self.length_z,
+                    "length_y": self.length_y,
+                    "temperature_z": self.temperature_z,
+                    "Dtemp": self.fuel_chan.Dtemp_x1,
+                    "qflux_x0": self.fuel_chan.qflux_x1,
+                    "current_density": self.current_density,
+                    "include_temperature_x_thermo": include_temp_x_thermo,
+                }
+            )
+            self.contact_interconnect_oxygen_flow_mesh = soc.SocContactResistor(
+                default={
+                    "has_holdup": False,
+                    "dynamic": False,
+                    "control_volume_zfaces": self.config.control_volume_zfaces,
+                    "length_z": self.length_z,
+                    "length_y": self.length_y,
+                    "temperature_z": self.temperature_z,
+                    "Dtemp": self.oxygen_chan.Dtemp_x1,
+                    "qflux_x0": self.oxygen_chan.qflux_x1,
+                    "current_density": self.current_density,
+                    "include_temperature_x_thermo": include_temp_x_thermo,
+                }
+            )
+            self.contact_flow_mesh_oxygen_electrode = soc.SocContactResistor(
+                default={
+                    "has_holdup": False,
+                    "dynamic": False,
+                    "control_volume_zfaces": self.config.control_volume_zfaces,
+                    "length_z": self.length_z,
+                    "length_y": self.length_y,
+                    "temperature_z": self.temperature_z,
+                    "Dtemp": self.oxygen_chan.Dtemp_x0,
+                    "qflux_x1": self.oxygen_chan.qflux_x0,
+                    "current_density": self.current_density,
+                    "include_temperature_x_thermo": include_temp_x_thermo,
+                }
+            )
+            fuel_electrode_qflux_x0 = self.contact_flow_mesh_fuel_electrode.qflux_x1
+            oxygen_electrode_qflux_x1 = self.contact_flow_mesh_oxygen_electrode.qflux_x0
+            interconnect_qflux_x0 = self.contact_interconnect_oxygen_flow_mesh.qflux_x1
+            interconnect_qflux_x1 = self.contact_interconnect_fuel_flow_mesh.qflux_x0
+        else:
+            fuel_electrode_qflux_x0 = self.fuel_chan.qflux_x1
+            oxygen_electrode_qflux_x1 = self.oxygen_chan.qflux_x0
+            interconnect_qflux_x0 = self.oxygen_chan.qflux_x1
+            interconnect_qflux_x1 = self.fuel_chan.qflux_x0
         self.fuel_electrode = soc.SocElectrode(
             default={
                 "has_holdup": has_holdup,
@@ -286,7 +305,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "dconc_refdt": self.fuel_chan.dcdt,
                 "Dconc_x0": self.fuel_chan.Dconc_x1,
                 "xflux_x0": self.fuel_chan.xflux_x1,
-                "qflux_x0": self.contact_flow_mesh_fuel_electrode.qflux_x1,
+                "qflux_x0": fuel_electrode_qflux_x0,
                 "temperature_z": self.temperature_z,
                 "Dtemp_x0": self.fuel_chan.Dtemp_x1,
                 "current_density": self.current_density,
@@ -306,7 +325,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "dconc_refdt": self.oxygen_chan.dcdt,
                 "Dconc_x1": self.oxygen_chan.Dconc_x0,
                 "xflux_x1": self.oxygen_chan.xflux_x0,
-                "qflux_x1": self.contact_flow_mesh_oxygen_electrode.qflux_x0,
+                "qflux_x1": oxygen_electrode_qflux_x1,
                 "temperature_z": self.temperature_z,
                 "Dtemp_x1": self.oxygen_chan.Dtemp_x0,
                 "current_density": self.current_density,
@@ -390,15 +409,18 @@ class SolidOxideCellData(UnitModelBlockData):
                     }
                 ),
             )
-
+        
         @self.Expression(tset, iznodes)
         def eta_contact(b, t, iz):
-            return (
-                b.contact_interconnect_fuel_flow_mesh.voltage_drop[t, iz]
-                + b.contact_flow_mesh_fuel_electrode.voltage_drop[t, iz]
-                + b.contact_interconnect_oxygen_flow_mesh.voltage_drop[t, iz]
-                + b.contact_flow_mesh_oxygen_electrode.voltage_drop[t, iz]
-            )
+            if self.config.include_contact_resistance:
+                return (
+                    b.contact_interconnect_fuel_flow_mesh.voltage_drop[t, iz]
+                    + b.contact_flow_mesh_fuel_electrode.voltage_drop[t, iz]
+                    + b.contact_interconnect_oxygen_flow_mesh.voltage_drop[t, iz]
+                    + b.contact_flow_mesh_oxygen_electrode.voltage_drop[t, iz]
+                )
+            else:
+                return 0
 
         @self.Expression(tset, iznodes)
         def eta_ohm(b, t, iz):
@@ -414,16 +436,16 @@ class SolidOxideCellData(UnitModelBlockData):
                 "Flux through interconnect has not yet been implemented"
             )
         else:
-            self.contact_interconnect_fuel_flow_mesh.qflux_x0.value = 0
-            self.contact_interconnect_oxygen_flow_mesh.qflux_x1.value = 0
+            interconnect_qflux_x0.value = 0
+            interconnect_qflux_x1.value = 0
 
             @self.Constraint(tset, iznodes)
             def no_qflux_fuel_interconnect_eqn(b, t, iz):
-                return 0 == b.contact_interconnect_fuel_flow_mesh.qflux_x0[t, iz]
+                return 0 == interconnect_qflux_x1[t, iz]
 
             @self.Constraint(tset, iznodes)
             def no_qflux_oxygen_interconnect_eqn(b, t, iz):
-                return 0 == b.contact_interconnect_oxygen_flow_mesh.qflux_x1[t, iz]
+                return 0 == interconnect_qflux_x0[t, iz]
 
         @self.Constraint(tset, iznodes)
         def mean_temperature_eqn(b, t, iz):
@@ -499,13 +521,13 @@ class SolidOxideCellData(UnitModelBlockData):
 
         self.temperature_z.fix(temperature_guess)
         self.mean_temperature_eqn.deactivate()
-
-        self.contact_interconnect_fuel_flow_mesh.initialize_build(
-            outlvl=outlvl, solver=solver, optarg=optarg, fix_qflux_x0=True
-        )
-        self.contact_interconnect_oxygen_flow_mesh.initialize_build(
-            outlvl=outlvl, solver=solver, optarg=optarg, fix_qflux_x0=False
-        )
+        if self.config.include_contact_resistance:
+            self.contact_interconnect_fuel_flow_mesh.initialize_build(
+                outlvl=outlvl, solver=solver, optarg=optarg, fix_qflux_x0=True
+            )
+            self.contact_interconnect_oxygen_flow_mesh.initialize_build(
+                outlvl=outlvl, solver=solver, optarg=optarg, fix_qflux_x0=False
+            )
 
         # Reset the fluxes to zero in case there are stale values
         init_log.info_high("Initializing Fuel Channel")
@@ -533,11 +555,11 @@ class SolidOxideCellData(UnitModelBlockData):
         self.oxygen_chan.xflux_x0.unfix()
         self.oxygen_chan.qflux_x0.unfix()
         self.oxygen_chan.qflux_x1.unfix()
-
-        init_log.info_high("Initializing Contact Resistors")
-
-        self.contact_flow_mesh_fuel_electrode.initialize_build(fix_qflux_x0=True)
-        self.contact_flow_mesh_oxygen_electrode.initialize_build(fix_qflux_x0=False)
+        if self.config.include_contact_resistance:
+            init_log.info_high("Initializing Contact Resistors")
+    
+            self.contact_flow_mesh_fuel_electrode.initialize_build(fix_qflux_x0=True)
+            self.contact_flow_mesh_oxygen_electrode.initialize_build(fix_qflux_x0=False)
 
         init_log.info_high("Calculating reaction rate at current guess")
         self.fuel_tpb.Dtemp.fix(0)
@@ -765,9 +787,23 @@ class SolidOxideCellData(UnitModelBlockData):
 
     def recursive_scaling(self):
         gsf = iscale.get_scaling_factor
-        ssf = iscale.set_scaling_factor
+        ssf = common._set_scaling_factor_if_none
         cst = iscale.constraint_scaling_transform
         sdf = common._set_default_factor
+
+        # TODO why are electrodes missing?
+        submodels = [
+            self.fuel_chan,
+            self.fuel_tpb,
+            self.oxygen_chan,
+            self.oxygen_tpb,
+            self.electrolyte,
+        ]
+        if self.config.include_contact_resistance:
+            submodels.append(self.contact_interconnect_fuel_flow_mesh)
+            submodels.append(self.contact_flow_mesh_fuel_electrode)
+            submodels.append(self.contact_interconnect_oxygen_flow_mesh)
+            submodels.append(self.contact_flow_mesh_oxygen_electrode)
 
         sy_def = 10
         s_inert_flux = 1e4
@@ -826,50 +862,44 @@ class SolidOxideCellData(UnitModelBlockData):
 
                 s_q_flux = s_react_flux * 1e-4  # Chosen heuristically based on TdS_rxn
                 # s_q_flux = s_react_flux*1e-6
-                for submodel in [
-                    self.fuel_chan,
-                    self.contact_interconnect_fuel_flow_mesh,
-                    self.contact_flow_mesh_fuel_electrode,
-                    self.fuel_tpb,
-                    self.oxygen_chan,
-                    self.contact_interconnect_oxygen_flow_mesh,
-                    self.contact_flow_mesh_oxygen_electrode,
-                    self.oxygen_tpb,
-                    self.electrolyte,
-                ]:
-                    if gsf(submodel.qflux_x0[t, iz]) is None:
-                        ssf(submodel.qflux_x0[t, iz], s_q_flux)
-                    if gsf(submodel.qflux_x1[t, iz]) is None:
-                        ssf(submodel.qflux_x1[t, iz], s_q_flux)
+                for submodel in submodels:
+                    ssf(submodel.qflux_x0[t, iz], s_q_flux)
+                    ssf(submodel.qflux_x1[t, iz], s_q_flux)
                 if not self.config.flux_through_interconnect:
-                    sq = gsf(
-                        self.contact_interconnect_fuel_flow_mesh.qflux_x0[t, iz],
-                        default=s_q_flux,
-                    )
-                    cst(self.no_qflux_fuel_interconnect_eqn[t, iz], sq, overwrite=False)
-                    sq = gsf(
-                        self.contact_interconnect_oxygen_flow_mesh.qflux_x1[t, iz],
-                        default=s_q_flux,
-                    )
-                    cst(
-                        self.no_qflux_oxygen_interconnect_eqn[t, iz],
-                        sq,
-                        overwrite=False,
-                    )
+                    if self.config.include_contact_resistance:
+                        sq = gsf(
+                            self.contact_interconnect_fuel_flow_mesh.qflux_x0[t, iz],
+                            default=s_q_flux,
+                        )
+                        cst(self.no_qflux_fuel_interconnect_eqn[t, iz], sq, overwrite=False)
+                        sq = gsf(
+                            self.contact_interconnect_oxygen_flow_mesh.qflux_x1[t, iz],
+                            default=s_q_flux,
+                        )
+                        cst(
+                            self.no_qflux_oxygen_interconnect_eqn[t, iz],
+                            sq,
+                            overwrite=False,
+                        )
+                    else:
+                        sq = gsf(
+                            self.fuel_chan.qflux_x0[t, iz],
+                            default=s_q_flux,
+                        )
+                        cst(self.no_qflux_fuel_interconnect_eqn[t, iz], sq, overwrite=False)
+                        sq = gsf(
+                            self.oxygen_chan.qflux_x1[t, iz],
+                            default=s_q_flux,
+                        )
+                        cst(
+                            self.no_qflux_oxygen_interconnect_eqn[t, iz],
+                            sq,
+                            overwrite=False,
+                        )
         for idx, con in self.mean_temperature_eqn.items():
             cst(con, 1, overwrite=False)
 
-        for submodel in [
-            self.fuel_chan,
-            self.contact_interconnect_fuel_flow_mesh,
-            self.contact_flow_mesh_fuel_electrode,
-            self.fuel_electrode,
-            self.fuel_tpb,
-            self.oxygen_chan,
-            self.contact_interconnect_oxygen_flow_mesh,
-            self.contact_flow_mesh_oxygen_electrode,
-            self.oxygen_electrode,
-            self.oxygen_tpb,
-            self.electrolyte,
-        ]:
+        submodels.append(self.fuel_electrode)
+        submodels.append(self.oxygen_electrode)
+        for submodel in submodels:
             submodel.recursive_scaling()

@@ -144,6 +144,7 @@ def model_func():
             "oxygen_tpb_stoich_dict": oxygen_stoich_dict,
             "flow_pattern": HeatExchangerFlowPattern.cocurrent,
             "include_temperature_x_thermo": True,
+            "include_contact_resistance": True
         }
     )
 
