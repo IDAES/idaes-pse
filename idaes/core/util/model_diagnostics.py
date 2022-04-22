@@ -15,23 +15,24 @@
 modeling in Pyomo.
 """
 
-__author__ = "Alexander Dowling"
+__author__ = "Alexander Dowling, Douglas Allan"
+
+
+from operator import itemgetter
 
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 import numpy as np
-from scipy.sparse.linalg import svds
+from scipy.linalg import svd
+from scipy.sparse.linalg import svds, norm
 from scipy.sparse import issparse, find
 
 from idaes.core.util.model_statistics import (
     large_residuals_set,
     variables_near_bounds_set,
 )
-
-import matplotlib.pyplot as plt
-
-from operator import itemgetter
+import idaes.core.util.scaling as iscale
 
 
 class DegeneracyHunter:
@@ -61,21 +62,21 @@ class DegeneracyHunter:
             # setup pynumero interface
             self.nlp = PyomoNLP(self.block)
 
-            # calculate Jacobian of equality constraints in COO sparse matrix format
-            jac_eq = self.nlp.evaluate_jacobian_eq()
-
-            # save the Jacobian
-            self.jac_eq = jac_eq
+            # Get the scaled Jacobian of equality constraints
+            self.jac_eq = iscale.get_jacobian(
+                self.block, equality_constraints_only=True
+            )[0]
 
             # Create a list of equality constraint names
-            self.eq_con_list = PyomoNLP.get_pyomo_equality_constraints(self.nlp)
+            self.eq_con_list = self.nlp.get_pyomo_equality_constraints()
+            self.var_list = self.nlp.get_pyomo_variables()
 
             self.candidate_eqns = None
 
         elif type(block_or_jac) is np.array:
 
             raise NotImplementedError(
-                "Degeneracy Hunter only currently supports analyzing a Pyomo model"
+                "Degeneracy Hunter currently only supports analyzing a Pyomo model"
             )
 
             # TODO: Need to refactor, document, and test support for Jacobian
@@ -112,7 +113,7 @@ class DegeneracyHunter:
         self.max_nu = 1e5
         self.min_nonzero_nu = 1e-5
 
-    def check_residuals(self, tol=1e-5, print_level=2, sort=True):
+    def check_residuals(self, tol=1e-5, print_level=1, sort=True):
         """
         Method to return a ComponentSet of all Constraint components with a
         residual greater than a given threshold which appear in a model.
@@ -200,12 +201,14 @@ class DegeneracyHunter:
 
         return vnbs
 
-    def check_rank_equality_constraints(self, tol=1e-6):
+    def check_rank_equality_constraints(self, tol=1e-6, dense=False):
         """
         Method to check the rank of the Jacobian of the equality constraints
 
         Args:
             tol: Tolerance for smallest singular value (default=1E-6)
+            dense: If True, use a dense svd to perform singular value analysis,
+            which tends to be slower but more reliable than svds
 
         Returns:
             Number of singular values less than tolerance (-1 means error)
@@ -225,7 +228,7 @@ class DegeneracyHunter:
         counter = 0
         if self.n_eq > 1:
             if self.s is None:
-                self.svd_analysis()
+                self.svd_analysis(dense=dense)
 
             n = len(self.s)
 
@@ -235,9 +238,7 @@ class DegeneracyHunter:
                 if self.s[i] < tol:
                     counter += 1
         else:
-            # TODO: Make this an exception
-            print("Model needs at least 2 equality constraints to check rank.")
-            counter = -1
+            print(f"Only singular value: {norm(self.jac_eq,'fro')}")
 
         return counter
 
@@ -505,12 +506,14 @@ class DegeneracyHunter:
         else:
             return None, None
 
-    def svd_analysis(self, n_smallest_sv=10):
+    def svd_analysis(self, n_sv=None, dense=False):
         """
         Perform SVD analysis of the constraint Jacobian
 
         Args:
-            n_smallest_sv: number of smallest singular values to compute
+            n_sv: number of smallest singular values to compute
+            dense: If True, use a dense svd to perform singular value analysis,
+            which tends to be slower but more reliable than svds
 
         Returns:
             Nothing
@@ -519,12 +522,20 @@ class DegeneracyHunter:
             Stores SVD results in object
 
         """
-
-        if self.n_eq > 1:
-
+        if n_sv is None:
             # Determine the number of singular values to compute
             # The "-1" is needed to avoid an error with svds
-            n_sv = min(n_smallest_sv, min(self.n_eq, self.n_var) - 1)
+            n_sv = min(10, min(self.n_eq, self.n_var) - 1)
+
+        if self.n_eq > 1:
+            if n_sv >= min(self.n_eq, self.n_var):
+                raise ValueError(
+                    f"For a {self.n_eq} by {self.n_var} system, svd_analysis "
+                    f"can compute at most {min(self.n_eq, self.n_var) - 1} "
+                    f"singular values and vectors, but {n_sv} were called for."
+                )
+            if n_sv < 1:
+                raise ValueError(f"Nonsense value for n_sv={n_sv} received.")
             print("Computing the", n_sv, "smallest singular value(s)")
 
             # Perform SVD
@@ -532,18 +543,69 @@ class DegeneracyHunter:
             # Thus U is a n_eq x n_eq matrix
             # And V is a n_var x n_var
             # (U or V may be smaller in economy mode)
-            # Thus we really only care about U
-            u, s, v = svds(self.jac_eq, k=n_sv, which="SM")
+            if dense:
+                u, s, vT = svd(self.jac_eq.todense(), full_matrices=False)
+                # Reorder singular values and vectors so that the singular
+                # values are from least to greatest
+                u = np.flip(u[:, -n_sv:], axis=1)
+                s = np.flip(s[-n_sv:], axis=0)
+                vT = np.flip(vT[-n_sv:, :], axis=0)
+            else:
+                # svds does not guarantee the order in which it generates
+                # singular values, but typically generates them least-to-greatest.
+                # Maybe the warning is for singular values of nearly equal
+                # magnitude or a similar edge case?
+                u, s, vT = svds(self.jac_eq, k=n_sv, which="SM")  # , solver='lobpcg')
 
             # Save results
             self.u = u
             self.s = s
-            self.v = v
+            self.v = vT.transpose()
 
         else:
-            print(
-                "Warning: model must contain at least 2 equality constraints to perform svd_analysis"
+            raise ValueError(
+                "Model needs at least 2 equality constraints to perform svd_analysis."
             )
+
+    def underdetermined_variables_and_constraints(self, n_calc=1, tol=0.1, dense=False):
+        """
+        Determines constraints and variables associated with the smallest
+        singular values by having large components in the left and right
+        singular vectors, respectively, associated with those singular values.
+
+        Args:
+            n_calc: The singular value, as ordered from least to greatest
+            starting from 1, to calculate associated constraints and variables
+            tol: Size below which to ignore constraints and variables in
+            the singular vector
+            dense: If True, use a dense svd to perform singular value analysis,
+            which tends to be slower but more reliable than svds
+
+        Returns
+        -------
+        None.
+
+        """
+        if self.s is None:
+            self.svd_analysis(
+                n_sv=max(n_calc, min(10, min(self.n_eq, self.n_var) - 1)), dense=dense
+            )
+        n_sv = len(self.s)
+        if n_sv < n_calc:
+            raise ValueError(
+                "User wanted constraints and variables associated "
+                f"with the {n_calc}-th smallest singular value, "
+                f"but only {n_sv} small singular values have been "
+                "calculated. Run svd_analysis again and specify "
+                f"n_sv>={n_calc}."
+            )
+        print("Column:    Variable")
+        for i in np.where(abs(self.v[:, n_calc - 1]) > tol)[0]:
+            print(str(i) + ": " + self.var_list[i].name)
+        print("")
+        print("Row:    Constraint")
+        for i in np.where(abs(self.u[:, n_calc - 1]) > tol)[0]:
+            print(str(i) + ": " + self.eq_con_list[i].name)
 
     def find_candidate_equations(self, verbose=True, tee=False):
         """
@@ -597,7 +659,6 @@ class DegeneracyHunter:
 
         # Check if it is empty or None
         if self.candidate_eqns:
-
             if verbose:
                 print("*** Searching for Irreducible Degenerate Sets ***")
                 print("Building MILP model...")
