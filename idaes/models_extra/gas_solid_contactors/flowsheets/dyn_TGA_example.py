@@ -89,7 +89,7 @@ def main(m):
         m.fs.TGA.gas[t].mole_frac_comp["CH4"].fix(0.1)
 
     # Solver options
-    optarg = {"bound_push": 1e-8, "halt_on_ampl_error": "yes", "linear_solver": "ma27"}
+    optarg={"tol": 1e-6}
 
     t_start = time.time()  # Run start time
 
@@ -101,7 +101,7 @@ def main(m):
 
     print()
     print("Initialize the model")
-    m.fs.TGA.initialize()
+    m.fs.TGA.initialize(optarg=optarg)
 
     t_initialize = time.time()  # Initialization time
 

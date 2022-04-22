@@ -414,7 +414,7 @@ see reaction package for documentation.}""",
         Returns:
             None
         """
-
+        outlvl = idaeslog.DEBUG  # so the failing test error shows in the log
         # Set solver options
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
@@ -445,9 +445,23 @@ see reaction package for documentation.}""",
         init_log.info_high("Initialization Step 1 Complete.")
 
         # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, outlvl) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+
+        # ---------------------------------------------------------------------
         # Release Inlet state
         blk.gas.release_state(gas_phase_flags, outlvl)
         blk.solids.release_state(solid_phase_flags, outlvl)
+
+        if not check_optimal_termination(res):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information."
+            )
+
+        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -522,18 +536,15 @@ see reaction package for documentation.}""",
             if hasattr(self, "solids_energy_holdup_constraints"):
                 for t, c in self.solids_energy_holdup_constraints.items():
                     sf1 = iscale.get_scaling_factor(self.volume_bed)
-                    sf2 = iscale.get_scaling_factor(self.solids[t].dens_mass_skeletal)
-                    sf3 = iscale.get_scaling_factor(self.solids[t].enth_mass)
+                    sf2 = iscale.get_scaling_factor(self.solids[t].enth_mass)
                     iscale.constraint_scaling_transform(
-                        c, sf1 * sf2 * sf3, overwrite=False
+                        c, sf1 * sf2, overwrite=False
                     )
 
             if hasattr(self, "solids_energy_accumulation_constraints"):
                 for t, c in self.solids_energy_accumulation_constraints.items():
                     sf1 = iscale.get_scaling_factor(self.volume_bed)
-                    sf2 = (1/value(self.volume_solid[t] * pyunits.convert(
-                        self.reactions[t].dh_rxn["R1"],
-                        to_units=units_meta_solid("energy_mole"))))
+                    sf2 = iscale.get_scaling_factor(self.solids[t].enth_mass)
                     iscale.constraint_scaling_transform(
                         c, sf1 * sf2, overwrite=False
                     )

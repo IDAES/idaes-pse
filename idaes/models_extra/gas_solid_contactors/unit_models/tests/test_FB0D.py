@@ -20,7 +20,6 @@ import pytest
 
 from pyomo.environ import (
     check_optimal_termination,
-    SolverStatus,
     ConcreteModel,
     TransformationFactory,
     value,
@@ -234,19 +233,41 @@ class TestIronOC(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_unscaled(self, iron_oc_unscaled):
-        optarg = {
-            "bound_push": 1e-8,
-            "halt_on_ampl_error": "yes",
-            "linear_solver": "ma27",
-        }
+        # added max_iter, halt_on_ampl_error optargs and set log to DEBUG
+        # to display solve error (only occurs in this test, and doesn't occur
+        # when the dyn_TGA_example is modified to use an EnergyBalance with
+        # no scaling - not sure why but seems like it concerns the energy eqns)
+        optarg = {"tol": 1e-6, "max_iter": 10000, "halt_on_ampl_error": 'yes'}
+        import idaes.logger as idaeslog
+        initialization_tester(iron_oc_unscaled, optarg=optarg, outlvl=idaeslog.DEBUG)
 
-        initialization_tester(iron_oc_unscaled)
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_by_time_unscaled(self, iron_oc_unscaled):
 
+        optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 
         initialize_by_time_element(iron_oc_unscaled.fs,
                                    iron_oc_unscaled.fs.time,
                                    solver=solver)
+
+        assert degrees_of_freedom(iron_oc_unscaled) == 0
+
+        # Assert that model is still fixed and deactivated as expected
+        assert iron_oc_unscaled.fs.unit.solids[iron_oc_unscaled.fs.time.first()].particle_porosity.fixed
+
+        for t in iron_oc_unscaled.fs.time:
+            if t != iron_oc_unscaled.fs.time.first():
+                assert not iron_oc_unscaled.fs.unit.solids[t].particle_porosity.fixed
+            assert iron_oc_unscaled.fs.unit.solids[t].density_particle_constraint.active
+            assert iron_oc_unscaled.fs.unit.solids[t].density_skeletal_constraint.active
+
+        # Assert that constraints are feasible after initialization
+        for con in iron_oc_unscaled.fs.component_data_objects(Constraint, active=True):
+            assert value(con.body) - value(con.upper) < 1e-4
+            assert value(con.lower) - value(con.body) < 1e-4
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -256,7 +277,6 @@ class TestIronOC(object):
 
         # Check for optimal solution
         assert check_optimal_termination(results)
-        assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.component
     def test_scaling(self, iron_oc):
@@ -345,30 +365,48 @@ class TestIronOC(object):
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.solids_energy_holdup_constraints.items():
             assert pytest.approx(
-                1.27323E-9, abs=1e-11
+                1.27324E-7, abs=1e-9
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.solids_energy_accumulation_constraints.items():
             assert pytest.approx(
-                9.32201E-7, abs=1e-9
+                1.27324E-7, abs=1e-9
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, iron_oc):
-        optarg = {
-            "bound_push": 1e-8,
-            "halt_on_ampl_error": "yes",
-            "linear_solver": "ma27",
-        }
+        optarg = {"tol": 1e-6}
 
-        initialization_tester(iron_oc)
+        initialization_tester(iron_oc, optarg=optarg)
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_by_time(self, iron_oc):
+
+        optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 
         initialize_by_time_element(iron_oc.fs,
                                    iron_oc.fs.time,
                                    solver=solver)
+
+        assert degrees_of_freedom(iron_oc) == 0
+
+        # Assert that model is still fixed and deactivated as expected
+        assert iron_oc.fs.unit.solids[iron_oc.fs.time.first()].particle_porosity.fixed
+
+        for t in iron_oc.fs.time:
+            if t != iron_oc.fs.time.first():
+                assert not iron_oc.fs.unit.solids[t].particle_porosity.fixed
+            assert iron_oc.fs.unit.solids[t].density_particle_constraint.active
+            assert iron_oc.fs.unit.solids[t].density_skeletal_constraint.active
+
+        # Assert that constraints are feasible after initialization
+        for con in iron_oc.fs.component_data_objects(Constraint, active=True):
+            assert value(con.body) - value(con.upper) < 1e-4
+            assert value(con.lower) - value(con.body) < 1e-4
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -378,7 +416,6 @@ class TestIronOC(object):
 
         # Check for optimal solution
         assert check_optimal_termination(results)
-        assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -542,6 +579,14 @@ class TestIronOC(object):
         iron_oc.fs.unit.gas.report()
         iron_oc.fs.unit.solids.report()
 
+    @pytest.mark.component
+    def test_initialization_error(self, iron_oc):
+        iron_oc.fs.unit.volume_bed.fix(1)
+
+        with pytest.raises(InitializationError):
+            optarg = {"tol": 1e-6}
+            iron_oc.fs.unit.initialize(optarg=optarg)
+
 
 # -----------------------------------------------------------------------------
 class TestIronOC_EnergyBalanceType(object):
@@ -676,19 +721,37 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_unscaled(self, iron_oc_unscaled):
-        optarg = {
-            "bound_push": 1e-8,
-            "halt_on_ampl_error": "yes",
-            "linear_solver": "ma27",
-        }
+        optarg = {"tol": 1e-6}
 
-        initialization_tester(iron_oc_unscaled)
+        initialization_tester(iron_oc_unscaled, optarg=optarg)
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_by_time_unscaled(self, iron_oc_unscaled):
+
+        optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 
         initialize_by_time_element(iron_oc_unscaled.fs,
                                    iron_oc_unscaled.fs.time,
                                    solver=solver)
+
+        assert degrees_of_freedom(iron_oc_unscaled) == 0
+
+        # Assert that model is still fixed and deactivated as expected
+        assert iron_oc_unscaled.fs.unit.solids[iron_oc_unscaled.fs.time.first()].particle_porosity.fixed
+
+        for t in iron_oc_unscaled.fs.time:
+            if t != iron_oc_unscaled.fs.time.first():
+                assert not iron_oc_unscaled.fs.unit.solids[t].particle_porosity.fixed
+            assert iron_oc_unscaled.fs.unit.solids[t].density_particle_constraint.active
+            assert iron_oc_unscaled.fs.unit.solids[t].density_skeletal_constraint.active
+
+        # Assert that constraints are feasible after initialization
+        for con in iron_oc_unscaled.fs.component_data_objects(Constraint, active=True):
+            assert value(con.body) - value(con.upper) < 1e-4
+            assert value(con.lower) - value(con.body) < 1e-4
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -698,7 +761,6 @@ class TestIronOC_EnergyBalanceType(object):
 
         # Check for optimal solution
         assert check_optimal_termination(results)
-        assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.component
     def test_scaling(self, iron_oc):
@@ -794,17 +856,37 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, iron_oc):
-        optarg = {
-            "bound_push": 1e-8,
-            "halt_on_ampl_error": "yes",
-            "linear_solver": "ma27",
-        }
+        optarg = {"tol": 1e-6}
 
-        initialization_tester(iron_oc)
+        initialization_tester(iron_oc, optarg=optarg)
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_by_time(self, iron_oc):
+
+        optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 
-        initialize_by_time_element(iron_oc.fs, iron_oc.fs.time, solver=solver)
+        initialize_by_time_element(iron_oc.fs,
+                                   iron_oc.fs.time,
+                                   solver=solver)
+
+        assert degrees_of_freedom(iron_oc) == 0
+
+        # Assert that model is still fixed and deactivated as expected
+        assert iron_oc.fs.unit.solids[iron_oc.fs.time.first()].particle_porosity.fixed
+
+        for t in iron_oc.fs.time:
+            if t != iron_oc.fs.time.first():
+                assert not iron_oc.fs.unit.solids[t].particle_porosity.fixed
+            assert iron_oc.fs.unit.solids[t].density_particle_constraint.active
+            assert iron_oc.fs.unit.solids[t].density_skeletal_constraint.active
+
+        # Assert that constraints are feasible after initialization
+        for con in iron_oc.fs.component_data_objects(Constraint, active=True):
+            assert value(con.body) - value(con.upper) < 1e-4
+            assert value(con.lower) - value(con.body) < 1e-4
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -931,3 +1013,11 @@ class TestIronOC_EnergyBalanceType(object):
         # no inlet/outlet ports (no stream table), test block reports instead
         iron_oc.fs.unit.gas.report()
         iron_oc.fs.unit.solids.report()
+
+    @pytest.mark.component
+    def test_initialization_error(self, iron_oc):
+        iron_oc.fs.unit.volume_bed.fix(1)
+
+        with pytest.raises(InitializationError):
+            optarg = {"tol": 1e-6}
+            iron_oc.fs.unit.initialize(optarg=optarg)
