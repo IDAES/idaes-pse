@@ -94,43 +94,43 @@ class SocContactResistorData(UnitModelBlockData):
             return b.voltage_drop[t, iz] * b.current_density[t, iz]
 
         @self.Constraint(tset, iznodes)
-        def qflux_eqn(b, t, iz):
-            return b.qflux_x1[t, iz] == b.qflux_x0[t, iz] + b.joule_heating_flux[t, iz]
+        def heat_flux_x_eqn(b, t, iz):
+            return b.heat_flux_x1[t, iz] == b.heat_flux_x0[t, iz] + b.joule_heating_flux[t, iz]
 
     def initialize_build(
-        self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, fix_qflux_x0=True
+        self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, fix_heat_flux_x0=True
     ):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        self.Dtemp.fix()
-        if fix_qflux_x0:
-            self.qflux_x0.fix()
+        self.temperature_deviation_x.fix()
+        if fix_heat_flux_x0:
+            self.heat_flux_x0.fix()
         else:
-            self.qflux_x1.fix()
+            self.heat_flux_x1.fix()
 
         slvr = get_solver(solver, optarg)
         common._init_solve_block(self, slvr, solve_log)
 
-        self.Dtemp.unfix()
-        if fix_qflux_x0:
-            self.qflux_x0.unfix()
+        self.temperature_deviation_x.unfix()
+        if fix_heat_flux_x0:
+            self.heat_flux_x0.unfix()
         else:
-            self.qflux_x1.unfix()
+            self.heat_flux_x1.unfix()
 
     def calculate_scaling_factors(self):
         pass
 
     def recursive_scaling(self):
         gsf = iscale.get_scaling_factor
-        for i, c in self.qflux_eqn.items():
-            if self.qflux_x0[i].is_reference():
-                sq0 = gsf(self.qflux_x0[i].referent)
+        for i, c in self.heat_flux_x_eqn.items():
+            if self.heat_flux_x0[i].is_reference():
+                sq0 = gsf(self.heat_flux_x0[i].referent)
             else:
-                sq0 = gsf(self.qflux_x0[i], warning=True)
-            if self.qflux_x1[i].is_reference():
-                sq1 = gsf(self.qflux_x1[i].referent)
+                sq0 = gsf(self.heat_flux_x0[i], warning=True)
+            if self.heat_flux_x1[i].is_reference():
+                sq1 = gsf(self.heat_flux_x1[i].referent)
             else:
-                sq1 = gsf(self.qflux_x1[i], warning=True)
+                sq1 = gsf(self.heat_flux_x1[i], warning=True)
             sq = min(sq0, sq1)
             iscale.constraint_scaling_transform(c, sq, overwrite=False)

@@ -609,7 +609,7 @@ def _thermal_boundary_conditions_config(CONFIG, thin):
     )
     if thin:
         CONFIG.declare(
-            "Dtemp",
+            "temperature_deviation_x",
             ConfigValue(
                 default=None,
                 description="Deviation of temperature " "from temperature_z",
@@ -617,27 +617,27 @@ def _thermal_boundary_conditions_config(CONFIG, thin):
         )
     else:
         CONFIG.declare(
-            "Dtemp_x0",
+            "temperature_deviation_x0",
             ConfigValue(
                 default=None,
                 description="Deviation of temperature at x=0 " "from temperature_z",
             ),
         )
         CONFIG.declare(
-            "Dtemp_x1",
+            "temperature_deviation_x1",
             ConfigValue(
                 default=None,
                 description="Deviation of temperature at x=1 " "from temperature_z",
             ),
         )
     CONFIG.declare(
-        "qflux_x0",
+        "heat_flux_x0",
         ConfigValue(
             default=None, description="Heat flux through x=0 " "(positive is in)"
         ),
     )
     CONFIG.declare(
-        "qflux_x1",
+        "heat_flux_x1",
         ConfigValue(
             default=None, description="Heat flux through x=1 " "(positive is out)"
         ),
@@ -655,40 +655,40 @@ def _create_thermal_boundary_conditions_if_none(unit, thin):
     _create_if_none(unit, "temperature_z", idx_set=(tset, iznodes), units=pyo.units.K)
 
     if thin:
-        _create_if_none(unit, "Dtemp", idx_set=(tset, iznodes), units=pyo.units.K)
+        _create_if_none(unit, "temperature_deviation_x", idx_set=(tset, iznodes), units=pyo.units.K)
 
         @unit.Expression(tset, iznodes)
         def temperature(b, t, iz):
             if include_temp_x_thermo:
-                return b.temperature_z[t, iz] + b.Dtemp[t, iz]
+                return b.temperature_z[t, iz] + b.temperature_deviation_x[t, iz]
             else:
                 return b.temperature_z[t, iz]
 
     else:
-        _create_if_none(unit, "Dtemp_x0", idx_set=(tset, iznodes), units=pyo.units.K)
+        _create_if_none(unit, "temperature_deviation_x0", idx_set=(tset, iznodes), units=pyo.units.K)
 
         @unit.Expression(tset, iznodes)
         def temperature_x0(b, t, iz):
             if include_temp_x_thermo:
-                return b.temperature_z[t, iz] + b.Dtemp_x0[t, iz]
+                return b.temperature_z[t, iz] + b.temperature_deviation_x0[t, iz]
             else:
                 return b.temperature_z[t, iz]
 
-        _create_if_none(unit, "Dtemp_x1", idx_set=(tset, iznodes), units=pyo.units.K)
+        _create_if_none(unit, "temperature_deviation_x1", idx_set=(tset, iznodes), units=pyo.units.K)
 
         @unit.Expression(tset, iznodes)
         def temperature_x1(b, t, iz):
             if include_temp_x_thermo:
-                return b.temperature_z[t, iz] + b.Dtemp_x1[t, iz]
+                return b.temperature_z[t, iz] + b.temperature_deviation_x1[t, iz]
             else:
                 return b.temperature_z[t, iz]
 
     _create_if_none(
-        unit, "qflux_x0", idx_set=(tset, iznodes), units=pyo.units.W / pyo.units.m**2
+        unit, "heat_flux_x0", idx_set=(tset, iznodes), units=pyo.units.W / pyo.units.m**2
     )
 
     _create_if_none(
-        unit, "qflux_x1", idx_set=(tset, iznodes), units=pyo.units.W / pyo.units.m**2
+        unit, "heat_flux_x1", idx_set=(tset, iznodes), units=pyo.units.W / pyo.units.m**2
     )
 
 
@@ -698,11 +698,11 @@ def _material_boundary_conditions_config(CONFIG, thin):
     # otherwise either end of unit have different concentrations
     if thin:
         CONFIG.declare(
-            "xflux",
+            "material_flux_x",
             ConfigValue(default=None, description="Variable for material flux"),
         )
         CONFIG.declare(
-            "Dconc",
+            "conc_mol_comp_deviation_x",
             ConfigValue(
                 default=None,
                 description="Deviation of concentration from channel bulk "
@@ -711,7 +711,7 @@ def _material_boundary_conditions_config(CONFIG, thin):
         )
     else:
         CONFIG.declare(
-            "Dconc_x0",
+            "conc_mol_comp_deviation_x0",
             ConfigValue(
                 default=None,
                 description="Deviation of concentration at x= 0 from "
@@ -719,7 +719,7 @@ def _material_boundary_conditions_config(CONFIG, thin):
             ),
         )
         CONFIG.declare(
-            "Dconc_x1",
+            "conc_mol_comp_deviation_x1",
             ConfigValue(
                 default=None,
                 description="Deviation of concentration at x= 0 from "
@@ -727,11 +727,11 @@ def _material_boundary_conditions_config(CONFIG, thin):
             ),
         )
         CONFIG.declare(
-            "xflux_x0",
+            "material_flux_x0",
             ConfigValue(default=None, description="Variable for material flux at x=0"),
         )
         CONFIG.declare(
-            "xflux_x1",
+            "material_flux_x1",
             ConfigValue(default=None, description="Variable for material flux at x=1"),
         )
 
@@ -746,38 +746,38 @@ def _create_material_boundary_conditions_if_none(unit, thin):
     if thin:
         _create_if_none(
             unit,
-            "Dconc",
+            "conc_mol_comp_deviation_x",
             idx_set=(tset, iznodes, comps),
             units=pyo.units.mol / pyo.units.m**3,
         )
         _create_if_none(
             unit,
-            "xflux",
+            "material_flux_x",
             idx_set=(tset, iznodes, comps),
             units=pyo.units.mol / (pyo.units.s * pyo.units.m**2),
         )
     else:
         _create_if_none(
             unit,
-            "Dconc_x0",
+            "conc_mol_comp_deviation_x0",
             idx_set=(tset, iznodes, comps),
             units=pyo.units.mol / pyo.units.m**3,
         )
         _create_if_none(
             unit,
-            "Dconc_x1",
+            "conc_mol_comp_deviation_x1",
             idx_set=(tset, iznodes, comps),
             units=pyo.units.mol / pyo.units.m**3,
         )
         _create_if_none(
             unit,
-            "xflux_x0",
+            "material_flux_x0",
             idx_set=(tset, iznodes, comps),
             units=pyo.units.mol / (pyo.units.s * pyo.units.m**2),
         )
         _create_if_none(
             unit,
-            "xflux_x1",
+            "material_flux_x1",
             idx_set=(tset, iznodes, comps),
             units=pyo.units.mol / (pyo.units.s * pyo.units.m**2),
         )

@@ -70,7 +70,7 @@ class SocConductiveSlabData(UnitModelBlockData):
         common._submodel_boilerplate_create_if_none(self)
         common._create_thermal_boundary_conditions_if_none(self, thin=False)
 
-        self.Dtemp = pyo.Var(
+        self.temperature_deviation_x = pyo.Var(
             tset,
             ixnodes,
             iznodes,
@@ -102,7 +102,7 @@ class SocConductiveSlabData(UnitModelBlockData):
         @self.Expression(tset, ixnodes, iznodes)
         def temperature(b, t, ix, iz):
             if b.config.include_temperature_x_thermo:
-                return b.temperature_z[t, iz] + b.Dtemp[t, ix, iz]
+                return b.temperature_z[t, iz] + b.temperature_deviation_x[t, ix, iz]
             else:
                 return b.temperature_z[t, iz]
 
@@ -169,11 +169,11 @@ class SocConductiveSlabData(UnitModelBlockData):
                 ifaces=ixfaces,
                 nodes=b.xnodes,
                 faces=b.xfaces,
-                phi_func=lambda ixf: b.Dtemp[t, ixf, iz] / b.length_x,
-                phi_bound_0=(b.Dtemp_x0[t, iz] - b.Dtemp[t, ixnodes.first(), iz])
+                phi_func=lambda ixf: b.temperature_deviation_x[t, ixf, iz] / b.length_x,
+                phi_bound_0=(b.temperature_deviation_x0[t, iz] - b.temperature_deviation_x[t, ixnodes.first(), iz])
                 / (b.xfaces.first() - b.xnodes.first())
                 / b.length_x,
-                phi_bound_1=(b.Dtemp[t, ixnodes.last(), iz] - b.Dtemp_x1[t, iz])
+                phi_bound_1=(b.temperature_deviation_x[t, ixnodes.last(), iz] - b.temperature_deviation_x1[t, iz])
                 / (b.xnodes.last() - b.xfaces.last())
                 / b.length_x,
                 derivative=True,
@@ -193,19 +193,19 @@ class SocConductiveSlabData(UnitModelBlockData):
             )
 
         @self.Expression(tset, ixfaces, iznodes)
-        def qxflux(b, t, ix, iz):
+        def heat_flux_x(b, t, ix, iz):
             return -b.thermal_conductivity * b.dTdx[t, ix, iz]
 
         @self.Constraint(tset, iznodes)
-        def qflux_x0_eqn(b, t, iz):
-            return b.qflux_x0[t, iz] == b.qxflux[t, ixfaces.first(), iz]
+        def heat_flux_x0_eqn(b, t, iz):
+            return b.heat_flux_x0[t, iz] == b.heat_flux_x[t, ixfaces.first(), iz]
 
         @self.Constraint(tset, iznodes)
-        def qflux_x1_eqn(b, t, iz):
-            return b.qflux_x1[t, iz] == b.qxflux[t, ixfaces.last(), iz]
+        def heat_flux_x1_eqn(b, t, iz):
+            return b.heat_flux_x1[t, iz] == b.heat_flux_x[t, ixfaces.last(), iz]
 
         @self.Expression(tset, ixnodes, izfaces)
-        def qzflux(b, t, ix, iz):
+        def heat_flux_z(b, t, ix, iz):
             return -b.thermal_conductivity * b.dTdz[t, ix, iz]
 
         @self.Expression(tset, ixnodes, iznodes)
@@ -245,8 +245,8 @@ class SocConductiveSlabData(UnitModelBlockData):
         def energy_balance_solid_eqn(b, t, ix, iz):
             return (
                 b.node_volume[ix, iz] * b.dcedt_solid[t, ix, iz]
-                == b.xface_area[iz] * (b.qxflux[t, ix, iz] - b.qxflux[t, ix + 1, iz])
-                + b.zface_area[ix] * (b.qzflux[t, ix, iz] - b.qzflux[t, ix, iz + 1])
+                == b.xface_area[iz] * (b.heat_flux_x[t, ix, iz] - b.heat_flux_x[t, ix + 1, iz])
+                + b.zface_area[ix] * (b.heat_flux_z[t, ix, iz] - b.heat_flux_z[t, ix, iz + 1])
                 + b.joule_heating[t, ix, iz]
             )
 
@@ -281,27 +281,27 @@ class SocConductiveSlabData(UnitModelBlockData):
                 if not self.temperature_z[t, iz].is_reference():
                     sT = sgsf(self.temperature_z[t, iz], 1e-2)
 
-                if self.qflux_x0[t, iz].is_reference():
-                    sq0 = gsf(self.qflux_x0[t, iz].referent, default=1e-2)
+                if self.heat_flux_x0[t, iz].is_reference():
+                    sq0 = gsf(self.heat_flux_x0[t, iz].referent, default=1e-2)
                 else:
-                    sq0 = sgsf(self.qflux_x0[t, iz], 1e-2)
-                cst(self.qflux_x0_eqn[t, iz], sq0)
-                if not self.Dtemp_x0.is_reference():
-                    ssf(self.Dtemp_x0, sq0 * sLx / sk)
+                    sq0 = sgsf(self.heat_flux_x0[t, iz], 1e-2)
+                cst(self.heat_flux_x0_eqn[t, iz], sq0)
+                if not self.temperature_deviation_x0.is_reference():
+                    ssf(self.temperature_deviation_x0, sq0 * sLx / sk)
 
-                if self.qflux_x1[t, iz].is_reference():
-                    sq1 = gsf(self.qflux_x1[t, iz].referent, default=1e-2)
+                if self.heat_flux_x1[t, iz].is_reference():
+                    sq1 = gsf(self.heat_flux_x1[t, iz].referent, default=1e-2)
                 else:
-                    sq1 = sgsf(self.qflux_x1[t, iz], 1e-2)
-                cst(self.qflux_x1_eqn[t, iz], sq1)
-                if not self.Dtemp_x1.is_reference():
-                    ssf(self.Dtemp_x1, sq1 * sLx / sk)
+                    sq1 = sgsf(self.heat_flux_x1[t, iz], 1e-2)
+                cst(self.heat_flux_x1_eqn[t, iz], sq1)
+                if not self.temperature_deviation_x1.is_reference():
+                    ssf(self.temperature_deviation_x1, sq1 * sLx / sk)
 
                 sqx = min(sq0, sq1)
                 sqz = 10 * sqx  # Heuristic
 
                 for ix in self.ixnodes:
-                    sDT = sgsf(self.Dtemp[t, ix, iz], sqx * sLx / sk)
+                    sDT = sgsf(self.temperature_deviation_x[t, ix, iz], sqx * sLx / sk)
 
                     if self.config.has_holdup:
                         s_rho_U_solid = sgsf(

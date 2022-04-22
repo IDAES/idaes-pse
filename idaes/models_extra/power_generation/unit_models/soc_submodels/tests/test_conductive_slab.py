@@ -31,11 +31,11 @@ def common_components(nt, nz, nx):
             "current_density": nz * nt,
             "length_z": 1,
             "length_y": 1,
-            "Dtemp_x0": nz * nt,
-            "qflux_x0": nz * nt,
-            "Dtemp_x1": nz * nt,
-            "qflux_x1": nz * nt,
-            "Dtemp": nx * nz * nt,
+            "temperature_deviation_x0": nz * nt,
+            "heat_flux_x0": nz * nt,
+            "temperature_deviation_x1": nz * nt,
+            "heat_flux_x1": nz * nt,
+            "temperature_deviation_x": nx * nz * nt,
             "length_x": 1,
             "resistivity_log_preexponential_factor": 1,
             "resistivity_thermal_exponent_dividend": 1,
@@ -44,8 +44,8 @@ def common_components(nt, nz, nx):
             "thermal_conductivity": 1,
         },
         pyo.Constraint: {
-            "qflux_x0_eqn": nz * nt,
-            "qflux_x1_eqn": nz * nt,
+            "heat_flux_x0_eqn": nz * nt,
+            "heat_flux_x1_eqn": nz * nt,
             "energy_balance_solid_eqn": nx * nz * nt,
         },
         pyo.Expression: {
@@ -60,8 +60,8 @@ def common_components(nt, nz, nx):
             "current": nz * nt,
             "dTdx": (nx + 1) * nz * nt,
             "dTdz": (nz + 1) * nx * nt,
-            "qxflux": (nx + 1) * nz * nt,
-            "qzflux": (nz + 1) * nx * nt,
+            "heat_flux_x": (nx + 1) * nz * nt,
+            "heat_flux_z": (nz + 1) * nx * nt,
             "resistivity": nx * nz * nt,
             "resistance": nx * nz * nt,
             "voltage_drop": nx * nz * nt,
@@ -97,8 +97,8 @@ def modelNoHoldup():
     m.fs.slab.resistivity_log_preexponential_factor.fix(pyo.log(1.07e-4))
     m.fs.slab.resistivity_thermal_exponent_dividend.fix(7237)
 
-    slab.Dtemp_x0.fix(0)
-    slab.qflux_x0.fix(0)
+    slab.temperature_deviation_x0.fix(0)
+    slab.heat_flux_x0.fix(0)
     slab.length_y.fix(0.08)
     slab.length_z.fix(0.08)
     slab.temperature_z.fix(1000)
@@ -118,12 +118,12 @@ def modelHoldupNotDynamic():
     )
     iznodes = m.fs.iznodes
     tset = m.fs.config.time
-    m.fs.Dtemp_x0 = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
-    m.fs.qflux_x0 = pyo.Var(
+    m.fs.temperature_deviation_x0 = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
+    m.fs.heat_flux_x0 = pyo.Var(
         tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
     )
-    m.fs.Dtemp_x1 = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
-    m.fs.qflux_x1 = pyo.Var(
+    m.fs.temperature_deviation_x1 = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
+    m.fs.heat_flux_x1 = pyo.Var(
         tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
     )
 
@@ -136,14 +136,14 @@ def modelHoldupNotDynamic():
             "length_y": m.fs.length_y,
             "current_density": m.fs.current_density,
             "temperature_z": m.fs.temperature_z,
-            "Dtemp_x0": m.fs.Dtemp_x0,
-            "qflux_x0": m.fs.qflux_x0,
-            "Dtemp_x1": m.fs.Dtemp_x1,
-            "qflux_x1": m.fs.qflux_x1,
+            "temperature_deviation_x0": m.fs.temperature_deviation_x0,
+            "heat_flux_x0": m.fs.heat_flux_x0,
+            "temperature_deviation_x1": m.fs.temperature_deviation_x1,
+            "heat_flux_x1": m.fs.heat_flux_x1,
         }
     )
-    m.fs.Dtemp_x0.fix(0)
-    m.fs.qflux_x0.fix(0)
+    m.fs.temperature_deviation_x0.fix(0)
+    m.fs.heat_flux_x0.fix(0)
 
     m.fs.slab.length_x.fix(1.4e-4)
     m.fs.slab.heat_capacity.fix(470)
@@ -191,10 +191,10 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
             "current_density",
             "length_z",
             "length_y",
-            "Dtemp_x0",
-            "qflux_x0",
-            "Dtemp_x1",
-            "qflux_x1",
+            "temperature_deviation_x0",
+            "heat_flux_x0",
+            "temperature_deviation_x1",
+            "heat_flux_x1",
         ],
     )
 

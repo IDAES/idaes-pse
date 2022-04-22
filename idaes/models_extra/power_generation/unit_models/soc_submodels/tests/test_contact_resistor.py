@@ -36,8 +36,8 @@ def model():
     )
     iznodes = m.fs.iznodes
     tset = m.fs.config.time
-    m.fs.Dtemp = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
-    m.fs.qflux_x0 = pyo.Var(
+    m.fs.temperature_deviation_x = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
+    m.fs.heat_flux_x0 = pyo.Var(
         tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
     )
 
@@ -48,12 +48,12 @@ def model():
             "length_y": m.fs.length_y,
             "current_density": m.fs.current_density,
             "temperature_z": m.fs.temperature_z,
-            "Dtemp": m.fs.Dtemp,
-            "qflux_x0": m.fs.qflux_x0,
+            "temperature_deviation_x": m.fs.temperature_deviation_x,
+            "heat_flux_x0": m.fs.heat_flux_x0,
         }
     )
-    m.fs.Dtemp.fix(0)
-    m.fs.qflux_x0.fix(0)
+    m.fs.temperature_deviation_x.fix(0)
+    m.fs.heat_flux_x0.fix(0)
 
     m.fs.contact.log_preexponential_factor.fix(pyo.log(0.46e-4))
     m.fs.contact.thermal_exponent_dividend.fix(0)
@@ -80,8 +80,8 @@ def model2():
     )
     m.fs.contact.current_density.fix(0)
     m.fs.contact.temperature_z.fix(0)
-    m.fs.contact.Dtemp.fix(0)
-    m.fs.contact.qflux_x0.fix(0)
+    m.fs.contact.temperature_deviation_x.fix(0)
+    m.fs.contact.heat_flux_x0.fix(0)
 
     m.fs.contact.log_preexponential_factor.fix(pyo.log(0.46e-4))
     m.fs.contact.thermal_exponent_dividend.fix(0)
@@ -100,17 +100,17 @@ def test_build(model):
         comp_dict={
             pyo.Var: {
                 "temperature_z": nz * nt,
-                "Dtemp": nz * nt,
-                "qflux_x0": nz * nt,
+                "temperature_deviation_x": nz * nt,
+                "heat_flux_x0": nz * nt,
                 "current_density": nz * nt,
                 "length_z": 1,
                 "length_y": 1,
-                "qflux_x1": nz * nt,
+                "heat_flux_x1": nz * nt,
                 "log_preexponential_factor": 1,
                 "thermal_exponent_dividend": 1,
                 "contact_fraction": 1,
             },
-            pyo.Constraint: {"qflux_eqn": nz * nt},
+            pyo.Constraint: {"heat_flux_x_eqn": nz * nt},
             pyo.Expression: {
                 "temperature": nz * nt,
                 "contact_resistance": nz * nt,
@@ -120,8 +120,8 @@ def test_build(model):
         },
         references=[
             "temperature_z",
-            "Dtemp",
-            "qflux_x0",
+            "temperature_deviation_x",
+            "heat_flux_x0",
             "current_density",
             "length_z",
             "length_y",
@@ -140,17 +140,17 @@ def test_build2(model2):
         comp_dict={
             pyo.Var: {
                 "temperature_z": nz * nt,
-                "Dtemp": nz * nt,
-                "qflux_x0": nz * nt,
+                "temperature_deviation_x": nz * nt,
+                "heat_flux_x0": nz * nt,
                 "current_density": nz * nt,
                 "length_z": 1,
                 "length_y": 1,
-                "qflux_x1": nz * nt,
+                "heat_flux_x1": nz * nt,
                 "log_preexponential_factor": 1,
                 "thermal_exponent_dividend": 1,
                 "contact_fraction": 1,
             },
-            pyo.Constraint: {"qflux_eqn": nz * nt},
+            pyo.Constraint: {"heat_flux_x_eqn": nz * nt},
             pyo.Expression: {
                 "temperature": nz * nt,
                 "contact_resistance": nz * nt,
@@ -167,8 +167,8 @@ def test_build2(model2):
 @pytest.mark.component
 def test_initialization(model):
     model.fs.contact.initialize_build(optarg={"nlp_scaling_method": "user-scaling"})
-    model.fs.qflux_x0.unfix()
-    model.fs.contact.qflux_x1.fix()
+    model.fs.heat_flux_x0.unfix()
+    model.fs.contact.heat_flux_x1.fix()
     model.fs.contact.initialize_build(
-        fix_qflux_x0=False, optarg={"nlp_scaling_method": "user-scaling"}
+        fix_heat_flux_x0=False, optarg={"nlp_scaling_method": "user-scaling"}
         )

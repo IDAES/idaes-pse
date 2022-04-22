@@ -67,7 +67,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         )
     )
     CONFIG.declare(
-        "conc_ref",
+        "conc_mol_comp_ref",
         ConfigValue(
             default=None,
             description="Variable for the component concentration in bulk channel ",
@@ -78,7 +78,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         ConfigValue(
             domain=In([True, False]),
             description="Whether the triple phase boundary is located below or "
-            "above the electrolyte. This flag determines the sign of xflux.",
+            "above the electrolyte. This flag determines the sign of material_flux_x.",
         ),
     )
 
@@ -142,7 +142,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
 
         common._create_if_none(
             self,
-            "conc_ref",
+            "conc_mol_comp_ref",
             idx_set=(tset, iznodes, comps),
             units=pyo.units.mol / pyo.units.m**3,
         )
@@ -198,19 +198,19 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         )
 
         @self.Expression(tset, iznodes, comps)
-        def conc(b, t, iz, j):
-            return b.conc_ref[t, iz, j] + b.Dconc[t, iz, j]
+        def conc_mol_comp(b, t, iz, j):
+            return b.conc_mol_comp_ref[t, iz, j] + b.conc_mol_comp_deviation_x[t, iz, j]
 
         @self.Expression(tset, iznodes)
         def pressure(b, t, iz):
-            return sum(b.conc[t, iz, i] for i in comps) * _constR * b.temperature[t, iz]
+            return sum(b.conc_mol_comp[t, iz, i] for i in comps) * _constR * b.temperature[t, iz]
 
         # mole_frac_comp must be a variable because we want IPOPT to enforce
         # a lower bound of 0 in order to avoid AMPL errors, etc.
         @self.Constraint(tset, iznodes, comps)
         def mole_frac_comp_eqn(b, t, iz, j):
-            return b.mole_frac_comp[t, iz, j] == b.conc[t, iz, j] / sum(
-                b.conc[t, iz, i] for i in comps
+            return b.mole_frac_comp[t, iz, j] == b.conc_mol_comp[t, iz, j] / sum(
+                b.conc_mol_comp[t, iz, i] for i in comps
             )
 
         @self.Constraint(tset, iznodes, comps)
@@ -293,10 +293,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             return b.activation_potential[t, iz]
 
         @self.Constraint(tset, iznodes)
-        def qflux_eqn(b, t, iz):
+        def heat_flux_x_eqn(b, t, iz):
             return (
-                b.qflux_x1[t, iz]
-                == b.qflux_x0[t, iz]
+                b.heat_flux_x1[t, iz]
+                == b.heat_flux_x0[t, iz]
                 + b.current_density[t, iz]
                 * b.voltage_drop_total[t, iz]  # Resistive heating
                 - b.reaction_rate_per_unit_area[t, iz]  # Reversible heat of reaction
@@ -305,15 +305,15 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             )
 
         @self.Constraint(tset, iznodes, comps)
-        def xflux_eqn(b, t, iz, j):
+        def material_flux_x_eqn(b, t, iz, j):
             if b.config.below_electrolyte:
                 return (
-                    b.xflux[t, iz, j]
+                    b.material_flux_x[t, iz, j]
                     == -b.reaction_rate_per_unit_area[t, iz] * b.tpb_stoich[j]
                 )
             else:
                 return (
-                    b.xflux[t, iz, j]
+                    b.material_flux_x[t, iz, j]
                     == b.reaction_rate_per_unit_area[t, iz] * b.tpb_stoich[j]
                 )
 
@@ -323,20 +323,20 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        self.Dtemp.fix()
-        self.conc_ref.fix()
-        self.Dconc.fix()
+        self.temperature_deviation_x.fix()
+        self.conc_mol_comp_ref.fix()
+        self.conc_mol_comp_deviation_x.fix()
         if fix_x0:
-            self.qflux_x0.fix()
+            self.heat_flux_x0.fix()
         else:
-            self.qflux_x1.fix()
+            self.heat_flux_x1.fix()
 
         for t in self.flowsheet().time:
             for iz in self.iznodes:
-                denom = pyo.value(sum(self.conc[t, iz, j] for j in self.component_list))
+                denom = pyo.value(sum(self.conc_mol_comp[t, iz, j] for j in self.component_list))
                 for j in self.component_list:
                     self.mole_frac_comp[t, iz, j].value = pyo.value(
-                        self.conc[t, iz, j] / denom
+                        self.conc_mol_comp[t, iz, j] / denom
                     )
                     self.log_mole_frac_comp[t, iz, j].value = pyo.value(
                         pyo.log(self.mole_frac_comp[t, iz, j])
@@ -345,13 +345,13 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         slvr = get_solver(solver, optarg)
         common._init_solve_block(self, slvr, solve_log)
 
-        self.Dtemp.unfix()
-        self.conc_ref.unfix()
-        self.Dconc.unfix()
+        self.temperature_deviation_x.unfix()
+        self.conc_mol_comp_ref.unfix()
+        self.conc_mol_comp_deviation_x.unfix()
         if fix_x0:
-            self.qflux_x0.unfix()
+            self.heat_flux_x0.unfix()
         else:
-            self.qflux_x1.unfix()
+            self.heat_flux_x1.unfix()
 
     def calculate_scaling_factors(self):
         pass
@@ -377,16 +377,16 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                     si = gsf(self.current_density[t, iz], default=1e-2, warning=True)
                 # TODO come back when I come up with a good formulation
                 cst(self.activation_potential_eqn[t, iz], si)
-                if self.qflux_x0[t, iz].is_reference():
-                    gsf(self.qflux_x0[t, iz].referent, default=1e-2)
+                if self.heat_flux_x0[t, iz].is_reference():
+                    gsf(self.heat_flux_x0[t, iz].referent, default=1e-2)
                 else:
-                    sqx0 = sgsf(self.qflux_x0[t, iz], 1e-2)
-                if self.qflux_x1[t, iz].is_reference():
-                    sqx1 = gsf(self.qflux_x1[t, iz].referent, 1e-2)
+                    sqx0 = sgsf(self.heat_flux_x0[t, iz], 1e-2)
+                if self.heat_flux_x1[t, iz].is_reference():
+                    sqx1 = gsf(self.heat_flux_x1[t, iz].referent, 1e-2)
                 else:
-                    sqx1 = sgsf(self.qflux_x1[t, iz], 1e-2)
+                    sqx1 = sgsf(self.heat_flux_x1[t, iz], 1e-2)
                 sqx = min(sqx0, sqx1)
-                cst(self.qflux_eqn[t, iz], sqx)
+                cst(self.heat_flux_x_eqn[t, iz], sqx)
                 for j in self.component_list:
                     # TODO Come back with good formulation for trace components
                     # and scale DConc and Cref
@@ -394,5 +394,5 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                     ssf(self.log_mole_frac_comp[t, iz, j], 1)
                     cst(self.mole_frac_comp_eqn[t, iz, j], sy)
                     cst(self.log_mole_frac_comp_eqn[t, iz, j], sy)
-                    sxflux = sgsf(self.xflux[t, iz, j], 1e-2)
-                    cst(self.xflux_eqn[t, iz, j], sxflux)
+                    smaterial_flux_x = sgsf(self.material_flux_x[t, iz, j], 1e-2)
+                    cst(self.material_flux_x_eqn[t, iz, j], smaterial_flux_x)

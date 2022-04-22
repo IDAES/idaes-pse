@@ -33,17 +33,17 @@ def common_components(nt, nz, nx, ncomp):
             "length_x": 1,
             "length_z": 1,
             "length_y": 1,
-            "conc_ref": nz * nt * ncomp,
-            "Dconc_x0": nz * nt * ncomp,
-            "Dconc": nz * nx * nt * ncomp,
-            "Dconc_x1": nz * nt * ncomp,
-            "xflux_x0": nz * nt * ncomp,
-            "xflux_x1": nz * nt * ncomp,
-            "Dtemp_x0": nz * nt,
-            "qflux_x0": nz * nt,
-            "Dtemp_x1": nz * nt,
-            "qflux_x1": nz * nt,
-            "Dtemp": nx * nz * nt,
+            "conc_mol_comp_ref": nz * nt * ncomp,
+            "conc_mol_comp_deviation_x0": nz * nt * ncomp,
+            "conc_mol_comp_deviation_x": nz * nx * nt * ncomp,
+            "conc_mol_comp_deviation_x1": nz * nt * ncomp,
+            "material_flux_x0": nz * nt * ncomp,
+            "material_flux_x1": nz * nt * ncomp,
+            "temperature_deviation_x0": nz * nt,
+            "heat_flux_x0": nz * nt,
+            "temperature_deviation_x1": nz * nt,
+            "heat_flux_x1": nz * nt,
+            "temperature_deviation_x": nx * nz * nt,
             "enth_mol": nx * nz * nt,
             "pressure": nx * nz * nt,
             "mole_frac_comp": nx * nz * nt * ncomp,
@@ -57,10 +57,10 @@ def common_components(nt, nz, nx, ncomp):
             "conc_eqn": nt * nz * nx * ncomp,
             "mole_frac_eqn": nt * nz * nx,
             "enth_mol_eqn": nt * nz * nx,
-            "xflux_x0_eqn": nz * nt * ncomp,
-            "xflux_x1_eqn": nz * nt * ncomp,
-            "qflux_x0_eqn": nz * nt,
-            "qflux_x1_eqn": nz * nt,
+            "material_flux_x0_eqn": nz * nt * ncomp,
+            "material_flux_x1_eqn": nz * nt * ncomp,
+            "heat_flux_x0_eqn": nz * nt,
+            "heat_flux_x1_eqn": nz * nt,
             "material_balance_eqn": nx * nz * nt * ncomp,
             "energy_balance_solid_eqn": nx * nz * nt,
         },
@@ -68,16 +68,16 @@ def common_components(nt, nz, nx, ncomp):
             "temperature_x0": nz * nt,
             "temperature": nx * nz * nt,
             "temperature_x1": nz * nt,
-            "conc_x0": nz * nt * ncomp,
-            "conc": nz * nx * nt * ncomp,
-            "conc_x1": nz * nt * ncomp,
+            "conc_mol_comp_x0": nz * nt * ncomp,
+            "conc_mol_comp": nz * nx * nt * ncomp,
+            "conc_mol_comp_x1": nz * nt * ncomp,
             "diff_eff_coeff": nt * nx * nz * ncomp,
             "diff_eff_coeff_xfaces": nt * (nx + 1) * nz * ncomp,
             "diff_eff_coeff_zfaces": nt * nx * (nz + 1) * ncomp,
             "temperature_xfaces": nt * (nx + 1) * nz,
             "temperature_zfaces": nt * nx * (nz + 1),
-            "dcdt": nz * nx * nt * ncomp,
-            "volume_molar": nt * nx * nz,
+            "dconc_mol_compdt": nz * nx * nt * ncomp,
+            "vol_mol": nt * nx * nz,
             "dz": nz,
             "dx": nx,
             "node_volume": nx * nz,
@@ -85,12 +85,12 @@ def common_components(nt, nz, nx, ncomp):
             "xface_area": nz,
             "dcdx": ncomp * (nx + 1) * nz * nt,
             "dcdz": ncomp * (nz + 1) * nx * nt,
-            "xflux": ncomp * (nx + 1) * nz * nt,
-            "zflux": ncomp * (nz + 1) * nx * nt,
+            "material_flux_x": ncomp * (nx + 1) * nz * nt,
+            "material_flux_z": ncomp * (nz + 1) * nx * nt,
             "dTdx": (nx + 1) * nz * nt,
             "dTdz": (nz + 1) * nx * nt,
-            "qxflux": (nx + 1) * nz * nt,
-            "qzflux": (nz + 1) * nx * nt,
+            "heat_flux_x": (nx + 1) * nz * nt,
+            "heat_flux_z": (nz + 1) * nx * nt,
             "resistivity": nx * nz * nt,
             "resistance": nx * nz * nt,
             "current": nt * nz,
@@ -102,11 +102,11 @@ def common_components(nt, nz, nx, ncomp):
     }
 
 def fix_boundary_conditions(electrode):
-    electrode.Dtemp_x0.fix()
-    electrode.conc_ref.fix()
-    electrode.Dconc_x0.fix()
-    electrode.xflux_x0.fix()
-    electrode.qflux_x0.fix()
+    electrode.temperature_deviation_x0.fix()
+    electrode.conc_mol_comp_ref.fix()
+    electrode.conc_mol_comp_deviation_x0.fix()
+    electrode.material_flux_x0.fix()
+    electrode.heat_flux_x0.fix()
 
 @pytest.fixture
 def modelNoHoldup():
@@ -158,28 +158,28 @@ def modelHoldupNotDynamic():
     # time_units = m.fs.time_units
     tset = m.fs.config.time
     comps = m.fs.comps = pyo.Set(initialize=["H2", "H2O", "N2"])
-    m.fs.Dtemp_x0 = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
-    m.fs.conc_ref = pyo.Var(
+    m.fs.temperature_deviation_x0 = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
+    m.fs.conc_mol_comp_ref = pyo.Var(
         tset, iznodes, comps, initialize=1, units=pyo.units.mol / pyo.units.m**3
     )
-    m.fs.Dconc_x0 = pyo.Var(
+    m.fs.conc_mol_comp_deviation_x0 = pyo.Var(
         tset, iznodes, comps, initialize=0, units=pyo.units.mol / pyo.units.m**3
     )
-    m.fs.dconc_refdt = pyo.Param(
+    m.fs.dconc_mol_comp_refdt = pyo.Param(
         tset,
         iznodes,
         comps,
         initialize=0,
         units=pyo.units.mol / (pyo.units.m**3 * pyo.units.s),
     )
-    m.fs.xflux_x0 = pyo.Var(
+    m.fs.material_flux_x0 = pyo.Var(
         tset,
         iznodes,
         comps,
         initialize=0,
         units=pyo.units.mol / (pyo.units.s * pyo.units.m**2),
     )
-    m.fs.qflux_x0 = pyo.Var(
+    m.fs.heat_flux_x0 = pyo.Var(
         tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
     )
     m.fs.fuel_electrode = soc.SocElectrode(
@@ -190,13 +190,13 @@ def modelHoldupNotDynamic():
             "component_list": ["H2", "H2O", "N2"],
             "length_z": m.fs.length_z,
             "length_y": m.fs.length_y,
-            "conc_ref": m.fs.conc_ref,
-            "dconc_refdt": m.fs.dconc_refdt,
-            "Dconc_x0": m.fs.Dconc_x0,
-            "xflux_x0": m.fs.xflux_x0,
-            "qflux_x0": m.fs.qflux_x0,
+            "conc_mol_comp_ref": m.fs.conc_mol_comp_ref,
+            "dconc_mol_comp_refdt": m.fs.dconc_mol_comp_refdt,
+            "conc_mol_comp_deviation_x0": m.fs.conc_mol_comp_deviation_x0,
+            "material_flux_x0": m.fs.material_flux_x0,
+            "heat_flux_x0": m.fs.heat_flux_x0,
             "temperature_z": m.fs.temperature_z,
-            "Dtemp_x0": m.fs.Dtemp_x0,
+            "temperature_deviation_x0": m.fs.temperature_deviation_x0,
             "current_density": m.fs.current_density,
         }
     )
@@ -224,8 +224,8 @@ def test_build_modelNoHoldup(modelNoHoldup):
 
     comp_dict = common_components(nt, nz, nx, ncomp)
     comp_dict[pyo.Param] = {}
-    comp_dict[pyo.Param]["dconc_refdt"] = nt * nz * ncomp
-    comp_dict[pyo.Param]["dDconcdt"] = nt * nz * nx * ncomp
+    comp_dict[pyo.Param]["dconc_mol_comp_refdt"] = nt * nz * ncomp
+    comp_dict[pyo.Param]["dconc_mol_comp_deviation_xdt"] = nt * nz * nx * ncomp
     comp_dict[pyo.Param]["dcedt"] = nt * nx * nz
     comp_dict[pyo.Param]["dcedt_solid"] = nt * nx * nz
 
@@ -250,8 +250,8 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
     comp_dict[pyo.Var]["int_energy_density"] = nx * nz * nt
     comp_dict[pyo.Var]["int_energy_density_solid"] = nx * nz * nt
     comp_dict[pyo.Param] = {}
-    comp_dict[pyo.Param]["dconc_refdt"] = nt * nz * ncomp
-    comp_dict[pyo.Param]["dDconcdt"] = nt * nz * nx * ncomp
+    comp_dict[pyo.Param]["dconc_mol_comp_refdt"] = nt * nz * ncomp
+    comp_dict[pyo.Param]["dconc_mol_comp_deviation_xdt"] = nt * nz * nx * ncomp
     comp_dict[pyo.Param]["dcedt"] = nt * nx * nz
     comp_dict[pyo.Param]["dcedt_solid"] = nt * nx * nz
     comp_dict[pyo.Constraint]["int_energy_mol_eqn"] = nt * nx * nz
@@ -266,12 +266,12 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
             "current_density",
             "length_z",
             "length_y",
-            "conc_ref",
-            "Dconc_x0",
-            "dconc_refdt",
-            "xflux_x0",
-            "Dtemp_x0",
-            "qflux_x0",
+            "conc_mol_comp_ref",
+            "conc_mol_comp_deviation_x0",
+            "dconc_mol_comp_refdt",
+            "material_flux_x0",
+            "temperature_deviation_x0",
+            "heat_flux_x0",
         ],
     )
 

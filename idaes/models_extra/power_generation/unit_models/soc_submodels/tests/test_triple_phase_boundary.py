@@ -30,15 +30,15 @@ def common_components(nt, nz, ncomp, nreact):
     return {
         pyo.Var: {
             "temperature_z": nz * nt,
-            "Dtemp": nz * nt,
-            "conc_ref": nz * nt * ncomp,
-            "Dconc": nz * nt * ncomp,
-            "xflux": nz * nt * ncomp,
-            "qflux_x0": nz * nt,
+            "temperature_deviation_x": nz * nt,
+            "conc_mol_comp_ref": nz * nt * ncomp,
+            "conc_mol_comp_deviation_x": nz * nt * ncomp,
+            "material_flux_x": nz * nt * ncomp,
+            "heat_flux_x0": nz * nt,
             "current_density": nz * nt,
             "length_z": 1,
             "length_y": 1,
-            "qflux_x1": nz * nt,
+            "heat_flux_x1": nz * nt,
             "mole_frac_comp": nz * nt * ncomp,
             "log_mole_frac_comp": nz * nt * ncomp,
             "activation_potential": nz * nt,
@@ -51,13 +51,13 @@ def common_components(nt, nz, ncomp, nreact):
         pyo.Constraint: {
             "mole_frac_comp_eqn": nz * nt * ncomp,
             "log_mole_frac_comp_eqn": nz * nt * ncomp,
-            "xflux_eqn": nz * nt * ncomp,
+            "material_flux_x_eqn": nz * nt * ncomp,
             "activation_potential_eqn": nz * nt,
-            "qflux_eqn": nz * nt,
+            "heat_flux_x_eqn": nz * nt,
         },
         pyo.Expression: {
             "temperature": nz * nt,
-            "conc": nz * nt * ncomp,
+            "conc_mol_comp": nz * nt * ncomp,
             "pressure": nz * nt,
             "ds_rxn": nz * nt,
             "dh_rxn": nz * nt,
@@ -83,21 +83,21 @@ def modelFuel():
     tset = m.fs.config.time
     comps = m.fs.comps = pyo.Set(initialize=fuel_comps)
 
-    m.fs.Dtemp = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
-    m.fs.conc_ref = pyo.Var(
+    m.fs.temperature_deviation_x = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
+    m.fs.conc_mol_comp_ref = pyo.Var(
         tset, iznodes, comps, initialize=1, units=pyo.units.mol / pyo.units.m**3
     )
-    m.fs.Dconc = pyo.Var(
+    m.fs.conc_mol_comp_deviation_x = pyo.Var(
         tset, iznodes, comps, initialize=0, units=pyo.units.mol / pyo.units.m**3
     )
-    m.fs.xflux = pyo.Var(
+    m.fs.material_flux_x = pyo.Var(
         tset,
         iznodes,
         comps,
         initialize=0,
         units=pyo.units.mol / (pyo.units.s * pyo.units.m**2),
     )
-    m.fs.qflux_x0 = pyo.Var(
+    m.fs.heat_flux_x0 = pyo.Var(
         tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
     )
     m.fs.fuel_tpb = soc.SocTriplePhaseBoundary(
@@ -110,17 +110,17 @@ def modelFuel():
             "inert_species": ["N2"],
             "current_density": m.fs.current_density,
             "temperature_z": m.fs.temperature_z,
-            "Dtemp": m.fs.Dtemp,
-            "qflux_x0": m.fs.qflux_x0,
-            "conc_ref": m.fs.conc_ref,
-            "Dconc": m.fs.Dconc,
-            "xflux": m.fs.xflux,
+            "temperature_deviation_x": m.fs.temperature_deviation_x,
+            "heat_flux_x0": m.fs.heat_flux_x0,
+            "conc_mol_comp_ref": m.fs.conc_mol_comp_ref,
+            "conc_mol_comp_deviation_x": m.fs.conc_mol_comp_deviation_x,
+            "material_flux_x": m.fs.material_flux_x,
         }
     )
-    m.fs.Dtemp.fix(0)
-    m.fs.qflux_x0.fix(0)
-    m.fs.conc_ref.fix(1)
-    m.fs.Dconc.fix(0)
+    m.fs.temperature_deviation_x.fix(0)
+    m.fs.heat_flux_x0.fix(0)
+    m.fs.conc_mol_comp_ref.fix(1)
+    m.fs.conc_mol_comp_deviation_x.fix(0)
 
     m.fs.fuel_tpb.exchange_current_log_preexponential_factor.fix(pyo.log(1.375e10))
     m.fs.fuel_tpb.exchange_current_activation_energy.fix(120e3)
@@ -156,10 +156,10 @@ def modelOxygen():
     m.fs.oxygen_tpb.temperature_z.fix(0)
     m.fs.oxygen_tpb.current_density.fix(0)
     
-    m.fs.oxygen_tpb.Dtemp.fix(0)
-    m.fs.oxygen_tpb.qflux_x0.fix(0)
-    m.fs.oxygen_tpb.conc_ref.fix(1)
-    m.fs.oxygen_tpb.Dconc.fix(0)
+    m.fs.oxygen_tpb.temperature_deviation_x.fix(0)
+    m.fs.oxygen_tpb.heat_flux_x0.fix(0)
+    m.fs.oxygen_tpb.conc_mol_comp_ref.fix(1)
+    m.fs.oxygen_tpb.conc_mol_comp_deviation_x.fix(0)
 
     m.fs.oxygen_tpb.exchange_current_log_preexponential_factor.fix(pyo.log(1.375e10))
     m.fs.oxygen_tpb.exchange_current_activation_energy.fix(120e3)
@@ -183,11 +183,11 @@ def test_build_fuel(modelFuel):
         comp_dict=common_components(nt, nz, ncomp, nreact),
         references=[
             "temperature_z",
-            "Dtemp",
-            "conc_ref",
-            "Dconc",
-            "xflux",
-            "qflux_x0",
+            "temperature_deviation_x",
+            "conc_mol_comp_ref",
+            "conc_mol_comp_deviation_x",
+            "material_flux_x",
+            "heat_flux_x0",
             "current_density",
             "length_z",
             "length_y",

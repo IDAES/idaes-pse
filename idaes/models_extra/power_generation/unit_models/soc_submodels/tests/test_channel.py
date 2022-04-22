@@ -28,18 +28,18 @@ def common_components(nt, nz, ncomp):
     return {
         pyo.Var: {
             "temperature_z": nz * nt,
-            "Dtemp_x0": nz * nt,
-            "Dtemp": nz * nt,
-            "Dtemp_x1": nz * nt,
+            "temperature_deviation_x0": nz * nt,
+            "temperature_deviation_x": nz * nt,
+            "temperature_deviation_x1": nz * nt,
             "enth_mol": nz * nt,
             "heat_transfer_coefficient": nt * nz,
             "velocity": nz * nt,
             "pressure": nz * nt,
             "flow_mol": nz * nt,
             "mole_frac_comp": nz * nt * ncomp,
-            "conc": nz * nt * ncomp,
-            "qflux_x0": nz * nt,
-            "qflux_x1": nz * nt,
+            "conc_mol_comp": nz * nt * ncomp,
+            "heat_flux_x0": nz * nt,
+            "heat_flux_x1": nz * nt,
             "length_x": 1,
             "length_z": 1,
             "length_y": 1,
@@ -72,13 +72,13 @@ def common_components(nt, nz, ncomp):
             "xface_area": nz,
             "enth_mol_inlet": nt,
             "diff_eff_coeff": nt * nz * ncomp,
-            "volume_molar": nt * nz,
-            "volume_molar_inlet": nt,
+            "vol_mol": nt * nz,
+            "vol_mol_inlet": nt,
             "mass_transfer_coeff": nt * nz * ncomp,
-            "zflux_inlet": nt * ncomp,
-            "zflux_enth_inlet": nt,
-            "zflux": nt * (nz + 1) * ncomp,
-            "zflux_enth": nt * (nz + 1),
+            "material_flux_z_inlet": nt * ncomp,
+            "material_flux_z_enth_inlet": nt,
+            "material_flux_z": nt * (nz + 1) * ncomp,
+            "material_flux_z_enth": nt * (nz + 1),
             "pressure_face": nt * (nz + 1),
             "material_balance_eqn": nt * nz * ncomp,
             "flow_mol_comp_outlet": nt * ncomp,
@@ -91,12 +91,12 @@ def common_components(nt, nz, ncomp):
     }
 
 def fix_boundary_conditions(channel):
-    channel.qflux_x0.fix(0)
-    channel.qflux_x1.fix(0)
+    channel.heat_flux_x0.fix(0)
+    channel.heat_flux_x1.fix(0)
     if channel.config.below_electrode:
-        channel.xflux_x1.fix(0)
+        channel.material_flux_x1.fix(0)
     else:
-        channel.xflux_x0.fix(0)
+        channel.material_flux_x0.fix(0)
     channel.flow_mol_inlet.fix()
     channel.temperature_inlet.fix()
     channel.pressure_inlet.fix()
@@ -167,13 +167,13 @@ def test_build_modelNoHoldup(modelNoHoldup):
     ncomp = len(channel.component_list)
 
     comp_dict = common_components(nt, nz, ncomp)
-    comp_dict[pyo.Var]["Dconc_x0"] = nt * nz * ncomp
-    comp_dict[pyo.Var]["xflux_x0"] = nt * nz * ncomp
-    comp_dict[pyo.Constraint]["xflux_x0_eqn"] = nt * nz * ncomp
-    comp_dict[pyo.Expression]["Dconc_x1"] = nt * nz * ncomp
-    comp_dict[pyo.Expression]["xflux_x1"] = nt * nz * ncomp
+    comp_dict[pyo.Var]["conc_mol_comp_deviation_x0"] = nt * nz * ncomp
+    comp_dict[pyo.Var]["material_flux_x0"] = nt * nz * ncomp
+    comp_dict[pyo.Constraint]["material_flux_x0_eqn"] = nt * nz * ncomp
+    comp_dict[pyo.Expression]["conc_mol_comp_deviation_x1"] = nt * nz * ncomp
+    comp_dict[pyo.Expression]["material_flux_x1"] = nt * nz * ncomp
     comp_dict[pyo.Param] = {}
-    comp_dict[pyo.Param]["dcdt"] = nt * nz * ncomp
+    comp_dict[pyo.Param]["dconc_mol_compdt"] = nt * nz * ncomp
     comp_dict[pyo.Param]["dcedt"] = nt * nz
 
     soc_testing._build_test_utility(
@@ -191,15 +191,15 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
     ncomp = len(channel.component_list)
 
     comp_dict = common_components(nt, nz, ncomp)
-    comp_dict[pyo.Expression]["Dconc_x0"] = nt * nz * ncomp
-    comp_dict[pyo.Expression]["xflux_x0"] = nt * nz * ncomp
-    comp_dict[pyo.Var]["Dconc_x1"] = nt * nz * ncomp
-    comp_dict[pyo.Var]["xflux_x1"] = nt * nz * ncomp
-    comp_dict[pyo.Constraint]["xflux_x1_eqn"] = nt * nz * ncomp
+    comp_dict[pyo.Expression]["conc_mol_comp_deviation_x0"] = nt * nz * ncomp
+    comp_dict[pyo.Expression]["material_flux_x0"] = nt * nz * ncomp
+    comp_dict[pyo.Var]["conc_mol_comp_deviation_x1"] = nt * nz * ncomp
+    comp_dict[pyo.Var]["material_flux_x1"] = nt * nz * ncomp
+    comp_dict[pyo.Constraint]["material_flux_x1_eqn"] = nt * nz * ncomp
     comp_dict[pyo.Var]["int_energy_mol"] = nt * nz
     comp_dict[pyo.Var]["int_energy_density"] = nt * nz
     comp_dict[pyo.Param] = {}
-    comp_dict[pyo.Param]["dcdt"] = nt * nz * ncomp
+    comp_dict[pyo.Param]["dconc_mol_compdt"] = nt * nz * ncomp
     comp_dict[pyo.Param]["dcedt"] = nt * nz
     comp_dict[pyo.Constraint]["int_energy_mol_eqn"] = nt * nz
     comp_dict[pyo.Constraint]["int_energy_density_eqn"] = nt * nz

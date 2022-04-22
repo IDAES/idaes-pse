@@ -105,7 +105,7 @@ class SocChannelData(UnitModelBlockData):
         common._create_thermal_boundary_conditions_if_none(self, thin=False)
 
         if not self.config.below_electrode:
-            self.Dconc_x0 = pyo.Var(
+            self.conc_mol_comp_deviation_x0 = pyo.Var(
                 tset,
                 iznodes,
                 comps,
@@ -114,7 +114,7 @@ class SocChannelData(UnitModelBlockData):
                 initialize=0,
                 units=pyo.units.mol / pyo.units.m**3,
             )
-            self.xflux_x0 = pyo.Var(
+            self.material_flux_x0 = pyo.Var(
                 tset,
                 iznodes,
                 comps,
@@ -125,15 +125,15 @@ class SocChannelData(UnitModelBlockData):
             )
 
             @self.Expression(tset, iznodes, comps)
-            def Dconc_x1(b, t, iz, j):
+            def conc_mol_comp_deviation_x1(b, t, iz, j):
                 return 0
 
             @self.Expression(tset, iznodes, comps)
-            def xflux_x1(b, t, iz, j):
+            def material_flux_x1(b, t, iz, j):
                 return 0
 
         else:
-            self.Dconc_x1 = pyo.Var(
+            self.conc_mol_comp_deviation_x1 = pyo.Var(
                 tset,
                 iznodes,
                 comps,
@@ -142,7 +142,7 @@ class SocChannelData(UnitModelBlockData):
                 initialize=0,
                 units=pyo.units.mol / pyo.units.m**3,
             )
-            self.xflux_x1 = pyo.Var(
+            self.material_flux_x1 = pyo.Var(
                 tset,
                 iznodes,
                 comps,
@@ -153,11 +153,11 @@ class SocChannelData(UnitModelBlockData):
             )
 
             @self.Expression(tset, iznodes, comps)
-            def Dconc_x0(b, t, iz, j):
+            def conc_mol_comp_deviation_x0(b, t, iz, j):
                 return 0
 
             @self.Expression(tset, iznodes, comps)
-            def xflux_x0(b, t, iz, j):
+            def material_flux_x0(b, t, iz, j):
                 return 0
 
         # Channel thickness AKA length in the x direction is specific to the
@@ -180,7 +180,7 @@ class SocChannelData(UnitModelBlockData):
             units=pyo.units.mol / pyo.units.s,
             bounds=(-1e-9, None),
         )
-        self.conc = pyo.Var(
+        self.conc_mol_comp = pyo.Var(
             tset,
             iznodes,
             comps,
@@ -188,7 +188,7 @@ class SocChannelData(UnitModelBlockData):
             units=pyo.units.mol / pyo.units.m**3,
             bounds=(0, None),
         )
-        self.Dtemp = pyo.Var(
+        self.temperature_deviation_x = pyo.Var(
             tset,
             iznodes,
             doc="Deviation of temperature at node centers " "from temperature_z",
@@ -260,14 +260,14 @@ class SocChannelData(UnitModelBlockData):
 
         # Add time derivative varaible if steady state use const 0.
         if dynamic:
-            self.dcdt = DerivativeVar(
-                self.conc,
+            self.dconc_mol_compdt = DerivativeVar(
+                self.conc_mol_comp,
                 wrt=tset,
                 initialize=0,
                 doc="Component concentration time derivative",
             )
         else:
-            self.dcdt = pyo.Param(
+            self.dconc_mol_compdt = pyo.Param(
                 tset,
                 iznodes,
                 comps,
@@ -310,16 +310,16 @@ class SocChannelData(UnitModelBlockData):
         @self.Expression(tset, iznodes)
         def temperature(b, t, iz):
             if include_temp_x_thermo:
-                return b.temperature_z[t, iz] + b.Dtemp[t, iz]
+                return b.temperature_z[t, iz] + b.temperature_deviation_x[t, iz]
             else:
                 return b.temperature_z[t, iz]
 
         @self.Expression(tset, iznodes)
-        def volume_molar(b, t, iz):
+        def vol_mol(b, t, iz):
             return _constR * b.temperature[t, iz] / b.pressure[t, iz]
 
         @self.Expression(tset)
-        def volume_molar_inlet(b, t):
+        def vol_mol_inlet(b, t):
             return _constR * b.temperature_inlet[t] / b.pressure_inlet[t]
 
         # TODO maybe replace with variable-constraint pair?
@@ -352,19 +352,19 @@ class SocChannelData(UnitModelBlockData):
         if not self.config.below_electrode:
 
             @self.Constraint(tset, iznodes, comps)
-            def xflux_x0_eqn(b, t, iz, i):
+            def material_flux_x0_eqn(b, t, iz, i):
                 return (
-                    b.xflux_x0[t, iz, i]
-                    == b.mass_transfer_coeff[t, iz, i] * b.Dconc_x0[t, iz, i]
+                    b.material_flux_x0[t, iz, i]
+                    == b.mass_transfer_coeff[t, iz, i] * b.conc_mol_comp_deviation_x0[t, iz, i]
                 )
 
         else:
 
             @self.Constraint(tset, iznodes, comps)
-            def xflux_x1_eqn(b, t, iz, i):
+            def material_flux_x1_eqn(b, t, iz, i):
                 return (
-                    b.xflux_x1[t, iz, i]
-                    == -b.mass_transfer_coeff[t, iz, i] * b.Dconc_x1[t, iz, i]
+                    b.material_flux_x1[t, iz, i]
+                    == -b.mass_transfer_coeff[t, iz, i] * b.conc_mol_comp_deviation_x1[t, iz, i]
                 )
 
         @self.Constraint(tset, iznodes)
@@ -374,11 +374,11 @@ class SocChannelData(UnitModelBlockData):
             if self.config.opposite_flow:
                 return (
                     b.flow_mol[t, iz]
-                    == -b.flow_area * b.velocity[t, iz] / b.volume_molar[t, iz]
+                    == -b.flow_area * b.velocity[t, iz] / b.vol_mol[t, iz]
                 )
             return (
                 b.flow_mol[t, iz]
-                == b.flow_area * b.velocity[t, iz] / b.volume_molar[t, iz]
+                == b.flow_area * b.velocity[t, iz] / b.vol_mol[t, iz]
             )
 
         @self.Constraint(tset, iznodes)
@@ -388,7 +388,7 @@ class SocChannelData(UnitModelBlockData):
         @self.Constraint(tset, iznodes, comps)
         def conc_eqn(b, t, iz, i):
             return (
-                b.conc[t, iz, i] * b.temperature[t, iz] * _constR
+                b.conc_mol_comp[t, iz, i] * b.temperature[t, iz] * _constR
                 == b.pressure[t, iz] * b.mole_frac_comp[t, iz, i]
             )
 
@@ -413,7 +413,7 @@ class SocChannelData(UnitModelBlockData):
             def int_energy_density_eqn(b, t, iz):
                 return (
                     b.int_energy_density[t, iz]
-                    == b.int_energy_mol[t, iz] / b.volume_molar[t, iz]
+                    == b.int_energy_mol[t, iz] / b.vol_mol[t, iz]
                 )
 
         @self.Constraint(tset, iznodes)
@@ -425,7 +425,7 @@ class SocChannelData(UnitModelBlockData):
             return b.flow_mol_inlet[t] * b.mole_frac_comp_inlet[t, i]
 
         @self.Expression(tset, comps)
-        def zflux_inlet(b, t, i):
+        def material_flux_z_inlet(b, t, i):
             # either way the flow goes, want the flow rate to be positive, but
             # in the opposite flow cases want flux and velocity to be negative
             if self.config.opposite_flow:
@@ -433,7 +433,7 @@ class SocChannelData(UnitModelBlockData):
             return b.flow_mol_inlet[t] / b.flow_area * b.mole_frac_comp_inlet[t, i]
 
         @self.Expression(tset)
-        def zflux_enth_inlet(b, t):
+        def material_flux_z_enth_inlet(b, t):
             # either way the flow goes, want the flow rate to be positive, but
             # in the opposite flow cases want flux and velocity to be negative
             if self.config.opposite_flow:
@@ -441,28 +441,28 @@ class SocChannelData(UnitModelBlockData):
             return b.flow_mol_inlet[t] / b.flow_area * b.enth_mol_inlet[t]
 
         @self.Expression(tset, izfaces, comps)
-        def zflux(b, t, iz, i):
+        def material_flux_z(b, t, iz, i):
             return common._interpolate_channel(
                 iz=iz,
                 ifaces=izfaces,
                 nodes=b.znodes,
                 faces=b.zfaces,
-                phi_func=lambda iface: b.velocity[t, iface] * b.conc[t, iface, i],
-                phi_inlet=b.zflux_inlet[t, i],
+                phi_func=lambda iface: b.velocity[t, iface] * b.conc_mol_comp[t, iface, i],
+                phi_inlet=b.material_flux_z_inlet[t, i],
                 opposite_flow=self.config.opposite_flow,
             )
 
         @self.Expression(tset, izfaces)
-        def zflux_enth(b, t, iz):
+        def material_flux_z_enth(b, t, iz):
             return common._interpolate_channel(
                 iz=iz,
                 ifaces=izfaces,
                 nodes=b.znodes,
                 faces=b.zfaces,
                 phi_func=lambda iface: b.velocity[t, iface]
-                / b.volume_molar[t, iface]
+                / b.vol_mol[t, iface]
                 * b.enth_mol[t, iface],
-                phi_inlet=b.zflux_enth_inlet[t],
+                phi_inlet=b.material_flux_z_enth_inlet[t],
                 opposite_flow=self.config.opposite_flow,
             )
 
@@ -486,9 +486,9 @@ class SocChannelData(UnitModelBlockData):
         def material_balance_eqn(b, t, iz, i):
             # if t == tset.first() and dynamic:
             #     return pyo.Constraint.Skip
-            return b.dcdt[t, iz, i] * b.node_volume[iz] == b.flow_area * (
-                b.zflux[t, iz, i] - b.zflux[t, iz + 1, i]
-            ) + b.xface_area[iz] * (b.xflux_x0[t, iz, i] - b.xflux_x1[t, iz, i])
+            return b.dconc_mol_compdt[t, iz, i] * b.node_volume[iz] == b.flow_area * (
+                b.material_flux_z[t, iz, i] - b.material_flux_z[t, iz + 1, i]
+            ) + b.xface_area[iz] * (b.material_flux_x0[t, iz, i] - b.material_flux_x1[t, iz, i])
 
         if dynamic:
             self.material_balance_eqn[tset.first(), :, :].deactivate()
@@ -497,15 +497,15 @@ class SocChannelData(UnitModelBlockData):
         def energy_balance_eqn(b, t, iz):
             return (
                 b.dcedt[t, iz] * b.node_volume[iz]
-                == b.flow_area * (b.zflux_enth[t, iz] - b.zflux_enth[t, iz + 1])
+                == b.flow_area * (b.material_flux_z_enth[t, iz] - b.material_flux_z_enth[t, iz + 1])
                 + b.xface_area[iz]
                 * sum(
-                    (b.xflux_x0[t, iz, i] - b.xflux_x1[t, iz, i])
+                    (b.material_flux_x0[t, iz, i] - b.material_flux_x1[t, iz, i])
                     * common._comp_enthalpy_expr(b.temperature_x1[t, iz], i)
                     for i in comps
                 )
-                + b.qflux_x0[t, iz] * b.xface_area[iz]
-                - b.qflux_x1[t, iz] * b.xface_area[iz]
+                + b.heat_flux_x0[t, iz] * b.xface_area[iz]
+                - b.heat_flux_x1[t, iz] * b.xface_area[iz]
             )
 
         if dynamic:
@@ -513,14 +513,14 @@ class SocChannelData(UnitModelBlockData):
 
         @self.Constraint(tset, iznodes)
         def temperature_x0_eqn(b, t, iz):
-            return self.qflux_x0[t, iz] == self.heat_transfer_coefficient[t, iz] * (
-                self.Dtemp_x0[t, iz] - self.Dtemp[t, iz]
+            return self.heat_flux_x0[t, iz] == self.heat_transfer_coefficient[t, iz] * (
+                self.temperature_deviation_x0[t, iz] - self.temperature_deviation_x[t, iz]
             )
 
         @self.Constraint(tset, iznodes)
         def temperature_x1_eqn(b, t, iz):
-            return self.qflux_x1[t, iz] == self.heat_transfer_coefficient[t, iz] * (
-                self.Dtemp[t, iz] - self.Dtemp_x1[t, iz]
+            return self.heat_flux_x1[t, iz] == self.heat_transfer_coefficient[t, iz] * (
+                self.temperature_deviation_x[t, iz] - self.temperature_deviation_x1[t, iz]
             )
 
         # For convenience define outlet expressions
@@ -534,9 +534,9 @@ class SocChannelData(UnitModelBlockData):
         @self.Expression(tset, comps)
         def flow_mol_comp_outlet(b, t, i):
             if self.config.opposite_flow:
-                return -b.zflux[t, izfout, i] * b.flow_area
+                return -b.material_flux_z[t, izfout, i] * b.flow_area
             else:
-                return b.zflux[t, izfout, i] * b.flow_area
+                return b.material_flux_z[t, izfout, i] * b.flow_area
 
         # @self.Expression(tset)
         def rule_flow_mol_outlet(b, t):
@@ -559,9 +559,9 @@ class SocChannelData(UnitModelBlockData):
         @self.Expression(tset)
         def enth_mol_outlet(b, t):
             if self.config.opposite_flow:
-                return -b.zflux_enth[t, izfout] * b.flow_area / b.flow_mol_outlet[t]
+                return -b.material_flux_z_enth[t, izfout] * b.flow_area / b.flow_mol_outlet[t]
             else:
-                return b.zflux_enth[t, izfout] * b.flow_area / b.flow_mol_outlet[t]
+                return b.material_flux_z_enth[t, izfout] * b.flow_area / b.flow_mol_outlet[t]
 
         # know enthalpy need a constraint to back calculate temperature
         @self.Constraint(tset)
@@ -577,9 +577,9 @@ class SocChannelData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        xflux_guess=None,
-        qflux_x1_guess=None,
-        qflux_x0_guess=None,
+        material_flux_x_guess=None,
+        heat_flux_x1_guess=None,
+        heat_flux_x0_guess=None,
         velocity_guess=None,
     ):
         # At present, this method does not fix inlet variables because they are
@@ -596,9 +596,9 @@ class SocChannelData(UnitModelBlockData):
             _set_if_unfixed(self.temperature_outlet[t], self.temperature_inlet[t])
             for iz in self.iznodes:
                 _set_if_unfixed(self.temperature_z[t, iz], self.temperature_inlet[t])
-                _set_if_unfixed(self.Dtemp_x0[t, iz], 0)
-                _set_if_unfixed(self.Dtemp[t, iz], 0)
-                _set_if_unfixed(self.Dtemp_x1[t, iz], 0)
+                _set_if_unfixed(self.temperature_deviation_x0[t, iz], 0)
+                _set_if_unfixed(self.temperature_deviation_x[t, iz], 0)
+                _set_if_unfixed(self.temperature_deviation_x1[t, iz], 0)
                 _set_if_unfixed(self.pressure[t, iz], self.pressure_inlet[t])
                 _set_if_unfixed(self.flow_mol[t, iz], self.flow_mol_inlet[t])
                 for i in self.component_list:
@@ -606,7 +606,7 @@ class SocChannelData(UnitModelBlockData):
                         self.mole_frac_comp[t, iz, i], self.mole_frac_comp_inlet[t, i]
                     )
                     _set_if_unfixed(
-                        self.conc[t, iz, i],
+                        self.conc_mol_comp[t, iz, i],
                         self.pressure[t, iz]
                         * self.mole_frac_comp[t, iz, i]
                         / self.temperature[t, iz]
@@ -614,7 +614,7 @@ class SocChannelData(UnitModelBlockData):
                     )
                 _set_if_unfixed(
                     self.velocity[t, iz],
-                    self.flow_mol[t, iz] / self.flow_area * self.volume_molar[t, iz],
+                    self.flow_mol[t, iz] / self.flow_area * self.vol_mol[t, iz],
                 )
                 _set_if_unfixed(
                     self.enth_mol[t, iz],
@@ -635,7 +635,7 @@ class SocChannelData(UnitModelBlockData):
                     )
                     _set_if_unfixed(
                         self.int_energy_density[t, iz],
-                        self.int_energy_mol[t, iz] / self.volume_molar[t, iz],
+                        self.int_energy_mol[t, iz] / self.vol_mol[t, iz],
                     )
         slvr = get_solver(solver, optarg)
         common._init_solve_block(self, slvr, solve_log)
@@ -675,13 +675,13 @@ class SocChannelData(UnitModelBlockData):
                 for iz in self.iznodes:
                     sum_in += sum(
                         _element_dict[element][j]
-                        * self.xflux_x0[t, iz, j]
+                        * self.material_flux_x0[t, iz, j]
                         * self.xface_area[iz]
                         for j in self.component_list
                     )
                     sum_out += sum(
                         _element_dict[element][j]
-                        * self.xflux_x1[t, iz, j]
+                        * self.material_flux_x1[t, iz, j]
                         * self.xface_area[iz]
                         for j in self.component_list
                     )
@@ -699,18 +699,18 @@ class SocChannelData(UnitModelBlockData):
 
             for iz in self.iznodes:
                 enth_in += self.xface_area[iz] * (
-                    self.qflux_x0[t, iz]
+                    self.heat_flux_x0[t, iz]
                     + sum(
                         common._comp_enthalpy_expr(self.temperature_x0[t, iz], j)
-                        * self.xflux_x0[t, iz, j]
+                        * self.material_flux_x0[t, iz, j]
                         for j in self.component_list
                     )
                 )
                 enth_out += self.xface_area[iz] * (
-                    self.qflux_x1[t, iz]
+                    self.heat_flux_x1[t, iz]
                     + sum(
                         common._comp_enthalpy_expr(self.temperature_x1[t, iz], j)
-                        * self.xflux_x1[t, iz, j]
+                        * self.material_flux_x1[t, iz, j]
                         for j in self.component_list
                     )
                 )
@@ -757,8 +757,8 @@ class SocChannelData(UnitModelBlockData):
                 # and forgot to scale these
                 if not self.temperature_z[t, iz].is_reference():
                     gsf(self.temperature_z[t, iz], warning=True)
-                gsf(self.qflux_x0[t, iz], warning=True)
-                gsf(self.qflux_x1[t, iz], warning=True)
+                gsf(self.heat_flux_x0[t, iz], warning=True)
+                gsf(self.heat_flux_x1[t, iz], warning=True)
 
                 s_flow_mol = sgsf(self.flow_mol[t, iz], s_flow_mol)
                 sT = sgsf(self.temperature_z[t, iz], sT)
@@ -780,15 +780,15 @@ class SocChannelData(UnitModelBlockData):
                     s_rho_U = sgsf(self.int_energy_density[t, iz], sU / sV)
                     cst(self.int_energy_density_eqn[t, iz], s_rho_U)
 
-                sq0 = sgsf(self.qflux_x0[t, iz], 1e-2)
+                sq0 = sgsf(self.heat_flux_x0[t, iz], 1e-2)
                 cst(self.temperature_x0_eqn[t, iz], sq0)
-                sq1 = sgsf(self.qflux_x1[t, iz], 1e-2)
+                sq1 = sgsf(self.heat_flux_x1[t, iz], 1e-2)
                 cst(self.temperature_x1_eqn[t, iz], sq1)
                 sq = min(sq0, sq1)
 
-                sDT = sgsf(self.Dtemp[t, iz], sq / sh)
-                ssf(self.Dtemp_x0[t, iz], sDT)
-                ssf(self.Dtemp_x1[t, iz], sDT)
+                sDT = sgsf(self.temperature_deviation_x[t, iz], sq / sh)
+                ssf(self.temperature_deviation_x0[t, iz], sDT)
+                ssf(self.temperature_deviation_x1[t, iz], sDT)
 
                 # Pointless other than making a record that this equation
                 # is well-scaled by default
@@ -799,27 +799,27 @@ class SocChannelData(UnitModelBlockData):
                     # notify the user if they're using a standalone channel
                     # and forgot to scale these
                     if self.config.below_electrode:
-                        gsf(self.xflux_x1[t, iz, j], warning=True)
+                        gsf(self.material_flux_x1[t, iz, j], warning=True)
                     else:
-                        gsf(self.xflux_x0[t, iz, j], warning=True)
+                        gsf(self.material_flux_x0[t, iz, j], warning=True)
 
                     sy = sgsf(self.mole_frac_comp[t, iz, j], sy_in[j])
                     cst(self.material_balance_eqn[t, iz, j], s_flow_mol * sy)
 
-                    ssf(self.conc[t, iz, j], sy * sP / (sR * sT))
+                    ssf(self.conc_mol_comp[t, iz, j], sy * sP / (sR * sT))
                     cst(self.conc_eqn[t, iz, j], sy * sP)
 
-                    if hasattr(self, "xflux_x0_eqn"):
+                    if hasattr(self, "material_flux_x0_eqn"):
                         sXflux = gsf(
-                            self.xflux_x0[t, iz, j], default=1e-1, warning=True
+                            self.material_flux_x0[t, iz, j], default=1e-1, warning=True
                         )
-                        cst(self.xflux_x0_eqn[t, iz, j], sXflux)
-                        ssf(self.Dconc_x0[t, iz, j], sLx * sXflux / sD)
-                    if hasattr(self, "xflux_x1_eqn"):
+                        cst(self.material_flux_x0_eqn[t, iz, j], sXflux)
+                        ssf(self.conc_mol_comp_deviation_x0[t, iz, j], sLx * sXflux / sD)
+                    if hasattr(self, "material_flux_x1_eqn"):
                         sXflux = gsf(
-                            self.xflux_x1[t, iz, j], default=1e-1, warning=True
+                            self.material_flux_x1[t, iz, j], default=1e-1, warning=True
                         )
-                        cst(self.xflux_x1_eqn[t, iz, j], sXflux)
-                        ssf(self.Dconc_x1[t, iz, j], sLx * sXflux / sD)
+                        cst(self.material_flux_x1_eqn[t, iz, j], sXflux)
+                        ssf(self.conc_mol_comp_deviation_x1[t, iz, j], sLx * sXflux / sD)
 
             cst(self.temperature_outlet_eqn[t], sH)
