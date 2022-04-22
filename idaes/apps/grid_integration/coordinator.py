@@ -10,15 +10,13 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from pyomo.common.dependencies import attempt_import
+from itertools import zip_longest
 
-prescient, prescient_avail = attempt_import("prescient")
-if prescient_avail:
-    import prescient.plugins as pplugins
-    from prescient.simulator.config import PrescientConfig
+from pyomo.common.dependencies import attempt_import
 from pyomo.common.config import ConfigDict, ConfigValue
 import pyomo.environ as pyo
-from itertools import zip_longest
+
+prescient, prescient_avail = attempt_import("prescient")
 
 
 class DoubleLoopCoordinator:
