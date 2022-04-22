@@ -1167,9 +1167,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     mass transfer should be included in enthalpy balance. This
                     should generally be the same as the has_mass_transfer
                     argument in the material balance methods
-            custom_term - a Pyomo Expression representing custom terms to
-                    be included in enthalpy balances.
-                    Expression must be indexed by time and phase list
+            custom_term - a Python method which returns Pyomo expressions representing
+                    custom terms to be included in enthalpy balances.
+                    Method should accept time and phase list as arguments.
 
         Returns:
             Constraint object representing enthalpy balances
@@ -1378,9 +1378,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Args:
             has_pressure_change - whether terms for pressure change should be
                     included in enthalpy balances
-            custom_term - a Pyomo Expression representing custom terms to
-                    be included in pressure balances.
-                    Expression must be indexed by time
+            custom_term - a Python method which returns Pyomo expressions representing
+                    custom terms to be included in enthalpy balances.
+                    Method should accept time as an arguments.
 
         Returns:
             Constraint object representing pressure balances
