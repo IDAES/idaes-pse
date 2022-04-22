@@ -242,6 +242,16 @@ def _new_idaes_config_block():
     )
 
     cfg["petsc_ts"]["options"].declare(
+        "--ts_save_trajectory",
+        pyomo.common.config.ConfigValue(
+            domain=int,
+            default=1,
+            description="Save the trajectory data from PETSc",
+            doc="Save the trajectory data from PETSc"
+        ),
+    )
+
+    cfg["petsc_ts"]["options"].declare(
         "--ts_max_snes_failures",
         pyomo.common.config.ConfigValue(
             domain=int,
