@@ -117,6 +117,24 @@ def _new_idaes_config_block():
     """
     cfg = pyomo.common.config.ConfigBlock("idaes", implicit=True)
     cfg.declare(
+        "warning_to_exception",
+        pyomo.common.config.ConfigValue(
+            domain=bool,
+            default=False,
+            description="Convert any logged warnings or errors to exceptions",
+            doc="Convert any logged warnings or errors to exceptions"
+        ),
+    )
+    cfg.declare(
+        "deperacation_to_exception",
+        pyomo.common.config.ConfigValue(
+            domain=bool,
+            default=False,
+            description="Convert any logged deperacation warnings to exceptions",
+            doc="Convert any logged deperacation warnings to exceptions"
+        ),
+    )
+    cfg.declare(
         "logging",
         pyomo.common.config.ConfigBlock(
             implicit=True,
@@ -412,8 +430,38 @@ def write_config(path, cfg=None):
         json.dump(cfg.value(), f, cls=ConfigBlockJSONEncoder, indent=4)
 
 
+class _WarningToExceptionFilter(logging.Filter):
+    """Filter applied to IDAES loggers returned by this modulue."""
+
+    @staticmethod
+    def filter(record):
+        if record.levelno >= logging.WARNING:
+            raise RuntimeError(
+                f"Logged Warning converted to excption: {record.msg}")
+
+
+class _DeperacationToExceptionFilter(logging.Filter):
+    """Filter applied to IDAES loggers returned by this modulue."""
+
+    @staticmethod
+    def filter(record):
+        if record.levelno >= logging.WARNING:
+            if "deprecat" in record.msg.lower():
+                raise RuntimeError(
+                    f"Logged deprecation converted to excption: {record.msg}")
+
+
 def reconfig(cfg):
     logging.config.dictConfig(cfg.logging.value())
+    _log = logging.getLogger("idaes")
+    if cfg.deperacation_to_exception:
+        _log.addFilter(_DeperacationToExceptionFilter)
+    else:
+        _log.removeFilter(_DeperacationToExceptionFilter)
+    if cfg.warning_to_exception:
+        _log.addFilter(_WarningToExceptionFilter)
+    else:
+        _log.removeFilter(_WarningToExceptionFilter)
     setup_environment(bin_directory, cfg.use_idaes_solvers)
 
 
