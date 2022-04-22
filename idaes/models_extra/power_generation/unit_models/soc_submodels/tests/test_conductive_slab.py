@@ -71,6 +71,7 @@ def common_components(nt, nz, nx):
         },
     }
 
+
 @pytest.fixture
 def modelNoHoldup():
     m = pyo.ConcreteModel()
@@ -106,6 +107,7 @@ def modelNoHoldup():
 
     return m
 
+
 @pytest.fixture
 def modelHoldupNotDynamic():
     time_set = [0]
@@ -118,11 +120,15 @@ def modelHoldupNotDynamic():
     )
     iznodes = m.fs.iznodes
     tset = m.fs.config.time
-    m.fs.temperature_deviation_x0 = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
+    m.fs.temperature_deviation_x0 = pyo.Var(
+        tset, iznodes, initialize=0, units=pyo.units.K
+    )
     m.fs.heat_flux_x0 = pyo.Var(
         tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
     )
-    m.fs.temperature_deviation_x1 = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
+    m.fs.temperature_deviation_x1 = pyo.Var(
+        tset, iznodes, initialize=0, units=pyo.units.K
+    )
     m.fs.heat_flux_x1 = pyo.Var(
         tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
     )
@@ -154,6 +160,7 @@ def modelHoldupNotDynamic():
 
     return m
 
+
 @pytest.mark.build
 @pytest.mark.unit
 def test_build_modelNoHoldup(modelNoHoldup):
@@ -170,6 +177,7 @@ def test_build_modelNoHoldup(modelNoHoldup):
     )
 
     assert degrees_of_freedom(slab) == 0
+
 
 @pytest.mark.build
 @pytest.mark.unit
@@ -199,6 +207,7 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
     )
 
     assert degrees_of_freedom(slab) == 0
+
 
 @pytest.mark.component
 def test_units(modelHoldupNotDynamic):

@@ -23,13 +23,19 @@ from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR, _constF, _set_if_unfixed, _species_list, _element_list, _element_dict
+    _constR,
+    _constF,
+    _set_if_unfixed,
+    _species_list,
+    _element_list,
+    _element_dict,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
+
 
 @declare_process_block_class("SolidOxideCell")
 class SolidOxideCellData(UnitModelBlockData):
@@ -97,7 +103,7 @@ class SolidOxideCellData(UnitModelBlockData):
             description="List of fuel-side species that do not participate in "
             "reactions at the triple phase boundary."
             # But may be involved in reforming
-        )
+        ),
     )
     CONFIG.declare(
         "oxygen_tpb_stoich_dict",
@@ -114,8 +120,8 @@ class SolidOxideCellData(UnitModelBlockData):
             default=[],
             domain=ListOf(str),
             description="List of oxygen-side species that do not participate in "
-            "reactions at the triple phase boundary."
-        )
+            "reactions at the triple phase boundary.",
+        ),
     )
     CONFIG.declare(
         "flow_pattern",
@@ -173,9 +179,7 @@ class SolidOxideCellData(UnitModelBlockData):
         )
         # Set up node and face sets and get integer indices for them
         izfaces, iznodes = common._face_initializer(
-            self,
-            self.config.control_volume_zfaces,
-            "z"
+            self, self.config.control_volume_zfaces, "z"
         )
         self.current_density = pyo.Var(
             tset, iznodes, initialize=0, units=pyo.units.A / pyo.units.m**2
@@ -302,10 +306,18 @@ class SolidOxideCellData(UnitModelBlockData):
                     "include_temperature_x_thermo": include_temp_x_thermo,
                 }
             )
-            fuel_electrode_heat_flux_x0 = self.contact_flow_mesh_fuel_electrode.heat_flux_x1
-            oxygen_electrode_heat_flux_x1 = self.contact_flow_mesh_oxygen_electrode.heat_flux_x0
-            interconnect_heat_flux_x0 = self.contact_interconnect_oxygen_flow_mesh.heat_flux_x1
-            interconnect_heat_flux_x1 = self.contact_interconnect_fuel_flow_mesh.heat_flux_x0
+            fuel_electrode_heat_flux_x0 = (
+                self.contact_flow_mesh_fuel_electrode.heat_flux_x1
+            )
+            oxygen_electrode_heat_flux_x1 = (
+                self.contact_flow_mesh_oxygen_electrode.heat_flux_x0
+            )
+            interconnect_heat_flux_x0 = (
+                self.contact_interconnect_oxygen_flow_mesh.heat_flux_x1
+            )
+            interconnect_heat_flux_x1 = (
+                self.contact_interconnect_fuel_flow_mesh.heat_flux_x0
+            )
         else:
             fuel_electrode_heat_flux_x0 = self.fuel_chan.heat_flux_x1
             oxygen_electrode_heat_flux_x1 = self.oxygen_chan.heat_flux_x0
@@ -430,7 +442,7 @@ class SolidOxideCellData(UnitModelBlockData):
                     }
                 ),
             )
-        
+
         @self.Expression(tset, iznodes)
         def eta_contact(b, t, iz):
             if self.config.include_contact_resistance:
@@ -470,21 +482,26 @@ class SolidOxideCellData(UnitModelBlockData):
 
         @self.Constraint(tset, iznodes)
         def mean_temperature_eqn(b, t, iz):
-            return 0 == b.fuel_chan.temperature_deviation_x[t, iz] + b.oxygen_chan.temperature_deviation_x[t, iz]
+            return (
+                0
+                == b.fuel_chan.temperature_deviation_x[t, iz]
+                + b.oxygen_chan.temperature_deviation_x[t, iz]
+            )
 
         if dynamic:
             self.mean_temperature_eqn[tset.first(), :].deactivate()
 
         @self.Constraint(tset, iznodes)
         def potential_eqn(b, t, iz):
-            return b.potential[t] == (b.fuel_tpb.nernst_potential[t, iz] 
-              + b.oxygen_tpb.nernst_potential[t, iz]
-              - (
+            return b.potential[t] == (
+                b.fuel_tpb.nernst_potential[t, iz]
+                + b.oxygen_tpb.nernst_potential[t, iz]
+                - (
                     b.eta_ohm[t, iz]
                     + b.fuel_tpb.voltage_drop_total[t, iz]
                     + b.oxygen_tpb.voltage_drop_total[t, iz]
                 )
-              )
+            )
 
         # This is net flow of power *into* the cell. In fuel cell mode, this will
         # be negative
@@ -579,9 +596,13 @@ class SolidOxideCellData(UnitModelBlockData):
         self.oxygen_chan.heat_flux_x1.unfix()
         if self.config.include_contact_resistance:
             init_log.info_high("Initializing Contact Resistors")
-    
-            self.contact_flow_mesh_fuel_electrode.initialize_build(fix_heat_flux_x0=True)
-            self.contact_flow_mesh_oxygen_electrode.initialize_build(fix_heat_flux_x0=False)
+
+            self.contact_flow_mesh_fuel_electrode.initialize_build(
+                fix_heat_flux_x0=True
+            )
+            self.contact_flow_mesh_oxygen_electrode.initialize_build(
+                fix_heat_flux_x0=False
+            )
 
         init_log.info_high("Calculating reaction rate at current guess")
         self.fuel_tpb.temperature_deviation_x.fix(0)
@@ -591,7 +612,10 @@ class SolidOxideCellData(UnitModelBlockData):
         for t in self.flowsheet().time:
             for iz in self.fuel_tpb.iznodes:
                 denom = pyo.value(
-                    sum(self.fuel_tpb.conc_mol_comp[t, iz, j] for j in self.fuel_tpb.component_list)
+                    sum(
+                        self.fuel_tpb.conc_mol_comp[t, iz, j]
+                        for j in self.fuel_tpb.component_list
+                    )
                 )
                 for j in self.fuel_tpb.component_list:
                     self.fuel_tpb.mole_frac_comp[t, iz, j].value = pyo.value(
@@ -615,7 +639,10 @@ class SolidOxideCellData(UnitModelBlockData):
         for t in self.flowsheet().time:
             for iz in self.oxygen_tpb.iznodes:
                 denom = pyo.value(
-                    sum(self.oxygen_tpb.conc_mol_comp[t, iz, j] for j in self.oxygen_tpb.component_list)
+                    sum(
+                        self.oxygen_tpb.conc_mol_comp[t, iz, j]
+                        for j in self.oxygen_tpb.component_list
+                    )
                 )
                 for j in self.oxygen_tpb.component_list:
                     self.oxygen_tpb.mole_frac_comp[t, iz, j].value = pyo.value(
@@ -865,7 +892,10 @@ class SolidOxideCellData(UnitModelBlockData):
                         s_flux_j = sy_in_fuel[j] * s_inert_flux
                     else:
                         s_flux_j = sy_in_fuel[j] * s_react_flux
-                    for var in [self.fuel_chan.material_flux_x1, self.fuel_electrode.material_flux_x1]:
+                    for var in [
+                        self.fuel_chan.material_flux_x1,
+                        self.fuel_electrode.material_flux_x1,
+                    ]:
                         if gsf(var[t, iz, j]) is None:
                             ssf(var[t, iz, j], s_flux_j)
                     ssf(self.fuel_tpb.mole_frac_comp[t, iz, j], sy_in_fuel[j])
@@ -891,12 +921,20 @@ class SolidOxideCellData(UnitModelBlockData):
                 if not self.config.flux_through_interconnect:
                     if self.config.include_contact_resistance:
                         sq = gsf(
-                            self.contact_interconnect_fuel_flow_mesh.heat_flux_x0[t, iz],
+                            self.contact_interconnect_fuel_flow_mesh.heat_flux_x0[
+                                t, iz
+                            ],
                             default=s_q_flux,
                         )
-                        cst(self.no_heat_flux_fuel_interconnect_eqn[t, iz], sq, overwrite=False)
+                        cst(
+                            self.no_heat_flux_fuel_interconnect_eqn[t, iz],
+                            sq,
+                            overwrite=False,
+                        )
                         sq = gsf(
-                            self.contact_interconnect_oxygen_flow_mesh.heat_flux_x1[t, iz],
+                            self.contact_interconnect_oxygen_flow_mesh.heat_flux_x1[
+                                t, iz
+                            ],
                             default=s_q_flux,
                         )
                         cst(
@@ -909,7 +947,11 @@ class SolidOxideCellData(UnitModelBlockData):
                             self.fuel_chan.heat_flux_x0[t, iz],
                             default=s_q_flux,
                         )
-                        cst(self.no_heat_flux_fuel_interconnect_eqn[t, iz], sq, overwrite=False)
+                        cst(
+                            self.no_heat_flux_fuel_interconnect_eqn[t, iz],
+                            sq,
+                            overwrite=False,
+                        )
                         sq = gsf(
                             self.oxygen_chan.heat_flux_x1[t, iz],
                             default=s_q_flux,

@@ -16,6 +16,7 @@ __author__ = "Douglas Allan"
 import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock
 
+
 def _cell_flowsheet_model(dynamic, time_set, zfaces):
     # function that creates a unit model with cell-level variables for testing
     # subcomponents that require them

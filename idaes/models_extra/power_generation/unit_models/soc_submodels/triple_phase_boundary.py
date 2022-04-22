@@ -22,13 +22,19 @@ import pyomo.environ as pyo
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR, _constF, _set_if_unfixed, _species_list, _element_list, _element_dict
+    _constR,
+    _constF,
+    _set_if_unfixed,
+    _species_list,
+    _element_list,
+    _element_dict,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
+
 
 @declare_process_block_class("SocTriplePhaseBoundary")
 class SocTriplePhaseBoundaryData(UnitModelBlockData):
@@ -63,8 +69,8 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             default=[],
             domain=ListOf(str),
             description="List of species that do not participate in "
-            "reactions at the triple phase boundary."
-        )
+            "reactions at the triple phase boundary.",
+        ),
     )
     CONFIG.declare(
         "conc_mol_comp_ref",
@@ -93,9 +99,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         tset = self.flowsheet().config.time
         # Set up node and face sets and get integer indices for them
         izfaces, iznodes = common._face_initializer(
-            self, 
-            self.config.control_volume_zfaces,
-            "z"
+            self, self.config.control_volume_zfaces, "z"
         )
         comps = self.component_list = pyo.Set(
             initialize=self.config.component_list,
@@ -103,7 +107,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             doc="Set of all gas-phase components present in submodel",
         )
         self.tpb_stoich = copy.copy(self.config.tpb_stoich_dict)
-        
+
         # Copy and pasted from the Gibbs reactor
         for j in self.config.inert_species:
             if j not in comps:
@@ -111,29 +115,30 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                     "{} invalid component in inert_species argument. {} is "
                     "not in the provided component list.".format(self.name, j)
                 )
-                
+
         self.inert_species_list = pyo.Set(
             initialize=self.config.inert_species,
             ordered=True,
-            doc="Set of components that do not react at triple phase boundary"
+            doc="Set of components that do not react at triple phase boundary",
         )
         # Ensure all inerts have been assigned a zero in the stoich
         for j in self.inert_species_list:
             self.tpb_stoich[j] = 0
 
-        self.reacting_component_list =pyo.Set(
+        self.reacting_component_list = pyo.Set(
             initialize=[
-                j for j, coeff in self.tpb_stoich.items() 
+                j
+                for j, coeff in self.tpb_stoich.items()
                 if j not in self.inert_species_list
             ],
             ordered=True,
             doc="Set of components (gas-phase and solid) that react at triple "
-            "phase boundary"
+            "phase boundary",
         )
         self.reacting_gas_list = pyo.Set(
             initialize=[j for j in comps if j not in self.inert_species_list],
             ordered=True,
-            doc="Set of gas-phase components that react at triple phase boundary"
+            doc="Set of gas-phase components that react at triple phase boundary",
         )
 
         common._submodel_boilerplate_create_if_none(self)
@@ -203,7 +208,11 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
 
         @self.Expression(tset, iznodes)
         def pressure(b, t, iz):
-            return sum(b.conc_mol_comp[t, iz, i] for i in comps) * _constR * b.temperature[t, iz]
+            return (
+                sum(b.conc_mol_comp[t, iz, i] for i in comps)
+                * _constR
+                * b.temperature[t, iz]
+            )
 
         # mole_frac_comp must be a variable because we want IPOPT to enforce
         # a lower bound of 0 in order to avoid AMPL errors, etc.
@@ -231,8 +240,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             else:
                 out_expr = -_constR * pressure_exponent * pyo.log(P / P_ref)
             return out_expr + (
-                sum(nu_j[j] * common._comp_entropy_expr(T, j)
-                    for j in b.reacting_component_list)
+                sum(
+                    nu_j[j] * common._comp_entropy_expr(T, j)
+                    for j in b.reacting_component_list
+                )
                 - _constR
                 * sum(
                     nu_j[j] * log_y_j[t, iz, j]
@@ -245,8 +256,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         def dh_rxn(b, t, iz):
             T = b.temperature[t, iz]
             nu_j = b.tpb_stoich
-            return sum(nu_j[j] * common._comp_enthalpy_expr(T, j) 
-                       for j in b.reacting_component_list)
+            return sum(
+                nu_j[j] * common._comp_enthalpy_expr(T, j)
+                for j in b.reacting_component_list
+            )
 
         @self.Expression(tset, iznodes)
         def dg_rxn(b, t, iz):
@@ -333,7 +346,9 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
 
         for t in self.flowsheet().time:
             for iz in self.iznodes:
-                denom = pyo.value(sum(self.conc_mol_comp[t, iz, j] for j in self.component_list))
+                denom = pyo.value(
+                    sum(self.conc_mol_comp[t, iz, j] for j in self.component_list)
+                )
                 for j in self.component_list:
                     self.mole_frac_comp[t, iz, j].value = pyo.value(
                         self.conc_mol_comp[t, iz, j] / denom

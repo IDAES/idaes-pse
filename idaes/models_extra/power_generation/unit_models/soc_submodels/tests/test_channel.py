@@ -24,6 +24,7 @@ import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as soc_testing
 
+
 def common_components(nt, nz, ncomp):
     return {
         pyo.Var: {
@@ -52,9 +53,9 @@ def common_components(nt, nz, ncomp):
         pyo.Constraint: {
             "flow_mol_eqn": nz * nt,
             "constant_pressure_eqn": nz * nt,
-            "conc_eqn": nz * nt * ncomp,
+            "conc_mol_comp_eqn": nz * nt * ncomp,
             "enth_mol_eqn": nt * nz,
-            "mole_frac_eqn": nt * nz,
+            "mole_frac_comp_eqn": nt * nz,
             "material_balance_eqn": nt * nz * ncomp,
             "energy_balance_eqn": nt * nz,
             "temperature_x0_eqn": nt * nz,
@@ -76,7 +77,7 @@ def common_components(nt, nz, ncomp):
             "vol_mol_inlet": nt,
             "mass_transfer_coeff": nt * nz * ncomp,
             "material_flux_z_inlet": nt * ncomp,
-            "material_flux_z_enth_inlet": nt,
+            "enth_flux_z_inlet": nt,
             "material_flux_z": nt * (nz + 1) * ncomp,
             "material_flux_z_enth": nt * (nz + 1),
             "pressure_face": nt * (nz + 1),
@@ -90,6 +91,7 @@ def common_components(nt, nz, ncomp):
         },
     }
 
+
 def fix_boundary_conditions(channel):
     channel.heat_flux_x0.fix(0)
     channel.heat_flux_x1.fix(0)
@@ -101,6 +103,7 @@ def fix_boundary_conditions(channel):
     channel.temperature_inlet.fix()
     channel.pressure_inlet.fix()
     channel.mole_frac_comp_inlet.fix()
+
 
 @pytest.fixture
 def modelNoHoldup():
@@ -120,7 +123,7 @@ def modelNoHoldup():
             "control_volume_zfaces": zfaces,
             "opposite_flow": True,
             "below_electrode": False,
-            "component_list": ["O2","H2O"],
+            "component_list": ["O2", "H2O"],
         }
     )
     m.fs.oxygen_chan.length_x.fix(0.002)
@@ -131,14 +134,13 @@ def modelNoHoldup():
     fix_boundary_conditions(m.fs.oxygen_chan)
     return m
 
+
 @pytest.fixture
 def modelHoldupNotDynamic():
     time_set = [0, 1]
     zfaces = np.linspace(0, 1, 6).tolist()
     m = soc_testing._cell_flowsheet_model(
-        dynamic=False,
-        time_set=time_set,
-        zfaces=zfaces
+        dynamic=False, time_set=time_set, zfaces=zfaces
     )
 
     m.fs.fuel_chan = soc.SocChannel(
@@ -157,6 +159,7 @@ def modelHoldupNotDynamic():
     m.fs.fuel_chan.heat_transfer_coefficient.fix(100)
     fix_boundary_conditions(m.fs.fuel_chan)
     return m
+
 
 @pytest.mark.build
 @pytest.mark.unit
@@ -181,6 +184,7 @@ def test_build_modelNoHoldup(modelNoHoldup):
         comp_dict=comp_dict,
     )
     assert degrees_of_freedom(channel) == 0
+
 
 @pytest.mark.build
 @pytest.mark.unit
@@ -214,6 +218,7 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
         ],
     )
     assert degrees_of_freedom(channel) == 0
+
 
 # @pytest.mark.component
 # def test_units(modelHoldupNotDynamic):

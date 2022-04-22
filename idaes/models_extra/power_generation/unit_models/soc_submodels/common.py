@@ -38,13 +38,16 @@ _constF = 96485 * pyo.units.coulomb / pyo.units.mol
 _safe_log_eps = 1e-9
 _safe_sqrt_eps = 1e-9
 
+
 class CV_Bound(enum.Enum):
     EXTRAPOLATE = 1
     NODE_VALUE = 2
 
+
 def _set_and_get_attr(obj, name, val):
     setattr(obj, name, val)
     return getattr(obj, name)
+
 
 def _set_default_factor(c, s):
     """Iterate over an indexed component, and set individual scaling factors
@@ -77,7 +80,7 @@ def _set_and_get_scaling_factor(c, s):
     Args:
         c: (scalar) component to be scaled
         s: scaling factor
-        
+
     Returns:
         Scaling factor assigned to c
     """
@@ -131,6 +134,7 @@ def _create_if_none(blk, var_name, idx_set, units):
     else:
         setattr(blk, var_name, pyo.Reference(attr))
 
+
 def _init_solve_block(blk, solver, log):
     """Checks whether solving a block is a square problem. If not, raise
     InitializationError. If it is, solve block while redirecting output to
@@ -159,9 +163,7 @@ def _init_solve_block(blk, solver, log):
         )
 
 
-def _interpolate_channel(
-    iz, ifaces, nodes, faces, phi_func, phi_inlet, opposite_flow
-):
+def _interpolate_channel(iz, ifaces, nodes, faces, phi_func, phi_inlet, opposite_flow):
     """PRIVATE Function: Interpolate faces of control volumes in 1D
 
     Args:
@@ -246,6 +248,7 @@ def _interpolate_2D(
         # Since we are doing linear interpolation derivative is the slope
         # between node centers even if they are not evenly spaced
         return (phi_func(icd) - phi_func(icu)) / (cd - cu)
+
 
 _element_list = ["Ar", "H", "O", "C", "N", "S"]
 _species_list = [
@@ -492,15 +495,19 @@ def _binary_diffusion_coefficient_expr(temperature, p, c1, c2):
     cm2_to_m2 = 0.01 * 0.01
     Pa_to_bar = 1e-5
     return (
-        0.002666
-        * cm2_to_m2
-        * temperature ** (3 / 2)
-        / (p / pyo.units.Pa)
-        / Pa_to_bar
-        / mab**0.5
-        / sab**2
-        / omega
-    ) * pyo.units.m**2 / pyo.units.s
+        (
+            0.002666
+            * cm2_to_m2
+            * temperature ** (3 / 2)
+            / (p / pyo.units.Pa)
+            / Pa_to_bar
+            / mab**0.5
+            / sab**2
+            / omega
+        )
+        * pyo.units.m**2
+        / pyo.units.s
+    )
 
 
 def _comp_enthalpy_expr(temperature, comp):
@@ -655,7 +662,9 @@ def _create_thermal_boundary_conditions_if_none(unit, thin):
     _create_if_none(unit, "temperature_z", idx_set=(tset, iznodes), units=pyo.units.K)
 
     if thin:
-        _create_if_none(unit, "temperature_deviation_x", idx_set=(tset, iznodes), units=pyo.units.K)
+        _create_if_none(
+            unit, "temperature_deviation_x", idx_set=(tset, iznodes), units=pyo.units.K
+        )
 
         @unit.Expression(tset, iznodes)
         def temperature(b, t, iz):
@@ -665,7 +674,9 @@ def _create_thermal_boundary_conditions_if_none(unit, thin):
                 return b.temperature_z[t, iz]
 
     else:
-        _create_if_none(unit, "temperature_deviation_x0", idx_set=(tset, iznodes), units=pyo.units.K)
+        _create_if_none(
+            unit, "temperature_deviation_x0", idx_set=(tset, iznodes), units=pyo.units.K
+        )
 
         @unit.Expression(tset, iznodes)
         def temperature_x0(b, t, iz):
@@ -674,7 +685,9 @@ def _create_thermal_boundary_conditions_if_none(unit, thin):
             else:
                 return b.temperature_z[t, iz]
 
-        _create_if_none(unit, "temperature_deviation_x1", idx_set=(tset, iznodes), units=pyo.units.K)
+        _create_if_none(
+            unit, "temperature_deviation_x1", idx_set=(tset, iznodes), units=pyo.units.K
+        )
 
         @unit.Expression(tset, iznodes)
         def temperature_x1(b, t, iz):
@@ -684,11 +697,17 @@ def _create_thermal_boundary_conditions_if_none(unit, thin):
                 return b.temperature_z[t, iz]
 
     _create_if_none(
-        unit, "heat_flux_x0", idx_set=(tset, iznodes), units=pyo.units.W / pyo.units.m**2
+        unit,
+        "heat_flux_x0",
+        idx_set=(tset, iznodes),
+        units=pyo.units.W / pyo.units.m**2,
     )
 
     _create_if_none(
-        unit, "heat_flux_x1", idx_set=(tset, iznodes), units=pyo.units.W / pyo.units.m**2
+        unit,
+        "heat_flux_x1",
+        idx_set=(tset, iznodes),
+        units=pyo.units.W / pyo.units.m**2,
     )
 
 
@@ -782,6 +801,7 @@ def _create_material_boundary_conditions_if_none(unit, thin):
             units=pyo.units.mol / (pyo.units.s * pyo.units.m**2),
         )
 
+
 def _face_initializer(blk, faces, direction):
     dfaces = direction + "faces"
     dnodes = direction + "nodes"
@@ -795,41 +815,51 @@ def _face_initializer(blk, faces, direction):
             f"Largest control volume face provided in "
             f"{dfaces} to block {blk.name} is not one."
         )
-    for i in range(len(faces)-1):
-        if not faces[i+1] - faces[i] > 0:
+    for i in range(len(faces) - 1):
+        if not faces[i + 1] - faces[i] > 0:
             raise ConfigurationError(
                 f"Sequence of control volume face distances in {dfaces} "
                 "is not strictly increasing."
             )
-    
-    face_set = _set_and_get_attr(blk, dfaces,
-         pyo.Set(initialize=faces,
-                 ordered=True,
-                 doc = f"{direction} coordinates for control volume faces"
-        )
+
+    face_set = _set_and_get_attr(
+        blk,
+        dfaces,
+        pyo.Set(
+            initialize=faces,
+            ordered=True,
+            doc=f"{direction} coordinates for control volume faces",
+        ),
     )
-    node_set = _set_and_get_attr(blk, dnodes, pyo.Set(
+    node_set = _set_and_get_attr(
+        blk,
+        dnodes,
+        pyo.Set(
             initialize=[
                 (face_set.at(i) + face_set.at(i + 1)) / 2.0
                 for i in range(1, len(faces))
             ],
             ordered=True,
-            doc = f"{direction} coordinates for control volume centers"
-        )
+            doc=f"{direction} coordinates for control volume centers",
+        ),
     )
     # This sets provide an integer index for nodes and faces
-    iface_set = _set_and_get_attr(blk, "i"+dfaces,
+    iface_set = _set_and_get_attr(
+        blk,
+        "i" + dfaces,
         pyo.Set(
             initialize=range(1, len(face_set) + 1),
             ordered=True,
-            doc = f"Integer index set for {dfaces}"
-        )
+            doc=f"Integer index set for {dfaces}",
+        ),
     )
-    inode_set = _set_and_get_attr(blk, "i"+dnodes,
+    inode_set = _set_and_get_attr(
+        blk,
+        "i" + dnodes,
         pyo.Set(
             initialize=range(1, len(node_set) + 1),
             ordered=True,
-            doc = f"Integer index set for {dnodes}"
-        )
+            doc=f"Integer index set for {dnodes}",
+        ),
     )
     return iface_set, inode_set

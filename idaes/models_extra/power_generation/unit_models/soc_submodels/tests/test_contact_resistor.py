@@ -25,18 +25,19 @@ import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as 
 
 solver = pyo.SolverFactory("ipopt")
 
+
 @pytest.fixture
 def model():
     time_set = [0]
-    zfaces = np.linspace(0,1,4).tolist()
+    zfaces = np.linspace(0, 1, 4).tolist()
     m = soc_testing._cell_flowsheet_model(
-        dynamic=False,
-        time_set=time_set,
-        zfaces=zfaces
+        dynamic=False, time_set=time_set, zfaces=zfaces
     )
     iznodes = m.fs.iznodes
     tset = m.fs.config.time
-    m.fs.temperature_deviation_x = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
+    m.fs.temperature_deviation_x = pyo.Var(
+        tset, iznodes, initialize=0, units=pyo.units.K
+    )
     m.fs.heat_flux_x0 = pyo.Var(
         tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
     )
@@ -61,10 +62,11 @@ def model():
 
     return m
 
+
 @pytest.fixture
 def model2():
-    time_set = [0 ,1]
-    zfaces = np.linspace(0,1,8).tolist()
+    time_set = [0, 1]
+    zfaces = np.linspace(0, 1, 8).tolist()
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
         default={
@@ -88,6 +90,7 @@ def model2():
     m.fs.contact.contact_fraction.fix(1)
 
     return m
+
 
 @pytest.mark.build
 @pytest.mark.unit
@@ -129,6 +132,7 @@ def test_build(model):
     )
     assert degrees_of_freedom(model.fs.contact) == 0
 
+
 @pytest.mark.build
 @pytest.mark.unit
 def test_build2(model2):
@@ -160,7 +164,7 @@ def test_build2(model2):
         },
     )
     assert degrees_of_freedom(model2.fs.contact) == 0
-    
+
 
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -171,4 +175,4 @@ def test_initialization(model):
     model.fs.contact.heat_flux_x1.fix()
     model.fs.contact.initialize_build(
         fix_heat_flux_x0=False, optarg={"nlp_scaling_method": "user-scaling"}
-        )
+    )

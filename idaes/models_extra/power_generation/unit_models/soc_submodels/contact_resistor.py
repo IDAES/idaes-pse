@@ -22,12 +22,18 @@ import pyomo.environ as pyo
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR, _constF, _set_if_unfixed, _species_list, _element_list, _element_dict
+    _constR,
+    _constF,
+    _set_if_unfixed,
+    _species_list,
+    _element_list,
+    _element_dict,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
+
 
 @declare_process_block_class("SocContactResistor")
 class SocContactResistorData(UnitModelBlockData):
@@ -55,9 +61,7 @@ class SocContactResistorData(UnitModelBlockData):
         tset = self.flowsheet().config.time
         # Set up node and face sets and get integer indices for them
         izfaces, iznodes = common._face_initializer(
-            self, 
-            self.config.control_volume_zfaces,
-            "z"
+            self, self.config.control_volume_zfaces, "z"
         )
         common._submodel_boilerplate_create_if_none(self)
         common._create_thermal_boundary_conditions_if_none(self, thin=True)
@@ -95,7 +99,10 @@ class SocContactResistorData(UnitModelBlockData):
 
         @self.Constraint(tset, iznodes)
         def heat_flux_x_eqn(b, t, iz):
-            return b.heat_flux_x1[t, iz] == b.heat_flux_x0[t, iz] + b.joule_heating_flux[t, iz]
+            return (
+                b.heat_flux_x1[t, iz]
+                == b.heat_flux_x0[t, iz] + b.joule_heating_flux[t, iz]
+            )
 
     def initialize_build(
         self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, fix_heat_flux_x0=True

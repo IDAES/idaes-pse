@@ -22,13 +22,18 @@ from pyomo.network import Port
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR, _set_if_unfixed, _species_list, _element_list, _element_dict
+    _constR,
+    _set_if_unfixed,
+    _species_list,
+    _element_list,
+    _element_dict,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 
 from idaes.core.base.var_like_expression import VarLikeExpression
 import idaes.logger as idaeslog
+
 
 @declare_process_block_class("SocChannel")
 class SocChannelData(UnitModelBlockData):
@@ -91,9 +96,7 @@ class SocChannelData(UnitModelBlockData):
         )
         # Set up node and face sets and get integer indices for them
         izfaces, iznodes = common._face_initializer(
-            self, 
-            self.config.control_volume_zfaces,
-            "z"
+            self, self.config.control_volume_zfaces, "z"
         )
         # Space saving aliases
         comps = self.component_list
@@ -355,7 +358,8 @@ class SocChannelData(UnitModelBlockData):
             def material_flux_x0_eqn(b, t, iz, i):
                 return (
                     b.material_flux_x0[t, iz, i]
-                    == b.mass_transfer_coeff[t, iz, i] * b.conc_mol_comp_deviation_x0[t, iz, i]
+                    == b.mass_transfer_coeff[t, iz, i]
+                    * b.conc_mol_comp_deviation_x0[t, iz, i]
                 )
 
         else:
@@ -364,7 +368,8 @@ class SocChannelData(UnitModelBlockData):
             def material_flux_x1_eqn(b, t, iz, i):
                 return (
                     b.material_flux_x1[t, iz, i]
-                    == -b.mass_transfer_coeff[t, iz, i] * b.conc_mol_comp_deviation_x1[t, iz, i]
+                    == -b.mass_transfer_coeff[t, iz, i]
+                    * b.conc_mol_comp_deviation_x1[t, iz, i]
                 )
 
         @self.Constraint(tset, iznodes)
@@ -377,8 +382,7 @@ class SocChannelData(UnitModelBlockData):
                     == -b.flow_area * b.velocity[t, iz] / b.vol_mol[t, iz]
                 )
             return (
-                b.flow_mol[t, iz]
-                == b.flow_area * b.velocity[t, iz] / b.vol_mol[t, iz]
+                b.flow_mol[t, iz] == b.flow_area * b.velocity[t, iz] / b.vol_mol[t, iz]
             )
 
         @self.Constraint(tset, iznodes)
@@ -386,7 +390,7 @@ class SocChannelData(UnitModelBlockData):
             return b.pressure[t, iz] == b.pressure_inlet[t]
 
         @self.Constraint(tset, iznodes, comps)
-        def conc_eqn(b, t, iz, i):
+        def conc_mol_comp_eqn(b, t, iz, i):
             return (
                 b.conc_mol_comp[t, iz, i] * b.temperature[t, iz] * _constR
                 == b.pressure[t, iz] * b.mole_frac_comp[t, iz, i]
@@ -395,7 +399,8 @@ class SocChannelData(UnitModelBlockData):
         @self.Constraint(tset, iznodes)
         def enth_mol_eqn(b, t, iz):
             return b.enth_mol[t, iz] == sum(
-                common._comp_enthalpy_expr(b.temperature[t, iz], i) * b.mole_frac_comp[t, iz, i]
+                common._comp_enthalpy_expr(b.temperature[t, iz], i)
+                * b.mole_frac_comp[t, iz, i]
                 for i in comps
             )
 
@@ -417,7 +422,7 @@ class SocChannelData(UnitModelBlockData):
                 )
 
         @self.Constraint(tset, iznodes)
-        def mole_frac_eqn(b, t, iz):
+        def mole_frac_comp_eqn(b, t, iz):
             return 1 == sum(b.mole_frac_comp[t, iz, i] for i in comps)
 
         @self.Expression(tset, comps)
@@ -433,7 +438,7 @@ class SocChannelData(UnitModelBlockData):
             return b.flow_mol_inlet[t] / b.flow_area * b.mole_frac_comp_inlet[t, i]
 
         @self.Expression(tset)
-        def material_flux_z_enth_inlet(b, t):
+        def enth_flux_z_inlet(b, t):
             # either way the flow goes, want the flow rate to be positive, but
             # in the opposite flow cases want flux and velocity to be negative
             if self.config.opposite_flow:
@@ -447,7 +452,8 @@ class SocChannelData(UnitModelBlockData):
                 ifaces=izfaces,
                 nodes=b.znodes,
                 faces=b.zfaces,
-                phi_func=lambda iface: b.velocity[t, iface] * b.conc_mol_comp[t, iface, i],
+                phi_func=lambda iface: b.velocity[t, iface]
+                * b.conc_mol_comp[t, iface, i],
                 phi_inlet=b.material_flux_z_inlet[t, i],
                 opposite_flow=self.config.opposite_flow,
             )
@@ -462,7 +468,7 @@ class SocChannelData(UnitModelBlockData):
                 phi_func=lambda iface: b.velocity[t, iface]
                 / b.vol_mol[t, iface]
                 * b.enth_mol[t, iface],
-                phi_inlet=b.material_flux_z_enth_inlet[t],
+                phi_inlet=b.enth_flux_z_inlet[t],
                 opposite_flow=self.config.opposite_flow,
             )
 
@@ -488,7 +494,9 @@ class SocChannelData(UnitModelBlockData):
             #     return pyo.Constraint.Skip
             return b.dconc_mol_compdt[t, iz, i] * b.node_volume[iz] == b.flow_area * (
                 b.material_flux_z[t, iz, i] - b.material_flux_z[t, iz + 1, i]
-            ) + b.xface_area[iz] * (b.material_flux_x0[t, iz, i] - b.material_flux_x1[t, iz, i])
+            ) + b.xface_area[iz] * (
+                b.material_flux_x0[t, iz, i] - b.material_flux_x1[t, iz, i]
+            )
 
         if dynamic:
             self.material_balance_eqn[tset.first(), :, :].deactivate()
@@ -497,7 +505,8 @@ class SocChannelData(UnitModelBlockData):
         def energy_balance_eqn(b, t, iz):
             return (
                 b.dcedt[t, iz] * b.node_volume[iz]
-                == b.flow_area * (b.material_flux_z_enth[t, iz] - b.material_flux_z_enth[t, iz + 1])
+                == b.flow_area
+                * (b.material_flux_z_enth[t, iz] - b.material_flux_z_enth[t, iz + 1])
                 + b.xface_area[iz]
                 * sum(
                     (b.material_flux_x0[t, iz, i] - b.material_flux_x1[t, iz, i])
@@ -514,13 +523,15 @@ class SocChannelData(UnitModelBlockData):
         @self.Constraint(tset, iznodes)
         def temperature_x0_eqn(b, t, iz):
             return self.heat_flux_x0[t, iz] == self.heat_transfer_coefficient[t, iz] * (
-                self.temperature_deviation_x0[t, iz] - self.temperature_deviation_x[t, iz]
+                self.temperature_deviation_x0[t, iz]
+                - self.temperature_deviation_x[t, iz]
             )
 
         @self.Constraint(tset, iznodes)
         def temperature_x1_eqn(b, t, iz):
             return self.heat_flux_x1[t, iz] == self.heat_transfer_coefficient[t, iz] * (
-                self.temperature_deviation_x[t, iz] - self.temperature_deviation_x1[t, iz]
+                self.temperature_deviation_x[t, iz]
+                - self.temperature_deviation_x1[t, iz]
             )
 
         # For convenience define outlet expressions
@@ -559,9 +570,17 @@ class SocChannelData(UnitModelBlockData):
         @self.Expression(tset)
         def enth_mol_outlet(b, t):
             if self.config.opposite_flow:
-                return -b.material_flux_z_enth[t, izfout] * b.flow_area / b.flow_mol_outlet[t]
+                return (
+                    -b.material_flux_z_enth[t, izfout]
+                    * b.flow_area
+                    / b.flow_mol_outlet[t]
+                )
             else:
-                return b.material_flux_z_enth[t, izfout] * b.flow_area / b.flow_mol_outlet[t]
+                return (
+                    b.material_flux_z_enth[t, izfout]
+                    * b.flow_area
+                    / b.flow_mol_outlet[t]
+                )
 
         # know enthalpy need a constraint to back calculate temperature
         @self.Constraint(tset)
@@ -792,7 +811,7 @@ class SocChannelData(UnitModelBlockData):
 
                 # Pointless other than making a record that this equation
                 # is well-scaled by default
-                cst(self.mole_frac_eqn[t, iz], 1)
+                cst(self.mole_frac_comp_eqn[t, iz], 1)
 
                 for j in self.component_list:
                     # These should have been scaled by the cell-level method, so
@@ -807,19 +826,23 @@ class SocChannelData(UnitModelBlockData):
                     cst(self.material_balance_eqn[t, iz, j], s_flow_mol * sy)
 
                     ssf(self.conc_mol_comp[t, iz, j], sy * sP / (sR * sT))
-                    cst(self.conc_eqn[t, iz, j], sy * sP)
+                    cst(self.conc_mol_comp_eqn[t, iz, j], sy * sP)
 
                     if hasattr(self, "material_flux_x0_eqn"):
                         sXflux = gsf(
                             self.material_flux_x0[t, iz, j], default=1e-1, warning=True
                         )
                         cst(self.material_flux_x0_eqn[t, iz, j], sXflux)
-                        ssf(self.conc_mol_comp_deviation_x0[t, iz, j], sLx * sXflux / sD)
+                        ssf(
+                            self.conc_mol_comp_deviation_x0[t, iz, j], sLx * sXflux / sD
+                        )
                     if hasattr(self, "material_flux_x1_eqn"):
                         sXflux = gsf(
                             self.material_flux_x1[t, iz, j], default=1e-1, warning=True
                         )
                         cst(self.material_flux_x1_eqn[t, iz, j], sXflux)
-                        ssf(self.conc_mol_comp_deviation_x1[t, iz, j], sLx * sXflux / sD)
+                        ssf(
+                            self.conc_mol_comp_deviation_x1[t, iz, j], sLx * sXflux / sD
+                        )
 
             cst(self.temperature_outlet_eqn[t], sH)

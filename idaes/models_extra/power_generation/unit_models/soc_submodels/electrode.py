@@ -21,12 +21,17 @@ import pyomo.environ as pyo
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR, _set_if_unfixed, _species_list, _element_list, _element_dict
+    _constR,
+    _set_if_unfixed,
+    _species_list,
+    _element_list,
+    _element_dict,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
+
 
 @declare_process_block_class("SocElectrode")
 class SocElectrodeData(UnitModelBlockData):
@@ -75,14 +80,10 @@ class SocElectrodeData(UnitModelBlockData):
         )
         # Set up node and face sets and get integer indices for them
         izfaces, iznodes = common._face_initializer(
-            self, 
-            self.config.control_volume_zfaces,
-            "z"
+            self, self.config.control_volume_zfaces, "z"
         )
         ixfaces, ixnodes = common._face_initializer(
-            self,
-            self.config.control_volume_xfaces,
-            "x"
+            self, self.config.control_volume_xfaces, "x"
         )
 
         # Space saving aliases
@@ -100,9 +101,11 @@ class SocElectrodeData(UnitModelBlockData):
             # If we're dynamic, the user needs to either provide both the
             # reference concentration and its derivative, or provide neither.
             assert (
-                self.config.conc_mol_comp_ref is None and self.config.dconc_mol_comp_refdt is None
+                self.config.conc_mol_comp_ref is None
+                and self.config.dconc_mol_comp_refdt is None
             ) or (
-                self.config.conc_mol_comp_ref is not None and self.config.dconc_mol_comp_refdt is not None
+                self.config.conc_mol_comp_ref is not None
+                and self.config.dconc_mol_comp_refdt is not None
             )
 
         if self.config.conc_mol_comp_ref is None:
@@ -134,9 +137,13 @@ class SocElectrodeData(UnitModelBlockData):
         else:
             self.conc_mol_comp_ref = pyo.Reference(self.config.conc_mol_comp_ref)
             if self.config.dconc_mol_comp_refdt.ctype == DerivativeVar:
-                self.dconc_mol_comp_refdt = pyo.Reference(self.config.dconc_mol_comp_refdt, ctype=pyo.Var)
+                self.dconc_mol_comp_refdt = pyo.Reference(
+                    self.config.dconc_mol_comp_refdt, ctype=pyo.Var
+                )
             else:
-                self.dconc_mol_comp_refdt = pyo.Reference(self.config.dconc_mol_comp_refdt)
+                self.dconc_mol_comp_refdt = pyo.Reference(
+                    self.config.dconc_mol_comp_refdt
+                )
         common._submodel_boilerplate_create_if_none(self)
         common._create_thermal_boundary_conditions_if_none(self, thin=False)
         common._create_material_boundary_conditions_if_none(self, thin=False)
@@ -161,7 +168,8 @@ class SocElectrodeData(UnitModelBlockData):
             ixnodes,
             iznodes,
             comps,
-            doc="Deviation of component concentration at node centers " "from conc_mol_comp_ref",
+            doc="Deviation of component concentration at node centers "
+            "from conc_mol_comp_ref",
             units=pyo.units.mol / pyo.units.m**3,
             bounds=(-100, 100),
         )
@@ -312,26 +320,36 @@ class SocElectrodeData(UnitModelBlockData):
 
         @self.Expression(tset, iznodes, comps)
         def conc_mol_comp_x0(b, t, iz, j):
-            return b.conc_mol_comp_ref[t, iz, j] + b.conc_mol_comp_deviation_x0[t, iz, j]
+            return (
+                b.conc_mol_comp_ref[t, iz, j] + b.conc_mol_comp_deviation_x0[t, iz, j]
+            )
 
         @self.Expression(tset, ixnodes, iznodes, comps)
         def conc_mol_comp(b, t, ix, iz, j):
-            return b.conc_mol_comp_ref[t, iz, j] + b.conc_mol_comp_deviation_x[t, ix, iz, j]
+            return (
+                b.conc_mol_comp_ref[t, iz, j]
+                + b.conc_mol_comp_deviation_x[t, ix, iz, j]
+            )
 
         @self.Expression(tset, iznodes, comps)
         def conc_mol_comp_x1(b, t, iz, j):
-            return b.conc_mol_comp_ref[t, iz, j] + b.conc_mol_comp_deviation_x1[t, iz, j]
+            return (
+                b.conc_mol_comp_ref[t, iz, j] + b.conc_mol_comp_deviation_x1[t, iz, j]
+            )
 
         @self.Expression(tset, ixnodes, iznodes, comps)
         def dconc_mol_compdt(b, t, ix, iz, j):
-            return b.dconc_mol_comp_refdt[t, iz, j] + b.dconc_mol_comp_deviation_xdt[t, ix, iz, j]
+            return (
+                b.dconc_mol_comp_refdt[t, iz, j]
+                + b.dconc_mol_comp_deviation_xdt[t, ix, iz, j]
+            )
 
         @self.Expression(tset, ixnodes, iznodes)
         def vol_mol(b, t, ix, iz):
             return _constR * b.temperature[t, ix, iz] / b.pressure[t, ix, iz]
 
         @self.Constraint(tset, ixnodes, iznodes, comps)
-        def conc_eqn(b, t, ix, iz, i):
+        def conc_mol_comp_eqn(b, t, ix, iz, i):
             return (
                 b.conc_mol_comp[t, ix, iz, i] * b.temperature[t, ix, iz] * _constR
                 == b.pressure[t, ix, iz] * b.mole_frac_comp[t, ix, iz, i]
@@ -371,7 +389,7 @@ class SocElectrodeData(UnitModelBlockData):
                 )
 
         @self.Constraint(tset, ixnodes, iznodes)
-        def mole_frac_eqn(b, t, ix, iz):
+        def mole_frac_comp_eqn(b, t, ix, iz):
             return 1 == sum(b.mole_frac_comp[t, ix, iz, i] for i in comps)
 
         @self.Expression(tset, ixnodes, iznodes, comps)
@@ -394,11 +412,18 @@ class SocElectrodeData(UnitModelBlockData):
                 ifaces=ixfaces,
                 nodes=b.xnodes,
                 faces=b.xfaces,
-                phi_func=lambda ixf: b.conc_mol_comp_deviation_x[t, ixf, iz, i] / b.length_x,
-                phi_bound_0=(b.conc_mol_comp_deviation_x[t, ixnodes.first(), iz, i] - b.conc_mol_comp_deviation_x0[t, iz, i])
+                phi_func=lambda ixf: b.conc_mol_comp_deviation_x[t, ixf, iz, i]
+                / b.length_x,
+                phi_bound_0=(
+                    b.conc_mol_comp_deviation_x[t, ixnodes.first(), iz, i]
+                    - b.conc_mol_comp_deviation_x0[t, iz, i]
+                )
                 / (b.xnodes.first() - b.xfaces.first())
                 / b.length_x,
-                phi_bound_1=(b.conc_mol_comp_deviation_x1[t, iz, i] - b.conc_mol_comp_deviation_x[t, ixnodes.last(), iz, i])
+                phi_bound_1=(
+                    b.conc_mol_comp_deviation_x1[t, iz, i]
+                    - b.conc_mol_comp_deviation_x[t, ixnodes.last(), iz, i]
+                )
                 / (b.xfaces.last() - b.xnodes.last())
                 / b.length_x,
                 derivative=True,
@@ -425,10 +450,16 @@ class SocElectrodeData(UnitModelBlockData):
                 nodes=b.xnodes,
                 faces=b.xfaces,
                 phi_func=lambda ixf: b.temperature_deviation_x[t, ixf, iz] / b.length_x,
-                phi_bound_0=(b.temperature_deviation_x[t, ixnodes.first(), iz] - b.temperature_deviation_x0[t, iz])
+                phi_bound_0=(
+                    b.temperature_deviation_x[t, ixnodes.first(), iz]
+                    - b.temperature_deviation_x0[t, iz]
+                )
                 / (b.xnodes.first() - b.xfaces.first())
                 / b.length_x,
-                phi_bound_1=(b.temperature_deviation_x1[t, iz] - b.temperature_deviation_x[t, ixnodes.last(), iz])
+                phi_bound_1=(
+                    b.temperature_deviation_x1[t, iz]
+                    - b.temperature_deviation_x[t, ixnodes.last(), iz]
+                )
                 / (b.xfaces.last() - b.xnodes.last())
                 / b.length_x,
                 derivative=True,
@@ -510,11 +541,17 @@ class SocElectrodeData(UnitModelBlockData):
 
         @self.Constraint(tset, iznodes, comps)
         def material_flux_x0_eqn(b, t, iz, i):
-            return b.material_flux_x[t, ixfaces.first(), iz, i] == b.material_flux_x0[t, iz, i]
+            return (
+                b.material_flux_x[t, ixfaces.first(), iz, i]
+                == b.material_flux_x0[t, iz, i]
+            )
 
         @self.Constraint(tset, iznodes, comps)
         def material_flux_x1_eqn(b, t, iz, i):
-            return b.material_flux_x[t, ixfaces.last(), iz, i] == b.material_flux_x1[t, iz, i]
+            return (
+                b.material_flux_x[t, ixfaces.last(), iz, i]
+                == b.material_flux_x1[t, iz, i]
+            )
 
         @self.Expression(tset, ixnodes, izfaces, comps)
         def material_flux_z(b, t, ix, iz, i):
@@ -575,9 +612,15 @@ class SocElectrodeData(UnitModelBlockData):
 
         @self.Constraint(tset, ixnodes, iznodes, comps)
         def material_balance_eqn(b, t, ix, iz, i):
-            return b.node_volume[ix, iz] * b.dconc_mol_compdt[t, ix, iz, i] == b.xface_area[iz] * (
+            return b.node_volume[ix, iz] * b.dconc_mol_compdt[
+                t, ix, iz, i
+            ] == b.xface_area[iz] * (
                 b.material_flux_x[t, ix, iz, i] - b.material_flux_x[t, ix + 1, iz, i]
-            ) + b.zface_area[ix] * (b.material_flux_z[t, ix, iz, i] - b.material_flux_z[t, ix, iz + 1, i])
+            ) + b.zface_area[
+                ix
+            ] * (
+                b.material_flux_z[t, ix, iz, i] - b.material_flux_z[t, ix, iz + 1, i]
+            )
 
         if dynamic:
             self.material_balance_eqn[tset.first(), :, :, :].deactivate()
@@ -594,8 +637,10 @@ class SocElectrodeData(UnitModelBlockData):
                     b.porosity * b.dcedt[t, ix, iz]
                     + (1 - b.porosity) * b.dcedt_solid[t, ix, iz]
                 )
-                == b.xface_area[iz] * (b.heat_flux_x[t, ix, iz] - b.heat_flux_x[t, ix + 1, iz])
-                + b.zface_area[ix] * (b.heat_flux_z[t, ix, iz] - b.heat_flux_z[t, ix, iz + 1])
+                == b.xface_area[iz]
+                * (b.heat_flux_x[t, ix, iz] - b.heat_flux_x[t, ix + 1, iz])
+                + b.zface_area[ix]
+                * (b.heat_flux_z[t, ix, iz] - b.heat_flux_z[t, ix, iz + 1])
                 + b.joule_heating[t, ix, iz]
                 # For mass flux heat transfer include exchange with channel
                 # probably make little differece, but want to ensure the energy
@@ -661,7 +706,9 @@ class SocElectrodeData(UnitModelBlockData):
                         _set_if_unfixed(self.pressure[t, ix, iz], pressure_guess)
                     for i in comps:
                         _set_if_unfixed(self.conc_mol_comp_deviation_x[t, ix, iz, i], 0)
-                    mol_dens = pyo.value(sum(self.conc_mol_comp[t, ix, iz, i] for i in comps))
+                    mol_dens = pyo.value(
+                        sum(self.conc_mol_comp[t, ix, iz, i] for i in comps)
+                    )
                     _set_if_unfixed(
                         self.pressure[t, ix, iz],
                         _constR * self.temperature[t, ix, iz] * mol_dens,
@@ -683,15 +730,16 @@ class SocElectrodeData(UnitModelBlockData):
                         _set_if_unfixed(
                             self.int_energy_mol[t, ix, iz],
                             sum(
-                                common._comp_int_energy_expr(self.temperature[t, ix, iz], i)
+                                common._comp_int_energy_expr(
+                                    self.temperature[t, ix, iz], i
+                                )
                                 * self.mole_frac_comp[t, ix, iz, i]
                                 for i in comps
                             ),
                         )
                         _set_if_unfixed(
                             self.int_energy_density[t, ix, iz],
-                            self.int_energy_mol[t, ix, iz]
-                            / self.vol_mol[t, ix, iz],
+                            self.int_energy_mol[t, ix, iz] / self.vol_mol[t, ix, iz],
                         )
                         # _set_if_unfixed(
                         #    self.int_energy_density_solid[t, ix, iz],
@@ -837,21 +885,31 @@ class SocElectrodeData(UnitModelBlockData):
                     # ssf(self.conc_mol_comp_ref[t,iz,j],sy_def*1e-4/(sR*sT))
 
                     if self.material_flux_x0[t, iz, j].is_reference():
-                        smaterial_flux_x0 = gsf(self.material_flux_x0[t, iz, j].referent, default=1e-2)
+                        smaterial_flux_x0 = gsf(
+                            self.material_flux_x0[t, iz, j].referent, default=1e-2
+                        )
                     else:
                         smaterial_flux_x0 = sgsf(self.material_flux_x0[t, iz, j], 1e-2)
                     cst(self.material_flux_x0_eqn[t, iz, j], smaterial_flux_x0)
                     if not self.conc_mol_comp_deviation_x0[t, iz, j].is_reference():
-                        ssf(self.conc_mol_comp_deviation_x0[t, iz, j], smaterial_flux_x0 * sLx / sD)
+                        ssf(
+                            self.conc_mol_comp_deviation_x0[t, iz, j],
+                            smaterial_flux_x0 * sLx / sD,
+                        )
 
                     if self.material_flux_x1[t, iz, j].is_reference():
-                        smaterial_flux_x1 = gsf(self.material_flux_x1[t, iz, j].referent, default=1e-2)
+                        smaterial_flux_x1 = gsf(
+                            self.material_flux_x1[t, iz, j].referent, default=1e-2
+                        )
                     else:
                         smaterial_flux_x1 = sgsf(self.material_flux_x1[t, iz, j], 1e-2)
                     cst(self.material_flux_x1_eqn[t, iz, j], smaterial_flux_x1)
 
                     if not self.conc_mol_comp_deviation_x1[t, iz, j].is_reference():
-                        ssf(self.conc_mol_comp_deviation_x1[t, iz, j], smaterial_flux_x1 * sLx / sD)
+                        ssf(
+                            self.conc_mol_comp_deviation_x1[t, iz, j],
+                            smaterial_flux_x1 * sLx / sD,
+                        )
 
                     smaterial_flux_x[j] = min(smaterial_flux_x0, smaterial_flux_x1)
 
@@ -881,13 +939,16 @@ class SocElectrodeData(UnitModelBlockData):
                         )
                         cst(self.int_energy_density_solid_eqn[t, ix, iz], s_rho_U_solid)
 
-                    cst(self.mole_frac_eqn[t, ix, iz], 1)
+                    cst(self.mole_frac_comp_eqn[t, ix, iz], 1)
                     cst(self.energy_balance_solid_eqn[t, ix, iz], sqx * sLy * sLz)
 
                     for j in self.component_list:
                         sy = sgsf(self.mole_frac_comp[t, ix, iz, j], sy_def)
-                        cst(self.conc_eqn[t, ix, iz, j], sy * sP)
-                        ssf(self.conc_mol_comp_deviation_x[t, ix, iz, j], smaterial_flux_x[j] * sLx / sD)
+                        cst(self.conc_mol_comp_eqn[t, ix, iz, j], sy * sP)
+                        ssf(
+                            self.conc_mol_comp_deviation_x[t, ix, iz, j],
+                            smaterial_flux_x[j] * sLx / sD,
+                        )
 
                         cst(
                             self.material_balance_eqn[t, ix, iz, j],

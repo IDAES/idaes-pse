@@ -21,12 +21,17 @@ import pyomo.environ as pyo
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR, _set_if_unfixed, _species_list, _element_list, _element_dict
+    _constR,
+    _set_if_unfixed,
+    _species_list,
+    _element_list,
+    _element_dict,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
+
 
 @declare_process_block_class("SocConductiveSlab")
 class SocConductiveSlabData(UnitModelBlockData):
@@ -51,14 +56,10 @@ class SocConductiveSlabData(UnitModelBlockData):
         tset = self.flowsheet().config.time
         # Set up node and face sets and get integer indices for them
         izfaces, iznodes = common._face_initializer(
-            self, 
-            self.config.control_volume_zfaces,
-            "z"
+            self, self.config.control_volume_zfaces, "z"
         )
         ixfaces, ixnodes = common._face_initializer(
-            self,
-            self.config.control_volume_xfaces,
-            "x"
+            self, self.config.control_volume_xfaces, "x"
         )
         # Channel thickness AKA length in the x direction is specific to the
         # channel so local variable here is the only option
@@ -170,10 +171,16 @@ class SocConductiveSlabData(UnitModelBlockData):
                 nodes=b.xnodes,
                 faces=b.xfaces,
                 phi_func=lambda ixf: b.temperature_deviation_x[t, ixf, iz] / b.length_x,
-                phi_bound_0=(b.temperature_deviation_x0[t, iz] - b.temperature_deviation_x[t, ixnodes.first(), iz])
+                phi_bound_0=(
+                    b.temperature_deviation_x0[t, iz]
+                    - b.temperature_deviation_x[t, ixnodes.first(), iz]
+                )
                 / (b.xfaces.first() - b.xnodes.first())
                 / b.length_x,
-                phi_bound_1=(b.temperature_deviation_x[t, ixnodes.last(), iz] - b.temperature_deviation_x1[t, iz])
+                phi_bound_1=(
+                    b.temperature_deviation_x[t, ixnodes.last(), iz]
+                    - b.temperature_deviation_x1[t, iz]
+                )
                 / (b.xnodes.last() - b.xfaces.last())
                 / b.length_x,
                 derivative=True,
@@ -245,8 +252,10 @@ class SocConductiveSlabData(UnitModelBlockData):
         def energy_balance_solid_eqn(b, t, ix, iz):
             return (
                 b.node_volume[ix, iz] * b.dcedt_solid[t, ix, iz]
-                == b.xface_area[iz] * (b.heat_flux_x[t, ix, iz] - b.heat_flux_x[t, ix + 1, iz])
-                + b.zface_area[ix] * (b.heat_flux_z[t, ix, iz] - b.heat_flux_z[t, ix, iz + 1])
+                == b.xface_area[iz]
+                * (b.heat_flux_x[t, ix, iz] - b.heat_flux_x[t, ix + 1, iz])
+                + b.zface_area[ix]
+                * (b.heat_flux_z[t, ix, iz] - b.heat_flux_z[t, ix, iz + 1])
                 + b.joule_heating[t, ix, iz]
             )
 

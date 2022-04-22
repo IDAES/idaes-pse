@@ -26,6 +26,7 @@ import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as 
 
 solver = pyo.SolverFactory("ipopt")
 
+
 def build_tester(cell, nt, nz):
     soc_testing._build_test_utility(
         cell,
@@ -51,6 +52,7 @@ def build_tester(cell, nt, nz):
         },
     )
 
+
 @pytest.fixture
 def model():
     time_set = [0]
@@ -62,7 +64,7 @@ def model():
     fuel_tpb_stoich_dict = {"H2": -0.5, "H2O": 0.5, "Vac": 0.5, "O^2-": -0.5}
     oxygen_comps = ["O2", "N2"]
     oxygen_tpb_stoich_dict = {"O2": -0.25, "N2": 0, "Vac": -0.5, "O^2-": 0.5}
-    
+
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
         default={
@@ -85,10 +87,11 @@ def model():
             "oxygen_tpb_stoich_dict": oxygen_tpb_stoich_dict,
             "inert_oxygen_species_triple_phase_boundary": ["N2"],
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "include_contact_resistance": True
+            "include_contact_resistance": True,
         }
     )
     return m
+
 
 @pytest.fixture
 def model_no_contact_resistance():
@@ -100,8 +103,8 @@ def model_no_contact_resistance():
     fuel_comps = ["H2", "H2O"]
     fuel_tpb_stoich_dict = {"H2": -0.5, "H2O": 0.5, "Vac": 0.5, "O^2-": -0.5}
     oxygen_comps = ["O2", "N2", "H2O"]
-    oxygen_tpb_stoich_dict = {"O2": -0.25, "H2O":0, "Vac": -0.5, "O^2-": 0.5}
-    
+    oxygen_tpb_stoich_dict = {"O2": -0.25, "H2O": 0, "Vac": -0.5, "O^2-": 0.5}
+
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
         default={
@@ -124,10 +127,11 @@ def model_no_contact_resistance():
             "oxygen_tpb_stoich_dict": oxygen_tpb_stoich_dict,
             "inert_oxygen_species_triple_phase_boundary": ["N2", "H2O"],
             "flow_pattern": HeatExchangerFlowPattern.cocurrent,
-            "include_contact_resistance": False
+            "include_contact_resistance": False,
         }
     )
     return m
+
 
 @pytest.mark.build
 @pytest.mark.unit
@@ -201,25 +205,53 @@ def test_build(model):
         assert cell.length_y is trode.length_y.referent
         assert cell.length_z is trode.length_z.referent
 
-    assert cell.fuel_chan.temperature_deviation_x1 is cell.fuel_electrode.temperature_deviation_x0.referent
+    assert (
+        cell.fuel_chan.temperature_deviation_x1
+        is cell.fuel_electrode.temperature_deviation_x0.referent
+    )
     assert (
         cell.contact_flow_mesh_fuel_electrode.heat_flux_x1
         is cell.fuel_electrode.heat_flux_x0.referent
     )
-    assert cell.fuel_chan.conc_mol_comp is cell.fuel_electrode.conc_mol_comp_ref.referent
-    assert cell.fuel_chan.conc_mol_comp_deviation_x1 is cell.fuel_electrode.conc_mol_comp_deviation_x0.referent
-    assert cell.fuel_chan.dconc_mol_compdt is cell.fuel_electrode.dconc_mol_comp_refdt.referent
-    assert cell.fuel_chan.material_flux_x1 is cell.fuel_electrode.material_flux_x0.referent
+    assert (
+        cell.fuel_chan.conc_mol_comp is cell.fuel_electrode.conc_mol_comp_ref.referent
+    )
+    assert (
+        cell.fuel_chan.conc_mol_comp_deviation_x1
+        is cell.fuel_electrode.conc_mol_comp_deviation_x0.referent
+    )
+    assert (
+        cell.fuel_chan.dconc_mol_compdt
+        is cell.fuel_electrode.dconc_mol_comp_refdt.referent
+    )
+    assert (
+        cell.fuel_chan.material_flux_x1 is cell.fuel_electrode.material_flux_x0.referent
+    )
 
-    assert cell.oxygen_chan.temperature_deviation_x0 is cell.oxygen_electrode.temperature_deviation_x1.referent
+    assert (
+        cell.oxygen_chan.temperature_deviation_x0
+        is cell.oxygen_electrode.temperature_deviation_x1.referent
+    )
     assert (
         cell.contact_flow_mesh_oxygen_electrode.heat_flux_x0
         is cell.oxygen_electrode.heat_flux_x1.referent
     )
-    assert cell.oxygen_chan.conc_mol_comp is cell.oxygen_electrode.conc_mol_comp_ref.referent
-    assert cell.oxygen_chan.conc_mol_comp_deviation_x0 is cell.oxygen_electrode.conc_mol_comp_deviation_x1.referent
-    assert cell.oxygen_chan.dconc_mol_compdt is cell.oxygen_electrode.dconc_mol_comp_refdt.referent
-    assert cell.oxygen_chan.material_flux_x0 is cell.oxygen_electrode.material_flux_x1.referent
+    assert (
+        cell.oxygen_chan.conc_mol_comp
+        is cell.oxygen_electrode.conc_mol_comp_ref.referent
+    )
+    assert (
+        cell.oxygen_chan.conc_mol_comp_deviation_x0
+        is cell.oxygen_electrode.conc_mol_comp_deviation_x1.referent
+    )
+    assert (
+        cell.oxygen_chan.dconc_mol_compdt
+        is cell.oxygen_electrode.dconc_mol_comp_refdt.referent
+    )
+    assert (
+        cell.oxygen_chan.material_flux_x0
+        is cell.oxygen_electrode.material_flux_x1.referent
+    )
 
     tpb_list = [cell.fuel_tpb, cell.oxygen_tpb]
 
@@ -229,24 +261,43 @@ def test_build(model):
         assert cell.length_y is tpb.length_y.referent
         assert cell.length_z is tpb.length_z.referent
 
-    assert cell.fuel_tpb.temperature_deviation_x.referent is cell.fuel_electrode.temperature_deviation_x1
+    assert (
+        cell.fuel_tpb.temperature_deviation_x.referent
+        is cell.fuel_electrode.temperature_deviation_x1
+    )
     assert cell.fuel_tpb.heat_flux_x0.referent is cell.fuel_electrode.heat_flux_x1
     assert cell.fuel_tpb.conc_mol_comp_ref.referent is cell.fuel_chan.conc_mol_comp
-    assert cell.fuel_tpb.conc_mol_comp_deviation_x.referent is cell.fuel_electrode.conc_mol_comp_deviation_x1
+    assert (
+        cell.fuel_tpb.conc_mol_comp_deviation_x.referent
+        is cell.fuel_electrode.conc_mol_comp_deviation_x1
+    )
 
-    assert cell.oxygen_tpb.temperature_deviation_x.referent is cell.oxygen_electrode.temperature_deviation_x0
+    assert (
+        cell.oxygen_tpb.temperature_deviation_x.referent
+        is cell.oxygen_electrode.temperature_deviation_x0
+    )
     assert cell.oxygen_tpb.heat_flux_x1.referent is cell.oxygen_electrode.heat_flux_x0
     assert cell.oxygen_tpb.conc_mol_comp_ref.referent is cell.oxygen_chan.conc_mol_comp
-    assert cell.oxygen_tpb.conc_mol_comp_deviation_x.referent is cell.oxygen_electrode.conc_mol_comp_deviation_x0
+    assert (
+        cell.oxygen_tpb.conc_mol_comp_deviation_x.referent
+        is cell.oxygen_electrode.conc_mol_comp_deviation_x0
+    )
 
     assert cell.temperature_z is cell.electrolyte.temperature_z.referent
     assert cell.current_density is cell.electrolyte.current_density.referent
     assert cell.length_y is cell.electrolyte.length_y.referent
     assert cell.length_z is cell.electrolyte.length_z.referent
-    assert cell.fuel_electrode.temperature_deviation_x1 is cell.electrolyte.temperature_deviation_x0.referent
-    assert cell.oxygen_electrode.temperature_deviation_x0 is cell.electrolyte.temperature_deviation_x1.referent
+    assert (
+        cell.fuel_electrode.temperature_deviation_x1
+        is cell.electrolyte.temperature_deviation_x0.referent
+    )
+    assert (
+        cell.oxygen_electrode.temperature_deviation_x0
+        is cell.electrolyte.temperature_deviation_x1.referent
+    )
     assert cell.fuel_tpb.heat_flux_x1 is cell.electrolyte.heat_flux_x0.referent
     assert cell.oxygen_tpb.heat_flux_x0 is cell.electrolyte.heat_flux_x1.referent
+
 
 @pytest.mark.build
 @pytest.mark.unit
@@ -271,25 +322,47 @@ def test_build_no_contact_resistance(model_no_contact_resistance):
         assert cell.length_y is trode.length_y.referent
         assert cell.length_z is trode.length_z.referent
 
-    assert cell.fuel_chan.temperature_deviation_x1 is cell.fuel_electrode.temperature_deviation_x0.referent
     assert (
-        cell.fuel_chan.heat_flux_x1
-        is cell.fuel_electrode.heat_flux_x0.referent
+        cell.fuel_chan.temperature_deviation_x1
+        is cell.fuel_electrode.temperature_deviation_x0.referent
     )
-    assert cell.fuel_chan.conc_mol_comp is cell.fuel_electrode.conc_mol_comp_ref.referent
-    assert cell.fuel_chan.conc_mol_comp_deviation_x1 is cell.fuel_electrode.conc_mol_comp_deviation_x0.referent
-    assert cell.fuel_chan.dconc_mol_compdt is cell.fuel_electrode.dconc_mol_comp_refdt.referent
-    assert cell.fuel_chan.material_flux_x1 is cell.fuel_electrode.material_flux_x0.referent
+    assert cell.fuel_chan.heat_flux_x1 is cell.fuel_electrode.heat_flux_x0.referent
+    assert (
+        cell.fuel_chan.conc_mol_comp is cell.fuel_electrode.conc_mol_comp_ref.referent
+    )
+    assert (
+        cell.fuel_chan.conc_mol_comp_deviation_x1
+        is cell.fuel_electrode.conc_mol_comp_deviation_x0.referent
+    )
+    assert (
+        cell.fuel_chan.dconc_mol_compdt
+        is cell.fuel_electrode.dconc_mol_comp_refdt.referent
+    )
+    assert (
+        cell.fuel_chan.material_flux_x1 is cell.fuel_electrode.material_flux_x0.referent
+    )
 
-    assert cell.oxygen_chan.temperature_deviation_x0 is cell.oxygen_electrode.temperature_deviation_x1.referent
     assert (
-        cell.oxygen_chan.heat_flux_x0
-        is cell.oxygen_electrode.heat_flux_x1.referent
+        cell.oxygen_chan.temperature_deviation_x0
+        is cell.oxygen_electrode.temperature_deviation_x1.referent
     )
-    assert cell.oxygen_chan.conc_mol_comp is cell.oxygen_electrode.conc_mol_comp_ref.referent
-    assert cell.oxygen_chan.conc_mol_comp_deviation_x0 is cell.oxygen_electrode.conc_mol_comp_deviation_x1.referent
-    assert cell.oxygen_chan.dconc_mol_compdt is cell.oxygen_electrode.dconc_mol_comp_refdt.referent
-    assert cell.oxygen_chan.material_flux_x0 is cell.oxygen_electrode.material_flux_x1.referent
+    assert cell.oxygen_chan.heat_flux_x0 is cell.oxygen_electrode.heat_flux_x1.referent
+    assert (
+        cell.oxygen_chan.conc_mol_comp
+        is cell.oxygen_electrode.conc_mol_comp_ref.referent
+    )
+    assert (
+        cell.oxygen_chan.conc_mol_comp_deviation_x0
+        is cell.oxygen_electrode.conc_mol_comp_deviation_x1.referent
+    )
+    assert (
+        cell.oxygen_chan.dconc_mol_compdt
+        is cell.oxygen_electrode.dconc_mol_comp_refdt.referent
+    )
+    assert (
+        cell.oxygen_chan.material_flux_x0
+        is cell.oxygen_electrode.material_flux_x1.referent
+    )
 
     tpb_list = [cell.fuel_tpb, cell.oxygen_tpb]
 
@@ -299,21 +372,39 @@ def test_build_no_contact_resistance(model_no_contact_resistance):
         assert cell.length_y is tpb.length_y.referent
         assert cell.length_z is tpb.length_z.referent
 
-    assert cell.fuel_tpb.temperature_deviation_x.referent is cell.fuel_electrode.temperature_deviation_x1
+    assert (
+        cell.fuel_tpb.temperature_deviation_x.referent
+        is cell.fuel_electrode.temperature_deviation_x1
+    )
     assert cell.fuel_tpb.heat_flux_x0.referent is cell.fuel_electrode.heat_flux_x1
     assert cell.fuel_tpb.conc_mol_comp_ref.referent is cell.fuel_chan.conc_mol_comp
-    assert cell.fuel_tpb.conc_mol_comp_deviation_x.referent is cell.fuel_electrode.conc_mol_comp_deviation_x1
+    assert (
+        cell.fuel_tpb.conc_mol_comp_deviation_x.referent
+        is cell.fuel_electrode.conc_mol_comp_deviation_x1
+    )
 
-    assert cell.oxygen_tpb.temperature_deviation_x.referent is cell.oxygen_electrode.temperature_deviation_x0
+    assert (
+        cell.oxygen_tpb.temperature_deviation_x.referent
+        is cell.oxygen_electrode.temperature_deviation_x0
+    )
     assert cell.oxygen_tpb.heat_flux_x1.referent is cell.oxygen_electrode.heat_flux_x0
     assert cell.oxygen_tpb.conc_mol_comp_ref.referent is cell.oxygen_chan.conc_mol_comp
-    assert cell.oxygen_tpb.conc_mol_comp_deviation_x.referent is cell.oxygen_electrode.conc_mol_comp_deviation_x0
+    assert (
+        cell.oxygen_tpb.conc_mol_comp_deviation_x.referent
+        is cell.oxygen_electrode.conc_mol_comp_deviation_x0
+    )
 
     assert cell.temperature_z is cell.electrolyte.temperature_z.referent
     assert cell.current_density is cell.electrolyte.current_density.referent
     assert cell.length_y is cell.electrolyte.length_y.referent
     assert cell.length_z is cell.electrolyte.length_z.referent
-    assert cell.fuel_electrode.temperature_deviation_x1 is cell.electrolyte.temperature_deviation_x0.referent
-    assert cell.oxygen_electrode.temperature_deviation_x0 is cell.electrolyte.temperature_deviation_x1.referent
+    assert (
+        cell.fuel_electrode.temperature_deviation_x1
+        is cell.electrolyte.temperature_deviation_x0.referent
+    )
+    assert (
+        cell.oxygen_electrode.temperature_deviation_x0
+        is cell.electrolyte.temperature_deviation_x1.referent
+    )
     assert cell.fuel_tpb.heat_flux_x1 is cell.electrolyte.heat_flux_x0.referent
     assert cell.oxygen_tpb.heat_flux_x0 is cell.electrolyte.heat_flux_x1.referent

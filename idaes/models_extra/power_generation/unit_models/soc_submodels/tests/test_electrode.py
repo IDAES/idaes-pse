@@ -23,6 +23,7 @@ import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as soc_testing
 
+
 def common_components(nt, nz, nx, ncomp):
     return {
         pyo.Var: {
@@ -54,8 +55,8 @@ def common_components(nt, nz, nx, ncomp):
             "solid_thermal_conductivity": 1,
         },
         pyo.Constraint: {
-            "conc_eqn": nt * nz * nx * ncomp,
-            "mole_frac_eqn": nt * nz * nx,
+            "conc_mol_comp_eqn": nt * nz * nx * ncomp,
+            "mole_frac_comp_eqn": nt * nz * nx,
             "enth_mol_eqn": nt * nz * nx,
             "material_flux_x0_eqn": nz * nt * ncomp,
             "material_flux_x1_eqn": nz * nt * ncomp,
@@ -101,12 +102,14 @@ def common_components(nt, nz, nx, ncomp):
         },
     }
 
+
 def fix_boundary_conditions(electrode):
     electrode.temperature_deviation_x0.fix()
     electrode.conc_mol_comp_ref.fix()
     electrode.conc_mol_comp_deviation_x0.fix()
     electrode.material_flux_x0.fix()
     electrode.heat_flux_x0.fix()
+
 
 @pytest.fixture
 def modelNoHoldup():
@@ -144,21 +147,22 @@ def modelNoHoldup():
     electrode.current_density.fix(0)
     return m
 
+
 @pytest.fixture
 def modelHoldupNotDynamic():
     time_set = [0]
     zfaces = np.linspace(0, 1, 8).tolist()
     xfaces_electrode = np.linspace(0, 1, 12).tolist()
     m = soc_testing._cell_flowsheet_model(
-        dynamic=False,
-        time_set=time_set,
-        zfaces=zfaces
+        dynamic=False, time_set=time_set, zfaces=zfaces
     )
     iznodes = m.fs.iznodes
     # time_units = m.fs.time_units
     tset = m.fs.config.time
     comps = m.fs.comps = pyo.Set(initialize=["H2", "H2O", "N2"])
-    m.fs.temperature_deviation_x0 = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
+    m.fs.temperature_deviation_x0 = pyo.Var(
+        tset, iznodes, initialize=0, units=pyo.units.K
+    )
     m.fs.conc_mol_comp_ref = pyo.Var(
         tset, iznodes, comps, initialize=1, units=pyo.units.mol / pyo.units.m**3
     )
@@ -213,6 +217,7 @@ def modelHoldupNotDynamic():
     fix_boundary_conditions(electrode)
     return m
 
+
 @pytest.mark.build
 @pytest.mark.unit
 def test_build_modelNoHoldup(modelNoHoldup):
@@ -235,6 +240,7 @@ def test_build_modelNoHoldup(modelNoHoldup):
     )
 
     assert degrees_of_freedom(electrode) == 0
+
 
 @pytest.mark.build
 @pytest.mark.unit

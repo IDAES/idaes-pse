@@ -26,6 +26,7 @@ import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as 
 
 solver = pyo.SolverFactory("ipopt")
 
+
 def common_components(nt, nz, ncomp, nreact):
     return {
         pyo.Var: {
@@ -68,22 +69,24 @@ def common_components(nt, nz, ncomp, nreact):
             "voltage_drop_total": nz * nt,
         },
     }
+
+
 @pytest.fixture
 def modelFuel():
     time_set = [0]
     zfaces = np.linspace(0, 1, 6).tolist()
-    fuel_comps = ["H2","N2","H2O"]
+    fuel_comps = ["H2", "N2", "H2O"]
     m = soc_testing._cell_flowsheet_model(
-        dynamic=False,
-        time_set=time_set,
-        zfaces=zfaces
+        dynamic=False, time_set=time_set, zfaces=zfaces
     )
     iznodes = m.fs.iznodes
     # time_units = m.fs.time_units
     tset = m.fs.config.time
     comps = m.fs.comps = pyo.Set(initialize=fuel_comps)
 
-    m.fs.temperature_deviation_x = pyo.Var(tset, iznodes, initialize=0, units=pyo.units.K)
+    m.fs.temperature_deviation_x = pyo.Var(
+        tset, iznodes, initialize=0, units=pyo.units.K
+    )
     m.fs.conc_mol_comp_ref = pyo.Var(
         tset, iznodes, comps, initialize=1, units=pyo.units.mol / pyo.units.m**3
     )
@@ -106,7 +109,13 @@ def modelFuel():
             "length_z": m.fs.length_z,
             "length_y": m.fs.length_y,
             "component_list": fuel_comps,
-            "tpb_stoich_dict": {"H2": -0.5, "H2O": 0.5, "N2": 0, "Vac": 0.5, "O^2-": -0.5},
+            "tpb_stoich_dict": {
+                "H2": -0.5,
+                "H2O": 0.5,
+                "N2": 0,
+                "Vac": 0.5,
+                "O^2-": -0.5,
+            },
             "inert_species": ["N2"],
             "current_density": m.fs.current_density,
             "temperature_z": m.fs.temperature_z,
@@ -132,11 +141,12 @@ def modelFuel():
 
     return m
 
+
 @pytest.fixture
 def modelOxygen():
     time_set = [0, 1, 2]
     zfaces = np.linspace(0, 1, 8).tolist()
-    o2_comps = ["O2","N2"]
+    o2_comps = ["O2", "N2"]
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
         default={
@@ -155,7 +165,7 @@ def modelOxygen():
     )
     m.fs.oxygen_tpb.temperature_z.fix(0)
     m.fs.oxygen_tpb.current_density.fix(0)
-    
+
     m.fs.oxygen_tpb.temperature_deviation_x.fix(0)
     m.fs.oxygen_tpb.heat_flux_x0.fix(0)
     m.fs.oxygen_tpb.conc_mol_comp_ref.fix(1)
@@ -169,6 +179,7 @@ def modelOxygen():
     m.fs.oxygen_tpb.exchange_current_exponent_comp["O2"].fix(0.25)
 
     return m
+
 
 @pytest.mark.build
 @pytest.mark.unit
@@ -194,7 +205,8 @@ def test_build_fuel(modelFuel):
         ],
     )
     assert degrees_of_freedom(tpb) == 0
-    
+
+
 @pytest.mark.build
 @pytest.mark.unit
 def test_build_oxygen(modelOxygen):
@@ -210,6 +222,7 @@ def test_build_oxygen(modelOxygen):
 
     assert degrees_of_freedom(tpb) == 0
 
+
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
@@ -217,11 +230,13 @@ def test_initialization_fuel(modelFuel):
     modelFuel.fs.fuel_tpb.initialize(
         fix_x0=True, optarg={"nlp_scaling_method": "user-scaling"}
     )
+
+
 @pytest.mark.unit
 def test_extra_inert():
     time_set = [0, 1, 2]
     zfaces = np.linspace(0, 1, 8).tolist()
-    o2_comps = ["O2","N2"]
+    o2_comps = ["O2", "N2"]
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
         default={
@@ -231,9 +246,9 @@ def test_extra_inert():
         }
     )
     with pytest.raises(
-            ConfigurationError,
-            match = "fs.oxygen_tpb invalid component in inert_species "
-            "argument. H2O is not in the provided component list."
+        ConfigurationError,
+        match="fs.oxygen_tpb invalid component in inert_species "
+        "argument. H2O is not in the provided component list.",
     ):
         m.fs.oxygen_tpb = soc.SocTriplePhaseBoundary(
             default={

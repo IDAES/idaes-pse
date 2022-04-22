@@ -146,7 +146,7 @@ def model_func():
             "inert_oxygen_species_triple_phase_boundary": ["N2"],
             "flow_pattern": HeatExchangerFlowPattern.cocurrent,
             "include_temperature_x_thermo": True,
-            "include_contact_resistance": True
+            "include_contact_resistance": True,
         }
     )
 

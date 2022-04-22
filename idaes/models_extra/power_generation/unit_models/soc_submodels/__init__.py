@@ -11,9 +11,21 @@
 # license information.
 #################################################################################
 
-from idaes.models_extra.power_generation.unit_models.soc_submodels.channel import SocChannel
-from idaes.models_extra.power_generation.unit_models.soc_submodels.electrode import SocElectrode
-from idaes.models_extra.power_generation.unit_models.soc_submodels.conductive_slab import SocConductiveSlab
-from idaes.models_extra.power_generation.unit_models.soc_submodels.triple_phase_boundary import SocTriplePhaseBoundary
-from idaes.models_extra.power_generation.unit_models.soc_submodels.contact_resistor import SocContactResistor
-from idaes.models_extra.power_generation.unit_models.soc_submodels.solid_oxide_cell import SolidOxideCell
+from idaes.models_extra.power_generation.unit_models.soc_submodels.channel import (
+    SocChannel,
+)
+from idaes.models_extra.power_generation.unit_models.soc_submodels.electrode import (
+    SocElectrode,
+)
+from idaes.models_extra.power_generation.unit_models.soc_submodels.conductive_slab import (
+    SocConductiveSlab,
+)
+from idaes.models_extra.power_generation.unit_models.soc_submodels.triple_phase_boundary import (
+    SocTriplePhaseBoundary,
+)
+from idaes.models_extra.power_generation.unit_models.soc_submodels.contact_resistor import (
+    SocContactResistor,
+)
+from idaes.models_extra.power_generation.unit_models.soc_submodels.solid_oxide_cell import (
+    SolidOxideCell,
+)
