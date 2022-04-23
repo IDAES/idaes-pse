@@ -473,6 +473,16 @@ h_params = {
         "G": 0.5 * 236.1663,  # 0,
         "H": 0,  # -236.0,
     },
+    "e^-": {
+        "A": 0.0,
+        "B": 0.0,
+        "C": 0.0,
+        "D": 0.0,
+        "E": 0.0,
+        "F": 0.0,
+        "G": 0.0,
+        "H": 0.0,
+    }
 }
 
 
@@ -531,9 +541,8 @@ def _comp_enthalpy_expr(temperature, comp):
 
 def _comp_int_energy_expr(temperature, comp):
     # ideal gas internal energy
-    d = h_params[comp]
-    t = temperature / 1000.0
-    return _comp_enthalpy_expr(temperature, comp) - _constR * temperature
+    # NIST has 298 K as a reference state, so adjust internal energy expression for that
+    return _comp_enthalpy_expr(temperature, comp) - _constR * (temperature - 298.15)
 
 
 def _comp_entropy_expr(temperature, comp):
@@ -542,7 +551,7 @@ def _comp_entropy_expr(temperature, comp):
     t = temperature / 1000.0 / pyo.units.K
     return (
         (
-            d["A"] * safe_log(t, eps=_safe_log_eps)
+            d["A"] * pyo.log(t)
             + d["B"] * t
             + d["C"] * t**2 / 2.0
             + d["D"] * t**3 / 3.0
