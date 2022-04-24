@@ -88,7 +88,7 @@ def test_deprecate_to_except():
     with idaes.temporary_config_ctx():
         with pytest.raises(RuntimeError):
             _log = logging.getLogger("idaes")
-            idaes.cfg.deperacation_to_exception = True
+            idaes.cfg.deprecation_to_exception = True
             idaes.reconfig()
             _log.warning("DEPRECATED: Hey! Don't use that.")
     _log.warning("DEPRECATED: Hey! Don't use that.")

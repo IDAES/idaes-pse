@@ -126,12 +126,12 @@ def _new_idaes_config_block():
         ),
     )
     cfg.declare(
-        "deperacation_to_exception",
+        "deprecation_to_exception",
         pyomo.common.config.ConfigValue(
             domain=bool,
             default=False,
-            description="Convert any logged deperacation warnings to exceptions",
-            doc="Convert any logged deperacation warnings to exceptions"
+            description="Convert any logged deprecation warnings to exceptions",
+            doc="Convert any logged deprecation warnings to exceptions"
         ),
     )
     cfg.declare(
@@ -431,33 +431,33 @@ def write_config(path, cfg=None):
 
 
 class _WarningToExceptionFilter(logging.Filter):
-    """Filter applied to IDAES loggers returned by this modulue."""
+    """Filter applied to IDAES loggers returned by this module."""
 
     @staticmethod
     def filter(record):
         if record.levelno >= logging.WARNING:
             raise RuntimeError(
-                f"Logged Warning converted to excption: {record.msg}")
+                f"Logged Warning converted to exception: {record.msg}")
 
 
-class _DeperacationToExceptionFilter(logging.Filter):
-    """Filter applied to IDAES loggers returned by this modulue."""
+class _DeprecationToExceptionFilter(logging.Filter):
+    """Filter applied to IDAES loggers returned by this module."""
 
     @staticmethod
     def filter(record):
         if record.levelno >= logging.WARNING:
             if "deprecat" in record.msg.lower():
                 raise RuntimeError(
-                    f"Logged deprecation converted to excption: {record.msg}")
+                    f"Logged deprecation converted to exception: {record.msg}")
 
 
 def reconfig(cfg):
     logging.config.dictConfig(cfg.logging.value())
     _log = logging.getLogger("idaes")
-    if cfg.deperacation_to_exception:
-        _log.addFilter(_DeperacationToExceptionFilter)
+    if cfg.deprecation_to_exception:
+        _log.addFilter(_DeprecationToExceptionFilter)
     else:
-        _log.removeFilter(_DeperacationToExceptionFilter)
+        _log.removeFilter(_DeprecationToExceptionFilter)
     if cfg.warning_to_exception:
         _log.addFilter(_WarningToExceptionFilter)
     else:
