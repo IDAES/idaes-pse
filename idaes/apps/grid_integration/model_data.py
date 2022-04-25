@@ -16,6 +16,11 @@ from abc import ABC, abstractmethod
 
 
 class BaseValidator(ABC):
+
+    """
+    A base data descriptor that validate values before store them.
+    """
+
     def __set_name__(self, cls, prop_name):
         self.prop_name = prop_name
 
@@ -32,15 +37,37 @@ class BaseValidator(ABC):
 
     @abstractmethod
     def _validate(self, instance, value):
+
+        """
+        Validate the provided value.
+
+        Args:
+            instance: an instance that uses this data descriptor.
+            value: value that needs to be validated.
+        """
         pass
 
 
 class RealValueValidator(BaseValidator):
+
+    """
+    A data descriptor that validate whether a value is a real number and whether
+    it is within its lower and upper bounds (if provided).
+    """
+
     def __init__(self, min_val=None, max_val=None):
         self.min_val = min_val
         self.max_val = max_val
 
     def _validate(self, instance, value):
+
+        """
+        Validate whether the provided value is within bounds and is a real number.
+
+        Args:
+            instance: an instance that uses this data descriptor.
+            value: value that needs to be validated.
+        """
 
         if not isinstance(value, Real):
             raise TypeError(f"Value for {self.prop_name} shoulde be real numbers.")
@@ -55,7 +82,22 @@ class RealValueValidator(BaseValidator):
 
 
 class AtLeastPminValidator(BaseValidator):
+
+    """
+    A data descriptor that validate whether a value is greater or equal to the
+    generator's Pmin. These values include Pmax, shut-down capacity, start-up
+    capacity, and etc.
+    """
+
     def _validate(self, instance, value):
+
+        """
+        Validate whether the provided value is at least Pmin.
+
+        Args:
+            instance: an instance that uses this data descriptor.
+            value: value that needs to be validated.
+        """
 
         pmin = getattr(instance, "p_min", None)
 
@@ -74,6 +116,10 @@ class AtLeastPminValidator(BaseValidator):
 
 
 class GeneratorModelData:
+
+    """
+    A class that holds data for generator parameters.
+    """
 
     p_min = RealValueValidator(min_val=0)
     min_down_time = RealValueValidator(min_val=0)
@@ -126,10 +172,29 @@ class GeneratorModelData:
 
     @property
     def gen_name(self):
+
+        """
+        Property getter for generator's name.
+
+        Returns:
+            str: generator's name
+        """
+
         return self._gen_name
 
     @gen_name.setter
     def gen_name(self, value):
+
+        """
+        Property setter for generator's name.
+
+        Args:
+            value: generator's name in str
+
+        Returns:
+            None
+        """
+
         if not isinstance(value, str):
             raise TypeError(
                 f"Value for generator names must be str, but {type(value)} is provided."
@@ -138,10 +203,29 @@ class GeneratorModelData:
 
     @property
     def generator_type(self):
+
+        """
+        Property getter for generator's type.
+
+        Returns:
+            str: generator's type
+        """
+
         return self._generator_type
 
     @generator_type.setter
     def generator_type(self, value):
+
+        """
+        Property setter for generator's type.
+
+        Args:
+            value: generator's type in str
+
+        Returns:
+            None
+        """
+
         allowed_types = ["thermal", "renewable"]
         if value not in allowed_types:
             raise ValueError(
@@ -150,6 +234,19 @@ class GeneratorModelData:
         self._generator_type = value
 
     def _check_empty_and_sort_cost_pairs(self, pair_description, pairs):
+
+        """
+        Check whether a list of pairs for production and startup costs is empty,
+        and then sort them based on power output and startup lag.
+
+        Args:
+            pair_description: a string description for the list of pairs
+            pairs: a list of pairs
+
+        Returns:
+            None
+
+        """
 
         if pairs is None or len(pairs) == 0:
             raise ValueError(f"Empty {pair_description} are provided.")
@@ -160,6 +257,17 @@ class GeneratorModelData:
         return
 
     def _assemble_default_cost_bids(self, production_cost_bid_pairs):
+
+        """
+        Assemble the default production cost bids.
+
+        Args:
+            production_cost_bid_pairs: a list of pairs, which consit of power output
+            and corresponding marginal costs
+
+        Returns:
+            dict: the assembled production cost bids
+        """
 
         self._check_empty_and_sort_cost_pairs(
             pair_description="production cost pairs", pairs=production_cost_bid_pairs
@@ -180,6 +288,17 @@ class GeneratorModelData:
         }
 
     def _assemble_default_startup_cost_bids(self, startup_cost_pairs):
+
+        """
+        Assemble the default startup cost bids.
+
+        Args:
+            startup_cost_pairs: a list of pairs, which consit of startup time lag
+            and corresponding startup costs
+
+        Returns:
+            dict: the assembled startup cost bids
+        """
 
         self._check_empty_and_sort_cost_pairs(
             pair_description="startup cost pairs", pairs=startup_cost_pairs
