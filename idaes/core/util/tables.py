@@ -244,7 +244,7 @@ def create_stream_table_dataframe(
     """
     # Variable Types:
     class VariableType():
-        NOTFIXED = 1
+        UNFIXED = 1
         FIXED = 2
         PARAMETER = 3
         EXPRESSION = 4
@@ -285,7 +285,7 @@ def create_stream_table_dataframe(
                         if disp_dict[k][i].fixed:
                             stream_attributes[var_type_key][stream_key] = VariableType.FIXED
                         else:
-                            stream_attributes[var_type_key][stream_key] = VariableType.NOTFIXED
+                            stream_attributes[var_type_key][stream_key] = VariableType.UNFIXED
                     elif isinstance(disp_dict[k][i], Param):
                         stream_attributes[var_type_key][stream_key] = VariableType.PARAMETER
                     elif isinstance(disp_dict[k][i], Expression):

@@ -1,7 +1,35 @@
 export class StreamTable {
+    // Variable Types
+    UNFIXED = {
+        num: 1,
+        text: 'Unfixed'
+        // UNFIXED types don't have a visual representation in the Stream Table
+    };
+    FIXED = {
+        num: 2,
+        text: 'Fixed',
+        className: 'streamtable-vartype-fixed',
+        cellStyle: '<span class="streamtable-vartype-fixed" style="margin-top: 7%;" title="Fixed"></span>'
+    };
+    PARAMETER = {
+        num: 3,
+        text: 'Parameter',
+        className: 'streamtable-vartype-parameter',
+        cellStyle: '<span class="streamtable-vartype-parameter" style="margin-top: 7%;" title="Parameter"></span>'
+    };
+    EXPRESSION = {
+        num: 4,
+        text: 'Expression',
+        className: 'streamtable-vartype-expression',
+        cellStyle: '<span class="streamtable-vartype-expression" style="margin-top: 7%;" title="Expression"></span>'
+    };
+
     constructor(app, model) {
         this._app = app;
         this.initTable(model);
+
+        // Keeping track of existing variable types. e.g fixed, Parameter, Expression
+        this.existing_var_types = new Set();
     };
 
     initTable(model) {
@@ -15,16 +43,58 @@ export class StreamTable {
         // Clear the table
         $("#hide-fields-list").empty();
         $("#stream-table-data").empty();
+        // Clear list of existing variable types
+        this.existing_var_types = new Set();
+    }
+
+    fillVarTypesPanel() {
+        /** Create a panel for each variable type that exists in the Stream Table */
+        const var_types_panel = document.querySelector('#existing-variable-types');
+        console.log("this.existing_var_types:", this.existing_var_types);
+        this.existing_var_types.forEach(var_type => {
+            const stream_table_class = 'streamtable-vartype-element';
+
+            const header_vartype = document.createElement('p');
+            header_vartype.innerHTML = 'Variable Types:';
+            header_vartype.className = stream_table_class;
+
+            const elem_vartype = document.createElement('span'); // Parent node
+            elem_vartype.className = stream_table_class;
+
+            // Create dot with the right color and the right variable type text
+            const elem_dot = document.createElement('span');
+            const elem_text = document.createElement('span');
+            elem_text.className = 'streamtable-vartype-text';
+            console.log("var_type:", var_type);
+            switch (var_type) {
+                case this.FIXED.num:
+                    elem_dot.className = this.FIXED.className;
+                    elem_dot.title = this.FIXED.text;
+                    elem_text.innerHTML = this.FIXED.text;
+                    break;
+                case this.PARAMETER.num:
+                    elem_dot.className = this.PARAMETER.className;
+                    elem_dot.title = this.PARAMETER.text;
+                    elem_text.innerHTML = this.PARAMETER.text;
+                    break;
+                case this.EXPRESSION.num:
+                    elem_dot.className = this.EXPRESSION.className;
+                    elem_dot.title = this.EXPRESSION.text;
+                    elem_text.innerHTML = this.EXPRESSION.text;
+                    break;
+                default:
+                    console.warn(`Warning: Couldn't identify Variable type: ${data[col_index]}`);
+            };
+            elem_vartype.appendChild(elem_dot);
+            elem_vartype.appendChild(elem_text);
+
+            var_types_panel.appendChild(header_vartype);
+            var_types_panel.appendChild(elem_vartype);
+        });
     }
 
     fillTable(model) {
         // This method fills the table with the streams and information from the model
-
-        // Variable Type Enumerations
-        const NOTFIXED = 1
-        const FIXED = 2
-        const PARAMETER = 3
-        const EXPRESSION = 4
 
         // Get the stream table data from the html
         let stream_table_data = model["model"]["stream_table"];
@@ -34,7 +104,6 @@ export class StreamTable {
 
         // Specify the column headers
         let columns = stream_table_data["columns"];
-        console.log("columns:", columns);
         let column_defs = [];
         for (let col in columns) {
             // There is an empty column because of the way that the pandas dataframe was oriented so 
@@ -64,9 +133,7 @@ export class StreamTable {
                         filter: 'agTextColumnFilter',
                         sortable: true,
                         resizable: true,
-                        // cellStyle: {"text-align": "right"}
                         cellRenderer: (params) => {
-                            console.log("cellRenderer - params:", params);
                             return '<span class="streamtable-cell">' + params.value + '</span>';
                         }
                     });
@@ -90,7 +157,6 @@ export class StreamTable {
             let row_object = {};
             let data = data_arrays[var_index];
             for (let col_index in columns) {
-                console.log("columns[col_index]:", columns[col_index])
                 if (columns[col_index] === "Units") {
                     if (data[col_index] && data[col_index].html) {
                         row_object[variable_col] = row_object[variable_col] + '<span class="streamtable-units">' + data[col_index].html + '</span>';
@@ -101,41 +167,24 @@ export class StreamTable {
                 }
                 else if (columns[col_index].includes("_vartype")) {
                     const stream_col = columns[col_index].substring(0, columns[col_index].length - 8)
-                    // let cellStyle = {};
                     let cell_style = "";
-                    console.log("data[col_index]:", data[col_index]);
                     switch (data[col_index]) {
-                        case FIXED:
-                            // cellStyle = {
-                            //     cellStyle: { 'background-color': 'orange' }
-                            // }
-                            cell_style = '<span class="streamtable-vartype-fixed" title="Fixed"></span>'
+                        case this.FIXED.num:
+                            cell_style = this.FIXED.cellStyle;
+                            this.existing_var_types.add(this.FIXED.num);
                             break;
-                        case PARAMETER:
-                            // cellStyle = {
-                            //     cellStyle: { 'background-color': 'blue' }
-                            // }
-                            cell_style = '<span class="streamtable-vartype-parameter" title="Parameter"></span>'
+                        case this.PARAMETER.num:
+                            cell_style = this.PARAMETER.cellStyle;
+                            this.existing_var_types.add(this.PARAMETER.num);
                             break;
-                        case EXPRESSION:
-                            // cellStyle = {
-                            //     cellStyle: { 'background-color': 'greenyellow' }
-                            // }
-                            cell_style = '<span class="streamtable-vartype-expression" title="Expression"></span>'
+                        case this.EXPRESSION.num:
+                            cell_style = this.EXPRESSION.cellStyle;
+                            this.existing_var_types.add(this.EXPRESSION.num);
                             break;
                         default:
                             console.warn(`Warning: Couldn't identify Variable type: ${data[col_index]}`);
                     };
                     row_object[stream_col] = cell_style + '<span class="streamtable-variable-value">' + data[col_index-1] + '</span>';
-                    // for (let column_def_index in column_defs) {
-                    //     if (column_defs[column_def_index].headerName === stream_col) {
-                    //         column_defs[column_def_index] = {
-                    //             ...column_defs[column_def_index],
-                    //             ...cellStyle
-                    //         };
-                    //         break;
-                    //     }
-                    // }
                 }
                 else {
                     row_object[columns[col_index]] = data[col_index];
@@ -143,6 +192,9 @@ export class StreamTable {
             };
             row_data.push(row_object);
         };
+
+        // Fill the Variable Types panel
+        this.fillVarTypesPanel();
 
         // let the grid know which columns and what data to use
         this._gridOptions = {

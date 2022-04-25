@@ -354,31 +354,47 @@ input:checked + .slider:before {
   float: right;
 }
 
+.streamtable-vartype-panel {
+  height: 1.7em;
+  display: flex;
+  gap: 1em;
+  justify-content: center;
+}
+
+.streamtable-vartype-element {
+  display: inline-flex;
+  gap: 0.3em;
+  place-content: center;
+}
+
+.streamtable-vartype-text {
+  float: right;
+}
+
 .streamtable-vartype-fixed {
   height: 7px;
   width:  7px;
-  margin-top: 7%;
+  margin-top: 9%;
   background-color: #7526f1;
   border-radius: 50%;
-  /* display: inline-block; */
   float: left;
 }
 
 .streamtable-vartype-parameter {
   height: 7px;
   width:  7px;
-  background-color: #70972f;
+  margin-top: 9%;
+  background-color: #74AA50;
   border-radius: 50%;
-  /* display: inline-block; */
   float: left;
 }
 
 .streamtable-vartype-expression {
   height: 7px;
   width:  7px;
-  background-color: #fcba03;
+  margin-top: 9%;
+  background-color: #EAAA00;
   border-radius: 50%;
-  /* display: inline-block; */
   float: left;
 }
 
