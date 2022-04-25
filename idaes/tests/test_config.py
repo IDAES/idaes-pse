@@ -81,7 +81,6 @@ def test_warning_to_except():
             idaes.cfg.warning_to_exception = True
             idaes.reconfig()
             _log.warning("Hey! Don't do that.")
-    _log.warning("Hey! Don't do that.")
 
 @pytest.mark.unit
 def test_deprecate_to_except():
@@ -91,4 +90,3 @@ def test_deprecate_to_except():
             idaes.cfg.deprecation_to_exception = True
             idaes.reconfig()
             _log.warning("DEPRECATED: Hey! Don't use that.")
-    _log.warning("DEPRECATED: Hey! Don't use that.")
