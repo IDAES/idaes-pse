@@ -50,14 +50,18 @@ export class StreamTable {
     fillVarTypesPanel() {
         /** Create a panel for each variable type that exists in the Stream Table */
         const var_types_panel = document.querySelector('#existing-variable-types');
-        console.log("this.existing_var_types:", this.existing_var_types);
-        this.existing_var_types.forEach(var_type => {
-            const stream_table_class = 'streamtable-vartype-element';
+        const stream_table_class = 'streamtable-vartype-element';
 
+        // Adding header
+        if (this.existing_var_types.size > 0) {
             const header_vartype = document.createElement('p');
             header_vartype.innerHTML = 'Variable Types:';
             header_vartype.className = stream_table_class;
+            var_types_panel.appendChild(header_vartype);
+        }
 
+        // Adding each type
+        this.existing_var_types.forEach(var_type => {
             const elem_vartype = document.createElement('span'); // Parent node
             elem_vartype.className = stream_table_class;
 
@@ -88,7 +92,6 @@ export class StreamTable {
             elem_vartype.appendChild(elem_dot);
             elem_vartype.appendChild(elem_text);
 
-            var_types_panel.appendChild(header_vartype);
             var_types_panel.appendChild(elem_vartype);
         });
     }
