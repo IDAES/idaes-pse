@@ -33,7 +33,7 @@ import idaes.core.util.model_statistics as mstat
 from idaes.core.util.misc import VarLikeExpression
 import idaes.logger as idaeslog
 
-_constR = 8.3145 * pyo.units.J / pyo.units.mol / pyo.units.K  # or Pa*m3/K/mol
+_constR = 8.31446261815324 * pyo.units.J / pyo.units.mol / pyo.units.K  # or Pa*m3/K/mol
 _constF = 96485 * pyo.units.coulomb / pyo.units.mol
 _safe_log_eps = 1e-9
 _safe_sqrt_eps = 1e-9
@@ -538,12 +538,20 @@ def _comp_enthalpy_expr(temperature, comp):
         / pyo.units.mol
     )
 
+_monotomic_gas_standard_state = ["He", "Ne", "Ar", "Kr", "Xe", "Ra"]
+_diatomic_gas_standard_state = ["F", "Cl", "H", "N", "O"]
 
 def _comp_int_energy_expr(temperature, comp):
     # ideal gas internal energy
-    # NIST has 298 K as a reference state, so adjust internal energy expression for that
-    return _comp_enthalpy_expr(temperature, comp) - _constR * (temperature - 298.15)
-
+    # NIST has 298.15 K as a reference state, so adjust internal energy expression for that
+    T_ref = 298.15
+    dn_form = 1
+    for element, molecule_dict in _element_dict.items():
+        if element in _monotomic_gas_standard_state:
+            dn_form -= molecule_dict[comp]
+        elif element in _diatomic_gas_standard_state:
+            dn_form -= 0.5*molecule_dict[comp]
+    return _comp_enthalpy_expr(temperature, comp) - _constR * (temperature - T_ref) + dn_form * _constR * T_ref
 
 def _comp_entropy_expr(temperature, comp):
     # ideal gas entropy

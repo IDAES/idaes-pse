@@ -127,9 +127,9 @@ def model_func():
     xfaces_electrolyte = [0.0, 1.0]
 
     fuel_comps = ["H2", "H2O", "N2"]
-    fuel_stoich_dict = {"H2": -0.5, "H2O": 0.5, "N2": 0, "Vac": 0.5, "O^2-": -0.5}
+    fuel_stoich_dict = {"H2": -0.5, "H2O": 0.5, "N2": 0, "Vac": 0.5, "O^2-": -0.5, "e^-": 1.0}
     oxygen_comps = ["O2", "N2"]
-    oxygen_stoich_dict = {"O2": -0.25, "Vac": -0.5, "O^2-": 0.5}
+    oxygen_stoich_dict = {"O2": -0.25, "Vac": -0.5, "O^2-": 0.5, "e^-": -1.0}
 
     m.fs.cell = SolidOxideCell(
         default={
@@ -267,7 +267,7 @@ def test_initialization(model):
         temperature_guess=1103.15,
         optarg={"nlp_scaling_method": "user-scaling"},
     )
-
+    cell.model_check()
     # Test whether fixed degrees of freedom remain fixed
     assert degrees_of_freedom(m.fs.cell) == 0
 
@@ -469,7 +469,7 @@ def test_model_replication(model):
         )
 
     for df, cached_df in zip(out, cached_results):
-        pd.testing.assert_frame_equal(df, cached_df, check_dtype=False, rtol=1e-4)
+        pd.testing.assert_frame_equal(df, cached_df, check_dtype=False, rtol=5e-4)
 
     df = out[4]
     data = pd.read_csv(

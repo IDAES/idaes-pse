@@ -57,10 +57,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         ConfigValue(default=["H2", "H2O"], description="List of components"),
     )
     CONFIG.declare(
-        "tpb_stoich_dict",
+        "reaction_stoichiometry",
         ConfigValue(
-            description="Stochiometry coefficients for component reactions on "
-            "the triple phase boundary.",
+            description="Stochiometric coefficients for component reactions on the triple phase boundary. Must contain "
+                        "term for number of electrons consumed/liberated.",
         ),
     )
     CONFIG.declare(
@@ -106,7 +106,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             ordered=True,
             doc="Set of all gas-phase components present in submodel",
         )
-        self.tpb_stoich = copy.copy(self.config.tpb_stoich_dict)
+        self.reaction_stoichiometry = copy.copy(self.config.reaction_stoichiometry)
 
         # Copy and pasted from the Gibbs reactor
         for j in self.config.inert_species:
@@ -121,14 +121,24 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             ordered=True,
             doc="Set of components that do not react at triple phase boundary",
         )
-        # Ensure all inerts have been assigned a zero in the stoich
+        # Ensure all inerts have been assigned a zero for a stoichiometric coefficient
         for j in self.inert_species_list:
-            self.tpb_stoich[j] = 0
+            try:
+                # Want to future-proof this method in case floating-point round-off ever becomes an issue.
+                if abs(self.reaction_stoichiometry[j])>1e-8:
+                    raise ConfigurationError(
+                        f"Component {j} was in inert_species_list provided to {self.name}, but "
+                        "has a nonzero stoichiometric coefficient."
+                    )
+            except KeyError:
+                # Inert species does not have stoichiometry specified.
+                pass
+            self.reaction_stoichiometry[j] = 0
 
         self.reacting_component_list = pyo.Set(
             initialize=[
                 j
-                for j, coeff in self.tpb_stoich.items()
+                for j, coeff in self.reaction_stoichiometry.items()
                 if j not in self.inert_species_list
             ],
             ordered=True,
@@ -232,7 +242,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             P = b.pressure[t, iz]
             P_ref = 1e5 * pyo.units.Pa
             log_y_j = b.log_mole_frac_comp
-            nu_j = b.tpb_stoich
+            nu_j = b.reaction_stoichiometry
             # Any j not in comps is assumed to not be vapor phase
             pressure_exponent = sum(nu_j[j] for j in b.reacting_gas_list)
             if abs(pressure_exponent) < 1e-6:
@@ -254,10 +264,9 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
 
         @self.Expression(tset, iznodes)
         def dh_rxn(b, t, iz):
-            T = b.temperature[t, iz]
-            nu_j = b.tpb_stoich
             return sum(
-                nu_j[j] * common._comp_enthalpy_expr(T, j)
+                b.reaction_stoichiometry[j]
+                * common._comp_enthalpy_expr(b.temperature[t, iz], j)
                 for j in b.reacting_component_list
             )
 
@@ -267,7 +276,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
 
         @self.Expression(tset, iznodes)
         def nernst_potential(b, t, iz):
-            return -b.dg_rxn[t, iz] / _constF
+            if b.config.below_electrolyte:
+                return -b.dg_rxn[t, iz] / (_constF * b.reaction_stoichiometry["e^-"])
+            else:
+                return -b.dg_rxn[t, iz] / (_constF * -b.reaction_stoichiometry["e^-"])
 
         @self.Expression(tset, iznodes)
         def log_exchange_current_density(b, t, iz):
@@ -298,7 +310,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         def reaction_rate_per_unit_area(b, t, iz):
             # Assuming there are no current leaks, the reaction rate can be
             # calculated directly from the current density
-            return b.current_density[t, iz] / _constF
+            if b.config.below_electrolyte:
+                return b.current_density[t, iz] / (_constF * b.reaction_stoichiometry["e^-"])
+            else:
+                return b.current_density[t, iz] / (_constF * -b.reaction_stoichiometry["e^-"])
 
         # Put this expression in to prepare for a contact resistance term
         @self.Expression(tset, iznodes)
@@ -322,12 +337,12 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             if b.config.below_electrolyte:
                 return (
                     b.material_flux_x[t, iz, j]
-                    == -b.reaction_rate_per_unit_area[t, iz] * b.tpb_stoich[j]
+                    == -b.reaction_rate_per_unit_area[t, iz] * b.reaction_stoichiometry[j]
                 )
             else:
                 return (
                     b.material_flux_x[t, iz, j]
-                    == b.reaction_rate_per_unit_area[t, iz] * b.tpb_stoich[j]
+                    == b.reaction_rate_per_unit_area[t, iz] * b.reaction_stoichiometry[j]
                 )
 
     def initialize_build(

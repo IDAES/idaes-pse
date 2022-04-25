@@ -33,9 +33,10 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 
-solver = pyo.SolverFactory("ipopt")
+def approx(x):
+    return pytest.approx(x, rel=1e-6)
 
-#@pytest.fixture
+@pytest.fixture
 def model_ideal():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
@@ -58,34 +59,28 @@ def model_ideal():
                  "defined_state": True}
     )
     m.fs.propsIdeal.flow_mol.fix(1000)
-    # Technically the NIST standard state is 1 bar, but this is what Andrew has
+    # Technically the NIST standard state is 1 bar, but this is what Andrew has at the moment
     m.fs.propsIdeal.pressure.fix(1.01325e5)
     return m
-#@pytest.mark.component
+@pytest.mark.component
 def test_thermo(model_ideal):
     m = model_ideal
-    approx = lambda x: pytest.approx(x, rel=1e-4)
     for comp in m.fs.propsIdeal.component_list:
-        # obj = cobj(m.fs.propsIdeal, comp)
-        # entr_mol_expr = get_method(m.fs.propsIdeal, "entr_mol_ig_comp", comp)
+        obj = cobj(m.fs.propsIdeal, comp)
+        # Avoid having to solve the block by getting the ideal gas entropy method directly
+        entr_mol_expr = get_method(m.fs.propsIdeal, "entr_mol_ig_comp", comp)
         m.fs.propsIdeal.mole_frac_comp.fix(1e-19)
         m.fs.propsIdeal.mole_frac_comp[comp].fix(1)
         for T in np.linspace(500, 1200, 71):
             m.fs.propsIdeal.temperature.fix(T)
-            solver.solve(m)
-            # if not pyo.value(common._comp_int_energy_expr(T, comp)) == approx(
-            #     pyo.value(m.fs.propsIdeal.energy_internal_mol_phase_comp["Vap", comp])):
-            #     import pdb; pdb.set_trace()
-            # Come back to this once I understand what's going on with the diatomic standard state stuff
-            # assert pyo.value(common._comp_int_energy_expr(T, comp)) == approx(
-            #      pyo.value(m.fs.propsIdeal.energy_internal_mol_phase_comp["Vap", comp]))
+            assert pyo.value(common._comp_int_energy_expr(T, comp)) == approx(
+                 pyo.value(m.fs.propsIdeal.energy_internal_mol_phase_comp["Vap", comp]))
             assert pyo.value(common._comp_enthalpy_expr(T, comp)) == approx(
                 pyo.value(m.fs.propsIdeal.enth_mol_phase_comp["Vap", comp]))
             assert pyo.value(common._comp_entropy_expr(T, comp)) == approx(
-                pyo.value(m.fs.propsIdeal.entr_mol_phase_comp["Vap", comp]))
-            # assert pyo.value(common._comp_entropy_expr(T, comp)) == approx(
-            #     pyo.value(entr_mol_expr(m.fs.propsIdeal, obj, T * pyo.units.K)))
+                pyo.value(entr_mol_expr(m.fs.propsIdeal, obj, T * pyo.units.K)))
 
-if __name__ == "__main__":
-    m = model_ideal()
-    test_thermo(m)
+# if __name__ == "__main__":
+#     m = model_ideal()
+#     test_thermo(m)
+#     print("All passed!")

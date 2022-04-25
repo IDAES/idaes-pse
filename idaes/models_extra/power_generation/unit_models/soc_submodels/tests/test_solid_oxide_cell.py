@@ -61,9 +61,9 @@ def model():
     xfaces_electrolyte = np.linspace(0, 1, 8).tolist()
 
     fuel_comps = ["H2", "H2O", "N2"]
-    fuel_tpb_stoich_dict = {"H2": -0.5, "H2O": 0.5, "Vac": 0.5, "O^2-": -0.5}
+    fuel_tpb_stoich_dict = {"H2": -0.5, "H2O": 0.5, "Vac": 0.5, "O^2-": -0.5, "e^-": 1.0}
     oxygen_comps = ["O2", "N2"]
-    oxygen_tpb_stoich_dict = {"O2": -0.25, "N2": 0, "Vac": -0.5, "O^2-": 0.5}
+    oxygen_tpb_stoich_dict = {"O2": -0.25, "N2": 0, "Vac": -0.5, "O^2-": 0.5, "e^-": -1.0}
 
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
@@ -101,9 +101,9 @@ def model_no_contact_resistance():
     xfaces_electrolyte = np.linspace(0, 1, 12).tolist()
 
     fuel_comps = ["H2", "H2O"]
-    fuel_tpb_stoich_dict = {"H2": -0.5, "H2O": 0.5, "Vac": 0.5, "O^2-": -0.5}
+    fuel_tpb_stoich_dict = {"H2": -0.5, "H2O": 0.5, "Vac": 0.5, "O^2-": -0.5, "e^-": 1}
     oxygen_comps = ["O2", "N2", "H2O"]
-    oxygen_tpb_stoich_dict = {"O2": -0.25, "H2O": 0, "Vac": -0.5, "O^2-": 0.5}
+    oxygen_tpb_stoich_dict = {"O2": -0.25, "H2O": 0, "Vac": -0.5, "O^2-": 0.5, "e^-":-1}
 
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(

@@ -89,7 +89,7 @@ class SolidOxideCellData(UnitModelBlockData):
     CONFIG.declare(
         "fuel_tpb_stoich_dict",
         ConfigValue(
-            default={"H2": -0.5, "H2O": 0.5},
+            default={"H2": -0.5, "H2O": 0.5, "e^-": 1.0},
             description="Dictionary describing the stoichiometry of a "
             "reaction to produce one electron in the fuel "
             "electrode.",
@@ -108,7 +108,7 @@ class SolidOxideCellData(UnitModelBlockData):
     CONFIG.declare(
         "oxygen_tpb_stoich_dict",
         ConfigValue(
-            default={"O2": -0.25},
+            default={"O2": -0.25, "e^-": -1.0},
             description="Dictionary describing the stoichiometry of a "
             "reaction to consume one electron in the oxygen "
             "electrode.",
@@ -371,7 +371,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "component_list": self.fuel_component_list,
-                "tpb_stoich_dict": self.config.fuel_tpb_stoich_dict,
+                "reaction_stoichiometry": self.config.fuel_tpb_stoich_dict,
                 "inert_species": self.config.inert_fuel_species_triple_phase_boundary,
                 "current_density": self.current_density,
                 "temperature_z": self.temperature_z,
@@ -392,7 +392,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "component_list": self.oxygen_component_list,
-                "tpb_stoich_dict": self.config.oxygen_tpb_stoich_dict,
+                "reaction_stoichiometry": self.config.oxygen_tpb_stoich_dict,
                 "inert_species": self.config.inert_oxygen_species_triple_phase_boundary,
                 "current_density": self.current_density,
                 "temperature_z": self.temperature_z,
