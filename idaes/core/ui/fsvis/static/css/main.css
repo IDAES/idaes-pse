@@ -354,6 +354,7 @@ input:checked + .slider:before {
   float: right;
 }
 
+/* Styling visual indicators to identify different Variable types in the Stream Table */
 .streamtable-vartype-panel {
   height: 1.7em;
   display: flex;

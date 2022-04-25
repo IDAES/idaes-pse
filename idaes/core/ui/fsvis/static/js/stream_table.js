@@ -69,8 +69,10 @@ export class StreamTable {
             const elem_dot = document.createElement('span');
             const elem_text = document.createElement('span');
             elem_text.className = 'streamtable-vartype-text';
-            console.log("var_type:", var_type);
             switch (var_type) {
+                case this.UNFIXED.num:
+                    console.info(`Unfixed variables don't have a visual indicator`);
+                    break;
                 case this.FIXED.num:
                     elem_dot.className = this.FIXED.className;
                     elem_dot.title = this.FIXED.text;
@@ -87,7 +89,7 @@ export class StreamTable {
                     elem_text.innerHTML = this.EXPRESSION.text;
                     break;
                 default:
-                    console.warn(`Warning: Couldn't identify Variable type: ${data[col_index]}`);
+                    console.warn(`Couldn't identify Variable type: ${data[col_index]}`);
             };
             elem_vartype.appendChild(elem_dot);
             elem_vartype.appendChild(elem_text);
@@ -172,6 +174,9 @@ export class StreamTable {
                     const stream_col = columns[col_index].substring(0, columns[col_index].length - 8)
                     let cell_style = "";
                     switch (data[col_index]) {
+                        case this.UNFIXED.num:
+                            console.info(`Unfixed variables don't have a visual indicator`);
+                            break;
                         case this.FIXED.num:
                             cell_style = this.FIXED.cellStyle;
                             this.existing_var_types.add(this.FIXED.num);
@@ -185,7 +190,7 @@ export class StreamTable {
                             this.existing_var_types.add(this.EXPRESSION.num);
                             break;
                         default:
-                            console.warn(`Warning: Couldn't identify Variable type: ${data[col_index]}`);
+                            console.warn(`Couldn't identify Variable type: ${data[col_index]}`);
                     };
                     row_object[stream_col] = cell_style + '<span class="streamtable-variable-value">' + data[col_index-1] + '</span>';
                 }

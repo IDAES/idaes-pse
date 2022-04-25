@@ -237,7 +237,7 @@ def create_stream_table_dataframe(
             (default) where streams are displayed as columns, or 'index' where
             stream are displayed as rows.
         add_variable_type : Add columns for each stream to specify the
-            corresponding variable type. (e.g fixed, not-fixed, parameter)
+            corresponding variable type. (e.g fixed, unfixed, Parameter, Expression)
 
     Returns:
         A pandas DataFrame containing the stream table data.
@@ -259,12 +259,6 @@ def create_stream_table_dataframe(
         var_type_key = f"{key}{variable_type_suffix}"
         stream_attributes[key] = {}
         stream_attributes[var_type_key] = {}
-        print("*******************************************")
-        print("sb.define_state_vars():")
-        print(sb.define_state_vars())
-        print("\n\nsb.define_display_vars():")
-        print(sb.define_display_vars())
-        print("\n\n")
         if true_state:
             disp_dict = sb.define_state_vars()
         else:
@@ -297,10 +291,6 @@ def create_stream_table_dataframe(
                     full_keys.append(stream_key)
 
     # Check for missing rows in any stream, and fill with "-" if needed
-    print("#################################################")
-    print("stream_attributes:")
-    from pprint import pprint
-    pprint(stream_attributes)
     for k, v in stream_attributes.items():
         for r in full_keys:
             if r not in v.keys():
