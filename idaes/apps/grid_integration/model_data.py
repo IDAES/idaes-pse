@@ -14,45 +14,6 @@
 from numbers import Real
 from abc import ABC, abstractmethod
 
-{
-    "bus": "Adams",
-    "in_service": True,
-    "mbase": 100.0,
-    "pg": 76.0,
-    "qg": -2.31,
-    "p_min": 30.0,
-    "p_max": 76.0,
-    "q_min": -25.0,
-    "q_max": 30.0,
-    "ramp_q": 2.0,
-    "fuel": "Coal",
-    "unit_type": "STEAM",
-    "area": "1",
-    "zone": "12.0",
-    "generator_type": "thermal",
-    "p_fuel": {
-        "data_type": "fuel_curve",
-        "values": [(30.0, 347.73), (45.3, 481.36), (60.7, 633.22), (76.0, 796.18)],
-    },
-    "startup_fuel": [(4.0, 1111.637669), (10.0, 1599.13457), (12.0, 1738.41)],
-    "non_fuel_startup_cost": 0.0,
-    "shutdown_cost": 0.0,
-    "agc_capable": True,
-    "p_min_agc": 30.0,
-    "p_max_agc": 76.0,
-    "ramp_agc": 2.0,
-    "ramp_up_60min": 120.0,
-    "ramp_down_60min": 120.0,
-    "fuel_cost": 2.11399,
-    "startup_capacity": 30.0,
-    "shutdown_capacity": 30.0,
-    "min_up_time": 8.0,
-    "min_down_time": 4.0,
-    "initial_status": 9.0,
-    "initial_p_output": 30.0,
-    "initial_q_output": 0.0,
-}
-
 
 class BaseValidator(ABC):
     def __set_name__(self, cls, prop_name):
@@ -127,7 +88,7 @@ class GeneratorModelData:
     def __init__(
         self,
         gen_name,
-        gen_type,
+        generator_type,
         p_min,
         p_max,
         min_down_time,
@@ -136,14 +97,12 @@ class GeneratorModelData:
         ramp_down_60min,
         shutdown_capacity,
         startup_capacity,
-        output_points,
-        marginal_costs,
-        start_up_lags=None,
-        start_up_costs=None,
+        production_cost_bid_pairs=None,
+        startup_cost_pairs=None,
         fixed_commitment=None,
     ):
         self.gen_name = gen_name
-        self.gen_type = gen_type
+        self.generator_type = generator_type
         self.p_min = p_min
         self.p_max = p_max
         self.min_down_time = min_down_time
@@ -152,10 +111,18 @@ class GeneratorModelData:
         self.ramp_down_60min = ramp_down_60min
         self.shutdown_capacity = shutdown_capacity
         self.startup_capacity = startup_capacity
+
+        fixed_commitment_allowed_values = [0, 1, None]
+        if fixed_commitment not in fixed_commitment_allowed_values:
+            raise ValueError(
+                f"Value for generator fixed commitment must be one of {fixed_commitment_allowed_values}, but {fixed_commitment} is provided."
+            )
         self.fixed_commitment = fixed_commitment
 
-        self._assemble_default_cost_bids(output_points, marginal_costs)
-        self._assemble_default_start_up_cost_bids(start_up_lags, start_up_costs)
+        self.default_bids = self._assemble_default_cost_bids(production_cost_bid_pairs)
+        self.default_startup_bids = self._assemble_default_startup_cost_bids(
+            startup_cost_pairs
+        )
 
     @property
     def gen_name(self):
@@ -170,20 +137,60 @@ class GeneratorModelData:
         self._gen_name = value
 
     @property
-    def gen_type(self):
-        return self._gen_type
+    def generator_type(self):
+        return self._generator_type
 
-    @gen_type.setter
-    def gen_type(self, value):
+    @generator_type.setter
+    def generator_type(self, value):
         allowed_types = ["thermal", "renewable"]
         if value not in allowed_types:
             raise ValueError(
                 f"Value for generator types must be one of {allowed_types}, but {value} is provided."
             )
-        self._gen_type = value
+        self._generator_type = value
 
-    def _assemble_default_cost_bids(self, output_points, marginal_costs):
-        pass
+    def _check_empty_and_sort_cost_pairs(self, pair_description, pairs):
 
-    def _assemble_default_start_up_cost_bids(self, start_up_lags, start_up_costs):
-        pass
+        if pairs is None or len(pairs) == 0:
+            raise ValueError(f"Empty {pair_description} are provided.")
+
+        # sort based on power output
+        pairs.sort(key=lambda p: p[0])
+
+        return
+
+    def _assemble_default_cost_bids(self, production_cost_bid_pairs):
+
+        self._check_empty_and_sort_cost_pairs(
+            pair_description="production cost pairs", pairs=production_cost_bid_pairs
+        )
+
+        if production_cost_bid_pairs[0][0] != self.p_min:
+            raise ValueError(
+                f"The first power output in the bid should be the Pmin {self.p_min}, but {production_cost_bid_pairs[0][0]} is provided."
+            )
+
+        if production_cost_bid_pairs[-1][0] != self.p_max:
+            raise ValueError(
+                f"The last power output in the bid should be the Pmax {self.p_max}, but {production_cost_bid_pairs[-1][0]} is provided."
+            )
+
+        return {
+            power: marginal_cost for power, marginal_cost in production_cost_bid_pairs
+        }
+
+    def _assemble_default_startup_cost_bids(self, startup_cost_pairs):
+
+        self._check_empty_and_sort_cost_pairs(
+            pair_description="startup cost pairs", pairs=startup_cost_pairs
+        )
+
+        if startup_cost_pairs[0][0] != self.min_down_time:
+            raise ValueError(
+                f"The first startup lag should be the same as minimum down time {self.min_down_time}, but {startup_cost_pairs[0][0]} is provided."
+            )
+
+        return {
+            startup_lag: startup_cost
+            for startup_lag, startup_cost in startup_cost_pairs
+        }
