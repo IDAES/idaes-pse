@@ -183,13 +183,12 @@ class TestModelSerialize(unittest.TestCase):
     @pytest.mark.unit
     def test01c(self):
         """
-        Simple test of load save json
+        Simple test of load save json for a _BlockData
         """
         model = self.setup_model01b()
         a = model.b["1"].a
         b = model.b["1"].b
         sd = to_json(model.b["1"], return_dict=True, human_read=True)
-        print(sd)
         # change variable values
         a.value = 0.11
         b.value = 0.11
