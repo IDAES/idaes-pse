@@ -81,15 +81,12 @@ class SolidOxideCellData(UnitModelBlockData):
             default=["O2"], description="List of components in the oxygen stream"
         ),
     )
-    # TODO do we want them to provide an electron term in stoich dict?
-    # improve documentation
     CONFIG.declare(
-        "fuel_tpb_stoich_dict",
+        "fuel_triple_phase_boundary_stoich_dict",
         ConfigValue(
             default={"H2": -0.5, "H2O": 0.5, "e^-": 1.0},
-            description="Dictionary describing the stoichiometry of a "
-            "reaction to produce one electron in the fuel "
-            "electrode.",
+            description="Dictionary with species as keys and stoichiometric coefficients as values "
+            "for the redox reaction that occurs at the fuel-side triple phase boundary",
         ),
     )
     CONFIG.declare(
@@ -103,12 +100,11 @@ class SolidOxideCellData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-        "oxygen_tpb_stoich_dict",
+        "oxygen_triple_phase_boundary_stoich_dict",
         ConfigValue(
             default={"O2": -0.25, "e^-": -1.0},
-            description="Dictionary describing the stoichiometry of a "
-            "reaction to consume one electron in the oxygen "
-            "electrode.",
+            description="Dictionary with species as keys and stoichiometric coefficients as values "
+            "for the redox reaction that occurs at the oxygen-side triple phase boundary",
         ),
     )
     CONFIG.declare(
@@ -368,7 +364,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "component_list": self.fuel_component_list,
-                "reaction_stoichiometry": self.config.fuel_tpb_stoich_dict,
+                "reaction_stoichiometry": self.config.fuel_triple_phase_boundary_stoich_dict,
                 "inert_species": self.config.inert_fuel_species_triple_phase_boundary,
                 "current_density": self.current_density,
                 "temperature_z": self.temperature_z,
@@ -389,7 +385,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "component_list": self.oxygen_component_list,
-                "reaction_stoichiometry": self.config.oxygen_tpb_stoich_dict,
+                "reaction_stoichiometry": self.config.oxygen_triple_phase_boundary_stoich_dict,
                 "inert_species": self.config.inert_oxygen_species_triple_phase_boundary,
                 "current_density": self.current_density,
                 "temperature_z": self.temperature_z,
@@ -511,6 +507,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 for iz in b.electrolyte.iznodes
             )
 
+    # TODO reorder initialization method to match base class.
     def initialize_build(
         self,
         current_density_guess,

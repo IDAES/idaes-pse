@@ -59,7 +59,7 @@ def model():
     xfaces_electrolyte = np.linspace(0, 1, 8).tolist()
 
     fuel_comps = ["H2", "H2O", "N2"]
-    fuel_tpb_stoich_dict = {
+    fuel_triple_phase_boundary_stoich_dict = {
         "H2": -0.5,
         "H2O": 0.5,
         "Vac": 0.5,
@@ -67,7 +67,7 @@ def model():
         "e^-": 1.0,
     }
     oxygen_comps = ["O2", "N2"]
-    oxygen_tpb_stoich_dict = {
+    oxygen_triple_phase_boundary_stoich_dict = {
         "O2": -0.25,
         "N2": 0,
         "Vac": -0.5,
@@ -91,10 +91,10 @@ def model():
             "control_volume_xfaces_oxygen_electrode": xfaces_electrode,
             "control_volume_xfaces_electrolyte": xfaces_electrolyte,
             "fuel_component_list": fuel_comps,
-            "fuel_tpb_stoich_dict": fuel_tpb_stoich_dict,
+            "fuel_triple_phase_boundary_stoich_dict": fuel_triple_phase_boundary_stoich_dict,
             "inert_fuel_species_triple_phase_boundary": ["N2"],
             "oxygen_component_list": oxygen_comps,
-            "oxygen_tpb_stoich_dict": oxygen_tpb_stoich_dict,
+            "oxygen_triple_phase_boundary_stoich_dict": oxygen_triple_phase_boundary_stoich_dict,
             "inert_oxygen_species_triple_phase_boundary": ["N2"],
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             "include_contact_resistance": True,
@@ -111,9 +111,9 @@ def model_no_contact_resistance():
     xfaces_electrolyte = np.linspace(0, 1, 12).tolist()
 
     fuel_comps = ["H2", "H2O"]
-    fuel_tpb_stoich_dict = {"H2": -0.5, "H2O": 0.5, "Vac": 0.5, "O^2-": -0.5, "e^-": 1}
+    fuel_triple_phase_boundary_stoich_dict = {"H2": -0.5, "H2O": 0.5, "Vac": 0.5, "O^2-": -0.5, "e^-": 1}
     oxygen_comps = ["O2", "N2", "H2O"]
-    oxygen_tpb_stoich_dict = {
+    oxygen_triple_phase_boundary_stoich_dict = {
         "O2": -0.25,
         "H2O": 0,
         "Vac": -0.5,
@@ -137,10 +137,10 @@ def model_no_contact_resistance():
             "control_volume_xfaces_oxygen_electrode": xfaces_electrode,
             "control_volume_xfaces_electrolyte": xfaces_electrolyte,
             "fuel_component_list": fuel_comps,
-            "fuel_tpb_stoich_dict": fuel_tpb_stoich_dict,
+            "fuel_triple_phase_boundary_stoich_dict": fuel_triple_phase_boundary_stoich_dict,
             # "inert_fuel_species_triple_phase_boundary": [], Test default
             "oxygen_component_list": oxygen_comps,
-            "oxygen_tpb_stoich_dict": oxygen_tpb_stoich_dict,
+            "oxygen_triple_phase_boundary_stoich_dict": oxygen_triple_phase_boundary_stoich_dict,
             "inert_oxygen_species_triple_phase_boundary": ["N2", "H2O"],
             "flow_pattern": HeatExchangerFlowPattern.cocurrent,
             "include_contact_resistance": False,
