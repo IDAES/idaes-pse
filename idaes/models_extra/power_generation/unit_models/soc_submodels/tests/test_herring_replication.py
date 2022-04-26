@@ -427,7 +427,7 @@ def kazempoor_braun_replication(model):
             assert degrees_of_freedom(m) == 0
             status = solver.solve(
                 m,
-                tee=True,
+                tee=False,
                 options={
                     "tol": 1e-6,
                     "max_iter": 100,
@@ -469,7 +469,7 @@ def test_model_replication(model):
         )
 
     for df, cached_df in zip(out, cached_results):
-        pd.testing.assert_frame_equal(df, cached_df, check_dtype=False, rtol=5e-4)
+        pd.testing.assert_frame_equal(df, cached_df, check_dtype=False, check_exact=False, rtol=3e-3)
 
     df = out[4]
     data = pd.read_csv(
@@ -490,5 +490,5 @@ if __name__ == "__main__":
     out = kazempoor_braun_replication(m)
 
     # Uncomment to recreate cached data
-    for i, df in enumerate(out):
-        df.to_csv(os.sep.join([data_cache, f"case_{i+1}.csv"]))
+    # for i, df in enumerate(out):
+    #     df.to_csv(os.sep.join([data_cache, f"case_{i+1}.csv"]))

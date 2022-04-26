@@ -368,7 +368,7 @@ def modelFuelAndOxygen(include_solid_species):
                     for comp in b.oxygen_tpb.component_list) + b.oxygen_tpb.heat_flux_x1[t,iz]
 
     @m.fs.Expression(m.fs.time, m.fs.fuel_tpb.iznodes)
-    def voltage_difference(b,t,iz):
+    def voltage_difference(b, t, iz):
         return b.fuel_tpb.nernst_potential[t,iz] + b.oxygen_tpb.nernst_potential[t,iz] - (
             b.fuel_tpb.voltage_drop_total[t,iz] + b.oxygen_tpb.voltage_drop_total[t,iz])
 
@@ -379,7 +379,25 @@ def modelFuelAndOxygen(include_solid_species):
     @m.fs.Expression(m.fs.time, m.fs.fuel_tpb.iznodes)
     def energy_created(b, t, iz):
         return b.net_energy_flux_out[t, iz] + b.electric_work_flux[t, iz]
+
+    m.fs.element_list =pyo.Set(
+        initialize=["H", "O", "N"],
+        ordered=True
+    )
+    @m.fs.Expression(m.fs.time, m.fs.fuel_tpb.iznodes, m.fs.element_list)
+    def element_created(b, t, iz, i):
+        return -sum(
+            common._element_dict[i][j]
+            * b.fuel_tpb.material_flux_x[t, iz, j]
+            for j in b.fuel_tpb.component_list
+        ) + sum(
+            common._element_dict[i][j]
+            * b.oxygen_tpb.material_flux_x[t, iz, j]
+            for j in b.oxygen_tpb.component_list
+        )
+
     return m
+
 
 def conservation_tester(m):
     for P_fuel in np.linspace(1e5, 5e5, 3):
@@ -397,6 +415,8 @@ def conservation_tester(m):
                         m.fs.current_density.fix(J)
                         solver.solve(m)
                         assert pyo.value(m.fs.energy_created[0, 1]) == pytest.approx(0, rel=1e-4)
+                        for i in m.fs.element_list:
+                            assert pyo.value(m.fs.element_created[0, 1, i]) == pytest.approx(0, rel=1e-4)
 
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
