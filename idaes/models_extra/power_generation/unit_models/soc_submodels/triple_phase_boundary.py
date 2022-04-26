@@ -31,7 +31,7 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.common import
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 
@@ -60,7 +60,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         "reaction_stoichiometry",
         ConfigValue(
             description="Stochiometric coefficients for component reactions on the triple phase boundary. Must contain "
-                        "term for number of electrons consumed/liberated.",
+            "term for number of electrons consumed/liberated.",
         ),
     )
     CONFIG.declare(
@@ -125,7 +125,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         for j in self.inert_species_list:
             try:
                 # Want to future-proof this method in case floating-point round-off ever becomes an issue.
-                if abs(self.reaction_stoichiometry[j])>1e-8:
+                if abs(self.reaction_stoichiometry[j]) > 1e-8:
                     raise ConfigurationError(
                         f"Component {j} was in inert_species_list provided to {self.name}, but "
                         "has a nonzero stoichiometric coefficient."
@@ -311,9 +311,13 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             # Assuming there are no current leaks, the reaction rate can be
             # calculated directly from the current density
             if b.config.below_electrolyte:
-                return b.current_density[t, iz] / (_constF * b.reaction_stoichiometry["e^-"])
+                return b.current_density[t, iz] / (
+                    _constF * b.reaction_stoichiometry["e^-"]
+                )
             else:
-                return b.current_density[t, iz] / (_constF * -b.reaction_stoichiometry["e^-"])
+                return b.current_density[t, iz] / (
+                    _constF * -b.reaction_stoichiometry["e^-"]
+                )
 
         # Put this expression in to prepare for a contact resistance term
         @self.Expression(tset, iznodes)
@@ -337,12 +341,14 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             if b.config.below_electrolyte:
                 return (
                     b.material_flux_x[t, iz, j]
-                    == -b.reaction_rate_per_unit_area[t, iz] * b.reaction_stoichiometry[j]
+                    == -b.reaction_rate_per_unit_area[t, iz]
+                    * b.reaction_stoichiometry[j]
                 )
             else:
                 return (
                     b.material_flux_x[t, iz, j]
-                    == b.reaction_rate_per_unit_area[t, iz] * b.reaction_stoichiometry[j]
+                    == b.reaction_rate_per_unit_area[t, iz]
+                    * b.reaction_stoichiometry[j]
                 )
 
     def initialize_build(

@@ -20,9 +20,12 @@ import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock, UnitModelBlock
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
-    GenericStateBlock
- )
-from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop, EosType
+    GenericStateBlock,
+)
+from idaes.models_extra.power_generation.properties.natural_gas_PR import (
+    get_prop,
+    EosType,
+)
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 
 from idaes.models.properties.modular_properties.base.utility import (
@@ -33,8 +36,10 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 
+
 def approx(x):
     return pytest.approx(x, rel=1e-6)
+
 
 @pytest.fixture
 def model_ideal():
@@ -55,13 +60,14 @@ def model_ideal():
         doc="Air property parameters",
     )
     m.fs.propsIdeal = GenericStateBlock(
-        default={"parameters": m.fs.paramsIdeal,
-                 "defined_state": True}
+        default={"parameters": m.fs.paramsIdeal, "defined_state": True}
     )
     m.fs.propsIdeal.flow_mol.fix(1000)
     # Technically the NIST standard state is 1 bar, but this is what Andrew has at the moment
     m.fs.propsIdeal.pressure.fix(1.01325e5)
     return m
+
+
 @pytest.mark.component
 def test_thermo(model_ideal):
     m = model_ideal
@@ -74,11 +80,15 @@ def test_thermo(model_ideal):
         for T in np.linspace(500, 1200, 71):
             m.fs.propsIdeal.temperature.fix(T)
             assert pyo.value(common._comp_int_energy_expr(T, comp)) == approx(
-                 pyo.value(m.fs.propsIdeal.energy_internal_mol_phase_comp["Vap", comp]))
+                pyo.value(m.fs.propsIdeal.energy_internal_mol_phase_comp["Vap", comp])
+            )
             assert pyo.value(common._comp_enthalpy_expr(T, comp)) == approx(
-                pyo.value(m.fs.propsIdeal.enth_mol_phase_comp["Vap", comp]))
+                pyo.value(m.fs.propsIdeal.enth_mol_phase_comp["Vap", comp])
+            )
             assert pyo.value(common._comp_entropy_expr(T, comp)) == approx(
-                pyo.value(entr_mol_expr(m.fs.propsIdeal, obj, T * pyo.units.K)))
+                pyo.value(entr_mol_expr(m.fs.propsIdeal, obj, T * pyo.units.K))
+            )
+
 
 # if __name__ == "__main__":
 #     m = model_ideal()

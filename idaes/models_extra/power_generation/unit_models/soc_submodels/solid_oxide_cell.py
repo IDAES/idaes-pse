@@ -32,7 +32,7 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.common import
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 
@@ -423,7 +423,9 @@ class SolidOxideCellData(UnitModelBlockData):
             }
         )
         self.state_vars = {"flow_mol", "mole_frac_comp", "temperature", "pressure"}
-        for chan, alias in zip([self.fuel_channel, self.oxygen_channel], ["fuel", "oxygen"]):
+        for chan, alias in zip(
+            [self.fuel_channel, self.oxygen_channel], ["fuel", "oxygen"]
+        ):
             setattr(
                 self,
                 alias + "_inlet",
@@ -810,12 +812,14 @@ class SolidOxideCellData(UnitModelBlockData):
                     )
 
             enth_in = (
-                self.fuel_channel.enth_mol_inlet[t] * self.fuel_channel.flow_mol_inlet[t]
+                self.fuel_channel.enth_mol_inlet[t]
+                * self.fuel_channel.flow_mol_inlet[t]
                 + self.oxygen_channel.enth_mol_inlet[t]
                 * self.oxygen_channel.flow_mol_inlet[t]
             )
             enth_out = (
-                self.fuel_channel.enth_mol_outlet[t] * self.fuel_channel.flow_mol_outlet[t]
+                self.fuel_channel.enth_mol_outlet[t]
+                * self.fuel_channel.flow_mol_outlet[t]
                 + self.oxygen_channel.enth_mol_outlet[t]
                 * self.oxygen_channel.flow_mol_outlet[t]
             )

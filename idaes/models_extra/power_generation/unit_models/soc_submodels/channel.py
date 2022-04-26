@@ -29,7 +29,7 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.common import
     _element_dict,
 )
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 from idaes.core.base.var_like_expression import VarLikeExpression
 import idaes.logger as idaeslog

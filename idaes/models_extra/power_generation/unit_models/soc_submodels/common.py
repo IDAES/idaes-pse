@@ -27,7 +27,7 @@ from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.math import safe_log
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.core.util.model_statistics as mstat
 
 from idaes.core.util.misc import VarLikeExpression
@@ -482,7 +482,7 @@ h_params = {
         "F": 0.0,
         "G": 0.0,
         "H": 0.0,
-    }
+    },
 }
 
 
@@ -538,8 +538,10 @@ def _comp_enthalpy_expr(temperature, comp):
         / pyo.units.mol
     )
 
+
 _monotomic_gas_standard_state = ["He", "Ne", "Ar", "Kr", "Xe", "Ra"]
 _diatomic_gas_standard_state = ["F", "Cl", "H", "N", "O"]
+
 
 def _comp_int_energy_expr(temperature, comp):
     # ideal gas internal energy
@@ -550,8 +552,13 @@ def _comp_int_energy_expr(temperature, comp):
         if element in _monotomic_gas_standard_state:
             dn_form -= molecule_dict[comp]
         elif element in _diatomic_gas_standard_state:
-            dn_form -= 0.5*molecule_dict[comp]
-    return _comp_enthalpy_expr(temperature, comp) - _constR * (temperature - T_ref) + dn_form * _constR * T_ref
+            dn_form -= 0.5 * molecule_dict[comp]
+    return (
+        _comp_enthalpy_expr(temperature, comp)
+        - _constR * (temperature - T_ref)
+        + dn_form * _constR * T_ref
+    )
+
 
 def _comp_entropy_expr(temperature, comp):
     # ideal gas entropy

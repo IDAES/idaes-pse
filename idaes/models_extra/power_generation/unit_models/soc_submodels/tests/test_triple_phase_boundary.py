@@ -160,8 +160,7 @@ def modelOxygen():
         default={
             "control_volume_zfaces": zfaces,
             "component_list": o2_comps,
-            "reaction_stoichiometry": {"O2": -0.25,
-                                       "e^-": -1.0},
+            "reaction_stoichiometry": {"O2": -0.25, "e^-": -1.0},
             "inert_species": ["N2"],
         }
     )
@@ -256,10 +255,16 @@ def test_extra_inert():
             default={
                 "control_volume_zfaces": zfaces,
                 "component_list": o2_comps,
-                "reaction_stoichiometry": {"O2": -0.25, "Vac": -0.5, "O^2-": 0.5, "e^-": -1.0},
+                "reaction_stoichiometry": {
+                    "O2": -0.25,
+                    "Vac": -0.5,
+                    "O^2-": 0.5,
+                    "e^-": -1.0,
+                },
                 "inert_species": ["N2", "H2O"],
             }
         )
+
 
 def modelFuelAndOxygen(include_solid_species):
     time_set = [0]
@@ -267,15 +272,12 @@ def modelFuelAndOxygen(include_solid_species):
     fuel_comps = ["H2", "N2", "H2O"]
     oxygen_comps = ["O2", "N2"]
     fuel_stoich = {
-                "H2": -1.0,
-                "H2O": 1.0,
-                "N2": 0.0,
-                "e^-": 2.0,
-            }
-    oxygen_stoich = {
-                        "O2": -1.0,
-                        "e^-": -4.0
-                    }
+        "H2": -1.0,
+        "H2O": 1.0,
+        "N2": 0.0,
+        "e^-": 2.0,
+    }
+    oxygen_stoich = {"O2": -1.0, "e^-": -4.0}
     if include_solid_species:
         fuel_stoich["Vac"] = 1.0
         fuel_stoich["O^2-"] = -1.0
@@ -346,49 +348,61 @@ def modelFuelAndOxygen(include_solid_species):
 
     C_tot = 1.2e5 / pyo.value(common._constR * T)
 
-    m.fs.fuel_tpb.conc_mol_comp_ref[0, :, "H2O"].fix(0.5*C_tot)
-    m.fs.fuel_tpb.conc_mol_comp_ref[0, :, "H2"].fix(0.05*C_tot)
-    m.fs.fuel_tpb.conc_mol_comp_ref[0, :, "N2"].fix(0.45*C_tot)
+    m.fs.fuel_tpb.conc_mol_comp_ref[0, :, "H2O"].fix(0.5 * C_tot)
+    m.fs.fuel_tpb.conc_mol_comp_ref[0, :, "H2"].fix(0.05 * C_tot)
+    m.fs.fuel_tpb.conc_mol_comp_ref[0, :, "N2"].fix(0.45 * C_tot)
 
-    m.fs.oxygen_tpb.conc_mol_comp_ref[0, :, "O2"].fix(0.21*C_tot)
-    m.fs.oxygen_tpb.conc_mol_comp_ref[0, :, "N2"].fix(0.79*C_tot)
+    m.fs.oxygen_tpb.conc_mol_comp_ref[0, :, "O2"].fix(0.21 * C_tot)
+    m.fs.oxygen_tpb.conc_mol_comp_ref[0, :, "N2"].fix(0.79 * C_tot)
 
     m.fs.fuel_tpb.heat_flux_x1.fix(0)
     m.fs.current_density.fix(1000)
 
     @m.fs.Expression(m.fs.time, m.fs.fuel_tpb.iznodes)
     def net_energy_flux_out(b, t, iz):
-        return -sum(b.fuel_tpb.material_flux_x[t, iz, comp]*common._comp_enthalpy_expr(b.fuel_tpb.temperature[t,iz], comp)
-                    for comp in b.fuel_tpb.component_list) - b.fuel_tpb.heat_flux_x0[t,iz] + sum(
-            b.oxygen_tpb.material_flux_x[t, iz, comp]*common._comp_enthalpy_expr(b.oxygen_tpb.temperature[t,iz], comp)
-                    for comp in b.oxygen_tpb.component_list) + b.oxygen_tpb.heat_flux_x1[t,iz]
+        return (
+            -sum(
+                b.fuel_tpb.material_flux_x[t, iz, comp]
+                * common._comp_enthalpy_expr(b.fuel_tpb.temperature[t, iz], comp)
+                for comp in b.fuel_tpb.component_list
+            )
+            - b.fuel_tpb.heat_flux_x0[t, iz]
+            + sum(
+                b.oxygen_tpb.material_flux_x[t, iz, comp]
+                * common._comp_enthalpy_expr(b.oxygen_tpb.temperature[t, iz], comp)
+                for comp in b.oxygen_tpb.component_list
+            )
+            + b.oxygen_tpb.heat_flux_x1[t, iz]
+        )
 
     @m.fs.Expression(m.fs.time, m.fs.fuel_tpb.iznodes)
     def voltage_difference(b, t, iz):
-        return b.fuel_tpb.potential_nernst[t,iz] + b.oxygen_tpb.potential_nernst[t,iz] - (
-            b.fuel_tpb.voltage_drop_total[t,iz] + b.oxygen_tpb.voltage_drop_total[t,iz])
+        return (
+            b.fuel_tpb.potential_nernst[t, iz]
+            + b.oxygen_tpb.potential_nernst[t, iz]
+            - (
+                b.fuel_tpb.voltage_drop_total[t, iz]
+                + b.oxygen_tpb.voltage_drop_total[t, iz]
+            )
+        )
 
     @m.fs.Expression(m.fs.time, m.fs.fuel_tpb.iznodes)
     def electric_work_flux(b, t, iz):
-        return b.voltage_difference[t,iz] * b.current_density[t,iz]
+        return b.voltage_difference[t, iz] * b.current_density[t, iz]
 
     @m.fs.Expression(m.fs.time, m.fs.fuel_tpb.iznodes)
     def energy_created(b, t, iz):
         return b.net_energy_flux_out[t, iz] + b.electric_work_flux[t, iz]
 
-    m.fs.element_list =pyo.Set(
-        initialize=["H", "O", "N"],
-        ordered=True
-    )
+    m.fs.element_list = pyo.Set(initialize=["H", "O", "N"], ordered=True)
+
     @m.fs.Expression(m.fs.time, m.fs.fuel_tpb.iznodes, m.fs.element_list)
     def element_created(b, t, iz, i):
         return -sum(
-            common._element_dict[i][j]
-            * b.fuel_tpb.material_flux_x[t, iz, j]
+            common._element_dict[i][j] * b.fuel_tpb.material_flux_x[t, iz, j]
             for j in b.fuel_tpb.component_list
         ) + sum(
-            common._element_dict[i][j]
-            * b.oxygen_tpb.material_flux_x[t, iz, j]
+            common._element_dict[i][j] * b.oxygen_tpb.material_flux_x[t, iz, j]
             for j in b.oxygen_tpb.component_list
         )
 
@@ -406,13 +420,20 @@ def conservation_tester(m):
                 m.fs.fuel_tpb.conc_mol_comp_ref[0, :, "H2O"].fix((0.6 - y_H2) * C_tot)
                 for y_O2 in np.linspace(0.1, 0.3, 3):
                     m.fs.oxygen_tpb.conc_mol_comp_ref[0, :, "O2"].fix(y_O2 * C_tot)
-                    m.fs.oxygen_tpb.conc_mol_comp_ref[0, :, "N2"].fix((1 - y_O2) * C_tot)
+                    m.fs.oxygen_tpb.conc_mol_comp_ref[0, :, "N2"].fix(
+                        (1 - y_O2) * C_tot
+                    )
                     for J in np.linspace(-1000, 1000, 5):
                         m.fs.current_density.fix(J)
                         solver.solve(m)
-                        assert pyo.value(m.fs.energy_created[0, 1]) == pytest.approx(0, rel=1e-4)
+                        assert pyo.value(m.fs.energy_created[0, 1]) == pytest.approx(
+                            0, rel=1e-4
+                        )
                         for i in m.fs.element_list:
-                            assert pyo.value(m.fs.element_created[0, 1, i]) == pytest.approx(0, rel=1e-4)
+                            assert pyo.value(
+                                m.fs.element_created[0, 1, i]
+                            ) == pytest.approx(0, rel=1e-4)
+
 
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -422,6 +443,7 @@ def test_conservation_no_solid_species():
     solver.solve(m)
     conservation_tester(m)
 
+
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.integration
@@ -429,4 +451,3 @@ def test_conservation_solid_species():
     m = modelFuelAndOxygen(True)
     solver.solve(m)
     conservation_tester(m)
-
