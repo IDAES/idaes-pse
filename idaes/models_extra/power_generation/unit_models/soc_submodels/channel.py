@@ -13,7 +13,7 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigValue, In
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
 from pyomo.network import Port
@@ -490,8 +490,6 @@ class SocChannelData(UnitModelBlockData):
 
         @self.Constraint(tset, iznodes, comps)
         def material_balance_eqn(b, t, iz, i):
-            # if t == tset.first() and dynamic:
-            #     return pyo.Constraint.Skip
             return b.dconc_mol_compdt[t, iz, i] * b.node_volume[iz] == b.flow_area * (
                 b.material_flux_z[t, iz, i] - b.material_flux_z[t, iz + 1, i]
             ) + b.xface_area[iz] * (
@@ -549,15 +547,12 @@ class SocChannelData(UnitModelBlockData):
             else:
                 return b.material_flux_z[t, izfout, i] * b.flow_area
 
-        # @self.Expression(tset)
         def rule_flow_mol_outlet(b, t):
             return sum(b.flow_mol_comp_outlet[t, i] for i in comps)
 
-        # @self.Expression(tset)
         def rule_pressure_outlet(b, t):
             return b.pressure_face[t, izfout]
 
-        # @self.Expression(tset, comps)
         def rule_mole_frac_comp_outlet(b, t, i):
             return b.flow_mol_comp_outlet[t, i] / b.flow_mol_outlet[t]
 

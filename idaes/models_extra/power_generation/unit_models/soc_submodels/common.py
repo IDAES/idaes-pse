@@ -16,21 +16,14 @@ __author__ = "John Eslick, Douglas Allan"
 import copy
 import enum
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.dae import DerivativeVar
+from pyomo.common.config import ConfigValue, In
 import pyomo.environ as pyo
-from pyomo.network import Port
 
 
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
-from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
+from idaes.core import useDefault
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
-from idaes.core.util.math import safe_log
-from idaes.core.solvers import get_solver
 import idaes.core.util.model_statistics as mstat
-
-from idaes.core.util.misc import VarLikeExpression
 import idaes.logger as idaeslog
 
 _constR = 8.31446261815324 * pyo.units.J / pyo.units.mol / pyo.units.K  # or Pa*m3/K/mol

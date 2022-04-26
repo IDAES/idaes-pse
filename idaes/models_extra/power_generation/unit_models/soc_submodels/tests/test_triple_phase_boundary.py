@@ -17,7 +17,6 @@ import pytest
 import numpy as np
 
 import pyomo.environ as pyo
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError

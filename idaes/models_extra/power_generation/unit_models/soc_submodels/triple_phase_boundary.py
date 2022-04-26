@@ -19,15 +19,11 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 import pyomo.environ as pyo
 
 
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
     _constR,
     _constF,
-    _set_if_unfixed,
-    _species_list,
-    _element_list,
-    _element_dict,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
@@ -399,8 +395,6 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         cst = lambda c, s: iscale.constraint_scaling_transform(c, s, overwrite=False)
         sR = 1e-1  # Scaling factor for R
         sy_def = 10  # Mole frac comp scaling
-        # sLy = sgsf(self.length_y,1/self.length_y[None].value)
-        # sLz = sgsf(self.length_z,len(self.iznodes)/self.length_z[None].value)
         sLy = 1 / self.length_y[None].value
         sLz = len(self.iznodes) / self.length_z[None].value
 

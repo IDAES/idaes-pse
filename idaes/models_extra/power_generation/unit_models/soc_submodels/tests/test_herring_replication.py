@@ -219,8 +219,6 @@ def model_func():
     m.fs.cell.electrolyte.resistivity_log_preexponential_factor.fix(pyo.log(1.07e-4))
     m.fs.cell.electrolyte.resistivity_thermal_exponent_dividend.fix(7237)
 
-    # m.fs.cell.oxygen_tpb.exchange_current_exponent_comp["O2"].fix(0.5)
-
     # Values from Kazempoor and Braun
     m.fs.cell.fuel_tpb.exchange_current_log_preexponential_factor.fix(pyo.log(5.5e8))
     m.fs.cell.fuel_tpb.exchange_current_activation_energy.fix(100e3)

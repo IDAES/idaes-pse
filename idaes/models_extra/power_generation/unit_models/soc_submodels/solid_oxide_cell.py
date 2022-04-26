@@ -13,19 +13,16 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool, ListOf
-from pyomo.dae import DerivativeVar
+from pyomo.common.config import ConfigValue, In, Bool, ListOf
 import pyomo.environ as pyo
 from pyomo.network import Port
 
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR,
     _constF,
-    _set_if_unfixed,
     _species_list,
     _element_list,
     _element_dict,
@@ -666,7 +663,6 @@ class SolidOxideCellData(UnitModelBlockData):
         self.fuel_electrode.conc_mol_comp_deviation_x0.fix()
         self.fuel_electrode.temperature_deviation_x0.fix()
         self.fuel_electrode.heat_flux_x0.fix()
-        # self.fuel_electrode.conc_mol_comp_deviation_x0.fix()
         self.fuel_electrode.material_flux_x1.fix()
 
         self.fuel_electrode.initialize_build(
@@ -680,7 +676,6 @@ class SolidOxideCellData(UnitModelBlockData):
         self.fuel_electrode.conc_mol_comp_deviation_x0.unfix()
         self.fuel_electrode.temperature_deviation_x0.unfix()
         self.fuel_electrode.heat_flux_x0.unfix()
-        # self.fuel_electrode.conc_mol_comp_deviation_x0.unfix()
         self.fuel_electrode.material_flux_x1.unfix()
 
         init_log.info_high("Initializing Oxygen Electrode")
@@ -728,10 +723,10 @@ class SolidOxideCellData(UnitModelBlockData):
 
         # Unfix any inlet variables that were fixed by initialization
         # To be honest, using a state block would probably have been less work
-        for chan, comps in zip(
+        for channel, comps in zip(
             ["fuel", "oxygen"], [self.fuel_component_list, self.oxygen_component_list]
         ):
-            pname = chan + "_inlet"
+            pname = channel + "_inlet"
             p = getattr(self, pname)
             for varname in self.state_vars:
                 var = getattr(p, varname)

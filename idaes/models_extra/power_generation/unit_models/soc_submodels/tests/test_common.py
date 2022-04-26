@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 
 import pyomo.environ as pyo
-from idaes.core import FlowsheetBlock, UnitModelBlock
+from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
     GenericStateBlock,
@@ -32,9 +32,6 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
 )
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
-import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 
 
 def approx(x):
@@ -88,9 +85,3 @@ def test_thermo(model_ideal):
             assert pyo.value(common._comp_entropy_expr(T, comp)) == approx(
                 pyo.value(entr_mol_expr(m.fs.propsIdeal, obj, T * pyo.units.K))
             )
-
-
-# if __name__ == "__main__":
-#     m = model_ideal()
-#     test_thermo(m)
-#     print("All passed!")

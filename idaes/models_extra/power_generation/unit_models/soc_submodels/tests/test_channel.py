@@ -17,11 +17,9 @@ import pytest
 import numpy as np
 
 import pyomo.environ as pyo
-from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
-import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as soc_testing
 
 

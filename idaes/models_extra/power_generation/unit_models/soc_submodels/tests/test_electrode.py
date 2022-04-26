@@ -20,7 +20,6 @@ import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
-import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as soc_testing
 
 
@@ -157,7 +156,6 @@ def modelHoldupNotDynamic():
         dynamic=False, time_set=time_set, zfaces=zfaces
     )
     iznodes = m.fs.iznodes
-    # time_units = m.fs.time_units
     tset = m.fs.config.time
     comps = m.fs.comps = pyo.Set(initialize=["H2", "H2O", "N2"])
     m.fs.temperature_deviation_x0 = pyo.Var(

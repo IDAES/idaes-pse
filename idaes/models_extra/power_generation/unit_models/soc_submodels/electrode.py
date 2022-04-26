@@ -13,12 +13,12 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigValue
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
 
 
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
     _constR,
@@ -741,10 +741,6 @@ class SocElectrodeData(UnitModelBlockData):
                             self.int_energy_density[t, ix, iz],
                             self.int_energy_mol[t, ix, iz] / self.vol_mol[t, ix, iz],
                         )
-                        # _set_if_unfixed(
-                        #    self.int_energy_density_solid[t, ix, iz],
-                        #    self.solid_heat_capacity * self.solid_density * (self.temperature[t, ix, iz] - 1000 * pyo.units.K)
-                        # )
                 for i in comps:
                     _set_if_unfixed(
                         self.conc_mol_comp_deviation_x1[t, iz, i],

@@ -13,22 +13,12 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-import copy
-
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 import pyomo.environ as pyo
 
 
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
-from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR,
-    _constF,
-    _set_if_unfixed,
-    _species_list,
-    _element_list,
-    _element_dict,
-)
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
@@ -66,11 +56,10 @@ class SocContactResistorData(UnitModelBlockData):
         common._submodel_boilerplate_create_if_none(self)
         common._create_thermal_boundary_conditions_if_none(self, thin=True)
 
-        # Preexponential factor needs to be given in units of  omh*m**2
+        # Preexponential factor needs to be given in units of ohm*m**2
         self.log_preexponential_factor = pyo.Var(
             initialize=-50, units=pyo.units.dimensionless
         )
-        # units=pyo.units.ohm*pyo.units.m**2,)
         self.thermal_exponent_dividend = pyo.Var(initialize=0, units=pyo.units.K)
         self.contact_fraction = pyo.Var(
             initialize=1, units=pyo.units.dimensionless, bounds=(0, 1)

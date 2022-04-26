@@ -17,11 +17,9 @@ import pytest
 import numpy as np
 
 import pyomo.environ as pyo
-from idaes.core import FlowsheetBlock, UnitModelBlock
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
-import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as soc_testing
 
 solver = pyo.SolverFactory("ipopt")
