@@ -117,6 +117,24 @@ def _new_idaes_config_block():
     """
     cfg = pyomo.common.config.ConfigBlock("idaes", implicit=True)
     cfg.declare(
+        "warning_to_exception",
+        pyomo.common.config.ConfigValue(
+            domain=bool,
+            default=False,
+            description="Convert any logged warnings or errors to exceptions",
+            doc="Convert any logged warnings or errors to exceptions"
+        ),
+    )
+    cfg.declare(
+        "deprecation_to_exception",
+        pyomo.common.config.ConfigValue(
+            domain=bool,
+            default=False,
+            description="Convert any logged deprecation warnings to exceptions",
+            doc="Convert any logged deprecation warnings to exceptions"
+        ),
+    )
+    cfg.declare(
         "logging",
         pyomo.common.config.ConfigBlock(
             implicit=True,
@@ -238,6 +256,16 @@ def _new_idaes_config_block():
             implicit=True,
             description="Default solver options for 'petsc_ts'",
             doc="Default solver options for 'petsc_ts' solver"
+        ),
+    )
+
+    cfg["petsc_ts"]["options"].declare(
+        "--ts_save_trajectory",
+        pyomo.common.config.ConfigValue(
+            domain=int,
+            default=1,
+            description="Save the trajectory data from PETSc",
+            doc="Save the trajectory data from PETSc"
         ),
     )
 
@@ -402,8 +430,38 @@ def write_config(path, cfg=None):
         json.dump(cfg.value(), f, cls=ConfigBlockJSONEncoder, indent=4)
 
 
+class _WarningToExceptionFilter(logging.Filter):
+    """Filter applied to IDAES loggers returned by this module."""
+
+    @staticmethod
+    def filter(record):
+        if record.levelno >= logging.WARNING:
+            raise RuntimeError(
+                f"Logged Warning converted to exception: {record.msg}")
+
+
+class _DeprecationToExceptionFilter(logging.Filter):
+    """Filter applied to IDAES loggers returned by this module."""
+
+    @staticmethod
+    def filter(record):
+        if record.levelno >= logging.WARNING:
+            if "deprecat" in record.msg.lower():
+                raise RuntimeError(
+                    f"Logged deprecation converted to exception: {record.msg}")
+
+
 def reconfig(cfg):
     logging.config.dictConfig(cfg.logging.value())
+    _log = logging.getLogger("idaes")
+    if cfg.deprecation_to_exception:
+        _log.addFilter(_DeprecationToExceptionFilter)
+    else:
+        _log.removeFilter(_DeprecationToExceptionFilter)
+    if cfg.warning_to_exception:
+        _log.addFilter(_WarningToExceptionFilter)
+    else:
+        _log.removeFilter(_WarningToExceptionFilter)
     setup_environment(bin_directory, cfg.use_idaes_solvers)
 
 

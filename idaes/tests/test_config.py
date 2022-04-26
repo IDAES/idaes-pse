@@ -14,6 +14,7 @@
 import os
 import pytest
 import idaes
+import logging
 
 class TestIdaesConfigure(object):
 
@@ -71,3 +72,21 @@ def test_canonical_distro():
     assert idaes.config.canonical_distro("Ubuntu1804")  == "ubuntu1804"
     assert idaes.config.canonical_distro("Windows")  == "windows"
     assert idaes.config.canonical_distro("daRwin")  == "darwin"
+
+@pytest.mark.unit
+def test_warning_to_except():
+    with idaes.temporary_config_ctx():
+        with pytest.raises(RuntimeError):
+            _log = logging.getLogger("idaes")
+            idaes.cfg.warning_to_exception = True
+            idaes.reconfig()
+            _log.warning("Hey! Don't do that.")
+
+@pytest.mark.unit
+def test_deprecate_to_except():
+    with idaes.temporary_config_ctx():
+        with pytest.raises(RuntimeError):
+            _log = logging.getLogger("idaes")
+            idaes.cfg.deprecation_to_exception = True
+            idaes.reconfig()
+            _log.warning("DEPRECATED: Hey! Don't use that.")
