@@ -181,6 +181,32 @@ class TestModelSerialize(unittest.TestCase):
         assert b.ub == 100
 
     @pytest.mark.unit
+    def test01c(self):
+        """
+        Simple test of load save json for a _BlockData
+        """
+        model = self.setup_model01b()
+        a = model.b["1"].a
+        b = model.b["1"].b
+        sd = to_json(model.b["1"], return_dict=True, human_read=True)
+        # change variable values
+        a.value = 0.11
+        b.value = 0.11
+        a.unfix()
+        model.b["1"].deactivate()
+        b.setlb(2)
+        b.setub(4)
+        # reload values
+        from_json(model.b["1"], sd=sd)
+        # make sure they are right
+        assert a.fixed
+        assert model.b["1"].active
+        assert value(b) == 20
+        assert value(a) == 2
+        assert b.lb == -100
+        assert b.ub == 100
+
+    @pytest.mark.unit
     def test02(self):
         """Test with suffixes"""
         model = self.setup_model02()
