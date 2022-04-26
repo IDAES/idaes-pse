@@ -202,7 +202,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "feed info",
+                            "text": "Flow_mol -inf\nMole_frac_comp benzene 0.5\nMole_frac_comp toluene 0.5\nTemperature inf\nPressure na",
                             "text-anchor": "left"
                         }
                     },
@@ -469,7 +469,7 @@
         "arcs": {
             "s_inlet_1": {
                 "dest": "flash",
-                "label": "feed info",
+                "label": "Flow_mol -inf\nMole_frac_comp benzene 0.5\nMole_frac_comp toluene 0.5\nTemperature inf\nPressure na",
                 "source": "inlet_1"
             },
             "s_liq_outlet_1": {
@@ -486,11 +486,38 @@
         "id": "demo",
         "stream_table": {
             "columns": [
-                "",
-                "Variable"
+                "Variable",
+                "s_inlet_1"
             ],
-            "data": [],
-            "index": []
+            "data": [
+                [
+                    "flow_mol",
+                    -Infinity
+                ],
+                [
+                    "mole_frac_comp benzene",
+                    0.5
+                ],
+                [
+                    "mole_frac_comp toluene",
+                    0.5
+                ],
+                [
+                    "temperature",
+                    Infinity
+                ],
+                [
+                    "pressure",
+                    NaN
+                ]
+            ],
+            "index": [
+                0,
+                1,
+                2,
+                3,
+                4
+            ]
         },
         "unit_models": {
             "flash": {

@@ -11,25 +11,12 @@
 # license information.
 #################################################################################
 """
-General pure component electrolyte methods
+Deprecation path for renamed module.
 """
-from pyomo.environ import Var, units as pyunits
+from pyomo.common.deprecation import deprecation_warning
 
-from idaes.core.util.misc import set_param_from_config
+deprecation_warning("The generic_models.properties.core.pure.electrolyte has been "
+                    "moved to idaes.models.properties.modular_properties.pure.electrolyte",
+                    version="2.0.0.alpha0")
 
-
-# -----------------------------------------------------------------------------
-# Method for constant relative permittivity
-# RElative permittivity was referred to as the dielectric constant in the past
-class relative_permittivity_constant():
-
-    @staticmethod
-    def build_parameters(cobj):
-        cobj.relative_permittivity_liq_comp = Var(
-            doc="Relative permittivity",
-            units=pyunits.dimensionless)
-        set_param_from_config(cobj, param="relative_permittivity_liq_comp")
-
-    @staticmethod
-    def return_expression(b, cobj, T):
-        return cobj.relative_permittivity_liq_comp
+from idaes.models.properties.modular_properties.pure.electrolyte import *

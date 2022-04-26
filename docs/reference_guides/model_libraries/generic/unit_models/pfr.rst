@@ -44,7 +44,7 @@ where :math:`X_{t,x,r}` is the extent of reaction of reaction :math:`r` at point
 PFR Class
 ---------
 
-.. module:: idaes.generic_models.unit_models.plug_flow_reactor
+.. module:: idaes.models.unit_models.plug_flow_reactor
 
 .. autoclass:: PFR
     :members:

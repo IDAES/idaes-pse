@@ -17,6 +17,5 @@ from pyomo.common.deprecation import relocated_module_attribute
 
 
 relocated_module_attribute(
-    'Tray',
-    'idaes.generic_models.unit_models.column_models.tray.Tray',
-    version='1.12')
+    "Tray", "idaes.models_extra.column_models.tray.Tray", version="2.0.0.alpha0"
+)

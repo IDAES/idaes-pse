@@ -31,7 +31,7 @@ and then the function *training* is called on the initialized object:
 .. code:: python
 
    # Required imports
-   >>> from idaes.surrogate.pysmo import kriging
+   >>> from idaes.core.surrogate.pysmo import kriging
    >>> import pandas as pd
 
    # Load dataset from a csv file
@@ -90,12 +90,12 @@ Once a Kriging model has been trained, predictions for values at previously unsa
 Further details about *pysmo.kriging* module may be found by consulting the examples or reading the paper [...]
 
 
-.. module:: idaes.surrogate.pysmo.kriging
+.. module:: idaes.core.surrogate.pysmo.kriging
 
 Available Methods
 ------------------
 
-.. autoclass:: idaes.surrogate.pysmo.kriging.KrigingModel
+.. autoclass:: idaes.core.surrogate.pysmo.kriging.KrigingModel
     :members: __init__, get_feature_vector, training, predict_output, r2_calculation, generate_expression
 
 References:

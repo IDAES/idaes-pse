@@ -15,35 +15,51 @@ Tests for math util methods.
 """
 
 import pytest
-from pyomo.environ import (Block, ConcreteModel, Constraint, Expression, exp,
-                           Set, Var, value, Param, Reals, units as pyunits,
-                           TransformationFactory, check_optimal_termination)
+from pyomo.environ import (
+    Block,
+    ConcreteModel,
+    Constraint,
+    Expression,
+    exp,
+    Set,
+    Var,
+    value,
+    Param,
+    Reals,
+    units as pyunits,
+    TransformationFactory,
+    check_optimal_termination,
+)
 from pyomo.network import Arc, Port
 
-from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType,
-                        declare_process_block_class,
-                        PhysicalParameterBlock,
-                        StateBlock,
-                        StateBlockData,
-                        ReactionParameterBlock,
-                        ReactionBlockBase,
-                        ReactionBlockDataBase,
-                        MaterialFlowBasis,
-                        Component,
-                        Phase)
+from idaes.core import (
+    FlowsheetBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+    declare_process_block_class,
+    PhysicalParameterBlock,
+    StateBlock,
+    StateBlockData,
+    ReactionParameterBlock,
+    ReactionBlockBase,
+    ReactionBlockDataBase,
+    MaterialFlowBasis,
+    Component,
+    Phase,
+)
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.generic_models.unit_models import CSTR
+from idaes.models.unit_models import CSTR
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.initialization import (fix_state_vars,
-                                            revert_state_vars,
-                                            propagate_state,
-                                            solve_indexed_blocks,
-                                            initialize_by_time_element)
-from idaes.core.util import get_solver
+from idaes.core.util.initialization import (
+    fix_state_vars,
+    revert_state_vars,
+    propagate_state,
+    solve_indexed_blocks,
+    initialize_by_time_element,
+)
+from idaes.core.solvers import get_solver
 
 __author__ = "Andrew Lee"
 
@@ -74,11 +90,15 @@ class ParameterData(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': pyunits.minute,
-                               'length': pyunits.m,
-                               'amount': pyunits.kmol,
-                               'temperature': pyunits.K,
-                               'mass': pyunits.kg})
+        obj.add_default_units(
+            {
+                "time": pyunits.minute,
+                "length": pyunits.m,
+                "amount": pyunits.kmol,
+                "temperature": pyunits.K,
+                "mass": pyunits.kg,
+            }
+        )
 
 
 class _AqueousEnzymeStateBlock(StateBlock):
@@ -86,36 +106,44 @@ class _AqueousEnzymeStateBlock(StateBlock):
         pass
 
 
-@declare_process_block_class("AqueousEnzymeStateBlock",
-                             block_class=_AqueousEnzymeStateBlock)
+@declare_process_block_class(
+    "AqueousEnzymeStateBlock", block_class=_AqueousEnzymeStateBlock
+)
 class AqueousEnzymeStateBlockData(StateBlockData):
     def build(self):
         super(AqueousEnzymeStateBlockData, self).build()
 
-        self.conc_mol = Var(self._params.component_list,
-                            domain=Reals,
-                            doc='Component molar concentration [kmol/m^3]')
+        self.conc_mol = Var(
+            self._params.component_list,
+            domain=Reals,
+            doc="Component molar concentration [kmol/m^3]",
+        )
 
-        self.flow_mol_comp = Var(self._params.component_list,
-                                 domain=Reals,
-                                 doc='Molar component flow rate [kmol/min]')
+        self.flow_mol_comp = Var(
+            self._params.component_list,
+            domain=Reals,
+            doc="Molar component flow rate [kmol/min]",
+        )
 
         self.flow_vol = Var(
-            domain=Reals, doc='Volumetric flow rate out of reactor [m^3/min]')
+            domain=Reals, doc="Volumetric flow rate out of reactor [m^3/min]"
+        )
 
-        self.temperature = Var(initialize=303, domain=Reals,
-                               doc='Temperature within reactor [K]')
+        self.temperature = Var(
+            initialize=303, domain=Reals, doc="Temperature within reactor [K]"
+        )
 
         if not self.config.defined_state:
-            self.conc_mol['Solvent'].fix(1.)
+            self.conc_mol["Solvent"].fix(1.0)
 
         def flow_mol_comp_rule(b, j):
-            return b.flow_mol_comp[j] == b.flow_vol*b.conc_mol[j]
+            return b.flow_mol_comp[j] == b.flow_vol * b.conc_mol[j]
 
         self.flow_mol_comp_eqn = Constraint(
             self._params.component_list,
             rule=flow_mol_comp_rule,
-            doc='Outlet component molar flow rate equation')
+            doc="Outlet component molar flow rate equation",
+        )
 
     def get_material_density_terms(b, p, j):
         return b.conc_mol[j]
@@ -127,74 +155,79 @@ class AqueousEnzymeStateBlockData(StateBlockData):
         return MaterialFlowBasis.molar
 
     def get_enthalpy_flow_terms(b, p):
-        return b.flow_vol*b.temperature
+        return b.flow_vol * b.temperature
 
     def get_energy_density_terms(b, p):
         return b.temperature
 
     def define_state_vars(b):
-        return {'conc_mol': b.conc_mol,
-                'temperature': b.temperature,
-                'flow_vol': b.flow_vol}
+        return {
+            "conc_mol": b.conc_mol,
+            "temperature": b.temperature,
+            "flow_vol": b.flow_vol,
+        }
 
 
-@declare_process_block_class('EnzymeReactionParameterBlock')
+@declare_process_block_class("EnzymeReactionParameterBlock")
 class EnzymeReactionParameterData(ReactionParameterBlock):
-    '''
+    """
     Enzyme reaction:
     S + E <-> C -> P + E
-    '''
+    """
 
     def build(self):
         super(EnzymeReactionParameterData, self).build()
 
         self._reaction_block_class = EnzymeReactionBlock
 
-        self.rate_reaction_idx = Set(initialize=['R1', 'R2', 'R3'])
-        self.rate_reaction_stoichiometry = {('R1', 'aq', 'S'): -1,
-                                            ('R1', 'aq', 'E'): -1,
-                                            ('R1', 'aq', 'C'): 1,
-                                            ('R1', 'aq', 'P'): 0,
-                                            ('R1', 'aq', 'Solvent'): 0,
-                                            ('R2', 'aq', 'S'): 1,
-                                            ('R2', 'aq', 'E'): 1,
-                                            ('R2', 'aq', 'C'): -1,
-                                            ('R2', 'aq', 'P'): 0,
-                                            ('R2', 'aq', 'Solvent'): 0,
-                                            ('R3', 'aq', 'S'): 0,
-                                            ('R3', 'aq', 'E'): 1,
-                                            ('R3', 'aq', 'C'): -1,
-                                            ('R3', 'aq', 'P'): 1,
-                                            ('R3', 'aq', 'Solvent'): 0}
+        self.rate_reaction_idx = Set(initialize=["R1", "R2", "R3"])
+        self.rate_reaction_stoichiometry = {
+            ("R1", "aq", "S"): -1,
+            ("R1", "aq", "E"): -1,
+            ("R1", "aq", "C"): 1,
+            ("R1", "aq", "P"): 0,
+            ("R1", "aq", "Solvent"): 0,
+            ("R2", "aq", "S"): 1,
+            ("R2", "aq", "E"): 1,
+            ("R2", "aq", "C"): -1,
+            ("R2", "aq", "P"): 0,
+            ("R2", "aq", "Solvent"): 0,
+            ("R3", "aq", "S"): 0,
+            ("R3", "aq", "E"): 1,
+            ("R3", "aq", "C"): -1,
+            ("R3", "aq", "P"): 1,
+            ("R3", "aq", "Solvent"): 0,
+        }
 
-        self.act_energy = Param(self.rate_reaction_idx,
-                                initialize={'R1': 8.0e3,
-                                            'R2': 9.0e3,
-                                            'R3': 1.0e4},
-                                doc='Activation energy [kcal/kmol]')
+        self.act_energy = Param(
+            self.rate_reaction_idx,
+            initialize={"R1": 8.0e3, "R2": 9.0e3, "R3": 1.0e4},
+            doc="Activation energy [kcal/kmol]",
+        )
 
-        self.gas_const = Param(initialize=1.987,
-                               doc='Gas constant R [kcal/kmol/K]')
+        self.gas_const = Param(initialize=1.987, doc="Gas constant R [kcal/kmol/K]")
 
-        self.temperature_ref = Param(initialize=300.0,
-                                     doc='Reference temperature')
+        self.temperature_ref = Param(initialize=300.0, doc="Reference temperature")
 
         self.k_rxn = Param(
             self.rate_reaction_idx,
-            initialize={'R1': 3.36e6,
-                        'R2': 1.80e6,
-                        'R3': 5.79e7},
-            doc='Pre-exponential rate constant in Arrhenius expression')
+            initialize={"R1": 3.36e6, "R2": 1.80e6, "R3": 5.79e7},
+            doc="Pre-exponential rate constant in Arrhenius expression",
+        )
 
     #    self.reaction_block_class = EnzymeReactionBlock
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': pyunits.minute,
-                               'length': pyunits.m,
-                               'amount': pyunits.kmol,
-                               'temperature': pyunits.K,
-                               'mass': pyunits.kg})
+        obj.add_default_units(
+            {
+                "time": pyunits.minute,
+                "length": pyunits.m,
+                "amount": pyunits.kmol,
+                "temperature": pyunits.K,
+                "mass": pyunits.kg,
+            }
+        )
 
 
 class _EnzymeReactionBlock(ReactionBlockBase):
@@ -203,49 +236,63 @@ class _EnzymeReactionBlock(ReactionBlockBase):
         pass
 
 
-@declare_process_block_class('EnzymeReactionBlock',
-                             block_class=_EnzymeReactionBlock)
+@declare_process_block_class("EnzymeReactionBlock", block_class=_EnzymeReactionBlock)
 class EnzymeReactionBlockData(ReactionBlockDataBase):
     def build(self):
         super(EnzymeReactionBlockData, self).build()
 
-        self.reaction_coef = Var(self._params.rate_reaction_idx,
-                                 domain=Reals, doc='Reaction rate coefficient')
+        self.reaction_coef = Var(
+            self._params.rate_reaction_idx,
+            domain=Reals,
+            doc="Reaction rate coefficient",
+        )
 
-        self.reaction_rate = Var(self._params.rate_reaction_idx,
-                                 domain=Reals,
-                                 doc='Reaction rate [kmol/m^3/min]')
+        self.reaction_rate = Var(
+            self._params.rate_reaction_idx,
+            domain=Reals,
+            doc="Reaction rate [kmol/m^3/min]",
+        )
 
-        self.dh_rxn = Param(self._params.rate_reaction_idx,
-                            domain=Reals, doc='Heat of reaction',
-                            initialize={'R1': 1e3/900/0.231,
-                                        'R2': 1e3/900/0.231,
-                                        'R3': 5e3/900/0.231})
+        self.dh_rxn = Param(
+            self._params.rate_reaction_idx,
+            domain=Reals,
+            doc="Heat of reaction",
+            initialize={
+                "R1": 1e3 / 900 / 0.231,
+                "R2": 1e3 / 900 / 0.231,
+                "R3": 5e3 / 900 / 0.231,
+            },
+        )
 
         def reaction_rate_rule(b, r):
-            if r == 'R1':
-                return (b.reaction_rate[r] ==
-                        b.reaction_coef[r] *
-                        b.state_ref.conc_mol['S']*b.state_ref.conc_mol['E'])
-            elif r == 'R2':
-                return (b.reaction_rate[r] ==
-                        b.reaction_coef[r] *
-                        b.state_ref.conc_mol['C'])
-            elif r == 'R3':
-                return (b.reaction_rate[r] ==
-                        b.reaction_coef[r] *
-                        b.state_ref.conc_mol['C'])
+            if r == "R1":
+                return (
+                    b.reaction_rate[r]
+                    == b.reaction_coef[r]
+                    * b.state_ref.conc_mol["S"]
+                    * b.state_ref.conc_mol["E"]
+                )
+            elif r == "R2":
+                return (
+                    b.reaction_rate[r] == b.reaction_coef[r] * b.state_ref.conc_mol["C"]
+                )
+            elif r == "R3":
+                return (
+                    b.reaction_rate[r] == b.reaction_coef[r] * b.state_ref.conc_mol["C"]
+                )
 
-        self.reaction_rate_eqn = Constraint(self._params.rate_reaction_idx,
-                                            rule=reaction_rate_rule)
+        self.reaction_rate_eqn = Constraint(
+            self._params.rate_reaction_idx, rule=reaction_rate_rule
+        )
 
         def arrhenius_rule(b, r):
-            return (b.reaction_coef[r] == b._params.k_rxn[r] *
-                    exp(-b._params.act_energy[r]/b._params.gas_const /
-                        b.state_ref.temperature))
+            return b.reaction_coef[r] == b._params.k_rxn[r] * exp(
+                -b._params.act_energy[r] / b._params.gas_const / b.state_ref.temperature
+            )
 
-        self.arrhenius_eqn = Constraint(self._params.rate_reaction_idx,
-                                        rule=arrhenius_rule)
+        self.arrhenius_eqn = Constraint(
+            self._params.rate_reaction_idx, rule=arrhenius_rule
+        )
 
     def get_reaction_rate_basis(b):
         return MaterialFlowBasis.molar
@@ -257,7 +304,7 @@ def model():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.sb = m.fs.pp.state_block_class(default={'parameters': m.fs.pp})
+    m.fs.sb = m.fs.pp.state_block_class(default={"parameters": m.fs.pp})
 
     for i in m.fs.sb.flow_mol_phase_comp:
         assert not m.fs.sb.flow_mol_phase_comp[i].fixed
@@ -302,12 +349,16 @@ def test_fix_state_vars_None_value(model):
 def test_fix_state_vars_guesses(model):
     # Note that flow_mol_phase_comp is labled as component_flow
     # in define_state_vars
-    state_args = {"component_flow_phase": {("p1", "c1"): 1,
-                                           ("p1", "c2"): 2,
-                                           ("p2", "c1"): 3,
-                                           ("p2", "c2"): 4},
-                  "pressure": 2e5,
-                  "temperature": 500}
+    state_args = {
+        "component_flow_phase": {
+            ("p1", "c1"): 1,
+            ("p1", "c2"): 2,
+            ("p2", "c1"): 3,
+            ("p2", "c2"): 4,
+        },
+        "pressure": 2e5,
+        "temperature": 500,
+    }
 
     flags = fix_state_vars(model.fs.sb, state_args)
 
@@ -337,10 +388,14 @@ def test_fix_state_vars_guesses(model):
 def test_fix_state_vars_partial_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
-    state_args = {"component_flow_phase": {("p1", "c1"): 1,
-                                           ("p1", "c2"): 2,
-                                           ("p2", "c1"): 3,
-                                           ("p2", "c2"): 4}}
+    state_args = {
+        "component_flow_phase": {
+            ("p1", "c1"): 1,
+            ("p1", "c2"): 2,
+            ("p2", "c1"): 3,
+            ("p2", "c2"): 4,
+        }
+    }
 
     flags = fix_state_vars(model.fs.sb, state_args)
 
@@ -370,11 +425,11 @@ def test_fix_state_vars_partial_guesses(model):
 def test_fix_state_vars_guesses_mismatch_index(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
-    state_args = {"component_flow_phase": {("p1", "c1"): 1,
-                                           ("p1", "c2"): 2,
-                                           ("p2", "c1"): 3},
-                  "pressure": 2e5,
-                  "temperature": 500}
+    state_args = {
+        "component_flow_phase": {("p1", "c1"): 1, ("p1", "c2"): 2, ("p2", "c1"): 3},
+        "pressure": 2e5,
+        "temperature": 500,
+    }
 
     with pytest.raises(ConfigurationError):
         fix_state_vars(model.fs.sb, state_args)
@@ -419,12 +474,16 @@ def test_fix_state_vars_fixed_guesses(model):
     model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
     model.fs.sb.pressure.fix(1.5e5)
 
-    state_args = {"component_flow_phase": {("p1", "c1"): 1,
-                                           ("p1", "c2"): 2,
-                                           ("p2", "c1"): 3,
-                                           ("p2", "c2"): 4},
-                  "pressure": 2e5,
-                  "temperature": 500}
+    state_args = {
+        "component_flow_phase": {
+            ("p1", "c1"): 1,
+            ("p1", "c2"): 2,
+            ("p2", "c1"): 3,
+            ("p2", "c2"): 4,
+        },
+        "pressure": 2e5,
+        "temperature": 500,
+    }
 
     flags = fix_state_vars(model.fs.sb, state_args)
 
@@ -470,12 +529,16 @@ def test_revert_state_vars_basic(model):
 def test_revert_state_vars_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
-    state_args = {"component_flow_phase": {("p1", "c1"): 1,
-                                           ("p1", "c2"): 2,
-                                           ("p2", "c1"): 3,
-                                           ("p2", "c2"): 4},
-                  "pressure": 2e5,
-                  "temperature": 500}
+    state_args = {
+        "component_flow_phase": {
+            ("p1", "c1"): 1,
+            ("p1", "c2"): 2,
+            ("p2", "c1"): 3,
+            ("p2", "c2"): 4,
+        },
+        "pressure": 2e5,
+        "temperature": 500,
+    }
 
     flags = fix_state_vars(model.fs.sb, state_args)
 
@@ -529,12 +592,16 @@ def test_revert_state_vars_fixed_guesses(model):
     model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
     model.fs.sb.pressure.fix(1.5e5)
 
-    state_args = {"component_flow_phase": {("p1", "c1"): 1,
-                                           ("p1", "c2"): 2,
-                                           ("p2", "c1"): 3,
-                                           ("p2", "c2"): 4},
-                  "pressure": 2e5,
-                  "temperature": 500}
+    state_args = {
+        "component_flow_phase": {
+            ("p1", "c1"): 1,
+            ("p1", "c2"): 2,
+            ("p2", "c1"): 3,
+            ("p2", "c2"): 4,
+        },
+        "pressure": 2e5,
+        "temperature": 500,
+    }
 
     flags = fix_state_vars(model.fs.sb, state_args)
     revert_state_vars(model.fs.sb, flags)
@@ -557,10 +624,12 @@ def test_revert_state_vars_fixed_guesses(model):
 
 @pytest.mark.unit
 def test_revert_state_vars_flag_mismatch(model):
-    flags = {(None, 'component_flow_phase', ('p1', 'c1')): False,
-             (None, 'component_flow_phase', ('p1', 'c2')): False,
-             (None, 'component_flow_phase', ('p2', 'c1')): False,
-             (None, 'pressure', None): False}
+    flags = {
+        (None, "component_flow_phase", ("p1", "c1")): False,
+        (None, "component_flow_phase", ("p1", "c2")): False,
+        (None, "component_flow_phase", ("p2", "c1")): False,
+        (None, "pressure", None): False,
+    }
 
     with pytest.raises(ConfigurationError):
         revert_state_vars(model.fs.sb, flags)
@@ -575,9 +644,11 @@ def test_propagate_state():
         b.v1 = Var()
         b.v2 = Var(b.s)
         b.e1 = Expression(expr=b.v1)
+
         @b.Expression(b.s)
         def e2(blk, i):
-            return b.v2[i]*b.v1
+            return b.v2[i] * b.v1
+
         b.p1 = Param(mutable=True, initialize=5)
         b.p2 = Param(b.s, mutable=True, initialize=6)
 
@@ -745,9 +816,10 @@ def test_propagate_state_indexed_fixed():
     m.b1 = Block(rule=block_rule)
     m.b2 = Block(rule=block_rule)
 
-    def arc_rule(m,i):
-        return {'source': m.b1.p[i], 'destination':m.b2.p[i]}
-    m.s1 = Arc([1,2], rule=arc_rule)
+    def arc_rule(m, i):
+        return {"source": m.b1.p[i], "destination": m.b2.p[i]}
+
+    m.s1 = Arc([1, 2], rule=arc_rule)
 
     # Set values on first block
     m.b1.v1.value = 10
@@ -804,9 +876,10 @@ def test_propagate_state_indexed():
     m.b1 = Block(rule=block_rule)
     m.b2 = Block(rule=block_rule)
 
-    def arc_rule(m,i):
-        return {'source': m.b1.p[i], 'destination':m.b2.p[i]}
-    m.s1 = Arc([1,2], rule=arc_rule)
+    def arc_rule(m, i):
+        return {"source": m.b1.p[i], "destination": m.b2.p[i]}
+
+    m.s1 = Arc([1, 2], rule=arc_rule)
 
     with pytest.raises(AttributeError):
         propagate_state(m.s1)
@@ -878,6 +951,7 @@ def test_solve_indexed_block_list():
     def block_rule(b, x):
         b.v = Var(initialize=1.0)
         b.c = Constraint(expr=b.v == 2.0)
+
     m.b = Block(m.s, rule=block_rule)
 
     solve_indexed_blocks(solver=solver, blocks=[m.b])
@@ -896,6 +970,7 @@ def test_solve_indexed_block_IndexedBlock():
     def block_rule(b, x):
         b.v = Var(initialize=1.0)
         b.c = Constraint(expr=b.v == 2.0)
+
     m.b = Block(m.s, rule=block_rule)
 
     solve_indexed_blocks(solver=solver, blocks=m.b)
@@ -918,33 +993,36 @@ def test_initialize_by_time_element():
     time_set = [0, horizon]
     ntfe = 60  # For a finite element every six seconds
     ntcp = 2
-    m = ConcreteModel(name='CSTR model for testing')
-    m.fs = FlowsheetBlock(default={'dynamic': True,
-                                   'time_set': time_set,
-                                   'time_units': pyunits.minute})
+    m = ConcreteModel(name="CSTR model for testing")
+    m.fs = FlowsheetBlock(
+        default={"dynamic": True, "time_set": time_set, "time_units": pyunits.minute}
+    )
 
     m.fs.properties = AqueousEnzymeParameterBlock()
     m.fs.reactions = EnzymeReactionParameterBlock(
-            default={'property_package': m.fs.properties})
-    m.fs.cstr = CSTR(default={
-        "property_package": m.fs.properties,
-        "reaction_package": m.fs.reactions,
-        "material_balance_type": MaterialBalanceType.componentTotal,
-        "energy_balance_type": EnergyBalanceType.enthalpyTotal,
-        "momentum_balance_type": MomentumBalanceType.none,
-        "has_heat_of_reaction": True})
+        default={"property_package": m.fs.properties}
+    )
+    m.fs.cstr = CSTR(
+        default={
+            "property_package": m.fs.properties,
+            "reaction_package": m.fs.reactions,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "energy_balance_type": EnergyBalanceType.enthalpyTotal,
+            "momentum_balance_type": MomentumBalanceType.none,
+            "has_heat_of_reaction": True,
+        }
+    )
 
     # Time discretization
-    disc = TransformationFactory('dae.collocation')
-    disc.apply_to(
-        m, wrt=m.fs.time, nfe=ntfe, ncp=ntcp, scheme='LAGRANGE-RADAU')
+    disc = TransformationFactory("dae.collocation")
+    disc.apply_to(m, wrt=m.fs.time, nfe=ntfe, ncp=ntcp, scheme="LAGRANGE-RADAU")
 
     # Fix geometry variables
     m.fs.cstr.volume[0].fix(1.0)
 
     # Fix initial conditions:
-    for p, j in m.fs.properties.phase_list*m.fs.properties.component_list:
-        if j == 'Solvent':
+    for p, j in m.fs.properties.phase_list * m.fs.properties.component_list:
+        if j == "Solvent":
             continue
         m.fs.cstr.control_volume.material_holdup[0, p, j].fix(0)
 
@@ -952,30 +1030,30 @@ def test_initialize_by_time_element():
     # This is a huge hack because I didn't know that the proper way to
     # have multiple inlets to a CSTR was to use a mixer.
     # I 'combine' both my inlet streams before sending them to the CSTR.
-    for t, j in m.fs.time*m.fs.properties.component_list:
+    for t, j in m.fs.time * m.fs.properties.component_list:
         if t <= 2:
-            if j == 'E':
-                m.fs.cstr.inlet.conc_mol[t, j].fix(11.91*0.1/2.2)
-            elif j == 'S':
-                m.fs.cstr.inlet.conc_mol[t, j].fix(12.92*2.1/2.2)
-            elif j != 'Solvent':
+            if j == "E":
+                m.fs.cstr.inlet.conc_mol[t, j].fix(11.91 * 0.1 / 2.2)
+            elif j == "S":
+                m.fs.cstr.inlet.conc_mol[t, j].fix(12.92 * 2.1 / 2.2)
+            elif j != "Solvent":
                 m.fs.cstr.inlet.conc_mol[t, j].fix(0)
         elif t <= 4:
-            if j == 'E':
-                m.fs.cstr.inlet.conc_mol[t, j].fix(5.95*0.1/2.2)
-            elif j == 'S':
-                m.fs.cstr.inlet.conc_mol[t, j].fix(12.92*2.1/2.2)
-            elif j != 'Solvent':
+            if j == "E":
+                m.fs.cstr.inlet.conc_mol[t, j].fix(5.95 * 0.1 / 2.2)
+            elif j == "S":
+                m.fs.cstr.inlet.conc_mol[t, j].fix(12.92 * 2.1 / 2.2)
+            elif j != "Solvent":
                 m.fs.cstr.inlet.conc_mol[t, j].fix(0)
         else:
-            if j == 'E':
-                m.fs.cstr.inlet.conc_mol[t, j].fix(8.95*0.1/2.2)
-            elif j == 'S':
-                m.fs.cstr.inlet.conc_mol[t, j].fix(16.75*2.1/2.2)
-            elif j != 'Solvent':
+            if j == "E":
+                m.fs.cstr.inlet.conc_mol[t, j].fix(8.95 * 0.1 / 2.2)
+            elif j == "S":
+                m.fs.cstr.inlet.conc_mol[t, j].fix(16.75 * 2.1 / 2.2)
+            elif j != "Solvent":
                 m.fs.cstr.inlet.conc_mol[t, j].fix(0)
 
-    m.fs.cstr.inlet.conc_mol[:, 'Solvent'].fix(1.)
+    m.fs.cstr.inlet.conc_mol[:, "Solvent"].fix(1.0)
 
     m.fs.cstr.inlet.flow_vol.fix(2.2)
     m.fs.cstr.inlet.temperature.fix(300)
@@ -991,29 +1069,25 @@ def test_initialize_by_time_element():
     assert degrees_of_freedom(m) == 0
 
     # Assert that the result looks how we expect
-    assert m.fs.cstr.outlet.conc_mol[0, 'S'].value == 0
-    assert abs(m.fs.cstr.outlet.conc_mol[2, 'S'].value - 11.389) < 1e-2
-    assert abs(m.fs.cstr.outlet.conc_mol[4, 'P'].value - 0.2191) < 1e-3
-    assert abs(m.fs.cstr.outlet.conc_mol[6, 'E'].value - 0.0327) < 1e-3
+    assert m.fs.cstr.outlet.conc_mol[0, "S"].value == 0
+    assert abs(m.fs.cstr.outlet.conc_mol[2, "S"].value - 11.389) < 1e-2
+    assert abs(m.fs.cstr.outlet.conc_mol[4, "P"].value - 0.2191) < 1e-3
+    assert abs(m.fs.cstr.outlet.conc_mol[6, "E"].value - 0.0327) < 1e-3
     assert abs(m.fs.cstr.outlet.temperature[6].value - 289.7) < 1
 
     # Assert that model is still fixed and deactivated as expected
-    assert (
-        m.fs.cstr.control_volume.material_holdup[
-            m.fs.time.first(), 'aq', 'S'].fixed)
+    assert m.fs.cstr.control_volume.material_holdup[m.fs.time.first(), "aq", "S"].fixed
 
     for t in m.fs.time:
         if t != m.fs.time.first():
-            assert (not m.fs.cstr.control_volume.material_holdup[
-                t, 'aq', 'S'].fixed)
+            assert not m.fs.cstr.control_volume.material_holdup[t, "aq", "S"].fixed
 
             assert not m.fs.cstr.outlet.temperature[t].fixed
-        assert (m.fs.cstr.control_volume.material_holdup_calculation[
-            t, 'aq', 'C'].active)
+        assert m.fs.cstr.control_volume.material_holdup_calculation[t, "aq", "C"].active
 
         assert m.fs.cstr.control_volume.properties_out[t].active
-        assert not m.fs.cstr.outlet.conc_mol[t, 'S'].fixed
-        assert m.fs.cstr.inlet.conc_mol[t, 'S'].fixed
+        assert not m.fs.cstr.outlet.conc_mol[t, "S"].fixed
+        assert m.fs.cstr.inlet.conc_mol[t, "S"].fixed
 
     # Assert that constraints are feasible after initialization
     for con in m.fs.component_data_objects(Constraint, active=True):

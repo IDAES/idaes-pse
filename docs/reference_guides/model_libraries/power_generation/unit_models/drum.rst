@@ -2,9 +2,9 @@ Drum Model
 ==========
 
 .. index::
-  pair: idaes.power_generation.unit_models.drum;Drum
+  pair: idaes.models_extra.power_generation.unit_models.drum;Drum
 
-.. currentmodule:: idaes.power_generation.unit_models.drum
+.. currentmodule:: idaes.models_extra.power_generation.unit_models.drum
 
 Introduction
 ------------

@@ -2,9 +2,9 @@ Proportional-Integral-Derivative (PID) Controller
 =================================================
 
 .. index::
-   pair: idaes.generic_models.control.controller; Proportional-Integral-Derivative (PID) Controller
+   pair: idaes.models.control.controller; Proportional-Integral-Derivative (PID) Controller
 
-.. currentmodule:: idaes.generic_models.control.controller
+.. currentmodule:: idaes.models.control.controller
 
 The IDAES framework contains a basic PID control implementation, which is described
 in this section.
@@ -25,16 +25,16 @@ file "pid_steam_tank_pressure.pdf."
   import pyomo.environ as pyo
   from pyomo.network import Arc
   from idaes.core import FlowsheetBlock, MaterialBalanceType
-  from idaes.generic_models.unit_models import Heater, Valve
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.unit_models import Heater, Valve
+  from idaes.models.properties import iapws95
   from idaes.core.util.initialization import propagate_state
-  from idaes.generic_models.control.controller import (
+  from idaes.models.control.controller import (
       PIDController,
       ControllerType,
       ControllerMVBoundType
   )
   import idaes.core.util.scaling as iscale
-  from idaes.core.util import get_solver
+  from idaes.core.solvers import get_solver
   from idaes.core.util.plot import plot_grid_dynamic
 
   def _valve_pressure_flow_cb(b):

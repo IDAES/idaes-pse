@@ -26,8 +26,7 @@ from idaes.core.util.misc import TagReference, svg_tag
 
 # simple svg from drawn in incscape, with text ids:
 #   TAGME_4.x, TAGME_4.y, and TAGME_4.f
-svg_test_str = \
-"""<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+svg_test_str = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
@@ -184,9 +183,9 @@ svg_test_str = \
 @pytest.mark.unit
 def test_tag_reference():
     m = ConcreteModel()
-    m.x = Var([0,1], initialize={0:2.22,1:3.33})
-    m.y = Var([0,1], initialize={0:4.44,1:5.55})
-    m.f = Var([0,1], initialize={0:6.66,1:7.77})
+    m.x = Var([0, 1], initialize={0: 2.22, 1: 3.33})
+    m.y = Var([0, 1], initialize={0: 4.44, 1: 5.55})
+    m.f = Var([0, 1], initialize={0: 6.66, 1: 7.77})
     test_tag = {}
     test_tag["TAGME@4.x"] = TagReference(m.x[:], description="x tag")
     test_tag["TAGME@4.y"] = TagReference(m.y[:], description="y tag")
@@ -195,38 +194,38 @@ def test_tag_reference():
 
     xml_str = svg_tag(m.tag, svg_test_str, idx=0)
     # lazy testing
-    assert("2.2200e" in xml_str)
-    assert("4.4400e" in xml_str)
-    assert("6.6600e" in xml_str)
+    assert "2.2200e" in xml_str
+    assert "4.4400e" in xml_str
+    assert "6.6600e" in xml_str
 
     xml_str = svg_tag(m.tag, svg_test_str, idx=1)
     # lazy testing
-    assert("3.3300e" in xml_str)
-    assert("5.5500e" in xml_str)
-    assert("7.7700e" in xml_str)
+    assert "3.3300e" in xml_str
+    assert "5.5500e" in xml_str
+    assert "7.7700e" in xml_str
 
     xml_str = svg_tag(m.tag, svg_test_str, show_tags=True)
     # lazy testing
-    assert("TAGME@4.x" in xml_str)
-    assert("TAGME@4.y" in xml_str)
-    assert("TAGME@4.f" in xml_str)
+    assert "TAGME@4.x" in xml_str
+    assert "TAGME@4.y" in xml_str
+    assert "TAGME@4.f" in xml_str
 
     tag_data_like = {}
     tag_data_like["TAGME@4.x"] = 1.1212
     tag_data_like["TAGME@4.y"] = 2.1212
     tag_data_like["TAGME@4.f"] = "3.1212 Hello"
     xml_str = svg_tag(tag_data_like, svg_test_str, idx=None)
-    assert("1.1212" in xml_str)
-    assert("2.1212" in xml_str)
-    assert("3.1212 Hello" in xml_str)
+    assert "1.1212" in xml_str
+    assert "2.1212" in xml_str
+    assert "3.1212 Hello" in xml_str
 
 
 @pytest.mark.unit
 def test_tag_reference_default_format():
     m = ConcreteModel()
-    m.x = Var([0,1], initialize={0:2.22,1:3.33})
-    m.y = Var([0,1], initialize={0:4.44,1:5.55})
-    m.f = Var([0,1], initialize={0:6.66,1:7.77})
+    m.x = Var([0, 1], initialize={0: 2.22, 1: 3.33})
+    m.y = Var([0, 1], initialize={0: 4.44, 1: 5.55})
+    m.f = Var([0, 1], initialize={0: 6.66, 1: 7.77})
     test_tag = {}
     test_tag["TAGME@4.x"] = TagReference(m.x[:], description="x tag")
     test_tag["TAGME@4.y"] = TagReference(m.y[:], description="y tag")
@@ -235,36 +234,36 @@ def test_tag_reference_default_format():
 
     xml_str = svg_tag(m.tag, svg_test_str, idx=0, tag_format_default="{:.2f}X")
     # lazy testing
-    assert("2.22X" in xml_str)
-    assert("4.44X" in xml_str)
-    assert("6.66X" in xml_str)
+    assert "2.22X" in xml_str
+    assert "4.44X" in xml_str
+    assert "6.66X" in xml_str
 
 
 @pytest.mark.unit
 def test_tag_reference_tag_format():
     m = ConcreteModel()
-    m.x = Var([0,1], initialize={0:2.22,1:3.33})
-    m.y = Var([0,1], initialize={0:4.44,1:5.55})
-    m.f = Var([0,1], initialize={0:6.66,1:7.77})
+    m.x = Var([0, 1], initialize={0: 2.22, 1: 3.33})
+    m.y = Var([0, 1], initialize={0: 4.44, 1: 5.55})
+    m.f = Var([0, 1], initialize={0: 6.66, 1: 7.77})
     test_tag = {}
     test_tag["TAGME@4.x"] = TagReference(m.x[:], description="x tag")
     test_tag["TAGME@4.y"] = TagReference(m.y[:], description="y tag")
     test_tag["TAGME@4.f"] = TagReference(m.f[:], description="z tag")
     m.tag = test_tag
 
-    xml_str = svg_tag(m.tag, svg_test_str, idx=0, tag_format={"TAGME@4.y":"{:.5e}"})
+    xml_str = svg_tag(m.tag, svg_test_str, idx=0, tag_format={"TAGME@4.y": "{:.5e}"})
     # lazy testing
-    assert("2.2200e" in xml_str)
-    assert("4.44000e" in xml_str)
-    assert("6.6600e" in xml_str)
+    assert "2.2200e" in xml_str
+    assert "4.44000e" in xml_str
+    assert "6.6600e" in xml_str
 
 
 @pytest.mark.unit
 def test_tag_reference_tag_format_conditional():
     m = ConcreteModel()
-    m.x = Var([0,1], initialize={0:10000,1:3.33})
-    m.y = Var([0,1], initialize={0:1.1,1:5.55})
-    m.f = Var([0,1], initialize={0:4.5,1:7.77})
+    m.x = Var([0, 1], initialize={0: 10000, 1: 3.33})
+    m.y = Var([0, 1], initialize={0: 1.1, 1: 5.55})
+    m.f = Var([0, 1], initialize={0: 4.5, 1: 7.77})
     test_tag = {}
     test_tag["TAGME@4.x"] = TagReference(m.x[:], description="x tag")
     test_tag["TAGME@4.y"] = TagReference(m.y[:], description="y tag")
@@ -275,11 +274,13 @@ def test_tag_reference_tag_format_conditional():
         m.tag,
         svg_test_str,
         idx=0,
-        tag_format_default=lambda x: "{:,.0f} kPa" if x >= 100 else "{:.2f} kPa")
+        tag_format_default=lambda x: "{:,.0f} kPa" if x >= 100 else "{:.2f} kPa",
+    )
     # lazy testing
-    assert("10,000 kPa" in xml_str)
-    assert("1.10 kPa" in xml_str)
-    assert("4.50 kPa" in xml_str)
+    assert "10,000 kPa" in xml_str
+    assert "1.10 kPa" in xml_str
+    assert "4.50 kPa" in xml_str
+
 
 if __name__ == "__main__":
     # Check deprication warnings

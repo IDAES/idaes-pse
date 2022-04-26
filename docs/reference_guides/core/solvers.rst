@@ -7,6 +7,11 @@ but IDAES provides a few extensions to make working with solvers slightly easier
 Some IDAES solver features are documented in other sections, so references are
 provided as appropriate.
 
+.. toctree::
+    :maxdepth: 1
+
+    homotopy
+
 Default Solver Config
 ---------------------
 
@@ -24,8 +29,7 @@ Getting a Solver
 ----------------
 
 Typically users can use the standard Pyomo SoverFactory to get a solver.  If a
-solver is needed in a general model or utility, a
-:ref:`utility function <reference_guides/core/util/misc:get_solver>` (``idaes.core.util.misc.get_solver``)
+solver is needed in a general model or utility, a utility function (``idaes.core.solvers.get_solver``)
 provides a default or user configured solver at runtime. This is used by IDAES
 core models and tests.
 
@@ -130,16 +134,14 @@ Discretization
 """"""""""""""
 
 The utility for solving Pyomo.DAE problems uses the PETSc TS solvers to integrate
-between each time point in the Pyomo.DAE discretization.  The results are stored
-for each time point in the Pyomo model. This can be used to initialize and verify
-the results of the full time-discretized model. For example this could be used to
-determine if the time steps used in the discretization are too big by comparing
-the integrator solution to the fully discretized model solution.
-
-To quickly run a DAE model, a time discretization with one element can be made.
-In this case, the PETSc TS solver will integrate from the initial condition to
-the end point. Results for intermediate times can be read from PETSc's stored
-trajectory data if the proper solver options are specified.
+between selected time points in the Pyomo.DAE discretization. The results for each
+time point integrated between are stored in the Pyomo model. Optionally the
+skipped time points can be interpolated from the PETSc solver trajectory data.
+This can be used to initialize and verify the results of the full time-discretized
+model. For example, this could be used to determine if the time steps used in the
+discretization are too big by comparing the integrator solution to the fully
+discretized solution. To quickly run a DAE model, you can integrate between the
+first and last time points.
 
 Time Variable
 """""""""""""
@@ -176,16 +178,10 @@ The following function can be used to solve the DAE.
 Reading Trajectory Data
 """""""""""""""""""""""
 
-Usually if you want to read the trajectory data from the solver, you will want to
-solve the whole time domain at once, so you will want to specify one time element
-in the Pyomo.DAE discretization. By specifying the ``--ts_save_trajectory=1`` and
-``--ts_trajectory_type=visualization`` options the trajectory information will
-be saved.  Supplying the ``vars_stub`` argument to the ``petsc_dae_by_time_element()``
-function will copy the `*.col` and `*.typ` files needed to interpret the trajectory
-data to the current working directory.
-
-The ``PetscTrajectory`` class has methods to read in trajectory data and
-interpolate time points as needed.
+By specifying the ``--ts_save_trajectory=1`` option the trajectory information will
+be saved.  The ``idaes.core.solvers.petsc.petsc_dae_by_time_element`` function
+returns trajectory data if saved as a ``PetscTrajectory`` class, which has methods
+to load, save, and interpolate.
 
 .. autoclass:: idaes.core.solvers.petsc.PetscTrajectory
     :members:

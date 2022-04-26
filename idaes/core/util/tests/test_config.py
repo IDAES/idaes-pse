@@ -19,24 +19,28 @@ import pytest
 from pyomo.environ import ConcreteModel, Set
 from pyomo.dae import ContinuousSet
 from pyomo.network import Port
-from idaes.core import (declare_process_block_class,
-                        PhysicalParameterBlock,
-                        StateBlock,
-                        StateBlockData,
-                        ReactionParameterBlock,
-                        useDefault)
-from idaes.core.phases import PhaseType as PT
-from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block,
-                                    is_state_block,
-                                    list_of_floats,
-                                    list_of_strings,
-                                    list_of_phase_types,
-                                    is_port,
-                                    is_time_domain,
-                                    is_transformation_method,
-                                    is_transformation_scheme,
-                                    DefaultBool)
+from idaes.core import (
+    declare_process_block_class,
+    PhysicalParameterBlock,
+    StateBlock,
+    StateBlockData,
+    ReactionParameterBlock,
+    useDefault,
+)
+from idaes.core.base.phases import PhaseType as PT
+from idaes.core.util.config import (
+    is_physical_parameter_block,
+    is_reaction_parameter_block,
+    is_state_block,
+    list_of_floats,
+    list_of_strings,
+    list_of_phase_types,
+    is_port,
+    is_time_domain,
+    is_transformation_method,
+    is_transformation_scheme,
+    DefaultBool,
+)
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -141,11 +145,11 @@ def test_is_state_block_fails():
 @pytest.mark.unit
 def test_list_of_strings():
     # Test list_of_strings=returns correctly
-    assert list_of_strings(1) == ['1']  # int
-    assert list_of_strings([1, 2, 3]) == ['1', '2', '3']  # list of ints
-    assert list_of_strings(1.0) == ['1.0']  # float
+    assert list_of_strings(1) == ["1"]  # int
+    assert list_of_strings([1, 2, 3]) == ["1", "2", "3"]  # list of ints
+    assert list_of_strings(1.0) == ["1.0"]  # float
     # list of floats
-    assert list_of_strings([1.0, 2.0, 3.0]) == ['1.0', '2.0', '3.0']
+    assert list_of_strings([1.0, 2.0, 3.0]) == ["1.0", "2.0", "3.0"]
     assert list_of_strings("foo") == ["foo"]  # str
     assert list_of_strings(["foo", "bar"]) == ["foo", "bar"]  # list of strs
 
@@ -225,11 +229,9 @@ def test_is_time_domain_errors():
 
 @pytest.mark.unit
 def test_is_transformation_method():
-    assert is_transformation_method("dae.finite_difference") == \
-        "dae.finite_difference"
+    assert is_transformation_method("dae.finite_difference") == "dae.finite_difference"
 
-    assert is_transformation_method("dae.collocation") == \
-        "dae.collocation"
+    assert is_transformation_method("dae.collocation") == "dae.collocation"
 
     with pytest.raises(ConfigurationError):
         is_transformation_method("dea.finite_difference")
@@ -250,8 +252,10 @@ def test_is_transformation_scheme():
 def test_list_of_phase_types():
     assert list_of_phase_types(PT.liquidPhase) == [PT.liquidPhase]
     assert list_of_phase_types([PT.liquidPhase]) == [PT.liquidPhase]
-    assert list_of_phase_types([PT.liquidPhase, PT.vaporPhase]) == \
-        [PT.liquidPhase, PT.vaporPhase]
+    assert list_of_phase_types([PT.liquidPhase, PT.vaporPhase]) == [
+        PT.liquidPhase,
+        PT.vaporPhase,
+    ]
     with pytest.raises(ValueError):
         list_of_phase_types("foo")
 

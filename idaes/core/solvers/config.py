@@ -17,10 +17,10 @@ import idaes
 class SolverWrapper(object):
     def __init__(self, name, register=True):
         if name is None:
-            name = 'default'
+            name = "default"
         self.name = name
         self.registered = register
-        if name == 'default':
+        if name == "default":
             self.solver = None
             doc = "IDAES Configured Default Solver"
         else:
@@ -38,8 +38,11 @@ class SolverWrapper(object):
         else:
             name = self.name
             solver = self.solver
-        if name in idaes.cfg and (idaes.cfg.use_idaes_solver_config or \
-            name == "default" or not self.registered):
+        if name in idaes.cfg and (
+            idaes.cfg.use_idaes_solver_config
+            or name == "default"
+            or not self.registered
+        ):
             for k, v in idaes.cfg[name].items():
                 if k not in kwargs:
                     kwargs[k] = v
@@ -67,7 +70,7 @@ def use_idaes_solver_configuration_defaults(b=True):
         None
     """
     idaes.cfg.use_idaes_solver_config = b
-    if b: # This will let you explicitly state you don't want any part of this
+    if b:  # This will let you explicitly state you don't want any part of this
         # so if you only do "use_idaes_solver_configuration_defaults(False)" up-
         # front you are saying I know this stuff exists and I must insist you
         # don't use it, of course you can still implicitly not use it.  You can
@@ -78,5 +81,5 @@ def use_idaes_solver_configuration_defaults(b=True):
             if isinstance(SolverFactory.get_class(c), SolverWrapper):
                 continue
             SolverWrapper(c)
-        if 'default' not in SolverFactory:
-            SolverWrapper('default')
+        if "default" not in SolverFactory:
+            SolverWrapper("default")

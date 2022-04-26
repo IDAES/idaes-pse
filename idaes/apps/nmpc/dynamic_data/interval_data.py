@@ -92,16 +92,9 @@ def interval_data_from_time_series(data, use_left_endpoint=False):
     its right endpoint.
 
     In:
-    (
-        [t0, ...],
-        {
-            str(cuid): [value0, ...],
-        },
-    )
+        ([t0, ...], {str(cuid): [value0, ...], },)
     Out:
-    {
-        str(cuid): {(t0, t1): value0 or value1, ...},
-    }
+        {str(cuid): {(t0, t1): value0 or value1, ...},}
 
     Arguments
     ---------
