@@ -12,6 +12,7 @@
 #################################################################################
 
 from numbers import Real
+from math import isclose
 from abc import ABC, abstractmethod
 
 
@@ -72,12 +73,12 @@ class RealValueValidator(BaseValidator):
         if not isinstance(value, Real):
             raise TypeError(f"Value for {self.prop_name} shoulde be real numbers.")
 
-        if self.min_val is not None and value < self.min_val:
+        if self.min_val is not None and value < self.min_val and not isclose(value, self.min_val):
             raise ValueError(
                 f"Value should be greater than or equal to {self.min_val}."
             )
 
-        if self.max_val is not None and value > self.max_val:
+        if self.max_val is not None and value > self.max_val and not isclose(value, self.max_val):
             raise ValueError(f"Value should be less than or equal to {self.max_val}.")
 
 
@@ -109,7 +110,7 @@ class AtLeastPminValidator(BaseValidator):
         if not isinstance(value, Real):
             raise TypeError(f"Value for {self.prop_name} shoulde be real numbers.")
 
-        if value < pmin:
+        if value < pmin and not isclose(value, pmin):
             raise ValueError(
                 f"Value for {self.prop_name} shoulde be greater or equal to Pmin."
             )
@@ -147,6 +148,7 @@ class GeneratorModelData:
         startup_cost_pairs=None,
         fixed_commitment=None,
     ):
+
         self.gen_name = gen_name
         self.generator_type = generator_type
         self.p_min = p_min
