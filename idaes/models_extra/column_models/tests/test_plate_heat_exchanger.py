@@ -16,24 +16,28 @@ Author: Akula Paul
 """
 
 import pytest
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Param,
-                           units as pyunits,
-                           value)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Param,
+    units as pyunits,
+    value,
+)
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.column_models.plate_heat_exchanger import (
-    PlateHeatExchanger as PHE)
+    PlateHeatExchanger as PHE,
+)
 
 from idaes.models.properties.modular_properties.base.generic_property import (
-    GenericParameterBlock)
-from idaes.models_extra.column_models.properties.MEA_solvent \
-    import configuration as aqueous_mea
+    GenericParameterBlock,
+)
+from idaes.models_extra.column_models.properties.MEA_solvent import (
+    configuration as aqueous_mea,
+)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 
 # -----------------------------------------------------------------------------
@@ -49,15 +53,15 @@ def test_config():
     m.fs.hotside_properties = GenericParameterBlock(default=aqueous_mea)
     m.fs.coldside_properties = GenericParameterBlock(default=aqueous_mea)
 
-    m.fs.unit = PHE(default={'passes': 4,
-                             'channels_per_pass': 12,
-                             'number_of_divider_plates': 2,
-                             "hot_side": {
-                                 "property_package": m.fs.hotside_properties
-                             },
-                             "cold_side": {
-                                 "property_package": m.fs.coldside_properties
-                             }})
+    m.fs.unit = PHE(
+        default={
+            "passes": 4,
+            "channels_per_pass": 12,
+            "number_of_divider_plates": 2,
+            "hot_side": {"property_package": m.fs.hotside_properties},
+            "cold_side": {"property_package": m.fs.coldside_properties},
+        }
+    )
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 7
@@ -73,12 +77,15 @@ class TestPHE(object):
         m.fs.hotside_properties = GenericParameterBlock(default=aqueous_mea)
         m.fs.coldside_properties = GenericParameterBlock(default=aqueous_mea)
 
-        m.fs.unit = PHE(default={
-            'passes': 4,
-            'channels_per_pass': 12,
-            'number_of_divider_plates': 2,
-            "hot_side": {"property_package": m.fs.hotside_properties},
-            "cold_side": {"property_package": m.fs.coldside_properties}})
+        m.fs.unit = PHE(
+            default={
+                "passes": 4,
+                "channels_per_pass": 12,
+                "number_of_divider_plates": 2,
+                "hot_side": {"property_package": m.fs.hotside_properties},
+                "cold_side": {"property_package": m.fs.coldside_properties},
+            }
+        )
 
         # hot fluid
         m.fs.unit.hot_inlet.flow_mol[0].fix(60.54879)
@@ -160,9 +167,8 @@ class TestPHE(object):
     @pytest.mark.component
     def test_initialize(self, phe):
         initialization_tester(
-            phe,
-            duty=(245000, pyunits.W),
-            optarg={"bound_push": 1e-8, "mu_init": 1e-8})
+            phe, duty=(245000, pyunits.W), optarg={"bound_push": 1e-8, "mu_init": 1e-8}
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -178,76 +184,103 @@ class TestPHE(object):
     @pytest.mark.component
     def test_solution(self, phe):
         # phe.fs.unit.display()
-        assert (pytest.approx(182244.65, rel=1e-5) ==
-                value(phe.fs.unit.hot_outlet.pressure[0]))
-        assert (pytest.approx(177366.53, rel=1e-5) ==
-                value(phe.fs.unit.cold_outlet.pressure[0]))
+        assert pytest.approx(182244.65, rel=1e-5) == value(
+            phe.fs.unit.hot_outlet.pressure[0]
+        )
+        assert pytest.approx(177366.53, rel=1e-5) == value(
+            phe.fs.unit.cold_outlet.pressure[0]
+        )
 
-        assert pytest.approx(685.730, rel=1e-5) == value(
-            phe.fs.unit.Re_hot[0])
-        assert pytest.approx(196.018, rel=1e-5) == value(
-            phe.fs.unit.Re_cold[0])
-        assert pytest.approx(4.55441, rel=1e-5) == value(
-            phe.fs.unit.Pr_hot[0])
-        assert pytest.approx(15.0566, rel=1e-5) == value(
-            phe.fs.unit.Pr_cold[0])
+        assert pytest.approx(685.730, rel=1e-5) == value(phe.fs.unit.Re_hot[0])
+        assert pytest.approx(196.018, rel=1e-5) == value(phe.fs.unit.Re_cold[0])
+        assert pytest.approx(4.55441, rel=1e-5) == value(phe.fs.unit.Pr_hot[0])
+        assert pytest.approx(15.0566, rel=1e-5) == value(phe.fs.unit.Pr_cold[0])
         assert pytest.approx(3691.35, rel=1e-5) == value(
-            phe.fs.unit.heat_transfer_coefficient_hot_side[0])
+            phe.fs.unit.heat_transfer_coefficient_hot_side[0]
+        )
         assert pytest.approx(2610.81, rel=1e-5) == value(
-            phe.fs.unit.heat_transfer_coefficient_cold_side[0])
+            phe.fs.unit.heat_transfer_coefficient_cold_side[0]
+        )
         assert pytest.approx(1170.34, rel=1e-5) == value(
-            phe.fs.unit.heat_transfer_coefficient[0])
+            phe.fs.unit.heat_transfer_coefficient[0]
+        )
 
-        assert pytest.approx(24.4118, rel=1e-5) == value(
-            phe.fs.unit.NTU[0])
-        assert pytest.approx(0.971227, rel=1e-5) == value(
-            phe.fs.unit.Cratio[0])
-        assert pytest.approx(0.676902, rel=1e-5) == value(
-            phe.fs.unit.effectiveness[0])
+        assert pytest.approx(24.4118, rel=1e-5) == value(phe.fs.unit.NTU[0])
+        assert pytest.approx(0.971227, rel=1e-5) == value(phe.fs.unit.Cratio[0])
+        assert pytest.approx(0.676902, rel=1e-5) == value(phe.fs.unit.effectiveness[0])
 
-        assert pytest.approx(244327, rel=1e-5) == value(
-            phe.fs.unit.heat_duty[0])
+        assert pytest.approx(244327, rel=1e-5) == value(phe.fs.unit.heat_duty[0])
 
-        assert (pytest.approx(365.288, rel=1e-5) ==
-                value(phe.fs.unit.hot_outlet.temperature[0]))
-        assert (pytest.approx(356.952, rel=1e-5) ==
-                value(phe.fs.unit.cold_outlet.temperature[0]))
+        assert pytest.approx(365.288, rel=1e-5) == value(
+            phe.fs.unit.hot_outlet.temperature[0]
+        )
+        assert pytest.approx(356.952, rel=1e-5) == value(
+            phe.fs.unit.cold_outlet.temperature[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, phe):
         # Mass conservation test
-        assert abs(value(phe.fs.unit.hot_inlet.flow_mol[0] -
-                         phe.fs.unit.hot_outlet.flow_mol[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    phe.fs.unit.hot_inlet.flow_mol[0]
+                    - phe.fs.unit.hot_outlet.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
 
         for j in phe.fs.hotside_properties.apparent_species_set:
-            assert abs(value(
-                phe.fs.unit.hot_inlet.flow_mol[0] *
-                phe.fs.unit.hot_inlet.mole_frac_comp[0, j] -
-                phe.fs.unit.hot_outlet.flow_mol[0] *
-                phe.fs.unit.hot_outlet.mole_frac_comp[0, j])) <= 1e-6
+            assert (
+                abs(
+                    value(
+                        phe.fs.unit.hot_inlet.flow_mol[0]
+                        * phe.fs.unit.hot_inlet.mole_frac_comp[0, j]
+                        - phe.fs.unit.hot_outlet.flow_mol[0]
+                        * phe.fs.unit.hot_outlet.mole_frac_comp[0, j]
+                    )
+                )
+                <= 1e-6
+            )
 
-        assert abs(value(phe.fs.unit.cold_inlet.flow_mol[0] -
-                         phe.fs.unit.cold_outlet.flow_mol[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    phe.fs.unit.cold_inlet.flow_mol[0]
+                    - phe.fs.unit.cold_outlet.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
 
         for j in phe.fs.coldside_properties.apparent_species_set:
-            assert abs(value(
-                phe.fs.unit.cold_inlet.flow_mol[0] *
-                phe.fs.unit.cold_inlet.mole_frac_comp[0, j] -
-                phe.fs.unit.cold_outlet.flow_mol[0] *
-                phe.fs.unit.cold_outlet.mole_frac_comp[0, j])) <= 1e-6
+            assert (
+                abs(
+                    value(
+                        phe.fs.unit.cold_inlet.flow_mol[0]
+                        * phe.fs.unit.cold_inlet.mole_frac_comp[0, j]
+                        - phe.fs.unit.cold_outlet.flow_mol[0]
+                        * phe.fs.unit.cold_outlet.mole_frac_comp[0, j]
+                    )
+                )
+                <= 1e-6
+            )
 
         # Energy conservation test
-        assert abs(value(
-            phe.fs.unit.hot_side.properties_in[
-                0]._enthalpy_flow_term["Liq"] +
-            phe.fs.unit.cold_side.properties_in[
-                0]._enthalpy_flow_term["Liq"] -
-            phe.fs.unit.hot_side.properties_out[
-                0]._enthalpy_flow_term["Liq"] -
-            phe.fs.unit.cold_side.properties_out[
-                0]._enthalpy_flow_term["Liq"])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    phe.fs.unit.hot_side.properties_in[0]._enthalpy_flow_term["Liq"]
+                    + phe.fs.unit.cold_side.properties_in[0]._enthalpy_flow_term["Liq"]
+                    - phe.fs.unit.hot_side.properties_out[0]._enthalpy_flow_term["Liq"]
+                    - phe.fs.unit.cold_side.properties_out[0]._enthalpy_flow_term["Liq"]
+                )
+            )
+            <= 1e-6
+        )
 
     # @pytest.mark.ui
     # @pytest.mark.unit
