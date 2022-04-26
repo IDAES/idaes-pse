@@ -64,7 +64,7 @@ def common_components(nt, nz, ncomp, nreact):
             "ds_rxn": nz * nt,
             "dh_rxn": nz * nt,
             "dg_rxn": nz * nt,
-            "nernst_potential": nz * nt,
+            "potential_nernst": nz * nt,
             "log_exchange_current_density": nz * nt,
             "reaction_rate_per_unit_area": nz * nt,
             "voltage_drop_total": nz * nt,
@@ -114,8 +114,6 @@ def modelFuel():
                 "H2": -0.5,
                 "H2O": 0.5,
                 "N2": 0,
-                # "Vac": 0.5,
-                # "O^2-": -0.5,
                 "e^-": 1.0,
             },
             "inert_species": ["N2"],
@@ -163,8 +161,6 @@ def modelOxygen():
             "control_volume_zfaces": zfaces,
             "component_list": o2_comps,
             "reaction_stoichiometry": {"O2": -0.25,
-                                       # "Vac": -0.5,
-                                       # "O^2-": 0.5,
                                        "e^-": -1.0},
             "inert_species": ["N2"],
         }
@@ -369,7 +365,7 @@ def modelFuelAndOxygen(include_solid_species):
 
     @m.fs.Expression(m.fs.time, m.fs.fuel_tpb.iznodes)
     def voltage_difference(b, t, iz):
-        return b.fuel_tpb.nernst_potential[t,iz] + b.oxygen_tpb.nernst_potential[t,iz] - (
+        return b.fuel_tpb.potential_nernst[t,iz] + b.oxygen_tpb.potential_nernst[t,iz] - (
             b.fuel_tpb.voltage_drop_total[t,iz] + b.oxygen_tpb.voltage_drop_total[t,iz])
 
     @m.fs.Expression(m.fs.time, m.fs.fuel_tpb.iznodes)

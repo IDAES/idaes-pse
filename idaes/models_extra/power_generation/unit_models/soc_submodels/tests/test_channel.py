@@ -117,7 +117,7 @@ def modelNoHoldup():
             "time_units": pyo.units.s,
         }
     )
-    m.fs.oxygen_chan = soc.SocChannel(
+    m.fs.oxygen_channel = soc.SocChannel(
         default={
             "has_holdup": False,
             "control_volume_zfaces": zfaces,
@@ -126,12 +126,12 @@ def modelNoHoldup():
             "component_list": ["O2", "H2O"],
         }
     )
-    m.fs.oxygen_chan.length_x.fix(0.002)
-    m.fs.oxygen_chan.heat_transfer_coefficient.fix(100)
-    m.fs.oxygen_chan.length_y.fix(0.08)
-    m.fs.oxygen_chan.length_z.fix(0.08)
-    m.fs.oxygen_chan.temperature_z.fix(1000)
-    fix_boundary_conditions(m.fs.oxygen_chan)
+    m.fs.oxygen_channel.length_x.fix(0.002)
+    m.fs.oxygen_channel.heat_transfer_coefficient.fix(100)
+    m.fs.oxygen_channel.length_y.fix(0.08)
+    m.fs.oxygen_channel.length_z.fix(0.08)
+    m.fs.oxygen_channel.temperature_z.fix(1000)
+    fix_boundary_conditions(m.fs.oxygen_channel)
     return m
 
 
@@ -143,7 +143,7 @@ def modelHoldupNotDynamic():
         dynamic=False, time_set=time_set, zfaces=zfaces
     )
 
-    m.fs.fuel_chan = soc.SocChannel(
+    m.fs.fuel_channel = soc.SocChannel(
         default={
             "has_holdup": True,
             "control_volume_zfaces": zfaces,
@@ -155,16 +155,16 @@ def modelHoldupNotDynamic():
             "component_list": ["H2", "H2O", "N2"],
         }
     )
-    m.fs.fuel_chan.length_x.fix(0.002)
-    m.fs.fuel_chan.heat_transfer_coefficient.fix(100)
-    fix_boundary_conditions(m.fs.fuel_chan)
+    m.fs.fuel_channel.length_x.fix(0.002)
+    m.fs.fuel_channel.heat_transfer_coefficient.fix(100)
+    fix_boundary_conditions(m.fs.fuel_channel)
     return m
 
 
 @pytest.mark.build
 @pytest.mark.unit
 def test_build_modelNoHoldup(modelNoHoldup):
-    channel = modelNoHoldup.fs.oxygen_chan
+    channel = modelNoHoldup.fs.oxygen_channel
     nz = len(channel.znodes)
     nt = len(channel.flowsheet().time)
     ncomp = len(channel.component_list)
@@ -189,7 +189,7 @@ def test_build_modelNoHoldup(modelNoHoldup):
 @pytest.mark.build
 @pytest.mark.unit
 def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
-    channel = modelHoldupNotDynamic.fs.fuel_chan
+    channel = modelHoldupNotDynamic.fs.fuel_channel
     nz = len(channel.znodes)
     nt = len(channel.flowsheet().time)
     ncomp = len(channel.component_list)

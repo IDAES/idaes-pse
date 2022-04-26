@@ -150,13 +150,13 @@ def model_func():
         }
     )
 
-    m.fs.cell.fuel_chan.length_x.fix(1.09e-3)
-    m.fs.cell.oxygen_chan.length_x.fix(1.09e-3)
+    m.fs.cell.fuel_channel.length_x.fix(1.09e-3)
+    m.fs.cell.oxygen_channel.length_x.fix(1.09e-3)
 
     m.fs.cell.length_y.fix(0.08)
 
     m.fs.cell.length_z.fix(0.08)
-    m.fs.cell.fuel_chan.heat_transfer_coefficient.fix(100)
+    m.fs.cell.fuel_channel.heat_transfer_coefficient.fix(100)
 
     m.fs.cell.contact_flow_mesh_fuel_electrode.log_preexponential_factor.fix(
         pyo.log(0.55e-4)
@@ -181,7 +181,7 @@ def model_func():
     m.fs.cell.contact_interconnect_oxygen_flow_mesh.thermal_exponent_dividend.fix(0)
     m.fs.cell.contact_interconnect_oxygen_flow_mesh.contact_fraction.fix(1)
 
-    m.fs.cell.oxygen_chan.heat_transfer_coefficient.fix(100)
+    m.fs.cell.oxygen_channel.heat_transfer_coefficient.fix(100)
 
     m.fs.cell.fuel_electrode.length_x.fix(23e-6)
     m.fs.cell.fuel_electrode.porosity.fix(0.37)

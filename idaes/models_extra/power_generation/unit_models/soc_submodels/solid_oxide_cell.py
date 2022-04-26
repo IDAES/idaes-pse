@@ -221,7 +221,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 " argument was set to {}.".format(self.name, self.config.flow_pattern)
             )
 
-        self.fuel_chan = soc.SocChannel(
+        self.fuel_channel = soc.SocChannel(
             default={
                 "has_holdup": has_holdup,
                 "dynamic": dynamic,
@@ -229,13 +229,13 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "temperature_z": self.temperature_z,
-                "opposite_flow": False,
+                "opposite_flow": False,  # Fuel channel flows from z=0 to z=1 no matter what
                 "below_electrode": True,
                 "component_list": self.fuel_component_list,
                 "include_temperature_x_thermo": include_temp_x_thermo,
             }
         )
-        self.oxygen_chan = soc.SocChannel(
+        self.oxygen_channel = soc.SocChannel(
             default={
                 "has_holdup": has_holdup,
                 "dynamic": dynamic,
@@ -244,7 +244,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_y": self.length_y,
                 "temperature_z": self.temperature_z,
                 "below_electrode": False,
-                "opposite_flow": opposite_flow,
+                "opposite_flow": opposite_flow,  # Oxygen channel flow direction depends on config
                 "component_list": self.oxygen_component_list,
                 "include_temperature_x_thermo": include_temp_x_thermo,
             }
@@ -258,8 +258,8 @@ class SolidOxideCellData(UnitModelBlockData):
                     "length_z": self.length_z,
                     "length_y": self.length_y,
                     "temperature_z": self.temperature_z,
-                    "temperature_deviation_x": self.fuel_chan.temperature_deviation_x0,
-                    "heat_flux_x1": self.fuel_chan.heat_flux_x0,
+                    "temperature_deviation_x": self.fuel_channel.temperature_deviation_x0,
+                    "heat_flux_x1": self.fuel_channel.heat_flux_x0,
                     "current_density": self.current_density,
                     "include_temperature_x_thermo": include_temp_x_thermo,
                 }
@@ -272,8 +272,8 @@ class SolidOxideCellData(UnitModelBlockData):
                     "length_z": self.length_z,
                     "length_y": self.length_y,
                     "temperature_z": self.temperature_z,
-                    "temperature_deviation_x": self.fuel_chan.temperature_deviation_x1,
-                    "heat_flux_x0": self.fuel_chan.heat_flux_x1,
+                    "temperature_deviation_x": self.fuel_channel.temperature_deviation_x1,
+                    "heat_flux_x0": self.fuel_channel.heat_flux_x1,
                     "current_density": self.current_density,
                     "include_temperature_x_thermo": include_temp_x_thermo,
                 }
@@ -286,8 +286,8 @@ class SolidOxideCellData(UnitModelBlockData):
                     "length_z": self.length_z,
                     "length_y": self.length_y,
                     "temperature_z": self.temperature_z,
-                    "temperature_deviation_x": self.oxygen_chan.temperature_deviation_x1,
-                    "heat_flux_x0": self.oxygen_chan.heat_flux_x1,
+                    "temperature_deviation_x": self.oxygen_channel.temperature_deviation_x1,
+                    "heat_flux_x0": self.oxygen_channel.heat_flux_x1,
                     "current_density": self.current_density,
                     "include_temperature_x_thermo": include_temp_x_thermo,
                 }
@@ -300,8 +300,8 @@ class SolidOxideCellData(UnitModelBlockData):
                     "length_z": self.length_z,
                     "length_y": self.length_y,
                     "temperature_z": self.temperature_z,
-                    "temperature_deviation_x": self.oxygen_chan.temperature_deviation_x0,
-                    "heat_flux_x1": self.oxygen_chan.heat_flux_x0,
+                    "temperature_deviation_x": self.oxygen_channel.temperature_deviation_x0,
+                    "heat_flux_x1": self.oxygen_channel.heat_flux_x0,
                     "current_density": self.current_density,
                     "include_temperature_x_thermo": include_temp_x_thermo,
                 }
@@ -319,26 +319,26 @@ class SolidOxideCellData(UnitModelBlockData):
                 self.contact_interconnect_fuel_flow_mesh.heat_flux_x0
             )
         else:
-            fuel_electrode_heat_flux_x0 = self.fuel_chan.heat_flux_x1
-            oxygen_electrode_heat_flux_x1 = self.oxygen_chan.heat_flux_x0
-            interconnect_heat_flux_x0 = self.oxygen_chan.heat_flux_x1
-            interconnect_heat_flux_x1 = self.fuel_chan.heat_flux_x0
+            fuel_electrode_heat_flux_x0 = self.fuel_channel.heat_flux_x1
+            oxygen_electrode_heat_flux_x1 = self.oxygen_channel.heat_flux_x0
+            interconnect_heat_flux_x0 = self.oxygen_channel.heat_flux_x1
+            interconnect_heat_flux_x1 = self.fuel_channel.heat_flux_x0
         self.fuel_electrode = soc.SocElectrode(
             default={
                 "has_holdup": has_holdup,
                 "dynamic": dynamic,
                 "control_volume_zfaces": self.config.control_volume_zfaces,
                 "control_volume_xfaces": self.config.control_volume_xfaces_fuel_electrode,
-                "component_list": self.fuel_chan.component_list,
+                "component_list": self.fuel_channel.component_list,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
-                "conc_mol_comp_ref": self.fuel_chan.conc_mol_comp,
-                "dconc_mol_comp_refdt": self.fuel_chan.dconc_mol_compdt,
-                "conc_mol_comp_deviation_x0": self.fuel_chan.conc_mol_comp_deviation_x1,
-                "material_flux_x0": self.fuel_chan.material_flux_x1,
+                "conc_mol_comp_ref": self.fuel_channel.conc_mol_comp,
+                "dconc_mol_comp_refdt": self.fuel_channel.dconc_mol_compdt,
+                "conc_mol_comp_deviation_x0": self.fuel_channel.conc_mol_comp_deviation_x1,
+                "material_flux_x0": self.fuel_channel.material_flux_x1,
                 "heat_flux_x0": fuel_electrode_heat_flux_x0,
                 "temperature_z": self.temperature_z,
-                "temperature_deviation_x0": self.fuel_chan.temperature_deviation_x1,
+                "temperature_deviation_x0": self.fuel_channel.temperature_deviation_x1,
                 "current_density": self.current_density,
                 "include_temperature_x_thermo": include_temp_x_thermo,
             }
@@ -349,16 +349,16 @@ class SolidOxideCellData(UnitModelBlockData):
                 "dynamic": dynamic,
                 "control_volume_zfaces": self.config.control_volume_zfaces,
                 "control_volume_xfaces": self.config.control_volume_xfaces_oxygen_electrode,
-                "component_list": self.oxygen_chan.component_list,
+                "component_list": self.oxygen_channel.component_list,
                 "length_z": self.length_z,
                 "length_y": self.length_y,
-                "conc_mol_comp_ref": self.oxygen_chan.conc_mol_comp,
-                "dconc_mol_comp_refdt": self.oxygen_chan.dconc_mol_compdt,
-                "conc_mol_comp_deviation_x1": self.oxygen_chan.conc_mol_comp_deviation_x0,
-                "material_flux_x1": self.oxygen_chan.material_flux_x0,
+                "conc_mol_comp_ref": self.oxygen_channel.conc_mol_comp,
+                "dconc_mol_comp_refdt": self.oxygen_channel.dconc_mol_compdt,
+                "conc_mol_comp_deviation_x1": self.oxygen_channel.conc_mol_comp_deviation_x0,
+                "material_flux_x1": self.oxygen_channel.material_flux_x0,
                 "heat_flux_x1": oxygen_electrode_heat_flux_x1,
                 "temperature_z": self.temperature_z,
-                "temperature_deviation_x1": self.oxygen_chan.temperature_deviation_x0,
+                "temperature_deviation_x1": self.oxygen_channel.temperature_deviation_x0,
                 "current_density": self.current_density,
                 "include_temperature_x_thermo": include_temp_x_thermo,
             }
@@ -377,7 +377,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "temperature_z": self.temperature_z,
                 "temperature_deviation_x": self.fuel_electrode.temperature_deviation_x1,
                 "heat_flux_x0": self.fuel_electrode.heat_flux_x1,
-                "conc_mol_comp_ref": self.fuel_chan.conc_mol_comp,
+                "conc_mol_comp_ref": self.fuel_channel.conc_mol_comp,
                 "conc_mol_comp_deviation_x": self.fuel_electrode.conc_mol_comp_deviation_x1,
                 "material_flux_x": self.fuel_electrode.material_flux_x1,
                 "include_temperature_x_thermo": include_temp_x_thermo,
@@ -398,7 +398,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "temperature_z": self.temperature_z,
                 "temperature_deviation_x": self.oxygen_electrode.temperature_deviation_x0,
                 "heat_flux_x1": self.oxygen_electrode.heat_flux_x0,
-                "conc_mol_comp_ref": self.oxygen_chan.conc_mol_comp,
+                "conc_mol_comp_ref": self.oxygen_channel.conc_mol_comp,
                 "conc_mol_comp_deviation_x": self.oxygen_electrode.conc_mol_comp_deviation_x0,
                 "material_flux_x": self.oxygen_electrode.material_flux_x0,
                 "include_temperature_x_thermo": include_temp_x_thermo,
@@ -423,7 +423,7 @@ class SolidOxideCellData(UnitModelBlockData):
             }
         )
         self.state_vars = {"flow_mol", "mole_frac_comp", "temperature", "pressure"}
-        for chan, alias in zip([self.fuel_chan, self.oxygen_chan], ["fuel", "oxygen"]):
+        for chan, alias in zip([self.fuel_channel, self.oxygen_channel], ["fuel", "oxygen"]):
             setattr(
                 self,
                 alias + "_inlet",
@@ -444,7 +444,7 @@ class SolidOxideCellData(UnitModelBlockData):
             )
 
         @self.Expression(tset, iznodes)
-        def eta_contact(b, t, iz):
+        def voltage_drop_contact(b, t, iz):
             if self.config.include_contact_resistance:
                 return (
                     b.contact_interconnect_fuel_flow_mesh.voltage_drop[t, iz]
@@ -456,12 +456,12 @@ class SolidOxideCellData(UnitModelBlockData):
                 return 0
 
         @self.Expression(tset, iznodes)
-        def eta_ohm(b, t, iz):
+        def voltage_drop_ohmic(b, t, iz):
             return (
                 b.electrolyte.voltage_drop_total[t, iz]
                 + b.fuel_electrode.voltage_drop_total[t, iz]
                 + b.oxygen_electrode.voltage_drop_total[t, iz]
-                + b.eta_contact[t, iz]
+                + b.voltage_drop_contact[t, iz]
             )
 
         if self.config.flux_through_interconnect:
@@ -484,8 +484,8 @@ class SolidOxideCellData(UnitModelBlockData):
         def mean_temperature_eqn(b, t, iz):
             return (
                 0
-                == b.fuel_chan.temperature_deviation_x[t, iz]
-                + b.oxygen_chan.temperature_deviation_x[t, iz]
+                == b.fuel_channel.temperature_deviation_x[t, iz]
+                + b.oxygen_channel.temperature_deviation_x[t, iz]
             )
 
         if dynamic:
@@ -494,10 +494,10 @@ class SolidOxideCellData(UnitModelBlockData):
         @self.Constraint(tset, iznodes)
         def potential_eqn(b, t, iz):
             return b.potential[t] == (
-                b.fuel_tpb.nernst_potential[t, iz]
-                + b.oxygen_tpb.nernst_potential[t, iz]
+                b.fuel_tpb.potential_nernst[t, iz]
+                + b.oxygen_tpb.potential_nernst[t, iz]
                 - (
-                    b.eta_ohm[t, iz]
+                    b.voltage_drop_ohmic[t, iz]
                     + b.fuel_tpb.voltage_drop_total[t, iz]
                     + b.oxygen_tpb.voltage_drop_total[t, iz]
                 )
@@ -570,30 +570,30 @@ class SolidOxideCellData(UnitModelBlockData):
 
         # Reset the fluxes to zero in case there are stale values
         init_log.info_high("Initializing Fuel Channel")
-        self.fuel_chan.material_flux_x1.fix(0)
-        self.fuel_chan.heat_flux_x0.fix(0)
-        self.fuel_chan.heat_flux_x1.fix(0)
-        self.fuel_chan.initialize_build(
+        self.fuel_channel.material_flux_x1.fix(0)
+        self.fuel_channel.heat_flux_x0.fix(0)
+        self.fuel_channel.heat_flux_x1.fix(0)
+        self.fuel_channel.initialize_build(
             outlvl=outlvl,
             solver=solver,
             optarg=optarg,
         )
-        self.fuel_chan.material_flux_x1.unfix()
-        self.fuel_chan.heat_flux_x0.unfix()
-        self.fuel_chan.heat_flux_x1.unfix()
+        self.fuel_channel.material_flux_x1.unfix()
+        self.fuel_channel.heat_flux_x0.unfix()
+        self.fuel_channel.heat_flux_x1.unfix()
 
         init_log.info_high("Initializing Oxygen Channel")
-        self.oxygen_chan.material_flux_x0.fix(0)
-        self.oxygen_chan.heat_flux_x0.fix(0)
-        self.oxygen_chan.heat_flux_x1.fix(0)
-        self.oxygen_chan.initialize_build(
+        self.oxygen_channel.material_flux_x0.fix(0)
+        self.oxygen_channel.heat_flux_x0.fix(0)
+        self.oxygen_channel.heat_flux_x1.fix(0)
+        self.oxygen_channel.initialize_build(
             outlvl=outlvl,
             solver=solver,
             optarg=optarg,
         )
-        self.oxygen_chan.material_flux_x0.unfix()
-        self.oxygen_chan.heat_flux_x0.unfix()
-        self.oxygen_chan.heat_flux_x1.unfix()
+        self.oxygen_channel.material_flux_x0.unfix()
+        self.oxygen_channel.heat_flux_x0.unfix()
+        self.oxygen_channel.heat_flux_x1.unfix()
         if self.config.include_contact_resistance:
             init_log.info_high("Initializing Contact Resistors")
 
@@ -751,8 +751,8 @@ class SolidOxideCellData(UnitModelBlockData):
         self.recursive_scaling()
 
     def model_check(self, steady_state=True):
-        self.fuel_chan.model_check()
-        self.oxygen_chan.model_check()
+        self.fuel_channel.model_check()
+        self.oxygen_channel.model_check()
         self.fuel_electrode.model_check()
         self.oxygen_electrode.model_check()
         self.electrolyte.model_check()
@@ -791,7 +791,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 sum_in = 0
                 sum_out = 0
                 for chan, comps in zip(
-                    [self.fuel_chan, self.oxygen_chan],
+                    [self.fuel_channel, self.oxygen_channel],
                     [self.fuel_component_list, self.oxygen_component_list],
                 ):
                     sum_in += sum(
@@ -810,14 +810,14 @@ class SolidOxideCellData(UnitModelBlockData):
                     )
 
             enth_in = (
-                self.fuel_chan.enth_mol_inlet[t] * self.fuel_chan.flow_mol_inlet[t]
-                + self.oxygen_chan.enth_mol_inlet[t]
-                * self.oxygen_chan.flow_mol_inlet[t]
+                self.fuel_channel.enth_mol_inlet[t] * self.fuel_channel.flow_mol_inlet[t]
+                + self.oxygen_channel.enth_mol_inlet[t]
+                * self.oxygen_channel.flow_mol_inlet[t]
             )
             enth_out = (
-                self.fuel_chan.enth_mol_outlet[t] * self.fuel_chan.flow_mol_outlet[t]
-                + self.oxygen_chan.enth_mol_outlet[t]
-                * self.oxygen_chan.flow_mol_outlet[t]
+                self.fuel_channel.enth_mol_outlet[t] * self.fuel_channel.flow_mol_outlet[t]
+                + self.oxygen_channel.enth_mol_outlet[t]
+                * self.oxygen_channel.flow_mol_outlet[t]
             )
             normal = max(
                 pyo.value(abs(enth_in)),
@@ -841,10 +841,10 @@ class SolidOxideCellData(UnitModelBlockData):
         sdf = common._set_default_factor
 
         submodels = [
-            self.fuel_chan,
+            self.fuel_channel,
             self.fuel_electrode,
             self.fuel_tpb,
-            self.oxygen_chan,
+            self.oxygen_channel,
             self.oxygen_electrode,
             self.oxygen_tpb,
             self.electrolyte,
@@ -893,7 +893,7 @@ class SolidOxideCellData(UnitModelBlockData):
                     else:
                         s_flux_j = sy_in_fuel[j] * s_react_flux
                     for var in [
-                        self.fuel_chan.material_flux_x1,
+                        self.fuel_channel.material_flux_x1,
                         self.fuel_electrode.material_flux_x1,
                     ]:
                         if gsf(var[t, iz, j]) is None:
@@ -906,7 +906,7 @@ class SolidOxideCellData(UnitModelBlockData):
                         s_flux_j = sy_in_oxygen[j] * s_react_flux
                     # s_flux_j = sy_in_oxygen[j]*s_mat_flux / max(abs(self.oxygen_tpb.tpb_stoich[j]),0.25)
                     for var in [
-                        self.oxygen_chan.material_flux_x0,
+                        self.oxygen_channel.material_flux_x0,
                         self.oxygen_electrode.material_flux_x0,
                     ]:
                         if gsf(var[t, iz, j]) is None:
@@ -944,7 +944,7 @@ class SolidOxideCellData(UnitModelBlockData):
                         )
                     else:
                         sq = gsf(
-                            self.fuel_chan.heat_flux_x0[t, iz],
+                            self.fuel_channel.heat_flux_x0[t, iz],
                             default=s_q_flux,
                         )
                         cst(

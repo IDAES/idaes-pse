@@ -275,7 +275,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             return b.dh_rxn[t, iz] - b.temperature[t, iz] * b.ds_rxn[t, iz]
 
         @self.Expression(tset, iznodes)
-        def nernst_potential(b, t, iz):
+        def potential_nernst(b, t, iz):
             if b.config.below_electrolyte:
                 return -b.dg_rxn[t, iz] / (_constF * b.reaction_stoichiometry["e^-"])
             else:
