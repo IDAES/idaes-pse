@@ -546,22 +546,22 @@
                     NaN
 =======
                     -Infinity,
-                    2
+                    "-"
                 ],
                 [
                     "mole_frac_comp benzene",
                     0.5,
-                    2
+                    "-"
                 ],
                 [
                     "mole_frac_comp toluene",
                     0.5,
-                    2
+                    "-"
                 ],
                 [
                     "temperature",
                     Infinity,
-                    2
+                    "-"
                 ],
                 [
                     "pressure",
