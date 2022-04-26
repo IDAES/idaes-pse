@@ -11,7 +11,6 @@
 # license information.
 #################################################################################
 
-from tkinter import Variable
 from pandas import DataFrame
 from collections import OrderedDict
 from pyomo.environ import value
