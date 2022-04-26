@@ -75,7 +75,9 @@ def test_create_model_data_object(generator_params, generator_data_object):
 )
 def test_create_model_data_with_non_real_numbers(param_name, value, generator_params):
     generator_params[param_name] = value
-    with pytest.raises(TypeError, match=f"Value for {param_name} shoulde be real numbers."):
+    with pytest.raises(
+        TypeError, match=f"Value for {param_name} shoulde be real numbers."
+    ):
         GeneratorModelData(**generator_params)
 
 
@@ -105,14 +107,20 @@ def test_create_model_data_with_less_than_pmin_data(
     param_name, value, generator_params
 ):
     generator_params[param_name] = value
-    with pytest.raises(ValueError, match=f"Value for {param_name} shoulde be greater or equal to Pmin."):
+    with pytest.raises(
+        ValueError, match=f"Value for {param_name} shoulde be greater or equal to Pmin."
+    ):
         GeneratorModelData(**generator_params)
+
 
 @pytest.mark.unit
 def test_invalid_fixed_commitment_value(generator_params):
     generator_params["fixed_commitment"] = 5
-    with pytest.raises(ValueError, match=r"^(Value for generator fixed commitment must be one of)"):
+    with pytest.raises(
+        ValueError, match=r"^(Value for generator fixed commitment must be one of)"
+    ):
         GeneratorModelData(**generator_params)
+
 
 @pytest.mark.unit
 def test_invalid_generator_name(generator_params):
@@ -120,33 +128,53 @@ def test_invalid_generator_name(generator_params):
     with pytest.raises(TypeError, match=r".*generator names must be str.*"):
         GeneratorModelData(**generator_params)
 
+
 @pytest.mark.unit
 def test_invalid_generator_type(generator_params):
     generator_params["generator_type"] = "nuclear"
-    with pytest.raises(ValueError, match=r"^(Value for generator types must be one of)"):
+    with pytest.raises(
+        ValueError, match=r"^(Value for generator types must be one of)"
+    ):
         GeneratorModelData(**generator_params)
 
+
 @pytest.mark.unit
-@pytest.mark.parametrize("param_name", ["production_cost_bid_pairs", "startup_cost_pairs"])
+@pytest.mark.parametrize(
+    "param_name", ["production_cost_bid_pairs", "startup_cost_pairs"]
+)
 def test_empty_bid_pairs(param_name, generator_params):
     generator_params[param_name] = None
-    with pytest.raises(ValueError, match=r"Empty production|startup cost pairs are provided."):
+    with pytest.raises(
+        ValueError, match=r"Empty production|startup cost pairs are provided."
+    ):
         GeneratorModelData(**generator_params)
+
 
 @pytest.mark.unit
 def test_bid_missing_pmin(generator_params):
-    generator_params["production_cost_bid_pairs"] = generator_params["production_cost_bid_pairs"][1:]
-    with pytest.raises(ValueError, match=r"^(The first power output in the bid should be the Pmin)"): 
+    generator_params["production_cost_bid_pairs"] = generator_params[
+        "production_cost_bid_pairs"
+    ][1:]
+    with pytest.raises(
+        ValueError, match=r"^(The first power output in the bid should be the Pmin)"
+    ):
         GeneratorModelData(**generator_params)
+
 
 @pytest.mark.unit
 def test_bid_missing_pmax(generator_params):
     generator_params["production_cost_bid_pairs"].pop()
-    with pytest.raises(ValueError, match=r"^(The last power output in the bid should be the Pmax)"):                         
+    with pytest.raises(
+        ValueError, match=r"^(The last power output in the bid should be the Pmax)"
+    ):
         GeneratorModelData(**generator_params)
+
 
 @pytest.mark.unit
 def test_invalid_start_up_bid(generator_params):
     generator_params["startup_cost_pairs"] = [(0, 0)]
-    with pytest.raises(ValueError, match=r"^(The first startup lag should be the same as minimum down time)"):                         
+    with pytest.raises(
+        ValueError,
+        match=r"^(The first startup lag should be the same as minimum down time)",
+    ):
         GeneratorModelData(**generator_params)
