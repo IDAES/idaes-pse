@@ -657,6 +657,9 @@ class KrigingModel:
 
         """
         t1 = np.array([variable_list])
+        if t1.ndim > 2:
+           t1 =  t1.reshape(1, len(variable_list))
+
         phi_var = []
         for i in range(0, self.x_data.shape[0]):
             curr_term = sum(

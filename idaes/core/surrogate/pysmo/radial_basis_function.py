@@ -1167,6 +1167,10 @@ class RadialBasisFunctions:
 
         """
         t1 = np.array([variable_list])
+
+        if t1.ndim > 2:
+           t1 =  t1.reshape(1, len(variable_list))
+
         basis_vector = []
         # Calculate distances from centres
         for i in range(0, self.centres.shape[0]):
