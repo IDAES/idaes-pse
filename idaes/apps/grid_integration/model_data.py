@@ -73,12 +73,20 @@ class RealValueValidator(BaseValidator):
         if not isinstance(value, Real):
             raise TypeError(f"Value for {self.prop_name} shoulde be real numbers.")
 
-        if self.min_val is not None and value < self.min_val and not isclose(value, self.min_val):
+        if (
+            self.min_val is not None
+            and value < self.min_val
+            and not isclose(value, self.min_val)
+        ):
             raise ValueError(
                 f"Value should be greater than or equal to {self.min_val}."
             )
 
-        if self.max_val is not None and value > self.max_val and not isclose(value, self.max_val):
+        if (
+            self.max_val is not None
+            and value > self.max_val
+            and not isclose(value, self.max_val)
+        ):
             raise ValueError(f"Value should be less than or equal to {self.max_val}.")
 
 
@@ -167,10 +175,38 @@ class GeneratorModelData:
             )
         self.fixed_commitment = fixed_commitment
 
-        self.default_bids = self._assemble_default_cost_bids(production_cost_bid_pairs)
-        self.default_startup_bids = self._assemble_default_startup_cost_bids(
-            startup_cost_pairs
-        )
+        self.p_cost = self._assemble_default_cost_bids(production_cost_bid_pairs)
+        self.startup_cost = self._assemble_default_startup_cost_bids(startup_cost_pairs)
+
+        # initialization for iterator
+        # get the collection of the params
+        self._collection = [
+            name
+            for name in dir(self)
+            if not name.startswith("__")
+            and not name.startswith("_")
+            and not callable(getattr(self, name))
+        ]
+        self._index = -1
+
+    def __iter__(self):
+        """
+        Make it iteratble.
+        """
+        return self
+
+    def __next__(self):
+        """
+        Implement iterator method.
+        """
+
+        self._index += 1
+        if self._index >= len(self._collection):
+            self._index = -1
+            raise StopIteration
+        else:
+            name = self._collection[self._index]
+            return name, getattr(self, name)
 
     @property
     def gen_name(self):
@@ -285,9 +321,7 @@ class GeneratorModelData:
                 f"The last power output in the bid should be the Pmax {self.p_max}, but {production_cost_bid_pairs[-1][0]} is provided."
             )
 
-        return {
-            power: marginal_cost for power, marginal_cost in production_cost_bid_pairs
-        }
+        return production_cost_bid_pairs
 
     def _assemble_default_startup_cost_bids(self, startup_cost_pairs):
 
@@ -311,7 +345,4 @@ class GeneratorModelData:
                 f"The first startup lag should be the same as minimum down time {self.min_down_time}, but {startup_cost_pairs[0][0]} is provided."
             )
 
-        return {
-            startup_lag: startup_cost
-            for startup_lag, startup_cost in startup_cost_pairs
-        }
+        return startup_cost_pairs

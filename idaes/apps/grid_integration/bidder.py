@@ -14,8 +14,8 @@ import pandas as pd
 import pyomo.environ as pyo
 from pyomo.opt.base.solvers import OptSolver
 import os
-from itertools import combinations
 from abc import ABC, abstractmethod
+from idaes.apps.grid_integration.utils import convert_marginal_costs_to_actual_costs
 
 from pyomo.common.dependencies import attempt_import
 
@@ -823,14 +823,9 @@ class Bidder(AbstractBidder):
                 pre_power = power
 
             # calculate the actual cost
-            pre_power = 0
-            pre_cost = 0
-            for power, marginal_cost in bids[t][gen].items():
-
-                delta_p = power - pre_power
-                bids[t][gen][power] = pre_cost + marginal_cost * delta_p
-                pre_power = power
-                pre_cost += marginal_cost * delta_p
+            bids[t][gen] = convert_marginal_costs_to_actual_costs(
+                list(bids[t][gen].items())
+            )
 
         # check if bids are convex
         for t in bids:
@@ -838,13 +833,13 @@ class Bidder(AbstractBidder):
                 temp_curve = {
                     "data_type": "cost_curve",
                     "cost_curve_type": "piecewise",
-                    "values": list(bids[t][gen].items()),
+                    "values": bids[t][gen],
                 }
                 tx_utils.validate_and_clean_cost_curve(
                     curve=temp_curve,
                     curve_type="cost_curve",
-                    p_min=min(bids[t][gen].keys()),
-                    p_max=max(bids[t][gen].keys()),
+                    p_min=min([p[0] for p in bids[t][gen]]),
+                    p_max=max([p[0] for p in bids[t][gen]]),
                     gen_name=gen,
                     t=t,
                 )
@@ -856,9 +851,9 @@ class Bidder(AbstractBidder):
             full_bids[t] = {}
             for gen in bids[t]:
                 full_bids[t][gen] = {}
-                full_bids[t][gen]["p_cost"] = list(bids[t][gen].items())
-                full_bids[t][gen]["p_min"] = min(bids[t][gen].keys())
-                full_bids[t][gen]["p_max"] = max(bids[t][gen].keys())
+                full_bids[t][gen]["p_cost"] = bids[t][gen]
+                full_bids[t][gen]["p_min"] = min([p[0] for p in bids[t][gen]])
+                full_bids[t][gen]["p_max"] = max([p[0] for p in bids[t][gen]])
                 full_bids[t][gen]["startup_capacity"] = full_bids[t][gen]["p_min"]
                 full_bids[t][gen]["shutdown_capacity"] = full_bids[t][gen]["p_min"]
 
