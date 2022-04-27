@@ -268,9 +268,9 @@ def test_initialization(model):
     cell.recursive_scaling()
 
     cell.initialize_build(
+        optarg={"nlp_scaling_method": "user-scaling"},
         current_density_guess=-2000,
         temperature_guess=1103.15,
-        optarg={"nlp_scaling_method": "user-scaling"},
     )
     cell.model_check()
     # Test whether fixed degrees of freedom remain fixed
@@ -413,9 +413,9 @@ def kazempoor_braun_replication(model):
         m.fs.cell.recursive_scaling()
 
         m.fs.cell.initialize_build(
+            optarg={"nlp_scaling_method": "user-scaling"},
             current_density_guess=0,
             temperature_guess=T_in,
-            optarg={"nlp_scaling_method": "user-scaling"},
         )
 
         results["voltage"].append(

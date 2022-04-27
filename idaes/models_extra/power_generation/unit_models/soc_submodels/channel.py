@@ -591,10 +591,6 @@ class SocChannelData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        material_flux_x_guess=None,
-        heat_flux_x1_guess=None,
-        heat_flux_x0_guess=None,
-        velocity_guess=None,
     ):
         # At present, this method does not fix inlet variables because they are
         # fixed at the cell level instead.

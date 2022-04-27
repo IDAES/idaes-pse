@@ -507,19 +507,30 @@ class SolidOxideCellData(UnitModelBlockData):
                 for iz in b.electrolyte.iznodes
             )
 
-    # TODO reorder initialization method to match base class.
     def initialize_build(
         self,
-        current_density_guess,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        material_flux_x_guess=None,
-        heat_flux_x1_guess=None,
-        heat_flux_x0_guess=None,
+        current_density_guess=None,
         temperature_guess=None,
-        velocity_guess=None,
     ):
+        t0 = self.flowsheet().time.first()
+        if temperature_guess is None:
+            temperature_guess = (
+                    self.fuel_channel.temperature_inlet[t0].value
+                    + self.oxygen_channel.temperature_inlet[t0].value
+            ) / 2
+            init_log.warning(
+                f"No guess provided for {self.name} average operating temperature, using average of "
+                 "channel inlet temperatures instead."
+            )
+        if current_density_guess is None:
+            current_density_guess = 0
+            init_log.warning(
+                f"No guess provided for {self.name} average current density, using initial guess of zero current density."
+            )
+
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         tset = self.flowsheet().config.time
