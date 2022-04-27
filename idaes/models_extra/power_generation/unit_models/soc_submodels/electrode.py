@@ -747,8 +747,8 @@ class SocElectrodeData(UnitModelBlockData):
                         self.conc_mol_comp_deviation_x[t, self.ixnodes.last(), iz, i],
                     )
 
-        slvr = get_solver(solver, optarg)
-        common._init_solve_block(self, slvr, solve_log)
+        opt = get_solver(solver, optarg)
+        common._init_solve_block(self, opt, solve_log)
 
     def calculate_scaling_factors(self):
         pass

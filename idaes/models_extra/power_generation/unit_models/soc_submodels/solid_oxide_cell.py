@@ -356,7 +356,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "include_temperature_x_thermo": include_temp_x_thermo,
             }
         )
-        self.fuel_tpb = soc.SocTriplePhaseBoundary(
+        self.fuel_triple_phase_boundary = soc.SocTriplePhaseBoundary(
             default={
                 "has_holdup": False,
                 "dynamic": False,
@@ -377,7 +377,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "below_electrolyte": True,
             }
         )
-        self.oxygen_tpb = soc.SocTriplePhaseBoundary(
+        self.oxygen_triple_phase_boundary = soc.SocTriplePhaseBoundary(
             default={
                 "has_holdup": False,
                 "dynamic": False,
@@ -410,8 +410,8 @@ class SolidOxideCellData(UnitModelBlockData):
                 "current_density": self.current_density,
                 "temperature_deviation_x0": self.fuel_electrode.temperature_deviation_x1,
                 "temperature_deviation_x1": self.oxygen_electrode.temperature_deviation_x0,
-                "heat_flux_x0": self.fuel_tpb.heat_flux_x1,
-                "heat_flux_x1": self.oxygen_tpb.heat_flux_x0,
+                "heat_flux_x0": self.fuel_triple_phase_boundary.heat_flux_x1,
+                "heat_flux_x1": self.oxygen_triple_phase_boundary.heat_flux_x0,
                 "include_temperature_x_thermo": include_temp_x_thermo,
             }
         )
@@ -489,12 +489,12 @@ class SolidOxideCellData(UnitModelBlockData):
         @self.Constraint(tset, iznodes)
         def potential_eqn(b, t, iz):
             return b.potential[t] == (
-                b.fuel_tpb.potential_nernst[t, iz]
-                + b.oxygen_tpb.potential_nernst[t, iz]
+                b.fuel_triple_phase_boundary.potential_nernst[t, iz]
+                + b.oxygen_triple_phase_boundary.potential_nernst[t, iz]
                 - (
                     b.voltage_drop_ohmic[t, iz]
-                    + b.fuel_tpb.voltage_drop_total[t, iz]
-                    + b.oxygen_tpb.voltage_drop_total[t, iz]
+                    + b.fuel_triple_phase_boundary.voltage_drop_total[t, iz]
+                    + b.oxygen_triple_phase_boundary.voltage_drop_total[t, iz]
                 )
             )
 
@@ -559,7 +559,7 @@ class SolidOxideCellData(UnitModelBlockData):
                         var[t].fix()
 
         unfix_potential = {}
-        slvr = get_solver(solver, optarg)
+        opt = get_solver(solver, optarg)
         for t in tset:
             unfix_potential[t] = not self.potential[t].fixed
         self.potential_eqn.deactivate()
@@ -612,59 +612,59 @@ class SolidOxideCellData(UnitModelBlockData):
             )
 
         init_log.info_high("Calculating reaction rate at current guess")
-        self.fuel_tpb.temperature_deviation_x.fix(0)
-        self.fuel_tpb.conc_mol_comp_deviation_x.fix(0)
-        self.fuel_tpb.conc_mol_comp_ref.fix()
-        self.fuel_tpb.heat_flux_x1.fix(0)
+        self.fuel_triple_phase_boundary.temperature_deviation_x.fix(0)
+        self.fuel_triple_phase_boundary.conc_mol_comp_deviation_x.fix(0)
+        self.fuel_triple_phase_boundary.conc_mol_comp_ref.fix()
+        self.fuel_triple_phase_boundary.heat_flux_x1.fix(0)
         for t in self.flowsheet().time:
-            for iz in self.fuel_tpb.iznodes:
+            for iz in self.fuel_triple_phase_boundary.iznodes:
                 denom = pyo.value(
                     sum(
-                        self.fuel_tpb.conc_mol_comp[t, iz, j]
-                        for j in self.fuel_tpb.component_list
+                        self.fuel_triple_phase_boundary.conc_mol_comp[t, iz, j]
+                        for j in self.fuel_triple_phase_boundary.component_list
                     )
                 )
-                for j in self.fuel_tpb.component_list:
-                    self.fuel_tpb.mole_frac_comp[t, iz, j].value = pyo.value(
-                        self.fuel_tpb.conc_mol_comp[t, iz, j] / denom
+                for j in self.fuel_triple_phase_boundary.component_list:
+                    self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j].value = pyo.value(
+                        self.fuel_triple_phase_boundary.conc_mol_comp[t, iz, j] / denom
                     )
-                    self.fuel_tpb.log_mole_frac_comp[t, iz, j].value = pyo.value(
-                        pyo.log(self.fuel_tpb.mole_frac_comp[t, iz, j])
+                    self.fuel_triple_phase_boundary.log_mole_frac_comp[t, iz, j].value = pyo.value(
+                        pyo.log(self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j])
                     )
 
-        common._init_solve_block(self.fuel_tpb, slvr, solve_log)
+        common._init_solve_block(self.fuel_triple_phase_boundary, opt, solve_log)
 
-        self.fuel_tpb.temperature_deviation_x.unfix()
-        self.fuel_tpb.conc_mol_comp_deviation_x.unfix()
-        self.fuel_tpb.conc_mol_comp_ref.unfix()
-        self.fuel_tpb.heat_flux_x1.unfix()
+        self.fuel_triple_phase_boundary.temperature_deviation_x.unfix()
+        self.fuel_triple_phase_boundary.conc_mol_comp_deviation_x.unfix()
+        self.fuel_triple_phase_boundary.conc_mol_comp_ref.unfix()
+        self.fuel_triple_phase_boundary.heat_flux_x1.unfix()
 
-        self.oxygen_tpb.temperature_deviation_x.fix(0)
-        self.oxygen_tpb.conc_mol_comp_deviation_x.fix(0)
-        self.oxygen_tpb.conc_mol_comp_ref.fix()
-        self.oxygen_tpb.heat_flux_x0.fix(0)
+        self.oxygen_triple_phase_boundary.temperature_deviation_x.fix(0)
+        self.oxygen_triple_phase_boundary.conc_mol_comp_deviation_x.fix(0)
+        self.oxygen_triple_phase_boundary.conc_mol_comp_ref.fix()
+        self.oxygen_triple_phase_boundary.heat_flux_x0.fix(0)
         for t in self.flowsheet().time:
-            for iz in self.oxygen_tpb.iznodes:
+            for iz in self.oxygen_triple_phase_boundary.iznodes:
                 denom = pyo.value(
                     sum(
-                        self.oxygen_tpb.conc_mol_comp[t, iz, j]
-                        for j in self.oxygen_tpb.component_list
+                        self.oxygen_triple_phase_boundary.conc_mol_comp[t, iz, j]
+                        for j in self.oxygen_triple_phase_boundary.component_list
                     )
                 )
-                for j in self.oxygen_tpb.component_list:
-                    self.oxygen_tpb.mole_frac_comp[t, iz, j].value = pyo.value(
-                        self.oxygen_tpb.conc_mol_comp[t, iz, j] / denom
+                for j in self.oxygen_triple_phase_boundary.component_list:
+                    self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j].value = pyo.value(
+                        self.oxygen_triple_phase_boundary.conc_mol_comp[t, iz, j] / denom
                     )
-                    self.oxygen_tpb.log_mole_frac_comp[t, iz, j].value = pyo.value(
-                        pyo.log(self.oxygen_tpb.mole_frac_comp[t, iz, j])
+                    self.oxygen_triple_phase_boundary.log_mole_frac_comp[t, iz, j].value = pyo.value(
+                        pyo.log(self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j])
                     )
 
-        common._init_solve_block(self.oxygen_tpb, slvr, solve_log)
+        common._init_solve_block(self.oxygen_triple_phase_boundary, opt, solve_log)
 
-        self.oxygen_tpb.temperature_deviation_x.unfix()
-        self.oxygen_tpb.conc_mol_comp_deviation_x.unfix()
-        self.oxygen_tpb.conc_mol_comp_ref.unfix()
-        self.oxygen_tpb.heat_flux_x0.unfix()
+        self.oxygen_triple_phase_boundary.temperature_deviation_x.unfix()
+        self.oxygen_triple_phase_boundary.conc_mol_comp_deviation_x.unfix()
+        self.oxygen_triple_phase_boundary.conc_mol_comp_ref.unfix()
+        self.oxygen_triple_phase_boundary.heat_flux_x0.unfix()
 
         init_log.info_high("Initializing Fuel Electrode")
         self.fuel_electrode.conc_mol_comp_ref.fix()
@@ -707,10 +707,10 @@ class SolidOxideCellData(UnitModelBlockData):
         self.oxygen_electrode.material_flux_x0.unfix()
 
         init_log.info_high("Initializing Triple Phase Boundaries")
-        self.fuel_tpb.initialize_build(
+        self.fuel_triple_phase_boundary.initialize_build(
             outlvl=outlvl, solver=solver, optarg=optarg, fix_x0=True
         )
-        self.oxygen_tpb.initialize_build(
+        self.oxygen_triple_phase_boundary.initialize_build(
             outlvl=outlvl, solver=solver, optarg=optarg, fix_x0=False
         )
 
@@ -718,7 +718,7 @@ class SolidOxideCellData(UnitModelBlockData):
         self.mean_temperature_eqn.activate()
 
         init_log.info_high("Solving cell with fixed current density")
-        common._init_solve_block(self, slvr, solve_log)
+        common._init_solve_block(self, opt, solve_log)
 
         self.potential_eqn.activate()
         # TODO---does the user ever have a reason to fix current density
@@ -727,7 +727,7 @@ class SolidOxideCellData(UnitModelBlockData):
         self.potential.fix()
 
         init_log.info_high("Solving cell with potential equations active")
-        common._init_solve_block(self, slvr, solve_log)
+        common._init_solve_block(self, opt, solve_log)
 
         # Unfix any inlet variables that were fixed by initialization
         # To be honest, using a state block would probably have been less work
@@ -753,7 +753,7 @@ class SolidOxideCellData(UnitModelBlockData):
         init_log.info(f"{self.name} initialization completed successfully.")
 
     def calculate_scaling_factors(self):
-        self.recursive_scaling()
+        pass
 
     def model_check(self, steady_state=True):
         self.fuel_channel.model_check()
@@ -850,10 +850,10 @@ class SolidOxideCellData(UnitModelBlockData):
         submodels = [
             self.fuel_channel,
             self.fuel_electrode,
-            self.fuel_tpb,
+            self.fuel_triple_phase_boundary,
             self.oxygen_channel,
             self.oxygen_electrode,
-            self.oxygen_tpb,
+            self.oxygen_triple_phase_boundary,
             self.electrolyte,
         ]
         if self.config.include_contact_resistance:
@@ -905,20 +905,20 @@ class SolidOxideCellData(UnitModelBlockData):
                     ]:
                         if gsf(var[t, iz, j]) is None:
                             ssf(var[t, iz, j], s_flux_j)
-                    ssf(self.fuel_tpb.mole_frac_comp[t, iz, j], sy_in_fuel[j])
+                    ssf(self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j], sy_in_fuel[j])
                 for j in self.oxygen_component_list:
                     if j in self.config.inert_oxygen_species_triple_phase_boundary:
                         s_flux_j = sy_in_oxygen[j] * s_inert_flux
                     else:
                         s_flux_j = sy_in_oxygen[j] * s_react_flux
-                    # s_flux_j = sy_in_oxygen[j]*s_mat_flux / max(abs(self.oxygen_tpb.tpb_stoich[j]),0.25)
+                    # s_flux_j = sy_in_oxygen[j]*s_mat_flux / max(abs(self.oxygen_triple_phase_boundary.tpb_stoich[j]),0.25)
                     for var in [
                         self.oxygen_channel.material_flux_x0,
                         self.oxygen_electrode.material_flux_x0,
                     ]:
                         if gsf(var[t, iz, j]) is None:
                             ssf(var[t, iz, j], s_flux_j)
-                    ssf(self.oxygen_tpb.mole_frac_comp[t, iz, j], sy_in_oxygen[j])
+                    ssf(self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j], sy_in_oxygen[j])
 
                 s_q_flux = s_react_flux * 1e-4  # Chosen heuristically based on TdS_rxn
                 # s_q_flux = s_react_flux*1e-6
@@ -960,7 +960,7 @@ class SolidOxideCellData(UnitModelBlockData):
                             overwrite=False,
                         )
                         sq = gsf(
-                            self.oxygen_chan.heat_flux_x1[t, iz],
+                            self.oxygen_channel.heat_flux_x1[t, iz],
                             default=s_q_flux,
                         )
                         cst(

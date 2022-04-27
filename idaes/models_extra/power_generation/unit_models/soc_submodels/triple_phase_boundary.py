@@ -62,7 +62,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
     CONFIG.declare(
         "inert_species",
         ConfigValue(
-            default=[],
+            default=[],  # TODO does this cause bug where all instances use the same default list?
             domain=ListOf(str),
             description="List of species that do not participate in "
             "reactions at the triple phase boundary.",
@@ -102,6 +102,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             ordered=True,
             doc="Set of all gas-phase components present in submodel",
         )
+        if "e^-" not in self.config.reaction_stoichiometry.keys():
+            raise ConfigurationError(f"Number of electrons produced or consumed in redox reaction at {self.name} "
+                                     "not specified.")
+
         self.reaction_stoichiometry = copy.copy(self.config.reaction_stoichiometry)
 
         # Copy and pasted from the Gibbs reactor
@@ -374,8 +378,8 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                         pyo.log(self.mole_frac_comp[t, iz, j])
                     )
 
-        slvr = get_solver(solver, optarg)
-        common._init_solve_block(self, slvr, solve_log)
+        opt = get_solver(solver, optarg)
+        common._init_solve_block(self, opt, solve_log)
 
         self.temperature_deviation_x.unfix()
         self.conc_mol_comp_ref.unfix()

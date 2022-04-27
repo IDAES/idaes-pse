@@ -105,8 +105,8 @@ class SocContactResistorData(UnitModelBlockData):
         else:
             self.heat_flux_x1.fix()
 
-        slvr = get_solver(solver, optarg)
-        common._init_solve_block(self, slvr, solve_log)
+        opt = get_solver(solver, optarg)
+        common._init_solve_block(self, opt, solve_log)
 
         self.temperature_deviation_x.unfix()
         if fix_heat_flux_x0:

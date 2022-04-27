@@ -29,3 +29,6 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.contact_resis
 from idaes.models_extra.power_generation.unit_models.soc_submodels.solid_oxide_cell import (
     SolidOxideCell,
 )
+from idaes.models_extra.power_generation.unit_models.soc_submodels.solid_oxide_module_simple import (
+    SolidOxideModuleSimple,
+)

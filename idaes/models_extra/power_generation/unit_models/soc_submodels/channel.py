@@ -647,8 +647,8 @@ class SocChannelData(UnitModelBlockData):
                         self.int_energy_density[t, iz],
                         self.int_energy_mol[t, iz] / self.vol_mol[t, iz],
                     )
-        slvr = get_solver(solver, optarg)
-        common._init_solve_block(self, slvr, solve_log)
+        opt = get_solver(solver, optarg)
+        common._init_solve_block(self, opt, solve_log)
 
     def calculate_scaling_factors(self):
         pass
