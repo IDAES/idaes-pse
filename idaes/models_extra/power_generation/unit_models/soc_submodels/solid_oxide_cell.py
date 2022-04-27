@@ -516,6 +516,9 @@ class SolidOxideCellData(UnitModelBlockData):
         temperature_guess=None,
     ):
         t0 = self.flowsheet().time.first()
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
         if temperature_guess is None:
             temperature_guess = (
                     self.fuel_channel.temperature_inlet[t0].value
@@ -530,9 +533,6 @@ class SolidOxideCellData(UnitModelBlockData):
             init_log.warning(
                 f"No guess provided for {self.name} average current density, using initial guess of zero current density."
             )
-
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         tset = self.flowsheet().config.time
         # t0 = tset.first()
 
