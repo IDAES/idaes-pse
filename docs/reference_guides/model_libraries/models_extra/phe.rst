@@ -149,7 +149,7 @@ where :math:`f` is the friction factor for the side and :math:`v` is the velocit
 PlateHeatExchanger Class
 ------------------------
 
-.. module:: idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.plate_heat_exchanger
+.. module:: idaes.models_extra.column_models.plate_heat_exchanger
 
 .. autoclass:: PlateHeatExchanger
   :members:
