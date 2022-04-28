@@ -61,6 +61,7 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
+from idaes.core.util.constants import Constants
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -128,17 +129,22 @@ class ReactionParameterData(ReactionParameterBlock):
             ("R1", "Sol", "Al2O3"): 0,
         }
 
-        # Standard Heat of Reaction - kJ/mol_rxn
-        dh_rxn_dict = {"R1": -469.4432}
+        # Standard Heat of Reaction - J/mol_rxn
+        dh_rxn_dict = {"R1": -469.4432e3}
         self.dh_rxn = Param(
             self.rate_reaction_idx,
             initialize=dh_rxn_dict,
-            doc="Heat of reaction [kJ/mol]",
-            units=pyunits.kJ / pyunits.mol,
+            doc="Heat of reaction [J/mol]",
+            units=pyunits.J / pyunits.mol,
         )
 
         # Smoothing factor
-        self.eps = Param(mutable=True, default=1e-8, doc="Smoothing Factor")
+        self.eps = Param(
+            mutable=True,
+            default=1e-8,
+            doc="Smoothing Factor",
+            units=pyunits.mol / pyunits.m**3,
+        )
         # Reaction rate scale factor
         self._scale_factor_rxn = Param(
             mutable=True,
@@ -180,9 +186,9 @@ class ReactionParameterData(ReactionParameterBlock):
         self.energy_activation = Var(
             self.rate_reaction_idx,
             domain=Reals,
-            initialize=1.4e1,
-            doc="Activation energy [kJ/mol]",
-            units=pyunits.kJ / pyunits.mol,
+            initialize=1.4e4,
+            doc="Activation energy [J/mol]",
+            units=pyunits.J / pyunits.mol,
         )
         self.energy_activation.fix()
 
@@ -432,7 +438,8 @@ class ReactionBlockData(ReactionBlockDataBase):
             self._params.rate_reaction_idx,
             domain=Reals,
             initialize=1,
-            doc="Rate constant " "[mol^(1-N_reaction)m^(3*N_reaction -2)/s]",
+            doc="Rate constant " "[mol^(1-rxn_order) * m^(3*rxn_order -2)/s]",
+            units=pyunits.m / pyunits.s,
         )
 
         def rate_constant_eqn(b, j):
@@ -442,7 +449,10 @@ class ReactionBlockData(ReactionBlockDataBase):
                     * exp(
                         -self._params.energy_activation[j]
                         / (
-                            self.gas_state_ref._params.gas_const
+                            pyunits.convert(
+                                Constants.gas_constant,  # J/mol/K
+                                to_units=pyunits.J / pyunits.mol / pyunits.K,
+                            )
                             * self.solid_state_ref.temperature
                         )
                     )
@@ -464,7 +474,10 @@ class ReactionBlockData(ReactionBlockDataBase):
     # Conversion of oxygen carrier
     def _OC_conv(self):
         self.OC_conv = Var(
-            domain=Reals, initialize=0.0, doc="Fraction of metal oxide converted"
+            domain=Reals,
+            initialize=0.0,
+            doc="Fraction of metal oxide converted",
+            units=pyunits.dimensionless,
         )
 
         def OC_conv_eqn(b):
