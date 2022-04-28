@@ -1604,10 +1604,9 @@ class PolynomialRegression:
             Pyomo Expression              : Pyomo expression of the polynomial model based on the variables provided in **variable_list**.
 
         """
-        # Reshaping of array necessary for scalar pyomo inputs
+        # Reshaping of array necessary when input variables are Pyomo scalar variables
         vl = np.array([variable_list])
-        if vl.ndim > 2:
-           vl =  vl.reshape(1, len(variable_list))
+        vl = vl.reshape(1, len(variable_list)) if vl.ndim > 2 else vl
 
         terms = PolynomialRegression.polygeneration(
             self.final_polynomial_order, self.multinomials, vl 
