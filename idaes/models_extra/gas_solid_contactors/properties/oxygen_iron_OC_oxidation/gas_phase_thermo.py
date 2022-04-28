@@ -1044,17 +1044,105 @@ class GasPhaseStateBlockData(StateBlockData):
             self.del_component(self.mixture_enthalpy_eqn)
             raise
 
-    def get_material_flow_terms(b, p, j):
-        return b.flow_mol * b.mole_frac_comp[j]
+    def _entr_mol(self):
+        units_meta = self._params.get_metadata().derived_units
+        units_entr_mol = (units_meta["energy"] * units_meta["amount"] ** -1
+                          * units_meta["temperature"] ** -1)
+        self.entr_mol = Var(
+            doc="Specific Entropy",
+            initialize=1.0,
+            units=units_entr_mol,
+        )
+        # Specific Entropy
 
-    def get_enthalpy_flow_terms(b, p):
-        return b.flow_mol * b.enth_mol
+        def rule_entr_phase(b, p):
+            # This property module only has one phase
+            return self.entr_mol
 
-    def get_material_density_terms(b, p, j):
-        return b.dens_mol_comp[j]
+        self.entr_mol_phase = Expression(self.params.phase_list, rule=rule_entr_phase)
 
-    def get_energy_density_terms(b, p):
-        return b.dens_mol * b.enth_mol
+        def entropy_correlation(b):
+            t = pyunits.convert(self.temperature, to_units=pyunits.kK)
+            x = b.mole_frac_comp
+            p = pyunits.convert(b.pressure, to_units=pyunits.Pa)
+            r_gas = pyunits.convert(
+                Constants.gas_constant, to_units=pyunits.J / pyunits.mol / pyunits.K
+            )
+            return (
+                self.entr_mol + r_gas * log(p / 1e5 / pyunits.Pa)
+            ) * b.flow_mol == sum(
+                b.flow_mol
+                * b.mole_frac_comp[j]
+                * (
+                    self.params.cp_param_1[j] * log(t / pyunits.kK)
+                    + self.params.cp_param_2[j] * t
+                    + self.params.cp_param_3[j] * t**2 / 2
+                    + self.params.cp_param_4[j] * t**3 / 3
+                    - self.params.cp_param_5[j] / t**2 / 2
+                    + self.params.cp_param_7[j]
+                    + r_gas * log(x[j])
+                )
+                for j in self.params.component_list
+            )
+
+        try:
+            self.entropy_correlation = Constraint(rule=entropy_correlation)
+        except AttributeError:
+            self.del_component(self.entr_mol_phase)
+            self.del_component(self.entropy_correlation)
+
+    def get_material_flow_terms(self, p, j):
+        if not self.is_property_constructed("material_flow_terms"):
+            try:
+
+                def rule_material_flow_terms(b, j):
+                    return b.flow_mol * b.mole_frac_comp[j]
+
+                self.material_flow_terms = Expression(
+                    self._params.component_list, rule=rule_material_flow_terms
+                )
+            except AttributeError:
+                self.del_component(self.material_flow_terms)
+        return self.material_flow_terms[j]
+
+    def get_enthalpy_flow_terms(self, p):
+        if not self.is_property_constructed("enthalpy_flow_terms"):
+            try:
+
+                def rule_enthalpy_flow_terms(b):
+                    return self.enth_mol * self.flow_mol
+
+                self.enthalpy_flow_terms = Expression(rule=rule_enthalpy_flow_terms)
+            except AttributeError:
+                self.del_component(self.enthalpy_flow_terms)
+        return self.enthalpy_flow_terms
+
+    def get_material_density_terms(self, p, j):
+        # return b.dens_mol_comp[j]
+        if not self.is_property_constructed("material_density_terms"):
+            try:
+
+                def rule_material_density_terms(b, j):
+                    return b.dens_mol_comp[j]
+
+                self.material_density_terms = Expression(
+                    self._params.component_list, rule=rule_material_density_terms
+                )
+            except AttributeError:
+                self.del_component(self.material_density_terms)
+        return self.material_density_terms[j]
+
+    def get_energy_density_terms(self, p):
+        if not self.is_property_constructed("energy_density_terms"):
+            try:
+
+                def rule_energy_density_terms(b):
+                    return self.enth_mol * self.dens_mol
+
+                self.energy_density_terms = Expression(rule=rule_energy_density_terms)
+            except AttributeError:
+                self.del_component(self.energy_density_terms)
+        return self.energy_density_terms
 
     def define_state_vars(b):
         return {
