@@ -131,7 +131,9 @@ def modelFuel():
     m.fs.conc_mol_comp_ref.fix(1)
     m.fs.conc_mol_comp_deviation_x.fix(0)
 
-    m.fs.fuel_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(pyo.log(1.375e10))
+    m.fs.fuel_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(
+        pyo.log(1.375e10)
+    )
     m.fs.fuel_triple_phase_boundary.exchange_current_activation_energy.fix(120e3)
     m.fs.fuel_triple_phase_boundary.activation_potential_alpha1.fix(0.5)
     m.fs.fuel_triple_phase_boundary.activation_potential_alpha2.fix(0.5)
@@ -171,7 +173,9 @@ def modelOxygen():
     m.fs.oxygen_triple_phase_boundary.conc_mol_comp_ref.fix(1)
     m.fs.oxygen_triple_phase_boundary.conc_mol_comp_deviation_x.fix(0)
 
-    m.fs.oxygen_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(pyo.log(1.375e10))
+    m.fs.oxygen_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(
+        pyo.log(1.375e10)
+    )
     m.fs.oxygen_triple_phase_boundary.exchange_current_activation_energy.fix(120e3)
     m.fs.oxygen_triple_phase_boundary.activation_potential_alpha1.fix(0.5)
     m.fs.oxygen_triple_phase_boundary.activation_potential_alpha2.fix(0.5)
@@ -324,7 +328,9 @@ def modelFuelAndOxygen(include_solid_species):
         }
     )
 
-    m.fs.fuel_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(pyo.log(1.375e10))
+    m.fs.fuel_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(
+        pyo.log(1.375e10)
+    )
     m.fs.fuel_triple_phase_boundary.exchange_current_activation_energy.fix(120e3)
     m.fs.fuel_triple_phase_boundary.activation_potential_alpha1.fix(0.5)
     m.fs.fuel_triple_phase_boundary.activation_potential_alpha2.fix(0.5)
@@ -332,7 +338,9 @@ def modelFuelAndOxygen(include_solid_species):
     m.fs.fuel_triple_phase_boundary.exchange_current_exponent_comp["H2"].fix(1)
     m.fs.fuel_triple_phase_boundary.exchange_current_exponent_comp["H2O"].fix(1)
 
-    m.fs.oxygen_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(pyo.log(1.375e10))
+    m.fs.oxygen_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(
+        pyo.log(1.375e10)
+    )
     m.fs.oxygen_triple_phase_boundary.exchange_current_activation_energy.fix(120e3)
     m.fs.oxygen_triple_phase_boundary.activation_potential_alpha1.fix(0.5)
     m.fs.oxygen_triple_phase_boundary.activation_potential_alpha2.fix(0.5)
@@ -362,13 +370,17 @@ def modelFuelAndOxygen(include_solid_species):
         return (
             -sum(
                 b.fuel_triple_phase_boundary.material_flux_x[t, iz, comp]
-                * common._comp_enthalpy_expr(b.fuel_triple_phase_boundary.temperature[t, iz], comp)
+                * common._comp_enthalpy_expr(
+                    b.fuel_triple_phase_boundary.temperature[t, iz], comp
+                )
                 for comp in b.fuel_triple_phase_boundary.component_list
             )
             - b.fuel_triple_phase_boundary.heat_flux_x0[t, iz]
             + sum(
                 b.oxygen_triple_phase_boundary.material_flux_x[t, iz, comp]
-                * common._comp_enthalpy_expr(b.oxygen_triple_phase_boundary.temperature[t, iz], comp)
+                * common._comp_enthalpy_expr(
+                    b.oxygen_triple_phase_boundary.temperature[t, iz], comp
+                )
                 for comp in b.oxygen_triple_phase_boundary.component_list
             )
             + b.oxygen_triple_phase_boundary.heat_flux_x1[t, iz]
@@ -395,13 +407,17 @@ def modelFuelAndOxygen(include_solid_species):
 
     m.fs.element_list = pyo.Set(initialize=["H", "O", "N"], ordered=True)
 
-    @m.fs.Expression(m.fs.time, m.fs.fuel_triple_phase_boundary.iznodes, m.fs.element_list)
+    @m.fs.Expression(
+        m.fs.time, m.fs.fuel_triple_phase_boundary.iznodes, m.fs.element_list
+    )
     def element_created(b, t, iz, i):
         return -sum(
-            common._element_dict[i][j] * b.fuel_triple_phase_boundary.material_flux_x[t, iz, j]
+            common._element_dict[i][j]
+            * b.fuel_triple_phase_boundary.material_flux_x[t, iz, j]
             for j in b.fuel_triple_phase_boundary.component_list
         ) + sum(
-            common._element_dict[i][j] * b.oxygen_triple_phase_boundary.material_flux_x[t, iz, j]
+            common._element_dict[i][j]
+            * b.oxygen_triple_phase_boundary.material_flux_x[t, iz, j]
             for j in b.oxygen_triple_phase_boundary.component_list
         )
 
@@ -414,11 +430,19 @@ def conservation_tester(m):
             m.fs.temperature_z.fix(T)
             C_tot = P_fuel / pyo.value(common._constR * T)
             for y_H2 in np.linspace(0.1, 0.5, 3):
-                m.fs.fuel_triple_phase_boundary.conc_mol_comp_ref[0, :, "H2"].fix(y_H2 * C_tot)
-                m.fs.fuel_triple_phase_boundary.conc_mol_comp_ref[0, :, "N2"].fix(0.4 * C_tot)
-                m.fs.fuel_triple_phase_boundary.conc_mol_comp_ref[0, :, "H2O"].fix((0.6 - y_H2) * C_tot)
+                m.fs.fuel_triple_phase_boundary.conc_mol_comp_ref[0, :, "H2"].fix(
+                    y_H2 * C_tot
+                )
+                m.fs.fuel_triple_phase_boundary.conc_mol_comp_ref[0, :, "N2"].fix(
+                    0.4 * C_tot
+                )
+                m.fs.fuel_triple_phase_boundary.conc_mol_comp_ref[0, :, "H2O"].fix(
+                    (0.6 - y_H2) * C_tot
+                )
                 for y_O2 in np.linspace(0.1, 0.3, 3):
-                    m.fs.oxygen_triple_phase_boundary.conc_mol_comp_ref[0, :, "O2"].fix(y_O2 * C_tot)
+                    m.fs.oxygen_triple_phase_boundary.conc_mol_comp_ref[0, :, "O2"].fix(
+                        y_O2 * C_tot
+                    )
                     m.fs.oxygen_triple_phase_boundary.conc_mol_comp_ref[0, :, "N2"].fix(
                         (1 - y_O2) * C_tot
                     )

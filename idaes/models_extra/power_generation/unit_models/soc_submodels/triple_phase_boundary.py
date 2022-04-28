@@ -103,8 +103,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             doc="Set of all gas-phase components present in submodel",
         )
         if "e^-" not in self.config.reaction_stoichiometry.keys():
-            raise ConfigurationError(f"Number of electrons produced or consumed in redox reaction at {self.name} "
-                                     "not specified.")
+            raise ConfigurationError(
+                f"Number of electrons produced or consumed in redox reaction at {self.name} "
+                "not specified."
+            )
 
         self.reaction_stoichiometry = copy.copy(self.config.reaction_stoichiometry)
 

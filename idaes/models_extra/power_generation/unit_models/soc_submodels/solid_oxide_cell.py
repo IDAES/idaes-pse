@@ -521,12 +521,12 @@ class SolidOxideCellData(UnitModelBlockData):
 
         if temperature_guess is None:
             temperature_guess = (
-                    self.fuel_channel.temperature_inlet[t0].value
-                    + self.oxygen_channel.temperature_inlet[t0].value
+                self.fuel_channel.temperature_inlet[t0].value
+                + self.oxygen_channel.temperature_inlet[t0].value
             ) / 2
             init_log.warning(
                 f"No guess provided for {self.name} average operating temperature, using average of "
-                 "channel inlet temperatures instead."
+                "channel inlet temperatures instead."
             )
         if current_density_guess is None:
             current_density_guess = 0
@@ -625,11 +625,17 @@ class SolidOxideCellData(UnitModelBlockData):
                     )
                 )
                 for j in self.fuel_triple_phase_boundary.component_list:
-                    self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j].value = pyo.value(
+                    self.fuel_triple_phase_boundary.mole_frac_comp[
+                        t, iz, j
+                    ].value = pyo.value(
                         self.fuel_triple_phase_boundary.conc_mol_comp[t, iz, j] / denom
                     )
-                    self.fuel_triple_phase_boundary.log_mole_frac_comp[t, iz, j].value = pyo.value(
-                        pyo.log(self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j])
+                    self.fuel_triple_phase_boundary.log_mole_frac_comp[
+                        t, iz, j
+                    ].value = pyo.value(
+                        pyo.log(
+                            self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j]
+                        )
                     )
 
         common._init_solve_block(self.fuel_triple_phase_boundary, opt, solve_log)
@@ -652,11 +658,18 @@ class SolidOxideCellData(UnitModelBlockData):
                     )
                 )
                 for j in self.oxygen_triple_phase_boundary.component_list:
-                    self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j].value = pyo.value(
-                        self.oxygen_triple_phase_boundary.conc_mol_comp[t, iz, j] / denom
+                    self.oxygen_triple_phase_boundary.mole_frac_comp[
+                        t, iz, j
+                    ].value = pyo.value(
+                        self.oxygen_triple_phase_boundary.conc_mol_comp[t, iz, j]
+                        / denom
                     )
-                    self.oxygen_triple_phase_boundary.log_mole_frac_comp[t, iz, j].value = pyo.value(
-                        pyo.log(self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j])
+                    self.oxygen_triple_phase_boundary.log_mole_frac_comp[
+                        t, iz, j
+                    ].value = pyo.value(
+                        pyo.log(
+                            self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j]
+                        )
                     )
 
         common._init_solve_block(self.oxygen_triple_phase_boundary, opt, solve_log)
@@ -905,7 +918,10 @@ class SolidOxideCellData(UnitModelBlockData):
                     ]:
                         if gsf(var[t, iz, j]) is None:
                             ssf(var[t, iz, j], s_flux_j)
-                    ssf(self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j], sy_in_fuel[j])
+                    ssf(
+                        self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j],
+                        sy_in_fuel[j],
+                    )
                 for j in self.oxygen_component_list:
                     if j in self.config.inert_oxygen_species_triple_phase_boundary:
                         s_flux_j = sy_in_oxygen[j] * s_inert_flux
@@ -918,7 +934,10 @@ class SolidOxideCellData(UnitModelBlockData):
                     ]:
                         if gsf(var[t, iz, j]) is None:
                             ssf(var[t, iz, j], s_flux_j)
-                    ssf(self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j], sy_in_oxygen[j])
+                    ssf(
+                        self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j],
+                        sy_in_oxygen[j],
+                    )
 
                 s_q_flux = s_react_flux * 1e-4  # Chosen heuristically based on TdS_rxn
                 # s_q_flux = s_react_flux*1e-6

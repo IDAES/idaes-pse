@@ -65,7 +65,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         ConfigBlock(
             implicit=True,
             description="Arguments to use for constructing property package "
-                        "of the fuel-side stream",
+            "of the fuel-side stream",
             doc="""A ConfigBlock with arguments to be passed to the property
                     block associated with the fuel-side stream,
                     **default** - None.
@@ -91,7 +91,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         ConfigBlock(
             implicit=True,
             description="Arguments to use for constructing property package "
-                        "of the oxygen-side stream",
+            "of the oxygen-side stream",
             doc="""A ConfigBlock with arguments to be passed to the property
                         block associated with the oxygen-side stream,
                         **default** - None.
@@ -110,7 +110,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         self.number_cells = pyo.Var(
             initialize=1e5,
             units=pyo.units.dimensionless,
-            doc="Number of cells in SOC module"
+            doc="Number of cells in SOC module",
         )
 
         self.solid_oxide_cell = soc.SolidOxideCell(
@@ -127,12 +127,13 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
             return props[t].pressure == port.pressure[t]
 
         def rule_flow_mol_comp(blk, t, j, props, port):
-            return (props[t].flow_mol_comp[j]
-                    == blk.number_cells * port.flow_mol[t]
-                    * port.mole_frac_comp[t, j])
+            return (
+                props[t].flow_mol_comp[j]
+                == blk.number_cells * port.flow_mol[t] * port.mole_frac_comp[t, j]
+            )
 
         def rule_mole_frac(blk, t, port, comps):
-            return sum(port.mole_frac_comp[t,j] for j in comps) == 1
+            return sum(port.mole_frac_comp[t, j] for j in comps) == 1
 
         for side in ["fuel", "oxygen"]:
             param_block = getattr(self.config, f"{side}_property_package")
@@ -148,7 +149,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                         "has_phase_equilibrium": False,
                         **package_args,
                     },
-                )
+                ),
             )
             setattr(
                 self,
@@ -161,7 +162,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                         "has_phase_equilibrium": False,
                         **package_args,
                     },
-                )
+                ),
             )
             side_comps = getattr(self.solid_oxide_cell, f"{side}_component_list")
             # Support absent components in property package to support legacy property packages that do not
@@ -173,7 +174,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                     initialize=param_block.component_list - side_comps,
                     ordered=True,
                     doc=f"Components in the {side}-side property package that are not actually present in the stream.",
-                )
+                ),
             )
 
             for direction in ["in", "out"]:
@@ -183,23 +184,39 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                 setattr(
                     self,
                     f"{port_name}_temperature_eqn",
-                    pyo.Constraint(tset, rule=lambda blk, t: rule_temperature(blk, t, props, port))
+                    pyo.Constraint(
+                        tset, rule=lambda blk, t: rule_temperature(blk, t, props, port)
+                    ),
                 )
                 setattr(
                     self,
                     f"{port_name}_pressure_eqn",
-                    pyo.Constraint(tset, rule=lambda blk, t: rule_pressure(blk, t, props, port))
+                    pyo.Constraint(
+                        tset, rule=lambda blk, t: rule_pressure(blk, t, props, port)
+                    ),
                 )
                 setattr(
                     self,
                     f"{port_name}_flow_mol_comp_eqn",
-                    pyo.Constraint(tset, side_comps, rule=lambda blk, t, j: rule_flow_mol_comp(blk, t, j, props, port))
+                    pyo.Constraint(
+                        tset,
+                        side_comps,
+                        rule=lambda blk, t, j: rule_flow_mol_comp(
+                            blk, t, j, props, port
+                        ),
+                    ),
                 )
                 if direction == "in":
-                    setattr(self,
-                            f"{port_name}_mole_frac_eqn",
-                                pyo.Constraint(tset, rule=lambda blk, t: rule_mole_frac(blk, t, port, side_comps))
-                            )
+                    setattr(
+                        self,
+                        f"{port_name}_mole_frac_eqn",
+                        pyo.Constraint(
+                            tset,
+                            rule=lambda blk, t: rule_mole_frac(
+                                blk, t, port, side_comps
+                            ),
+                        ),
+                    )
                 if direction == "out":
                     setattr(
                         self,
@@ -207,14 +224,14 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                         pyo.Constraint(
                             tset,
                             absent_comp_list,
-                            rule=lambda blk, t, j: rule_absent_comp(blk, t, j, props)
-                        )
+                            rule=lambda blk, t, j: rule_absent_comp(blk, t, j, props),
+                        ),
                     )
                 # Add a different port at the module level
                 self.add_port(
                     name=port_name,
                     block=props,
-                    doc=f"{side.capitalize()}-side {direction.capitalize()}let Port"
+                    doc=f"{side.capitalize()}-side {direction.capitalize()}let Port",
                 )
 
         # This is net flow of power *into* the cell. In fuel cell mode, this will
@@ -225,16 +242,15 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
 
         self.potential_cell = pyo.Reference(self.solid_oxide_cell.potential)
 
-
     def initialize_build(
-            self,
-            state_args_fuel=None,
-            state_args_oxygen=None,
-            outlvl=idaeslog.NOTSET,
-            solver=None,
-            optarg=None,
-            current_density_guess=None,
-            temperature_guess=None,
+        self,
+        state_args_fuel=None,
+        state_args_oxygen=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+        current_density_guess=None,
+        temperature_guess=None,
     ):
         t0 = self.flowsheet().time.first()
 
@@ -254,8 +270,8 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
 
         flags = {}
         for side, state_args in zip(
-                ["fuel", "oxygen"],
-                [state_args_fuel, state_args_oxygen],
+            ["fuel", "oxygen"],
+            [state_args_fuel, state_args_oxygen],
         ):
             props_in = getattr(self, side + "_properties_in")
             inlet = getattr(self.solid_oxide_cell, side + "_inlet")
@@ -270,9 +286,13 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
             for t in self.flowsheet().time:
                 inlet.temperature[t].value = pyo.value(props_in[t].temperature)
                 inlet.pressure[t].value = pyo.value(props_in[t].pressure)
-                inlet.flow_mol[t].value = pyo.value(props_in[t].flow_mol / self.number_cells)
+                inlet.flow_mol[t].value = pyo.value(
+                    props_in[t].flow_mol / self.number_cells
+                )
                 for j in comps:
-                    inlet.mole_frac_comp[t, j].value = pyo.value(props_in[t].mole_frac_comp[j])
+                    inlet.mole_frac_comp[t, j].value = pyo.value(
+                        props_in[t].mole_frac_comp[j]
+                    )
 
         self.solid_oxide_cell.initialize_build(
             outlvl=idaeslog.NOTSET,
@@ -285,8 +305,8 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         # Without knowing the state variables of the property package, the best we can do is just initialize
         # the property blocks and then solve the entire block
         for side, state_args in zip(
-                ["fuel", "oxygen"],
-                [state_args_fuel, state_args_oxygen],
+            ["fuel", "oxygen"],
+            [state_args_fuel, state_args_oxygen],
         ):
             props_out = getattr(self, side + "_properties_out")
             props_out.initialize(
@@ -312,9 +332,11 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
 
         gsf = iscale.get_scaling_factor
         ssf = common._set_scaling_factor_if_none
-        def cst(c, s): return iscale.constraint_scaling_transform(c, s, overwrite=False)
 
-        s_num_cells = gsf(self.number_cells, default=1/self.number_cells.value)
+        def cst(c, s):
+            return iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        s_num_cells = gsf(self.number_cells, default=1 / self.number_cells.value)
 
         for side in ["fuel", "oxygen"]:
             comps = getattr(self.solid_oxide_cell, f"{side}_component_list")
@@ -340,18 +362,18 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                         # To avoid Reference issues, use channel variables directly
                         ssf(channel.temperature_inlet[t], sT)
                         ssf(channel.pressure_inlet[t], sP)
-                        ssf(channel.flow_mol_inlet[t], sflow/s_num_cells)
+                        ssf(channel.flow_mol_inlet[t], sflow / s_num_cells)
 
                     for j in comps:
                         sx = gsf(props[t].mole_frac_comp[j])
-                        cst(flow_mol_comp_eqn[t,j], sflow * sx)
+                        cst(flow_mol_comp_eqn[t, j], sflow * sx)
                         if direction == "in":
-                            ssf(channel.mole_frac_comp_inlet[t,j], sx)
+                            ssf(channel.mole_frac_comp_inlet[t, j], sx)
 
                     if direction == "out":
                         for j in absent_comp_list:
                             sx = gsf(props[t].mole_frac_comp[j])
-                            cst(absent_comp_eqn[t,j], sflow * sx)
+                            cst(absent_comp_eqn[t, j], sflow * sx)
 
         self.solid_oxide_cell.recursive_scaling()
 
