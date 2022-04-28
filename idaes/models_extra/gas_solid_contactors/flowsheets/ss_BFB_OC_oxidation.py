@@ -26,6 +26,8 @@ from pyomo.environ import ConcreteModel, SolverFactory, value
 
 # Import IDAES core modules
 from idaes.core import FlowsheetBlock
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 # Import IDAES logger
 import idaes.logger as idaeslog
@@ -144,6 +146,14 @@ def main():
         },
     }
 
+    print()
+    print("Apply scaling transformation")
+    # Scale the model by applying scaling transformation
+    # This reduces ill conditioning of the model
+    iscale.calculate_scaling_factors(m)
+
+    print()
+    print("Initialize the model")
     m.fs.BFB.initialize(
         outlvl=idaeslog.INFO,
         gas_phase_state_args=gas_phase_state_args,
@@ -156,7 +166,8 @@ def main():
     # Final solve
 
     # Create a solver
-    solver = SolverFactory("ipopt")
+    solver = get_solver()
+
     solver.solve(m.fs.BFB, tee=True)
 
     t_simulation = time.time()  # Simulation time
