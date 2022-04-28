@@ -233,13 +233,9 @@ class TestIronOC(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_unscaled(self, iron_oc_unscaled):
-        # added max_iter, halt_on_ampl_error optargs and set log to DEBUG
-        # to display solve error (only occurs in this test, and doesn't occur
-        # when the dyn_TGA_example is modified to use an EnergyBalance with
-        # no scaling - not sure why but seems like it concerns the energy eqns)
-        optarg = {"tol": 1e-6, "max_iter": 10000, "halt_on_ampl_error": 'yes'}
-        import idaes.logger as idaeslog
-        initialization_tester(iron_oc_unscaled, optarg=optarg, outlvl=idaeslog.DEBUG)
+        optarg = {"tol": 1e-6}
+
+        initialization_tester(iron_oc_unscaled, optarg=optarg)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -329,47 +325,47 @@ class TestIronOC(object):
         # Calculate scaling factors
         iscale.calculate_scaling_factors(FB0D)
 
-        assert pytest.approx(0.10000, abs=1e-5) == iscale.get_scaling_factor(
+        assert pytest.approx(0.10000, rel=1e-5) == iscale.get_scaling_factor(
             FB0D.bed_diameter
         )
-        assert pytest.approx(0.10000, abs=1e-5) == iscale.get_scaling_factor(
+        assert pytest.approx(0.10000, rel=1e-5) == iscale.get_scaling_factor(
             FB0D.bed_height
         )
-        assert pytest.approx(0.12732, abs=1e-5) == iscale.get_scaling_factor(
+        assert pytest.approx(0.127324, rel=1e-5) == iscale.get_scaling_factor(
             FB0D.volume_bed
         )
 
         for c in FB0D.volume_bed_constraint.values():
             assert pytest.approx(
-                0.12732, abs=1e-5
+                0.127324, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.volume_solid_constraint.items():
             assert pytest.approx(
-                0.12732, abs=1e-5
+                0.127324, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for (t, j), c in FB0D.solids_material_holdup_constraints.items():
             assert pytest.approx(
-                0.00127, abs=1e-5
+                0.00127324, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for (t, j), c in FB0D.solids_material_accumulation_constraints.items():
             assert pytest.approx(
-                0.12732, abs=1e-5
+                0.127324, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.mass_solids_constraint.items():
             assert pytest.approx(
-                0.00127, abs=1e-5
+                0.00127324, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.sum_component_constraint.items():
             assert pytest.approx(
-                10.00000, abs=1e-5
+                10.00000, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.solids_energy_holdup_constraints.items():
             assert pytest.approx(
-                1.27324E-7, abs=1e-9
+                1.27324E-7, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.solids_energy_accumulation_constraints.items():
             assert pytest.approx(
-                1.27324E-7, abs=1e-9
+                1.27324E-7, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
 
     @pytest.mark.solver
@@ -422,27 +418,27 @@ class TestIronOC(object):
     @pytest.mark.component
     def test_solution(self, iron_oc):
         assert (
-            pytest.approx(1798.8532, abs=1e-2)
+            pytest.approx(1798.8532, rel=1e-5)
             == iron_oc.fs.unit.mass_solids[3600].value
         )
         assert (
-            pytest.approx(0.1955, abs=1e-2)
+            pytest.approx(0.195476, rel=1e-5)
             == iron_oc.fs.unit.solids[3600].particle_porosity.value
         )
         assert (
-            pytest.approx(0.5583, abs=1e-2)
+            pytest.approx(0.558299, rel=1e-5)
             == iron_oc.fs.unit.solids[3600].mass_frac_comp["Al2O3"].value
         )
         assert (
-            pytest.approx(0.0051, abs=1e-2)
+            pytest.approx(0.00511114, rel=1e-5)
             == iron_oc.fs.unit.solids[3600].mass_frac_comp["Fe2O3"].value
         )
         assert (
-            pytest.approx(0.4366, abs=1e-2)
+            pytest.approx(0.43659, rel=1e-5)
             == iron_oc.fs.unit.solids[3600].mass_frac_comp["Fe3O4"].value
         )
         assert (
-            pytest.approx(1255.59, abs=1e-2)
+            pytest.approx(1255.59, rel=1e-5)
             == iron_oc.fs.unit.solids[3600].temperature.value
         )
 
@@ -525,7 +521,7 @@ class TestIronOC(object):
             / iron_oc.fs.unit.solids[0]._params.mw_comp["Fe3O4"]
         )
         stoichiometric_ratio = fe2o3_reacted / fe3o4_produced
-        assert pytest.approx(1.5, abs=1e-6) == stoichiometric_ratio
+        assert pytest.approx(1.5, rel=1e-5) == stoichiometric_ratio
 
         # Conservation of energy check
         # first, check if Final Energy - Initial Energy = Reaction Enthalpy
@@ -813,43 +809,43 @@ class TestIronOC_EnergyBalanceType(object):
         # Calculate scaling factors
         iscale.calculate_scaling_factors(FB0D)
 
-        assert pytest.approx(0.10000, abs=1e-5) == iscale.get_scaling_factor(
+        assert pytest.approx(0.10000, rel=1e-5) == iscale.get_scaling_factor(
             FB0D.bed_diameter
         )
-        assert pytest.approx(0.10000, abs=1e-5) == iscale.get_scaling_factor(
+        assert pytest.approx(0.10000, rel=1e-5) == iscale.get_scaling_factor(
             FB0D.bed_height
         )
-        assert pytest.approx(0.12732, abs=1e-5) == iscale.get_scaling_factor(
+        assert pytest.approx(0.127324, rel=1e-5) == iscale.get_scaling_factor(
             FB0D.volume_bed
         )
 
         for c in FB0D.volume_bed_constraint.values():
             assert pytest.approx(
-                0.12732, abs=1e-5
+                0.127324, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.volume_solid_constraint.items():
             assert pytest.approx(
-                0.12732, abs=1e-5
+                0.127324, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for (t, j), c in FB0D.solids_material_holdup_constraints.items():
             assert pytest.approx(
-                0.00127, abs=1e-5
+                0.00127324, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for (t, j), c in FB0D.solids_material_accumulation_constraints.items():
             assert pytest.approx(
-                0.12732, abs=1e-5
+                0.127324, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.mass_solids_constraint.items():
             assert pytest.approx(
-                0.00127, abs=1e-5
+                0.00127324, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.sum_component_constraint.items():
             assert pytest.approx(
-                10.00000, abs=1e-5
+                10.00000, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.isothermal_solid_phase.items():
             assert pytest.approx(
-                0.01000, abs=1e-5
+                0.01000, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
 
     @pytest.mark.solver
@@ -902,27 +898,27 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.component
     def test_solution(self, iron_oc):  # need to update these values
         assert (
-            pytest.approx(1798.8281, abs=1e-2)
+            pytest.approx(1798.8281, rel=1e-5)
             == iron_oc.fs.unit.mass_solids[3600].value
         )
         assert (
-            pytest.approx(0.1955, abs=1e-2)
+            pytest.approx(0.195472, rel=1e-5)
             == iron_oc.fs.unit.solids[3600].particle_porosity.value
         )
         assert (
-            pytest.approx(0.5583, abs=1e-2)
+            pytest.approx(0.558307, rel=1e-5)
             == iron_oc.fs.unit.solids[3600].mass_frac_comp["Al2O3"].value
         )
         assert (
-            pytest.approx(0.0047, abs=1e-2)
+            pytest.approx(0.00469410, rel=1e-5)
             == iron_oc.fs.unit.solids[3600].mass_frac_comp["Fe2O3"].value
         )
         assert (
-            pytest.approx(0.4370, abs=1e-2)
+            pytest.approx(0.4370, rel=1e-5)
             == iron_oc.fs.unit.solids[3600].mass_frac_comp["Fe3O4"].value
         )
         assert (
-            pytest.approx(1273.15, abs=1e-2)
+            pytest.approx(1273.15, rel=1e-5)
             == iron_oc.fs.unit.solids[3600].temperature.value
         )
 
@@ -1005,7 +1001,7 @@ class TestIronOC_EnergyBalanceType(object):
             / iron_oc.fs.unit.solids[0]._params.mw_comp["Fe3O4"]
         )
         stoichiometric_ratio = fe2o3_reacted / fe3o4_produced
-        assert pytest.approx(1.5, abs=1e-6) == stoichiometric_ratio
+        assert pytest.approx(1.5, rel=1e-5) == stoichiometric_ratio
 
     @pytest.mark.ui
     @pytest.mark.unit

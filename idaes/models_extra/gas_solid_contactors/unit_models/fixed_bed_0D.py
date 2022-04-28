@@ -414,7 +414,7 @@ see reaction package for documentation.}""",
         Returns:
             None
         """
-        outlvl = idaeslog.DEBUG  # so the failing test error shows in the log
+
         # Set solver options
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")

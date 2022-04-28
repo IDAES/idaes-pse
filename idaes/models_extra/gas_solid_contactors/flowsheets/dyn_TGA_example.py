@@ -89,7 +89,7 @@ def main(m):
         m.fs.TGA.gas[t].mole_frac_comp["CH4"].fix(0.1)
 
     # Solver options
-    optarg={"tol": 1e-6}
+    optarg = {"tol": 1e-6}
 
     t_start = time.time()  # Run start time
 

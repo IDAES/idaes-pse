@@ -1367,11 +1367,11 @@ class TestIronOC_TransformationMethod(object):
         assert pytest.approx(0.266906, abs=1e-5) == iron_oc.fs.unit.delta[0, 0].value
         assert pytest.approx(0.31323, abs=1e-5) == iron_oc.fs.unit.delta[0, 1].value
         assert (
-            pytest.approx(126040.59980, abs=1e-5)
+            pytest.approx(126040.59979, abs=1e-5)
             == iron_oc.fs.unit.gas_outlet.pressure[0].value
         )
         assert (
-            pytest.approx(59959.40019, abs=1e-5)
+            pytest.approx(59959.40021, abs=1e-5)
             == iron_oc.fs.unit.gas_inlet.pressure[0].value
             - iron_oc.fs.unit.gas_outlet.pressure[0].value
         )
