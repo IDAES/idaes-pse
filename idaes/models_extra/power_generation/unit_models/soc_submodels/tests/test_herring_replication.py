@@ -72,8 +72,12 @@ from pyomo.common.fileutils import this_file_dir
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties import iapws95
+import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.models_extra.power_generation.unit_models.soc_submodels import SolidOxideCell
+
+from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+from idaes.power_generation.properties.natural_gas_PR import get_prop, EosType
+from idaes.models_extra.power_generation.unit_models.soc_submodels import SolidOxideCell, SolidOxideModuleSimple
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
     _comp_enthalpy_expr,
     _comp_entropy_expr,
@@ -105,6 +109,116 @@ N_cell = 10
 V_min = 8
 P = 85910
 
+zfaces = np.linspace(0, 1, 11).tolist()
+
+xfaces_electrode = [0.0, 1.0]
+xfaces_electrolyte = [0.0, 1.0]
+
+fuel_comps = ["H2", "H2O", "N2"]
+fuel_stoich_dict = {
+    "H2": -0.5,
+    "H2O": 0.5,
+    "N2": 0,
+    "Vac": 0.5,
+    "O^2-": -0.5,
+    "e^-": 1.0,
+}
+oxygen_comps = ["O2", "N2"]
+oxygen_stoich_dict = {"O2": -0.25, "Vac": -0.5, "O^2-": 0.5, "e^-": -1.0}
+
+cell_config = {
+            "has_holdup": True,
+            "control_volume_zfaces": zfaces,
+            "control_volume_xfaces_fuel_electrode": xfaces_electrode,
+            "control_volume_xfaces_oxygen_electrode": xfaces_electrode,
+            "control_volume_xfaces_electrolyte": xfaces_electrolyte,
+            "fuel_component_list": fuel_comps,
+            "fuel_triple_phase_boundary_stoich_dict": fuel_stoich_dict,
+            "inert_fuel_species_triple_phase_boundary": ["N2"],
+            "oxygen_component_list": oxygen_comps,
+            "oxygen_triple_phase_boundary_stoich_dict": oxygen_stoich_dict,
+            "inert_oxygen_species_triple_phase_boundary": ["N2"],
+            "flow_pattern": HeatExchangerFlowPattern.cocurrent,
+            "include_temperature_x_thermo": True,
+            "include_contact_resistance": True,
+        }
+
+def fix_cell_parameters(cell):
+    cell.fuel_channel.length_x.fix(1.09e-3)
+    cell.oxygen_channel.length_x.fix(1.09e-3)
+
+    cell.length_y.fix(0.08)
+
+    cell.length_z.fix(0.08)
+    cell.fuel_channel.heat_transfer_coefficient.fix(100)
+
+    cell.contact_flow_mesh_fuel_electrode.log_preexponential_factor.fix(
+        pyo.log(0.55e-4)
+    )
+    cell.contact_flow_mesh_oxygen_electrode.log_preexponential_factor.fix(
+        pyo.log(0.55e-4)
+    )
+    cell.contact_interconnect_fuel_flow_mesh.log_preexponential_factor.fix(
+        pyo.log(0.15e-4)
+    )
+    cell.contact_interconnect_oxygen_flow_mesh.log_preexponential_factor.fix(
+        pyo.log(0.15e-4)
+    )
+
+    cell.contact_flow_mesh_fuel_electrode.thermal_exponent_dividend.fix(0)
+    cell.contact_flow_mesh_fuel_electrode.contact_fraction.fix(1)
+    cell.contact_flow_mesh_oxygen_electrode.thermal_exponent_dividend.fix(0)
+    cell.contact_flow_mesh_oxygen_electrode.contact_fraction.fix(1)
+
+    cell.contact_interconnect_fuel_flow_mesh.thermal_exponent_dividend.fix(0)
+    cell.contact_interconnect_fuel_flow_mesh.contact_fraction.fix(1)
+    cell.contact_interconnect_oxygen_flow_mesh.thermal_exponent_dividend.fix(0)
+    cell.contact_interconnect_oxygen_flow_mesh.contact_fraction.fix(1)
+
+    cell.oxygen_channel.heat_transfer_coefficient.fix(100)
+
+    cell.fuel_electrode.length_x.fix(23e-6)
+    cell.fuel_electrode.porosity.fix(0.37)
+    cell.fuel_electrode.tortuosity.fix(3)
+    cell.fuel_electrode.solid_heat_capacity.fix(450)
+    cell.fuel_electrode.solid_density.fix(3210.0)
+    cell.fuel_electrode.solid_thermal_conductivity.fix(2.16)
+    cell.fuel_electrode.resistivity_log_preexponential_factor.fix(
+        pyo.log(8.856e-6)
+    )
+    cell.fuel_electrode.resistivity_thermal_exponent_dividend.fix(0)
+
+    cell.oxygen_electrode.length_x.fix(21e-6)
+    cell.oxygen_electrode.porosity.fix(0.37)
+    cell.oxygen_electrode.tortuosity.fix(3.0)
+    cell.oxygen_electrode.solid_heat_capacity.fix(430)
+    cell.oxygen_electrode.solid_density.fix(3030)
+    cell.oxygen_electrode.solid_thermal_conductivity.fix(2.16)
+    cell.oxygen_electrode.resistivity_log_preexponential_factor.fix(
+        pyo.log(1.425e-4)
+    )
+    cell.oxygen_electrode.resistivity_thermal_exponent_dividend.fix(0)
+
+    cell.electrolyte.length_x.fix(1.4e-4)
+    cell.electrolyte.heat_capacity.fix(470)
+    cell.electrolyte.density.fix(5160)
+    cell.electrolyte.thermal_conductivity.fix(2.16)
+    cell.electrolyte.resistivity_log_preexponential_factor.fix(pyo.log(1.07e-4))
+    cell.electrolyte.resistivity_thermal_exponent_dividend.fix(7237)
+
+    # Values from Kazempoor and Braun
+    cell.fuel_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(pyo.log(5.5e8))
+    cell.fuel_triple_phase_boundary.exchange_current_activation_energy.fix(100e3)
+    cell.fuel_triple_phase_boundary.activation_potential_alpha1.fix(1)
+    cell.fuel_triple_phase_boundary.activation_potential_alpha2.fix(1)
+    cell.fuel_triple_phase_boundary.exchange_current_exponent_comp["H2"].fix(0.5)
+    cell.fuel_triple_phase_boundary.exchange_current_exponent_comp["H2O"].fix(0.1)
+
+    cell.oxygen_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(pyo.log(7e8))
+    cell.oxygen_triple_phase_boundary.exchange_current_activation_energy.fix(110e3)
+    cell.oxygen_triple_phase_boundary.activation_potential_alpha1.fix(1)
+    cell.oxygen_triple_phase_boundary.activation_potential_alpha2.fix(1)
+    cell.oxygen_triple_phase_boundary.exchange_current_exponent_comp["O2"].fix(0.5)
 
 def model_func():
     m = pyo.ConcreteModel()
@@ -121,117 +235,11 @@ def model_func():
         default={"parameters": m.fs.propertiesIapws95}
     )
 
-    zfaces = np.linspace(0, 1, 11).tolist()
-
-    xfaces_electrode = [0.0, 1.0]
-    xfaces_electrolyte = [0.0, 1.0]
-
-    fuel_comps = ["H2", "H2O", "N2"]
-    fuel_stoich_dict = {
-        "H2": -0.5,
-        "H2O": 0.5,
-        "N2": 0,
-        "Vac": 0.5,
-        "O^2-": -0.5,
-        "e^-": 1.0,
-    }
-    oxygen_comps = ["O2", "N2"]
-    oxygen_stoich_dict = {"O2": -0.25, "Vac": -0.5, "O^2-": 0.5, "e^-": -1.0}
-
     m.fs.cell = SolidOxideCell(
-        default={
-            "has_holdup": True,
-            "control_volume_zfaces": zfaces,
-            "control_volume_xfaces_fuel_electrode": xfaces_electrode,
-            "control_volume_xfaces_oxygen_electrode": xfaces_electrode,
-            "control_volume_xfaces_electrolyte": xfaces_electrolyte,
-            "fuel_component_list": fuel_comps,
-            "fuel_triple_phase_boundary_stoich_dict": fuel_stoich_dict,
-            "inert_fuel_species_triple_phase_boundary": ["N2"],
-            "oxygen_component_list": oxygen_comps,
-            "oxygen_triple_phase_boundary_stoich_dict": oxygen_stoich_dict,
-            "inert_oxygen_species_triple_phase_boundary": ["N2"],
-            "flow_pattern": HeatExchangerFlowPattern.cocurrent,
-            "include_temperature_x_thermo": True,
-            "include_contact_resistance": True,
-        }
+        default=cell_config
     )
 
-    m.fs.cell.fuel_channel.length_x.fix(1.09e-3)
-    m.fs.cell.oxygen_channel.length_x.fix(1.09e-3)
-
-    m.fs.cell.length_y.fix(0.08)
-
-    m.fs.cell.length_z.fix(0.08)
-    m.fs.cell.fuel_channel.heat_transfer_coefficient.fix(100)
-
-    m.fs.cell.contact_flow_mesh_fuel_electrode.log_preexponential_factor.fix(
-        pyo.log(0.55e-4)
-    )
-    m.fs.cell.contact_flow_mesh_oxygen_electrode.log_preexponential_factor.fix(
-        pyo.log(0.55e-4)
-    )
-    m.fs.cell.contact_interconnect_fuel_flow_mesh.log_preexponential_factor.fix(
-        pyo.log(0.15e-4)
-    )
-    m.fs.cell.contact_interconnect_oxygen_flow_mesh.log_preexponential_factor.fix(
-        pyo.log(0.15e-4)
-    )
-
-    m.fs.cell.contact_flow_mesh_fuel_electrode.thermal_exponent_dividend.fix(0)
-    m.fs.cell.contact_flow_mesh_fuel_electrode.contact_fraction.fix(1)
-    m.fs.cell.contact_flow_mesh_oxygen_electrode.thermal_exponent_dividend.fix(0)
-    m.fs.cell.contact_flow_mesh_oxygen_electrode.contact_fraction.fix(1)
-
-    m.fs.cell.contact_interconnect_fuel_flow_mesh.thermal_exponent_dividend.fix(0)
-    m.fs.cell.contact_interconnect_fuel_flow_mesh.contact_fraction.fix(1)
-    m.fs.cell.contact_interconnect_oxygen_flow_mesh.thermal_exponent_dividend.fix(0)
-    m.fs.cell.contact_interconnect_oxygen_flow_mesh.contact_fraction.fix(1)
-
-    m.fs.cell.oxygen_channel.heat_transfer_coefficient.fix(100)
-
-    m.fs.cell.fuel_electrode.length_x.fix(23e-6)
-    m.fs.cell.fuel_electrode.porosity.fix(0.37)
-    m.fs.cell.fuel_electrode.tortuosity.fix(3)
-    m.fs.cell.fuel_electrode.solid_heat_capacity.fix(450)
-    m.fs.cell.fuel_electrode.solid_density.fix(3210.0)
-    m.fs.cell.fuel_electrode.solid_thermal_conductivity.fix(2.16)
-    m.fs.cell.fuel_electrode.resistivity_log_preexponential_factor.fix(
-        pyo.log(8.856e-6)
-    )
-    m.fs.cell.fuel_electrode.resistivity_thermal_exponent_dividend.fix(0)
-
-    m.fs.cell.oxygen_electrode.length_x.fix(21e-6)
-    m.fs.cell.oxygen_electrode.porosity.fix(0.37)
-    m.fs.cell.oxygen_electrode.tortuosity.fix(3.0)
-    m.fs.cell.oxygen_electrode.solid_heat_capacity.fix(430)
-    m.fs.cell.oxygen_electrode.solid_density.fix(3030)
-    m.fs.cell.oxygen_electrode.solid_thermal_conductivity.fix(2.16)
-    m.fs.cell.oxygen_electrode.resistivity_log_preexponential_factor.fix(
-        pyo.log(1.425e-4)
-    )
-    m.fs.cell.oxygen_electrode.resistivity_thermal_exponent_dividend.fix(0)
-
-    m.fs.cell.electrolyte.length_x.fix(1.4e-4)
-    m.fs.cell.electrolyte.heat_capacity.fix(470)
-    m.fs.cell.electrolyte.density.fix(5160)
-    m.fs.cell.electrolyte.thermal_conductivity.fix(2.16)
-    m.fs.cell.electrolyte.resistivity_log_preexponential_factor.fix(pyo.log(1.07e-4))
-    m.fs.cell.electrolyte.resistivity_thermal_exponent_dividend.fix(7237)
-
-    # Values from Kazempoor and Braun
-    m.fs.cell.fuel_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(pyo.log(5.5e8))
-    m.fs.cell.fuel_triple_phase_boundary.exchange_current_activation_energy.fix(100e3)
-    m.fs.cell.fuel_triple_phase_boundary.activation_potential_alpha1.fix(1)
-    m.fs.cell.fuel_triple_phase_boundary.activation_potential_alpha2.fix(1)
-    m.fs.cell.fuel_triple_phase_boundary.exchange_current_exponent_comp["H2"].fix(0.5)
-    m.fs.cell.fuel_triple_phase_boundary.exchange_current_exponent_comp["H2O"].fix(0.1)
-
-    m.fs.cell.oxygen_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(pyo.log(7e8))
-    m.fs.cell.oxygen_triple_phase_boundary.exchange_current_activation_energy.fix(110e3)
-    m.fs.cell.oxygen_triple_phase_boundary.activation_potential_alpha1.fix(1)
-    m.fs.cell.oxygen_triple_phase_boundary.activation_potential_alpha2.fix(1)
-    m.fs.cell.oxygen_triple_phase_boundary.exchange_current_exponent_comp["O2"].fix(0.5)
+    fix_cell_parameters(m.fs.cell)
 
     m.fs.cell.oxygen_inlet.flow_mol[0].fix(cccm_to_mps(3500) / N_cell)
     m.fs.cell.oxygen_inlet.mole_frac_comp[0, "O2"].fix(0.21)
@@ -248,9 +256,58 @@ def model():
     # so that the reference dataset can be recreated if necessary
     return model_func()
 
+@pytest.fixture
+def model_stack():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(
+        default={
+            "dynamic": False,
+            "time_set": [0],
+            "time_units": pyo.units.s,
+        }
+    )
+
+    m.fs.propertiesIapws95 = iapws95.Iapws95ParameterBlock()
+    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(
+        default={"parameters": m.fs.propertiesIapws95}
+    )
+
+    m.fs.oxygen_params = GenericParameterBlock(
+        default=get_prop(oxygen_comps, {"Vap"}, eos=EosType.IDEAL),
+        doc="Air-side parameters",
+    )
+    m.fs.fuel_params = GenericParameterBlock(
+        default=get_prop(fuel_comps, {"Vap"}, eos=EosType.IDEAL),
+        doc="Fuel-side parameters",
+    )
+
+    m.fs.stack = SolidOxideModuleSimple(
+        default={
+            "solid_oxide_cell_config": cell_config,
+            "fuel_property_package": m.fs.fuel_params,
+            "oxygen_property_package": m.fs.oxygen_params,
+        }
+    )
+
+    fix_cell_parameters(m.fs.stack.solid_oxide_cell)
+    m.fs.stack.number_cells.fix(10)
+    m.fs.stack.oxygen_inlet.flow_mol[0].fix(cccm_to_mps(3500))
+    m.fs.stack.oxygen_inlet.mole_frac_comp[0, "O2"].fix(0.21)
+    m.fs.stack.oxygen_inlet.mole_frac_comp[0, "N2"].fix(0.79)
+
+    for pp in [m.fs.fuel_params, m.fs.oxygen_params]:
+        pp.set_default_scaling("flow_mol", 1e3)
+        pp.set_default_scaling("flow_mol_phase", 1e3)
+        pp.set_default_scaling("mole_frac_comp", 10)
+        pp.set_default_scaling("mole_frac_phase_comp", 10)
+        pp.set_default_scaling("enth_mol_phase", 1e-3)
+        pp.set_default_scaling("pressure", 1e-5)
+        pp.set_default_scaling("temperature", 1e-2)
+
+    return m
 
 @pytest.mark.component
-def test_initialization(model):
+def test_initialization_cell(model):
     m = model
     cell = m.fs.cell
 
@@ -320,6 +377,83 @@ def test_initialization(model):
     cell.oxygen_inlet.mole_frac_comp[0, "O2"].fix()
     cell.oxygen_inlet.mole_frac_comp[0, "N2"].fix()
 
+@pytest.mark.component
+def test_initialization_stack(model_stack):
+    m = model_stack
+    stack = m.fs.stack
+    cell = m.fs.stack.solid_oxide_cell
+
+    stack.potential_cell[0].fix(1.288)
+    stack.fuel_inlet.temperature[0].fix(1103.15)
+    stack.fuel_inlet.pressure.fix(85910)
+    stack.fuel_inlet.flow_mol[0].fix(0.00484863)
+    stack.fuel_inlet.mole_frac_comp[0, "H2"].fix(0.0630491)
+    stack.fuel_inlet.mole_frac_comp[0, "H2O"].fix(0.6273812)
+    stack.fuel_inlet.mole_frac_comp[0, "N2"].fix(0.3095697)
+
+    stack.oxygen_inlet.temperature[0].fix(1103.15)
+    stack.oxygen_inlet.pressure.fix(85910)
+
+    iscale.calculate_scaling_factors(m)
+
+    assert degrees_of_freedom(m.fs.stack) == 0
+
+    stack.initialize_build(
+        optarg={"nlp_scaling_method": "user-scaling"},
+        current_density_guess=-2000,
+        temperature_guess=1103.15,
+    )
+    cell.model_check()
+    # Test whether fixed degrees of freedom remain fixed
+    assert degrees_of_freedom(m.fs.stack) == 0
+
+    approx = lambda x: pytest.approx(x, 1e-4)
+    assert cell.current_density[0, 1].value == approx(-2394.77)
+    assert cell.current_density[0, 3].value == approx(-2326.71)
+    assert cell.current_density[0, 5].value == approx(-2268.31)
+    assert cell.current_density[0, 8].value == approx(-2191.66)
+    assert cell.current_density[0, 10].value == approx(-2145.27)
+
+    assert stack.fuel_outlet.temperature[0].value == approx(1103.40)
+    assert pyo.value(stack.fuel_outlet.pressure[0]) == approx(85910)
+    assert approx(484.863e-5) == pyo.value(stack.fuel_outlet.flow_mol[0])
+    assert approx(0.472735) == pyo.value(stack.fuel_outlet.mole_frac_comp[0, "H2O"])
+    assert approx(0.217695) == pyo.value(stack.fuel_outlet.mole_frac_comp[0, "H2"])
+    assert approx(0.309570) == pyo.value(stack.fuel_outlet.mole_frac_comp[0, "N2"])
+
+    assert stack.oxygen_outlet.temperature[0].value == approx(1103.42)
+    assert pyo.value(stack.oxygen_outlet.pressure[0]) == approx(85910)
+    assert approx(297.821e-5) == pyo.value(stack.oxygen_outlet.flow_mol[0])
+    assert approx(0.3094487) == pyo.value(stack.oxygen_outlet.mole_frac_comp[0, "O2"])
+    assert approx(0.690551) == pyo.value(stack.oxygen_outlet.mole_frac_comp[0, "N2"])
+
+    # Test whether unfixed degrees of freedom remain unfixed
+    stack.potential_cell.unfix()
+    stack.fuel_inlet.temperature[0].unfix()
+    stack.fuel_inlet.pressure.unfix()
+    stack.fuel_inlet.flow_mol[0].unfix()
+    stack.fuel_inlet.mole_frac_comp[0, "H2"].unfix()
+    stack.fuel_inlet.mole_frac_comp[0, "H2O"].unfix()
+    stack.fuel_inlet.mole_frac_comp[0, "N2"].unfix()
+
+    stack.oxygen_inlet.temperature[0].unfix()
+    stack.oxygen_inlet.pressure.unfix()
+    stack.oxygen_inlet.mole_frac_comp[0, "O2"].unfix()
+    stack.oxygen_inlet.mole_frac_comp[0, "N2"].unfix()
+
+    assert degrees_of_freedom(stack) == 11
+
+    stack.initialize_build(
+        optarg={"nlp_scaling_method": "user-scaling"},
+        current_density_guess=-1500,
+        temperature_guess=1103.15
+    )
+
+    assert degrees_of_freedom(stack) == 11
+
+    # Clean up side effects for other tests
+    stack.oxygen_inlet.mole_frac_comp[0, "O2"].fix()
+    stack.oxygen_inlet.mole_frac_comp[0, "N2"].fix()
 
 def kazempoor_braun_replication(model):
     m = model

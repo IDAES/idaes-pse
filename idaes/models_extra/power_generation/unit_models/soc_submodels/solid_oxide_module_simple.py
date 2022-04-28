@@ -223,6 +223,9 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         def electrical_work(b, t):
             return b.solid_oxide_cell.electrical_work[t] * b.number_cells
 
+        self.potential_cell = pyo.Reference(self.solid_oxide_cell.potential)
+
+
     def initialize_build(
             self,
             state_args_fuel=None,
@@ -242,6 +245,11 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         opt = get_solver(solver, optarg)
 
         number_cells_fixed = self.number_cells.fixed
+        potential_cell_fixed = {}
+        for t in self.flowsheet().time:
+            potential_cell_fixed[t] = self.potential_cell[t].fixed
+            self.potential_cell[t].fix()
+
         self.number_cells.fix()
 
         flags = {}
@@ -295,6 +303,9 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         self.oxygen_properties_in.release_state(flags=flags["oxygen"], outlvl=outlvl)
         if not number_cells_fixed:
             self.number_cells.unfix()
+        for t in self.flowsheet().time:
+            if not potential_cell_fixed[t]:
+                self.potential_cell[t].unfix()
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
