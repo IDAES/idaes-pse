@@ -19,45 +19,6 @@ from idaes.apps.grid_integration.utils import convert_marginal_costs_to_actual_c
 
 prescient, prescient_avail = attempt_import("prescient")
 
-{
-    "bus": "Adams",
-    "in_service": True,
-    "mbase": 100.0,
-    "pg": 76.0,
-    "qg": -2.31,
-    "p_min": 30.0,
-    "p_max": 76.0,
-    "q_min": -25.0,
-    "q_max": 30.0,
-    "ramp_q": 2.0,
-    "fuel": "Coal",
-    "unit_type": "STEAM",
-    "area": "1",
-    "zone": "12.0",
-    "generator_type": "thermal",
-    "p_fuel": {
-        "data_type": "fuel_curve",
-        "values": [(30.0, 347.73), (45.3, 481.36), (60.7, 633.22), (76.0, 796.18)],
-    },
-    "startup_fuel": [(4.0, 1111.637669), (10.0, 1599.13457), (12.0, 1738.41)],
-    "non_fuel_startup_cost": 0.0,
-    "shutdown_cost": 0.0,
-    "agc_capable": True,
-    "p_min_agc": 30.0,
-    "p_max_agc": 76.0,
-    "ramp_agc": 2.0,
-    "ramp_up_60min": 120.0,
-    "ramp_down_60min": 120.0,
-    "fuel_cost": 2.11399,
-    "startup_capacity": 30.0,
-    "shutdown_capacity": 30.0,
-    "min_up_time": 8.0,
-    "min_down_time": 4.0,
-    "initial_status": 9.0,
-    "initial_p_output": 30.0,
-    "initial_q_output": 0.0,
-}
-
 
 class DoubleLoopCoordinator:
 
