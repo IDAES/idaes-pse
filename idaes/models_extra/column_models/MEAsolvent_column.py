@@ -15,7 +15,6 @@ Packed Solvent Column Model for MEA systems
 """
 
 # Import Python libraries
-import pytest
 import numpy as np
 
 # Import Pyomo libraries
@@ -24,34 +23,18 @@ from pyomo.environ import ConcreteModel, value, Var, NonNegativeReals, Param, Tr
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES Libraries
-import idaes
 from idaes.core.util.constants import Constants as CONST
-from idaes.core import FlowsheetBlock
 from idaes.models_extra.column_models.solvent_column import \
     PackedColumnData
-from idaes.models.properties.modular_properties.base.generic_property import (
-        GenericParameterBlock)
-from idaes.models_extra.column_models.properties.MEA_vapor \
-    import flue_gas as vaporconfig_absorber
-from idaes.models_extra.column_models.properties.MEA_vapor \
-    import wet_co2 as vaporconfig_stripper
-from idaes.models_extra.column_models.properties.MEA_solvent \
-    import configuration as liquidconfig
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import initialization_tester
 from idaes.core import declare_process_block_class
 from idaes.core.util.exceptions import InitializationError
-from pyomo.util.infeasible import log_infeasible_constraints
 from idaes.core.solvers.get_solver import get_solver
 import idaes.logger as idaeslog
 
-from idaes.core.util import model_serializer as ms
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
 import idaes.core.util.scaling as iscale
-from pyomo.util.infeasible import log_infeasible_constraints
-
-import os
 
 
 __author__ = "Paul Akula, John Eslick, Anuja Deshpande, Andrew Lee"
@@ -205,7 +188,7 @@ class MEAColumnData(PackedColumnData):
                              (blk.heat_transfer_coeff_base[t, x] *
                               blk.area_interfacial[t, x] *
                               blk.area_column)))
-        self.heat_transfer_Ackmann_correction = Constraint(
+        self.heat_transfer_coeff_corr = Constraint(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             rule=rule_heat_transfer_coeff_Ack,
@@ -287,7 +270,7 @@ class MEAColumnData(PackedColumnData):
                     blk.vapor_phase.properties[t, x].vol_mol_phase['Vap']))/\
                       (blk.packing_specific_area*blk.vapor_phase.properties[t, x].visc_d_phase['Vap']))**(3/4))
     
-        self.k_v_constraint = Constraint(self.flowsheet().time,
+        self.mass_transfer_coeff_vap_constraint = Constraint(self.flowsheet().time,
                               self.vapor_phase.length_domain,
                               equilibrium_comp,
                               rule=rule_mass_transfer_coeff_vap,
@@ -309,7 +292,7 @@ class MEAColumnData(PackedColumnData):
                     blk.liquid_phase.properties[t, x].diffus_phase_comp['Liq',j]/\
                     (blk.hydraulic_diameter*blk.holdup_liq[t, x]))**0.5
     
-        self.k_l_constraint = Constraint(self.flowsheet().time,
+        self.mass_transfer_coeff_liq_constraint = Constraint(self.flowsheet().time,
             self.liquid_phase.length_domain,
             solute_comp_list,
             rule=rule_mass_transfer_coeff_liq,
@@ -349,7 +332,7 @@ class MEAColumnData(PackedColumnData):
         
         self.yi_MEA = Var(self.flowsheet().time,
                           self.liquid_phase.length_domain,
-                          bounds=(0,100),
+                          bounds=(0,1),
                           initialize=1,
                           units=None,
                           doc='''Dimensionless concentration of MEA
@@ -357,8 +340,8 @@ class MEAColumnData(PackedColumnData):
                                       
         self.yi_MEA_subst = Var(self.flowsheet().time,
                           self.liquid_phase.length_domain,
-                          bounds=(0,100),
-                          initialize=1,
+                          bounds=(0,1),
+                          initialize=0.97,
                           units=None,
                           doc='''Substitute for yi_MEA''')
         
@@ -370,12 +353,10 @@ class MEAColumnData(PackedColumnData):
                 C_MEA = blk.liquid_phase.properties[t, x].conc_mol_phase_comp_true['Liq','MEA']
                 C_H2O = blk.liquid_phase.properties[t, x].conc_mol_phase_comp_true['Liq','H2O']
                 
-                # Original expression
+                # Reference: X.Luo et al., Chem. Eng. Sci. (2015)
+                
                 return (2.003e10*exp(-4742*pyunits.K/T)*C_MEA +
                         4.147e6*exp(-3110*pyunits.K/T)*C_H2O)*1e-6
-    
-                # # Updated expression with new reference - Puttas paper
-                # return 3.1732e9*exp(-4936.6*pyunits.K/T)*C_MEA*1e-6
     
         self.k2_rxn = Expression(self.flowsheet().time,
                               self.liquid_phase.length_domain,
@@ -511,15 +492,6 @@ class MEAColumnData(PackedColumnData):
                     blk.yi_MEA_subst[t, x])
                 )**2 for t in time_set) for x in x_set if x != blk.liquid_phase.length_domain.last()
             )
-                        
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                          doc='''Enhancement factor lower bound ''')                    
-        def E3_eqn(blk, t, x):
-            if x == blk.liquid_phase.length_domain.last():
-                return Constraint.Skip
-            else:
-                return 1 - blk.enhancement_factor[t, x] <= 0
 
         self.enhancement_factor.setlb(1)
         self.enhancement_factor.setub(500)
@@ -539,7 +511,7 @@ class MEAColumnData(PackedColumnData):
                       blk.vapor_phase.properties[t, x].cp_mol_phase['Vap'] *
                       blk.vapor_phase.properties[t, x].diffus_phase_comp['Vap','CO2']))**(2 / 3)
     
-        self.h_v_constraint = Constraint(self.flowsheet().time,
+        self.heat_transfer_coeff_base_constraint = Constraint(self.flowsheet().time,
                               self.vapor_phase.length_domain,
                               rule=rule_heat_transfer_coeff,
                               doc='''vap-liq heat transfer coefficient''')
@@ -619,12 +591,6 @@ class MEAColumnData(PackedColumnData):
             iscale.set_scaling_factor(blk.liquid_phase.properties[0, x].flow_mol_phase_comp_true['Liq','CO2'], 100)
             
             iscale.set_scaling_factor(blk.liquid_phase.properties[0, x].flow_mol_phase_comp_true['Liq','H2O'], 1e-3)
-            
-            iscale.set_scaling_factor(blk.liquid_phase.properties[0, x].flow_mol_phase_comp_true['Liq','MEACOO_-'], 0.1)
-            
-            iscale.set_scaling_factor(blk.liquid_phase.properties[0, x].flow_mol_phase_comp_true['Liq','MEA_+'], 0.1)
-            
-            iscale.set_scaling_factor(blk.liquid_phase.properties[0, x].flow_mol_phase_comp_true['Liq','HCO3_-'], 0.1)
             
             iscale.set_scaling_factor(blk.liquid_phase.properties[0, x].flow_mol_phase_comp_true['Liq','MEA'], 0.1)
             
@@ -1060,7 +1026,7 @@ class MEAColumnData(PackedColumnData):
         opt = get_solver()
         
         use_idaes_solver_configuration_defaults()
-        opt.options["bound_push"] = 1e-8
+        opt.options["bound_push"] = 1e-7
         
         blk.calculate_scaling_factors_props()
         blk.calculate_scaling_factors_control_vol()
@@ -1070,7 +1036,7 @@ class MEAColumnData(PackedColumnData):
             "interphase_mass_transfer_eqn",
             "liquid_mass_transfer_eqn",
             "vapor_mass_transfer_eqn",
-            "heat_transfer_Ackmann_correction",
+            "heat_transfer_coeff_corr",
             "heat_transfer_eqn1",
             "heat_transfer_eqn2",
             "enthalpy_transfer_eqn1",
@@ -1083,18 +1049,17 @@ class MEAColumnData(PackedColumnData):
         
         liquid_holdup_constraint = ["holdup_liq_constraint"]
         
-        mass_transfer_coeff_vap_constraint = ["k_v_constraint"]
+        mass_transfer_coeff_vap_constraints = ["mass_transfer_coeff_vap_constraint"]
         
-        mass_transfer_coeff_liq_constraint = ["k_l_constraint"]
+        mass_transfer_coeff_liq_constraints = ["mass_transfer_coeff_liq_constraint"]
         
         enhancement_factor_constraints = ["yi_MEA_subst_eqn",
                                           "E1_eqn",
-                                          "E2_eqn",
-                                          "E3_eqn"]
+                                          "E2_eqn"]
         
         enhancement_factor_obj = ["E2_obj"]
         
-        heat_transfer_coefficient_constraint = ["h_v_constraint"]
+        heat_transfer_coefficient_constraint = ["heat_transfer_coeff_base_constraint"]
         
         flooding_constraint = ["flood_fraction_constr"]
 
@@ -1109,9 +1074,9 @@ class MEAColumnData(PackedColumnData):
                 c.deactivate()
             if c.local_name in liquid_holdup_constraint:
                 c.deactivate()
-            if c.local_name in mass_transfer_coeff_vap_constraint:
+            if c.local_name in mass_transfer_coeff_vap_constraints:
                 c.deactivate()
-            if c.local_name in mass_transfer_coeff_liq_constraint:
+            if c.local_name in mass_transfer_coeff_liq_constraints:
                 c.deactivate()
             if c.local_name in enhancement_factor_constraints:
                 c.deactivate()
@@ -1245,13 +1210,13 @@ class MEAColumnData(PackedColumnData):
 
         # Unfix heat transfer terms
         blk.heat_transfer_coeff.unfix()
-        for c in ["heat_transfer_Ackmann_correction"]:
+        for c in ["heat_transfer_coeff_corr"]:
             getattr(blk, c).activate()
             
-        for k in blk.heat_transfer_Ackmann_correction:
+        for k in blk.heat_transfer_coeff_corr:
             calculate_variable_from_constraint(
                     blk.heat_transfer_coeff[k],
-                    blk.heat_transfer_Ackmann_correction[k])
+                    blk.heat_transfer_coeff_corr[k])
         
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -1276,14 +1241,6 @@ class MEAColumnData(PackedColumnData):
             "Step 5 complete: {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
-        blk.vapor_phase.release_state(flags=vflag)
-        blk.liquid_phase.release_state(flags=lflag)
-
-        if (res.solver.termination_condition != TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok):
-            raise InitializationError(
-                f"{blk.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
             
         blk.calculate_scaling_factors_unit_model()
         iscale.calculate_scaling_factors(blk)
@@ -1297,12 +1254,9 @@ class MEAColumnData(PackedColumnData):
             getattr(blk, c).activate()
             
         use_idaes_solver_configuration_defaults()
-        optarg = {
-                "tol": 2e-8,
-                "max_iter": 150,
-                "bound_push":1e-10}
-        opt.options = optarg
-        opt.solve(blk, tee=True)
+        opt.options["bound_push"] = 1e-10
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
         
         # ---------------------------------------------------------------------
         init_log.info('Step 7: Interfacial area constraint')
@@ -1312,7 +1266,8 @@ class MEAColumnData(PackedColumnData):
         for c in interfacial_area_constraint:
             getattr(blk, c).activate()
             
-        opt.solve(blk, tee=True)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
         
         # Scale variable
         for (t, x), v in blk.area_interfacial.items():
@@ -1338,7 +1293,8 @@ class MEAColumnData(PackedColumnData):
                 calculate_variable_from_constraint(blk.holdup_liq[0, x],
                                                    blk.holdup_liq_constraint[0, x])
             
-        opt.solve(blk, tee=True)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
         
         # Scale variable
         for (t, x), v in blk.holdup_liq.items():
@@ -1354,7 +1310,7 @@ class MEAColumnData(PackedColumnData):
         init_log.info('Initializing mass transfer coefficient (vapor phase) - degrees_of_freedom = {}'.format(degrees_of_freedom(blk)))
         blk.mass_transfer_coeff_vap.unfix()
         
-        for c in mass_transfer_coeff_vap_constraint:
+        for c in mass_transfer_coeff_vap_constraints:
             getattr(blk, c).activate()
             
         for x in blk.vapor_phase.length_domain:
@@ -1362,18 +1318,19 @@ class MEAColumnData(PackedColumnData):
                 pass
             else:
                 calculate_variable_from_constraint(blk.mass_transfer_coeff_vap[0, x, 'CO2'],
-                                                        blk.k_v_constraint[0, x, 'CO2'])
+                                                        blk.mass_transfer_coeff_vap_constraint[0, x, 'CO2'])
                 calculate_variable_from_constraint(blk.mass_transfer_coeff_vap[0, x, 'H2O'],
-                                                blk.k_v_constraint[0, x, 'H2O'])
+                                                blk.mass_transfer_coeff_vap_constraint[0, x, 'H2O'])
                 
-        opt.solve(blk, tee=True)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
         
         # Scale variable
         for (t, x, j), v in blk.mass_transfer_coeff_vap.items():
             iscale.set_scaling_factor(v, 1/value(blk.mass_transfer_coeff_vap[t, x, j]))
             
         # Scale constraint
-        for (t, x, j), v in blk.k_v_constraint.items():
+        for (t, x, j), v in blk.mass_transfer_coeff_vap_constraint.items():
             iscale.constraint_scaling_transform(
             v, iscale.get_scaling_factor(blk.mass_transfer_coeff_vap[t, x, j]))
             
@@ -1382,7 +1339,7 @@ class MEAColumnData(PackedColumnData):
         init_log.info('Initializing mass transfer coefficent (liquid phase) - degrees_of_freedom = {}'.format(degrees_of_freedom(blk)))        
         blk.mass_transfer_coeff_liq.unfix()
         
-        for c in mass_transfer_coeff_liq_constraint:
+        for c in mass_transfer_coeff_liq_constraints:
             getattr(blk, c).activate()
             
         for x in blk.liquid_phase.length_domain:
@@ -1390,16 +1347,17 @@ class MEAColumnData(PackedColumnData):
                 pass
             else:
                 calculate_variable_from_constraint(blk.mass_transfer_coeff_liq[0, x, 'CO2'],
-                                                blk.k_l_constraint[0, x, 'CO2'])
+                                                blk.mass_transfer_coeff_liq_constraint[0, x, 'CO2'])
                 
-        opt.solve(blk, tee=True)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
         
         # Scale variable
         for (t, x, j), v in blk.mass_transfer_coeff_liq.items():
             iscale.set_scaling_factor(v, 1/value(blk.mass_transfer_coeff_liq[t, x, 'CO2']))
             
         # Scale constraint
-        for (t, x, j), v in blk.k_l_constraint.items():
+        for (t, x, j), v in blk.mass_transfer_coeff_liq_constraint.items():
             iscale.constraint_scaling_transform(
             v, iscale.get_scaling_factor(blk.mass_transfer_coeff_liq[t, x, 'CO2']))
             
@@ -1423,20 +1381,12 @@ class MEAColumnData(PackedColumnData):
             else:
                 pass
             
-        for (t, x), v in blk.E3_eqn.items():
-            if x!=1:
-                iscale.constraint_scaling_transform(
-                v, 1)
-            else:
-                pass
-        optarg = {
-            "tol": 1e-7,
-            "max_iter": 500,
-            "bound_push":1e-10}
-        opt.options = optarg
-        opt.solve(blk, tee=True)
+        opt.options["max_iter"] = 100
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
         
         blk.E2_eqn.activate()
+        
         for (t, x), v in blk.E2_eqn.items():
             if x!=1:
                 iscale.constraint_scaling_transform(
@@ -1446,28 +1396,31 @@ class MEAColumnData(PackedColumnData):
         
         blk.E2_obj.deactivate()
         
-        opt.solve(blk, tee=True)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
         
         # ---------------------------------------------------------------------    
         init_log.info('Step 12: Heat transfer coefficient constraint')
         init_log.info('Initializing heat transfer coefficent - degrees_of_freedom = {}'.format(degrees_of_freedom(blk)))    
         blk.heat_transfer_coeff_base.unfix()
-        blk.h_v_constraint.activate()
+        blk.heat_transfer_coeff_base_constraint.activate()
         
         for x in blk.vapor_phase.length_domain:
             if x == blk.vapor_phase.length_domain.first():
                 pass
             else:
                 calculate_variable_from_constraint(blk.heat_transfer_coeff_base[0, x],
-                                                blk.h_v_constraint[0, x])        
-        opt.solve(blk, tee=True)
+                                                blk.heat_transfer_coeff_base_constraint[0, x])        
+        
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
 
         # Scale variable
         for (t, x), v in blk.heat_transfer_coeff_base.items():
             iscale.set_scaling_factor(v, 1/value(blk.heat_transfer_coeff_base[t, x]))
             
         # Scale constraint
-        for (t, x), v in blk.h_v_constraint.items():
+        for (t, x), v in blk.heat_transfer_coeff_base_constraint.items():
             iscale.constraint_scaling_transform(
             v, iscale.get_scaling_factor(blk.heat_transfer_coeff_base[t, x]))
             
@@ -1478,6 +1431,29 @@ class MEAColumnData(PackedColumnData):
         blk.floodfraction.unfix()
         blk.flood_fraction_constr.activate()
         
-        opt.solve(blk, tee=True)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        
+        # ---------------------------------------------------------------------
+        # Release state
+        blk.vapor_phase.release_state(flags=vflag)
+        blk.liquid_phase.release_state(flags=lflag)
+                
         init_log.info('Step 14: Initialization completed - degrees_of_freedom = {}'.format(degrees_of_freedom(blk)))
+        
+        # Check DOF
+        if degrees_of_freedom(blk) != 0:
+            raise InitializationError(
+                f"Degrees of freedom were not 0 at the end "
+                f"of initialization. DoF = {degrees_of_freedom(blk)}"
+            )
+
+        # Check solver status
+        if (res.solver.termination_condition != TerminationCondition.optimal or
+                res.solver.status != SolverStatus.ok):
+            raise InitializationError(
+                f"Model failed to initialize successfully. Please check "
+                f"the output logs for more information.")
+        else:
+            init_log.info('Initialization successful')
         
