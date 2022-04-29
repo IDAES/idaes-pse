@@ -335,8 +335,6 @@ class TestProperties(unittest.TestCase):
 
                 # Make sure properties have been calculated as expected
                 for var, val in outputs.items():
-                    print(var)
-                    print(var.name)
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(value(val), rel=1e-3)
 
@@ -542,8 +540,6 @@ class TestProperties(unittest.TestCase):
                     if value(val) != 0:
                         # To get around Pyomo issue #1627
                         val = value(pyunits.convert(val, var.get_units()))
-                    print(var)
-                    print(var.name)
                     assert var.value == pytest.approx(value(val), rel=1e-3)
 
 

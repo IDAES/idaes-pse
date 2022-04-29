@@ -983,8 +983,6 @@ class TestProperties(TestCase):
 
                 # Make sure properties have been calculated as expected
                 for var, val in target.items():
-                    print(var)
-                    print(var.name)
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(value(val), rel=1e-3)
 
