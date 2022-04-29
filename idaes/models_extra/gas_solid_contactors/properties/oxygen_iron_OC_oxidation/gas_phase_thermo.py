@@ -379,6 +379,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 "dens_mass": {"method": "_dens_mass", "units": "kg/m^3"},
                 "enth_mol": {"method": "_enth_mol", "units": "J/mol"},
                 "enth_mol_comp": {"method": "_enth_mol_comp", "units": "J/mol"},
+                "entr_mol": {"method": "_entr_mol", "units": "J/mol.K"},
                 "visc_d": {"method": "_visc_d", "units": "kg/m.s"},
                 "therm_cond": {"method": "_therm_cond", "units": "J/m.K.s"},
                 "diffusion_comp": {"method": "_diffusion_comp", "units": "cm2/s"},
@@ -793,13 +794,14 @@ class GasPhaseStateBlockData(StateBlockData):
         )
 
         def D_bin(i, j):
+
             empirical_coef_units = (
                 pyunits.cm**2
-                / pyunits.s
+                / pyunits.s**3
                 / pyunits.K**1.75
-                * pyunits.kg**0.5
+                * pyunits.kg**1.5
                 / pyunits.kmol**0.5
-                * pyunits.bar
+                / pyunits.m
             )
 
             return (

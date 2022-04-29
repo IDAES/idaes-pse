@@ -210,6 +210,7 @@ class ReactionParameterData(ReactionParameterBlock):
             domain=Reals,
             initialize=3.1e-4,
             doc="Pre-exponential factor" "[mol^(1-N_reaction)m^(3*N_reaction -2)/s]",
+            units=pyunits.m / pyunits.s
         )
         self.k0_rxn.fix()
 

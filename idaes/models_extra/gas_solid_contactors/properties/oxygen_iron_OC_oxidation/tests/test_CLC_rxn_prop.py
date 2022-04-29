@@ -25,6 +25,7 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
+from pyomo.util.check_units import assert_units_consistent
 import pyomo.common.unittest as unittest
 from pyomo.common.collections import ComponentMap
 from pyomo.util.subsystems import ParamSweeper
@@ -161,9 +162,14 @@ def test_solve(rxn_prop):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_solution(rxn_prop):
-    assert pytest.approx(1, abs=1e-2) == rxn_prop.fs.unit[0].k_rxn["R1"].value
-    assert pytest.approx(0, abs=1e-2) == rxn_prop.fs.unit[0].OC_conv.value
-    assert pytest.approx(0, abs=1e-2) == rxn_prop.fs.unit[0].reaction_rate["R1"].value
+    assert pytest.approx(1, rel=1e-5) == rxn_prop.fs.unit[0].k_rxn["R1"].value
+    assert pytest.approx(0, rel=1e-5) == rxn_prop.fs.unit[0].OC_conv.value
+    assert pytest.approx(0, rel=1e-5) == rxn_prop.fs.unit[0].reaction_rate["R1"].value
+
+
+@pytest.mark.component
+def test_units_consistent(rxn_prop):
+    assert_units_consistent(rxn_prop)
 
 
 @pytest.mark.unit
@@ -298,12 +304,13 @@ class TestProperties(unittest.TestCase):
 
         # Units of k_rxn are "non-physical" si units, chosen to be
         # consistent with the reaction rate rule.
+        k_rxn_units = pyunits.m / pyunits.s
         target_values = {
             "reaction_block.k_rxn[R1]": [
-                5.7556e-5,
-                6.7076e-5,
-                7.6203e-5,
-                8.4888e-5,
+                5.7556e-5 * k_rxn_units,
+                6.7076e-5 * k_rxn_units,
+                7.6203e-5 * k_rxn_units,
+                8.4888e-5 * k_rxn_units,
             ],
         }
         target_values = ComponentMap(
@@ -328,6 +335,8 @@ class TestProperties(unittest.TestCase):
 
                 # Make sure properties have been calculated as expected
                 for var, val in outputs.items():
+                    print(var)
+                    print(var.name)
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(value(val), rel=1e-3)
 
@@ -366,7 +375,7 @@ class TestProperties(unittest.TestCase):
                 0.4915,
             ],
             "reaction_block.OC_conv_temp": [
-                2.005e-4,
+                0.000,
                 1.0,
                 0.6371,
             ],
@@ -389,12 +398,12 @@ class TestProperties(unittest.TestCase):
                 # Sanity checks that inputs are properly set
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 # Make sure properties have been calculated as expected
                 for var, val in outputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
     def test_reaction_rate(self):
         m = self._make_model()
@@ -499,8 +508,8 @@ class TestProperties(unittest.TestCase):
             "reaction_block.reaction_rate[R1]": [
                 351.367 * molm3s,
                 245.957 * molm3s,
-                0.0 * molm3s,
-                0.0 * molm3s,
+                3.7189815316196473e-07 * molm3s,
+                0.000 * molm3s,
                 271.731 * molm3s,
                 87.842 * molm3s,
                 71.344 * molm3s,
@@ -526,14 +535,16 @@ class TestProperties(unittest.TestCase):
                 # Sanity checks that inputs are properly set
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 # Make sure properties have been calculated as expected
                 for var, val in outputs.items():
                     if value(val) != 0:
                         # To get around Pyomo issue #1627
                         val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    print(var)
+                    print(var.name)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
 
 if __name__ == "__main__":

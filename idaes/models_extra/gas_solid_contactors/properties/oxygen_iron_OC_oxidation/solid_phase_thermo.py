@@ -102,7 +102,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
             mutable=False,
             initialize=mw_comp_dict,
             doc="Molecular weights of solid components [kg/mol]",
-            units=pyunits.kg / pyunits.m**3,
+            units=pyunits.kg / pyunits.mol,
         )
 
         # Skeletal density of solid components - units = kg/m3. ref: NIST
@@ -722,17 +722,59 @@ class SolidPhaseStateBlockData(StateBlockData):
             self.del_component(self.mixture_enthalpy_eqn)
             raise
 
-    def get_material_flow_terms(b, p, j):
-        return b.flow_mass * b.mass_frac_comp[j]
+    def get_material_flow_terms(self, p, j):
+        # return b.flow_mass*b.mass_frac_comp[j]
+        if not self.is_property_constructed("material_flow_terms"):
+            try:
 
-    def get_enthalpy_flow_terms(b, p):
-        return b.flow_mass * b.enth_mass
+                def rule_material_flow_terms(b, j):
+                    return b.flow_mass * b.mass_frac_comp[j]
 
-    def get_material_density_terms(b, p, j):
-        return b.dens_mass_particle * b.mass_frac_comp[j]
+                self.material_flow_terms = Expression(
+                    self._params.component_list, rule=rule_material_flow_terms
+                )
+            except AttributeError:
+                self.del_component(self.material_flow_terms)
+        return self.material_flow_terms[j]
 
-    def get_energy_density_terms(b, p):
-        return b.dens_mass_particle * b.enth_mass
+    def get_enthalpy_flow_terms(self, p):
+        if not self.is_property_constructed("enthalpy_flow_terms"):
+            try:
+
+                def rule_enthalpy_flow_terms(b):
+                    return self.enth_mass * self.flow_mass
+
+                self.enthalpy_flow_terms = Expression(rule=rule_enthalpy_flow_terms)
+            except AttributeError:
+                self.del_component(self.enthalpy_flow_terms)
+        return self.enthalpy_flow_terms
+
+    def get_material_density_terms(self, p, j):
+        # return b.dens_mass_particle * b.mass_frac_comp[j]
+        if not self.is_property_constructed("material_density_terms"):
+            try:
+
+                def rule_material_density_terms(b, j):
+                    return b.dens_mass_particle * b.mass_frac_comp[j]
+
+                self.material_density_terms = Expression(
+                    self._params.component_list, rule=rule_material_density_terms
+                )
+            except AttributeError:
+                self.del_component(self.material_density_terms)
+        return self.material_density_terms[j]
+
+    def get_energy_density_terms(self, p):
+        if not self.is_property_constructed("energy_density_terms"):
+            try:
+
+                def rule_energy_density_terms(b):
+                    return b.dens_mass_particle * b.enth_mass
+
+                self.energy_density_terms = Expression(rule=rule_energy_density_terms)
+            except AttributeError:
+                self.del_component(self.energy_density_terms)
+        return self.energy_density_terms
 
     def define_state_vars(b):
         return {
