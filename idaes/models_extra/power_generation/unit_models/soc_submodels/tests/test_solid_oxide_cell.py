@@ -111,7 +111,13 @@ def model_no_contact_resistance():
     xfaces_electrolyte = np.linspace(0, 1, 12).tolist()
 
     fuel_comps = ["H2", "H2O"]
-    fuel_triple_phase_boundary_stoich_dict = {"H2": -0.5, "H2O": 0.5, "Vac": 0.5, "O^2-": -0.5, "e^-": 1}
+    fuel_triple_phase_boundary_stoich_dict = {
+        "H2": -0.5,
+        "H2O": 0.5,
+        "Vac": 0.5,
+        "O^2-": -0.5,
+        "e^-": 1,
+    }
     oxygen_comps = ["O2", "N2", "H2O"]
     oxygen_triple_phase_boundary_stoich_dict = {
         "O2": -0.25,
@@ -283,8 +289,14 @@ def test_build(model):
         cell.fuel_triple_phase_boundary.temperature_deviation_x.referent
         is cell.fuel_electrode.temperature_deviation_x1
     )
-    assert cell.fuel_triple_phase_boundary.heat_flux_x0.referent is cell.fuel_electrode.heat_flux_x1
-    assert cell.fuel_triple_phase_boundary.conc_mol_comp_ref.referent is cell.fuel_channel.conc_mol_comp
+    assert (
+        cell.fuel_triple_phase_boundary.heat_flux_x0.referent
+        is cell.fuel_electrode.heat_flux_x1
+    )
+    assert (
+        cell.fuel_triple_phase_boundary.conc_mol_comp_ref.referent
+        is cell.fuel_channel.conc_mol_comp
+    )
     assert (
         cell.fuel_triple_phase_boundary.conc_mol_comp_deviation_x.referent
         is cell.fuel_electrode.conc_mol_comp_deviation_x1
@@ -294,9 +306,13 @@ def test_build(model):
         cell.oxygen_triple_phase_boundary.temperature_deviation_x.referent
         is cell.oxygen_electrode.temperature_deviation_x0
     )
-    assert cell.oxygen_triple_phase_boundary.heat_flux_x1.referent is cell.oxygen_electrode.heat_flux_x0
     assert (
-        cell.oxygen_triple_phase_boundary.conc_mol_comp_ref.referent is cell.oxygen_channel.conc_mol_comp
+        cell.oxygen_triple_phase_boundary.heat_flux_x1.referent
+        is cell.oxygen_electrode.heat_flux_x0
+    )
+    assert (
+        cell.oxygen_triple_phase_boundary.conc_mol_comp_ref.referent
+        is cell.oxygen_channel.conc_mol_comp
     )
     assert (
         cell.oxygen_triple_phase_boundary.conc_mol_comp_deviation_x.referent
@@ -315,8 +331,14 @@ def test_build(model):
         cell.oxygen_electrode.temperature_deviation_x0
         is cell.electrolyte.temperature_deviation_x1.referent
     )
-    assert cell.fuel_triple_phase_boundary.heat_flux_x1 is cell.electrolyte.heat_flux_x0.referent
-    assert cell.oxygen_triple_phase_boundary.heat_flux_x0 is cell.electrolyte.heat_flux_x1.referent
+    assert (
+        cell.fuel_triple_phase_boundary.heat_flux_x1
+        is cell.electrolyte.heat_flux_x0.referent
+    )
+    assert (
+        cell.oxygen_triple_phase_boundary.heat_flux_x0
+        is cell.electrolyte.heat_flux_x1.referent
+    )
 
 
 @pytest.mark.build
@@ -400,8 +422,14 @@ def test_build_no_contact_resistance(model_no_contact_resistance):
         cell.fuel_triple_phase_boundary.temperature_deviation_x.referent
         is cell.fuel_electrode.temperature_deviation_x1
     )
-    assert cell.fuel_triple_phase_boundary.heat_flux_x0.referent is cell.fuel_electrode.heat_flux_x1
-    assert cell.fuel_triple_phase_boundary.conc_mol_comp_ref.referent is cell.fuel_channel.conc_mol_comp
+    assert (
+        cell.fuel_triple_phase_boundary.heat_flux_x0.referent
+        is cell.fuel_electrode.heat_flux_x1
+    )
+    assert (
+        cell.fuel_triple_phase_boundary.conc_mol_comp_ref.referent
+        is cell.fuel_channel.conc_mol_comp
+    )
     assert (
         cell.fuel_triple_phase_boundary.conc_mol_comp_deviation_x.referent
         is cell.fuel_electrode.conc_mol_comp_deviation_x1
@@ -411,9 +439,13 @@ def test_build_no_contact_resistance(model_no_contact_resistance):
         cell.oxygen_triple_phase_boundary.temperature_deviation_x.referent
         is cell.oxygen_electrode.temperature_deviation_x0
     )
-    assert cell.oxygen_triple_phase_boundary.heat_flux_x1.referent is cell.oxygen_electrode.heat_flux_x0
     assert (
-        cell.oxygen_triple_phase_boundary.conc_mol_comp_ref.referent is cell.oxygen_channel.conc_mol_comp
+        cell.oxygen_triple_phase_boundary.heat_flux_x1.referent
+        is cell.oxygen_electrode.heat_flux_x0
+    )
+    assert (
+        cell.oxygen_triple_phase_boundary.conc_mol_comp_ref.referent
+        is cell.oxygen_channel.conc_mol_comp
     )
     assert (
         cell.oxygen_triple_phase_boundary.conc_mol_comp_deviation_x.referent
@@ -432,5 +464,11 @@ def test_build_no_contact_resistance(model_no_contact_resistance):
         cell.oxygen_electrode.temperature_deviation_x0
         is cell.electrolyte.temperature_deviation_x1.referent
     )
-    assert cell.fuel_triple_phase_boundary.heat_flux_x1 is cell.electrolyte.heat_flux_x0.referent
-    assert cell.oxygen_triple_phase_boundary.heat_flux_x0 is cell.electrolyte.heat_flux_x1.referent
+    assert (
+        cell.fuel_triple_phase_boundary.heat_flux_x1
+        is cell.electrolyte.heat_flux_x0.referent
+    )
+    assert (
+        cell.oxygen_triple_phase_boundary.heat_flux_x0
+        is cell.electrolyte.heat_flux_x1.referent
+    )
