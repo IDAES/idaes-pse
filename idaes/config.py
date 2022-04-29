@@ -482,13 +482,16 @@ def create_dir(d):
 
 def get_data_directory():
     """Return the standard data directory for idaes, based on the OS."""
-    try:
-        if os.name == 'nt':  # Windows
-            data_directory = os.path.join(os.environ['LOCALAPPDATA'], "idaes")
-        else:  # any other OS
-            data_directory = os.path.join(os.environ['HOME'], ".idaes")
-    except AttributeError:
-        data_directory = None
+    if 'IDAES_DATA' in os.environ and os.environ['IDAES_DATA']:
+        data_directory = os.environ['IDAES_DATA']
+    else:
+        try:
+            if os.name == 'nt':  # Windows
+                data_directory = os.path.join(os.environ['LOCALAPPDATA'], "idaes")
+            else:  # any other OS
+                data_directory = os.path.join(os.environ['HOME'], ".idaes")
+        except AttributeError:
+            data_directory = None
     # Standard location for executable binaries.
     if data_directory is not None:
         bin_directory = os.path.join(data_directory, "bin")
