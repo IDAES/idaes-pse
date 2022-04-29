@@ -228,12 +228,6 @@ Hv = -779.305
 Ul = Hl - 8.314 * 300 * (Zl - 1)
 Uv = Hv - 8.314 * 300 * (Zv - 1)
 
-# Set path to root finder .so file
-_so = os.path.join(bin_directory, "cubic_roots.so")
-f_Zl = ExternalFunction(library=_so, function="ceos_z_liq")
-f_Zv = ExternalFunction(library=_so, function="ceos_z_vap")
-
-
 @pytest.mark.unit
 def test_wrong_phase():
     m = ConcreteModel()
@@ -777,9 +771,6 @@ def test_compress_fact_phase_Liq(m):
     assert isinstance(
         Cubic.compress_fact_phase(m.props[1], "Liq"), ExternalFunctionExpression
     )
-    assert pytest.approx(value(f_Zl(0, Al, Bl)), rel=1e-5) == value(
-        Cubic.compress_fact_phase(m.props[1], "Liq")
-    )
     assert (
         pytest.approx(value(Cubic.compress_fact_phase(m.props[1], "Liq")), rel=1e-5)
         == Zl
@@ -790,9 +781,6 @@ def test_compress_fact_phase_Liq(m):
 def test_compress_fact_phase_Vap(m):
     assert isinstance(
         Cubic.compress_fact_phase(m.props[1], "Vap"), ExternalFunctionExpression
-    )
-    assert pytest.approx(value(f_Zv(0, Av, Bv)), rel=1e-5) == value(
-        Cubic.compress_fact_phase(m.props[1], "Vap")
     )
     assert (
         pytest.approx(value(Cubic.compress_fact_phase(m.props[1], "Vap")), rel=1e-5)
