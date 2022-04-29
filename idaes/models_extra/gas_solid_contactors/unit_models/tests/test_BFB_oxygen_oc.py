@@ -907,6 +907,9 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_unscaled(self, iron_oc_unscaled):
+        # needs a little more help converging in under 100 iterations (default)
+        # so we provide a better set of state argument flags for initialization
+        # alternatively, could raise maximum iterations to 105 in optarg
         initialization_tester(
             iron_oc_unscaled,
             optarg={"tol": 1e-6},
@@ -914,9 +917,17 @@ class TestIronOC_EnergyBalanceType(object):
                 "flow_mol": 1567.79,
                 "temperature": 1173.9,
                 "pressure": 1.86e5,
+                "mole_frac_comp": {"O2": 0.2095,
+                                   "N2": 0.7808,
+                                   "CO2": 0.0004,
+                                   "H2O": 0.0093}
             },
             solid_phase_state_args={"flow_mass": 1230.865,
-                                    "temperature": 1173.9},
+                                    "temperature": 1173.9,
+                                    "mole_frac_comp": {"Fe2O3": 0.244162011502,
+                                                       "Fe3O4": 0.201998299487,
+                                                       "Al2O3": 0.553839689011},
+                                    },
         )
 
     @pytest.mark.solver
