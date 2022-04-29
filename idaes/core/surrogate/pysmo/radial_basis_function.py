@@ -1167,6 +1167,9 @@ class RadialBasisFunctions:
 
         """
         t1 = np.array([variable_list])
+        # Reshaping of variable array is necessary when input variables are Pyomo scalar variables
+        t1 =  t1.reshape(1, len(variable_list)) if t1.ndim > 2 else t1
+
         basis_vector = []
         # Calculate distances from centres
         for i in range(0, self.centres.shape[0]):
