@@ -47,7 +47,6 @@ from idaes.core import (
     ReactionBlockBase,
 )
 from idaes.core.util.misc import add_object_reference
-from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
@@ -63,6 +62,8 @@ from idaes.core.util.config import (
 )
 from idaes.core.util.constants import Constants
 import idaes.logger as idaeslog
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"
@@ -114,6 +115,8 @@ class ReactionParameterData(ReactionParameterBlock):
         super(ReactionParameterBlock, self).build()
 
         self._reaction_block_class = ReactionBlock
+
+        self.default_scaling_factor = {}
 
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])
@@ -444,7 +447,7 @@ class ReactionBlockData(ReactionBlockDataBase):
 
         def rate_constant_eqn(b, j):
             if j == "R1":
-                return 1e6 * self.k_rxn[j] == 1e6 * (
+                return self.k_rxn[j] == (
                     self._params.k0_rxn[j]
                     * exp(
                         -self._params.energy_activation[j]
@@ -482,8 +485,7 @@ class ReactionBlockData(ReactionBlockDataBase):
 
         def OC_conv_eqn(b):
             return (
-                1e6
-                * b.OC_conv
+                b.OC_conv
                 * (
                     b.solid_state_ref.mass_frac_comp["Fe2O3"]
                     + (
@@ -496,7 +498,7 @@ class ReactionBlockData(ReactionBlockDataBase):
                     )
                     * b.solid_state_ref.mass_frac_comp["Fe3O4"]
                 )
-                == 1e6 * b.solid_state_ref.mass_frac_comp["Fe2O3"]
+                == b.solid_state_ref.mass_frac_comp["Fe2O3"]
             )
 
         try:
@@ -516,7 +518,7 @@ class ReactionBlockData(ReactionBlockDataBase):
         )
 
         def OC_conv_temp_eqn(b):
-            return 1e3 * b.OC_conv_temp**3 == 1e3 * (1 - b.OC_conv) ** 2
+            return b.OC_conv_temp**3 == (1 - b.OC_conv) ** 2
 
         try:
             # Try to build constraint
@@ -537,7 +539,7 @@ class ReactionBlockData(ReactionBlockDataBase):
         )
 
         def rate_rule(b, r):
-            return b.reaction_rate[r] * 1e4 == b._params._scale_factor_rxn * 1e4 * (
+            return b.reaction_rate[r]== b._params._scale_factor_rxn * (
                 b.solid_state_ref.mass_frac_comp["Fe3O4"]
                 * (1 - b.solid_state_ref.particle_porosity)
                 * b.solid_state_ref.dens_mass_skeletal
@@ -580,3 +582,43 @@ class ReactionBlockData(ReactionBlockDataBase):
             _log.error("{} Temperature set below lower bound.".format(blk.name))
         if value(blk.temperature) > blk.temperature.ub:
             _log.error("{} Temperature set above upper bound.".format(blk.name))
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        # Set default scaling
+        def _set_default_factor(v, s):
+            for i in v:
+                if iscale.get_scaling_factor(v[i]) is None:
+                    iscale.set_scaling_factor(v[i], s)
+
+        _set_default_factor(self.k_rxn, 1e6)
+        _set_default_factor(self.OC_conv, 1e6)
+        _set_default_factor(self.OC_conv_temp, 1e3)
+        _set_default_factor(self.reaction_rate, 1e4)
+
+        if self.is_property_constructed("OC_conv_eqn"):
+            iscale.constraint_scaling_transform(
+                self.OC_conv_eqn,
+                iscale.get_scaling_factor(self.OC_conv),
+                overwrite=False,
+            )
+
+        if self.is_property_constructed("OC_conv_temp_eqn"):
+            iscale.constraint_scaling_transform(
+                self.OC_conv_temp_eqn,
+                iscale.get_scaling_factor(self.OC_conv_temp),
+                overwrite=False,
+            )
+
+        if self.is_property_constructed("rate_constant_eqn"):
+            for i, c in self.rate_constant_eqn.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.k_rxn[i]), overwrite=False
+                )
+
+        if self.is_property_constructed("gen_rate_expression"):
+            for i, c in self.gen_rate_expression.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.reaction_rate[i]), overwrite=False
+                )
