@@ -20,7 +20,7 @@ import logging
 import idaes
 from idaes.dmf import codesearch
 from idaes.dmf import resource
-from idaes.core import property_base  # noqa: F401
+from idaes.core.base import property_base  # noqa: F401
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
 
@@ -78,7 +78,7 @@ def index_property_metadata(
     wlk = codesearch.ModuleClassWalker(
         from_pkg=pkg,
         class_expr=expr,
-        parent_class=idaes.core.property_meta.HasPropertyClassMetadata,
+        parent_class=idaes.core.base.property_meta.HasPropertyClassMetadata,
         suppress_warnings=True,
         **kwargs
     )

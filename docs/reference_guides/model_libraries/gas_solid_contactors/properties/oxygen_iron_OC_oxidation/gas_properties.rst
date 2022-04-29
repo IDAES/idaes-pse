@@ -2,12 +2,12 @@ Gas properties
 ==============
 
 .. index::
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseParameterBlock
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseParameterData
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseStateBlock
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseStateBlockData
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseParameterBlock
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseParameterData
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseStateBlock
+   pair: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseStateBlockData
 
-.. currentmodule:: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties
+.. currentmodule:: idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties
 
 This property package provides the gas phase properties for the oxidation of a chemical looping combustion oxygen carrier.
 The components modeled are oxygen, nitrogen, carbon dioxide, and water.

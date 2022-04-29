@@ -10,23 +10,13 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from .cstr import CSTR
-from .flash import Flash
-from .gibbs_reactor import GibbsReactor
-from .heat_exchanger import HeatExchanger, HeatExchangerFlowPattern
-from .heater import Heater
-from .heat_exchanger_ntu import HeatExchangerNTU
-from .heat_exchanger_1D import HeatExchanger1D
-from .mixer import Mixer, MomentumMixingType, MixingType
-from .plug_flow_reactor import PFR
-from .pressure_changer import PressureChanger, Turbine, Pump, Compressor
-from .separator import Separator, SplittingType, EnergySplittingType
-from .stoichiometric_reactor import StoichiometricReactor
-from .equilibrium_reactor import EquilibriumReactor
-from .feed import Feed
-from .product import Product
-from .feed_flash import FeedFlash
-from .statejunction import StateJunction
-from .translator import Translator
-from .valve import ValveFunctionType, Valve, ValveData
-from .skeleton_model import SkeletonUnitModel, SkeletonUnitModelData
+"""
+Deprecation path for renamed module.
+"""
+from pyomo.common.deprecation import deprecation_warning
+
+deprecation_warning("The generic_models.unit_models package has been moved to "
+                    "idaes.models.unit_models",
+                    version="2.0.0.alpha0")
+
+from idaes.models.unit_models import *

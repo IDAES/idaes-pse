@@ -14,7 +14,7 @@ see http://kmh-lanl.hansonhub.com/uncertainty/meetings/gunz03vgr.pdf.
 Available Methods
 ------------------
 
-.. autoclass:: idaes.surrogate.pysmo.sampling.CVTSampling
+.. autoclass:: idaes.core.surrogate.pysmo.sampling.CVTSampling
     :members: __init__, sample_points
 
 References

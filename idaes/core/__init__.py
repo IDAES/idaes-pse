@@ -10,19 +10,39 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from .process_base import ProcessBlockData, useDefault, MaterialFlowBasis
-from .process_block import ProcessBlock, declare_process_block_class
-from .unit_model import UnitModelBlockData, UnitModelBlock
-from .flowsheet_model import FlowsheetBlockData, FlowsheetBlock
-from .property_base import (StateBlockData, PhysicalParameterBlock,
-                            StateBlock)
-from .reaction_base import (ReactionBlockDataBase, ReactionParameterBlock,
-                            ReactionBlockBase)
-from .control_volume_base import (ControlVolumeBlockData, CONFIG_Template,
-                                  MaterialBalanceType, EnergyBalanceType,
-                                  MomentumBalanceType, FlowDirection)
-from .control_volume0d import ControlVolume0DBlock
-from .control_volume1d import ControlVolume1DBlock
-from .phases import (
-    Phase, LiquidPhase, SolidPhase, VaporPhase, PhaseType, AqueousPhase)
-from .components import Component, Solvent, Solute, Ion, Cation, Anion, Apparent
+from .base.process_base import ProcessBlockData, useDefault, MaterialFlowBasis
+from .base.process_block import ProcessBlock, declare_process_block_class
+from .base.unit_model import UnitModelBlockData, UnitModelBlock
+from .base.flowsheet_model import FlowsheetBlockData, FlowsheetBlock
+from .base.property_base import StateBlockData, PhysicalParameterBlock, StateBlock
+from .base.reaction_base import (
+    ReactionBlockDataBase,
+    ReactionParameterBlock,
+    ReactionBlockBase,
+)
+from .base.control_volume_base import (
+    ControlVolumeBlockData,
+    CONFIG_Template,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+    FlowDirection,
+)
+from .base.control_volume0d import ControlVolume0DBlock
+from .base.control_volume1d import ControlVolume1DBlock, DistributedVars
+from .base.phases import (
+    Phase,
+    LiquidPhase,
+    SolidPhase,
+    VaporPhase,
+    PhaseType,
+    AqueousPhase,
+)
+from .base.components import Component, Solvent, Solute, Ion, Cation, Anion, Apparent
+from .base.costing_base import (
+    FlowsheetCostingBlock,
+    FlowsheetCostingBlockData,
+    UnitModelCostingBlock,
+    register_idaes_currency_units,
+)
+from .base.var_like_expression import VarLikeExpression

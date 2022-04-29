@@ -71,20 +71,21 @@ Linux
    the commands to install the required libraries may differ. If these libraries
    are already installed, you can skip this and proceed with the next step.
 
-   .. note:: Depending on your distribution, you may need to prepend ``sudo`` to
-            these commands or switch to the "root" user.
+   Debian 9::
 
-   Ubuntu 18.04 and 19.10 and distributions based on them::
+       sudo apt-get install libgfortran3 libgomp1 liblapack3 libblas3
+
+   Ubuntu 18.04, Ubuntu 20.04, and Debian 10::
 
       sudo apt-get install libgfortran4 libgomp1 liblapack3 libblas3
 
-   Ubuntu 20.04 and distributions based on it ::
+   Ubuntu 22.04 and Debian 11::
 
       sudo apt-get install libgfortran5 libgomp1 liblapack3 libblas3
 
    Current RedHat based distributions, including CentOS::
 
-      yum install lapack blas libgfortran libgomp
+      sudo yum install lapack blas libgfortran libgomp
 
 **Complete Generic Install**
 
@@ -142,19 +143,29 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 2. Run the :doc:`idaes get-extensions command<../../../reference_guides/commands/get_extensions>`
    to install the compiled binaries. These binaries include solvers and function libraries.
    See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>`
-   for more details.
+   for more details.  For example::
 
-    idaes get-extensions
+      idaes get-extensions
 
-..
+   ..
 
-    .. note:: If you are not able to successfully run the ``idaes get-extensions``
-              command due to network security settings or another reason, you can
-              download binary release files from
-              https://github.com/IDAES/idaes-ext/releases, and extract them in the
-              directory indicated by the ``idaes bin-directory`` command. You will
-              need both the ``idaes-lib-*`` and ``idaes-solvers-*`` files
-              appropriate for your operating system.
+   To install extras, the ``--extra`` option can be used. Currently the only
+   extra is PETSc.  PETSc provides nonlinear and time-stepping solvers for
+   problems with zero degrees of freedom (see :ref:`PETSc <reference_guides/core/solvers:PETSc Utilities>`).
+   For example, the following command will install the base binary packages plus
+   PETSc.::
+
+     idaes get-extensions --extra petsc
+
+   ..
+
+  .. note:: If you are not able to successfully run the ``idaes get-extensions``
+            command due to network security settings or another reason, you can
+            download binary release files from
+            https://github.com/IDAES/idaes-ext/releases, and extract them in the
+            directory indicated by the ``idaes bin-directory`` command. You will
+            need both the ``idaes-lib-*`` and ``idaes-solvers-*`` files
+            appropriate for your operating system.
 
 ..
 
@@ -187,15 +198,21 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
     Refer to the full :doc:`idaes get-examples command documentation <../../../reference_guides/commands/get_examples>`
     for more information.
 
-4. Run tests::
+4. To test that the installation was successful, you can run the IDAES test suite.
+   This is not strictly required, but can offer more confidence that the installation environment is as expected (if the tests pass),
+   and more insight into possible issues (if any of the tests fail).
+   The ``pytest`` package is required for running the test suite. After installing it using e.g. ``pip``, run the tests::
 
-    pytest --pyargs idaes -W ignore
+      python -m pip install pytest
+      python -m pytest --pyargs idaes -W ignore -rs
 
-5. You should see the tests run and all should pass to ensure the installation worked. You
-   may see some "Error" level log messages, but they are okay, and produced by tests for
+5. You should see the tests run and all should pass to ensure the installation worked.
+   You may see some "Error" level log messages, but they are okay, and produced by tests for
    error handling. The number of tests that failed and succeeded is reported at the end of the pytest
-   output. You can report problems on the |github-issues|
-   (Please try to be specific about the command and the offending output.)
+   output.
+   If the optional ``-rs`` flag is given, the output will also display tests that were skipped because of
+   e.g. optional dependencies that can be installed separately (see below).
+   You can report problems on the |github-issues| (Please try to be specific about the command and the offending output.)
 
 **Install IDAES using Conda**
 

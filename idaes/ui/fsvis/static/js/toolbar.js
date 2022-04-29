@@ -155,6 +155,32 @@ export class Toolbar {
             };
         });
 
+        // Streams toggle event listener
+        document.querySelector("#stream-names-toggle").addEventListener("change", function() {
+            if (this.checked) {
+                app._paper._graph.getLinks().forEach(function (link) {
+                    link.label(1, {
+                        attrs: {
+                            text: {
+                                display: "block",
+                            }
+                        }
+                    });
+                });
+            }
+            else {
+                app._paper._graph.getLinks().forEach(function (link) {
+                    link.label(1, {
+                        attrs: {
+                            text: {
+                                display: "none",
+                            }
+                        }
+                    });
+                });
+            };
+        });
+
         // Grid toggle event listener
         document.querySelector("#grid-toggle").addEventListener("change", function() {
             if (this.checked) {
@@ -177,7 +203,7 @@ export class Toolbar {
 
         // Zoom to fit event listener
         document.querySelector("#zoom-fit-btn").addEventListener("click", () => {
-            this._paper.paperScroller.zoomToFit();
+            this._paper.zoomToFit();
         });
     }
 

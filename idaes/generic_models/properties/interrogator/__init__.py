@@ -10,5 +10,13 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from .properties_interrogator import PropertyInterrogatorBlock
-from .reactions_interrogator import ReactionInterrogatorBlock
+"""
+Deprecation path for renamed module.
+"""
+from pyomo.common.deprecation import deprecation_warning
+
+deprecation_warning("The generic_models.properties.interrogator package has been moved to "
+                    "idaes.models.properties.interrogator",
+                    version="2.0.0.alpha0")
+
+from idaes.models.properties.interrogator import *

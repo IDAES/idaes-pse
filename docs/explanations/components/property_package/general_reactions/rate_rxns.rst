@@ -39,7 +39,7 @@ The `stoichiometry` configuration argument is used to define which components ta
 Concentration Form
 ^^^^^^^^^^^^^^^^^^
 
-Many common rate forms can be written using a number of different bases, such as molarity, molality or partial pressure. The `concentration_form` configuration argument is used in these cases to determine what basis to use for the concentration terms in the rate form and automatically write the correct expression (and determine units for the associated parameters. The `concentration_form` configuration argument must be an instance of a `ConcentrationForm` `Enum` (imported from idaes.generic_models.properties.core.generic.utility), and the following forms are currently available:
+Many common rate forms can be written using a number of different bases, such as molarity, molality or partial pressure. The `concentration_form` configuration argument is used in these cases to determine what basis to use for the concentration terms in the rate form and automatically write the correct expression (and determine units for the associated parameters. The `concentration_form` configuration argument must be an instance of a `ConcentrationForm` `Enum` (imported from idaes.models.properties.modular_properties.base.utility), and the following forms are currently available:
 
 * molarity: ConcentrationForm.molarity
 * activity: ConcentrationForm.activity

@@ -28,7 +28,7 @@ from pathlib import Path
 import pprint
 import re
 import sys
-from typing import List, Union, Iterator, Optional, IO
+from typing import List, Union, Iterator, Optional, IO, Any
 import uuid
 
 # third-party
@@ -76,6 +76,7 @@ class Predicates:
 
         Predicates.destroys = "destroys"
     """
+
     derived = "derived"  #: object is derived from the subject
     contains = "contains"  #: object is contained by the subject
     uses = "uses"  #: object is used by the subject
@@ -83,35 +84,32 @@ class Predicates:
 
     @classmethod
     def valid(cls, value) -> bool:
-        """Whether the 'value' is a valid predicate.
-        """
+        """Whether the 'value' is a valid predicate."""
         return value in cls.all()
 
     @classmethod
     def all(cls) -> List[str]:
-        """Return all predicates, as a list of strings.
-        """
+        """Return all predicates, as a list of strings."""
         return [k for k in cls.__dict__ if k and (k != "all") and (k[0] != "_")]
 
 
 class ResourceTypes:
-    experiment = "experiment"               #: Experiment(s)
-    tabular = "tabular_data"                #: Tabular data
-    publication = "publication"             #: Published work(s)
-    property = "propertydb"                 #: Property data
-    flowsheet = "flowsheet"                 #: Process flowsheet
-    notebook = "notebook"                   #: Jupyter Notebook
-    code = "code"                           #: Source code(s)
-    surrogate_model = "surrogate_model"     #: Surrogate model
-    data = "data"                           #: Generic data
-    other = "json"                          #: JSON data
-    json = "other"                          #: User-defined type of resource
-    resource_json = "resource_json"         #: JSON serialized resource
+    experiment = "experiment"  #: Experiment(s)
+    tabular = "tabular_data"  #: Tabular data
+    publication = "publication"  #: Published work(s)
+    property = "propertydb"  #: Property data
+    flowsheet = "flowsheet"  #: Process flowsheet
+    notebook = "notebook"  #: Jupyter Notebook
+    code = "code"  #: Source code(s)
+    surrogate_model = "surrogate_model"  #: Surrogate model
+    data = "data"  #: Generic data
+    other = "json"  #: JSON data
+    json = "other"  #: User-defined type of resource
+    resource_json = "resource_json"  #: JSON serialized resource
 
     @classmethod
     def all(cls) -> List[str]:
-        """Return all resource type names, as a list of strings.
-        """
+        """Return all resource type names, as a list of strings."""
         return [k for k in cls.__dict__ if k and (k != "all") and (k[0] != "_")]
 
 
@@ -223,7 +221,7 @@ RESOURCE_SCHEMA = {
                             "package",
                             "repository",
                             "notebook",
-                            "block"
+                            "block",
                         ],
                     },
                     "desc": {"type": "string"},
@@ -248,17 +246,16 @@ RESOURCE_SCHEMA = {
                     "isbn": {"type": "string"},
                     "language": {"type": "string"},
                     "source": {"type": "string"},
-                }
-            }
-        }
+                },
+            },
+        },
     },
-    "additionalProperties": False
+    "additionalProperties": False,
 }
 
 
 class Dict(dict):
-    """Subclass of dict that has a 'dirty' bit.
-    """
+    """Subclass of dict that has a 'dirty' bit."""
 
     def __init__(self, *args, **kwargs):
         super(Dict, self).__init__(*args, **kwargs)
@@ -275,31 +272,36 @@ class Dict(dict):
         return self._dirty
 
 
-class Resource(object):
-    """Core object for the Data Management Framework.
-    """
+class Resource:
+    """Core object for the Data Management Framework."""
 
     ID_FIELD = "id_"  #: Identifier field name constant
     ID_LENGTH = 32  #: Full-length of identifier
     TYPE_FIELD = "type"  #: Resource type field name constant
+    TABLE_FIELD = "table"  #: In data section, inline table
+    TABLE_INFO_FIELD = "table_info"  #: In data section, info for tables
+    DATA_FIELD = "data"  #: Extra data area
+    DATAFILES_FIELD = "datafiles"  #: Where datafiles are
+    DESCRIPTION_FIELD = "desc"  #: Description of resource
 
-    def __init__(self, value: dict = None, type_: str = None):
+    def __init__(self, value: dict = None, type_: str = None, name: str = None):
         if type_ is None:
             type_ = ResourceTypes.other
-        self._set_defaults(type_)
+        self._set_defaults(type_, name)
         if value:
             self.set_values(value)
         self._validator = jsonschema.Draft4Validator(RESOURCE_SCHEMA)
         self._validations = 0  # count validations; mostly for testing
         self.do_copy = self.is_tmp = False  # flags for copying datafiles
+        self._dmf_datafiles_path = None  # Set when added to a DMF DB
 
-    def _set_defaults(self, t):
+    def _set_defaults(self, t, nm):
         now = datetime.now().timestamp()
         self.v = Dict(
             {
                 self.ID_FIELD: identifier_str(),
                 self.TYPE_FIELD: t,
-                "aliases": [],
+                "aliases": [] if nm is None else [nm],
                 "collaborators": [],
                 "created": now,
                 "modified": now,
@@ -320,11 +322,56 @@ class Resource(object):
 
     @property
     def sources(self):
-        return self.v.get("sources", [])
+        if "sources" not in self.v:
+            self.v["sources"] = []
+        return self.v["sources"]
 
     @property
     def codes(self):
         return self.v.get("codes", [])
+
+    @property
+    def tables(self) -> Dict:  # TODO: Really should be Dict[str, Table]
+        """Get all the 'tables' stored in the resource.
+
+        The resource _should_ be of the type 'tabular' and this may be
+        enforced in the future.
+
+        Returns:
+            If there are tables, return a dictionary of the form
+            ``{'file': <idaes.dmf.tables.Table object>, ...}``.
+            If the table was stored inline in the resource the file will be the
+            empty string.
+            If there are no tables, this will return an empty dict.
+        """
+        from idaes.dmf.tables import Table  # avoid circular import
+
+        try:
+            tables = Table.from_resource(self)
+        except KeyError:
+            tables = {}
+        return tables
+
+    @property
+    def table(self) -> "idaes.dmf.tables.Table":
+        """Convenience attribute for retrieving a table from the resource when you
+        know that there is only one. If there are no tables, returns None.
+
+        Returns:
+            If one table, the Table object
+            If no tables, None
+            If multiple tables, raises an error
+
+        Raises:
+            KeyError: If there is more than one table
+        """
+        t = self.tables
+        if len(t) == 0:
+            return None
+        if len(t) == 1:
+            for v in t.values():
+                return v
+        raise KeyError(f"There are {len(t)} tables in the resource")
 
     def _massage_values(self):
         try:
@@ -463,8 +510,7 @@ class Resource(object):
 
     @property
     def id(self):
-        """Get resource identifier.
-        """
+        """Get resource identifier."""
         return self.v[self.ID_FIELD]
 
     def set_id(self, value=None):
@@ -495,31 +541,167 @@ class Resource(object):
 
     @property
     def name(self):
-        """Get resource name (first alias).
-        """
+        """Get resource name (first alias)."""
         try:
             nm = self.v["aliases"][0]
         except IndexError:
             nm = ""
         return nm
 
+    @name.setter
+    def name(self, value):
+        """Set resource name (first alias)."""
+        if "aliases" not in self.v:
+            self.v["aliases"] = [value]
+        else:
+            self.v["aliases"].insert(0, value)
+
+    @property
+    def desc(self):
+        """Get resource description"""
+        return self.v.get("desc", "")
+
+    @property
+    def description(self):
+        """Get resource description"""
+        return self.v.get("desc", "")
+
+    @desc.setter
+    def desc(self, value):
+        """Set resource description"""
+        self.v["desc"] = value
+
+    @description.setter
+    def description(self, value):
+        """Set resource description"""
+        self.v["desc"] = value
+
     @property
     def type(self):
-        """Get resource type.
-        """
+        """Get resource type."""
         return self.v[self.TYPE_FIELD]
 
     @property
     def data(self):
-        """Get JSON data for this resource.
-        """
+        """Get JSON data for this resource."""
         return self.v["data"]
 
     @data.setter
     def data(self, value):
-        """Set JSON data for this resource.
-        """
+        """Set JSON data for this resource."""
         self.v["data"] = value
+
+    @property
+    def tags(self):
+        """Get resource tags."""
+        return self.v.get("tags", [])
+
+    def add_tag(self, new_tag):
+        """Add a new resource tag."""
+        if "tags" not in self.v:
+            self.v["tags"] = []
+        tags = self.v["tags"]
+        if new_tag not in tags:
+            tags.append(new_tag)
+
+    @tags.setter
+    def tags(self, value: List[str]):
+        """Set all tags.
+
+        Args:
+            value: New list of tags to replace current one
+        """
+        if not value:
+            self.v["tags"] = []
+        else:
+            self.v["tags"] = value
+
+    def add_data_file(self, path, desc: str = None, do_copy: bool = True):
+        """Add a data file to the list of data files in the resource.
+
+        Args:
+            path: Path to the data file, as a string or Path object
+            desc: Description (otherwise use filename)
+            do_copy: If True, copy file into DMF workspace; otherwise do not copy
+
+        Returns:
+            None
+        """
+        # normalize input path to a Path object
+        if not hasattr(path, "absolute"):
+            path = Path(path)
+        # get the absolute path
+        abspath = str(path.absolute())
+        # hash the file (to detect changes)
+        file_hash = hash_file(path)
+        # add the datafile to the resource
+        self.v["datafiles"].append(
+            {
+                "desc": desc if desc else path.name,
+                "path": abspath,
+                "do_copy": do_copy,
+                "sha1": file_hash,
+            }
+        )
+
+    def add_table(
+        self,
+        path,
+        inline: bool = False,
+        file_format: str = "infer",
+        desc: str = None,
+        do_copy: bool = True,
+    ):
+        """Add a data file that represents tabular data.
+
+        To retrieve this data file (as a :class:`idaes.dmf.tables.Table` object),
+        get the `.tables` dict and use `path.name` as the key. For example::
+
+            my_resource.add_table("/path/to/my_table.csv")
+            # ...
+            dataframe = my_resource.tables["my_table.csv"].data
+
+        Args:
+            path: Path to the data file, as a string or Path object
+            inline: If true, put data inline in resource; otherwise copy the file
+            file_format: "csv", "excel", or "infer" to guess from file ext
+            desc: Description (otherwise use filename)
+            do_copy: If True, copy file into DMF workspace; otherwise do not copy
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: if file_format is "infer" but it cannot be inferred
+            IOError: if reading the data file fails
+        """
+        from idaes.dmf.tables import Table
+
+        table = Table.read_table(path, inline, file_format)
+        # add the table either inline or as a datafile
+        if inline:
+            # add contents of table to resource
+            table.add_to_resource(self)
+        else:
+            # add the table as a file, with parsed column header as metadata
+            table_meta = table.as_dict()
+            data = self.v.get(self.DATA_FIELD)
+            if self.TABLE_INFO_FIELD not in data:
+                data[self.TABLE_INFO_FIELD] = {}
+            #key = str(path)
+            key = Path(path).name
+            if path in data[self.TABLE_INFO_FIELD]:
+                if data[self.TABLE_INFO_FIELD][key] == table_meta:
+                    _log.warning(f"Ignoring duplicate table for '{key}'")
+                else:
+                    _log.info(f"Setting new metadata for table at '{key}'")
+                    # add the column names and units
+                    data[self.TABLE_INFO_FIELD][key] = table.as_dict(values=False)
+            else:
+                # add the table's file to the resource
+                self.add_data_file(path, desc=desc, do_copy=do_copy)
+                # add the column names and units
+                data[self.TABLE_INFO_FIELD][key] = table.as_dict(values=False)
 
     def get_datafiles(
         self, mode: Optional[str] = None, ignore_errors: bool = False
@@ -532,25 +714,43 @@ class Resource(object):
                   mode is not None (otherwise, no attempt is made to open the paths).
         Returns:
             generator: Generates Path or file objects, depending on mode
+
+        Raises:
+            ValueError: Problem with resolving the path to a file
         """
-        df_dir = self.v["datafiles_dir"]
+        datafiles_dir = self.v["datafiles_dir"]
         for datafile in self.v["datafiles"]:
-            if not df_dir:
-                path = Path(datafile["path"])
+            if "full_path" in datafile:
+                full_path = Path(datafile["full_path"])
             else:
-                df = Path(datafile["path"])
-                if df.is_absolute():
-                    path = df
+                path = Path(datafile["path"])
+                if path.is_absolute():
+                    full_path = path
                 else:
-                    path = Path(df_dir) / df
+                    if datafiles_dir:
+                        datafiles_path = Path(datafiles_dir)
+                        if self._dmf_datafiles_path is not None:
+                            full_path = self._dmf_datafiles_path / datafiles_path / path
+                        else:  # maybe we just wanted a relative path
+                            full_path = datafiles_path / path
+                        if not full_path.exists():
+                            msg = f"Path '{full_path}' to file '{path}' does not exist. " \
+                                  f"DMF path={self._dmf_datafiles_path}, resource path={datafiles_path}"
+                            raise ValueError(msg)
+                    else:
+                        # This is a problem!
+                        deets = ", ".join(["{k}={v}" for k, v in datafile.items()])
+                        msg = f"Cannot resolve relative path for datafile: No " \
+                              f"'datafiles_dir' in resource. {deets}"
+                        raise ValueError(msg)
             if mode is None:
-                yield path
+                yield full_path
             else:
                 try:
-                    fp = path.open(mode=mode)
+                    fp = full_path.open(mode=mode)
                 except FileNotFoundError:
                     if ignore_errors:
-                        _log.warning("Failed to open path '{path}' in mode '{mode}'")
+                        _log.warning(f"Failed to open path '{full_path}' in mode '{mode}'")
                     else:
                         raise
                 yield fp
@@ -667,8 +867,7 @@ def triple_from_resource_relations(id_, rrel):
 
 
 def date_float(value):
-    """Convert a date to a floating point seconds since the UNIX epoch.
-    """
+    """Convert a date to a floating point seconds since the UNIX epoch."""
 
     def bad_date(e):
         raise ValueError('Cannot convert date "{}" to float: {}'.format(value, e))
@@ -939,17 +1138,25 @@ class TidyUnitData:
 #
 
 
+def hash_file(path):
+    blksz, h = 1 << 16, hashlib.sha1()
+    with open(path, "rb") as f:
+        blk = f.read(blksz)
+        while blk:
+            h.update(blk)
+            blk = f.read(blksz)
+    return h.hexdigest()
+
+
 class ResourceImporter(abc.ABC):
-    """Base class for Resource importers.
-    """
+    """Base class for Resource importers."""
 
     def __init__(self, path: Path, do_copy: bool = None):
         self._path = path
         self._do_copy = do_copy
 
     def create(self) -> Resource:
-        """Factory method.
-        """
+        """Factory method."""
         r = self._create()
         r.validate()
         return r
@@ -960,7 +1167,7 @@ class ResourceImporter(abc.ABC):
 
     def _add_datafiles(self, r):
         abspath = str(self._path.absolute())
-        file_hash = self._hash_file(abspath)
+        file_hash = hash_file(abspath)
         r.v["datafiles"].append(
             {
                 "desc": self._path.name,
@@ -969,15 +1176,6 @@ class ResourceImporter(abc.ABC):
                 "sha1": file_hash,
             }
         )
-
-    def _hash_file(self, path):
-        blksz, h = 1 << 16, hashlib.sha1()
-        with open(path, "rb") as f:
-            blk = f.read(blksz)
-            while blk:
-                h.update(blk)
-                blk = f.read(blksz)
-        return h.hexdigest()
 
 
 class JupyterNotebookImporter(ResourceImporter):
@@ -1088,7 +1286,7 @@ DummyValueValidator(RESOURCE_SCHEMA).validate(DUMMY_RESOURCE)
 
 def schema_as_yaml():
     """Export resource schema as YAML suitable for embedding into, e.g.,
-       an OpenAPI spec.
+    an OpenAPI spec.
     """
     return yaml.dump(RESOURCE_SCHEMA)
 

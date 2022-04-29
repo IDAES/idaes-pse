@@ -2,11 +2,11 @@ Heat Exchanger using the NTU Method
 ===================================
 
 .. index::
-   pair: idaes.generic_models.unit_models.heat_exchanger_ntu;HeatExchangerNTU
+   pair: idaes.models.unit_models.heat_exchanger_ntu;HeatExchangerNTU
 
-.. currentmodule:: idaes.generic_models.unit_models.heat_exchanger_ntu
+.. currentmodule:: idaes.models.unit_models.heat_exchanger_ntu
 
-The HeatExchangerNTU model can be imported from :code:`idaes.generic_models.unit_models`, and models a heat exchanger using the effectiveness-NTU method.
+The HeatExchangerNTU model can be imported from :code:`idaes.models.unit_models`, and models a heat exchanger using the effectiveness-NTU method.
 
 Degrees of Freedom
 ------------------

@@ -2,9 +2,9 @@ Feedwater Heater Dynamic (0D)
 =============================
 
 .. index::
-    pair: idaes.power_generation.unit_models.feedwater_heater_0D_dynamic;FWH0DDynamic
+    pair: idaes.models_extra.power_generation.unit_models.feedwater_heater_0D_dynamic;FWH0DDynamic
 
-.. module:: idaes.power_generation.unit_models.feedwater_heater_0D_dynamic
+.. module:: idaes.models_extra.power_generation.unit_models.feedwater_heater_0D_dynamic
   :noindex:
 
 The FWH0DDynamic model is a 0D feedwater heater model suitable for dynamic modeling.
