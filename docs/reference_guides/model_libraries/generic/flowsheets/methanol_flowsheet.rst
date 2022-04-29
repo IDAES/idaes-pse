@@ -1,7 +1,7 @@
 Methanol Synthesis Flowsheet (gas-phase, steady state)
 ======================================================
 
-.. currentmodule:: idaes.generic_models.flowsheets.methanol_flowsheet
+.. currentmodule:: idaes.models.flowsheets.methanol_flowsheet
 
 This example demonstrates a steady-state simulation of methanol synthesis from hydrogen and carbon monoxide.
  This example does not represent any particular chemical process, but should be a reasonable approximation for methanol synthesis systems employing a
@@ -44,8 +44,8 @@ Main Models used:
     - Flash
 
 Property packages used:
-    - methanol_water_ideal (exists in generic properties examples folder)
-    - methanol_reactions (exists in generic properties examples folder)
+    - methanol_water_ideal (exists in idaes/models/properties/examples folder)
+    - methanol_reactions (exists in idaes/models/properties/examples folder)
 
 Figures Process Flow Diagram:
 

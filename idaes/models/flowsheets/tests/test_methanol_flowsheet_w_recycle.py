@@ -17,7 +17,7 @@ Tests for methanol flowsheet.
 
 import pytest
 
-from idaes.generic_models.flowsheets.methanol_flowsheet_w_recycle import (
+from idaes.models.flowsheets.methanol_flowsheet_w_recycle import (
     build_model, set_inputs, initialize_flowsheet, add_costing, report)
 
 from pyomo.environ import (Constraint,
@@ -31,12 +31,12 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.generic_models.properties.core.generic.generic_property import \
+from idaes.models.properties.modular_properties.base.generic_property import \
     GenericParameterBlock
-from idaes.generic_models.properties.core.generic.generic_reaction import \
+from idaes.models.properties.modular_properties.base.generic_reaction import \
     GenericReactionParameterBlock
 
-from idaes.generic_models.unit_models import (
+from idaes.models.unit_models import (
     Mixer,
     Heater,
     Compressor,
