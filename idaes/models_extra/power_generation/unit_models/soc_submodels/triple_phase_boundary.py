@@ -15,16 +15,13 @@ __author__ = "John Eslick, Douglas Allan"
 
 import copy
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 import pyomo.environ as pyo
 
 
 from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core.util.constants import Constants
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
-from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR,
-    _constF,
-)
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
@@ -50,7 +47,9 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
     )
     CONFIG.declare(
         "component_list",
-        ConfigValue(default=["H2", "H2O"], description="List of components"),
+        ConfigValue(
+            domain=ListOf(str), default=["H2", "H2O"], description="List of components"
+        ),
     )
     CONFIG.declare(
         "reaction_stoichiometry",
@@ -62,7 +61,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
     CONFIG.declare(
         "inert_species",
         ConfigValue(
-            default=[],  # TODO does this cause bug where all instances use the same default list?
+            default=None,
             domain=ListOf(str),
             description="List of species that do not participate in "
             "reactions at the triple phase boundary.",
@@ -78,7 +77,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
     CONFIG.declare(
         "below_electrolyte",
         ConfigValue(
-            domain=In([True, False]),
+            domain=Bool,
             description="Whether the triple phase boundary is located below or "
             "above the electrolyte. This flag determines the sign of material_flux_x.",
         ),
@@ -110,6 +109,8 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
 
         self.reaction_stoichiometry = copy.copy(self.config.reaction_stoichiometry)
 
+        if self.config.inert_species is None:
+            self.config.inert_species = list()
         # Copy and pasted from the Gibbs reactor
         for j in self.config.inert_species:
             if j not in comps:
@@ -222,7 +223,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         def pressure(b, t, iz):
             return (
                 sum(b.conc_mol_comp[t, iz, i] for i in comps)
-                * _constR
+                * Constants.gas_constant
                 * b.temperature[t, iz]
             )
 
@@ -250,13 +251,15 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             if abs(pressure_exponent) < 1e-6:
                 out_expr = 0
             else:
-                out_expr = -_constR * pressure_exponent * pyo.log(P / P_ref)
+                out_expr = (
+                    -Constants.gas_constant * pressure_exponent * pyo.log(P / P_ref)
+                )
             return out_expr + (
                 sum(
                     nu_j[j] * common._comp_entropy_expr(T, j)
                     for j in b.reacting_component_list
                 )
-                - _constR
+                - Constants.gas_constant
                 * sum(
                     nu_j[j] * log_y_j[t, iz, j]
                     for j in b.reacting_gas_list
@@ -279,9 +282,13 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         @self.Expression(tset, iznodes)
         def potential_nernst(b, t, iz):
             if b.config.below_electrolyte:
-                return -b.dg_rxn[t, iz] / (_constF * b.reaction_stoichiometry["e^-"])
+                return -b.dg_rxn[t, iz] / (
+                    Constants.faraday_constant * b.reaction_stoichiometry["e^-"]
+                )
             else:
-                return -b.dg_rxn[t, iz] / (_constF * -b.reaction_stoichiometry["e^-"])
+                return -b.dg_rxn[t, iz] / (
+                    Constants.faraday_constant * -b.reaction_stoichiometry["e^-"]
+                )
 
         @self.Expression(tset, iznodes)
         def log_exchange_current_density(b, t, iz):
@@ -289,7 +296,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             log_k = b.exchange_current_log_preexponential_factor[None]
             expo = b.exchange_current_exponent_comp
             E_A = b.exchange_current_activation_energy[None]
-            out = log_k - E_A / (_constR * T)
+            out = log_k - E_A / (Constants.gas_constant * T)
             for j in b.reacting_gas_list:
                 out += expo[j] * b.log_mole_frac_comp[t, iz, j]
             return out
@@ -303,7 +310,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             T = b.temperature[t, iz]
             alpha_1 = b.activation_potential_alpha1[None]
             alpha_2 = b.activation_potential_alpha2[None]
-            exp_expr = _constF * eta / (_constR * T)
+            exp_expr = Constants.faraday_constant * eta / (Constants.gas_constant * T)
             return i == pyo.exp(log_i0 + alpha_1 * exp_expr) - pyo.exp(
                 log_i0 - alpha_2 * exp_expr
             )
@@ -314,11 +321,11 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             # calculated directly from the current density
             if b.config.below_electrolyte:
                 return b.current_density[t, iz] / (
-                    _constF * b.reaction_stoichiometry["e^-"]
+                    Constants.faraday_constant * b.reaction_stoichiometry["e^-"]
                 )
             else:
                 return b.current_density[t, iz] / (
-                    _constF * -b.reaction_stoichiometry["e^-"]
+                    Constants.faraday_constant * -b.reaction_stoichiometry["e^-"]
                 )
 
         # Put this expression in to prepare for a contact resistance term
@@ -380,8 +387,8 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                         pyo.log(self.mole_frac_comp[t, iz, j])
                     )
 
-        opt = get_solver(solver, optarg)
-        common._init_solve_block(self, opt, solve_log)
+        solver_obj = get_solver(solver, optarg)
+        common._init_solve_block(self, solver_obj, solve_log)
 
         self.temperature_deviation_x.unfix()
         self.conc_mol_comp_ref.unfix()

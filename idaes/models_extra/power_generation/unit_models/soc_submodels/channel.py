@@ -13,16 +13,16 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue, In, ListOf, Bool
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
 from pyomo.network import Port
 
 
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core.util.constants import Constants
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR,
     _set_if_unfixed,
     _species_list,
     _element_list,
@@ -40,15 +40,18 @@ class SocChannelData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
         "component_list",
-        ConfigValue(default=["H2", "H2O"], description="List of components"),
+        ConfigValue(
+            domain=ListOf(str), default=["H2", "H2O"], description="List of components"
+        ),
     )
 
     CONFIG.declare(
         "control_volume_zfaces",
         ConfigValue(
+            domain=ListOf(float),
             description="List containing coordinates of control volume faces "
             "in z direction. Coordinates must start with zero, be strictly "
-            "increasing, and end with one"
+            "increasing, and end with one",
         ),
     )
     CONFIG.declare(
@@ -72,12 +75,16 @@ class SocChannelData(UnitModelBlockData):
     common._thermal_boundary_conditions_config(CONFIG, thin=False)
     CONFIG.declare(
         "opposite_flow",
-        ConfigValue(default=False, description="If True assume velocity is negative"),
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True assume velocity is negative",
+        ),
     )
     CONFIG.declare(
         "below_electrode",
         ConfigValue(
-            domain=In([True, False]),
+            domain=Bool,
             description="Decides whether or not to create material "
             "flux terms above or below the channel.",
         ),
@@ -319,11 +326,11 @@ class SocChannelData(UnitModelBlockData):
 
         @self.Expression(tset, iznodes)
         def vol_mol(b, t, iz):
-            return _constR * b.temperature[t, iz] / b.pressure[t, iz]
+            return Constants.gas_constant * b.temperature[t, iz] / b.pressure[t, iz]
 
         @self.Expression(tset)
         def vol_mol_inlet(b, t):
-            return _constR * b.temperature_inlet[t] / b.pressure_inlet[t]
+            return Constants.gas_constant * b.temperature_inlet[t] / b.pressure_inlet[t]
 
         # TODO maybe replace with variable-constraint pair?
         @self.Expression(tset)
@@ -392,7 +399,9 @@ class SocChannelData(UnitModelBlockData):
         @self.Constraint(tset, iznodes, comps)
         def conc_mol_comp_eqn(b, t, iz, i):
             return (
-                b.conc_mol_comp[t, iz, i] * b.temperature[t, iz] * _constR
+                b.conc_mol_comp[t, iz, i]
+                * b.temperature[t, iz]
+                * Constants.gas_constant
                 == b.pressure[t, iz] * b.mole_frac_comp[t, iz, i]
             )
 
@@ -620,7 +629,7 @@ class SocChannelData(UnitModelBlockData):
                         self.pressure[t, iz]
                         * self.mole_frac_comp[t, iz, i]
                         / self.temperature[t, iz]
-                        / _constR,
+                        / Constants.gas_constant,
                     )
                 _set_if_unfixed(
                     self.velocity[t, iz],
@@ -647,8 +656,8 @@ class SocChannelData(UnitModelBlockData):
                         self.int_energy_density[t, iz],
                         self.int_energy_mol[t, iz] / self.vol_mol[t, iz],
                     )
-        opt = get_solver(solver, optarg)
-        common._init_solve_block(self, opt, solve_log)
+        solver_obj = get_solver(solver, optarg)
+        common._init_solve_block(self, solver_obj, solve_log)
 
     def calculate_scaling_factors(self):
         pass

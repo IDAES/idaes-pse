@@ -258,6 +258,16 @@ class SocConductiveSlabData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         pass
 
+    def initialize_build(self, outlvl=idaeslog.NOTSET, solver=None, optarg=None):
+        # We've got initial estimates of temperature and heat flux at both ends of the slab. The fluxes are actually the
+        # important things to preserve, but we cannot fix both of them (BVPs with two sets of Neumann boundary
+        # conditions are ill-defined).
+        raise NotImplementedError(
+            "Initialization for the conductive_slab unit model is not implemented because there is no obvious set "
+            "of boundary conditions to fix during solid_oxide_cell initialization, and it is not meant to be "
+            "initialized in isolation."
+        )
+
     def model_check(self):
         pass
 

@@ -18,6 +18,7 @@ import numpy as np
 
 import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock
+from idaes.core.util.constants import Constants
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
@@ -353,7 +354,7 @@ def modelFuelAndOxygen(include_solid_species):
 
     m.fs.oxygen_triple_phase_boundary.exchange_current_exponent_comp["O2"].fix(0.25)
 
-    C_tot = 1.2e5 / pyo.value(common._constR * T)
+    C_tot = 1.2e5 / pyo.value(Constants.gas_constant * T)
 
     m.fs.fuel_triple_phase_boundary.conc_mol_comp_ref[0, :, "H2O"].fix(0.5 * C_tot)
     m.fs.fuel_triple_phase_boundary.conc_mol_comp_ref[0, :, "H2"].fix(0.05 * C_tot)
@@ -428,7 +429,7 @@ def conservation_tester(m):
     for P_fuel in np.linspace(1e5, 5e5, 3):
         for T in np.linspace(900, 1100, 4):
             m.fs.temperature_z.fix(T)
-            C_tot = P_fuel / pyo.value(common._constR * T)
+            C_tot = P_fuel / pyo.value(Constants.gas_constant * T)
             for y_H2 in np.linspace(0.1, 0.5, 3):
                 m.fs.fuel_triple_phase_boundary.conc_mol_comp_ref[0, :, "H2"].fix(
                     y_H2 * C_tot

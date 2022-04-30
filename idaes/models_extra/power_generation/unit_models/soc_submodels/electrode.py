@@ -13,15 +13,15 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigValue
+from pyomo.common.config import ConfigValue, In, Bool, ListOf
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
 
 
 from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core.util.constants import Constants
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR,
     _set_if_unfixed,
     _species_list,
     _element_list,
@@ -39,14 +39,17 @@ class SocElectrodeData(UnitModelBlockData):
     CONFIG.declare(
         "control_volume_xfaces",
         ConfigValue(
+            domain=ListOf(float),
             description="List containing coordinates of control volume faces "
             "in x direction. Coordinates must start with zero, be strictly "
-            "increasing, and end with one"
+            "increasing, and end with one",
         ),
     )
     CONFIG.declare(
         "component_list",
-        ConfigValue(default=["H2", "H2O"], description="List of components"),
+        ConfigValue(
+            domain=ListOf(str), default=["H2", "H2O"], description="List of components"
+        ),
     )
     CONFIG.declare(
         "conc_mol_comp_ref",
@@ -346,12 +349,18 @@ class SocElectrodeData(UnitModelBlockData):
 
         @self.Expression(tset, ixnodes, iznodes)
         def vol_mol(b, t, ix, iz):
-            return _constR * b.temperature[t, ix, iz] / b.pressure[t, ix, iz]
+            return (
+                Constants.gas_constant
+                * b.temperature[t, ix, iz]
+                / b.pressure[t, ix, iz]
+            )
 
         @self.Constraint(tset, ixnodes, iznodes, comps)
         def conc_mol_comp_eqn(b, t, ix, iz, i):
             return (
-                b.conc_mol_comp[t, ix, iz, i] * b.temperature[t, ix, iz] * _constR
+                b.conc_mol_comp[t, ix, iz, i]
+                * b.temperature[t, ix, iz]
+                * Constants.gas_constant
                 == b.pressure[t, ix, iz] * b.mole_frac_comp[t, ix, iz, i]
             )
 
@@ -711,7 +720,7 @@ class SocElectrodeData(UnitModelBlockData):
                     )
                     _set_if_unfixed(
                         self.pressure[t, ix, iz],
-                        _constR * self.temperature[t, ix, iz] * mol_dens,
+                        Constants.gas_constant * self.temperature[t, ix, iz] * mol_dens,
                     )
                     for i in comps:
                         _set_if_unfixed(
@@ -747,8 +756,8 @@ class SocElectrodeData(UnitModelBlockData):
                         self.conc_mol_comp_deviation_x[t, self.ixnodes.last(), iz, i],
                     )
 
-        opt = get_solver(solver, optarg)
-        common._init_solve_block(self, opt, solve_log)
+        solver_obj = get_solver(solver, optarg)
+        common._init_solve_block(self, solver_obj, solve_log)
 
     def calculate_scaling_factors(self):
         pass

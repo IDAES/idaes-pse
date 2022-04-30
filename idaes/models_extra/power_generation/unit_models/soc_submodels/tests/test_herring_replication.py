@@ -640,5 +640,5 @@ if __name__ == "__main__":
     out = kazempoor_braun_replication(m)
 
     # Uncomment to recreate cached data
-    # for i, df in enumerate(out):
-    #     df.to_csv(os.sep.join([data_cache, f"case_{i+1}.csv"]))
+    for i, df in enumerate(out):
+        df.to_csv(os.sep.join([data_cache, f"case_{i+1}.csv"]))

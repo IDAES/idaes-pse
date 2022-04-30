@@ -22,6 +22,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as soc_testing
 
+
 # Class for the electrolyte and interconnect
 def common_components(nt, nz, nx):
     return {
@@ -162,7 +163,7 @@ def modelHoldupNotDynamic():
 
 @pytest.mark.build
 @pytest.mark.unit
-def test_build_modelNoHoldup(modelNoHoldup):
+def test_build_model_no_holdup(modelNoHoldup):
     slab = modelNoHoldup.fs.slab
     nx = len(slab.ixnodes)
     nz = len(slab.iznodes)
@@ -180,7 +181,7 @@ def test_build_modelNoHoldup(modelNoHoldup):
 
 @pytest.mark.build
 @pytest.mark.unit
-def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
+def test_build_model_holdup_not_dynamic(modelHoldupNotDynamic):
     slab = modelHoldupNotDynamic.fs.slab
     nx = len(slab.ixnodes)
     nz = len(slab.iznodes)
@@ -206,6 +207,17 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
     )
 
     assert degrees_of_freedom(slab) == 0
+
+
+@pytest.mark.component
+def test_initialization_exception(modelNoHoldup):
+    with pytest.raises(
+        NotImplementedError,
+        match="Initialization for the conductive_slab unit model is not implemented because there is no obvious "
+        "set of boundary conditions to fix during solid_oxide_cell initialization, and it is not meant to be "
+        "initialized in isolation.",
+    ):
+        modelNoHoldup.fs.slab.initialize_build()
 
 
 # @pytest.mark.component

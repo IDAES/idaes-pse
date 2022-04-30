@@ -21,8 +21,8 @@ from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
+from idaes.core.util.constants import Constants
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constF,
     _species_list,
     _element_list,
     _element_dict,
@@ -40,45 +40,53 @@ class SolidOxideCellData(UnitModelBlockData):
     CONFIG.declare(
         "control_volume_zfaces",
         ConfigValue(
+            domain=ListOf(float),
             description="List containing coordinates of control volume faces "
             "in z direction. Coordinates must start with zero, be strictly "
-            "increasing, and end with one"
+            "increasing, and end with one",
         ),
     )
     CONFIG.declare(
         "control_volume_xfaces_fuel_electrode",
         ConfigValue(
+            domain=ListOf(float),
             description="List containing coordinates of control volume faces "
             "in x direction for fuel electrode. Coordinates must start with "
-            "zero, be strictly increasing, and end with one"
+            "zero, be strictly increasing, and end with one",
         ),
     )
     CONFIG.declare(
         "control_volume_xfaces_oxygen_electrode",
         ConfigValue(
+            domain=ListOf(float),
             description="List containing coordinates of control volume faces "
             "in x direction for oxygen electrode. Coordinates must start with "
-            "zero, be strictly increasing, and end with one"
+            "zero, be strictly increasing, and end with one",
         ),
     )
     CONFIG.declare(
         "control_volume_xfaces_electrolyte",
         ConfigValue(
+            domain=ListOf(float),
             description="List containing coordinates of control volume faces "
             "in x direction for electrolyte. Coordinates must start with "
-            "zero, be strictly increasing, and end with one"
+            "zero, be strictly increasing, and end with one",
         ),
     )
     CONFIG.declare(
         "fuel_component_list",
         ConfigValue(
-            default=["H2", "H2O"], description="List of components in fuel stream"
+            domain=ListOf(str),
+            default=["H2", "H2O"],
+            description="List of components in fuel stream",
         ),
     )
     CONFIG.declare(
         "oxygen_component_list",
         ConfigValue(
-            default=["O2"], description="List of components in the oxygen stream"
+            domain=ListOf(str),
+            default=["O2"],
+            description="List of components in the oxygen stream",
         ),
     )
     CONFIG.declare(
@@ -110,7 +118,7 @@ class SolidOxideCellData(UnitModelBlockData):
     CONFIG.declare(
         "inert_oxygen_species_triple_phase_boundary",
         ConfigValue(
-            default=[],
+            default=None,
             domain=ListOf(str),
             description="List of oxygen-side species that do not participate in "
             "reactions at the triple phase boundary.",
@@ -559,7 +567,7 @@ class SolidOxideCellData(UnitModelBlockData):
                         var[t].fix()
 
         unfix_potential = {}
-        opt = get_solver(solver, optarg)
+        solver_obj = get_solver(solver, optarg)
         for t in tset:
             unfix_potential[t] = not self.potential[t].fixed
         self.potential_eqn.deactivate()
@@ -638,7 +646,7 @@ class SolidOxideCellData(UnitModelBlockData):
                         )
                     )
 
-        common._init_solve_block(self.fuel_triple_phase_boundary, opt, solve_log)
+        common._init_solve_block(self.fuel_triple_phase_boundary, solver_obj, solve_log)
 
         self.fuel_triple_phase_boundary.temperature_deviation_x.unfix()
         self.fuel_triple_phase_boundary.conc_mol_comp_deviation_x.unfix()
@@ -672,7 +680,9 @@ class SolidOxideCellData(UnitModelBlockData):
                         )
                     )
 
-        common._init_solve_block(self.oxygen_triple_phase_boundary, opt, solve_log)
+        common._init_solve_block(
+            self.oxygen_triple_phase_boundary, solver_obj, solve_log
+        )
 
         self.oxygen_triple_phase_boundary.temperature_deviation_x.unfix()
         self.oxygen_triple_phase_boundary.conc_mol_comp_deviation_x.unfix()
@@ -731,7 +741,7 @@ class SolidOxideCellData(UnitModelBlockData):
         self.mean_temperature_eqn.activate()
 
         init_log.info_high("Solving cell with fixed current density")
-        common._init_solve_block(self, opt, solve_log)
+        common._init_solve_block(self, solver_obj, solve_log)
 
         self.potential_eqn.activate()
         # TODO---does the user ever have a reason to fix current density
@@ -740,7 +750,7 @@ class SolidOxideCellData(UnitModelBlockData):
         self.potential.fix()
 
         init_log.info_high("Solving cell with potential equations active")
-        common._init_solve_block(self, opt, solve_log)
+        common._init_solve_block(self, solver_obj, solve_log)
 
         # Unfix any inlet variables that were fixed by initialization
         # To be honest, using a state block would probably have been less work
@@ -906,7 +916,9 @@ class SolidOxideCellData(UnitModelBlockData):
             for j in self.oxygen_component_list:
                 sy_in_oxygen[j] = gsf(self.oxygen_inlet.mole_frac_comp[t, j], sy_def)
             for iz in self.iznodes:
-                s_react_flux = gsf(self.current_density[t, iz]) * pyo.value(_constF)
+                s_react_flux = gsf(self.current_density[t, iz]) * pyo.value(
+                    Constants.faraday_constant
+                )
                 for j in self.fuel_component_list:
                     if j in self.config.inert_fuel_species_triple_phase_boundary:
                         s_flux_j = sy_in_fuel[j] * s_inert_flux

@@ -24,10 +24,9 @@ from idaes.core import useDefault
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.model_statistics as mstat
+from idaes.core.util.constants import Constants
 import idaes.logger as idaeslog
 
-_constR = 8.31446261815324 * pyo.units.J / pyo.units.mol / pyo.units.K  # or Pa*m3/K/mol
-_constF = 96485 * pyo.units.coulomb / pyo.units.mol
 _safe_log_eps = 1e-9
 _safe_sqrt_eps = 1e-9
 
@@ -548,8 +547,8 @@ def _comp_int_energy_expr(temperature, comp):
             dn_form -= 0.5 * molecule_dict[comp]
     return (
         _comp_enthalpy_expr(temperature, comp)
-        - _constR * (temperature - T_ref)
-        + dn_form * _constR * T_ref
+        - Constants.gas_constant * (temperature - T_ref)
+        + dn_form * Constants.gas_constant * T_ref
     )
 
 

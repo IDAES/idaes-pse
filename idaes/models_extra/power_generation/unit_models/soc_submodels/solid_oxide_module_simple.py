@@ -24,7 +24,6 @@ from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constF,
     _species_list,
     _element_list,
     _element_dict,
@@ -258,7 +257,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         tset = self.flowsheet().config.time
 
-        opt = get_solver(solver, optarg)
+        solver_obj = get_solver(solver, optarg)
 
         number_cells_fixed = self.number_cells.fixed
         potential_cell_fixed = {}
@@ -315,7 +314,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                 solver=solver,
                 state_args=state_args,
             )
-        common._init_solve_block(self, opt, solve_log)
+        common._init_solve_block(self, solver_obj, solve_log)
 
         init_log.info(f"{self.name} initialization complete.")
 
