@@ -482,7 +482,7 @@ def create_dir(d):
 
 def get_data_directory():
     """Return the standard data directory for idaes, based on the OS."""
-    if 'IDAES_DATA' in os.environ and os.environ['IDAES_DATA']:
+    if 'IDAES_DATA' in os.environ:
         data_directory = os.environ['IDAES_DATA']
     else:
         try:
@@ -492,6 +492,12 @@ def get_data_directory():
                 data_directory = os.path.join(os.environ['HOME'], ".idaes")
         except AttributeError:
             data_directory = None
+    if data_directory is None or not os.path.isdir(os.path.dirname(data_directory)):
+        _log.warning(
+            "IDAES data directory location does not exist: "
+            f"{os.path.dirname(data_directory)}"
+        )
+        data_directory = None
     # Standard location for executable binaries.
     if data_directory is not None:
         bin_directory = os.path.join(data_directory, "bin")
@@ -519,6 +525,8 @@ def setup_environment(bin_directory, use_idaes_solvers):
     Returns:
         None
     """
+    if bin_directory is None:
+        return
     oe = orig_environ
     if use_idaes_solvers:
         os.environ['PATH'] = os.pathsep.join([bin_directory, oe.get('PATH', '')])

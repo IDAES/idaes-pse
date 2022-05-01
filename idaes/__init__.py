@@ -35,7 +35,10 @@ config.bin_directory = bin_directory
 config.testing_directory = testing_directory
 
 # Set the path for the global and local config files
-_global_config_file = os.path.join(data_directory, "idaes.conf")
+if data_directory is not None:
+    _global_config_file = os.path.join(data_directory, "idaes.conf")
+else:
+    _global_config_file = None
 _local_config_file = "idaes.conf"
 
 # Create the general IDAES configuration block, with default config
@@ -73,20 +76,21 @@ def _create_testing_dir():
     _create_data_dir()
     config.create_dir(testing_directory)
 
-try:
-    _create_data_dir()
-except FileNotFoundError:
-    pass # the standard place for this doesn't exist, shouldn't be a show stopper
+if data_directory is not None:
+    try:
+        _create_data_dir()
+    except FileNotFoundError:
+        pass # the standard place for this doesn't exist, shouldn't be a show stopper
 
-try:
-    _create_bin_dir()
-except FileNotFoundError:
-    pass # the standard place for this doesn't exist, shouldn't be a show stopper
+    try:
+        _create_bin_dir()
+    except FileNotFoundError:
+        pass # the standard place for this doesn't exist, shouldn't be a show stopper
 
-try:
-    _create_testing_dir()
-except FileNotFoundError:
-    pass # the standard place for this doesn't exist, shouldn't be a show stopper
+    try:
+        _create_testing_dir()
+    except FileNotFoundError:
+        pass # the standard place for this doesn't exist, shouldn't be a show stopper
 
 
 def reconfig():
