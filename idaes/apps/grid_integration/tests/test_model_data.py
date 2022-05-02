@@ -50,12 +50,12 @@ def test_create_model_data_object(generator_params, generator_data_object):
             assert param_val == generator_params[param_name]
 
     # test bids
-    attr_names = ["default_bids", "default_startup_bids"]
+    attr_names = ["p_cost", "startup_cost"]
     param_names = ["production_cost_bid_pairs", "startup_cost_pairs"]
 
     for a_name, p_name in zip(attr_names, param_names):
         bids = getattr(generator_data_object, a_name)
-        expected_bid = {key: val for key, val in generator_params[p_name]}
+        expected_bid = [(key, val) for key, val in generator_params[p_name]]
         pyo_unittest.assertStructuredAlmostEqual(first=bids, second=expected_bid)
 
 
