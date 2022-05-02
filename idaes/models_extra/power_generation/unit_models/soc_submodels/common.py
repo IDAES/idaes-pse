@@ -199,7 +199,7 @@ def _interpolate_2D(
     phi_bound_1,
     derivative=False,
 ):
-    """PRIVATE Function: Interpolate faces of control volumes in 1D
+    """PRIVATE Function: Interpolate faces of control volumes in 2D
 
     Args:
         ic: face index in x or z direction matching specified direction
@@ -207,14 +207,13 @@ def _interpolate_2D(
         nodes: set of node locations in specified direction
         faces: set of face locations in specified direction
         phi_func: function that returns an expression for the quantity to be
-            interpolated at a node cneter as a function of node index
+            interpolated at a node center as a function of node index
         phi_bound_0: expression for the value of the quantity to be interpolated
             at the 0 bound
         phi_bound_1: expression for the value of the quantity to be interpolated
             at the 1 bound
         derivative: If True estimate derivative
         method: interpolation method currently only CDS is supported
-        direction: direction to interpolate
 
     Returns:
         expression for phi at face
@@ -281,6 +280,11 @@ class _SubsetOf(object):
         self._domain = domain
 
     def __call__(self, possible_subset):
+        # We often like to use None to represent the empty set in Config blocks because using a mutable object
+        # for a default function value results in the same object being used every time the function is called
+        # Not sure the same is true for Config blocks, but it probably is.
+        if possible_subset is None:
+            return None
         for value in possible_subset:
             if value not in self._domain:
                 raise ValueError("value %s not in domain %s" % (value, self._domain))

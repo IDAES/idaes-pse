@@ -10,6 +10,14 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
+"""
+Model for channel in SolidOxideCell. If opposite_flow is false, material flows from
+z=0 to z=1, otherwise it flows from z=1 to z=0. Pure convection occurs in the z
+direction, while mass and heat transfer coefficients govern fluxes out of the x=0
+and x=1 sides of the model. The PDEs are discretized in the z direction  by a finite
+volume method with upwind differences used to calculate convection fluxes. It is
+assumed that the gas is ideal.
+"""
 
 __author__ = "John Eslick, Douglas Allan"
 

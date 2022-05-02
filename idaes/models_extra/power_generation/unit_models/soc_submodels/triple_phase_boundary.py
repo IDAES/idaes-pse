@@ -10,7 +10,13 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-
+"""
+This model contains equations relating to the electrochemistry occurring at the
+triple phase boundary. The (half-cell) Nernst potential and activation
+overpotential are calculated, resistance heating is added to the heat flux, and
+the reaction rate is linked to the current density using the stoichiometric
+coefficient provided for e^-.
+"""
 __author__ = "John Eslick, Douglas Allan"
 
 import copy

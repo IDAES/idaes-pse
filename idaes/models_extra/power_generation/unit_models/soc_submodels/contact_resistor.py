@@ -10,7 +10,12 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-
+"""
+Simple model to represent resistance originating from the contact between the
+flow mesh and electrode or flow mesh and interconnect. An equality constraint is
+created to add a resistance heating term from the heat flux coming from one side
+to that coming out the other.
+"""
 __author__ = "John Eslick, Douglas Allan"
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In

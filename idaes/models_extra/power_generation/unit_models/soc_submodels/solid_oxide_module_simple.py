@@ -10,7 +10,16 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
+"""
+Unit model to scale SOC variables to and from cell-scale to module-scale and
+translate between the FTPx variables assumed at the cell level to a general
+property package. The only module-level variable, besides those contained
+in the StateBlocks, is number_cells. Ports created are fuel_inlet, fuel_outlet,
+oxygen_inlet, and oxygen_outlet.
 
+A config block for the SOC unit model must be provided. Further documentation
+is provided in the cell model file.
+"""
 __author__ = "Douglas Allan"
 
 from pyomo.common.config import ConfigValue, In, Bool, ListOf, ConfigBlock

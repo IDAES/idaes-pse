@@ -10,7 +10,15 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-
+"""
+Electrode model for SolidOxideCell. The electrodes are porous media that contain
+both a gas and a solid phase. PDEs are  discretized in both x and z directions
+using a finite volume method. Quantities are interpolated using a centered-difference
+scheme. Presently only conventional diffusion is considered, because the Knudsen
+number is much less than one for reactive species (H2, H2O, and O2). The energy
+balance considers thermal condition from the solid phase, enthalpy flows
+from gas species, and resistive heating from the current flowing through the medium.
+"""
 __author__ = "John Eslick, Douglas Allan"
 
 from pyomo.common.config import ConfigValue, In, Bool, ListOf
@@ -96,7 +104,7 @@ class SocElectrodeData(UnitModelBlockData):
         # Electrode thickness AKA length in the x direction is specific to the
         # electrode so local variable here is the only option
         self.length_x = pyo.Var(
-            doc="Thickness of the electrode (x-direction)",
+            doc="Thickness of the slab (x-direction)",
             units=pyo.units.m,
         )
 
@@ -162,7 +170,7 @@ class SocElectrodeData(UnitModelBlockData):
             tset,
             ixnodes,
             iznodes,
-            doc="Deviation of temperature at node centers " "from temperature_z",
+            doc="Deviation of temperature at node centers from temperature_z",
             units=pyo.units.K,
             bounds=(-1000, 1000),
         )

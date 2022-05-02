@@ -10,7 +10,12 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-
+"""
+Two-dimensional model of a slab of some conductive material. Presently it is
+used to for the SOC electrolyte, but it can also be used for the interconnect.
+It is discretized using a finite volume method with centered differences for
+interpolation, and contains only thermal transport and resistive heating terms.
+"""
 __author__ = "John Eslick, Douglas Allan"
 
 from pyomo.common.config import ConfigValue
