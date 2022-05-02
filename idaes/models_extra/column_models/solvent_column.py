@@ -598,7 +598,7 @@ and used when constructing these
                 return pyunits.convert(
                     blk.vapor_phase.heat[t, x],
                     to_units=lunits("power") / lunits("length"),
-                ) == -(
+                ) == (
                     blk.heat_transfer_coeff[t, x]
                     * (
                         blk.liquid_phase.properties[t, zb].temperature
