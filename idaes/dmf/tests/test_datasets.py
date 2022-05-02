@@ -113,6 +113,21 @@ def pub_datasets(
     yield ds
 
 
+@pytest.fixture
+def save_restore_config():
+    """Use this to avoid changes to global config.yaml
+    """
+    ws = datasets.get_dataset_workspace()
+    config = ws / "config.yaml"
+    # copy current config value
+    with config.open("r") as fp:
+        data = fp.read()
+    yield config
+    # put it back
+    with config.open("w") as fp:
+        fp.write(data)
+
+
 # Tests
 # -----
 
@@ -180,7 +195,7 @@ def test_publication_dataset_load_and_retrieve(
 
 
 @pytest.mark.unit
-def test_dataset_init_no_workspace():
+def test_dataset_init_no_workspace(save_restore_config):
     ds = datasets.Dataset()
 
 
