@@ -32,21 +32,23 @@ import os
 
 import pytest
 import pyomo.environ as pyo
+from pyomo.environ import check_optimal_termination
 from pyomo.common.fileutils import this_file_dir
 
-from idaes.models_extra.power_generation.flowsheets.NGFC.NGFC_flowsheet import (
-    build_power_island,
-    build_reformer,
-    set_power_island_inputs,
-    set_reformer_inputs,
-    scale_flowsheet,
-    initialize_power_island,
-    initialize_reformer,
-    connect_reformer_to_power_island,
-    SOFC_ROM_setup,
-    add_SOFC_energy_balance,
-    add_result_constraints,
-)
+from idaes.models_extra.power_generation.flowsheets.NGFC.NGFC_flowsheet \
+    import (
+        build_power_island,
+        build_reformer,
+        set_power_island_inputs,
+        set_reformer_inputs,
+        scale_flowsheet,
+        initialize_power_island,
+        initialize_reformer,
+        connect_reformer_to_power_island,
+        SOFC_ROM_setup,
+        add_SOFC_energy_balance,
+        add_result_constraints,
+        )
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -64,9 +66,9 @@ def m():
 
     build_power_island(m)
     build_reformer(m)
+    scale_flowsheet(m)
     set_power_island_inputs(m)
     set_reformer_inputs(m)
-    connect_reformer_to_power_island(m)
 
     return m
 
@@ -85,41 +87,43 @@ def test_build(m):
     assert hasattr(m.fs.reformer, "heat_duty")
     assert hasattr(m.fs.reformer, "deltaP")
 
-    assert not m.fs.anode_mix.feed.flow_mol[0].fixed
-
 
 @pytest.mark.integration
 def test_initialize(m):
-    scale_flowsheet(m)
+    solver.options = {
+        "max_iter": 500,
+        "tol": 1e-7,
+        "bound_push": 1e-12,
+        "linear_solver": "ma57",
+        "ma57_pivtol": 1e-3,
+          }
     initialize_power_island(m)
     initialize_reformer(m)
 
-    assert pyo.value(m.fs.reformer.lagrange_mult[(0, "H")]) == pytest.approx(
-        83163, 1e-3
-    )
-    assert pyo.value(m.fs.prereformer.lagrange_mult[(0, "H")]) == pytest.approx(
-        63608, 1e-3
-    )
-    assert pyo.value(m.fs.anode.lagrange_mult[(0, "H")]) == pytest.approx(76820, 1e-3)
-
-    assert pyo.value(m.fs.bypass_rejoin.outlet.temperature[0]) == pytest.approx(
-        640.6, 1e-3
-    )
-    assert pyo.value(m.fs.anode_hx.shell_outlet.temperature[0]) == pytest.approx(
-        827.6, 1e-3
-    )
-    assert pyo.value(m.fs.cathode_hx.shell_outlet.temperature[0]) == pytest.approx(
-        475.8, 1e-3
-    )
+    assert pyo.value(m.fs.reformer.lagrange_mult[(0, "H")]) == \
+        pytest.approx(83053, 1e-3)
+    assert pyo.value(m.fs.prereformer.lagrange_mult[(0, "H")]) == \
+        pytest.approx(66902, 1e-3)
+    assert pyo.value(m.fs.anode.lagrange_mult[(0, "H")]) == \
+        pytest.approx(75542, 1e-3)
+    assert pyo.value(m.fs.bypass_rejoin.outlet.temperature[0]) == \
+        pytest.approx(1019, 1e-3)
+    assert pyo.value(m.fs.anode_hx.shell_outlet.temperature[0]) == \
+        pytest.approx(869, 1e-3)
+    assert pyo.value(m.fs.cathode_hx.shell_outlet.temperature[0]) == \
+        pytest.approx(475.8, 1e-3)
 
 
 @pytest.mark.integration
 def test_ROM(m):
+    connect_reformer_to_power_island(m)
     SOFC_ROM_setup(m)
     add_SOFC_energy_balance(m)
     add_result_constraints(m)
 
     assert degrees_of_freedom(m) == 0
+
+    assert not m.fs.anode_mix.feed.flow_mol[0].fixed
 
     assert hasattr(m.fs, "ROM_fuel_inlet_temperature")
     assert hasattr(m.fs, "ROM_internal_reformation")
@@ -133,18 +137,35 @@ def test_ROM(m):
 
 
 @pytest.mark.integration
+def test_solve(m):
+    solve_iteration = 0
+    for i in range(1, 10):  # keep looping until condition is met
+        solve_iteration += 1
+        print('Solve # ', solve_iteration)
+        res = solver.solve(m.fs.air_compressor_s2, tee=True)
+        if 'Optimal Solution Found' in res.solver.message:
+            break
+
+    assert solve_iteration == 1  # this value can be increased if needed
+    assert check_optimal_termination(res)
+
+
+@pytest.mark.integration
 def test_json_load(m):
     fname = os.path.join(
         os.path.join(os.path.dirname(this_file_dir()), "NGFC"),
-        "NGFC_flowsheet_init.json.gz",
+        "NGFC_flowsheet_solution.json.gz",
     )
 
     ms.from_json(m, fname=fname)
 
-    assert pyo.value(m.fs.cathode.ion_outlet.flow_mol[0]) == pytest.approx(
-        1670.093, 1e-5
-    )
-    assert pyo.value(m.fs.reformer_recuperator.area) == pytest.approx(4512.56, 1e-3)
-    assert pyo.value(m.fs.anode.heat_duty[0]) == pytest.approx(-672918626, 1e-5)
-    assert pyo.value(m.fs.CO2_emissions) == pytest.approx(291.169, 1e-5)
-    assert pyo.value(m.fs.net_power) == pytest.approx(659.879, 1e-5)
+    assert pyo.value(m.fs.cathode.ion_outlet.flow_mol[0]) == \
+        pytest.approx(1670, 1e-5)
+    assert pyo.value(m.fs.reformer_recuperator.area) == \
+        pytest.approx(2328, 1e-3)
+    assert pyo.value(m.fs.anode.heat_duty[0]) == \
+        pytest.approx(-871373774, 1e-5)
+    assert pyo.value(m.fs.CO2_emissions) == \
+        pytest.approx(300, 1e-5)
+    assert pyo.value(m.fs.net_power) == \
+        pytest.approx(660, 1e-5)

@@ -152,7 +152,8 @@ def build_SOFC_ROM(m):
 
     b.internal_reforming = Var(initialize=0.4, units=None, bounds=(0, 1))
 
-    b.air_temperature = Var(initialize=700, units=None, bounds=(550, 800))
+    #b.air_temperature = Var(initialize=700, units=None, bounds=(550, 800))
+    b.air_temperature = Var(initialize=700, units=None, bounds=(225, 800))
 
     b.air_recirculation = Var(initialize=0.5, units=None, bounds=(0, 0.8))
 
@@ -160,7 +161,8 @@ def build_SOFC_ROM(m):
 
     b.fuel_util = Var(initialize=0.85, units=None, bounds=(0.4, 0.95))
 
-    b.air_util = Var(initialize=0.5, units=None, bounds=(0.125, 0.833))
+    #b.air_util = Var(initialize=0.5, units=None, bounds=(0.125, 0.833))
+    b.air_util = Var(initialize=0.5, units=None, bounds=(0, 0.833))
 
     b.pressure = Var(initialize=1, units=units.atm, bounds=(1, 2.5))
 

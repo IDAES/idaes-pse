@@ -38,15 +38,12 @@ from pyomo.environ import units as pyunits
 from pyomo.network import Arc
 from pyomo.common.fileutils import this_file_dir
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.util.infeasible import log_infeasible_constraints
 
 # IDAES Imports
 from idaes.core import FlowsheetBlock
-from idaes.core.util import copy_port_values
+from idaes.core.util.initialization import propagate_state
 from idaes.core.util import model_serializer as ms
 from idaes.core.util.misc import svg_tag
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import InitializationError
 
 import idaes.core.util.scaling as iscale
@@ -79,6 +76,7 @@ from idaes.models_extra.power_generation.properties.natural_gas_PR import (
     get_prop,
     get_rxn,
 )
+
 from idaes.models_extra.power_generation.properties.NGFC.ROM.SOFC_ROM import (
     build_SOFC_ROM,
     initialize_SOFC_ROM,
@@ -533,7 +531,7 @@ def set_power_island_inputs(m):
     m.fs.anode_mix.feed.mole_frac_comp[0, "H2"].fix(0.2752)
     m.fs.anode_mix.feed.mole_frac_comp[0, "H2O"].fix(0.1118)
     m.fs.anode_mix.feed.mole_frac_comp[0, "N2"].fix(0.2879)
-    m.fs.anode_mix.feed.mole_frac_comp[0, "O2"].fix(0)
+    m.fs.anode_mix.feed.mole_frac_comp[0, "O2"].fix(1e-11)
     m.fs.anode_mix.feed.mole_frac_comp[0, "Ar"].fix(0.0034)
 
     # anode heat exchanger
@@ -817,18 +815,19 @@ def set_reformer_inputs(m):
 
 
 def scale_flowsheet(m):
+    print('Scaling flowsheet variables')
     # set NG_props default scaling
     m.fs.NG_props.set_default_scaling("flow_mol", 1e-3)
     m.fs.NG_props.set_default_scaling("flow_mol_phase", 1e-3)
     m.fs.NG_props.set_default_scaling("temperature", 1e-2)
     m.fs.NG_props.set_default_scaling("pressure", 1e-5)
 
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e1)
+    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2)
     m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C2H6")
     m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C3H8")
     m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C4H10")
 
-    m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e1)
+    m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e2)
     m.fs.NG_props.set_default_scaling(
         "mole_frac_phase_comp", 1e2, index=("Vap", "C2H6")
     )
@@ -839,68 +838,399 @@ def scale_flowsheet(m):
         "mole_frac_phase_comp", 1e2, index=("Vap", "C4H10")
     )
 
-    m.fs.NG_props.set_default_scaling("enth_mol_phase", 1e-3)
-    m.fs.NG_props.set_default_scaling("entr_mol_phase", 1e-1)
+    m.fs.NG_props.set_default_scaling("enth_mol_phase", 1e-6)
+    m.fs.NG_props.set_default_scaling("entr_mol_phase", 1e-4)
 
     # set syn_props default scaling
     m.fs.syn_props.set_default_scaling("flow_mol", 1e-3)
     m.fs.syn_props.set_default_scaling("flow_mol_phase", 1e-3)
     m.fs.syn_props.set_default_scaling("temperature", 1e-2)
     m.fs.syn_props.set_default_scaling("pressure", 1e-5)
-    m.fs.syn_props.set_default_scaling("mole_frac_comp", 1e1)
-    m.fs.syn_props.set_default_scaling("mole_frac_phase_comp", 1e1)
-    m.fs.syn_props.set_default_scaling("enth_mol_phase", 1e-3)
-    m.fs.syn_props.set_default_scaling("entr_mol_phase", 1e-1)
+    m.fs.syn_props.set_default_scaling("mole_frac_comp", 1e2)
+    m.fs.syn_props.set_default_scaling("mole_frac_phase_comp", 1e2)
+    m.fs.syn_props.set_default_scaling("enth_mol_phase", 1e-6)
+    m.fs.syn_props.set_default_scaling("entr_mol_phase", 1e-4)
 
     # set air_props default scaling
     m.fs.air_props.set_default_scaling("flow_mol", 1e-3)
     m.fs.air_props.set_default_scaling("flow_mol_phase", 1e-3)
     m.fs.air_props.set_default_scaling("temperature", 1e-2)
     m.fs.air_props.set_default_scaling("pressure", 1e-5)
-    m.fs.air_props.set_default_scaling("mole_frac_comp", 1e1)
-    m.fs.air_props.set_default_scaling("mole_frac_phase_comp", 1e1)
-    m.fs.air_props.set_default_scaling("enth_mol_phase", 1e-3)
-    m.fs.air_props.set_default_scaling("entr_mol_phase", 1e-3)
+    m.fs.air_props.set_default_scaling("mole_frac_comp", 1e2)
+    m.fs.air_props.set_default_scaling("mole_frac_phase_comp", 1e2)
+    m.fs.air_props.set_default_scaling("enth_mol_phase", 1e-6)
+    m.fs.air_props.set_default_scaling("entr_mol_phase", 1e-4)
 
     iscale.set_scaling_factor(m.fs.prereformer.lagrange_mult, 1e-4)
     iscale.set_scaling_factor(m.fs.anode.lagrange_mult, 1e-4)
 
-    iscale.calculate_scaling_factors(m)
-    # apply scaling factors
-    m.fs.NG_props.set_default_scaling("flow_mol", 1e-3)
-    m.fs.NG_props.set_default_scaling("flow_mol_phase", 1e-3)
-    m.fs.NG_props.set_default_scaling("temperature", 1e-2)
-    m.fs.NG_props.set_default_scaling("pressure", 1e-5)
-
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e1)
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C2H6")
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C3H8")
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C4H10")
-
-    m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e1)
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 1e2, index=("Vap", "C2H6")
-    )
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 1e2, index=("Vap", "C3H8")
-    )
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 1e2, index=("Vap", "C4H10")
-    )
-
-    m.fs.NG_props.set_default_scaling("enth_mol_phase", 1e-3)
-    m.fs.NG_props.set_default_scaling("entr_mol_phase", 1e-1)
-
     iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-4)
 
+    # overwrite mole_frac lower bound to remove warnings
+    print('overwriting mole_frac lower bound, set to 0 to remove warnings')
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        if '.mole_frac' in var.name: # don't catch log_mole_frac variables
+            var.setlb(0)
+
+    # some specific variable scaling
+    
+    # heat exchanger areas and overall heat transfer coefficiencts
+    iscale.set_scaling_factor(m.fs.anode_hx.area, 1e-4)
+    iscale.set_scaling_factor(m.fs.anode_hx.overall_heat_transfer_coefficient, 1)
+    iscale.set_scaling_factor(m.fs.cathode_hx.area, 1e-4)
+    iscale.set_scaling_factor(m.fs.cathode_hx.overall_heat_transfer_coefficient, 1)
+    iscale.set_scaling_factor(m.fs.reformer_recuperator.area, 1e-4)
+    iscale.set_scaling_factor(m.fs.reformer_recuperator.overall_heat_transfer_coefficient, 1)
+
+    # control volume heats
+    iscale.set_scaling_factor(m.fs.anode_hx.tube.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.anode_hx.shell.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.anode.control_volume.heat, 1e-8)
+    iscale.set_scaling_factor(m.fs.cathode_hx.tube.heat, 1e-8)
+    iscale.set_scaling_factor(m.fs.cathode_hx.shell.heat, 1e-8)
+    iscale.set_scaling_factor(m.fs.cathode_heat.control_volume.heat, 1e-8)
+    iscale.set_scaling_factor(m.fs.cathode_HRSG.control_volume.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.intercooler_s1.control_volume.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.intercooler_s2.control_volume.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.anode_HRSG.control_volume.heat, 1e-8)
+    iscale.set_scaling_factor(m.fs.prereformer.control_volume.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.reformer.control_volume.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.reformer_recuperator.shell.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.reformer_recuperator.tube.heat, 1e-6)
+
+    # work
+    iscale.set_scaling_factor(m.fs.anode_blower.control_volume.work, 1e-5)
+    iscale.set_scaling_factor(m.fs.air_blower.control_volume.work, 1e-6)
+    iscale.set_scaling_factor(m.fs.cathode_blower.control_volume.work, 1e-5)
+    iscale.set_scaling_factor(m.fs.air_compressor_s1.control_volume.work, 1e-6)
+    iscale.set_scaling_factor(m.fs.air_compressor_s2.control_volume.work, 1e-6)
+    iscale.set_scaling_factor(m.fs.cathode_expander.control_volume.work, 1e-6)
+    iscale.set_scaling_factor(m.fs.combustor_expander.control_volume.work, 1e-6)
+    iscale.set_scaling_factor(m.fs.NG_expander.control_volume.work, 1e-6)
+
+    # reaction extents
+    iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "h2_cmb"], 1e2)
+    iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "co_cmb"], 1e2)
+    iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "ch4_cmb"], 1e5)
+
+    print('Scaling flowsheet constraints')
+
+    list_units = ['anode_mix', 'anode_hx', 'prereformer', 'anode_translator',
+                  'fuel_cell_mix', 'anode', 'anode_recycle', 'anode_blower',
+                  'recycle_translator', 'air_blower', 'cathode_hx',
+                  'cathode_mix', 'cathode', 'cathode_translator',
+                  'cathode_heat', 'cathode_recycle', 'cathode_blower',
+                  'cathode_exhaust_split', 'cathode_expander', 'cathode_HRSG',
+                  'cathode_exhaust_translator', 'combustor_mix', 'combustor',
+                  'combustor_expander', 'anode_HRSG', 'reformer_recuperator',
+                  'NG_expander', 'reformer_bypass', 'air_compressor_s1',
+                  'intercooler_s1', 'air_compressor_s2', 'intercooler_s2',
+                  'reformer_mix', 'reformer', 'bypass_rejoin']
+
+    # set scaling for unit constraints
+    for name in list_units:
+        unit = getattr(m.fs, name)
+        # mixer constraints
+        if hasattr(unit, 'material_mixing_equations'):
+            for (t, j), c in unit.material_mixing_equations.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'enthalpy_mixing_equations'):
+            for t, c in unit.enthalpy_mixing_equations.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'minimum_pressure_constraint'):
+            for (t, i), c in unit.minimum_pressure_constraint.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+        if hasattr(unit, 'mixture_pressure'):
+            for t, c in unit.mixture_pressure.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+        if hasattr(unit, 'pressure_equality_constraints'):
+            for (t, i), c in unit.pressure_equality_constraints.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+
+        # separator constraints
+        if hasattr(unit, 'material_splitting_eqn'):
+            for (t, o, j), c in unit.material_splitting_eqn.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'temperature_equality_eqn'):
+            for (t, o), c in unit.temperature_equality_eqn.items():
+                iscale.constraint_scaling_transform(c, 1e-2, overwrite=False)
+        if hasattr(unit, 'molar_enthalpy_equality_eqn'):
+            for (t, o), c in unit.molar_enthalpy_equality_eqn.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'molar_enthalpy_splitting_eqn'):
+            for (t, o), c in unit.molar_enthalpy_splitting_eqn.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'pressure_equality_eqn'):
+            for (t, o), c in unit.pressure_equality_eqn.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+        if hasattr(unit, 'sum_split_frac'):
+            for t, c in unit.sum_split_frac.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+
+        # pressurechanger constraints
+
+        if hasattr(unit, "ratioP_calculation"):
+            for t, c in unit.ratioP_calculation.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+
+        if hasattr(unit, "fluid_work_calculation"):
+            for t, c in unit.fluid_work_calculation.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+
+        if hasattr(unit, "actual_work"):
+            for t, c in unit.actual_work.items():
+                iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
+
+        if hasattr(unit, "isentropic_pressure"):
+            for t, c in unit.isentropic_pressure.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+
+        if hasattr(unit, "isothermal"):
+            for t, c in unit.isothermal.items():
+                iscale.constraint_scaling_transform(c, 1e-2, overwrite=False)
+
+        if hasattr(unit, "isentropic"):
+            for t, c in unit.isentropic.items():
+                iscale.constraint_scaling_transform(c, 1e-1, overwrite=False)
+
+        if hasattr(unit, "isentropic_energy_balance"):
+            for t, c in unit.isentropic_energy_balance.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+
+        if hasattr(unit, "zero_work_equation"):
+            for t, c in unit.zero_work_equation.items():
+                iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
+
+        if hasattr(unit, "state_material_balances"):
+            for (t, j), c in unit.state_material_balances.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+
+        # heater and Stoic reactor only add 0D control volume constraints
+        if hasattr(unit, 'material_holdup_calculation'):
+            for (t, p, j), c in unit.material_holdup_calculation.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'rate_reaction_stoichiometry_constraint'):
+            for (t, p, j), c in (
+                    unit.rate_reaction_stoichiometry_constraint.items()):
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'equilibrium_reaction_stoichiometry_constraint'):
+            for (t, p, j), c in (
+                    unit.equilibrium_reaction_stoichiometry_constraint
+                    .items()):
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'inherent_reaction_stoichiometry_constraint'):
+            for (t, p, j), c in (
+                    unit.inherent_reaction_stoichiometry_constraint.items()):
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'material_balances'):
+            for (t, p, j), c in unit.material_balances.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'element_balances'):
+            for (t, e), c in unit.element_balances.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'elemental_holdup_calculation'):
+            for (t, e), c in unit.elemental_holdup_calculation.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'enthalpy_balances'):
+            for t, c in unit.enthalpy_balances.items():
+                iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
+        if hasattr(unit, 'energy_holdup_calculation'):
+            for (t, p), c in unit.energy_holdup_calculation.items():
+                iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
+        if hasattr(unit, 'pressure_balance'):
+            for t, c in unit.pressure_balance.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+        if hasattr(unit, 'sum_of_phase_fractions'):
+            for t, c in unit.sum_of_phase_fractions.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, "material_accumulation_disc_eq"):
+            for (t, p, j), c in unit.material_accumulation_disc_eq.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+
+        if hasattr(unit, "energy_accumulation_disc_eq"):
+            for (t, p), c in unit.energy_accumulation_disc_eq.items():
+                iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
+
+        if hasattr(unit, "element_accumulation_disc_eq"):
+            for (t, e), c in unit.element_accumulation_disc_eq.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+
+        # HeatExchanger non-CV constraints
+        if hasattr(unit, "heat_transfer_equation"):
+            for t, c in unit.heat_transfer_equation.items():
+                iscale.constraint_scaling_transform(c, 1e-7, overwrite=False)
+
+        if hasattr(unit, "unit_heat_balance"):
+            for t, c in unit.unit_heat_balance.items():
+                iscale.constraint_scaling_transform(c, 1e-7, overwrite=False)
+
+        if hasattr(unit, "delta_temperature_in_equation"):
+            for t, c in unit.delta_temperature_in_equation.items():
+                iscale.constraint_scaling_transform(c, 1e-1, overwrite=False)
+
+        if hasattr(unit, "delta_temperature_out_equation"):
+            for t, c in unit.delta_temperature_out_equation.items():
+                iscale.constraint_scaling_transform(c, 1e-1, overwrite=False)
+
+        # Translator has no constraints to scale
+        # Gibbs reactor minimization is scaled elsewhere, set by gibbs_scaling
+        # adding scaling factors of unity here for completeness
+        if hasattr(unit, "gibbs_minimization"):
+            for (t, p, j), c in unit.gibbs_minimization.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+
+        if hasattr(unit, "inert_species_balance"):
+            for (t, p, j), c in unit.inert_species_balance.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+
+        # check material density expressions - properties are indexed by time, constraints by (phase, component)
+        if hasattr(unit, "control_volume"):
+
+            if hasattr(unit.control_volume, 'properties_in'):
+                for t in m.fs.time:
+                    if hasattr(unit.control_volume.properties_in[t], "_material_density_term"):
+                        for (p, i), c in unit.control_volume.properties_in[t]._material_density_term.items():
+                            iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+
+            if hasattr(unit.control_volume, 'properties_out'):
+                for t in m.fs.time:
+                    if hasattr(unit.control_volume.properties_out[t], "_material_density_term"):
+                        for (p, i), c in unit.control_volume.properties_out[t]._material_density_term.items():
+                            iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+
+    # equality constraints between ports at Arc sources and destinations
+    for arc in m.fs.component_data_objects(Arc, descend_into=True):
+        for c in arc.component_data_objects(pyo.Constraint, descend_into=True):
+            if hasattr(unit, "enth_mol_equality"):
+                for t, c in unit.enth_mol_equality.items():
+                    iscale.constraint_scaling_transform(c, 1e-3,
+                                                        overwrite=False)
+            if hasattr(unit, "flow_mol_equality"):
+                for t, c in unit.flow_mol_equality.items():
+                    iscale.constraint_scaling_transform(c, 1e-3,
+                                                        overwrite=False)
+            if hasattr(unit, "mole_frac_comp_equality"):
+                for (t, j), c in unit.mole_frac_comp_equality.items():
+                    iscale.constraint_scaling_transform(c, 1e2,
+                                                        overwrite=False)
+            if hasattr(unit, "pressure_equality"):
+                for t, c in unit.pressure_equality.items():
+                    iscale.constraint_scaling_transform(c, 1e-5,
+                                                        overwrite=False)
+            if hasattr(unit, "temperature_equality"):
+                for t, c in unit.temperature_equality.items():
+                    iscale.constraint_scaling_transform(c, 1e-2,
+                                                        overwrite=False)
+
+    # scale flowsheet-level constraints
+    if hasattr(unit, "anode_translator_F"):
+        for t, c in unit.anode_translator_F.items():
+            iscale.constraint_scaling_transform(c, 1e-3,
+                                                overwrite=False)
+
+    if hasattr(unit, "anode_translator_T"):
+        for t, c in unit.anode_translator_T.items():
+            iscale.constraint_scaling_transform(c, 1e-2,
+                                                overwrite=False)
+
+    if hasattr(unit, "anode_translator_P"):
+        for t, c in unit.anode_translator_P.items():
+            iscale.constraint_scaling_transform(c, 1e-5,
+                                                overwrite=False)
+
+    if hasattr(unit, "anode_translator_x"):
+        for t, c in unit.anode_translator_x.items():
+            iscale.constraint_scaling_transform(c, 1e2,
+                                                overwrite=False)
+
+    if hasattr(unit, "ion_mix_constraint"):
+        for t, c in unit.ion_mix_constraint.items():
+            iscale.constraint_scaling_transform(c, 1e-5,
+                                                overwrite=False)
+
+    if hasattr(unit, "recycle_translator_F"):
+        for t, c in unit.recycle_translator_F.items():
+            iscale.constraint_scaling_transform(c, 1e-3,
+                                                overwrite=False)
+
+    if hasattr(unit, "recycle_translator_T"):
+        for t, c in unit.recycle_translator_T.items():
+            iscale.constraint_scaling_transform(c, 1e-2,
+                                                overwrite=False)
+
+    if hasattr(unit, "recycle_translator_P"):
+        for t, c in unit.recycle_translator_P.items():
+            iscale.constraint_scaling_transform(c, 1e-5,
+                                                overwrite=False)
+
+    if hasattr(unit, "recycle_translator_x"):
+        for t, c in unit.recycle_translator_x.items():
+            iscale.constraint_scaling_transform(c, 1e2,
+                                                overwrite=False)
+
+    if hasattr(unit, "cathode_translator_F"):
+        for t, c in unit.cathode_translator_F.items():
+            iscale.constraint_scaling_transform(c, 1e-3,
+                                                overwrite=False)
+
+    if hasattr(unit, "cathode_translator_T"):
+        for t, c in unit.cathode_translator_T.items():
+            iscale.constraint_scaling_transform(c, 1e-2,
+                                                overwrite=False)
+
+    if hasattr(unit, "cathode_translator_P"):
+        for t, c in unit.cathode_translator_P.items():
+            iscale.constraint_scaling_transform(c, 1e-5,
+                                                overwrite=False)
+
+    if hasattr(unit, "cathode_exhaust_translator_F"):
+        for t, c in unit.cathode_exhaust_translator_F.items():
+            iscale.constraint_scaling_transform(c, 1e-3,
+                                                overwrite=False)
+
+    if hasattr(unit, "cathode_exhaust_translator_T"):
+        for t, c in unit.cathode_exhaust_translator_T.items():
+            iscale.constraint_scaling_transform(c, 1e-2,
+                                                overwrite=False)
+
+    if hasattr(unit, "cathode_exhaust_translator_P"):
+        for t, c in unit.cathode_exhaust_translator_P.items():
+            iscale.constraint_scaling_transform(c, 1e-5,
+                                                overwrite=False)
+
+    if hasattr(unit, "cathode_exhaust_translator_x"):
+        for t, c in unit.cathode_exhaust_translator_x.items():
+            iscale.constraint_scaling_transform(c, 1e2,
+                                                overwrite=False)
+
+    if hasattr(unit, "reformer_air_rule"):
+        for t, c in unit.reformer_air_rule.items():
+            iscale.constraint_scaling_transform(c, 1e-3,
+                                                overwrite=False)
+
+    if hasattr(unit, "reformer_steam_flow"):
+        for t, c in unit.reformer_steam_flow.items():
+            iscale.constraint_scaling_transform(c, 1e-3,
+                                                overwrite=False)
+
+    print('Calculating scaling factors')
     iscale.calculate_scaling_factors(m)
+    print()
 
 
 def initialize_power_island(m):
+    solver = pyo.SolverFactory("ipopt")
+    solver.options = {
+        "max_iter": 500,
+        "tol": 1e-7,
+        "bound_push": 1e-12,
+        "linear_solver": "ma57",
+        "ma57_pivtol": 1e-3,
+          }
     # cathode side
     m.fs.air_blower.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.cathode_hx.tube_inlet, m.fs.air_blower.outlet)
+    propagate_state(m.fs.cathode_hx.tube_inlet, m.fs.air_blower.outlet)
 
     # fix cathode inlet to initial guess
     m.fs.cathode.inlet.flow_mol[0] = 34174
@@ -917,34 +1247,34 @@ def initialize_power_island(m):
     m.fs.cathode.inlet.unfix()
 
     # cathode translator block
-    copy_port_values(m.fs.cathode_translator.inlet, m.fs.cathode.ion_outlet)
+    propagate_state(m.fs.cathode_translator.inlet, m.fs.cathode.ion_outlet)
 
     m.fs.cathode_translator.initialize()
 
     # rest of cathode side
-    copy_port_values(m.fs.cathode_heat.inlet, m.fs.cathode.air_outlet)
+    propagate_state(m.fs.cathode_heat.inlet, m.fs.cathode.air_outlet)
 
     m.fs.cathode_heat.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.cathode_recycle.inlet, m.fs.cathode_heat.outlet)
+    propagate_state(m.fs.cathode_recycle.inlet, m.fs.cathode_heat.outlet)
 
     m.fs.cathode_recycle.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.cathode_hx.shell_inlet, m.fs.cathode_recycle.exhaust)
+    propagate_state(m.fs.cathode_hx.shell_inlet, m.fs.cathode_recycle.exhaust)
 
     m.fs.cathode_hx.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.cathode_blower.inlet, m.fs.cathode_recycle.recycle)
+    propagate_state(m.fs.cathode_blower.inlet, m.fs.cathode_recycle.recycle)
 
     m.fs.cathode_blower.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.cathode_mix.recycle, m.fs.cathode_blower.outlet)
+    propagate_state(m.fs.cathode_mix.recycle, m.fs.cathode_blower.outlet)
 
-    copy_port_values(m.fs.cathode_mix.feed, m.fs.cathode_hx.tube_outlet)
+    propagate_state(m.fs.cathode_mix.feed, m.fs.cathode_hx.tube_outlet)
 
     m.fs.cathode_mix.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.cathode.inlet, m.fs.cathode_mix.outlet)
+    propagate_state(m.fs.cathode.inlet, m.fs.cathode_mix.outlet)
 
     # anode side
     # anode inlet is used as tear stream
@@ -966,37 +1296,49 @@ def initialize_power_island(m):
 
     m.fs.anode.outlet.mole_frac_comp[0, "O2"] = 0
 
-    # This initialization step fails to converge, but is sufficent to continue
+    # This initialization step fails to converge, but is sufficient to resolve
     try:
         m.fs.anode.initialize(outlvl=logging.INFO)
     except InitializationError:
-        pass
+        # this step may end on Solve to Acceptable Level, add resolve condition
+        for i in range(1, 10):  # keep looping until condition is met
+            res = solver.solve(m.fs.anode, tee=True)
+            if 'Optimal Solution Found' in res.solver.message:
+                break
 
-    copy_port_values(m.fs.anode_recycle.inlet, m.fs.anode.outlet)
+    propagate_state(m.fs.anode_recycle.inlet, m.fs.anode.outlet)
 
     m.fs.anode_recycle.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.anode_blower.inlet, m.fs.anode_recycle.recycle)
+    propagate_state(m.fs.anode_blower.inlet, m.fs.anode_recycle.recycle)
 
-    m.fs.anode_blower.initialize(outlvl=logging.INFO)
+    # This initialization step fails to converge, but is sufficient to resolve
+    try:
+        m.fs.anode_blower.initialize(outlvl=logging.INFO)
+    except InitializationError:
+        # this step may end on Solve to Acceptable Level, add resolve condition
+        for i in range(1, 10):  # keep looping until condition is met
+            res = solver.solve(m.fs.anode_blower, tee=True)
+            if 'Optimal Solution Found' in res.solver.message:
+                break
 
-    copy_port_values(m.fs.recycle_translator.inlet, m.fs.anode_blower.outlet)
+    propagate_state(m.fs.recycle_translator.inlet, m.fs.anode_blower.outlet)
 
     m.fs.recycle_translator.initialize()
 
-    copy_port_values(m.fs.anode_mix.recycle, m.fs.recycle_translator.outlet)
+    propagate_state(m.fs.anode_mix.recycle, m.fs.recycle_translator.outlet)
 
     m.fs.anode_mix.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.anode_hx.tube_inlet, m.fs.anode_mix.outlet)
+    propagate_state(m.fs.anode_hx.tube_inlet, m.fs.anode_mix.outlet)
 
-    copy_port_values(m.fs.anode_hx.shell_inlet, m.fs.anode_recycle.exhaust)
+    propagate_state(m.fs.anode_hx.shell_inlet, m.fs.anode_recycle.exhaust)
 
     m.fs.anode_hx.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.prereformer.inlet, m.fs.anode_hx.tube_outlet)
+    propagate_state(m.fs.prereformer.inlet, m.fs.anode_hx.tube_outlet)
 
-    copy_port_values(m.fs.prereformer.outlet, m.fs.prereformer.inlet)
+    propagate_state(m.fs.prereformer.outlet, m.fs.prereformer.inlet)
 
     m.fs.prereformer.gibbs_scaling = 1e-4
 
@@ -1012,13 +1354,13 @@ def initialize_power_island(m):
 
     m.fs.prereformer.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.anode_translator.inlet, m.fs.prereformer.outlet)
+    propagate_state(m.fs.anode_translator.inlet, m.fs.prereformer.outlet)
 
     m.fs.anode_translator.initialize()
 
-    copy_port_values(m.fs.fuel_cell_mix.fuel_inlet, m.fs.anode_translator.outlet)
+    propagate_state(m.fs.fuel_cell_mix.fuel_inlet, m.fs.anode_translator.outlet)
 
-    copy_port_values(m.fs.fuel_cell_mix.ion_inlet, m.fs.cathode_translator.outlet)
+    propagate_state(m.fs.fuel_cell_mix.ion_inlet, m.fs.cathode_translator.outlet)
 
     m.fs.fuel_cell_mix.initialize(outlvl=logging.INFO)
 
@@ -1027,21 +1369,21 @@ def initialize_power_island(m):
     ##############################
 
     # cathode side
-    copy_port_values(m.fs.cathode_exhaust_split.inlet, m.fs.cathode_hx.shell_outlet)
+    propagate_state(m.fs.cathode_exhaust_split.inlet, m.fs.cathode_hx.shell_outlet)
 
     m.fs.cathode_exhaust_split.initialize(outlvl=logging.INFO)
 
-    copy_port_values(
+    propagate_state(
         m.fs.cathode_expander.inlet, m.fs.cathode_exhaust_split.exhaust_outlet
     )
 
     m.fs.cathode_expander.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.cathode_HRSG.inlet, m.fs.cathode_expander.outlet)
+    propagate_state(m.fs.cathode_HRSG.inlet, m.fs.cathode_expander.outlet)
 
     m.fs.cathode_HRSG.initialize(outlvl=logging.INFO)
 
-    copy_port_values(
+    propagate_state(
         m.fs.cathode_exhaust_translator.inlet,
         m.fs.cathode_exhaust_split.combustor_outlet,
     )
@@ -1049,28 +1391,44 @@ def initialize_power_island(m):
     m.fs.cathode_exhaust_translator.initialize()
 
     # anode side
-    copy_port_values(
+    propagate_state(
         m.fs.combustor_mix.cathode_inlet, m.fs.cathode_exhaust_translator.outlet
     )
 
-    copy_port_values(m.fs.combustor_mix.anode_inlet, m.fs.anode_hx.shell_outlet)
+    propagate_state(m.fs.combustor_mix.anode_inlet, m.fs.anode_hx.shell_outlet)
 
     m.fs.combustor_mix.initialize(outlvl=logging.INFO)
 
-    copy_port_values(m.fs.combustor.inlet, m.fs.combustor_mix.outlet)
+    propagate_state(m.fs.combustor.inlet, m.fs.combustor_mix.outlet)
 
-    m.fs.combustor.initialize()
+    # This initialization step fails to converge, but is sufficient to resolve
+    try:
+        m.fs.combustor.initialize(outlvl=logging.INFO)
+    except InitializationError:
+        # this step may end on Solve to Acceptable Level, add resolve condition
+        for i in range(1, 10):  # keep looping until condition is met
+            res = solver.solve(m.fs.combustor, tee=True)
+            if 'Optimal Solution Found' in res.solver.message:
+                break
 
-    copy_port_values(m.fs.combustor_expander.inlet, m.fs.combustor.outlet)
+    propagate_state(m.fs.combustor_expander.inlet, m.fs.combustor.outlet)
 
     m.fs.combustor_expander.initialize()
 
-    copy_port_values(m.fs.anode_HRSG.inlet, m.fs.combustor_expander.outlet)
+    propagate_state(m.fs.anode_HRSG.inlet, m.fs.combustor_expander.outlet)
 
     m.fs.anode_HRSG.initialize()
 
 
 def initialize_reformer(m):
+    solver = pyo.SolverFactory("ipopt")
+    solver.options = {
+        "max_iter": 500,
+        "tol": 1e-7,
+        "bound_push": 1e-12,
+        "linear_solver": "ma57",
+        "ma57_pivtol": 1e-3,
+          }
     m.fs.reformer.inlet.flow_mol[0] = 2262  # mol/s
     m.fs.reformer.inlet.temperature[0] = 470  # K
     m.fs.reformer.inlet.pressure[0] = 203395  # Pa
@@ -1097,57 +1455,81 @@ def initialize_reformer(m):
     m.fs.reformer.outlet.mole_frac_comp[0, "C3H8"] = 0
     m.fs.reformer.outlet.mole_frac_comp[0, "C4H10"] = 0
 
-    # This initialization step fails to converge, but is sufficent to continue
+    # This initialization step fails to converge, but is sufficient to resolve
     try:
-        m.fs.reformer.initialize()
+        m.fs.reformer.initialize(outlvl=logging.INFO)
     except InitializationError:
-        pass
+        # this step may end on Solve to Acceptable Level, add resolve condition
+        for i in range(1, 10):  # keep looping until condition is met
+            res = solver.solve(m.fs.reformer, tee=True)
+            if 'Optimal Solution Found' in res.solver.message:
+                break
 
     # reformer recuperator
-    copy_port_values(m.fs.reformer_recuperator.shell_inlet, m.fs.reformer.outlet)
+    propagate_state(m.fs.reformer_recuperator.shell_inlet, m.fs.reformer.outlet)
 
-    m.fs.reformer_recuperator.initialize()
+    # This initialization step fails to converge, but is sufficient to resolve
+    try:
+        m.fs.reformer_recuperator.initialize(outlvl=logging.INFO)
+    except InitializationError:
+        # this step may end on Solve to Acceptable Level, add resolve condition
+        for i in range(1, 10):  # keep looping until condition is met
+            res = solver.solve(m.fs.reformer_recuperator, tee=True)
+            if 'Optimal Solution Found' in res.solver.message:
+                break
 
     # NG expander
-    copy_port_values(m.fs.NG_expander.inlet, m.fs.reformer_recuperator.tube_outlet)
+    propagate_state(m.fs.NG_expander.inlet, m.fs.reformer_recuperator.tube_outlet)
 
-    m.fs.NG_expander.initialize()
+    # This initialization step fails to converge, but is sufficient to resolve
+    try:
+        m.fs.NG_expander.initialize(outlvl=logging.INFO)
+    except InitializationError:
+        # this step may end on Solve to Acceptable Level, add resolve condition
+        for i in range(1, 10):  # keep looping until condition is met
+            res = solver.solve(m.fs.NG_expander, tee=True)
+            if 'Optimal Solution Found' in res.solver.message:
+                break
 
     # reformer bypass
-    copy_port_values(m.fs.reformer_bypass.inlet, m.fs.NG_expander.outlet)
+    propagate_state(m.fs.reformer_bypass.inlet, m.fs.NG_expander.outlet)
 
     m.fs.reformer_bypass.initialize()
 
     # air compressor train
     m.fs.air_compressor_s1.initialize()
 
-    copy_port_values(m.fs.intercooler_s1.inlet, m.fs.air_compressor_s1.outlet)
+    propagate_state(m.fs.intercooler_s1.inlet, m.fs.air_compressor_s1.outlet)
 
     m.fs.intercooler_s1.initialize()
 
-    copy_port_values(m.fs.air_compressor_s2.inlet, m.fs.intercooler_s1.outlet)
+    propagate_state(m.fs.air_compressor_s2.inlet, m.fs.intercooler_s1.outlet)
 
-    m.fs.air_compressor_s2.initialize()
+    # This initialization step fails to converge, but is sufficient to resolve
+    try:
+        m.fs.air_compressor_s2.initialize(outlvl=logging.INFO)
+    except InitializationError:
+        # this step may end on Solve to Acceptable Level, add resolve condition
+        for i in range(1, 10):  # keep looping until condition is met
+            res = solver.solve(m.fs.air_compressor_s2, tee=True)
+            if 'Optimal Solution Found' in res.solver.message:
+                break
 
-    copy_port_values(m.fs.intercooler_s2.inlet, m.fs.air_compressor_s2.outlet)
+    propagate_state(m.fs.intercooler_s2.inlet, m.fs.air_compressor_s2.outlet)
 
     m.fs.intercooler_s2.initialize()
 
     # reformer mixer
-    copy_port_values(m.fs.reformer_mix.oxygen_inlet, m.fs.intercooler_s2.outlet)
+    propagate_state(m.fs.reformer_mix.oxygen_inlet, m.fs.intercooler_s2.outlet)
 
-    copy_port_values(m.fs.reformer_mix.gas_inlet, m.fs.reformer_bypass.reformer_outlet)
+    propagate_state(m.fs.reformer_mix.gas_inlet, m.fs.reformer_bypass.reformer_outlet)
 
     m.fs.reformer_mix.initialize()
 
     # bypass rejoin
-    copy_port_values(
-        m.fs.bypass_rejoin.syngas_inlet, m.fs.reformer_recuperator.shell_outlet
-    )
+    propagate_state(m.fs.bypass_rejoin.syngas_inlet, m.fs.reformer_recuperator.shell_outlet)
 
-    copy_port_values(
-        m.fs.bypass_rejoin.bypass_inlet, m.fs.reformer_bypass.bypass_outlet
-    )
+    propagate_state(m.fs.bypass_rejoin.bypass_inlet, m.fs.reformer_bypass.bypass_outlet)
 
     m.fs.bypass_rejoin.initialize()
 
@@ -1525,42 +1907,87 @@ def pfd_result(outfile, m, df):
 
 
 def main():
+    print('main function moved to run when script is called in console')
+
+    return m
+
+
+# %%       # ------------------------------------------------------------------
+if __name__ == "__main__":
     # create model and flowsheet
     m = pyo.ConcreteModel(name="NGFC without carbon capture")
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    # solver and options
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {"bound_push": 1e-16}
-
-    if os.path.exists("NGFC_flowsheet_init.json.gz"):
+    reinit = False  # switch to True to re-initialize and re-solve
+    resolve = False  # switch to True to re-solve only (for debugging)
+    if os.path.exists("NGFC_flowsheet_init.json.gz") and reinit is False:
+        # already initialized, can build model and load results from json
         build_power_island(m)
         build_reformer(m)
+        scale_flowsheet(m)
         connect_reformer_to_power_island(m)
         SOFC_ROM_setup(m)
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
-        scale_flowsheet(m)
-        ms.from_json(m, fname="NGFC_flowsheet_init.json.gz")
-
+        if os.path.exists("NGFC_flowsheet_solution.json.gz") and resolve is False:
+            # don't need to solve, can load results from json
+            print('Loading solved model')
+            ms.from_json(m, fname="NGFC_flowsheet_solution.json.gz")
+        else:
+            # need to solve the model using loaded initialization point
+            # and then serialize solved model results
+            print('Loading initialized model')
+            ms.from_json(m, fname="NGFC_flowsheet_init.json.gz")
+            # solver and options
+            solver = pyo.SolverFactory("ipopt")
+            solver.options = {
+                "max_iter": 100,
+                "tol": 1e-7,
+                "bound_push": 1e-12,
+                "linear_solver": "ma57",
+                "ma57_pivtol": 1e-3,
+                  }
+            solve_iteration = 0
+            for i in range(1, 10):  # keep looping until condition is met
+                solve_iteration += 1
+                print('Solve # ', solve_iteration)
+                res = solver.solve(m.fs.air_compressor_s2, tee=True)
+                if 'Optimal Solution Found' in res.solver.message:
+                    break
+            ms.to_json(m, fname="NGFC_flowsheet_solution.json.gz")
     else:
+        # need to initialize model, serialize, and try to solve/serialize
         build_power_island(m)
         build_reformer(m)
+        scale_flowsheet(m)
         set_power_island_inputs(m)
         set_reformer_inputs(m)
-        scale_flowsheet(m)
         initialize_power_island(m)
         initialize_reformer(m)
         connect_reformer_to_power_island(m)
         SOFC_ROM_setup(m)
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
-        solver.solve(m, tee=True)
         ms.to_json(m, fname="NGFC_flowsheet_init.json.gz")
+        solver = pyo.SolverFactory("ipopt")
+        solver.options = {
+            "max_iter": 100,
+            "tol": 1e-7,
+            "bound_push": 1e-12,
+            "linear_solver": "ma57",
+            "ma57_pivtol": 1e-3,
+              }
+        solve_iteration = 0
+        for i in range(1, 10):  # keep looping until condition is met
+            solve_iteration += 1
+            print('Solve # ', solve_iteration)
+            res = solver.solve(m.fs.air_compressor_s2, tee=True)
+            if 'Optimal Solution Found' in res.solver.message:
+                break
+
+        ms.to_json(m, fname="NGFC_flowsheet_solution.json.gz")
 
     # uncomment to report results
     # make_stream_dict(m)
     # df = create_stream_table_dataframe(streams=m._streams, orient="index")
     # pfd_result("NGFC_results.svg", m, df)
-
-    return m
