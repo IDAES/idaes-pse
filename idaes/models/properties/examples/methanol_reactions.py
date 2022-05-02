@@ -46,15 +46,15 @@ config_dict = {
                    "temperature": pyunits.K},
     "equilibrium_reactions": {
         "R1": {"stoichiometry": {("Vap", "CO"): -1,
-                                ("Vap", "H2"): -2,
-                                ("Vap", "CH3OH"): 1},
-              "heat_of_reaction": constant_dh_rxn,
-              "equilibrium_constant": gibbs_energy,
-              "equilibrium_form": power_law_equil,
-              "concentration_form": ConcentrationForm.activity,
-              "parameter_data": {
+                                 ("Vap", "H2"): -2,
+                                 ("Vap", "CH3OH"): 1},
+               "heat_of_reaction": constant_dh_rxn,
+               "equilibrium_constant": gibbs_energy,
+               "equilibrium_form": power_law_equil,
+               "concentration_form": ConcentrationForm.activity,
+               "parameter_data": {
                     "reaction_order": {("Vap", "CO"): 1,
-                                      ("Vap", "H2"): 2},
+                                       ("Vap", "H2"): 2},
                     "dh_rxn_ref": (-90640, pyunits.J/pyunits.mol),
                     "ds_rxn_ref": (-219.21, pyunits.J/pyunits.mol/pyunits.K),
                     "k_eq_ref": (1.000, pyunits.m**6/pyunits.mol**2),
