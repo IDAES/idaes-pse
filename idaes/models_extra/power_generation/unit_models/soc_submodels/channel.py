@@ -17,6 +17,12 @@ direction, while mass and heat transfer coefficients govern fluxes out of the x=
 and x=1 sides of the model. The PDEs are discretized in the z direction  by a finite
 volume method with upwind differences used to calculate convection fluxes. It is
 assumed that the gas is ideal.
+
+Like most submodels, the SocChannel will create terms for temperature and heat flux
+at both x=0 and x=1 edges if they are not provided in the config. However,
+concentration variables and xflux terms are created only on the side facing the
+electrode (x=1 if below_electrode is true, x=0 if false). Expressions are created
+for the other side, to avoid additional logic with material balances.
 """
 
 __author__ = "John Eslick, Douglas Allan"

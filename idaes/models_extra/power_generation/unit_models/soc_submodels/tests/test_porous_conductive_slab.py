@@ -120,7 +120,7 @@ def modelNoHoldup():
             "time_units": pyo.units.s,
         }
     )
-    m.fs.oxygen_electrode = soc.SocElectrode(
+    m.fs.oxygen_electrode = soc.PorousConductiveSlab(
         default={
             "has_holdup": False,
             "control_volume_zfaces": np.linspace(0, 1, 4).tolist(),
@@ -184,7 +184,7 @@ def modelHoldupNotDynamic():
     m.fs.heat_flux_x0 = pyo.Var(
         tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
     )
-    m.fs.fuel_electrode = soc.SocElectrode(
+    m.fs.fuel_electrode = soc.PorousConductiveSlab(
         default={
             "has_holdup": True,
             "control_volume_zfaces": zfaces,

@@ -11,13 +11,19 @@
 # license information.
 #################################################################################
 """
-Electrode model for SolidOxideCell. The electrodes are porous media that contain
-both a gas and a solid phase. PDEs are  discretized in both x and z directions
-using a finite volume method. Quantities are interpolated using a centered-difference
+Two-dimensional model of a porous, conductive medium, such as electrodes used in
+a solid oxide fuel/electrolytic cell. Equations regarding the reactions that occur
+at the triple phase boundary are located in the TriplePhaseBoundary class.
+Material and heat transfer PDEs are  discretized in both x and z directions using
+a finite volume method. Quantities are interpolated using a centered-difference
 scheme. Presently only conventional diffusion is considered, because the Knudsen
 number is much less than one for reactive species (H2, H2O, and O2). The energy
 balance considers thermal condition from the solid phase, enthalpy flows
 from gas species, and resistive heating from the current flowing through the medium.
+
+If Vars are not provided for boundary conditions at the x=0 or x=1 edges, new Vars
+will be created for those terms. No-flux boundary conditions are used along the z=0
+and z=1 edges.
 """
 __author__ = "John Eslick, Douglas Allan"
 
@@ -41,8 +47,8 @@ from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 
-@declare_process_block_class("SocElectrode")
-class SocElectrodeData(UnitModelBlockData):
+@declare_process_block_class("PorousConductiveSlab")
+class PorousConductiveSlabData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
         "control_volume_xfaces",

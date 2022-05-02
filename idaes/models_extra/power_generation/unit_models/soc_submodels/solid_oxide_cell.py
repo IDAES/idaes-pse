@@ -398,7 +398,7 @@ class SolidOxideCellData(UnitModelBlockData):
             oxygen_electrode_heat_flux_x1 = self.oxygen_channel.heat_flux_x0
             interconnect_heat_flux_x0 = self.oxygen_channel.heat_flux_x1
             interconnect_heat_flux_x1 = self.fuel_channel.heat_flux_x0
-        self.fuel_electrode = soc.SocElectrode(
+        self.fuel_electrode = soc.PorousConductiveSlab(
             default={
                 "has_holdup": has_holdup,
                 "dynamic": dynamic,
@@ -418,7 +418,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "include_temperature_x_thermo": include_temp_x_thermo,
             }
         )
-        self.oxygen_electrode = soc.SocElectrode(
+        self.oxygen_electrode = soc.PorousConductiveSlab(
             default={
                 "has_holdup": has_holdup,
                 "dynamic": dynamic,

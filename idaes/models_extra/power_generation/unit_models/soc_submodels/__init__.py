@@ -14,8 +14,8 @@
 from idaes.models_extra.power_generation.unit_models.soc_submodels.channel import (
     SocChannel,
 )
-from idaes.models_extra.power_generation.unit_models.soc_submodels.electrode import (
-    SocElectrode,
+from idaes.models_extra.power_generation.unit_models.soc_submodels.porous_conductive_slab import (
+    PorousConductiveSlab,
 )
 from idaes.models_extra.power_generation.unit_models.soc_submodels.conductive_slab import (
     SocConductiveSlab,
