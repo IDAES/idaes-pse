@@ -356,7 +356,7 @@ class DoubleLoopCoordinator:
 
         return
 
-    def _update_staic_params(self, gen_dict):
+    def _update_static_params(self, gen_dict):
 
         """
         Update static parameters in the Prescient generator parameter data dictionary.
@@ -369,7 +369,7 @@ class DoubleLoopCoordinator:
         """
 
         for param, value in self.bidder.bidding_model_object.model_data:
-            if param != "gen_name":
+            if param == "gen_name" or value is None:
                 continue
             elif param == "p_cost":
                 curve_value = convert_marginal_costs_to_actual_costs(value)
@@ -410,7 +410,7 @@ class DoubleLoopCoordinator:
 
         gen_name = self.bidder.bidding_model_object.model_data.gen_name
         gen_dict = ruc_instance.data["elements"]["generator"][gen_name]
-        self._update_staic_params(gen_dict)
+        self._update_static_params(gen_dict)
 
         return
 
@@ -508,7 +508,7 @@ class DoubleLoopCoordinator:
 
         gen_name = self.bidder.bidding_model_object.model_data.gen_name
         gen_dict = sced_instance.data["elements"]["generator"][gen_name]
-        self._update_staic_params(gen_dict)
+        self._update_static_params(gen_dict)
 
         return
 
