@@ -58,15 +58,10 @@ class TestParamBlock(object):
         )
 
         rate_config = model.rxn_params.config.rate_reactions
-        equil_config = model.rxn_params.config.equilibrium_reactions
 
         assert isinstance(model.rxn_params.rate_reaction_idx, Set)
         assert len(model.rxn_params.rate_reaction_idx) == 1
         assert "R1" in model.rxn_params.rate_reaction_idx
-
-        assert isinstance(model.rxn_params.equilibrium_reaction_idx, Set)
-        assert len(model.rxn_params.equilibrium_reaction_idx) == 1
-        assert "R2" in model.rxn_params.equilibrium_reaction_idx
 
         assert isinstance(model.rxn_params.rate_reaction_stoichiometry, dict)
         assert len(model.rxn_params.rate_reaction_stoichiometry) == 5
@@ -76,16 +71,7 @@ class TestParamBlock(object):
             else:
                 assert v == 0
 
-        assert isinstance(model.rxn_params.equilibrium_reaction_stoichiometry, dict)
-        assert len(model.rxn_params.equilibrium_reaction_stoichiometry) == 5
-        for k, v in model.rxn_params.equilibrium_reaction_stoichiometry.items():
-            if (k[1], k[2]) in equil_config[k[0]].stoichiometry.keys():
-                assert v == equil_config[k[0]].stoichiometry[k[1], k[2]]
-            else:
-                assert v == 0
-
         assert isinstance(model.rxn_params.reaction_R1, Block)
-        assert isinstance(model.rxn_params.reaction_R2, Block)
 
         assert_units_consistent(model)
 
@@ -181,7 +167,10 @@ class TestStateBlock(object):
             0.64818, rel=1e-4
         )
 
-        assert value(model.rxns[1].k_rxn["R1"]) == pytest.approx(1.0, rel=1e-4)
+        assert value(model.rxns[1].k_rxn["R1"]) == pytest.approx(
+            1.9175e8,
+            rel=1e-4
+        )
 
         assert value(model.rxns[1].reaction_rate["R1"]) == pytest.approx(
             value(
@@ -189,18 +178,7 @@ class TestStateBlock(object):
                 * model.props[1].mole_frac_comp["CO"] ** 1
                 * model.props[1].mole_frac_comp["H2"] ** 2
             ),
-            rel=1e-6,
-        )
-
-        assert value(model.rxns[1].k_eq["R2"]) == pytest.approx(71.4505, rel=1e-4)
-
-        assert value(model.rxns[1].k_eq["R2"]) == pytest.approx(
-            value(
-                model.props[1].mole_frac_comp["CH3OH"] ** 1
-                * model.props[1].mole_frac_comp["CO"] ** -1
-                * model.props[1].mole_frac_comp["H2"] ** -2
-            ),
-            rel=1e-6,
+            rel=1e-4,
         )
 
     @pytest.mark.ui

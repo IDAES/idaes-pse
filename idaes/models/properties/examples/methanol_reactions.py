@@ -20,10 +20,6 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
         ConcentrationForm)
 from idaes.models.properties.modular_properties.reactions.dh_rxn import \
     constant_dh_rxn
-from idaes.models.properties.modular_properties.reactions.equilibrium_forms import \
-    power_law_equil
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant \
-    import gibbs_energy
 from idaes.models.properties.modular_properties.reactions.rate_forms import \
     power_law_rate
 from idaes.models.properties.modular_properties.reactions.rate_constant import \
@@ -49,29 +45,13 @@ config_dict = {
                                  ("Vap", "H2"): -2,
                                  ("Vap", "CH3OH"): 1},
                "heat_of_reaction": constant_dh_rxn,
-               "concentration_form": ConcentrationForm.molarity,
+               "concentration_form": ConcentrationForm.moleFraction,
                "rate_constant": arrhenius,
                "rate_form": power_law_rate,
                "parameter_data": {
                     "reaction_order": {("Vap", "CO"): 1,
                                        ("Vap", "H2"): 2},
-                    "arrhenius_const": (1, pyunits.m**6 / pyunits.mol**2
+                    "arrhenius_const": (3.77287e19, pyunits.mol / pyunits.m**3
                                         / pyunits.s),
                     "dh_rxn_ref": (-90640, pyunits.J/pyunits.mol),
-                    "energy_activation": (0, pyunits.J/pyunits.mol)}}},
-    "equilibrium_reactions": {
-        "R2": {"stoichiometry": {("Vap", "CO"): -1,
-                                 ("Vap", "H2"): -2,
-                                 ("Vap", "CH3OH"): 1},
-               "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": gibbs_energy,
-               "equilibrium_form": power_law_equil,
-               "concentration_form": ConcentrationForm.activity,
-               "parameter_data": {
-                    "reaction_order": {("Vap", "CO"): 1,
-                                       ("Vap", "H2"): 2},
-                    "dh_rxn_ref": (-90640, pyunits.J/pyunits.mol),
-                    "ds_rxn_ref": (-219.21, pyunits.J/pyunits.mol/pyunits.K),
-                    "k_eq_ref": (1.000, pyunits.m**6/pyunits.mol**2),
-                    "T_eq_ref": (293.15, pyunits.K)}}},
-    }
+                    "energy_activation": (109.2e3, pyunits.J/pyunits.mol)}}}}

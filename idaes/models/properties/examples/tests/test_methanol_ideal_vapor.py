@@ -85,7 +85,7 @@ class TestParamBlock(object):
             assert isinstance(model.params.get_component(i), Component)
 
         assert isinstance(model.params._phase_component_set, Set)
-        assert len(model.params._phase_component_set) == 5
+        assert len(model.params._phase_component_set) == 4
         for i in model.params._phase_component_set:
             assert i in [
                 ("Vap", "CH4"),
