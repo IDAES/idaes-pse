@@ -52,7 +52,6 @@ def test_general_cubic_root_finder():
     plib = os.path.join(idaes.bin_directory, "cubic_roots.so")
     m = pyo.ConcreteModel()
     m.croot_l = pyo.ExternalFunction(library=plib, function="cubic_root_l")
-    m.croot_m = pyo.ExternalFunction(library=plib, function="cubic_root_m")
     m.croot_h = pyo.ExternalFunction(library=plib, function="cubic_root_h")
     param_dict = {
         1: {"b": -3, "c": 0.5, "d": -1, "three": False},
@@ -66,27 +65,18 @@ def test_general_cubic_root_finder():
         c = v["c"]
         d = v["d"]
         fl, gl, hl = m.croot_l.evaluate_fgh(args=(b, c, d))
-        fm, gm, hm = m.croot_m.evaluate_fgh(args=(b, c, d))
         fh, gh, hh = m.croot_h.evaluate_fgh(args=(b, c, d))
         if v["three"]:
-            assert fl < fm
-            assert fm < fh
+            assert fl < fh
         else:
-            assert pytest.approx(fl, abs=1e-5) == fm
-            assert pytest.approx(fm, abs=1e-5) == fh
+            assert pytest.approx(fl, abs=1e-5) == fh
         assert pytest.approx(0, abs=1e-6) == cubic_function(fl, b, c, d)
-        assert pytest.approx(0, abs=1e-6) == cubic_function(fm, b, c, d)
         assert pytest.approx(0, abs=1e-6) == cubic_function(fh, b, c, d)
         g, h = derivs(fl, b, c, d)
         for i, ge in enumerate(g):
             assert pytest.approx(ge, abs=1e-5) == gl[i]
         for i, he in enumerate(h):
             assert pytest.approx(he, abs=1e-5) == hl[i]
-        g, h = derivs(fm, b, c, d)
-        for i, ge in enumerate(g):
-            assert pytest.approx(ge, abs=1e-5) == gm[i]
-        for i, he in enumerate(h):
-            assert pytest.approx(he, abs=1e-5) == hm[i]
         g, h = derivs(fh, b, c, d)
         for i, ge in enumerate(g):
             assert pytest.approx(ge, abs=1e-5) == gh[i]
