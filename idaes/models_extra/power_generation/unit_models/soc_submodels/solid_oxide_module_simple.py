@@ -24,7 +24,7 @@ from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _species_list,
+    _gas_species_list,
     _element_list,
     _element_dict,
 )

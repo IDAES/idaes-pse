@@ -22,6 +22,7 @@ import pyomo.environ as pyo
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.constants import Constants
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
+from idaes.models_extra.power_generation.unit_models.soc_submodels.common import _gas_species_list, _all_species_list
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
@@ -48,12 +49,13 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
     CONFIG.declare(
         "component_list",
         ConfigValue(
-            domain=ListOf(str), default=["H2", "H2O"], description="List of components"
+            domain=common._SubsetOf(_gas_species_list), default=["H2", "H2O"], description="List of components"
         ),
     )
     CONFIG.declare(
         "reaction_stoichiometry",
         ConfigValue(
+            common._SubsetOf(_all_species_list),
             description="Stochiometric coefficients for component reactions on the triple phase boundary. Must contain "
             "term for number of electrons consumed/liberated.",
         ),
@@ -62,7 +64,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         "inert_species",
         ConfigValue(
             default=None,
-            domain=ListOf(str),
+            domain=common._SubsetOf(_gas_species_list),
             description="List of species that do not participate in "
             "reactions at the triple phase boundary.",
         ),

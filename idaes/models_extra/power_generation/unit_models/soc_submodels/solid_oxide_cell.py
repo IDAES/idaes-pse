@@ -23,7 +23,8 @@ import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.core.util.constants import Constants
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _species_list,
+    _gas_species_list,
+    _all_species_list,
     _element_list,
     _element_dict,
 )
@@ -76,7 +77,7 @@ class SolidOxideCellData(UnitModelBlockData):
     CONFIG.declare(
         "fuel_component_list",
         ConfigValue(
-            domain=ListOf(str),
+            domain=common._SubsetOf(_gas_species_list),
             default=["H2", "H2O"],
             description="List of components in fuel stream",
         ),
@@ -84,7 +85,7 @@ class SolidOxideCellData(UnitModelBlockData):
     CONFIG.declare(
         "oxygen_component_list",
         ConfigValue(
-            domain=ListOf(str),
+            domain=common._SubsetOf(_gas_species_list),
             default=["O2"],
             description="List of components in the oxygen stream",
         ),
@@ -92,6 +93,7 @@ class SolidOxideCellData(UnitModelBlockData):
     CONFIG.declare(
         "fuel_triple_phase_boundary_stoich_dict",
         ConfigValue(
+            domain=common._SubsetOf(_all_species_list),
             default={"H2": -0.5, "H2O": 0.5, "e^-": 1.0},
             description="Dictionary with species as keys and stoichiometric coefficients as values "
             "for the redox reaction that occurs at the fuel-side triple phase boundary",
@@ -100,8 +102,8 @@ class SolidOxideCellData(UnitModelBlockData):
     CONFIG.declare(
         "inert_fuel_species_triple_phase_boundary",
         ConfigValue(
-            default=[],
-            domain=ListOf(str),
+            domain=common._SubsetOf(_gas_species_list),
+            default=None,
             description="List of fuel-side species that do not participate in "
             "reactions at the triple phase boundary."
             # But may be involved in reforming
@@ -110,6 +112,7 @@ class SolidOxideCellData(UnitModelBlockData):
     CONFIG.declare(
         "oxygen_triple_phase_boundary_stoich_dict",
         ConfigValue(
+            domain=common._SubsetOf(_all_species_list),
             default={"O2": -0.25, "e^-": -1.0},
             description="Dictionary with species as keys and stoichiometric coefficients as values "
             "for the redox reaction that occurs at the oxygen-side triple phase boundary",
@@ -118,8 +121,8 @@ class SolidOxideCellData(UnitModelBlockData):
     CONFIG.declare(
         "inert_oxygen_species_triple_phase_boundary",
         ConfigValue(
+            domain=common._SubsetOf(_gas_species_list),
             default=None,
-            domain=ListOf(str),
             description="List of oxygen-side species that do not participate in "
             "reactions at the triple phase boundary.",
         ),
@@ -802,7 +805,7 @@ class SolidOxideCellData(UnitModelBlockData):
 
         for element in _element_list:
             include_element = False
-            for species in _species_list:
+            for species in _gas_species_list:
                 # Floating point equality take warning!
                 if species in comp_set and _element_dict[element][species] != 0:
                     include_element = True

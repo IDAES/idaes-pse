@@ -23,7 +23,7 @@ from idaes.core.util.constants import Constants
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
     _set_if_unfixed,
-    _species_list,
+    _gas_species_list,
     _element_list,
     _element_dict,
 )
@@ -48,7 +48,7 @@ class SocElectrodeData(UnitModelBlockData):
     CONFIG.declare(
         "component_list",
         ConfigValue(
-            domain=ListOf(str), default=["H2", "H2O"], description="List of components"
+            domain=common._SubsetOf(_gas_species_list), default=["H2", "H2O"], description="List of components"
         ),
     )
     CONFIG.declare(
@@ -768,7 +768,7 @@ class SocElectrodeData(UnitModelBlockData):
 
         for element in _element_list:
             include_element = False
-            for species in _species_list:
+            for species in _gas_species_list:
                 # Floating point equality take warning!
                 if species in comp_set and _element_dict[element][species] != 0:
                     include_element = True

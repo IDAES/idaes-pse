@@ -241,9 +241,54 @@ def _interpolate_2D(
         # between node centers even if they are not evenly spaced
         return (phi_func(icd) - phi_func(icu)) / (cd - cu)
 
+class _SubsetOf(object):
+    # Copied and modified from Pyomo's implementation of In
+    #  ___________________________________________________________________________
+    #
+    #  Pyomo: Python Optimization Modeling Objects
+    #  Copyright 2017 National Technology and Engineering Solutions of Sandia, LLC
+    #  Under the terms of Contract DE-NA0003525 with National Technology and
+    #  Engineering Solutions of Sandia, LLC, the U.S. Government retains certain
+    #  rights in this software.
+    #  This software is distributed under the 3-clause BSD License.
+    #  ___________________________________________________________________________
+    #
+    #  This module was originally developed as part of the PyUtilib project
+    #  Copyright (c) 2008 Sandia Corporation.
+    #  This software is distributed under the BSD License.
+    #  Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,
+    #  the U.S. Government retains certain rights in this software.
+    #  ___________________________________________________________________________
+    """_SubsetOf(domain, cast=None)
+    Domain validation class admitting a Container of possible values
+
+    This will admit any iterable containing values that are in the
+     `domain` Container (i.e., Container.__contains__() returns True).
+    Most common domains are list, set, and dict objects.
+
+    Parameters
+    ----------
+    domain: Container
+        The container that specifies the allowable values.  Incoming
+        values are passed to ``domain.__contains__()``, and if ``True``
+        is returned, the value is accepted and returned.
+    """
+    #  TODO Need to determine what to do about repeated entries before this can become a Pyomo PR
+    def __new__(cls, domain=None, cast=None):
+        return super(_SubsetOf, cls).__new__(cls)
+
+    def __init__(self, domain):
+        self._domain = domain
+
+    def __call__(self, possible_subset):
+        for value in possible_subset:
+            if value not in self._domain:
+                raise ValueError("value %s not in domain %s" % (value, self._domain))
+        return possible_subset
+
 
 _element_list = ["Ar", "H", "O", "C", "N", "S"]
-_species_list = [
+_gas_species_list = [
     "Ar",
     "CH4",
     "CO",
@@ -260,6 +305,8 @@ _species_list = [
     "O2",
     "SO2",
 ]
+_all_species_list = _gas_species_list.copy()
+_all_species_list.extend(["Vac", "O^2-", "e^-"])
 _element_dict = {
     "Ar": {"Ar": 1},
     "H": {"CH4": 4, "C2H4": 4, "C2H6": 6, "C3H8": 8, "H2": 2, "H2O": 2, "H2S": 2},
@@ -271,7 +318,7 @@ _element_dict = {
 
 # If a molecule is not listed under an element, it has zero atoms of that element
 for value in _element_dict.values():
-    for species in _species_list:
+    for species in _gas_species_list:
         if species not in value.keys():
             value[species] = 0
 
