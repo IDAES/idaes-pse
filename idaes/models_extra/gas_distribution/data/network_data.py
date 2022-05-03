@@ -12,22 +12,24 @@
 #################################################################################
 
 import pyomo.environ as pe
-from typing import Optional, MutableMapping, MutableSet, Generator
 from pyomo.core.expr.numeric_expr import ExpressionBase
-import logging
 from pyomo.common.collections.orderedset import OrderedSet
 from pyomo.core.base.block import _BlockData, ScalarBlock
-import idaes.core
+from pyomo.network.arc import Arc
+from pyomo.util.check_units import assert_units_consistent
+from pyomo.common.dependencies import attempt_import
 
+import logging
+from typing import Optional, MutableMapping, MutableSet, Generator
+import math
+
+import idaes.core
 from idaes.models_extra.gas_distribution.properties.natural_gas import NaturalGasParameterBlock
 from idaes.models_extra.gas_distribution.unit_models.pipeline import GasPipeline
 from idaes.models_extra.gas_distribution.unit_models.compressor import IsothermalCompressor
 from idaes.models_extra.gas_distribution.unit_models.node import PipelineNode
 
-from pyomo.network.arc import Arc
-import math
-from pyomo.util.check_units import assert_units_consistent
-import plotly.graph_objects as go
+go, plotly_available = attempt_import("plotly.graph_objects")
 
 
 logger = logging.getLogger(__name__)
