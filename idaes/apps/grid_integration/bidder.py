@@ -803,7 +803,7 @@ class Bidder(AbstractBidder):
 
             # make sure the orignal points in the bids
             for power, marginal_cost in self.bidding_model_object.model_data.p_cost:
-                if power not in bids[t][gen]:
+                if round(power, 2) not in bids[t][gen]:
                     bids[t][gen][power] = marginal_cost
 
             pmin = self.bidding_model_object.model_data.p_min

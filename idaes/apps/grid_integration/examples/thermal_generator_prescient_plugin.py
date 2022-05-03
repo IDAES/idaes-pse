@@ -19,17 +19,18 @@ from idaes.apps.grid_integration import Bidder
 from idaes.apps.grid_integration import PlaceHolderForecaster
 from idaes.apps.grid_integration import DoubleLoopCoordinator
 from idaes.apps.grid_integration.examples.thermal_generator import ThermalGenerator
+from idaes.apps.grid_integration.examples.utils import (
+    rts_gmlc_generator_dataframe,
+    rts_gmlc_bus_dataframe,
+)
 
 this_module_dir = os.path.dirname(__file__)
 
-generator = "102_STEAM_3"
+generator = "10_STEAM"
 tracking_horizon = 4
 bidding_horizon = 48
 n_scenario = 10
 n_tracking_hour = 1
-
-# read generator param data
-rts_gmlc_dataframe = pd.read_csv(os.path.join(this_module_dir, "gen.csv"))
 
 # create forecaster
 price_forecasts_df = pd.read_csv(
@@ -44,7 +45,10 @@ solver = pyo.SolverFactory("cbc")
 
 # make a tracker
 tracking_model_object = ThermalGenerator(
-    rts_gmlc_dataframe=rts_gmlc_dataframe, horizon=tracking_horizon, generator=generator
+    rts_gmlc_generator_dataframe=rts_gmlc_generator_dataframe,
+    rts_gmlc_bus_dataframe=rts_gmlc_bus_dataframe,
+    horizon=tracking_horizon,
+    generator=generator,
 )
 thermal_tracker = Tracker(
     tracking_model_object=tracking_model_object,
@@ -54,7 +58,10 @@ thermal_tracker = Tracker(
 
 # make a projection tracker
 projection_tracking_model_object = ThermalGenerator(
-    rts_gmlc_dataframe=rts_gmlc_dataframe, horizon=tracking_horizon, generator=generator
+    rts_gmlc_generator_dataframe=rts_gmlc_generator_dataframe,
+    rts_gmlc_bus_dataframe=rts_gmlc_bus_dataframe,
+    horizon=tracking_horizon,
+    generator=generator,
 )
 thermal_projection_tracker = Tracker(
     tracking_model_object=projection_tracking_model_object,
@@ -64,7 +71,10 @@ thermal_projection_tracker = Tracker(
 
 # create a bidder
 bidding_model_object = ThermalGenerator(
-    rts_gmlc_dataframe=rts_gmlc_dataframe, horizon=bidding_horizon, generator=generator
+    rts_gmlc_generator_dataframe=rts_gmlc_generator_dataframe,
+    rts_gmlc_bus_dataframe=rts_gmlc_bus_dataframe,
+    horizon=bidding_horizon,
+    generator=generator,
 )
 thermal_bidder = Bidder(
     bidding_model_object=bidding_model_object,
