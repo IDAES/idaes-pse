@@ -76,11 +76,13 @@ class DoubleLoopCoordinator:
         context.register_initialization_callback(self.initialize_customized_results)
         context.register_before_ruc_solve_callback(self.pass_static_params_to_DA)
         context.register_before_ruc_solve_callback(self.bid_into_DAM)
+        context.register_after_ruc_generation_callback(self.fetch_DA_prices)
         context.register_before_operations_solve_callback(self.pass_static_params_to_RT)
         context.register_before_operations_solve_callback(self.bid_into_RTM)
         context.register_after_operations_callback(self.track_sced_signal)
         context.register_update_operations_stats_callback(self.update_observed_dispatch)
         context.register_after_ruc_activation_callback(self.activate_DA_bids)
+        context.register_after_ruc_activation_callback(self.activate_DA_prices)
         context.register_finalization_callback(self.write_plugin_results)
 
         return
@@ -459,6 +461,38 @@ class DoubleLoopCoordinator:
 
         return
 
+    def fetch_DA_prices(self, options, simulator, result, uc_date, uc_hour):
+
+        """
+        This method fetches the day-ahead market prices from unit commitment results.
+
+        Arguments:
+            options: Prescient options from prescient.simulator.config.
+
+            simulator: Prescient simulator.
+
+            result: a Prescient RucPlan object.
+
+            ruc_date: the date of the day-ahead market we bid into.
+
+            ruc_hour: the hour the RUC is being solved in the day before.
+
+        Returns:
+            None
+        """
+
+        current_bus = self.bidder.bidding_model_object.model_data.bus
+        is_first_day = simulator.time_manager.current_time is None
+
+        DA_prices = [
+            result.ruc_market.day_ahead_prices.get((current_bus, t))
+            for t in range(options.ruc_horizon)
+        ]
+
+        if is_first_day:
+            self.current_DA_prices = DA_prices
+        self.next_DA_prices = DA_prices
+
     def _pass_RT_bid_to_prescient(self, options, simulator, sced_instance, bids, hour):
 
         """
@@ -762,6 +796,27 @@ class DoubleLoopCoordinator:
         # change bids
         self.current_bids = self.next_bids
         self.next_bids = None
+
+        return
+
+    def activate_DA_prices(self, options, simulator):
+
+        """
+        This function puts the day-ahead prices computed in the day before into effect,
+        i.e. the prices for the next day become the prices for the current day.
+
+        Arguments:
+            options: Prescient options from prescient.simulator.config.
+
+            simulator: Prescient simulator.
+
+        Returns:
+            None
+        """
+
+        # change bids
+        self.current_DA_prices = self.next_DA_prices
+        self.next_DA_prices = None
 
         return
 
