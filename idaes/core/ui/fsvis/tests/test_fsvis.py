@@ -31,8 +31,8 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
     BTXParameterBlock,
 )
 from idaes.models.unit_models import Flash
-from idaes.ui.fsvis import fsvis, errors
-from idaes.ui.flowsheet import validate_flowsheet
+from idaes.core.ui.fsvis import fsvis, errors
+from idaes.core.ui.flowsheet import validate_flowsheet
 
 
 @pytest.fixture(scope="module")
@@ -103,7 +103,7 @@ def test_visualize(flash_model, tmp_path):
 @pytest.mark.integration
 def test_save_visualization(flash_model, tmp_path):
     # view logs from the persistence module
-    logging.getLogger("idaes.ui.fsvis").setLevel(logging.DEBUG)
+    logging.getLogger("idaes.core.ui.fsvis").setLevel(logging.DEBUG)
     flowsheet = flash_model.fs
     # Start the visualization server, using temporary save location
     save_location = tmp_path / "flash-vis.json"
@@ -128,7 +128,7 @@ def _canonicalize(d):
 @pytest.mark.unit
 def test_invoke(flash_model):
     # from inspect import signature -- TODO: use for checking params
-    from idaes.ui import fsvis as fsvis_pkg
+    from idaes.core.ui import fsvis as fsvis_pkg
 
     functions = {
         "method": getattr(flash_model.fs, "visualize"),
@@ -160,7 +160,7 @@ def test_flowsheet_name(flash_model, tmp_path):
 
 @pytest.mark.unit
 def test_mock_webbrowser(flash_model):
-    from idaes.ui.fsvis import fsvis
+    from idaes.core.ui.fsvis import fsvis
 
     wb = fsvis.webbrowser
     for wb_mock in (MockWB(True), MockWB(False)):
@@ -290,7 +290,7 @@ def test_visualize_save_loadfromsaved(flash_model, save_files_prefix):
 
 @pytest.mark.unit
 def test_pick_default_save_location():
-    from idaes.ui.fsvis.fsvis import _pick_default_save_location as pdsl
+    from idaes.core.ui.fsvis.fsvis import _pick_default_save_location as pdsl
     p = pdsl("foo", None)
     assert str(p).endswith("foo.json")
     p = pdsl("foo", Path("/a"))
@@ -299,7 +299,7 @@ def test_pick_default_save_location():
 
 @pytest.mark.unit
 def test_existing_save_path(tmp_path):
-    from idaes.ui.fsvis.fsvis import _handle_existing_save_path as hesp
+    from idaes.core.ui.fsvis.fsvis import _handle_existing_save_path as hesp
     name = "foo"
     save_path = tmp_path / (name + ".json")
     # not there
