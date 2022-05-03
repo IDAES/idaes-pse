@@ -54,7 +54,10 @@ import pyomo.environ as pyo
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.constants import Constants
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
-from idaes.models_extra.power_generation.unit_models.soc_submodels.common import _gas_species_list, _all_species_list
+from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
+    _gas_species_list,
+    _all_species_list,
+)
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
@@ -81,7 +84,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
     CONFIG.declare(
         "component_list",
         ConfigValue(
-            domain=common._SubsetOf(_gas_species_list), default=["H2", "H2O"], description="List of components"
+            domain=common._SubsetOf(_gas_species_list), description="List of components"
         ),
     )
     CONFIG.declare(
@@ -135,6 +138,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             ordered=True,
             doc="Set of all gas-phase components present in submodel",
         )
+
         if "e^-" not in self.config.reaction_stoichiometry.keys():
             raise ConfigurationError(
                 f"Number of electrons produced or consumed in redox reaction at {self.name} "

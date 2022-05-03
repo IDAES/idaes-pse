@@ -172,7 +172,7 @@ class SolidOxideCellData(UnitModelBlockData):
         "fuel_component_list",
         ConfigValue(
             domain=common._SubsetOf(_gas_species_list),
-            default=["H2", "H2O"],
+            default=None,
             description="List of components in fuel stream",
         ),
     )
@@ -180,7 +180,7 @@ class SolidOxideCellData(UnitModelBlockData):
         "oxygen_component_list",
         ConfigValue(
             domain=common._SubsetOf(_gas_species_list),
-            default=["O2"],
+            default=None,
             description="List of components in the oxygen stream",
         ),
     )
@@ -188,7 +188,7 @@ class SolidOxideCellData(UnitModelBlockData):
         "fuel_triple_phase_boundary_stoich_dict",
         ConfigValue(
             domain=common._SubsetOf(_all_species_list),
-            default={"H2": -0.5, "H2O": 0.5, "e^-": 1.0},
+            default=None,
             description="Dictionary with species as keys and stoichiometric coefficients as values "
             "for the redox reaction that occurs at the fuel-side triple phase boundary",
         ),
@@ -207,7 +207,7 @@ class SolidOxideCellData(UnitModelBlockData):
         "oxygen_triple_phase_boundary_stoich_dict",
         ConfigValue(
             domain=common._SubsetOf(_all_species_list),
-            default={"O2": -0.25, "e^-": -1.0},
+            default=None,
             description="Dictionary with species as keys and stoichiometric coefficients as values "
             "for the redox reaction that occurs at the oxygen-side triple phase boundary",
         ),
@@ -266,13 +266,29 @@ class SolidOxideCellData(UnitModelBlockData):
         tset = self.flowsheet().config.time
         t0 = tset.first()
 
+        if self.config.fuel_component_list is None:
+            fuel_comp_list = ["H2", "H2O"]
+        else:
+            fuel_comp_list = self.config.fuel_component_list
+        if self.config.oxygen_component_list is None:
+            oxygen_comp_list = ["O2"]
+        else:
+            oxygen_comp_list = self.config.oxygen_component_list
+        if self.config.fuel_triple_phase_boundary_stoich_dict is None:
+            fuel_tpb_stoich = {"H2": -0.5, "H2O": 0.5, "e^-": 1.0}
+        else:
+            fuel_tpb_stoich = self.config.fuel_triple_phase_boundary_stoich_dict
+        if self.config.oxygen_triple_phase_boundary_stoich_dict is None:
+            oxygen_tpb_stoich = {"O2": -0.25, "e^-": -1.0}
+        else:
+            oxygen_tpb_stoich = self.config.oxygen_triple_phase_boundary_stoich_dict
         self.fuel_component_list = pyo.Set(
-            initialize=self.config.fuel_component_list,
+            initialize=fuel_comp_list,
             ordered=True,
             doc="Set of all gas-phase components present on fuel side of cell",
         )
         self.oxygen_component_list = pyo.Set(
-            initialize=self.config.oxygen_component_list,
+            initialize=oxygen_comp_list,
             ordered=True,
             doc="Set of all gas-phase components present on oxygen side of cell",
         )
@@ -470,7 +486,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "component_list": self.fuel_component_list,
-                "reaction_stoichiometry": self.config.fuel_triple_phase_boundary_stoich_dict,
+                "reaction_stoichiometry": fuel_tpb_stoich,
                 "inert_species": self.config.inert_fuel_species_triple_phase_boundary,
                 "current_density": self.current_density,
                 "temperature_z": self.temperature_z,
@@ -491,7 +507,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 "length_z": self.length_z,
                 "length_y": self.length_y,
                 "component_list": self.oxygen_component_list,
-                "reaction_stoichiometry": self.config.oxygen_triple_phase_boundary_stoich_dict,
+                "reaction_stoichiometry": oxygen_tpb_stoich,
                 "inert_species": self.config.inert_oxygen_species_triple_phase_boundary,
                 "current_density": self.current_density,
                 "temperature_z": self.temperature_z,

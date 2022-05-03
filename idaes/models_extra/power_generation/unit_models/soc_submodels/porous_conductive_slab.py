@@ -85,7 +85,7 @@ class PorousConductiveSlabData(UnitModelBlockData):
     CONFIG.declare(
         "component_list",
         ConfigValue(
-            domain=common._SubsetOf(_gas_species_list), default=["H2", "H2O"], description="List of components"
+            domain=common._SubsetOf(_gas_species_list), description="List of components"
         ),
     )
     CONFIG.declare(
