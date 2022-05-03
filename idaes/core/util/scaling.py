@@ -79,9 +79,32 @@ def scale_arc_constraints(blk):
                 "been applied?"
             )
             continue
-        for c in arc_block.component_data_objects(pyo.Constraint, descend_into=True):
-            sf = min_scaling_factor(identify_variables(c.body))
-            constraint_scaling_transform(c, sf)
+        warning = (
+            "Automatic scaling for arc constraints is supported for "
+            "only the Equality rule. Variable {name} on Port {port} was "
+            "created with a different rule, so the corresponding constraint "
+            "on {arc_name} will not be scaled."
+        )
+        port1 = arc.ports[0]
+        port2 = arc.ports[1]
+        for name in port1.vars.keys():
+            if not port1.is_equality(name):
+                _log.warning(
+                    warning.format(name=name, port=port1.name, arc_name=arc.name)
+                )
+                continue
+            if not port2.is_equality(name):
+                _log.warning(
+                    warning.format(name=name, port=port2.name, arc_name=arc.name)
+                )
+                continue
+            con = getattr(arc_block, name + "_equality")
+            for i, c in con.items():
+                if i is None:
+                    sf = min_scaling_factor([port1.vars[name], port2.vars[name]])
+                else:
+                    sf = min_scaling_factor([port1.vars[name][i], port2.vars[name][i]])
+                constraint_scaling_transform(c, sf)
 
 
 def map_scaling_factor(iter, default=1, warning=False, func=min, hint=None):
@@ -213,10 +236,10 @@ def get_scaling_factor(c, default=None, warning=False, exception=False, hint=Non
         default: value to return if no scale factor exists (default=None)
         warning: whether to log a warning if a scaling factor is not found
                  (default=False)
-        exception: whether to riase an Exception if a scaling factor is not
+        exception: whether to raise an Exception if a scaling factor is not
                    found (default=False)
         hint: (str) a string to add to the warning or exception message to help
-            loacate the source.
+            locate the source.
 
     Returns:
         scaling factor (float)
@@ -438,7 +461,7 @@ def unscaled_constraints_generator(blk, descend_into=True):
 
 
 def constraints_with_scale_factor_generator(blk, descend_into=True):
-    """Generator for constraints scaled by a sclaing factor, may or not have
+    """Generator for constraints scaled by a scaling factor, may or not have
     been transformed.
 
     Args:
@@ -461,6 +484,10 @@ def badly_scaled_var_generator(
     """This provides a rough check for variables with poor scaling based on
     their current scale factors and values. For each potentially poorly scaled
     variable it returns the var and its current scaled value.
+
+    Note that while this method is a reasonable heuristic for nonnegative
+    variables like (absolute) temperature and pressure, molar flows, etc., it
+    can be misleading for variables like enthalpies and fluxes.
 
     Args:
         blk: pyomo block
@@ -495,6 +522,7 @@ def constraint_autoscale_large_jac(
     max_grad=100,
     min_scale=1e-6,
     no_scale=False,
+    equality_constraints_only=False,
 ):
     """Automatically scale constraints based on the Jacobian.  This function
     imitates Ipopt's default constraint scaling.  This scales constraints down
@@ -513,6 +541,8 @@ def constraint_autoscale_large_jac(
             scaled too much.
         no_scale: just calculate the Jacobian and scaled Jacobian, don't scale
             anything
+        equality_constraints_only: Include only the equality constraints in the
+            Jacobian
 
     Returns:
         unscaled Jacobian CSR from, scaled Jacobian CSR from, Pynumero NLP
@@ -527,10 +557,16 @@ def constraint_autoscale_large_jac(
         setattr(m, dummy_objective_name, pyo.Objective(expr=0))
     # Create NLP and calculate the objective
     nlp = PyomoNLP(m)
-    jac = nlp.evaluate_jacobian().tocsr()
+    if equality_constraints_only:
+        jac = nlp.evaluate_jacobian_eq().tocsr()
+    else:
+        jac = nlp.evaluate_jacobian().tocsr()
     # Get lists of varibles and constraints to translate Jacobian indexes
     # save them on the NLP for later, since genrating them seems to take a while
-    nlp.clist = clist = nlp.get_pyomo_constraints()
+    if equality_constraints_only:
+        nlp.clist = clist = nlp.get_pyomo_equality_constraints()
+    else:
+        nlp.clist = clist = nlp.get_pyomo_constraints()
     nlp.vlist = vlist = nlp.get_pyomo_variables()
     # Create a scaled Jacobian to account for variable scaling, for now ignore
     # constraint scaling
@@ -565,7 +601,7 @@ def constraint_autoscale_large_jac(
     return jac, jac_scaled, nlp
 
 
-def get_jacobian(m, scaled=True):
+def get_jacobian(m, scaled=True, equality_constraints_only=False):
     """
     Get the Jacobian matrix at the current model values. This function also
     returns the Pynumero NLP which can be used to identify the constraints and
@@ -574,11 +610,15 @@ def get_jacobian(m, scaled=True):
     Args:
         m: model to get Jacobian from
         scaled: if True return scaled Jacobian, else get unscaled
+        equality_constraints_only: Only include equality constraints in the
+            Jacobian calculated and scaled
 
     Returns:
         Jacobian matrix in Scipy CSR format, Pynumero nlp
     """
-    jac, jac_scaled, nlp = constraint_autoscale_large_jac(m, no_scale=True)
+    jac, jac_scaled, nlp = constraint_autoscale_large_jac(
+        m, no_scale=True, equality_constraints_only=equality_constraints_only
+    )
     if scaled:
         return jac_scaled, nlp
     else:
@@ -609,6 +649,69 @@ def extreme_jacobian_entries(
             e = abs(jac[i, j])
             if (e <= small and e > zero) or e >= large:
                 el.append((e, c, v))
+    return el
+
+
+def extreme_jacobian_rows(
+    m=None, scaled=True, large=1e4, small=1e-4, jac=None, nlp=None
+):
+    """
+    Show very large and very small Jacobian rows. Typically indicates a badly-
+    scaled constraint.
+
+    Args:
+        m: model
+        scaled: if true use scaled Jacobian
+        large: >= to this value is consdered large
+        small: <= to this is consdered small
+
+    Returns:
+        (list of tuples), Row norm, Constraint
+    """
+    # Need both jac for the linear algebra and nlp for constraint names
+    if jac is None or nlp is None:
+        jac, nlp = get_jacobian(m, scaled)
+    el = []
+    for i, c in enumerate(nlp.clist):
+        norm = 0
+        # Calculate L2 norm
+        for j in jac[i].indices:
+            norm += jac[i, j] ** 2
+        norm = norm**0.5
+        if norm <= small or norm >= large:
+            el.append((norm, c))
+    return el
+
+
+def extreme_jacobian_columns(
+    m=None, scaled=True, large=1e4, small=1e-4, jac=None, nlp=None
+):
+    """
+    Show very large and very small Jacobian columns. A more reliable indicator
+    of a badly-scaled variable than badly_scaled_var_generator.
+
+    Args:
+        m: model
+        scaled: if true use scaled Jacobian
+        large: >= to this value is consdered large
+        small: <= to this is consdered small
+
+    Returns:
+        (list of tuples), Column norm, Variable
+    """
+    # Need both jac for the linear algebra and nlp for variable names
+    if jac is None or nlp is None:
+        jac, nlp = get_jacobian(m, scaled)
+    jac = jac.tocsc()
+    el = []
+    for j, v in enumerate(nlp.vlist):
+        norm = 0
+        # Calculate L2 norm
+        for i in jac.getcol(j).indices:
+            norm += jac[i, j] ** 2
+        norm = norm**0.5
+        if norm <= small or norm >= large:
+            el.append((norm, v))
     return el
 
 
