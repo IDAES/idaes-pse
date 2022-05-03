@@ -562,6 +562,35 @@ def _binary_diffusion_coefficient_expr(temperature, p, c1, c2):
         / pyo.units.s
     )
 
+def _pure_component_cp(temperature, c):
+    t = temperature / 1000.0 / pyo.units.K
+    return (
+        d["A"]
+        + d["B"] * t
+        + d["C"] * t ** 2
+        + d["D"] * t ** 3
+        + d["E"] / t ** 2
+    )*pyo.units.J/pyo.units.mol/pyo.units.K
+
+def _pure_component_cv(temperature, c):
+    return _pure_component_cp(temperature, c) - _constR
+
+def _pure_component_visc(temperature, c):
+    # The properties of gases and liquids 5th ed.  eqn 9-4.6
+    # low pressure gas from theory
+    return (
+        1e-7 * 16.64 * bin_diff_M[c] ** 0.5 * temperature /
+        (bin_diff_epsok[c] ** 0.5 * bin_diff_sigma[c] ** 2)
+    ) * pyo.units.Pa * pyo.units.s
+
+def _pure_component_thermal_comductivity(temperature, c):
+    # The properties of gases and liquids 5th ed.  eqn 10-3.6
+    # low pressure gas Stiel and Thodos 1964.
+    cv = _pure_component_cv(temperature, c)
+    visc = _pure_component_visc(temperature, c)
+    m = bin_diff_M[c] / 1000
+    units = pyo.units.W / pyo.units.m / pyo.units.K
+    return (1.15 + _constR * 2.03 / cv) * visc * cv / m * units
 
 def _comp_enthalpy_expr(temperature, comp):
     # ideal gas enthalpy
