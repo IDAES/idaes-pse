@@ -279,6 +279,7 @@ this_module_dir = os.path.dirname(__file__)
 
 testing_generator_params = {
     "gen_name": "10_STEAM",
+    "bus": "bus5",
     "generator_type": "thermal",
     "p_min": 30,
     "p_max": 76,
