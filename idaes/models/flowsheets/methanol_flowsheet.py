@@ -258,7 +258,7 @@ def set_inputs(m):
     print('DOF after units specified: ', degrees_of_freedom(m))
 
 
-def scale_variables(m):
+def scale_flowsheet(m):
 
     for var in m.fs.component_data_objects(Var, descend_into=True):
         if 'flow_mol' in var.name:
@@ -334,10 +334,6 @@ def scale_variables(m):
             iscale.set_scaling_factor(
                 block.properties[0.0].mole_frac_comp, 1e2)
 
-    iscale.calculate_scaling_factors(m)
-
-
-def scale_constraints(m):
     # set scaling for unit constraints
     for name in ('M101', 'C101', 'H101', 'R101', 'T101', 'H102', 'F101'):
         unit = getattr(m.fs, name)
@@ -683,8 +679,7 @@ if __name__ == "__main__":
               'max_iter': 5000}
     solver.options = optarg
     set_inputs(m)  # unit and stream specifications
-    scale_variables(m)
-    scale_constraints(m)
+    scale_flowsheet(m)
     initialize_flowsheet(m)  # rigorous initialization scheme
     print('DOF before solve: ', degrees_of_freedom(m))
     results = solver.solve(m, tee=True)

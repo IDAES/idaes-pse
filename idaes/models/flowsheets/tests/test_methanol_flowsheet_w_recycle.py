@@ -18,11 +18,13 @@ Tests for methanol flowsheet.
 import pytest
 
 from idaes.models.flowsheets.methanol_flowsheet_w_recycle import (
-    build_model, set_inputs, initialize_flowsheet, add_costing, report)
+    build_model, set_inputs, scale_flowsheet, initialize_flowsheet,
+    add_costing, report)
 
 from pyomo.environ import (Constraint,
                            ConcreteModel,
-                           value)
+                           value,
+                           Var)
 from pyomo.network import Arc
 from pyomo.environ import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
@@ -30,6 +32,8 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.scaling import (extreme_jacobian_columns,
+                                     extreme_jacobian_rows)
 
 from idaes.models.properties.modular_properties.base.generic_property import \
     GenericParameterBlock
@@ -90,6 +94,21 @@ def test_set_inputs(model):
     set_inputs(model)
 
     assert degrees_of_freedom(model) == 0
+
+
+@pytest.mark.unit
+def test_scaling(model):
+    scale_flowsheet(model)
+
+    # check that less than 10% of model variables are badly scaled pre-solve
+    badly_scaled_vars = extreme_jacobian_columns(model)
+    all_var = list(model.component_data_objects(Var, descend_into=True))
+    assert len(badly_scaled_vars)/len(all_var) < 0.1
+
+    # check that less than 10% of model constraints are badly scaled pre-solve
+    badly_scaled_cons = extreme_jacobian_rows(model)
+    all_con = list(model.component_data_objects(Constraint, descend_into=True))
+    assert len(badly_scaled_cons)/len(all_con) < 0.1
 
 
 @pytest.mark.integration
