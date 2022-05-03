@@ -117,7 +117,8 @@ class SocChannelData(UnitModelBlockData):
         ConfigValue(
             domain=Bool,
             default=False,
-            description="If True assume velocity is negative",
+            description="If True, gas flows from z=1 to z=0. Otherwise "
+            "gas flows from z=0 to z=1.",
         ),
     )
     CONFIG.declare(
