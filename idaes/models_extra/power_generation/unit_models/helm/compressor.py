@@ -158,7 +158,7 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Create solver
-        slvr = get_solver(solver, optarg)
+        opt = get_solver(solver, optarg)
 
         # Store original specification so initialization doesn't change the model
         # This will only resore the values of varaibles that were originally fixed
@@ -194,7 +194,7 @@ class HelmIsentropicCompressorData(BalanceBlockData):
             self.outlet.flow_mol[t] = pyo.value(self.inlet.flow_mol[t])
         # Solve the model (should be already solved from above)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = slvr.solve(self, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         from_json(self, sd=istate, wts=sp)
 
     def calculate_scaling_factors(self):

@@ -13,12 +13,12 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigValue
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
 
 
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
     _constR,
@@ -28,7 +28,7 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.common import
     _element_dict,
 )
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 
@@ -612,7 +612,7 @@ class SocElectrodeData(UnitModelBlockData):
 
         @self.Constraint(tset, ixnodes, iznodes, comps)
         def material_balance_eqn(b, t, ix, iz, i):
-            return b.node_volume[ix, iz] * b.dconc_mol_compdt[
+            return b.porosity * b.node_volume[ix, iz] * b.dconc_mol_compdt[
                 t, ix, iz, i
             ] == b.xface_area[iz] * (
                 b.material_flux_x[t, ix, iz, i] - b.material_flux_x[t, ix + 1, iz, i]
@@ -643,7 +643,7 @@ class SocElectrodeData(UnitModelBlockData):
                 * (b.heat_flux_z[t, ix, iz] - b.heat_flux_z[t, ix, iz + 1])
                 + b.joule_heating[t, ix, iz]
                 # For mass flux heat transfer include exchange with channel
-                # probably make little differece, but want to ensure the energy
+                # probably make little difference, but want to ensure the energy
                 # balance closes
                 + b.xface_area[iz]
                 * sum(
@@ -741,18 +741,14 @@ class SocElectrodeData(UnitModelBlockData):
                             self.int_energy_density[t, ix, iz],
                             self.int_energy_mol[t, ix, iz] / self.vol_mol[t, ix, iz],
                         )
-                        # _set_if_unfixed(
-                        #    self.int_energy_density_solid[t, ix, iz],
-                        #    self.solid_heat_capacity * self.solid_density * (self.temperature[t, ix, iz] - 1000 * pyo.units.K)
-                        # )
                 for i in comps:
                     _set_if_unfixed(
                         self.conc_mol_comp_deviation_x1[t, iz, i],
                         self.conc_mol_comp_deviation_x[t, self.ixnodes.last(), iz, i],
                     )
 
-        slvr = get_solver(solver, optarg)
-        common._init_solve_block(self, slvr, solve_log)
+        opt = get_solver(solver, optarg)
+        common._init_solve_block(self, opt, solve_log)
 
     def calculate_scaling_factors(self):
         pass

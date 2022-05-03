@@ -13,22 +13,15 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigValue
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
 
 
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
-from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _constR,
-    _set_if_unfixed,
-    _species_list,
-    _element_list,
-    _element_dict,
-)
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 

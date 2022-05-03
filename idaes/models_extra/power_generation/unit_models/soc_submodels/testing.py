@@ -28,7 +28,6 @@ def _cell_flowsheet_model(dynamic, time_set, zfaces):
             "time_units": pyo.units.s,
         }
     )
-    # time_units = m.fs.time_units
     tset = m.fs.config.time
     znodes = m.fs.znodes = pyo.Set(
         initialize=[(zfaces[i] + zfaces[i + 1]) / 2.0 for i in range(len(zfaces) - 1)]

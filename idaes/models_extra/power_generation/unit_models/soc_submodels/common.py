@@ -16,24 +16,17 @@ __author__ = "John Eslick, Douglas Allan"
 import copy
 import enum
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.dae import DerivativeVar
+from pyomo.common.config import ConfigValue, In
 import pyomo.environ as pyo
-from pyomo.network import Port
 
 
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
-from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
+from idaes.core import useDefault
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
-from idaes.core.util.math import safe_log
-from idaes.core.util import get_solver
 import idaes.core.util.model_statistics as mstat
-
-from idaes.core.util.misc import VarLikeExpression
 import idaes.logger as idaeslog
 
-_constR = 8.3145 * pyo.units.J / pyo.units.mol / pyo.units.K  # or Pa*m3/K/mol
+_constR = 8.31446261815324 * pyo.units.J / pyo.units.mol / pyo.units.K  # or Pa*m3/K/mol
 _constF = 96485 * pyo.units.coulomb / pyo.units.mol
 _safe_log_eps = 1e-9
 _safe_sqrt_eps = 1e-9
@@ -482,7 +475,7 @@ h_params = {
         "F": 0.0,
         "G": 0.0,
         "H": 0.0,
-    }
+    },
 }
 
 
@@ -519,6 +512,35 @@ def _binary_diffusion_coefficient_expr(temperature, p, c1, c2):
         / pyo.units.s
     )
 
+def _pure_component_cp(temperature, c):
+    t = temperature / 1000.0 / pyo.units.K
+    return (
+        d["A"]
+        + d["B"] * t
+        + d["C"] * t ** 2
+        + d["D"] * t ** 3
+        + d["E"] / t ** 2
+    )*pyo.units.J/pyo.units.mol/pyo.units.K
+
+def _pure_component_cv(temperature, c):
+    return _pure_component_cp(temperature, c) - _constR
+
+def _pure_component_visc(temperature, c):
+    # The properties of gases and liquids 5th ed.  eqn 9-4.6
+    # low pressure gas from theory
+    return (
+        1e-7 * 16.64 * bin_diff_M[c] ** 0.5 * temperature /
+        (bin_diff_epsok[c] ** 0.5 * bin_diff_sigma[c] ** 2)
+    ) * pyo.units.Pa * pyo.units.s
+
+def _pure_component_thermal_comductivity(temperature, c):
+    # The properties of gases and liquids 5th ed.  eqn 10-3.6
+    # low pressure gas Stiel and Thodos 1964.
+    cv = _pure_component_cv(temperature, c)
+    visc = _pure_component_visc(temperature, c)
+    m = bin_diff_M[c] / 1000
+    units = pyo.units.W / pyo.units.m / pyo.units.K
+    return (1.15 + _constR * 2.03 / cv) * visc * cv / m * units
 
 def _comp_enthalpy_expr(temperature, comp):
     # ideal gas enthalpy
@@ -539,10 +561,25 @@ def _comp_enthalpy_expr(temperature, comp):
     )
 
 
+_monotomic_gas_standard_state = ["He", "Ne", "Ar", "Kr", "Xe", "Ra"]
+_diatomic_gas_standard_state = ["F", "Cl", "H", "N", "O"]
+
+
 def _comp_int_energy_expr(temperature, comp):
     # ideal gas internal energy
-    # NIST has 298 K as a reference state, so adjust internal energy expression for that
-    return _comp_enthalpy_expr(temperature, comp) - _constR * (temperature - 298.15)
+    # NIST has 298.15 K as a reference state, so adjust internal energy expression for that
+    T_ref = 298.15
+    dn_form = 1
+    for element, molecule_dict in _element_dict.items():
+        if element in _monotomic_gas_standard_state:
+            dn_form -= molecule_dict[comp]
+        elif element in _diatomic_gas_standard_state:
+            dn_form -= 0.5 * molecule_dict[comp]
+    return (
+        _comp_enthalpy_expr(temperature, comp)
+        - _constR * (temperature - T_ref)
+        + dn_form * _constR * T_ref
+    )
 
 
 def _comp_entropy_expr(temperature, comp):

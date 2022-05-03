@@ -20,7 +20,6 @@ import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
-import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as soc_testing
 
 # Class for the electrolyte and interconnect
@@ -209,7 +208,7 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
     assert degrees_of_freedom(slab) == 0
 
 
-@pytest.mark.component
-def test_units(modelHoldupNotDynamic):
-    # TODO come back to this later
-    return
+# @pytest.mark.component
+# def test_units(modelHoldupNotDynamic):
+#     # TODO come back to this later
+#     return

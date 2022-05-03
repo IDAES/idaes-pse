@@ -13,7 +13,7 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigValue, In
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
 from pyomo.network import Port
@@ -29,7 +29,7 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.common import
     _element_dict,
 )
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 from idaes.core.base.var_like_expression import VarLikeExpression
 import idaes.logger as idaeslog
@@ -490,8 +490,6 @@ class SocChannelData(UnitModelBlockData):
 
         @self.Constraint(tset, iznodes, comps)
         def material_balance_eqn(b, t, iz, i):
-            # if t == tset.first() and dynamic:
-            #     return pyo.Constraint.Skip
             return b.dconc_mol_compdt[t, iz, i] * b.node_volume[iz] == b.flow_area * (
                 b.material_flux_z[t, iz, i] - b.material_flux_z[t, iz + 1, i]
             ) + b.xface_area[iz] * (
@@ -549,15 +547,12 @@ class SocChannelData(UnitModelBlockData):
             else:
                 return b.material_flux_z[t, izfout, i] * b.flow_area
 
-        # @self.Expression(tset)
         def rule_flow_mol_outlet(b, t):
             return sum(b.flow_mol_comp_outlet[t, i] for i in comps)
 
-        # @self.Expression(tset)
         def rule_pressure_outlet(b, t):
             return b.pressure_face[t, izfout]
 
-        # @self.Expression(tset, comps)
         def rule_mole_frac_comp_outlet(b, t, i):
             return b.flow_mol_comp_outlet[t, i] / b.flow_mol_outlet[t]
 
@@ -596,10 +591,6 @@ class SocChannelData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        material_flux_x_guess=None,
-        heat_flux_x1_guess=None,
-        heat_flux_x0_guess=None,
-        velocity_guess=None,
     ):
         # At present, this method does not fix inlet variables because they are
         # fixed at the cell level instead.
@@ -656,8 +647,8 @@ class SocChannelData(UnitModelBlockData):
                         self.int_energy_density[t, iz],
                         self.int_energy_mol[t, iz] / self.vol_mol[t, iz],
                     )
-        slvr = get_solver(solver, optarg)
-        common._init_solve_block(self, slvr, solve_log)
+        opt = get_solver(solver, optarg)
+        common._init_solve_block(self, opt, solve_log)
 
     def calculate_scaling_factors(self):
         pass
