@@ -22,7 +22,7 @@ from pyomo.environ import units as pyunits
 
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component
-from idaes.core.phases import PhaseType as PT
+from idaes.core.base.phases import PhaseType as PT
 from idaes.models.properties.modular_properties.state_definitions import FPhx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE

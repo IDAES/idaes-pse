@@ -31,23 +31,26 @@ from pyomo.network import Arc, SequentialDecomposition
 
 # Import IDAES core libraries
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
+from idaes.core.util import scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
 
 # Import required models
 
-from idaes.generic_models.properties.core.generic.generic_property import \
+from idaes.models.properties.modular_properties.base.generic_property import \
     GenericParameterBlock
-from idaes.generic_models.properties.core.generic.generic_reaction import \
+from idaes.models.properties.modular_properties.base.generic_reaction import \
     GenericReactionParameterBlock
 
-from idaes.generic_models.properties.examples import \
-    methanol_water_ideal as thermo_props
-from idaes.generic_models.properties.examples import \
+from idaes.models.properties.examples import \
+    methanol_ideal_VLE as thermo_props_VLE
+from idaes.models.properties.examples import \
+    methanol_ideal_vapor as thermo_props_vapor
+from idaes.models.properties.examples import \
     methanol_reactions as reaction_props
 
-from idaes.generic_models.unit_models import (
+from idaes.models.unit_models import (
     Mixer,
     Heater,
     Compressor,
@@ -55,9 +58,8 @@ from idaes.generic_models.unit_models import (
     StoichiometricReactor,
     Flash,
     Separator as Splitter)
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
-from idaes.generic_models.unit_models.pressure_changer import \
-    ThermodynamicAssumption
+from idaes.models.unit_models.mixer import MomentumMixingType
+from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 import idaes.core.util.unit_costing as costing
 import idaes.logger as idaeslog
 
@@ -66,22 +68,64 @@ def build_model(m):
     # Define model components and blocks
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.thermo_params = GenericParameterBlock(
-        default=thermo_props.config_dict)
+    m.fs.thermo_params_VLE = GenericParameterBlock(
+        default=thermo_props_VLE.config_dict)
+
+    m.fs.thermo_params_VLE.set_default_scaling("flow_mol", 1)
+    m.fs.thermo_params_VLE.set_default_scaling("temperature", 1e-2)
+    m.fs.thermo_params_VLE.set_default_scaling("pressure", 1e-2)
+    m.fs.thermo_params_VLE.set_default_scaling("enth_mol", 1e-3)
+    m.fs.thermo_params_VLE.set_default_scaling("entr_mol", 1e-1)
+    for comp in thermo_props_VLE.config_dict["components"]:
+        m.fs.thermo_params_VLE.set_default_scaling("mole_frac_comp",
+                                                   1e2, index=comp)
+        m.fs.thermo_params_VLE.set_default_scaling("enth_mol_comp",
+                                                   1e2, index=comp)
+        m.fs.thermo_params_VLE.set_default_scaling("entr_mol_phase_comp",
+                                                   1e2, index=comp)
+        for attr in dir(getattr(m.fs.thermo_params_VLE, comp)):
+            if 'coef' in attr:
+                iscale.set_scaling_factor(getattr(
+                    getattr(m.fs.thermo_params_VLE, comp), attr), 1)
+        m.fs.thermo_params_VLE.set_default_scaling("flow_mol_phase_comp",
+                                                   1, index=comp)
+
+    m.fs.thermo_params_vapor = GenericParameterBlock(
+        default=thermo_props_vapor.config_dict)
+
+    m.fs.thermo_params_vapor.set_default_scaling("flow_mol", 1)
+    m.fs.thermo_params_vapor.set_default_scaling("temperature", 1e-2)
+    m.fs.thermo_params_vapor.set_default_scaling("pressure", 1e-2)
+    m.fs.thermo_params_vapor.set_default_scaling("enth_mol", 1e-3)
+    m.fs.thermo_params_vapor.set_default_scaling("entr_mol", 1e-1)
+    for comp in thermo_props_vapor.config_dict["components"]:
+        m.fs.thermo_params_vapor.set_default_scaling("mole_frac_comp",
+                                                     1e2, index=comp)
+        m.fs.thermo_params_vapor.set_default_scaling("enth_mol_comp",
+                                                     1e2, index=comp)
+        m.fs.thermo_params_vapor.set_default_scaling("entr_mol_phase_comp",
+                                                     1e2, index=comp)
+        for attr in dir(getattr(m.fs.thermo_params_vapor, comp)):
+            if 'coef' in attr:
+                iscale.set_scaling_factor(getattr(
+                    getattr(m.fs.thermo_params_vapor, comp), attr), 1)
+        m.fs.thermo_params_vapor.set_default_scaling("flow_mol_phase_comp",
+                                                     1, index=comp)
+
     m.fs.reaction_params = GenericReactionParameterBlock(
-        default={"property_package": m.fs.thermo_params,
+        default={"property_package": m.fs.thermo_params_vapor,
                  **reaction_props.config_dict})
 
     # mixing feed streams
     m.fs.M101 = Mixer(
-        default={"property_package": m.fs.thermo_params,
+        default={"property_package": m.fs.thermo_params_vapor,
                  "momentum_mixing_type": MomentumMixingType.minimize,
                  "has_phase_equilibrium": True,
                  "inlet_list": ['H2_WGS', 'CO_WGS']})
 
     # mixing recycle back into feed streams
     m.fs.M102 = Mixer(
-        default={"property_package": m.fs.thermo_params,
+        default={"property_package": m.fs.thermo_params_vapor,
                  "momentum_mixing_type": MomentumMixingType.minimize,
                  "has_phase_equilibrium": True,
                  "inlet_list": ["feed", "recycle"]})
@@ -89,14 +133,14 @@ def build_model(m):
     # pre-compression
     m.fs.C101 = Compressor(
         default={"dynamic": False,
-                 "property_package": m.fs.thermo_params,
+                 "property_package": m.fs.thermo_params_vapor,
                  "compressor": True,
                  "thermodynamic_assumption": ThermodynamicAssumption.isothermal
                  })
 
     # pre-heating
     m.fs.H101 = Heater(
-        default={"property_package": m.fs.thermo_params,
+        default={"property_package": m.fs.thermo_params_vapor,
                  "has_pressure_change": False,
                  "has_phase_equilibrium": False})
 
@@ -105,29 +149,29 @@ def build_model(m):
         default={"has_heat_transfer": True,
                  "has_heat_of_reaction": True,
                  "has_pressure_change": False,
-                 "property_package": m.fs.thermo_params,
+                 "property_package": m.fs.thermo_params_vapor,
                  "reaction_package": m.fs.reaction_params})
 
     # post-expansion
     m.fs.T101 = Turbine(
         default={"dynamic": False,
-                 "property_package": m.fs.thermo_params})
+                 "property_package": m.fs.thermo_params_vapor})
 
     # post-cooling
     m.fs.H102 = Heater(
-        default={"property_package": m.fs.thermo_params,
+        default={"property_package": m.fs.thermo_params_vapor,
                  "has_pressure_change": False,
                  "has_phase_equilibrium": False})
 
     # product recovery
     m.fs.F101 = Flash(
-        default={"property_package": m.fs.thermo_params,
+        default={"property_package": m.fs.thermo_params_VLE,
                  "has_heat_transfer": True,
                  "has_pressure_change": True})
 
     # split waste gases for recycle
     m.fs.S101 = Splitter(
-        default={"property_package": m.fs.thermo_params,
+        default={"property_package": m.fs.thermo_params_vapor,
                  "ideal_separation": False,
                  "outlet_list": ["purge", "recycle"]})
 
@@ -184,7 +228,6 @@ def set_inputs(m):
     m.fs.M101.H2_WGS.mole_frac_comp[0, "CO"].fix(1e-6)
     m.fs.M101.H2_WGS.mole_frac_comp[0, "CH3OH"].fix(1e-6)
     m.fs.M101.H2_WGS.mole_frac_comp[0, "CH4"].fix(1e-6)
-    m.fs.M101.H2_WGS.mole_frac_comp[0, "H2O"].fix(1e-6)
     m.fs.M101.H2_WGS.enth_mol[0].fix(-142.4)  # J/mol
     m.fs.M101.H2_WGS.pressure.fix(30e5)  # Pa
 
@@ -193,7 +236,6 @@ def set_inputs(m):
     m.fs.M101.CO_WGS.mole_frac_comp[0, "CO"].fix(1)
     m.fs.M101.CO_WGS.mole_frac_comp[0, "CH3OH"].fix(1e-6)
     m.fs.M101.CO_WGS.mole_frac_comp[0, "CH4"].fix(1e-6)
-    m.fs.M101.CO_WGS.mole_frac_comp[0, "H2O"].fix(1e-6)
     m.fs.M101.CO_WGS.enth_mol[0].fix(-110676.4)  # J/mol
     m.fs.M101.CO_WGS.pressure.fix(30e5)  # Pa
     print('DOF after streams specified: ', degrees_of_freedom(m))
@@ -202,8 +244,8 @@ def set_inputs(m):
     m.fs.C101.outlet.pressure.fix(51e5)  # Pa
 
     m.fs.H101.outlet_temp = Constraint(
-        expr=m.fs.H101.control_volume.properties_out[0].temperature
-        == 488.15*pyunits.K)
+        expr=m.fs.H101.control_volume.properties_out[0].temperature == \
+            488.15 * pyunits.K)
 
     m.fs.R101.conversion = Var(initialize=0.75, bounds=(0, 1))
     m.fs.R101.conv_constraint = Constraint(
@@ -215,16 +257,16 @@ def set_inputs(m):
               m.fs.R101.outlet.mole_frac_comp[0, "CO"]))
     m.fs.R101.conversion.fix(0.75)
     m.fs.R101.outlet_temp = Constraint(
-        expr=m.fs.R101.control_volume.properties_out[0].temperature
-        == 507.15*pyunits.K)
+        expr=m.fs.R101.control_volume.properties_out[0].temperature == \
+            507.15 * pyunits.K)
     m.fs.R101.heat_duty.setub(0)  # rxn is exothermic, so duty is cooling only
 
     m.fs.T101.deltaP.fix(-2e6)
     m.fs.T101.efficiency_isentropic.fix(0.9)
 
     m.fs.H102.outlet_temp = Constraint(
-        expr=m.fs.H102.control_volume.properties_out[0].temperature
-        == 407.15*pyunits.K)
+        expr=m.fs.H102.control_volume.properties_out[0].temperature == \
+            407.15 * pyunits.K)
 
     m.fs.F101.recovery = Var(initialize=0.01, bounds=(0, 1))
     m.fs.F101.rec_constraint = Constraint(
@@ -234,15 +276,251 @@ def set_inputs(m):
                m.fs.F101.inlet.mole_frac_comp[0, "CH3OH"])))
     m.fs.F101.deltaP.fix(0)  # Pa
     m.fs.F101.outlet_temp = Constraint(
-        expr=m.fs.F101.control_volume.properties_out[0].temperature
-        == 407.15*pyunits.K)
+        expr=m.fs.F101.control_volume.properties_out[0].temperature == \
+            407.15 * pyunits.K)
 
     m.fs.S101.split_fraction[0, "purge"].fix(0.9999)  # initially no recycle
 
     print('DOF after units specified: ', degrees_of_freedom(m))
 
 
-def initialize_flowsheet(m, solved_m=None):
+def scale_variables(m):
+
+    for var in m.fs.component_data_objects(Var, descend_into=True):
+        if 'flow_mol' in var.name:
+            iscale.set_scaling_factor(var, 1)
+        if 'temperature' in var.name:
+            iscale.set_scaling_factor(var, 1e-2)
+        if 'pressure' in var.name:
+            iscale.set_scaling_factor(var, 1e-2)
+        if 'enth_mol' in var.name:
+            iscale.set_scaling_factor(var, 1e-3)
+        if 'mole_frac' in var.name:
+            iscale.set_scaling_factor(var, 1e2)
+        if 'entr_mol' in var.name:
+            iscale.set_scaling_factor(var, 1e-1)
+        if 'rate_reaction_extent' in var.name:
+            iscale.set_scaling_factor(var, 1e-3)
+        if 'heat' in var.name:
+            iscale.set_scaling_factor(var, 1e-3)
+        if 'work' in var.name:
+            iscale.set_scaling_factor(var, 1e-3)
+
+    # manual scaling
+    for unit in ('M101', 'C101', 'H101', 'R101', 'T101', 'H102', 'F101'):
+        block = getattr(m.fs, unit)
+        if 'mixer' in unit:
+            iscale.set_scaling_factor(block.inlet_1_state[0.0].mole_frac_comp,
+                                      1e2)
+            iscale.set_scaling_factor(block.inlet_2_state[0.0].mole_frac_comp,
+                                      1e2)
+            iscale.set_scaling_factor(block.mixed_state[0.0].mole_frac_comp,
+                                      1e2)
+            iscale.set_scaling_factor(block.inlet_1_state[0.0].enth_mol_phase,
+                                      1e-3)
+            iscale.set_scaling_factor(block.inlet_2_state[0.0].enth_mol_phase,
+                                      1e-3)
+            iscale.set_scaling_factor(block.mixed_state[0.0].enth_mol_phase,
+                                      1e-3)
+        if 'splitter' in unit:
+            iscale.set_scaling_factor(block.mixed_state[0.0].mole_frac_comp,
+                                      1e2)
+            iscale.set_scaling_factor(block.outlet_1_state[0.0].mole_frac_comp,
+                                      1e2)
+            iscale.set_scaling_factor(block.outlet_2_state[0.0].mole_frac_comp,
+                                      1e2)
+            iscale.set_scaling_factor(block.mixed_state[0.0].enth_mol_phase,
+                                      1e-3)
+            iscale.set_scaling_factor(block.outlet_1_state[0.0].enth_mol_phase,
+                                      1e-3)
+            iscale.set_scaling_factor(block.outlet_2_state[0.0].enth_mol_phase,
+                                      1e-3)
+        if hasattr(block, "control_volume"):
+            iscale.set_scaling_factor(
+                block.control_volume.properties_in[0.0].mole_frac_comp, 1e2)
+            iscale.set_scaling_factor(
+                block.control_volume.properties_out[0.0].mole_frac_comp, 1e2)
+            iscale.set_scaling_factor(
+                block.control_volume.properties_in[0.0].enth_mol_phase, 1e2)
+            iscale.set_scaling_factor(
+                block.control_volume.properties_out[0.0].enth_mol_phase, 1e2)
+            if hasattr(block.control_volume, "rate_reaction_extent"):
+                iscale.set_scaling_factor(block.control_volume
+                                          .rate_reaction_extent, 1e3)
+            if hasattr(block.control_volume, "heat"):
+                iscale.set_scaling_factor(block.control_volume.heat, 1e-3)
+            if hasattr(block.control_volume, "work"):
+                iscale.set_scaling_factor(block.control_volume.work, 1e-3)
+        if hasattr(block, "properties_isentropic"):
+            iscale.set_scaling_factor(
+                block.properties_isentropic[0.0].mole_frac_comp, 1e2)
+            iscale.set_scaling_factor(
+                block.properties_isentropic[0.0].enth_mol_phase, 1e-3)
+        if hasattr(block, "properties"):
+            iscale.set_scaling_factor(
+                block.properties[0.0].mole_frac_comp, 1e2)
+
+    iscale.calculate_scaling_factors(m)
+
+
+def scale_constraints(m):
+    # set scaling for unit constraints
+    for name in ('M101', 'C101', 'H101', 'R101', 'T101', 'H102', 'F101'):
+        unit = getattr(m.fs, name)
+        # mixer constraints
+        if hasattr(unit, 'material_mixing_equations'):
+            for (t, j), c in unit.material_mixing_equations.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'enthalpy_mixing_equations'):
+            for t, c in unit.enthalpy_mixing_equations.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'minimum_pressure_constraint'):
+            for (t, i), c in unit.minimum_pressure_constraint.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+        if hasattr(unit, 'mixture_pressure'):
+            for t, c in unit.mixture_pressure.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+        if hasattr(unit, 'pressure_equality_constraints'):
+            for (t, i), c in unit.pressure_equality_constraints.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+
+        # splitter constraints
+        if hasattr(unit, 'material_splitting_eqn'):
+            for (t, o, j), c in unit.material_splitting_eqn.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'temperature_equality_eqn'):
+            for (t, o), c in unit.temperature_equality_eqn.items():
+                iscale.constraint_scaling_transform(c, 1e-2, overwrite=False)
+        if hasattr(unit, 'molar_enthalpy_equality_eqn'):
+            for (t, o), c in unit.molar_enthalpy_equality_eqn.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'molar_enthalpy_splitting_eqn'):
+            for (t, o), c in unit.molar_enthalpy_splitting_eqn.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'pressure_equality_eqn'):
+            for (t, o), c in unit.pressure_equality_eqn.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+        if hasattr(unit, 'sum_split_frac'):
+            for t, c in unit.sum_split_frac.items():
+                iscale.constraint_scaling_transform(c, 1e2, overwrite=False)
+
+        # flash adds same as splitter, plus one more
+        if hasattr(unit, 'split_fraction_eq'):
+            for (t, o), c in unit.split_fraction_eq.items():
+                iscale.constraint_scaling_transform(c, 1e2, overwrite=False)
+
+        # pressurechanger constraints
+
+        if hasattr(unit, "ratioP_calculation"):
+            for t, c in unit.ratioP_calculation.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+
+        if hasattr(unit, "fluid_work_calculation"):
+            for t, c in unit.fluid_work_calculation.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+
+        if hasattr(unit, "actual_work"):
+            for t, c in unit.actual_work.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+
+        if hasattr(unit, "isentropic_pressure"):
+            for t, c in unit.isentropic_pressure.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+
+        if hasattr(unit, "isothermal"):
+            for t, c in unit.isothermal.items():
+                iscale.constraint_scaling_transform(c, 1e-2, overwrite=False)
+
+        if hasattr(unit, "isentropic"):
+            for t, c in unit.isentropic.items():
+                iscale.constraint_scaling_transform(c, 1e-1, overwrite=False)
+
+        if hasattr(unit, "isentropic_energy_balance"):
+            for t, c in unit.isentropic_energy_balance.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+
+        if hasattr(unit, "zero_work_equation"):
+            for t, c in unit.zero_work_equation.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+
+        if hasattr(unit, "state_material_balances"):
+            for (t, j), c in unit.state_material_balances.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+
+        # heater and reactor only add 0D control volume constraints
+        if hasattr(unit, 'material_holdup_calculation'):
+            for (t, p, j), c in unit.material_holdup_calculation.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'rate_reaction_stoichiometry_constraint'):
+            for (t, p, j), c in (
+                    unit.rate_reaction_stoichiometry_constraint.items()):
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'equilibrium_reaction_stoichiometry_constraint'):
+            for (t, p, j), c in (
+                    unit.equilibrium_reaction_stoichiometry_constraint
+                    .items()):
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'inherent_reaction_stoichiometry_constraint'):
+            for (t, p, j), c in (
+                    unit.inherent_reaction_stoichiometry_constraint.items()):
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'material_balances'):
+            for (t, p, j), c in unit.material_balances.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'element_balances'):
+            for (t, e), c in unit.element_balances.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'elemental_holdup_calculation'):
+            for (t, e), c in unit.elemental_holdup_calculation.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+        if hasattr(unit, 'enthalpy_balances'):
+            for t, c in unit.enthalpy_balances.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'energy_holdup_calculation'):
+            for (t, p), c in unit.energy_holdup_calculation.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+        if hasattr(unit, 'pressure_balance'):
+            for t, c in unit.pressure_balance.items():
+                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+        if hasattr(unit, 'sum_of_phase_fractions'):
+            for t, c in unit.sum_of_phase_fractions.items():
+                iscale.constraint_scaling_transform(c, 1e2, overwrite=False)
+        if hasattr(unit, "material_accumulation_disc_eq"):
+            for (t, p, j), c in unit.material_accumulation_disc_eq.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+
+        if hasattr(unit, "energy_accumulation_disc_eq"):
+            for (t, p), c in unit.energy_accumulation_disc_eq.items():
+                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+
+        if hasattr(unit, "element_accumulation_disc_eq"):
+            for (t, e), c in unit.element_accumulation_disc_eq.items():
+                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+
+    # equality constraints between ports at Arc sources and destinations
+    for arc in m.fs.component_data_objects(Arc, descend_into=True):
+        for c in arc.component_data_objects(Constraint, descend_into=True):
+            if hasattr(unit, "enth_mol_equality"):
+                for t, c in unit.enth_mol_equality.items():
+                    iscale.constraint_scaling_transform(c, 1e-3,
+                                                        overwrite=False)
+            if hasattr(unit, "flow_mol_equality"):
+                for t, c in unit.flow_mol_equality.items():
+                    iscale.constraint_scaling_transform(c, 1,
+                                                        overwrite=False)
+            if hasattr(unit, "mole_frac_comp_equality"):
+                for (t, j), c in unit.mole_frac_comp_equality.items():
+                    iscale.constraint_scaling_transform(c, 1e2,
+                                                        overwrite=False)
+            if hasattr(unit, "pressure_equality"):
+                for t, c in unit.pressure_equality.items():
+                    iscale.constraint_scaling_transform(c, 1e-5,
+                                                        overwrite=False)
+
+    iscale.calculate_scaling_factors(m)
+
+
+def initialize_flowsheet(m):
 
     # Initialize and solve flowsheet
 
@@ -265,40 +543,18 @@ def initialize_flowsheet(m, solved_m=None):
         print(o[0].name)
     print()
 
+    tear_guesses = {  # is there a way to generalize these values???
+        "flow_mol": {0: 954.00},
+        "mole_frac_comp": {
+                (0, "CH4"): 1e-6,
+                (0, "CO"): 0.33207,
+                (0, "H2"): 0.66792,
+                (0, "CH3OH"): 1e-6},
+        "enth_mol": {0: -36848},
+        "pressure": {0: 3e6}}
+
     # automatically build stream set for flowsheet and find the tear stream
     stream_set = [arc for arc in m.fs.component_data_objects(Arc)]
-
-    # if available, pull tear guesses from solved model
-    if solved_m is not None:
-        # use the prior solution values for the tear stream
-        tear_name = heuristic_tear_set[0].name.split(sep='.')
-        tear = getattr(solved_m.fs, tear_name[1]).destination
-        tear_guesses = {
-            "flow_mol": {0: round(value(tear.flow_mol[0]), 2)},
-            "mole_frac_comp": {
-                (0, "CH4"): round(value(tear.mole_frac_comp[0, "CH4"]), 6),
-                (0, "CO"): round(value(tear.mole_frac_comp[0, "CO"]), 5),
-                (0, "H2"): round(value(tear.mole_frac_comp[0, "H2"]), 5),
-                (0, "CH3OH"): round(value(tear.mole_frac_comp[0, "CH3OH"]), 6),
-                (0, "H2O"): round(value(tear.mole_frac_comp[0, "H2O"]), 6)},
-            "enth_mol": {0: round(value(tear.enth_mol[0]), 0)},
-            "pressure": {0: round(value(tear.pressure[0]), 0)}}
-        print('Tear guesses: ')
-        print(tear_guesses)
-    else:  # manually enter tear guesses - assumes set_inputs() above and
-        # that solver selects s02 (to fs.C101.inlet) as the tear stream
-        tear_guesses = {
-            "flow_mol": {0: 954.00},
-            "mole_frac_comp": {
-                    (0, "CH4"): 1e-6,
-                    (0, "CO"): 0.33207,
-                    (0, "H2"): 0.66792,
-                    (0, "CH3OH"): 1e-6,
-                    (0, "H2O"): 1e-6},
-            "enth_mol": {0: -36848},
-            "pressure": {0: 3e6}}
-
-    # set tear guesses
     for stream in stream_set:
         if stream in heuristic_tear_set:
             seq.set_guesses_for(stream.destination, tear_guesses)
@@ -420,7 +676,7 @@ def report(m):
     extent = m.fs.R101.rate_reaction_extent[0, "R1"]  # shorter parameter alias
     print('Extent of reaction: ', value(extent))
     print('Stoichiometry of each component normalized by the extent:')
-    complist = ('CH4', 'H2', 'H2O', 'CH3OH', 'CO')
+    complist = ('CH4', 'H2', 'CH3OH', 'CO')
     changelist = [value(m.fs.R101.outlet.mole_frac_comp[0, comp] *
                         m.fs.R101.outlet.flow_mol[0] -
                         m.fs.R101.inlet.mole_frac_comp[0, comp] *
@@ -479,3 +735,77 @@ def report(m):
     m.fs.M102.report()
     m.fs.F101.report()
     m.fs.S101.report()
+
+
+if __name__ == "__main__":
+
+    solver = get_solver()  # IPOPT
+    optarg = {'tol': 1e-6,
+              'max_iter': 5000,
+              'halt_on_ampl_error': 'yes'}
+    solver.options = optarg
+
+    m = ConcreteModel()
+    build_model(m)  # build flowsheet
+    set_inputs(m)  # unit and stream specifications
+    scale_variables(m)
+    scale_constraints(m)
+    initialize_flowsheet(m)  # rigorous initialization scheme
+    print('DOF before solve: ', degrees_of_freedom(m))
+    print()
+    print('Solving initial problem...')
+    results = solver.solve(m, tee=True)
+    assert results.solver.termination_condition == TerminationCondition.optimal
+
+    add_costing(m)  # re-solve with costing equations
+    print()
+    print('Solving with costing...')
+    results2 = solver.solve(m, tee=True)
+    print('Initial solution process results:')
+    report(m)  # display initial solution results
+
+    # Set up Optimization Problem (Maximize Revenue)
+    # keep process pre-reaction fixed and unfix some post-process specs
+    m.fs.R101.conversion.unfix()
+    m.fs.R101.conversion_lb = Constraint(expr=m.fs.R101.conversion >= 0.75)
+    m.fs.R101.conversion_ub = Constraint(expr=m.fs.R101.conversion <= 0.85)
+    m.fs.R101.outlet_temp.deactivate()
+    m.fs.R101.outlet_t_lb = Constraint(
+        expr=m.fs.R101.control_volume.properties_out[0.0].temperature >= 405)
+    m.fs.R101.outlet_t_ub = Constraint(
+        expr=m.fs.R101.control_volume.properties_out[0.0].temperature <= 505)
+
+    # Optimize turbine work (or delta P)
+    m.fs.T101.deltaP.unfix()  # optimize turbine work recovery/pressure drop
+    m.fs.T101.outlet_p_lb = Constraint(
+        expr=m.fs.T101.outlet.pressure[0] >= 10E5)
+    m.fs.T101.outlet_p_ub = Constraint(
+        expr=m.fs.T101.outlet.pressure[0] <= 51E5*0.8)
+
+    # Optimize Cooler outlet temperature - unfix cooler outlet temperature
+    m.fs.H102.outlet_temp.deactivate()
+    m.fs.H102.outlet_t_lb = Constraint(
+        expr=m.fs.H102.control_volume.properties_out[0.0].temperature
+        >= 407.15*0.8)
+    m.fs.H102.outlet_t_ub = Constraint(
+        expr=m.fs.H102.control_volume.properties_out[0.0].temperature
+        <= 480)
+
+    m.fs.F101.deltaP.unfix()  # allow pressure change in streams
+
+    m.fs.F101.isothermal = Constraint(
+        expr=m.fs.F101.control_volume.properties_out[0].temperature ==
+        m.fs.F101.control_volume.properties_in[0].temperature)
+
+    m.fs.S101.split_fraction[0, "purge"].unfix()  # allow some gas recycle
+    m.fs.S101.split_fraction_lb = Constraint(
+        expr=m.fs.S101.split_fraction[0, "purge"] >= 0.10)  # min 10% purge
+    m.fs.S101.split_fraction_ub = Constraint(
+        expr=m.fs.S101.split_fraction[0, "purge"] <= 0.50)  # max 50% purge
+
+    print()
+    print('Solving optimization problem...')
+    opt_res = solver.solve(m, tee=True)
+    assert opt_res.solver.termination_condition == TerminationCondition.optimal
+    print('Optimal solution process results:')
+    report(m)

@@ -57,7 +57,8 @@ def model():
 def test_build_flowsheet(model):
     assert isinstance(model.fs, FlowsheetBlock)
 
-    assert isinstance(model.fs.thermo_params, GenericParameterBlock)
+    assert isinstance(model.fs.thermo_params_VLE, GenericParameterBlock)
+    assert isinstance(model.fs.thermo_params_vapor, GenericParameterBlock)
     assert isinstance(model.fs.reaction_params, GenericReactionParameterBlock)
 
     assert isinstance(model.fs.M101, Mixer)
@@ -75,7 +76,7 @@ def test_build_flowsheet(model):
     assert isinstance(model.fs.s06, Arc)
     assert isinstance(model.fs.s07, Arc)
 
-    assert degrees_of_freedom(model) == 25
+    assert degrees_of_freedom(model) == 23
 
 
 @pytest.mark.unit
@@ -85,7 +86,7 @@ def test_set_inputs(model):
     assert degrees_of_freedom(model) == 0
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_initialize_flowsheet(model):
     initialize_flowsheet(model)
 
@@ -108,7 +109,7 @@ def test_unit_consistency(model):
     assert_units_consistent(model)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_solve_flowsheet(model):
     solver = get_solver()
     optarg = {'tol': 1e-6,
@@ -126,8 +127,83 @@ def test_solve_flowsheet(model):
     assert value(model.fs.F101.recovery*100) == pytest.approx(
         60.0047, abs=1e-2)
 
+    # check mass balance (inlets to outlets)
+    feed_mass = value(model.fs.M101.H2_WGS.flow_mol[0] *
+                      model.fs.thermo_params_vapor.H2.mw +
+                      model.fs.M101.CO_WGS.flow_mol[0] *
+                      model.fs.thermo_params_vapor.CO.mw)
+    product_mass = value(sum(model.fs.F101.liq_outlet.flow_mol[0] *
+                             model.fs.F101.liq_outlet.mole_frac_comp[0, comp]
+                             * getattr(model.fs.thermo_params_VLE, comp).mw
+                             for comp in ['CH4', 'CO', 'H2', 'CH3OH']))
+    exhaust_mass = value(sum(model.fs.F101.vap_outlet.flow_mol[0] *
+                             model.fs.F101.vap_outlet.mole_frac_comp[0, comp]
+                             * getattr(model.fs.thermo_params_VLE, comp).mw
+                             for comp in ['CH4', 'CO', 'H2', 'CH3OH']))
 
-@pytest.mark.unit
+    assert value(feed_mass - product_mass - exhaust_mass) == \
+        pytest.approx(0.0000, abs=1e-2)
+
+    # check mass balances (on each unit)
+    # mixer in is sum of named inlets, all others are total inlet
+    # flash out is sum of named outlets, all others are total outlet
+    for unit in ['M101', 'C101', 'H101', 'R101', 'T101', 'H102', 'F101']:
+        block = getattr(model.fs, unit)
+
+        # inlets
+        if unit == 'M101':  # inlets are not named 'inlet'
+            mass_in = feed_mass  # already have this
+        else:
+            mass_in = sum(block.inlet.flow_mol[0] *
+                          block.inlet.mole_frac_comp[0, comp]
+                          * getattr(model.fs.thermo_params_VLE, comp).mw
+                          for comp in ['CH4', 'CO', 'H2', 'CH3OH'])
+
+        # outlets
+        if unit == 'F101':  # outlets are not named 'outlet'
+            mass_out = product_mass + exhaust_mass  # already have these
+        else:
+            mass_out = sum(block.outlet.flow_mol[0] *
+                           block.outlet.mole_frac_comp[0, comp]
+                           * getattr(model.fs.thermo_params_VLE, comp).mw
+                           for comp in ['CH4', 'CO', 'H2', 'CH3OH'])
+
+        assert value(mass_in - mass_out) == pytest.approx(0.0000, abs=1e-2)
+
+    # check unit outlet temperatures and pressures
+
+    assert value(model.fs.M101.mixed_state[0].temperature) == \
+        pytest.approx(293.2017, abs=1e-2)
+    assert value(model.fs.C101.control_volume.properties_out[0].temperature) == \
+        pytest.approx(293.2017, abs=1e-2)
+    assert value(model.fs.H101.control_volume.properties_out[0].temperature) == \
+        pytest.approx(488.1500, abs=1e-2)
+    assert value(model.fs.R101.control_volume.properties_out[0].temperature) == \
+        pytest.approx(507.1500, abs=1e-2)
+    assert value(model.fs.T101.control_volume.properties_out[0].temperature) == \
+        pytest.approx(466.0282, abs=1e-2)
+    assert value(model.fs.H102.control_volume.properties_out[0].temperature) == \
+        pytest.approx(407.1500, abs=1e-2)
+    assert value(model.fs.F101.control_volume.properties_out[0].temperature) == \
+        pytest.approx(407.15, abs=1e-2)
+
+    assert value(model.fs.M101.outlet.pressure[0]) == \
+        pytest.approx(30e5, abs=1e-2)
+    assert value(model.fs.C101.outlet.pressure[0]) == \
+        pytest.approx(51e5, abs=1e-2)
+    assert value(model.fs.H101.outlet.pressure[0]) == \
+        pytest.approx(51e5, abs=1e-2)
+    assert value(model.fs.R101.outlet.pressure[0]) == \
+        pytest.approx(51e5, abs=1e-2)
+    assert value(model.fs.T101.outlet.pressure[0]) == \
+        pytest.approx(31e5, abs=1e-2)
+    assert value(model.fs.H102.outlet.pressure[0]) == \
+        pytest.approx(31e5, abs=1e-2)
+    assert value(model.fs.F101.vap_outlet.pressure[0]) == \
+        pytest.approx(31e5, abs=1e-2)
+
+
+@pytest.mark.integration
 def test_optimize_with_costing(model):
     add_costing(model)
 
@@ -181,11 +257,11 @@ def test_optimize_with_costing(model):
     assert value(model.fs.R101.heat_duty[0])/1E6 == pytest.approx(
         -51.3636, abs=1e-2)
     assert value(model.fs.T101.work_isentropic[0])/1E6 == pytest.approx(
-        -0.3819, abs=1e-2)
+        -1.9905, abs=1e-2)
     assert value(model.fs.F101.recovery*100) == pytest.approx(
         95.5433, abs=1e-2)
     assert value(model.fs.objective)/1E6 == pytest.approx(
-        81.087730, abs=1e-2)
+        81.0476, abs=1e-2)
 
 
 @pytest.mark.unit
