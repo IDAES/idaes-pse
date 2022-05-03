@@ -24,6 +24,29 @@ from gas species, and resistive heating from the current flowing through the med
 If Vars are not provided for boundary conditions at the x=0 or x=1 edges, new Vars
 will be created for those terms. No-flux boundary conditions are used along the z=0
 and z=1 edges.
+
+Boundary variables:
+    - ``temperature_deviation_x0[t, iz]``
+    - ``temperature_deviation_x1[t, iz]``
+    - ``heat_flux_x0[t, iz]``
+    - ``heat_flux_x1[t, iz]``
+    - ``conc_mol_comp_deviation_x0[t, iz]``
+    - ``conc_mol_comp_deviation_x1[t, iz]``
+    - ``material_flux_x0[t, iz]``
+    - ``material_flux_x1[t, iz]``
+
+Parameters:
+    - ``length_x``: Thickness of porous conductive slab
+    - ``porosity``: Porosity or void fraction of slab
+    - ``tortuosity``: Tortuosity of slab
+    - ``solid_heat_capacity``: Specific heat capacity of solid phase of slab on a mass-basis (i.e., in J/(kg * K))
+    - ``solid_density``: Mass density of the solid component of the slab. Note that literature
+      values that include void areas must be corrected by dividing by one minus porosity
+    - ``solid_thermal_conductivity``: Thermal conductivity of solid phase of slab. Again, literature
+      values may need to be divided by one minus porosity
+    - ``resistivity_log_preexponential_factor``: Natural logarithm of resistivity preexponential factor in ohm * m
+    - ``resistivity_thermal_exponent_dividend``: Parameter divided by temperature in resistivity equation, in K.
+      Would be something like (reduced) activation energy, but it can be both negative and positive.
 """
 __author__ = "John Eslick, Douglas Allan"
 

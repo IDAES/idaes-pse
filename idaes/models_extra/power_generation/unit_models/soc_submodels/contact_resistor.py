@@ -15,8 +15,19 @@ Simple model to represent resistance originating from the contact between the
 flow mesh and electrode or flow mesh and interconnect. An equality constraint is
 created to add a resistance heating term from the heat flux coming from one side
 to that coming out the other.
+
+Boundary variables:
+    - ``temperature_deviation[t, iz]``
+    - ``heat_flux_x0[t, iz]``
+    - ``heat_flux_x1[t, iz]``
+
+Parameters:
+    - ``log_preexponential_factor``: Natural logarithm of area squared resistance preexponential factor in ohm * m**2
+    - ``thermal_exponent_dividend``: Parameter divided by temperature in area squared resistance equation, in K.
+      Would be something like (reduced) activation energy, but it can be both negative and positive.
+    - ``contact_fraction``: Fraction of area at which both surfaces touch. If unknown, can fix at one.
 """
-__author__ = "John Eslick, Douglas Allan"
+__author__ = "Douglas Allan"
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 import pyomo.environ as pyo

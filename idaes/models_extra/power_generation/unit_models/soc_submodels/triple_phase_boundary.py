@@ -16,8 +16,34 @@ triple phase boundary. The (half-cell) Nernst potential and activation
 overpotential are calculated, resistance heating is added to the heat flux, and
 the reaction rate is linked to the current density using the stoichiometric
 coefficient provided for e^-.
+
+Boundary variables:
+    - ``temperature_deviation[t, iz]``
+    - ``heat_flux_x0[t, iz]``
+    - ``heat_flux_x1[t, iz]``
+    - ``conc_mol_comp_deviation[t, iz]``
+    - ``material_flux[t, iz]``
+
+Parameters:
+    - ``activation_potential_alpha1``
+    - ``activation_potential_alpha2``
+    - ``exchange_current_exponent_comp[j_react]``: Power law exponent of
+      component partial pressure for reacting gases. Set to stoichiometric
+      coefficients if unknown.
+    - ``exchange_current_log_preexponential_factor``: Logarithm of
+      preexponential factor of exchange current density in amps per m**2
+    - ``exchange_current_activation_energy``: Activation energy in expression
+      giving exchange current density.
+
+These are all parameters in the Butler-Volmer equation.
+See Noren and Hoffman (2005) for a good introduction.
+
+Noren, D. A., Hoffman, M. A. (2005). Clarifying the Butler-Volmer equation
+and related approximations for calculating activation losses in solid oxide
+fuel cell models. Journal of Power Sources, 152(1–2), 175–181.
+https://doi.org/10.1016/j.jpowsour.2005.03.174
 """
-__author__ = "John Eslick, Douglas Allan"
+__author__ = "Douglas Allan"
 
 import copy
 

@@ -14,11 +14,26 @@
 Unit model to scale SOC variables to and from cell-scale to module-scale and
 translate between the FTPx variables assumed at the cell level to a general
 property package. The only module-level variable, besides those contained
-in the StateBlocks, is number_cells. Ports created are fuel_inlet, fuel_outlet,
-oxygen_inlet, and oxygen_outlet.
+in the StateBlocks, is ``number_cells``.
 
 A config block for the SOC unit model must be provided. Further documentation
 is provided in the cell model file.
+
+Manipulated variables:
+    - ``potential_cell[t]``: Voltage across single cell
+
+Ports:
+    * ``fuel_inlet``
+    * ``fuel_outlet``
+    * ``oxygen_inlet``
+    * ``oxygen_outlet``
+
+Parameters:
+    - ``number_cells``: Number of cells in module
+
+Expressions:
+    - ``electrical_work[t]``: Rate of energy added to module. Greater than zero means energy added to module
+      (electrolysis mode) and less than zero means energy removed from module (fuel cell mode)
 """
 __author__ = "Douglas Allan"
 

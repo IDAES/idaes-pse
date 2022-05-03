@@ -23,6 +23,29 @@ at both x=0 and x=1 edges if they are not provided in the config. However,
 concentration variables and xflux terms are created only on the side facing the
 electrode (x=1 if below_electrode is true, x=0 if false). Expressions are created
 for the other side, to avoid additional logic with material balances.
+
+Manipulated variables (typically fixed through cell-level ports):
+    - ``flow_mol_inlet[t]``: Molar flow into channel
+    - ``mole_frac_comp_inlet[t, j]``: Molar composition of flow into channel
+    - ``temperature_inlet[t]``: Channel inlet flow rate
+    - ``pressure_inlet[t]``: Channel inlet pressure
+
+Boundary variables:
+    - ``temperature_deviation_x0[t, iz]``
+    - ``temperature_deviation_x1[t, iz]``
+    - ``heat_flux_x0[t, iz]``
+    - ``heat_flux_x1[t, iz]``
+    * If ``below_electrode = False``:
+        - ``material_flux_x0[t, iz]``
+        - ``conc_mol_comp_deviation_x0[t, iz]``
+    * If ``below_electrode = True``:
+        - ``material_flux_x1[t, iz]``
+        - ``conc_mol_comp_deviation_x1[t, iz]``
+
+Parameters:
+    - ``length_x``: Distance between electrode and interconnect
+    - ``heat_transfer_coefficient[t, iz]``: Heat transfer coefficient between channel bulk and surfaces.
+      Correlations to calculate this are planned, but they will add a large number of equations.
 """
 
 __author__ = "John Eslick, Douglas Allan"
@@ -277,12 +300,12 @@ class SocChannelData(UnitModelBlockData):
         self.mole_frac_comp_inlet = pyo.Var(
             tset,
             comps,
-            doc="Inlet compoent mole fractions",
+            doc="Inlet component mole fractions",
             bounds=(0, 1),
             units=pyo.units.dimensionless,
         )
 
-        # Add time derivative varaible if steady state use const 0.
+        # Add time derivative variable if steady state use const 0.
         if dynamic:
             self.dconc_mol_compdt = DerivativeVar(
                 self.conc_mol_comp,
@@ -299,7 +322,7 @@ class SocChannelData(UnitModelBlockData):
                 units=pyo.units.mol / pyo.units.m**3 / pyo.units.s,
             )
 
-        # Add time derivative varaible if steady state use const 0.
+        # Add time derivative variable if steady state use const 0.
         if dynamic:
             self.dcedt = DerivativeVar(
                 self.int_energy_density,

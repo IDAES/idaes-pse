@@ -15,6 +15,21 @@ Two-dimensional model of a slab of some conductive material. Presently it is
 used to for the SOC electrolyte, but it can also be used for the interconnect.
 It is discretized using a finite volume method with centered differences for
 interpolation, and contains only thermal transport and resistive heating terms.
+
+Boundary variables:
+    - ``temperature_deviation_x0[t, iz]``
+    - ``temperature_deviation_x1[t, iz]``
+    - ``heat_flux_x0[t, iz]``
+    - ``heat_flux_x1[t, iz]``
+
+Parameters:
+    - ``length_x``: Thickness of conductive slab
+    - ``heat_capacity``: Specific heat capacity of slab on a mass-basis (i.e., in J/(kg * K))
+    - ``density``: Mass density of slab
+    - ``thermal_conductivity``: Thermal conductivity of slab
+    - ``resistivity_log_preexponential_factor``: Natural logarithm of resistivity preexponential factor in ohm * m
+    - ``resistivity_thermal_exponent_dividend``: Parameter divided by temperature in resistivity equation, in K.
+      Would be something like (reduced) activation energy, but it can be both negative and positive.
 """
 __author__ = "John Eslick, Douglas Allan"
 

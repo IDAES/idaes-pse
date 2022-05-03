@@ -18,37 +18,38 @@ mode, but rather the but rather as "fuel" or "oxygen" electrodes, being the elec
 at which fuel or oxygen, respectively, is produced or consumed (depending on the mode).
 
 This model has at least seven submodels:
-    -Fuel/oxygen channels
-    -Fuel/oxygen electrodes
-    -Fuel/oxygen triple phase boundaries
-    -Electrolyte (a ConductiveSlab)
-    -(Optional) Contacts between the flow mesh and the interconnect, and between the
-        flow mesh and the electrodes (four total contacts)
-    -(Optional and not implemented) Interconnect between neighboring cells within the stack
-        (also a ConductiveSlab)
+    - Fuel/oxygen channels
+    - Fuel/oxygen electrodes (both ``PorousConductiveSlab`` objects)
+    - Fuel/oxygen triple phase boundaries
+    - Electrolyte (a ``ConductiveSlab``)
+    - (Optional) Contacts between the flow mesh and the interconnect, and between the flow mesh
+      and the electrodes (four total contacts)
+    - (Optional and not implemented) Interconnect between neighboring cells within the stack
+      (also a ``ConductiveSlab``)
 
 This model is two-dimensional.
-    -The z-axis is oriented along the direction of flow in the fuel channel, with the fuel
-        flow entering at z=0 and exiting at z=1, regardless of whether the cell operates in
-        counter-current or co-current mode. If operated in counter-current mode, the oxygen
-        enters at z=1 and exists at z=0.
-    -The x-axis starts at the fuel channel and ends at the oxygen channel. Each two-dimensional
-        submodel has an individual x-axis starting at x=0 at its bottom and ending at x=1 at
-        its top. So the fuel electrodes x=0 boundary is located at the fuel channel's x=1
-        boundary, the electrolyte's x=0 boundary is located at the fuel electrode's x=1
-        boundary, the oxygen electrode's x=0 boundary is located at the electrolyte's x=1
-        boundary, and the oxygen channel's x=0 boundary is located at the oxygen electrode's
-        x=0 boundary.
+    - The z-axis is oriented along the direction of flow in the fuel channel, with the fuel
+      flow entering at ``z=0`` and exiting at ``z=1``, regardless of whether the cell operates in
+      counter-current or co-current mode. If operated in counter-current mode, the oxygen
+      enters at ``z=1`` and exists at ``z=0``.
+    - The x-axis starts at the fuel channel and ends at the oxygen channel. Each two-dimensional
+      submodel has an individual x-axis starting at ``x=0`` at its bottom and ending at ``x=1`` at
+      its top. So the fuel electrodes ``x=0`` boundary is located at the fuel channel's ``x=1``
+      boundary, the electrolyte's ``x=0`` boundary is located at the fuel electrode's ``x=1``
+      boundary, the oxygen electrode's ``x=0`` boundary is located at the electrolyte's ``x=1``
+      boundary, and the oxygen channel's ``x=0`` boundary is located at the oxygen electrode's
+      ``x=0`` boundary.
+
 Flux terms are positive if a flow occurs from zero to one direction, and negative if a flow
 occurs from the one to zero direction. For example, if a positive heat flux term occurs at
-the x=1 boundary of the fuel channel, it means heat is flowing from the fuel channel to the
+the ``x=1`` boundary of the fuel channel, it means heat is flowing from the fuel channel to the
 fuel electrode.
 
 The triple phase boundary and the contact resistor terms are "thin". They have only a z-axis,
-with no x-axis. However, they do have different flux terms at their "x=0" and "x=1" sides,
+with no x-axis. However, they do have different flux terms at their ``x=0`` and ``x=1`` sides,
 which represent resistive heating and (for the triple phase boundaries) chemical reactions
 occurring at those interfaces. Channel models are not "thin", so they have temperatures and
-concentrations at their x=0 and x=1 edges different from those in the bulk. However, they
+concentrations at their ``x=0`` and ``x=1`` edges different from those in the bulk. However, they
 are not discretized in the x direction further. The other submodels have both x and z-axes.
 
 Boundary conditions between submodels are typically handled by adding variables from one
@@ -65,21 +66,44 @@ temperatures at a particular location in the z direction. Concentration values i
 are expressed as deviations from the concentrations in their respective channels.
 
 This model implements ideal gas properties for certain components, listed in
-common._gas_species_list. The user must specify which components to include on the fuel and
-oxygen sides, using fuel_component_list and oxygen_component_list. In addition to these gas
-phase species, certain solid-phase species are included in  common._all_species_list. These
+``common._gas_species_list``. The user must specify which components to include on the fuel and
+oxygen sides, using ``fuel_component_list`` and oxygen_component_list. In addition to these gas
+phase species, certain solid-phase species are included in  ``common._all_species_list``. These
 species can be used for specifying stoichiometry at the fuel and oxygen triple-phase boundaries.
-When specifying stoichiometry, an "e^-" term for electrons produced or consumed by the reaction
+When specifying stoichiometry, an ``"e^-"`` term for electrons produced or consumed by the reaction
 must be included.
 
-Submodel PDEs are discretized using a finite volume method. The control_volume_zfaces config
-argument determines the control volume faces in the z direction for all submodels, but control
-xfaces volume must be supplied separately for the electrodes and electrolyte.
+Submodel PDEs are discretized using a finite volume method. The ``control_volume_zfaces`` config
+argument determines the control volume faces in the z direction for all submodels, but
+``control_volume_xfaces`` must be supplied separately for the electrodes and electrolyte.
 
 More detailed descriptions of the submodels are found in their respective files. At the cell level,
 temperature_z, current_density, and cell_potential variables are created, along with average
-temperature equations, voltage drop equations, and boundary conditions at the x=0 end of the fuel
-channel and x=1 end of the oxygen channel (no flux conditions until the interconnect is implemented).
+temperature equations, voltage drop equations, and boundary conditions at the ``x=0`` end of the fuel
+channel and ``x=1`` end of the oxygen channel (no flux conditions until the interconnect is implemented).
+
+Manipulated variables:
+    - ``potential[t]``: Voltage across single cell
+
+Ports:
+    * ``fuel/oxygen_inlet``: Lifts channel level inlet variables to cell level.
+        - ``flow_mol[t]``: Molar flow into channel
+        - ``mole_frac_comp[t, j]``: Molar composition of flow into channel
+        - ``temperature[t]``: Channel inlet flow rate
+        - ``pressure[t]``: Channel inlet pressure
+    * ``fuel/oxygen_outlet``: Lifts channel level outlet variables to cell level.
+        - ``flow_mol[t]``: Molar flow out of channel
+        - ``mole_frac_comp[t, j]``: Molar composition of flow from channel
+        - ``temperature[t]``: Channel outlet flow rate
+        - ``pressure[t]``: Channel outlet pressure
+
+Parameters:
+    - ``length_z``: Length of cell along direction of flow
+    - ``length_y``: Width of cell
+
+Expressions:
+    - ``electrical_work[t]``: Rate of energy added to cell. Greater than zero means energy added to cell
+      (electrolysis mode) and less than zero means energy removed from cell (fuel cell mode)
 """
 __author__ = "John Eslick, Douglas Allan"
 
