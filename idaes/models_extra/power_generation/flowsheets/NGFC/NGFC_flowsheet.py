@@ -1090,13 +1090,13 @@ def scale_flowsheet(m):
                 for t in m.fs.time:
                     if hasattr(unit.control_volume.properties_in[t], "_material_density_term"):
                         for (p, i), c in unit.control_volume.properties_in[t]._material_density_term.items():
-                            iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+                            iscale.set_scaling_factor(c, 1e-3)
 
             if hasattr(unit.control_volume, 'properties_out'):
                 for t in m.fs.time:
                     if hasattr(unit.control_volume.properties_out[t], "_material_density_term"):
                         for (p, i), c in unit.control_volume.properties_out[t]._material_density_term.items():
-                            iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
+                            iscale.set_scaling_factor(c, 1e-3)
 
     # equality constraints between ports at Arc sources and destinations
     for arc in m.fs.component_data_objects(Arc, descend_into=True):

@@ -53,6 +53,8 @@ from idaes.models_extra.power_generation.flowsheets.NGFC.NGFC_flowsheet \
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
+from idaes.core.util.scaling import (extreme_jacobian_columns,
+                                     extreme_jacobian_rows)
 from idaes.core.util import model_serializer as ms
 
 solver_available = pyo.SolverFactory("ipopt").available()
@@ -86,6 +88,21 @@ def test_build(m):
     assert hasattr(m.fs, "reformer")
     assert hasattr(m.fs.reformer, "heat_duty")
     assert hasattr(m.fs.reformer, "deltaP")
+
+
+@pytest.mark.unit
+def test_scaling(m):
+    scale_flowsheet(m)
+
+    # check that less than 10% of model variables are badly scaled pre-solve
+    badly_scaled_vars = extreme_jacobian_columns(m)
+    all_var = list(m.component_data_objects(pyo.Var, descend_into=True))
+    assert len(badly_scaled_vars)/len(all_var) < 0.1
+
+    # check that less than 10% of model constraints are badly scaled pre-solve
+    badly_scaled_cons = extreme_jacobian_rows(m)
+    all_con = list(m.component_data_objects(pyo.Constraint, descend_into=True))
+    assert len(badly_scaled_cons)/len(all_con) < 0.1
 
 
 @pytest.mark.integration
