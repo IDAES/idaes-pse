@@ -15,8 +15,8 @@ Deprecation path for renamed module.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The generic_models.properties.examples.methanol_water_ideal module "
-                    "has been moved to idaes.models.properties.examples.methanol_water_ideal",
+deprecation_warning("The generic_models.properties.examples.methanol_ideal_VLE module "
+                    "has been moved to idaes.models.properties.examples.methanol_ideal_VLE",
                     version="2.0.0.alpha0")
 
-from idaes.models.properties.examples.methanol_water_ideal import *
+from idaes.models.properties.examples.methanol_ideal_VLE import *
