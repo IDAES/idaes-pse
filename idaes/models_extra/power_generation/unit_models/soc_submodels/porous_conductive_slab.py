@@ -35,7 +35,7 @@ Boundary variables:
     - ``material_flux_x0[t, iz]``
     - ``material_flux_x1[t, iz]``
 
-Parameters:
+Instances of ``Var`` that must be fixed:
     - ``length_x``: Thickness of porous conductive slab
     - ``porosity``: Porosity or void fraction of slab
     - ``tortuosity``: Tortuosity of slab

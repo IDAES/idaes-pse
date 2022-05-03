@@ -21,7 +21,7 @@ Boundary variables:
     - ``heat_flux_x0[t, iz]``
     - ``heat_flux_x1[t, iz]``
 
-Parameters:
+Instances of ``Var`` that must be fixed:
     - ``log_preexponential_factor``: Natural logarithm of area squared resistance preexponential factor in ohm * m**2
     - ``thermal_exponent_dividend``: Parameter divided by temperature in area squared resistance equation, in K.
       Would be something like (reduced) activation energy, but it can be both negative and positive.

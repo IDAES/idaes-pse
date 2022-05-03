@@ -22,7 +22,7 @@ Boundary variables:
     - ``heat_flux_x0[t, iz]``
     - ``heat_flux_x1[t, iz]``
 
-Parameters:
+Instances of ``Var`` that must be fixed:
     - ``length_x``: Thickness of conductive slab
     - ``heat_capacity``: Specific heat capacity of slab on a mass-basis (i.e., in J/(kg * K))
     - ``density``: Mass density of slab

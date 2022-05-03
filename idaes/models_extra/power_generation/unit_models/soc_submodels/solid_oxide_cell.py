@@ -78,7 +78,7 @@ argument determines the control volume faces in the z direction for all submodel
 ``control_volume_xfaces`` must be supplied separately for the electrodes and electrolyte.
 
 More detailed descriptions of the submodels are found in their respective files. At the cell level,
-temperature_z, current_density, and cell_potential variables are created, along with average
+``temperature_z``, ``current_density``, and ``cell_potential`` variables are created, along with average
 temperature equations, voltage drop equations, and boundary conditions at the ``x=0`` end of the fuel
 channel and ``x=1`` end of the oxygen channel (no flux conditions until the interconnect is implemented).
 
@@ -97,7 +97,7 @@ Ports:
         - ``temperature[t]``: Channel outlet flow rate
         - ``pressure[t]``: Channel outlet pressure
 
-Parameters:
+Instances of ``Var`` that must be fixed:
     - ``length_z``: Length of cell along direction of flow
     - ``length_y``: Width of cell
 

@@ -28,7 +28,7 @@ Ports:
     * ``oxygen_inlet``
     * ``oxygen_outlet``
 
-Parameters:
+Instances of ``Var`` that must be fixed:
     - ``number_cells``: Number of cells in module
 
 Expressions:

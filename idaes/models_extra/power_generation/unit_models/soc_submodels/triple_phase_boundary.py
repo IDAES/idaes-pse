@@ -15,7 +15,7 @@ This model contains equations relating to the electrochemistry occurring at the
 triple phase boundary. The (half-cell) Nernst potential and activation
 overpotential are calculated, resistance heating is added to the heat flux, and
 the reaction rate is linked to the current density using the stoichiometric
-coefficient provided for e^-.
+coefficient provided for ``"e^-"``.
 
 Boundary variables:
     - ``temperature_deviation[t, iz]``
@@ -24,7 +24,7 @@ Boundary variables:
     - ``conc_mol_comp_deviation[t, iz]``
     - ``material_flux[t, iz]``
 
-Parameters:
+Instances of ``Var`` that must be fixed:
     - ``activation_potential_alpha1``
     - ``activation_potential_alpha2``
     - ``exchange_current_exponent_comp[j_react]``: Power law exponent of

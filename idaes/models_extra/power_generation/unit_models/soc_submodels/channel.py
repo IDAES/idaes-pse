@@ -12,16 +12,16 @@
 #################################################################################
 """
 Model for channel in SolidOxideCell. If opposite_flow is false, material flows from
-z=0 to z=1, otherwise it flows from z=1 to z=0. Pure convection occurs in the z
-direction, while mass and heat transfer coefficients govern fluxes out of the x=0
-and x=1 sides of the model. The PDEs are discretized in the z direction  by a finite
+``z=0`` to ``z=1``, otherwise it flows from ``z=1`` to ``z=0``. Pure convection occurs in the z
+direction, while mass and heat transfer coefficients govern fluxes out of the ``x=0``
+and ``x=1`` sides of the model. The PDEs are discretized in the z direction  by a finite
 volume method with upwind differences used to calculate convection fluxes. It is
 assumed that the gas is ideal.
 
 Like most submodels, the SocChannel will create terms for temperature and heat flux
 at both x=0 and x=1 edges if they are not provided in the config. However,
 concentration variables and xflux terms are created only on the side facing the
-electrode (x=1 if below_electrode is true, x=0 if false). Expressions are created
+electrode (``x=1`` if below_electrode is true, ``x=0`` if false). Expressions are created
 for the other side, to avoid additional logic with material balances.
 
 Manipulated variables (typically fixed through cell-level ports):
@@ -35,14 +35,16 @@ Boundary variables:
     - ``temperature_deviation_x1[t, iz]``
     - ``heat_flux_x0[t, iz]``
     - ``heat_flux_x1[t, iz]``
+
     * If ``below_electrode = False``:
         - ``material_flux_x0[t, iz]``
         - ``conc_mol_comp_deviation_x0[t, iz]``
+
     * If ``below_electrode = True``:
         - ``material_flux_x1[t, iz]``
         - ``conc_mol_comp_deviation_x1[t, iz]``
 
-Parameters:
+Instances of ``Var`` that must be fixed:
     - ``length_x``: Distance between electrode and interconnect
     - ``heat_transfer_coefficient[t, iz]``: Heat transfer coefficient between channel bulk and surfaces.
       Correlations to calculate this are planned, but they will add a large number of equations.
