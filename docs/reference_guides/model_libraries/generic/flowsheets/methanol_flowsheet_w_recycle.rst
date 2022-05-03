@@ -30,7 +30,7 @@ Inputs:
 
 Main Assumptions:
 
-    Reaction is estimated as a kinetic, rate-based process with an Arrhenius power law
+    Reaction is estimated as a kinetic, rate-based gas-phase process with an Arrhenius power law
     Thermodynamics assume ideal vapor and liquid behavior, with smooth VLE and fugacity for phase equilibrium
     Minimum pressure mixing, isothermal compression and isentropic expansion for unit operations
     Recycle/purge split based on flow with no composition difference between outlet streams
@@ -47,7 +47,8 @@ Main Models used:
     - Splitter (acts as Separator)
 
 Property packages used:
-    - methanol_water_ideal (exists in idaes/models/properties/examples folder)
+    - methanol_ideal_VLE (exists in idaes/models/properties/examples folder)
+    - methanol_ideal_vapor (exists in idaes/models/properties/examples folder)
     - methanol_reactions (exists in idaes/models/properties/examples folder)
 
 Figures Process Flow Diagram:
