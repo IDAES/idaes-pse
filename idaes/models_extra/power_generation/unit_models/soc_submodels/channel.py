@@ -124,8 +124,10 @@ class SocChannelData(UnitModelBlockData):
         "below_electrode",
         ConfigValue(
             domain=Bool,
-            description="Decides whether or not to create material "
-            "flux terms above or below the channel.",
+            description="If True, the top of the channel is the electrode "
+            "boundary and material flux terms are created there. If False "
+            "the bottom is the electrode boundary and material flux terms "
+            "are created there.",
         ),
     )
 
