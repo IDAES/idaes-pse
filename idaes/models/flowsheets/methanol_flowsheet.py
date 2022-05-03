@@ -614,6 +614,7 @@ def report(m):
     print()
     print()
     extent = m.fs.R101.rate_reaction_extent[0, "R1"]  # shorter parameter alias
+
     print('Extent of reaction: ', value(extent))
     print('Stoichiometry of each component normalized by the extent:')
     complist = ('CH4', 'H2', 'CH3OH', 'CO')
@@ -621,6 +622,10 @@ def report(m):
                         m.fs.R101.outlet.flow_mol[0] -
                         m.fs.R101.inlet.mole_frac_comp[0, comp] *
                         m.fs.R101.inlet.flow_mol[0]) for comp in complist]
+    
+    # check that extent is not zero, since some reaction should have occurred
+    assert value(extent) > 0
+    
     normlist = [changelist[i]/value(extent) for i in range(len(complist))]
     change = dict(zip(complist, normlist))
     for entry in change:

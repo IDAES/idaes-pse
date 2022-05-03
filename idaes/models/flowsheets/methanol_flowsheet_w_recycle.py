@@ -677,6 +677,10 @@ def report(m):
                         m.fs.R101.outlet.flow_mol[0] -
                         m.fs.R101.inlet.mole_frac_comp[0, comp] *
                         m.fs.R101.inlet.flow_mol[0]) for comp in complist]
+
+    # check that extent is not zero, since some reaction should have occurred
+    assert value(extent) > 0
+
     normlist = [changelist[i]/value(extent) for i in range(len(complist))]
     change = dict(zip(complist, normlist))
     for entry in change:
