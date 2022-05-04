@@ -183,7 +183,7 @@ def create_configuration(
     if (exists and overwrite) or (not exists):
         try:
             config_path.open("w", encoding="utf-8")
-        except FileNotFoundError:
+        except FileNotFoundError as err:
             raise ValueError(f"Cannot create configuration: {err}")
     elif exists and not overwrite:
         raise KeyError(
@@ -1022,38 +1022,3 @@ class DMF(workspace.Workspace, HasTraits):
         """How many resources have been added to this instance of the DMF."""
         return len(self._resources)
 
-
-def get_propertydb_table(rsrc):
-    from idaes.dmf import propdata
-
-    return propdata.PropertyTable.load(rsrc.datafiles[0].fullpath)
-
-
-# 1. scalar string or number (int, float): Match resources that
-#            have this exact value for the given attribute.
-#         2. special scalars "@<value>":
-#
-#                 - "@true"/"@false": boolean (bare True/False will test existence)
-#
-#         3. date, as datetime.datetime instance: Match
-#            resources that have this exact date for the given attribute.
-#         4. list: Match resources that have a list value for this attribute,
-#            and for which any of the values in the provided list are in the
-#            resource's corresponding value. If a '!' is appended to the key
-#            name, then this will be interpreted as a directive to only match
-#            resources for which *all* values in the provided list are present.
-#         5. dict: This is an inequality, with one or more key/value pairs.
-#            The key is the type of inequality and the value is the numeric
-#            value for that range. All keys begin with '$'. The possible
-#            inequalities are:
-#
-#                 - "$lt": Less than (<)
-#                 - "$le": Less than or equal (<=)
-#                 - "$gt": Greater than (>)
-#                 - "$ge": Greater than or equal (>=)
-#                 - "$ne": Not equal to (!=)
-#
-#         6. Boolean True means does the field exist, and False means
-#            does it *not* exist.
-#         7. Regular expression, string "~<expr>" and `re_flags`
-#            for flags (understood: re.IGNORECASE)
