@@ -130,3 +130,11 @@ def test_nd_model():
     n5_x3 = m.fs.pipelines['pipe08_N05_exit03']
     assert(n5.outlets[1].arc.ports[0] == n5_x3.inlet_port)
     assert(x3.inlets[0].arc.ports[0] == n5_x3.outlet_port)
+
+@pytest.mark.unit
+def test_nd_plot():
+    net = parse_gaslib_network(netfile, scnfile)
+    m = net.build_model(with_bounds=False)
+    net.plot_results_at_time(m, m.fs.time.first(), show_plot=False)
+
+

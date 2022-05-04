@@ -581,7 +581,7 @@ class NetworkData(object):
     def get_link(self, link_name: str):
         return self._links[link_name]
 
-    def plot_results_at_time(self, m: _BlockData, t: float):
+    def plot_results_at_time(self, m: _BlockData, t: float, show_plot=True):
         # plot the nodes
         node_x = list()
         node_y = list()
@@ -649,4 +649,6 @@ class NetworkData(object):
             data=[node_trace, edge_trace, edge_text_trace],
             layout=go.Layout(hovermode='closest')
         )
-        fig.show()
+
+        if show_plot:
+            fig.show()
