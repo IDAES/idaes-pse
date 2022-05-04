@@ -398,7 +398,6 @@ def make_testing_selfscheduler():
     self_scheduler = SelfScheduler(
         bidding_model_object=bidding_model_object,
         n_scenario=n_scenario,
-        horizon=bidding_horizon,
         solver=solver,
         forecaster=forecaster,
         fixed_to_schedule=True,

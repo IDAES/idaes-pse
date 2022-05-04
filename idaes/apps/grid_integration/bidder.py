@@ -186,364 +186,20 @@ class AbstractBidder(ABC):
             )
 
 
-class SelfScheduler(AbstractBidder):
+class StochasticProgramBidder(AbstractBidder):
 
     """
-    Wrap a model object to self schedule into the market using stochastic programming.
+    Template class for bidders that use scenario-based stochastic programs.
     """
 
     def __init__(
         self,
         bidding_model_object,
         n_scenario,
-        horizon,
         solver,
         forecaster,
-        fixed_to_schedule=False,
     ):
-        self.bidding_model_object = bidding_model_object
-        self.n_scenario = n_scenario
-        self.horizon = horizon
-        self.solver = solver
-        self.forecaster = forecaster
-        self.generator = self.bidding_model_object.model_data.gen_name
-        self.fixed_to_schedule = fixed_to_schedule
 
-        self._check_inputs()
-
-        # add flowsheets to model
-        self.model = pyo.ConcreteModel()
-
-        # declare scenario set
-        self.model.SCENARIOS = pyo.Set(initialize=range(self.n_scenario))
-
-        # populate scenario blocks
-        self.model.fs = pyo.Block(self.model.SCENARIOS)
-        for i in self.model.SCENARIOS:
-            self.bidding_model_object.populate_model(self.model.fs[i])
-
-        # save power output variable in the model object
-        self._save_power_outputs()
-
-        self.formulate_bidding_problem()
-
-        # declare a list to store results
-        self.bids_result_list = []
-
-    def _save_power_outputs(self):
-
-        """
-        Create references of the power output variable in each price scenario
-        block.
-
-        Arguments:
-            None
-
-        Returns:
-            None
-        """
-
-        for i in self.model.SCENARIOS:
-            # get the power output
-            power_output_name = self.bidding_model_object.power_output
-            self.model.fs[i].power_output_ref = pyo.Reference(
-                getattr(self.model.fs[i], power_output_name)
-            )
-
-        return
-
-    def formulate_bidding_problem(self):
-
-        """
-        Formulate the bidding optimization problem by adding necessary
-        parameters, constraints, and objective function.
-
-        Arguments:
-            None
-
-        Returns:
-            None
-        """
-
-        # add bidding params
-        for i in self.model.SCENARIOS:
-            time_index = self.model.fs[i].power_output_ref.index_set()
-            self.model.fs[i].energy_price = pyo.Param(
-                time_index, initialize=0, mutable=True
-            )
-
-        # nonanticipativity constraints
-        def nonanticipativity_constraint_rule(model, s1, s2, t):
-            if s1 == s2:
-                return pyo.Constraint.Skip
-            return model.fs[s1].power_output_ref[t] == model.fs[s2].power_output_ref[t]
-
-        time_index = self.model.fs[
-            self.model.SCENARIOS.first()
-        ].power_output_ref.index_set()
-
-        self.model.NonanticipativityConstraints = pyo.Constraint(
-            self.model.SCENARIOS,
-            self.model.SCENARIOS,
-            time_index,
-            rule=nonanticipativity_constraint_rule,
-        )
-
-        # declare an empty objective
-        self.model.obj = pyo.Objective(expr=0, sense=pyo.maximize)
-        for k in self.model.SCENARIOS:
-            time_index = self.model.fs[k].power_output_ref.index_set()
-
-            cost_name = self.bidding_model_object.total_cost[0]
-            cost = getattr(self.model.fs[k], cost_name)
-            weight = self.bidding_model_object.total_cost[1]
-
-            for t in time_index:
-                self.model.obj.expr += (
-                    self.model.fs[k].power_output_ref[t]
-                    * self.model.fs[k].energy_price[t]
-                    - weight * cost[t]
-                )
-
-        return
-
-    def compute_bids(self, date, hour=None, **kwargs):
-
-        """
-        Solve the model to self-schedule into the markets. After solving, record
-        the schedule from the solve.
-
-        Arguments:
-
-            date: current simulation date
-
-            hour: current simulation hour
-
-        Returns:
-            None
-        """
-
-        price_forecasts = self.forecaster.forecast(date=date, hour=hour, **kwargs)
-
-        # update the price forecasts
-        self._pass_price_forecasts(price_forecasts)
-        self.solver.solve(self.model, tee=True)
-        bids = self._assemble_bids()
-        self.record_bids(bids, date=date, hour=hour)
-
-        return bids
-
-    def _assemble_bids(self):
-
-        """
-        This methods extract the bids out of the stochastic programming model and
-        organize them.
-
-        Arguments:
-
-        Returns:
-            bids: the bid we computed.
-        """
-
-        bids = {}
-
-        for t in range(self.horizon):
-
-            bids[t] = {}
-
-            bids[t][self.generator] = {
-                "p_max": round(pyo.value(self.model.fs[0].power_output_ref[t]), 4),
-                "p_min": self.bidding_model_object.model_data.p_min,
-            }
-
-            if self.fixed_to_schedule:
-                bids[t][self.generator]["p_min"] = bids[t][self.generator]["p_max"]
-                bids[t][self.generator]["min_up_time"] = 0
-                bids[t][self.generator]["min_down_time"] = 0
-                bids[t][self.generator]["fixed_commitment"] = (
-                    1 if bids[t][self.generator]["p_min"] > 0 else 0
-                )
-                bids[t][self.generator]["startup_fuel"] = [
-                    (bids[t][self.generator]["min_down_time"], 0)
-                ]
-                bids[t][self.generator]["startup_cost"] = [
-                    (bids[t][self.generator]["min_down_time"], 0)
-                ]
-
-            bids[t][self.generator]["p_cost"] = [
-                (bids[t][self.generator]["p_min"], 0),
-                (bids[t][self.generator]["p_max"], 0),
-            ]
-
-            bids[t][self.generator]["startup_capacity"] = bids[t][self.generator][
-                "p_min"
-            ]
-            bids[t][self.generator]["shutdown_capacity"] = bids[t][self.generator][
-                "p_min"
-            ]
-
-        return bids
-
-    def _pass_price_forecasts(self, price_forecasts):
-
-        """
-        Pass the price forecasts into model parameters.
-
-        Arguments:
-            price_forecasts: price forecasts needed to solve the bidding problem. {LMP scenario: [forecast timeseries] }
-
-        Returns:
-            None
-        """
-
-        for i in self.model.SCENARIOS:
-            time_index = self.model.fs[i].energy_price.index_set()
-            for t, p in zip(time_index, price_forecasts[i]):
-                self.model.fs[i].energy_price[t] = p
-
-        return
-
-    def _record_bids(self, bids, date, hour):
-
-        """
-        This function records the bids (schedule) we computed for the given date into a
-        DataFrame and temporarily stores the DataFrame in an instance attribute
-        list called bids_result_list.
-
-        Arguments:
-            bids: the obtained bids (schedule) for this date.
-
-            date: the date we bid into
-
-            hour: the hour we bid into
-
-        Returns:
-            None
-
-        """
-
-        df_list = []
-        for t in bids:
-            for g in bids[t]:
-
-                result_dict = {}
-                result_dict["Generator"] = g
-                result_dict["Date"] = date
-                if hour is not None:
-                    result_dict["Hour"] = hour
-
-                result_dict["Horizon"] = t
-                result_dict["Bid Power [MW]"] = bids[t][g].get("p_max")
-                result_dict["Bid Min Power [MW]"] = bids[t][g].get("p_min")
-
-                result_df = pd.DataFrame.from_dict(result_dict, orient="index")
-                df_list.append(result_df.T)
-
-        # save the result to object property
-        # wait to be written when simulation ends
-        self.bids_result_list.append(pd.concat(df_list))
-
-    def record_bids(self, bids, date, hour):
-
-        """
-        This function records the bids (schedule) and the details in the
-        underlying bidding model.
-
-        Arguments:
-            bids: the obtained bids for this date.
-
-            date: the date we bid into
-
-            hour: the hour we bid into
-
-        Returns:
-            None
-
-        """
-
-        # record bids
-        self._record_bids(bids, date, hour)
-
-        # record the details of bidding model
-        for i in self.model.SCENARIOS:
-            self.bidding_model_object.record_results(
-                self.model.fs[i], date=date, hour=hour, Scenario=i
-            )
-
-        return
-
-    def write_results(self, path):
-
-        """
-        This methods writes the saved operation stats into an csv file.
-
-        Arguments:
-            path: the path to write the results.
-
-        Return:
-            None
-        """
-
-        print("")
-        print("Saving bidding results to disk...")
-        pd.concat(self.bids_result_list).to_csv(
-            os.path.join(path, "bidder_detail.csv"), index=False
-        )
-        self.bidding_model_object.write_results(
-            path=os.path.join(path, "bidding_model_detail.csv")
-        )
-
-    def update_model(self, **kwargs):
-
-        """
-        Update the flowsheets in all the price scenario blocks to advance time
-        step.
-
-        Arguments:
-            kwargs: necessary profiles to update the underlying model. {stat_name: [...]}
-
-        Returns:
-            None
-        """
-
-        for i in self.model.SCENARIOS:
-            self.bidding_model_object.update_model(b=self.model.fs[i], **kwargs)
-
-    @property
-    def generator(self):
-        return self._generator
-
-    @generator.setter
-    def generator(self, name):
-        self._generator = name
-
-
-class Bidder(AbstractBidder):
-
-    """
-    Wrap a model object to bid into the market using stochastic programming.
-    """
-
-    def __init__(self, bidding_model_object, n_scenario, solver, forecaster):
-
-        """
-        Initializes the bidder object.
-
-        Arguments:
-            bidding_model_object: the model object for tracking for bidding
-
-            n_scenario: number of LMP scenarios
-
-            solver: a Pyomo mathematical programming solver object
-
-            forecaster: an initialized LMP forecaster object
-
-
-        Returns:
-            None
-        """
-
-        # copy the inputs
         self.bidding_model_object = bidding_model_object
         self.n_scenario = n_scenario
         self.solver = solver
@@ -551,7 +207,6 @@ class Bidder(AbstractBidder):
 
         self._check_inputs()
 
-        # get the generator name
         self.generator = self.bidding_model_object.model_data.gen_name
 
         # add flowsheets to model
@@ -633,39 +288,6 @@ class Bidder(AbstractBidder):
             )
         return
 
-    def _add_bidding_constraints(self):
-
-        """
-        Add bidding constraints to the model, i.e., the bid curves need to be
-        nondecreasing.
-
-        Arguments:
-            None
-
-        Returns:
-            None
-        """
-
-        def bidding_constraint_rule(model, s1, s2, t):
-            if s1 == s2:
-                return pyo.Constraint.Skip
-            return (
-                model.fs[s1].power_output_ref[t] - model.fs[s2].power_output_ref[t]
-            ) * (model.fs[s1].energy_price[t] - model.fs[s2].energy_price[t]) >= 0
-
-        time_index = self.model.fs[
-            self.model.SCENARIOS.first()
-        ].power_output_ref.index_set()
-
-        self.model.bidding_constraints = pyo.Constraint(
-            self.model.SCENARIOS,
-            self.model.SCENARIOS,
-            time_index,
-            rule=bidding_constraint_rule,
-        )
-
-        return
-
     def _add_bidding_objective(self):
 
         """
@@ -698,6 +320,8 @@ class Bidder(AbstractBidder):
                     * self.model.fs[k].energy_price[t]
                     - weight * cost[t]
                 )
+
+        return
 
     def compute_bids(self, date, hour=None, **kwargs):
 
@@ -741,6 +365,36 @@ class Bidder(AbstractBidder):
         for i in self.model.SCENARIOS:
             self.bidding_model_object.update_model(b=self.model.fs[i], **kwargs)
 
+        return
+
+    def record_bids(self, bids, date, hour):
+
+        """
+        This function records the bids and the details in the underlying bidding model.
+
+        Arguments:
+            bids: the obtained bids for this date.
+
+            date: the date we bid into
+
+            hour: the hour we bid into
+
+        Returns:
+            None
+
+        """
+
+        # record bids
+        self._record_bids(bids, date, hour)
+
+        # record the details of bidding model
+        for i in self.model.SCENARIOS:
+            self.bidding_model_object.record_results(
+                self.model.fs[i], date=date, hour=hour, Scenario=i
+            )
+
+        return
+
     def _pass_price_forecasts(self, price_forecasts):
 
         """
@@ -756,9 +410,243 @@ class Bidder(AbstractBidder):
         for i in self.model.SCENARIOS:
             time_index = self.model.fs[i].energy_price.index_set()
             for t, p in zip(time_index, price_forecasts[i]):
-
-                # update the price param (mutable) in the pyomo model
                 self.model.fs[i].energy_price[t] = p
+
+        return
+
+    def write_results(self, path):
+        """
+        This methods writes the saved operation stats into an csv file.
+
+        Arguments:
+            path: the path to write the results.
+
+        Return:
+            None
+        """
+
+        print("")
+        print("Saving bidding results to disk...")
+        pd.concat(self.bids_result_list).to_csv(
+            os.path.join(path, "bidder_detail.csv"), index=False
+        )
+        self.bidding_model_object.write_results(
+            path=os.path.join(path, "bidding_model_detail.csv")
+        )
+
+        return
+
+    @property
+    def generator(self):
+        return self._generator
+
+    @generator.setter
+    def generator(self, name):
+        self._generator = name
+
+
+class SelfScheduler(StochasticProgramBidder):
+
+    """
+    Wrap a model object to self schedule into the market using stochastic programming.
+    """
+
+    def __init__(
+        self,
+        bidding_model_object,
+        n_scenario,
+        solver,
+        forecaster,
+        fixed_to_schedule=False,
+    ):
+        super().__init__(bidding_model_object, n_scenario, solver, forecaster)
+        self.fixed_to_schedule = fixed_to_schedule
+
+    def _add_bidding_constraints(self):
+
+        """
+        Add bidding constraints to the model, i.e., power outputs in the first
+        stage need to be the same across all the scenarios.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+
+        # nonanticipativity constraints
+        def nonanticipativity_constraint_rule(model, s1, s2, t):
+            if s1 == s2:
+                return pyo.Constraint.Skip
+            return model.fs[s1].power_output_ref[t] == model.fs[s2].power_output_ref[t]
+
+        time_index = self.model.fs[
+            self.model.SCENARIOS.first()
+        ].power_output_ref.index_set()
+
+        self.model.NonanticipativityConstraints = pyo.Constraint(
+            self.model.SCENARIOS,
+            self.model.SCENARIOS,
+            time_index,
+            rule=nonanticipativity_constraint_rule,
+        )
+
+        return
+
+    def _assemble_bids(self):
+
+        """
+        This methods extract the bids out of the stochastic programming model and
+        organize them.
+
+        Arguments:
+
+        Returns:
+            bids: the bid we computed.
+        """
+
+        bids = {}
+
+        time_index = self.model.fs[
+            self.model.SCENARIOS.first()
+        ].power_output_ref.index_set()
+
+        for t in time_index:
+
+            bids[t] = {}
+
+            bids[t][self.generator] = {
+                "p_max": round(pyo.value(self.model.fs[0].power_output_ref[t]), 4),
+                "p_min": self.bidding_model_object.model_data.p_min,
+            }
+
+            if self.fixed_to_schedule:
+                bids[t][self.generator]["p_min"] = bids[t][self.generator]["p_max"]
+                bids[t][self.generator]["min_up_time"] = 0
+                bids[t][self.generator]["min_down_time"] = 0
+                bids[t][self.generator]["fixed_commitment"] = (
+                    1 if bids[t][self.generator]["p_min"] > 0 else 0
+                )
+                bids[t][self.generator]["startup_fuel"] = [
+                    (bids[t][self.generator]["min_down_time"], 0)
+                ]
+                bids[t][self.generator]["startup_cost"] = [
+                    (bids[t][self.generator]["min_down_time"], 0)
+                ]
+
+            bids[t][self.generator]["p_cost"] = [
+                (bids[t][self.generator]["p_min"], 0),
+                (bids[t][self.generator]["p_max"], 0),
+            ]
+
+            bids[t][self.generator]["startup_capacity"] = bids[t][self.generator][
+                "p_min"
+            ]
+            bids[t][self.generator]["shutdown_capacity"] = bids[t][self.generator][
+                "p_min"
+            ]
+
+        return bids
+
+    def _record_bids(self, bids, date, hour):
+
+        """
+        This function records the bids (schedule) we computed for the given date into a
+        DataFrame and temporarily stores the DataFrame in an instance attribute
+        list called bids_result_list.
+
+        Arguments:
+            bids: the obtained bids (schedule) for this date.
+
+            date: the date we bid into
+
+            hour: the hour we bid into
+
+        Returns:
+            None
+
+        """
+
+        df_list = []
+        for t in bids:
+            for g in bids[t]:
+
+                result_dict = {}
+                result_dict["Generator"] = g
+                result_dict["Date"] = date
+                if hour is not None:
+                    result_dict["Hour"] = hour
+
+                result_dict["Horizon"] = t
+                result_dict["Bid Power [MW]"] = bids[t][g].get("p_max")
+                result_dict["Bid Min Power [MW]"] = bids[t][g].get("p_min")
+
+                result_df = pd.DataFrame.from_dict(result_dict, orient="index")
+                df_list.append(result_df.T)
+
+        # save the result to object property
+        # wait to be written when simulation ends
+        self.bids_result_list.append(pd.concat(df_list))
+
+
+class Bidder(StochasticProgramBidder):
+
+    """
+    Wrap a model object to bid into the market using stochastic programming.
+    """
+
+    def __init__(self, bidding_model_object, n_scenario, solver, forecaster):
+
+        """
+        Initializes the bidder object.
+
+        Arguments:
+            bidding_model_object: the model object for tracking for bidding
+
+            n_scenario: number of LMP scenarios
+
+            solver: a Pyomo mathematical programming solver object
+
+            forecaster: an initialized LMP forecaster object
+
+
+        Returns:
+            None
+        """
+
+        super().__init__(bidding_model_object, n_scenario, solver, forecaster)
+
+    def _add_bidding_constraints(self):
+
+        """
+        Add bidding constraints to the model, i.e., the bid curves need to be
+        nondecreasing.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+
+        def bidding_constraint_rule(model, s1, s2, t):
+            if s1 == s2:
+                return pyo.Constraint.Skip
+            return (
+                model.fs[s1].power_output_ref[t] - model.fs[s2].power_output_ref[t]
+            ) * (model.fs[s1].energy_price[t] - model.fs[s2].energy_price[t]) >= 0
+
+        time_index = self.model.fs[
+            self.model.SCENARIOS.first()
+        ].power_output_ref.index_set()
+
+        self.model.bidding_constraints = pyo.Constraint(
+            self.model.SCENARIOS,
+            self.model.SCENARIOS,
+            time_index,
+            rule=bidding_constraint_rule,
+        )
 
         return
 
@@ -917,59 +805,3 @@ class Bidder(AbstractBidder):
         self.bids_result_list.append(pd.concat(df_list))
 
         return
-
-    def record_bids(self, bids, date, hour):
-
-        """
-        This function records the bids and the details in the underlying bidding model.
-
-        Arguments:
-            bids: the obtained bids for this date.
-
-            date: the date we bid into
-
-            hour: the hour we bid into
-
-        Returns:
-            None
-
-        """
-
-        # record bids
-        self._record_bids(bids, date, hour)
-
-        # record the details of bidding model
-        for i in self.model.SCENARIOS:
-            self.bidding_model_object.record_results(
-                self.model.fs[i], date=date, hour=hour, Scenario=i
-            )
-
-        return
-
-    def write_results(self, path):
-        """
-        This methods writes the saved operation stats into an csv file.
-
-        Arguments:
-            path: the path to write the results.
-
-        Return:
-            None
-        """
-
-        print("")
-        print("Saving bidding results to disk...")
-        pd.concat(self.bids_result_list).to_csv(
-            os.path.join(path, "bidder_detail.csv"), index=False
-        )
-        self.bidding_model_object.write_results(
-            path=os.path.join(path, "bidding_model_detail.csv")
-        )
-
-    @property
-    def generator(self):
-        return self._generator
-
-    @generator.setter
-    def generator(self, name):
-        self._generator = name
