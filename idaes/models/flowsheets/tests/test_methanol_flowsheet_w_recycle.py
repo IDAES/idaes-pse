@@ -17,6 +17,9 @@ Tests for methanol flowsheet.
 
 import pytest
 
+from io import StringIO
+import sys
+
 from idaes.models.flowsheets.methanol_flowsheet_w_recycle import (
     build_model, set_inputs, scale_flowsheet, initialize_flowsheet,
     add_costing, report)
@@ -340,6 +343,119 @@ def test_optimize_with_costing(model):
         104.7778, abs=1e-2)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_report(model):
+    stream = StringIO()
+    sys.stdout = stream
     report(model)
+    sys.stdout = sys.__stdout__
+
+    output = """
+
+Extent of reaction:  311.3069854949999
+Stoichiometry of each component normalized by the extent:
+CH4 :  0.0
+H2 :  -2.0
+CH3OH :  1.0
+CO :  -1.0
+These coefficients should follow 1*CO + 2*H2 => 1*CH3OH
+
+Reaction conversion:  0.8500000099995839
+Reactor duty (MW):  -59.35006318307154
+Duty from Reaction (MW)): 28.21686516526679
+Compressor work (MW):  -1.3029463025439575e-25
+Turbine work (MW):  -2.421530891240592
+Feed Mixer outlet temperature (C)):  20.051714213753485
+Recycle Mixer outlet temperature (C)):  40.2185811853476
+Feed Compressor outlet temperature (C)):  40.2185811853476
+Feed Compressor outlet pressure (Pa)):  5100000.0
+Heater outlet temperature (C)):  215.0
+Reactor outlet temperature (C)):  231.8500047840716
+Turbine outlet temperature (C)):  142.0419469369515
+Turbine outlet pressure (Pa)):  1506510.2418583187
+Cooler outlet temperature (C)):  52.56999698828196
+Flash outlet temperature (C)):  134.0
+Purge percentage (amount of vapor vented to exhaust): 9.9999990000297  %
+Methanol recovery(%):  95.18412474842862
+annualized capital cost ($/year) = 284310.49282557645
+operating cost ($/year) =  523119766.24597174
+sales ($/year) =  140530623320.32684
+raw materials cost ($/year) = 35229454878.16397
+revenue (1000$/year)=  104777764.36542407
+
+
+====================================================================================
+Unit : fs.M101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                H2_WGS      CO_WGS     Outlet  
+    Total Molar Flowrate          637.20      316.80     954.00
+    Total Mole Fraction CH4   1.0000e-06  1.0000e-06 1.0000e-06
+    Total Mole Fraction CO    1.0000e-06      1.0000    0.33208
+    Total Mole Fraction H2        1.0000  1.0000e-06    0.66792
+    Total Mole Fraction CH3OH 1.0000e-06  1.0000e-06 1.0000e-06
+    Molar Enthalpy               -142.40 -1.1068e+05    -36848.
+    Pressure                  3.0000e+06  3.0000e+06 3.0000e+06
+====================================================================================
+
+====================================================================================
+Unit : fs.M102                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                 feed      recycle    Outlet  
+    Total Molar Flowrate          954.00     194.83     1148.8
+    Total Mole Fraction CH4   1.0000e-06 4.4069e-05 8.3041e-06
+    Total Mole Fraction CO       0.33208    0.25377    0.31880
+    Total Mole Fraction H2       0.66792    0.67379    0.66892
+    Total Mole Fraction CH3OH 1.0000e-06   0.072392   0.012278
+    Molar Enthalpy               -36848.    -39572.    -37310.
+    Pressure                  3.0000e+06 1.2103e+07 3.0000e+06
+====================================================================================
+
+====================================================================================
+Unit : fs.F101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key             : Value       : Fixed : Bounds
+          Heat Duty : -9.9723e+06 : False : (None, None)
+    Pressure Change :  1.0597e+07 : False : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                             Inlet    Vapor Outlet  Liquid Outlet
+    flow_mol                  526.22       216.48        309.74  
+    mole_frac_comp CH4    1.8129e-05   4.4069e-05    1.0000e-08  
+    mole_frac_comp CO        0.10440      0.25377    1.0000e-08  
+    mole_frac_comp H2        0.27719      0.67379    1.0000e-08  
+    mole_frac_comp CH3OH     0.61839     0.072392        1.0000  
+    enth_mol             -1.3724e+05      -39572.   -2.3770e+05  
+    pressure              1.5065e+06   1.2103e+07    1.2103e+07  
+====================================================================================
+
+====================================================================================
+Unit : fs.S101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                           : Value   : Fixed : Bounds
+    Split Fraction [('recycle',)] : 0.90000 : False : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                 Inlet  
+    Molar Enthalpy               -39572.
+    Pressure                  1.2103e+07
+    Total Molar Flowrate          216.48
+    Total Mole Fraction CH3OH   0.072392
+    Total Mole Fraction CH4   4.4069e-05
+    Total Mole Fraction CO       0.25377
+    Total Mole Fraction H2       0.67379
+====================================================================================
+"""
+
+    assert output in stream.getvalue()

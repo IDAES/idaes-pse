@@ -17,6 +17,9 @@ Tests for methanol flowsheet.
 
 import pytest
 
+from io import StringIO
+import sys
+
 from idaes.models.flowsheets.methanol_flowsheet import (
     build_model, set_inputs, scale_flowsheet, initialize_flowsheet,
     add_costing, report)
@@ -287,6 +290,79 @@ def test_optimize_with_costing(model):
         81.0476, abs=1e-2)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_report(model):
+    stream = StringIO()
+    sys.stdout = stream
     report(model)
+    sys.stdout = sys.__stdout__
+
+    output = """
+
+Extent of reaction:  269.28054478798873
+Stoichiometry of each component normalized by the extent:
+CH4 :  0.0
+H2 :  -2.0
+CH3OH :  1.0
+CO :  -1.0
+These coefficients should follow 1*CO + 2*H2 => 1*CH3OH
+
+Reaction conversion:  0.8500000099999442
+Reactor duty (MW):  -51.36357357754515
+Duty from Reaction (MW)): 24.407588579583297
+Turbine work (MW):  -1.9904899177794635
+Mixer outlet temperature (C)):  20.051714213753485
+Compressor outlet temperature (C)):  20.051714213753485
+Compressor outlet pressure (Pa)):  5100000.0
+Heater outlet temperature (C)):  215.0
+Reactor outlet temperature (C)):  231.85000468716584
+Turbine outlet temperature (C)):  139.8588817267576
+Turbine outlet pressure (Pa)):  1427653.3547821408
+Cooler outlet temperature (C)):  52.56999709299214
+Flash outlet temperature (C)):  134.0
+Methanol recovery(%):  95.5432880783248
+annualized capital cost ($/year) = 262011.81501550632
+operating cost ($/year) =  451845877.93162763
+sales ($/year) =  116729133888.84218
+raw materials cost ($/year) = 35229454878.16397
+revenue (1000$/year)=  81047571.12093157
+
+
+====================================================================================
+Unit : fs.M101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                H2_WGS      CO_WGS     Outlet  
+    Total Molar Flowrate          637.20      316.80     954.00
+    Total Mole Fraction CH4   1.0000e-06  1.0000e-06 1.0000e-06
+    Total Mole Fraction CO    1.0000e-06      1.0000    0.33208
+    Total Mole Fraction H2        1.0000  1.0000e-06    0.66792
+    Total Mole Fraction CH3OH 1.0000e-06  1.0000e-06 1.0000e-06
+    Molar Enthalpy               -142.40 -1.1068e+05    -36848.
+    Pressure                  3.0000e+06  3.0000e+06 3.0000e+06
+====================================================================================
+
+====================================================================================
+Unit : fs.F101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key             : Value       : Fixed : Bounds
+          Heat Duty : -8.3431e+06 : False : (None, None)
+    Pressure Change :  1.0119e+07 : False : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                             Inlet    Vapor Outlet  Liquid Outlet
+    flow_mol                  415.44       158.16        257.28  
+    mole_frac_comp CH4    2.2964e-06   6.0318e-06    1.0000e-08  
+    mole_frac_comp CO        0.11438      0.30045    1.0000e-08  
+    mole_frac_comp H2        0.23743      0.62366    1.0000e-08  
+    mole_frac_comp CH3OH     0.64818     0.075879        1.0000  
+    enth_mol             -1.4444e+05      -45435.   -2.3772e+05  
+    pressure              1.4277e+06   1.1547e+07    1.1547e+07  
+====================================================================================
+"""
+    assert output in stream.getvalue()
