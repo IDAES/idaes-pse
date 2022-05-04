@@ -24,21 +24,22 @@ from io import BytesIO
 from socket import timeout
 from idaes.models_extra.gas_distribution.parsers.gaslib_parser import parse_gaslib_network
 
+pytest.importorskip("plotly", reason="plotly not available")
+
 try:
     data = urlopen("https://gaslib.zib.de/download/testData/GasLib-11.zip", timeout=3)
     zipfile = ZipFile(BytesIO(data.read()))
     files = [zipfile.open(file) for file in zipfile.namelist()]
     netfile = files[1]
     scnfile = files[2]
+    net = parse_gaslib_network(netfile, scnfile)
+    m = net.build_model(with_bounds=False)
 
 except timeout:
     raise unittest.SkipTest('An internet connection is required to test gaslib parsing tools')
 
 @pytest.mark.unit
 def test_nd_model():
-    net = parse_gaslib_network(netfile, scnfile)
-    m = net.build_model(with_bounds=False)
-
     nodes = 11
     pipes = 8
     compressors = 2
@@ -133,8 +134,7 @@ def test_nd_model():
 
 @pytest.mark.unit
 def test_nd_plot():
-    net = parse_gaslib_network(netfile, scnfile)
-    m = net.build_model(with_bounds=False)
     net.plot_results_at_time(m, m.fs.time.first(), show_plot=False)
+
 
 
