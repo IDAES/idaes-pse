@@ -12,7 +12,7 @@ The ``pysmo.sampling.LatinHypercubeSampling`` method carries out Latin Hypercube
 Available Methods
 ------------------
 
-.. autoclass:: idaes.surrogate.pysmo.sampling.LatinHypercubeSampling
+.. autoclass:: idaes.core.surrogate.pysmo.sampling.LatinHypercubeSampling
     :members: __init__, sample_points
 
 References

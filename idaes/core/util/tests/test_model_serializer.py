@@ -70,7 +70,7 @@ class TestModelSerialize(unittest.TestCase):
         a = model.a = Param(default=1, mutable=True)
         b = model.b = Param(default=2, mutable=True)
         c = model.c = Param(initialize=4)
-        e = model.e = Expression(expr=a+b)
+        e = model.e = Expression(expr=a + b)
         x = model.x = Var([1, 2], initialize={1: 1.5, 2: 2.5}, bounds=(-10, 10))
         model.f = Objective(expr=(x[1] - a) ** 2 + (x[2] - b) ** 2)
         model.g = Constraint(expr=x[1] + x[2] - c >= 0)
@@ -172,6 +172,32 @@ class TestModelSerialize(unittest.TestCase):
         b.setub(4)
         # reload values
         from_json(model, fname=self.fname)
+        # make sure they are right
+        assert a.fixed
+        assert model.b["1"].active
+        assert value(b) == 20
+        assert value(a) == 2
+        assert b.lb == -100
+        assert b.ub == 100
+
+    @pytest.mark.unit
+    def test01c(self):
+        """
+        Simple test of load save json for a _BlockData
+        """
+        model = self.setup_model01b()
+        a = model.b["1"].a
+        b = model.b["1"].b
+        sd = to_json(model.b["1"], return_dict=True, human_read=True)
+        # change variable values
+        a.value = 0.11
+        b.value = 0.11
+        a.unfix()
+        model.b["1"].deactivate()
+        b.setlb(2)
+        b.setub(4)
+        # reload values
+        from_json(model.b["1"], sd=sd)
         # make sure they are right
         assert a.fixed
         assert model.b["1"].active
@@ -339,7 +365,7 @@ class TestModelSerialize(unittest.TestCase):
                 (pyomo.core.base.param._ParamData, ("value",), None),
                 (Constraint._ComponentDataClass, ("active",), None),
                 (Block._ComponentDataClass, ("active",), None),
-            )
+            ),
         )
         model = self.setup_model02()
         x = model.x

@@ -164,6 +164,51 @@ def rp_example4():
 
     return m
 
+def rp_example5():
+    """This example is used to test ramping only in a subset of time.
+    """
+    m = pyo.ConcreteModel()
+
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+    m.ramp = pyo.Var(m.time)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+    def diff_eq_rule(m, t):
+        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
+
+    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+
+    def diff_eq2_rule(m, t):
+        return m.dxdt[t] == m.ramp[t]
+
+    m.diff_eq2 = pyo.Constraint(m.time, rule=diff_eq2_rule)
+
+    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer.apply_to(m, nfe=10, scheme="BACKWARD")
+
+    m.x[0].fix(0.0)
+    for t, v in m.ramp.items():
+        if t > 3 and t <= 5:
+            v.fix(4)
+        else:
+            v.fix(0)
+
+    assert pyo.value(m.ramp[0]) == 0
+    assert pyo.value(m.ramp[1]) == 0
+    assert pyo.value(m.ramp[2]) == 0
+    assert pyo.value(m.ramp[3]) == 0
+    assert pyo.value(m.ramp[4]) == 4
+    assert pyo.value(m.ramp[5]) == 4
+    assert pyo.value(m.ramp[6]) == 0
+    assert pyo.value(m.ramp[7]) == 0
+    assert pyo.value(m.ramp[8]) == 0
+    assert pyo.value(m.ramp[9]) == 0
+    assert pyo.value(m.ramp[10]) == 0
+
+    return m
+
 
 def car_example():
     """This is to test problems where a differential variable doesn't appear in
@@ -222,7 +267,7 @@ def car_example():
     return m
 
 
-def dae_with_non_time_indexed_constraint():
+def dae_with_non_time_indexed_constraint(nfe=1):
     """This provides a DAE model for solver testing. This model contains a non-
     time-indexed variable and constraint and a fixed derivative to test some
     edge cases.
@@ -285,8 +330,6 @@ def dae_with_non_time_indexed_constraint():
     def eq_y6(b, t):
         return b.ydot[t, 6] == b.Ks * b.y[t, 1] * b.y[t, 4] - b.y[t, 6]
 
-    model.ydot[:, 6].fix(0)
-
     @model.Constraint(model.t)
     def eq_r1(b, t):
         return b.r[t, 1] == b.k[1] * b.y[t, 1] ** 4 * b.y[t, 2] ** 0.5
@@ -324,7 +367,8 @@ def dae_with_non_time_indexed_constraint():
     model.eq_ydot5[0].deactivate()
 
     discretizer = pyo.TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(model, nfe=1, scheme="BACKWARD")
+    discretizer.apply_to(model, nfe=nfe, scheme="BACKWARD")
+    model.ydot[:, 6].fix(0)
 
     return (
         model,
@@ -473,7 +517,7 @@ def test_petsc_read_trajectory():
     m.scaling_factor[m.y[180, 1]] = 10  # make sure unscale works
 
     m.y_ref = pyo.Reference(m.y)  # make sure references don't get unscaled twice
-    petsc.petsc_dae_by_time_element(
+    res = petsc.petsc_dae_by_time_element(
         m,
         time=m.t,
         ts_options={
@@ -483,8 +527,6 @@ def test_petsc_read_trajectory():
             "--ts_save_trajectory": 1,
             "--ts_trajectory_type": "visualization",
         },
-        vars_stub="tj_random_junk_123",
-        trajectory_save_prefix="tj_random_junk_123",
     )
     assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
     assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
@@ -493,16 +535,15 @@ def test_petsc_read_trajectory():
     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
     assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
 
-    tj = petsc.PetscTrajectory(json="tj_random_junk_123_1.json.gz")
+    tj = res.trajectory
     assert tj.get_dt()[0] == pytest.approx(0.01)  # if small enough shouldn't be cut
     assert tj.get_vec(m.y[180, 1])[-1] == pytest.approx(y1, rel=1e-3)
     assert tj.get_vec("_time")[-1] == pytest.approx(180)
-    os.remove("tj_random_junk_123_1.json.gz")
 
     times = np.linspace(0, 180, 181)
-    vecs = tj.interpolate_vecs(times)
-    assert vecs[str(m.y[180, 1])][180] == pytest.approx(y1, rel=1e-3)
-    assert vecs["_time"][180] == pytest.approx(180)
+    tj2 = tj.interpolate(times)
+    assert tj2.get_vec(m.y[180, 1])[180] == pytest.approx(y1, rel=1e-3)
+    assert tj2.time[180] == pytest.approx(180)
 
     tj.to_json("some_testy_json.json")
     with open("some_testy_json.json", "r") as fp:
@@ -520,6 +561,44 @@ def test_petsc_read_trajectory():
     tj2 = petsc.PetscTrajectory(vecs=vecs)
     assert tj2.vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
     assert tj2.vecs["_time"][-1] == pytest.approx(180)
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_petsc_read_trajectory_parts():
+    """
+    Check that the PETSc DAE solver works.
+    """
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(nfe=10)
+    m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+    m.scaling_factor[m.y[180, 1]] = 10  # make sure unscale works
+
+    m.y_ref = pyo.Reference(m.y)  # make sure references don't get unscaled twice
+    res = petsc.petsc_dae_by_time_element(
+        m,
+        time=m.t,
+        between=[m.t.first(), m.t.at(4), m.t.last()],
+        ts_options={
+            "--ts_type": "cn",  # Crank–Nicolson
+            "--ts_adapt_type": "basic",
+            "--ts_dt": 0.01,
+            "--ts_save_trajectory": 1,
+        },
+    )
+    assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
+    assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
+    assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
+    assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
+    assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
+    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
+
+    tj = res.trajectory
+    assert tj.get_vec(m.y[180, 1])[-1] == pytest.approx(y1, rel=1e-3)
+    assert tj.get_vec("_time")[-1] == pytest.approx(180)
+    y1_trj = tj.interpolate_vec(m.t, m.y[180, 1])
+    y4_trj = tj.interpolate_vec(m.t, m.y[180, 4])
+    for i, t in enumerate(m.t):
+        assert y1_trj[i] == pytest.approx(pyo.value(m.y[t, 1]))
+        assert y4_trj[i] == pytest.approx(pyo.value(m.y[t, 4]))
 
 
 @pytest.mark.unit
@@ -579,3 +658,61 @@ def test_rp_example4():
     )
     assert pyo.value(m.u[10]) == pytest.approx(398)
     assert pyo.value(m.x[10]) == pytest.approx(20)
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_rp_example5a():
+
+    m = rp_example5()
+    petsc.petsc_dae_by_time_element(
+        m,
+        time=m.time,
+        between=[0, 3, 5, 10],
+        ts_options={
+            "--ts_dt": 1,
+            "--ts_adapt_type": "none",
+            "--ts_save_trajectory": 1,
+        },
+    )
+
+    assert pyo.value(m.x[0]) == pytest.approx(0)
+    assert pyo.value(m.x[1]) == pytest.approx(0)
+    assert pyo.value(m.x[2]) == pytest.approx(0)
+    assert pyo.value(m.x[3]) == pytest.approx(0)
+    assert pyo.value(m.x[4]) == pytest.approx(4)
+    assert pyo.value(m.x[5]) == pytest.approx(8)
+    assert pyo.value(m.x[6]) == pytest.approx(8)
+    assert pyo.value(m.x[7]) == pytest.approx(8)
+    assert pyo.value(m.x[8]) == pytest.approx(8)
+    assert pyo.value(m.x[9]) == pytest.approx(8)
+    assert pyo.value(m.x[10]) == pytest.approx(8)
+
+    assert pyo.value(m.u[0]) == pytest.approx(0)
+    assert pyo.value(m.u[1]) == pytest.approx(0)
+    assert pyo.value(m.u[2]) == pytest.approx(0)
+    assert pyo.value(m.u[3]) == pytest.approx(0)
+    assert pyo.value(m.u[4]) == pytest.approx(12)
+    assert pyo.value(m.u[5]) == pytest.approx(60)
+    assert pyo.value(m.u[6]) == pytest.approx(64)
+    assert pyo.value(m.u[7]) == pytest.approx(64)
+    assert pyo.value(m.u[8]) == pytest.approx(64)
+    assert pyo.value(m.u[9]) == pytest.approx(64)
+    assert pyo.value(m.u[10]) == pytest.approx(64)
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_rp_example5b():
+    m = rp_example5()
+    with pytest.raises(RuntimeError):
+        petsc.petsc_dae_by_time_element(
+            m,
+            time=m.time,
+            between=[0, 3.5, 5, 10],
+            ts_options={
+                "--ts_dt": 1,
+                "--ts_adapt_type": "none",
+                "--ts_save_trajectory": 1,
+            },
+        )

@@ -487,27 +487,53 @@
         "stream_table": {
             "columns": [
                 "Variable",
+                "Units",
                 "s_inlet_1"
             ],
             "data": [
                 [
                     "flow_mol",
+                    {
+                        "html": "mol/s",
+                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                        "raw": "mole / second"
+                    },
                     -Infinity
                 ],
                 [
                     "mole_frac_comp benzene",
+                    {
+                        "html": "",
+                        "latex": "",
+                        "raw": "dimensionless"
+                    },
                     0.5
                 ],
                 [
                     "mole_frac_comp toluene",
+                    {
+                        "html": "",
+                        "latex": "",
+                        "raw": "dimensionless"
+                    },
                     0.5
                 ],
                 [
                     "temperature",
+                    {
+                        "html": "K",
+                        "latex": "\\mathrm{K}",
+                        "raw": "kelvin"
+                    },
                     Infinity
                 ],
                 [
                     "pressure",
+                    {
+                        "html": "Pa",
+                        "latex": "\\mathrm{Pa}",
+                        "raw": "pascal"
+                    },
                     NaN
                 ]
             ],

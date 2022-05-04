@@ -13,7 +13,7 @@ The Hammersley sampling method is only available for low-dimensional problems :m
 Available Methods
 ------------------
 
-.. autoclass:: idaes.surrogate.pysmo.sampling.HammersleySampling
+.. autoclass:: idaes.core.surrogate.pysmo.sampling.HammersleySampling
     :members: __init__, sample_points
 
 References
