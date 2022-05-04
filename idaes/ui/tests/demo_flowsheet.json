@@ -3434,6 +3434,7 @@
         "stream_table": {
             "columns": [
                 "Variable",
+                "Units",
                 "s_inlet_8",
                 "s_inlet_7",
                 "s_inlet_6",
@@ -3458,6 +3459,11 @@
             "data": [
                 [
                     "flow_mol",
+                    {
+                        "html": "mol/s",
+                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                        "raw": "mole / second"
+                    },
                     "-",
                     "-",
                     "-",
@@ -3481,6 +3487,11 @@
                 ],
                 [
                     "mole_frac_comp benzene",
+                    {
+                        "html": "",
+                        "latex": "",
+                        "raw": "dimensionless"
+                    },
                     "-",
                     "-",
                     "-",
@@ -3504,6 +3515,11 @@
                 ],
                 [
                     "mole_frac_comp toluene",
+                    {
+                        "html": "",
+                        "latex": "",
+                        "raw": "dimensionless"
+                    },
                     "-",
                     "-",
                     "-",
@@ -3527,6 +3543,11 @@
                 ],
                 [
                     "temperature",
+                    {
+                        "html": "K",
+                        "latex": "\\mathrm{K}",
+                        "raw": "kelvin"
+                    },
                     "-",
                     "-",
                     "-",
@@ -3550,6 +3571,11 @@
                 ],
                 [
                     "pressure",
+                    {
+                        "html": "Pa",
+                        "latex": "\\mathrm{Pa}",
+                        "raw": "pascal"
+                    },
                     "-",
                     "-",
                     "-",
@@ -3573,6 +3599,11 @@
                 ],
                 [
                     "Molar Flow (mol/s)",
+                    {
+                        "html": "mol/s",
+                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                        "raw": "mole / second"
+                    },
                     1,
                     1,
                     1,
@@ -3596,6 +3627,11 @@
                 ],
                 [
                     "Mass Flow (kg/s)",
+                    {
+                        "html": "kg/s",
+                        "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                        "raw": "kilogram / second"
+                    },
                     0.04401,
                     0.04401,
                     0.04401,
@@ -3619,6 +3655,11 @@
                 ],
                 [
                     "T (K)",
+                    {
+                        "html": "K",
+                        "latex": "\\mathrm{K}",
+                        "raw": "kelvin"
+                    },
                     325.52764,
                     325.52764,
                     325.52764,
@@ -3642,6 +3683,11 @@
                 ],
                 [
                     "P (Pa)",
+                    {
+                        "html": "Pa",
+                        "latex": "\\mathrm{Pa}",
+                        "raw": "pascal"
+                    },
                     100000.0,
                     100000.0,
                     100000.0,
@@ -3665,6 +3711,11 @@
                 ],
                 [
                     "Vapor Fraction",
+                    {
+                        "html": "",
+                        "latex": "",
+                        "raw": "dimensionless"
+                    },
                     1.0,
                     1.0,
                     1.0,
@@ -3688,6 +3739,11 @@
                 ],
                 [
                     "Molar Enthalpy (J/mol) Vap",
+                    {
+                        "html": "J/mol",
+                        "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                        "raw": "joule / mole"
+                    },
                     1000.0,
                     1000.0,
                     1000.0,
@@ -3711,6 +3767,11 @@
                 ],
                 [
                     "Molar Enthalpy (J/mol) Liq",
+                    {
+                        "html": "J/mol",
+                        "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                        "raw": "joule / mole"
+                    },
                     1000.0,
                     1000.0,
                     1000.0,
@@ -3807,36 +3868,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -3854,26 +3950,51 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "flow_mol"
                     },
                     "1": {
                         "Inlet": 0.5,
                         "Outlet": 0.5,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "mole_frac_comp benzene"
                     },
                     "2": {
                         "Inlet": 0.5,
                         "Outlet": 0.5,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "mole_frac_comp toluene"
                     },
                     "3": {
                         "Inlet": 298.15,
                         "Outlet": 298.15,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
                         "Variable": "temperature"
                     },
                     "4": {
                         "Inlet": 101325.0,
                         "Outlet": 101325.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
                         "Variable": "pressure"
                     }
                 },
@@ -3891,36 +4012,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -3938,36 +4094,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -3979,30 +4170,55 @@
                 "stream_contents": {
                     "0": {
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "flow_mol",
                         "inlet_1": 1.0,
                         "inlet_2": 1.0
                     },
                     "1": {
                         "Outlet": 0.5,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "mole_frac_comp benzene",
                         "inlet_1": 0.5,
                         "inlet_2": 0.5
                     },
                     "2": {
                         "Outlet": 0.5,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "mole_frac_comp toluene",
                         "inlet_1": 0.5,
                         "inlet_2": 0.5
                     },
                     "3": {
                         "Outlet": 298.15,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
                         "Variable": "temperature",
                         "inlet_1": 298.15,
                         "inlet_2": 298.15
                     },
                     "4": {
                         "Outlet": 101325.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
                         "Variable": "pressure",
                         "inlet_1": 101325.0,
                         "inlet_2": 101325.0
@@ -4022,36 +4238,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -4081,36 +4332,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -4184,36 +4470,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -4263,36 +4584,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -4322,36 +4678,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
