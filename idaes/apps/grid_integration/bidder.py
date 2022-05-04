@@ -31,7 +31,7 @@ class AbstractBidder(ABC):
     """
 
     @abstractmethod
-    def update_model(self, **kwargs):
+    def update_day_ahead_model(self, **kwargs):
 
         """
         Update the flowsheets advance timesteps with necessary parameters in kwargs.
@@ -46,7 +46,41 @@ class AbstractBidder(ABC):
         pass
 
     @abstractmethod
-    def compute_bids(self, date, hour, **kwargs):
+    def update_real_time_model(self, **kwargs):
+
+        """
+        Update the flowsheets advance timesteps with necessary parameters in kwargs.
+
+        Arguments:
+            kwargs: necessary profiles to update the underlying model. {stat_name: [...]}
+
+        Returns:
+            None
+        """
+
+        pass
+
+    @abstractmethod
+    def compute_day_ahead_bids(self, date, hour, **kwargs):
+
+        """
+        Solve the model to bid/self-schedule into the markets. After solving, record
+        the schedule from the solve.
+
+        Arguments:
+
+            date: current simulation date
+
+            hour: current simulation hour
+
+        Returns:
+            None
+        """
+
+        pass
+
+    @abstractmethod
+    def compute_real_time_bids(self, date, hour, **kwargs):
 
         """
         Solve the model to bid/self-schedule into the markets. After solving, record
@@ -80,7 +114,7 @@ class AbstractBidder(ABC):
         pass
 
     @abstractmethod
-    def formulate_bidding_problem(self):
+    def formulate_DA_bidding_problem(self):
 
         """
         Formulate the bidding optimization problem by adding necessary
@@ -96,7 +130,23 @@ class AbstractBidder(ABC):
         pass
 
     @abstractmethod
-    def record_bids(self, bids, date, hour):
+    def formulate_RT_bidding_problem(self):
+
+        """
+        Formulate the bidding optimization problem by adding necessary
+        parameters, constraints, and objective function.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+
+        pass
+
+    @abstractmethod
+    def record_bids(self, bids, model, date, hour):
 
         """
         This function records the bids (schedule) and the details in the
@@ -195,12 +245,16 @@ class StochasticProgramBidder(AbstractBidder):
     def __init__(
         self,
         bidding_model_object,
+        day_ahead_horizon,
+        real_time_horizon,
         n_scenario,
         solver,
         forecaster,
     ):
 
         self.bidding_model_object = bidding_model_object
+        self.day_ahead_horizon = day_ahead_horizon
+        self.real_time_horizon = real_time_horizon
         self.n_scenario = n_scenario
         self.solver = solver
         self.forecaster = forecaster
@@ -209,26 +263,46 @@ class StochasticProgramBidder(AbstractBidder):
 
         self.generator = self.bidding_model_object.model_data.gen_name
 
-        # add flowsheets to model
-        self.model = pyo.ConcreteModel()
-
-        # declare scenario set
-        self.model.SCENARIOS = pyo.Set(initialize=range(self.n_scenario))
-
-        # populate scenario blocks
-        self.model.fs = pyo.Block(self.model.SCENARIOS)
-        for i in self.model.SCENARIOS:
-            self.bidding_model_object.populate_model(self.model.fs[i])
-
-        # save power output variable in the model object
-        self._save_power_outputs()
-
-        self.formulate_bidding_problem()
+        # day-ahead model
+        self.day_ahead_model = self.formulate_DA_bidding_problem()
+        self.real_time_model = self.formulate_RT_bidding_problem()
 
         # declare a list to store results
         self.bids_result_list = []
 
-    def _save_power_outputs(self):
+    def _set_up_bidding_problem(self, horizon):
+
+        model = pyo.ConcreteModel()
+
+        model.SCENARIOS = pyo.Set(initialize=range(self.n_scenario))
+
+        model.fs = pyo.Block(model.SCENARIOS)
+        for i in model.SCENARIOS:
+            self.bidding_model_object.populate_model(model.fs[i], horizon)
+
+        self._save_power_outputs(model)
+
+        self._add_bidding_params(model)
+        self._add_bidding_vars(model)
+        self._add_bidding_objective(model)
+
+        return model
+
+    def formulate_DA_bidding_problem(self):
+
+        model = self._set_up_bidding_problem(self.day_ahead_horizon)
+        self._add_DA_bidding_constraints(model)
+
+        return model
+
+    def formulate_RT_bidding_problem(self):
+
+        model = self._set_up_bidding_problem(self.real_time_horizon)
+        self._add_RT_bidding_constraints(model)
+
+        return model
+
+    def _save_power_outputs(self, model):
 
         """
         Create references of the power output variable in each price scenario
@@ -241,35 +315,16 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        for i in self.model.SCENARIOS:
+        for i in model.SCENARIOS:
             # get the power output
             power_output_name = self.bidding_model_object.power_output
-            self.model.fs[i].power_output_ref = pyo.Reference(
-                getattr(self.model.fs[i], power_output_name)
+            model.fs[i].power_output_ref = pyo.Reference(
+                getattr(model.fs[i], power_output_name)
             )
 
         return
 
-    def formulate_bidding_problem(self):
-
-        """
-        Formulate the bidding optimization problem by adding necessary
-        parameters, constraints, and objective function.
-
-        Arguments:
-            None
-
-        Returns:
-            None
-        """
-
-        self._add_bidding_params()
-        self._add_bidding_constraints()
-        self._add_bidding_objective()
-
-        return
-
-    def _add_bidding_params(self):
+    def _add_bidding_params(self, model):
 
         """
         Add necessary bidding parameters to the model, i.e., market energy price.
@@ -281,14 +336,45 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        for i in self.model.SCENARIOS:
-            time_index = self.model.fs[i].power_output_ref.index_set()
-            self.model.fs[i].energy_price = pyo.Param(
+        for i in model.SCENARIOS:
+            time_index = model.fs[i].power_output_ref.index_set()
+            model.fs[i].day_ahead_energy_price = pyo.Param(
                 time_index, initialize=0, mutable=True
             )
+            model.fs[i].real_time_energy_price = pyo.Param(
+                time_index, initialize=0, mutable=True
+            )
+
         return
 
-    def _add_bidding_objective(self):
+    def _add_bidding_vars(self, model):
+
+        """
+        Add necessary bidding parameters to the model, i.e., market energy price.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+
+        def day_ahead_power_ub_rule(fs, t):
+            return fs.power_output_ref[t] >= fs.day_ahead_power[t]
+
+        for i in model.SCENARIOS:
+            time_index = model.fs[i].power_output_ref.index_set()
+            model.fs[i].day_ahead_power = pyo.Var(
+                time_index, initialize=0, within=pyo.NonNegativeReals
+            )
+
+            model.fs[i].day_ahead_power_ub = pyo.Constraint(
+                time_index, rule=day_ahead_power_ub_rule
+            )
+
+        return
+
+    def _add_bidding_objective(self, model):
 
         """
         Add objective function to the model, i.e., maximizing the expected profit
@@ -302,28 +388,58 @@ class StochasticProgramBidder(AbstractBidder):
         """
 
         # declare an empty objective
-        self.model.obj = pyo.Objective(expr=0, sense=pyo.maximize)
+        model.obj = pyo.Objective(expr=0, sense=pyo.maximize)
 
-        for k in self.model.SCENARIOS:
-            time_index = self.model.fs[k].power_output_ref.index_set()
+        for k in model.SCENARIOS:
+            time_index = model.fs[k].power_output_ref.index_set()
 
             # currently .total_cost is a tuple of 2 items
             # the first item is the name of the cost expression
             # the second item is the weight for the cost
             cost_name = self.bidding_model_object.total_cost[0]
-            cost = getattr(self.model.fs[k], cost_name)
+            cost = getattr(model.fs[k], cost_name)
             weight = self.bidding_model_object.total_cost[1]
 
             for t in time_index:
-                self.model.obj.expr += (
-                    self.model.fs[k].power_output_ref[t]
-                    * self.model.fs[k].energy_price[t]
+                model.obj.expr += (
+                    model.fs[k].day_ahead_energy_price[t]
+                    * model.fs[k].day_ahead_power[t]
+                    + model.fs[k].real_time_energy_price[t]
+                    * (model.fs[k].power_output_ref[t] - model.fs[k].day_ahead_power[t])
                     - weight * cost[t]
                 )
 
         return
 
-    def compute_bids(self, date, hour=None, **kwargs):
+    def _compute_bids(
+        self,
+        day_ahead_price,
+        real_time_energy_price,
+        date,
+        hour,
+        model,
+        power_var_name,
+        energy_price_param_name,
+        market,
+    ):
+
+        # update the price forecasts
+        self._pass_price_forecasts(model, day_ahead_price, real_time_energy_price)
+
+        self.solver.solve(model, tee=True)
+
+        bids = self._assemble_bids(
+            model,
+            power_var_name=power_var_name,
+            energy_price_param_name=energy_price_param_name,
+            hour=hour,
+        )
+
+        self.record_bids(bids, model=model, date=date, hour=hour, market=market)
+
+        return bids
+
+    def compute_day_ahead_bids(self, date, hour=0):
 
         """
         Solve the model to bid into the markets. After solving, record the bids
@@ -339,17 +455,82 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        price_forecasts = self.forecaster.forecast(date=date, hour=hour, **kwargs)
+        day_ahead_price, real_time_energy_price = self.forecaster.forecast(
+            date=date, hour=hour, horizon=self.day_ahead_horizon
+        )
 
-        # update the price forecasts
-        self._pass_price_forecasts(price_forecasts)
-        self.solver.solve(self.model, tee=True)
-        bids = self._assemble_bids()
-        self.record_bids(bids, date=date, hour=hour)
+        return self._compute_bids(
+            day_ahead_price=day_ahead_price,
+            real_time_energy_price=real_time_energy_price,
+            date=date,
+            hour=hour,
+            model=self.day_ahead_model,
+            power_var_name="day_ahead_power",
+            energy_price_param_name="day_ahead_energy_price",
+            market="Day-ahead",
+        )
 
-        return bids
+    def compute_real_time_bids(
+        self, date, hour, realized_day_ahead_prices, realized_day_ahead_dispatches
+    ):
 
-    def update_model(self, **kwargs):
+        """
+        Solve the model to bid into the markets. After solving, record the bids
+        from the solve.
+
+        Arguments:
+
+            date: current simulation date
+
+            hour: current simulation hour
+
+        Returns:
+            None
+        """
+
+        day_ahead_price, real_time_energy_price = self.forecaster.forecast(
+            date=date, hour=hour, horizon=self.real_time_horizon
+        )
+
+        self._pass_realized_day_ahead_dispatches(realized_day_ahead_dispatches, hour)
+        self._pass_realized_day_ahead_prices(realized_day_ahead_prices, hour)
+
+        return self._compute_bids(
+            day_ahead_price=None,
+            real_time_energy_price=real_time_energy_price,
+            date=date,
+            hour=hour,
+            model=self.real_time_model,
+            power_var_name="power_output_ref",
+            energy_price_param_name="real_time_energy_price",
+            market="Real-time",
+        )
+
+    def _pass_realized_day_ahead_prices(self, realized_day_ahead_prices, hour):
+
+        time_index = self.real_time_model.fs[0].day_ahead_energy_price.index_set()
+        for s in self.real_time_model.SCENARIOS:
+            for t in time_index:
+                self.real_time_model.fs[s].day_ahead_energy_price[
+                    t
+                ] = realized_day_ahead_prices[hour + t]
+
+    def _pass_realized_day_ahead_dispatches(self, realized_day_ahead_dispatches, hour):
+
+        time_index = self.real_time_model.fs[0].day_ahead_power.index_set()
+        for s in self.real_time_model.SCENARIOS:
+            for t in time_index:
+                self.real_time_model.fs[s].day_ahead_power[t].fix(
+                    realized_day_ahead_dispatches[hour + t]
+                )
+
+    def update_day_ahead_model(self, **kwargs):
+        self._update_model(self.day_ahead_model, **kwargs)
+
+    def update_real_time_model(self, **kwargs):
+        self._update_model(self.real_time_model, **kwargs)
+
+    def _update_model(self, model, **kwargs):
 
         """
         Update the flowsheets in all the price scenario blocks to advance time
@@ -362,12 +543,12 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        for i in self.model.SCENARIOS:
-            self.bidding_model_object.update_model(b=self.model.fs[i], **kwargs)
+        for i in model.SCENARIOS:
+            self.bidding_model_object.update_model(b=model.fs[i], **kwargs)
 
         return
 
-    def record_bids(self, bids, date, hour):
+    def record_bids(self, bids, model, date, hour, market):
 
         """
         This function records the bids and the details in the underlying bidding model.
@@ -385,17 +566,17 @@ class StochasticProgramBidder(AbstractBidder):
         """
 
         # record bids
-        self._record_bids(bids, date, hour)
+        self._record_bids(bids, date, hour, Market=market)
 
         # record the details of bidding model
-        for i in self.model.SCENARIOS:
+        for i in model.SCENARIOS:
             self.bidding_model_object.record_results(
-                self.model.fs[i], date=date, hour=hour, Scenario=i
+                model.fs[i], date=date, hour=hour, Scenario=i, Market=market
             )
 
         return
 
-    def _pass_price_forecasts(self, price_forecasts):
+    def _pass_price_forecasts(self, model, day_ahead_price, real_time_energy_price):
 
         """
         Pass the price forecasts into model parameters.
@@ -407,10 +588,16 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        for i in self.model.SCENARIOS:
-            time_index = self.model.fs[i].energy_price.index_set()
-            for t, p in zip(time_index, price_forecasts[i]):
-                self.model.fs[i].energy_price[t] = p
+        for i in model.SCENARIOS:
+
+            time_index = model.fs[i].real_time_energy_price.index_set()
+
+            if day_ahead_price is not None:
+                for t, p in zip(time_index, day_ahead_price[i]):
+                    model.fs[i].day_ahead_energy_price[t] = p
+
+            for t, p in zip(time_index, real_time_energy_price[i]):
+                model.fs[i].real_time_energy_price[t] = p
 
         return
 
@@ -454,15 +641,24 @@ class SelfScheduler(StochasticProgramBidder):
     def __init__(
         self,
         bidding_model_object,
+        day_ahead_horizon,
+        real_time_horizon,
         n_scenario,
         solver,
         forecaster,
         fixed_to_schedule=False,
     ):
-        super().__init__(bidding_model_object, n_scenario, solver, forecaster)
+        super().__init__(
+            bidding_model_object,
+            day_ahead_horizon,
+            real_time_horizon,
+            n_scenario,
+            solver,
+            forecaster,
+        )
         self.fixed_to_schedule = fixed_to_schedule
 
-    def _add_bidding_constraints(self):
+    def _add_DA_bidding_constraints(self, model):
 
         """
         Add bidding constraints to the model, i.e., power outputs in the first
@@ -476,25 +672,53 @@ class SelfScheduler(StochasticProgramBidder):
         """
 
         # nonanticipativity constraints
-        def nonanticipativity_constraint_rule(model, s1, s2, t):
+        def day_ahead_bidding_constraints_rule(model, s1, s2, t):
             if s1 == s2:
                 return pyo.Constraint.Skip
-            return model.fs[s1].power_output_ref[t] == model.fs[s2].power_output_ref[t]
+            return model.fs[s1].day_ahead_power[t] == model.fs[s2].day_ahead_power[t]
 
-        time_index = self.model.fs[
-            self.model.SCENARIOS.first()
-        ].power_output_ref.index_set()
+        time_index = model.fs[model.SCENARIOS.first()].power_output_ref.index_set()
 
-        self.model.NonanticipativityConstraints = pyo.Constraint(
-            self.model.SCENARIOS,
-            self.model.SCENARIOS,
+        model.day_ahead_bidding_constraints = pyo.Constraint(
+            model.SCENARIOS,
+            model.SCENARIOS,
             time_index,
-            rule=nonanticipativity_constraint_rule,
+            rule=day_ahead_bidding_constraints_rule,
         )
 
         return
 
-    def _assemble_bids(self):
+    def _add_RT_bidding_constraints(self, model):
+
+        """
+        Add bidding constraints to the model, i.e., power outputs in the first
+        stage need to be the same across all the scenarios.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+
+        # nonanticipativity constraints
+        def real_time_bidding_constraints_rule(model, s1, s2, t):
+            if s1 == s2:
+                return pyo.Constraint.Skip
+            return model.fs[s1].power_output_ref[t] == model.fs[s2].power_output_ref[t]
+
+        time_index = model.fs[model.SCENARIOS.first()].power_output_ref.index_set()
+
+        model.real_time_bidding_constraints = pyo.Constraint(
+            model.SCENARIOS,
+            model.SCENARIOS,
+            time_index,
+            rule=real_time_bidding_constraints_rule,
+        )
+
+        return
+
+    def _assemble_bids(self, model, power_var_name, energy_price_param_name, hour):
 
         """
         This methods extract the bids out of the stochastic programming model and
@@ -508,16 +732,17 @@ class SelfScheduler(StochasticProgramBidder):
 
         bids = {}
 
-        time_index = self.model.fs[
-            self.model.SCENARIOS.first()
-        ].power_output_ref.index_set()
+        power_output_var = getattr(model.fs[0], power_var_name)
+        time_index = power_output_var.index_set()
 
-        for t in time_index:
+        for t_idx in time_index:
+
+            t = t_idx + hour
 
             bids[t] = {}
 
             bids[t][self.generator] = {
-                "p_max": round(pyo.value(self.model.fs[0].power_output_ref[t]), 4),
+                "p_max": round(pyo.value(power_output_var[t_idx]), 4),
                 "p_min": self.bidding_model_object.model_data.p_min,
             }
 
@@ -549,7 +774,7 @@ class SelfScheduler(StochasticProgramBidder):
 
         return bids
 
-    def _record_bids(self, bids, date, hour):
+    def _record_bids(self, bids, date, hour, **kwargs):
 
         """
         This function records the bids (schedule) we computed for the given date into a
@@ -582,6 +807,9 @@ class SelfScheduler(StochasticProgramBidder):
                 result_dict["Bid Power [MW]"] = bids[t][g].get("p_max")
                 result_dict["Bid Min Power [MW]"] = bids[t][g].get("p_min")
 
+                for k, v in kwargs.items():
+                    result_dict[k] = v
+
                 result_df = pd.DataFrame.from_dict(result_dict, orient="index")
                 df_list.append(result_df.T)
 
@@ -596,7 +824,15 @@ class Bidder(StochasticProgramBidder):
     Wrap a model object to bid into the market using stochastic programming.
     """
 
-    def __init__(self, bidding_model_object, n_scenario, solver, forecaster):
+    def __init__(
+        self,
+        bidding_model_object,
+        day_ahead_horizon,
+        real_time_horizon,
+        n_scenario,
+        solver,
+        forecaster,
+    ):
 
         """
         Initializes the bidder object.
@@ -615,9 +851,16 @@ class Bidder(StochasticProgramBidder):
             None
         """
 
-        super().__init__(bidding_model_object, n_scenario, solver, forecaster)
+        super().__init__(
+            bidding_model_object,
+            day_ahead_horizon,
+            real_time_horizon,
+            n_scenario,
+            solver,
+            forecaster,
+        )
 
-    def _add_bidding_constraints(self):
+    def _add_DA_bidding_constraints(self, model):
 
         """
         Add bidding constraints to the model, i.e., the bid curves need to be
@@ -630,27 +873,62 @@ class Bidder(StochasticProgramBidder):
             None
         """
 
-        def bidding_constraint_rule(model, s1, s2, t):
+        def day_ahead_bidding_constraints_rule(model, s1, s2, t):
             if s1 == s2:
                 return pyo.Constraint.Skip
             return (
-                model.fs[s1].power_output_ref[t] - model.fs[s2].power_output_ref[t]
-            ) * (model.fs[s1].energy_price[t] - model.fs[s2].energy_price[t]) >= 0
+                model.fs[s1].day_ahead_power[t] - model.fs[s2].day_ahead_power[t]
+            ) * (
+                model.fs[s1].day_ahead_energy_price[t]
+                - model.fs[s2].day_ahead_energy_price[t]
+            ) >= 0
 
-        time_index = self.model.fs[
-            self.model.SCENARIOS.first()
-        ].power_output_ref.index_set()
+        time_index = model.fs[model.SCENARIOS.first()].power_output_ref.index_set()
 
-        self.model.bidding_constraints = pyo.Constraint(
-            self.model.SCENARIOS,
-            self.model.SCENARIOS,
+        model.day_ahead_bidding_constraints = pyo.Constraint(
+            model.SCENARIOS,
+            model.SCENARIOS,
             time_index,
-            rule=bidding_constraint_rule,
+            rule=day_ahead_bidding_constraints_rule,
         )
 
         return
 
-    def _assemble_bids(self):
+    def _add_RT_bidding_constraints(self, model):
+
+        """
+        Add bidding constraints to the model, i.e., the bid curves need to be
+        nondecreasing.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+
+        def real_time_bidding_constraints_rule(model, s1, s2, t):
+            if s1 == s2:
+                return pyo.Constraint.Skip
+            return (
+                model.fs[s1].power_output_ref[t] - model.fs[s2].power_output_ref[t]
+            ) * (
+                model.fs[s1].real_time_energy_price[t]
+                - model.fs[s2].real_time_energy_price[t]
+            ) >= 0
+
+        time_index = model.fs[model.SCENARIOS.first()].power_output_ref.index_set()
+
+        model.real_time_bidding_constraints = pyo.Constraint(
+            model.SCENARIOS,
+            model.SCENARIOS,
+            time_index,
+            rule=real_time_bidding_constraints_rule,
+        )
+
+        return
+
+    def _assemble_bids(self, model, power_var_name, energy_price_param_name, hour):
 
         """
         This methods extract the bids out of the stochastic programming model and
@@ -665,8 +943,12 @@ class Bidder(StochasticProgramBidder):
         bids = {}
         gen = self.generator
 
-        for i in self.model.SCENARIOS:
-            time_index = self.model.fs[i].energy_price.index_set()
+        for i in model.SCENARIOS:
+
+            power_output_var = getattr(model.fs[i], power_var_name)
+            energy_price_param = getattr(model.fs[i], energy_price_param_name)
+            time_index = power_output_var.index_set()
+
             for t in time_index:
 
                 if t not in bids:
@@ -674,8 +956,8 @@ class Bidder(StochasticProgramBidder):
                 if gen not in bids[t]:
                     bids[t][gen] = {}
 
-                power = round(pyo.value(self.model.fs[i].power_output_ref[t]), 2)
-                marginal_cost = round(pyo.value(self.model.fs[i].energy_price[t]), 2)
+                power = round(pyo.value(power_output_var[t]), 2)
+                marginal_cost = round(pyo.value(energy_price_param[t]), 2)
 
                 # if power lower than pmin, e.g., power = 0, we need to skip this
                 # solution, because Prescient is not expecting any power output lower
@@ -735,13 +1017,16 @@ class Bidder(StochasticProgramBidder):
         # create full bids: this includes info in addition to costs
         full_bids = {}
 
-        for t in bids:
+        for t_idx in bids:
+
+            t = t_idx + hour
+
             full_bids[t] = {}
-            for gen in bids[t]:
+            for gen in bids[t_idx]:
                 full_bids[t][gen] = {}
-                full_bids[t][gen]["p_cost"] = bids[t][gen]
-                full_bids[t][gen]["p_min"] = min([p[0] for p in bids[t][gen]])
-                full_bids[t][gen]["p_max"] = max([p[0] for p in bids[t][gen]])
+                full_bids[t][gen]["p_cost"] = bids[t_idx][gen]
+                full_bids[t][gen]["p_min"] = min([p[0] for p in bids[t_idx][gen]])
+                full_bids[t][gen]["p_max"] = max([p[0] for p in bids[t_idx][gen]])
                 full_bids[t][gen]["startup_capacity"] = full_bids[t][gen]["p_min"]
                 full_bids[t][gen]["shutdown_capacity"] = full_bids[t][gen]["p_min"]
 
@@ -753,7 +1038,7 @@ class Bidder(StochasticProgramBidder):
 
         return full_bids
 
-    def _record_bids(self, bids, date, hour):
+    def _record_bids(self, bids, date, hour, **kwargs):
 
         """
         This method records the bids we computed for the given date into a
@@ -783,6 +1068,9 @@ class Bidder(StochasticProgramBidder):
                 result_dict["Generator"] = gen
                 result_dict["Date"] = date
                 result_dict["Hour"] = t
+
+                for k, v in kwargs.items():
+                    result_dict[k] = v
 
                 pair_cnt = len(bids[t][gen]["p_cost"])
 

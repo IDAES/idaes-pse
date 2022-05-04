@@ -23,7 +23,7 @@ class Tracker:
     with the DoubleLoopCoordinator.
     """
 
-    def __init__(self, tracking_model_object, n_tracking_hour, solver):
+    def __init__(self, tracking_model_object, tracking_horizon, n_tracking_hour, solver):
 
         """
         Initializes the tracker object.
@@ -39,6 +39,7 @@ class Tracker:
 
         # copy and check model object
         self.tracking_model_object = tracking_model_object
+        self.tracking_horizon = tracking_horizon
         self.n_tracking_hour = n_tracking_hour
         self.solver = solver
         self._check_inputs()
@@ -46,7 +47,7 @@ class Tracker:
         # add flowsheet to model
         self.model = pyo.ConcreteModel()
         self.model.fs = pyo.Block()
-        self.tracking_model_object.populate_model(self.model.fs)
+        self.tracking_model_object.populate_model(self.model.fs, self.tracking_horizon)
 
         # get the power output
         power_output_name = self.tracking_model_object.power_output
@@ -272,6 +273,9 @@ class Tracker:
 
         return
 
+    def update_model(self, **profiles):
+        self.tracking_model_object.update_model(self.model.fs, **profiles)
+
     def track_market_dispatch(self, market_dispatch, date, hour):
 
         """
@@ -301,9 +305,10 @@ class Tracker:
         profiles = self.tracking_model_object.get_implemented_profile(
             b=self.model.fs, last_implemented_time_step=self.n_tracking_hour - 1
         )
-        self.tracking_model_object.update_model(self.model.fs, **profiles)
 
         self._record_daily_stats(profiles)
+
+        return profiles
 
     def _record_daily_stats(self, profiles):
 
