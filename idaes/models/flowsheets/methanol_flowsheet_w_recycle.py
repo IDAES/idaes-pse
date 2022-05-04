@@ -372,10 +372,10 @@ def scale_flowsheet(m):
                 iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
         if hasattr(unit, 'minimum_pressure_constraint'):
             for (t, i), c in unit.minimum_pressure_constraint.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+                iscale.constraint_scaling_transform(c, 1e-2, overwrite=False)
         if hasattr(unit, 'mixture_pressure'):
             for t, c in unit.mixture_pressure.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
+                iscale.constraint_scaling_transform(c, 1e-2, overwrite=False)
         if hasattr(unit, 'pressure_equality_constraints'):
             for (t, i), c in unit.pressure_equality_constraints.items():
                 iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
@@ -441,7 +441,7 @@ def scale_flowsheet(m):
 
         if hasattr(unit, "state_material_balances"):
             for (t, j), c in unit.state_material_balances.items():
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
+                iscale.constraint_scaling_transform(c, 1e-2, overwrite=False)
 
         # heater and reactor only add 0D control volume constraints
         if hasattr(unit, 'material_holdup_calculation'):

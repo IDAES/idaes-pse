@@ -33,7 +33,8 @@ from pyomo.environ import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
+from idaes.core.util import scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.scaling import (extreme_jacobian_columns,
                                      extreme_jacobian_rows)
@@ -106,6 +107,155 @@ def test_scaling(model):
     badly_scaled_cons = extreme_jacobian_rows(model)
     all_con = list(model.component_data_objects(Constraint, descend_into=True))
     assert len(badly_scaled_cons)/len(all_con) < 0.1
+
+    # checking specific constraint scaling factors
+    for name in ('M101', 'C101', 'H101', 'R101', 'T101', 'H102', 'F101'):
+        unit = getattr(model.fs, name)
+        # mixer constraints
+        if hasattr(unit, 'material_mixing_equations'):
+            for (t, j), c in unit.material_mixing_equations.items():
+                assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'enthalpy_mixing_equations'):
+            for t, c in unit.enthalpy_mixing_equations.items():
+                assert pytest.approx(1e-3, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'minimum_pressure_constraint'):
+            for (t, i), c in unit.minimum_pressure_constraint.items():
+                assert pytest.approx(1e-2, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'mixture_pressure'):
+            for t, c in unit.mixture_pressure.items():
+                assert pytest.approx(1e-2, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'pressure_equality_constraints'):
+            for (t, i), c in unit.pressure_equality_constraints.items():
+                assert pytest.approx(1e-5, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        # splitter constraints
+        if hasattr(unit, 'material_splitting_eqn'):
+            for (t, o, j), c in unit.material_splitting_eqn.items():
+                assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'temperature_equality_eqn'):
+            for (t, o), c in unit.temperature_equality_eqn.items():
+                assert pytest.approx(1e-2, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'molar_enthalpy_equality_eqn'):
+            for (t, o), c in unit.molar_enthalpy_equality_eqn.items():
+                assert pytest.approx(1e-3, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'molar_enthalpy_splitting_eqn'):
+            for (t, o), c in unit.molar_enthalpy_splitting_eqn.items():
+                assert pytest.approx(1e-3, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'pressure_equality_eqn'):
+            for (t, o), c in unit.pressure_equality_eqn.items():
+                assert pytest.approx(1e-5, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'sum_split_frac'):
+            for t, c in unit.sum_split_frac.items():
+                assert pytest.approx(1e2, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        # flash adds same as splitter, plus one more
+        if hasattr(unit, 'split_fraction_eq'):
+            for (t, o), c in unit.split_fraction_eq.items():
+                assert pytest.approx(1e2, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        # pressurechanger constraints
+
+        if hasattr(unit, "ratioP_calculation"):
+            for t, c in unit.ratioP_calculation.items():
+                assert pytest.approx(1e-5, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        if hasattr(unit, "fluid_work_calculation"):
+            for t, c in unit.fluid_work_calculation.items():
+                assert pytest.approx(1e-5, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        if hasattr(unit, "actual_work"):
+            for t, c in unit.actual_work.items():
+                assert pytest.approx(1e-3, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        if hasattr(unit, "isentropic_pressure"):
+            for t, c in unit.isentropic_pressure.items():
+                assert pytest.approx(1e-5, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        if hasattr(unit, "isothermal"):
+            for t, c in unit.isothermal.items():
+                assert pytest.approx(1e-2, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        if hasattr(unit, "isentropic"):
+            for t, c in unit.isentropic.items():
+                assert pytest.approx(1e-1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        if hasattr(unit, "isentropic_energy_balance"):
+            for t, c in unit.isentropic_energy_balance.items():
+                assert pytest.approx(1e-3, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        if hasattr(unit, "zero_work_equation"):
+            for t, c in unit.zero_work_equation.items():
+                assert pytest.approx(1e-3, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        if hasattr(unit, "state_material_balances"):
+            for (t, j), c in unit.state_material_balances.items():
+                assert pytest.approx(1e-2, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        # heater and reactor only add 0D control volume constraints
+        if hasattr(unit, 'material_holdup_calculation'):
+            for (t, p, j), c in unit.material_holdup_calculation.items():
+                assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'rate_reaction_stoichiometry_constraint'):
+            for (t, p, j), c in (
+                    unit.rate_reaction_stoichiometry_constraint.items()):
+                assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'equilibrium_reaction_stoichiometry_constraint'):
+            for (t, p, j), c in (
+                    unit.equilibrium_reaction_stoichiometry_constraint
+                    .items()):
+                assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'inherent_reaction_stoichiometry_constraint'):
+            for (t, p, j), c in (
+                    unit.inherent_reaction_stoichiometry_constraint.items()):
+                assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'material_balances'):
+            for (t, p, j), c in unit.material_balances.items():
+                assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'element_balances'):
+            for (t, e), c in unit.element_balances.items():
+                assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'elemental_holdup_calculation'):
+            for (t, e), c in unit.elemental_holdup_calculation.items():
+                assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'enthalpy_balances'):
+            for t, c in unit.enthalpy_balances.items():
+                assert pytest.approx(1e-3, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'energy_holdup_calculation'):
+            for (t, p), c in unit.energy_holdup_calculation.items():
+                assert pytest.approx(1e-3, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'pressure_balance'):
+            for t, c in unit.pressure_balance.items():
+                assert pytest.approx(1e-5, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, 'sum_of_phase_fractions'):
+            for t, c in unit.sum_of_phase_fractions.items():
+                assert pytest.approx(1e2, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+        if hasattr(unit, "material_accumulation_disc_eq"):
+            for (t, p, j), c in unit.material_accumulation_disc_eq.items():
+                assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        if hasattr(unit, "energy_accumulation_disc_eq"):
+            for (t, p), c in unit.energy_accumulation_disc_eq.items():
+                assert pytest.approx(1e-3, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+        if hasattr(unit, "element_accumulation_disc_eq"):
+            for (t, e), c in unit.element_accumulation_disc_eq.items():
+                assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+
+    # equality constraints between ports at Arc sources and destinations
+    for arc in model.fs.component_data_objects(Arc, descend_into=True):
+        for c in arc.component_data_objects(Constraint, descend_into=True):
+            if hasattr(unit, "enth_mol_equality"):
+                for t, c in unit.enth_mol_equality.items():
+                    assert pytest.approx(1e-3, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+            if hasattr(unit, "flow_mol_equality"):
+                for t, c in unit.flow_mol_equality.items():
+                    assert pytest.approx(1, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+            if hasattr(unit, "mole_frac_comp_equality"):
+                for (t, j), c in unit.mole_frac_comp_equality.items():
+                    assert pytest.approx(1e2, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
+            if hasattr(unit, "pressure_equality"):
+                for t, c in unit.pressure_equality.items():
+                    assert pytest.approx(1e-5, rel=1e-5) == iscale.get_constraint_transform_applied_scaling_factor(c)
 
 
 @pytest.mark.integration
