@@ -15,9 +15,9 @@ from pandas import DataFrame
 from collections import OrderedDict
 from pyomo.environ import value
 from pyomo.network import Arc, Port
-from pyomo.core.base.units_container import units
 
 import idaes.logger as idaeslog
+from idaes.core.util.units_of_measurement import report_quantity
 
 _log = idaeslog.getLogger(__name__)
 
@@ -211,7 +211,7 @@ def tag_state_quantities(blocks, attributes, labels, exception=False):
 
 
 def create_stream_table_dataframe(
-    streams, true_state=False, time_point=0, orient="columns", add_units=False
+    streams, true_state=False, time_point=0, orient="columns"
 ):
     """
     Method to create a stream table in the form of a pandas dataframe. Method
@@ -231,8 +231,6 @@ def create_stream_table_dataframe(
         orient : orientation of stream table. Accepted values are 'columns'
             (default) where streams are displayed as columns, or 'index' where
             stream are displayed as rows.
-        add_units : Add a Units column to the dataframe representing the units
-            of the stream values.
 
     Returns:
         A pandas DataFrame containing the stream table data.
@@ -241,8 +239,7 @@ def create_stream_table_dataframe(
     stream_states = stream_states_dict(streams=streams, time_point=time_point)
     full_keys = []  # List of all rows in dataframe to fill in missing data
 
-    if add_units and stream_states:
-        stream_attributes["Units"] = {}
+    stream_attributes["Units"] = {}
 
     for key, sb in stream_states.items():
         stream_attributes[key] = {}
@@ -253,18 +250,14 @@ def create_stream_table_dataframe(
         for k in disp_dict:
             for i in disp_dict[k]:
                 stream_key = k if i is None else f"{k} {i}"
-                stream_attributes[key][stream_key] = value(disp_dict[k][i])
-                if add_units:
-                    pyomo_unit = units.get_units(disp_dict[k][i])
-                    if pyomo_unit is not None:
-                        pint_unit = pyomo_unit._get_pint_unit()
-                        stream_attributes["Units"][stream_key] = {
-                            "raw": str(pyomo_unit),
-                            "html": "{:~H}".format(pint_unit),
-                            "latex": "{:~L}".format(pint_unit),
-                        }
-                    else:
-                        stream_attributes["Units"][stream_key] = None
+
+                quant = report_quantity(disp_dict[k][i])
+
+                stream_attributes[key][stream_key] = quant.m
+                # TODO: Only need to do this once, as otherwise we are just
+                # repeatedly overwriting this
+                stream_attributes["Units"][stream_key] = quant.u
+
                 if stream_key not in full_keys:
                     full_keys.append(stream_key)
 

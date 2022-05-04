@@ -305,7 +305,7 @@ class FlowsheetSerializer:
         untouched_ports = set(self.ports) - used_ports
         return untouched_ports
 
-    def _make_valid_json(self, df):
+    def _clean_values(self, df):
         """
         Replacing NaN, Infinity, and Negative Infinity with strings to make valid JSON for front end consumption
         Args:
@@ -313,7 +313,36 @@ class FlowsheetSerializer:
         Return:
             The dataframe that now has valid JSON
         """
-        df = df.replace(np.nan, "NaN").replace(np.inf, "Inf").replace(np.NINF, "-Inf")
+        return df.replace(np.nan, "NaN").replace(np.inf, "Inf").replace(np.NINF, "-Inf")
+
+    def _clean_units(self, df):
+        """
+        Convert Unit pint object to different string formats in Pandas dataframe
+        Args:
+            df: The Pandas dataframe to replace pint objects to different string formats
+        Return:
+            The dataframe that now has valid JSON
+        """
+        if "Units" in df.columns:
+            df["Units"] = df["Units"].apply(
+                lambda pint_unit: {
+                    "raw": str(pint_unit),
+                    "html": "{:~H}".format(pint_unit),
+                    "latex": "{:~L}".format(pint_unit),
+                }
+            )
+        return df
+
+    def _make_valid_json(self, df):
+        """
+        Replacing non-serializable objects to have a final valid JSON object
+        Args:
+            df: The Pandas dataframe to replace non-serializable objects within
+        Return:
+            The dataframe that now has valid JSON
+        """
+        df = self._clean_values(df)
+        df = self._clean_units(df)
         return df
 
     def _add_unit_model_with_ports(self, unit, unit_type):
@@ -472,7 +501,7 @@ class FlowsheetSerializer:
         # Get the stream table and add it to the model json
         # Change the index of the pandas dataframe to not be the variables
         self._stream_table_df = (
-            create_stream_table_dataframe(self.streams, add_units=True)
+            create_stream_table_dataframe(self.streams)
             # Change the index of the pandas dataframe to not be the variables
             .reset_index()
             .rename(columns={"index": "Variable"})
@@ -488,8 +517,12 @@ class FlowsheetSerializer:
             (pd.notnull(self._stream_table_df)), None
         )
 
+        # Get different formats from the Units' pint object
+        self._stream_table_df = self._clean_units(self._stream_table_df)
+
         # Order the stream table based on the right order:
         # feed streams -> middle streams -> product streams
+        self._ordered_stream_names.appendleft("Units")
         self._ordered_stream_names.appendleft("Variable")
         self._stream_table_df = self._stream_table_df[self._ordered_stream_names]
 
