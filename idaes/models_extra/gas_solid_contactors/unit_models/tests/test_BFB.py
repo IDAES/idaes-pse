@@ -1125,11 +1125,11 @@ class TestIronOC_EnergyBalanceType(object):
         assert pytest.approx(0.52679, abs=1e-5) == iron_oc.fs.unit.delta[0, 0].value
         assert pytest.approx(0.30244, abs=1e-5) == iron_oc.fs.unit.delta[0, 1].value
         assert (
-            pytest.approx(122577.18737, abs=1e-5)
+            pytest.approx(122577.18737, rel=1e-5)
             == iron_oc.fs.unit.gas_outlet.pressure[0].value
         )
         assert (
-            pytest.approx(63422.81262, abs=1e-5)
+            pytest.approx(63422.81262, rel=1e-5)
             == iron_oc.fs.unit.gas_inlet.pressure[0].value
             - iron_oc.fs.unit.gas_outlet.pressure[0].value
         )
@@ -1364,14 +1364,14 @@ class TestIronOC_TransformationMethod(object):
             pytest.approx(3.36531, abs=1e-5)
             == iron_oc.fs.unit.velocity_bubble[0, 1].value
         )
-        assert pytest.approx(0.266906, abs=1e-5) == iron_oc.fs.unit.delta[0, 0].value
-        assert pytest.approx(0.31323, abs=1e-5) == iron_oc.fs.unit.delta[0, 1].value
+        assert pytest.approx(0.266906, rel=1e-5) == iron_oc.fs.unit.delta[0, 0].value
+        assert pytest.approx(0.31323, rel=1e-5) == iron_oc.fs.unit.delta[0, 1].value
         assert (
-            pytest.approx(126040.59980, abs=1e-5)
+            pytest.approx(126040.59980, rel=1e-5)
             == iron_oc.fs.unit.gas_outlet.pressure[0].value
         )
         assert (
-            pytest.approx(59959.40019, abs=1e-5)
+            pytest.approx(59959.40019, rel=1e-5)
             == iron_oc.fs.unit.gas_inlet.pressure[0].value
             - iron_oc.fs.unit.gas_outlet.pressure[0].value
         )
