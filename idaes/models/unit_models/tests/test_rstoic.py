@@ -16,6 +16,7 @@ Tests for IDAES Stoichiometric reactor.
 Author: Chinedu Okoli, Andrew Lee
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, units, Var
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
@@ -252,9 +253,40 @@ class TestSaponification(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, sapon):
-        sapon.fs.unit.report()
+        stream = StringIO()
+
+        sapon.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                  : Value  : Units         : Fixed : Bounds
+               Heat Duty : 0.0000 :          watt :  True : (None, None)
+         Pressure Change : 0.0000 :        pascal :  True : (None, None)
+    Reaction Extent [R1] : 90.000 : mole / second :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                             Units            Inlet     Outlet  
+    Volumetric Flowrate                meter ** 3 / second     1.0000     1.0000
+    Molar Concentration H2O              mole / meter ** 3     55388.     55388.
+    Molar Concentration NaOH             mole / meter ** 3     100.00     10.000
+    Molar Concentration EthylAcetate     mole / meter ** 3     100.00     10.000
+    Molar Concentration SodiumAcetate    mole / meter ** 3     0.0000     90.000
+    Molar Concentration Ethanol          mole / meter ** 3     0.0000     90.000
+    Temperature                                     kelvin     303.15     304.21
+    Pressure                                        pascal 1.0132e+05 1.0132e+05
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

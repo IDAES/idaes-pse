@@ -16,6 +16,8 @@ Authors: Andrew Lee
 """
 
 import pytest
+from io import StringIO
+
 from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models.feed_flash import FeedFlash, FlashType
@@ -27,8 +29,6 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
     number_total_constraints,
-    fixed_variables_set,
-    activated_constraints_set,
     number_unused_variables,
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
@@ -140,9 +140,27 @@ class TestBTXIdeal(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                               Units        Outlet  
+    flow_mol                mole / second     1.0000
+    mole_frac_comp benzene  dimensionless    0.50000
+    mole_frac_comp toluene  dimensionless    0.50000
+    temperature                    kelvin     368.00
+    pressure                       pascal 1.0132e+05
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -230,6 +248,26 @@ class TestIAPWS(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, iapws):
-        iapws.fs.unit.report()
+        stream = StringIO()
+
+        iapws.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                     Units          Outlet  
+    Molar Flow (mol/s)              mole / second     100.00
+    Mass Flow (kg/s)            kilogram / second     1.8015
+    T (K)                                  kelvin     373.13
+    P (Pa)                                 pascal 1.0132e+05
+    Vapor Fraction                  dimensionless    0.40467
+    Molar Enthalpy (J/mol) Vap       joule / mole     48201.
+    Molar Enthalpy (J/mol) Liq       joule / mole     7549.7
+====================================================================================
+"""
+
+        assert output in stream.getvalue()

@@ -16,6 +16,7 @@ Authors: Andrew Lee
 """
 
 import pytest
+from io import StringIO
 
 from pyomo.environ import ConcreteModel
 from pyomo.util.check_units import assert_units_consistent
@@ -138,6 +139,32 @@ class TestTranslate(object):
     # No solve, as problem has is missing linking constraints
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, trans):
-        trans.fs.unit.report()
+        stream = StringIO()
+
+        trans.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                             Units           Inlet     Outlet
+    Volumetric Flowrate                meter ** 3 / second  0.0010000       -
+    Molar Concentration H2O              mole / meter ** 3     55388.       -
+    Molar Concentration NaOH             mole / meter ** 3     100.00       -
+    Molar Concentration EthylAcetate     mole / meter ** 3     100.00       -
+    Molar Concentration SodiumAcetate    mole / meter ** 3     0.0000       -
+    Molar Concentration Ethanol          mole / meter ** 3     0.0000       -
+    Temperature                                     kelvin     298.15       -
+    Pressure                                        pascal 1.0132e+05       -
+    flow_mol                                 mole / second          -  1.0000
+    mole_frac_comp benzene                   dimensionless          - 0.50000
+    mole_frac_comp toluene                   dimensionless          - 0.50000
+    temperature                                     kelvin          -  298.15
+    pressure                                        pascal          -  101325
+====================================================================================
+"""
+
+        assert output in stream.getvalue()

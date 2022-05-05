@@ -16,6 +16,8 @@ Tests for Heat Exchanger 1D unit model.
 Author: Jaffer Ghouse
 """
 import pytest
+from io import StringIO
+
 from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
@@ -370,9 +372,42 @@ class TestBTX_cocurrent(object):
         assert abs(shell_side - tube_side) <= 1e-6
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                 : Value      : Units         : Fixed : Bounds
+        Number of Tubes :     10.000 : dimensionless :  True : (None, None)
+             Shell Area :    0.84842 :    meter ** 2 : False : (None, None)
+         Shell Diameter :     1.0400 :         meter :  True : (None, None)
+           Shell Length :     4.8500 :         meter :  True : (None, None)
+              Tube Area : 8.9417e-05 :    meter ** 2 : False : (None, None)
+    Tube Inner Diameter :   0.010670 :         meter :  True : (None, None)
+            Tube Length :     4.8500 :         meter :  True : (None, None)
+    Tube Outer Diameter :   0.011670 :         meter :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                               Units       Shell Inlet  Shell Outlet  Tube Inlet  Tube Outlet
+    flow_mol                mole / second      5.0000        5.0000       1.0000      1.0000 
+    mole_frac_comp benzene  dimensionless     0.50000       0.50000      0.50000     0.50000 
+    mole_frac_comp toluene  dimensionless     0.50000       0.50000      0.50000     0.50000 
+    temperature                    kelvin      365.00        322.67       300.00      322.46 
+    pressure                       pascal  1.0132e+05    1.0132e+05   1.0132e+05  1.0132e+05 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -571,9 +606,42 @@ class TestBTX_countercurrent(object):
         assert abs(shell_side - tube_side) <= 1e-6
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                 : Value      : Units         : Fixed : Bounds
+        Number of Tubes :     10.000 : dimensionless :  True : (None, None)
+             Shell Area :    0.84842 :    meter ** 2 : False : (None, None)
+         Shell Diameter :     1.0400 :         meter :  True : (None, None)
+           Shell Length :     4.8500 :         meter :  True : (None, None)
+              Tube Area : 8.9417e-05 :    meter ** 2 : False : (None, None)
+    Tube Inner Diameter :   0.010670 :         meter :  True : (None, None)
+            Tube Length :     4.8500 :         meter :  True : (None, None)
+    Tube Outer Diameter :   0.011670 :         meter :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                               Units       Shell Inlet  Shell Outlet  Tube Inlet  Tube Outlet
+    flow_mol                mole / second      5.0000        5.0000       1.0000      1.0000 
+    mole_frac_comp benzene  dimensionless     0.50000       0.50000      0.50000     0.50000 
+    mole_frac_comp toluene  dimensionless     0.50000       0.50000      0.50000     0.50000 
+    temperature                    kelvin      365.00        304.29       300.00      331.44 
+    pressure                       pascal  1.0132e+05    1.0132e+05   1.0132e+05  1.0132e+05 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -764,9 +832,44 @@ class TestIAPWS_cocurrent(object):
         assert abs(shell_side + tube_side) <= 1e-6
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, iapws):
-        iapws.fs.unit.report()
+        stream = StringIO()
+
+        iapws.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                 : Value      : Units         : Fixed : Bounds
+        Number of Tubes :     10.000 : dimensionless :  True : (None, None)
+             Shell Area :    0.84842 :    meter ** 2 : False : (None, None)
+         Shell Diameter :     1.0400 :         meter :  True : (None, None)
+           Shell Length :     4.8500 :         meter :  True : (None, None)
+              Tube Area : 8.9417e-05 :    meter ** 2 : False : (None, None)
+    Tube Inner Diameter :   0.010670 :         meter :  True : (None, None)
+            Tube Length :     4.8500 :         meter :  True : (None, None)
+    Tube Outer Diameter :   0.011670 :         meter :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                     Units         Shell Inlet  Shell Outlet  Tube Inlet  Tube Outlet
+    Molar Flow (mol/s)              mole / second      5.0000        5.0000       5.0000      5.0000 
+    Mass Flow (kg/s)            kilogram / second    0.090076      0.090076     0.090076    0.090076 
+    T (K)                                  kelvin      422.60        373.13       365.88      370.77 
+    P (Pa)                                 pascal  1.0132e+05    1.0132e+05   1.0132e+05  1.0132e+05 
+    Vapor Fraction                  dimensionless      1.0000       0.95316       0.0000      0.0000 
+    Molar Enthalpy (J/mol) Vap       joule / mole      50000.        48201.       47926.      48112. 
+    Molar Enthalpy (J/mol) Liq       joule / mole      11342.        7549.7       7000.0      7370.4 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -957,9 +1060,44 @@ class TestIAPWS_countercurrent(object):
         assert abs(shell_side + tube_side) <= 1e-6
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, iapws):
-        iapws.fs.unit.report()
+        stream = StringIO()
+
+        iapws.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                 : Value      : Units         : Fixed : Bounds
+        Number of Tubes :     10.000 : dimensionless :  True : (None, None)
+             Shell Area :    0.84842 :    meter ** 2 : False : (None, None)
+         Shell Diameter :     1.0400 :         meter :  True : (None, None)
+           Shell Length :     4.8500 :         meter :  True : (None, None)
+              Tube Area : 8.9417e-05 :    meter ** 2 : False : (None, None)
+    Tube Inner Diameter :   0.010670 :         meter :  True : (None, None)
+            Tube Length :     4.8500 :         meter :  True : (None, None)
+    Tube Outer Diameter :   0.011670 :         meter :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                     Units         Shell Inlet  Shell Outlet  Tube Inlet  Tube Outlet
+    Molar Flow (mol/s)              mole / second      5.0000        5.0000       5.0000      5.0000 
+    Mass Flow (kg/s)            kilogram / second    0.090076      0.090076     0.090076    0.090076 
+    T (K)                                  kelvin      422.60        373.13       365.88      372.00 
+    P (Pa)                                 pascal  1.0132e+05    1.0132e+05   1.0132e+05  1.0132e+05 
+    Vapor Fraction                  dimensionless      1.0000       0.93008       0.0000      0.0000 
+    Molar Enthalpy (J/mol) Vap       joule / mole      50000.        48201.       47926.      48158. 
+    Molar Enthalpy (J/mol) Liq       joule / mole      11342.        7549.7       7000.0      7464.2 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -1157,9 +1295,45 @@ class TestSaponification_cocurrent(object):
         assert abs(shell_side + tube_side) <= 1e-6
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, sapon):
-        sapon.fs.unit.report()
+        stream = StringIO()
+
+        sapon.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                 : Value      : Units         : Fixed : Bounds
+        Number of Tubes :     10.000 : dimensionless :  True : (None, None)
+             Shell Area :    0.84842 :    meter ** 2 : False : (None, None)
+         Shell Diameter :     1.0400 :         meter :  True : (None, None)
+           Shell Length :     4.8500 :         meter :  True : (None, None)
+              Tube Area : 8.9417e-05 :    meter ** 2 : False : (None, None)
+    Tube Inner Diameter :   0.010670 :         meter :  True : (None, None)
+            Tube Length :     4.8500 :         meter :  True : (None, None)
+    Tube Outer Diameter :   0.011670 :         meter :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                             Units          Shell Inlet  Shell Outlet  Tube Inlet  Tube Outlet
+    Volumetric Flowrate                meter ** 3 / second   0.0010000     0.0010000    0.0010000   0.0010000 
+    Molar Concentration H2O              mole / meter ** 3      55388.        55388.       55388.      55388. 
+    Molar Concentration NaOH             mole / meter ** 3      100.00        100.00       100.00      100.00 
+    Molar Concentration EthylAcetate     mole / meter ** 3      100.00        100.00       100.00      100.00 
+    Molar Concentration SodiumAcetate    mole / meter ** 3      0.0000    8.9990e-05       0.0000  8.9990e-05 
+    Molar Concentration Ethanol          mole / meter ** 3      0.0000    8.9990e-05       0.0000  8.9990e-05 
+    Temperature                                     kelvin      320.00        309.36       300.00      301.06 
+    Pressure                                        pascal  1.0132e+05    1.0132e+05   1.0132e+05  1.0132e+05 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -1357,9 +1531,45 @@ class TestSaponification_countercurrent(object):
         assert abs(shell_side + tube_side) <= 1e-6
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, sapon):
-        sapon.fs.unit.report()
+        stream = StringIO()
+
+        sapon.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                 : Value      : Units         : Fixed : Bounds
+        Number of Tubes :     10.000 : dimensionless :  True : (None, None)
+             Shell Area :    0.84842 :    meter ** 2 : False : (None, None)
+         Shell Diameter :     1.0400 :         meter :  True : (None, None)
+           Shell Length :     4.8500 :         meter :  True : (None, None)
+              Tube Area : 8.9417e-05 :    meter ** 2 : False : (None, None)
+    Tube Inner Diameter :   0.010670 :         meter :  True : (None, None)
+            Tube Length :     4.8500 :         meter :  True : (None, None)
+    Tube Outer Diameter :   0.011670 :         meter :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                             Units          Shell Inlet  Shell Outlet  Tube Inlet  Tube Outlet
+    Volumetric Flowrate                meter ** 3 / second   0.0010000     0.0010000    0.0010000   0.0010000 
+    Molar Concentration H2O              mole / meter ** 3      55388.        55388.       55388.      55388. 
+    Molar Concentration NaOH             mole / meter ** 3      100.00        100.00       100.00      100.00 
+    Molar Concentration EthylAcetate     mole / meter ** 3      100.00        100.00       100.00      100.00 
+    Molar Concentration SodiumAcetate    mole / meter ** 3      0.0000    8.9990e-05       0.0000  8.9990e-05 
+    Molar Concentration Ethanol          mole / meter ** 3      0.0000    8.9990e-05       0.0000  8.9990e-05 
+    Temperature                                     kelvin      320.00        309.19       300.00      301.08 
+    Pressure                                        pascal  1.0132e+05    1.0132e+05   1.0132e+05  1.0132e+05 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -1673,7 +1883,40 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                 : Value    : Units         : Fixed : Bounds
+        Number of Tubes :   10.000 : dimensionless :  True : (None, None)
+             Shell Area :   1.0000 :    meter ** 2 : False : (None, None)
+         Shell Diameter :   1.0400 :         meter :  True : (None, None)
+           Shell Length :   4.8500 :         meter :  True : (None, None)
+              Tube Area :   1.0000 :    meter ** 2 : False : (None, None)
+    Tube Inner Diameter : 0.010670 :         meter :  True : (None, None)
+            Tube Length :   4.8500 :         meter :  True : (None, None)
+    Tube Outer Diameter : 0.011670 :         meter :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                    Units       Shell Inlet  Shell Outlet  Tube Inlet  Tube Outlet
+    Total Molar Flowrate         mole / second      5.0000        100.00       1.0000      100.00 
+    Total Mole Fraction benzene  dimensionless     0.50000       0.50000      0.50000     0.50000 
+    Total Mole Fraction toluene  dimensionless     0.50000       0.50000      0.50000     0.50000 
+    Temperature                         kelvin      365.00        300.00       300.00      300.00 
+    Pressure                            pascal  1.0132e+05    1.0000e+05   1.0132e+05  1.0000e+05 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
     @pytest.mark.component
     def test_initialization_error(self, btx):

@@ -16,6 +16,7 @@ Tests for 0D lumped capacitance heat exchanger model
 Author: Rusty Gentile, John Eslick, Andrew Lee
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -473,32 +474,47 @@ class TestHXLCGeneric(object):
         ):
             m.fs.unit.activate_dynamic_heat_eq()
 
-    @pytest.mark.unit
-    def test_build_valid_configs(self, static_flowsheet_model, dynamic_flowsheet_model):
-        def build_unit_model(m, dyn, dyn_hb):
-            return HeatExchangerLumpedCapacitance(
-                default={
-                    "shell": {"property_package": m.fs.properties},
-                    "tube": {"property_package": m.fs.properties},
-                    "dynamic": dyn,
-                    "dynamic_heat_balance": dyn_hb,
-                }
-            )
+    @pytest.mark.ui
+    @pytest.mark.component
+    def test_report(self, model):
+        stream = StringIO()
 
-        # Static model
-        ms = static_flowsheet_model
-        ms.fs.unit = build_unit_model(ms, False, False)
+        model.fs.unit.report(ostream=stream)
 
-        # Dynamic model
-        md = dynamic_flowsheet_model
-        md.fs.u1 = build_unit_model(ms, False, False)
-        md.fs.u2 = build_unit_model(ms, True, False)
-        md.fs.u3 = build_unit_model(ms, False, True)
-        md.fs.u4 = build_unit_model(ms, True, True)
-        md.discretizer = TransformationFactory("dae.finite_difference")
-        md.discretizer.apply_to(md, nfe=10, wrt=md.fs.time, scheme="BACKWARD")
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
 
-        assert True
+    Variables: 
+
+    Key            : Value  : Units                           : Fixed : Bounds
+           HX Area : 1000.0 :                      meter ** 2 :  True : (0, None)
+    HX Coefficient : 100.00 : kilogram / kelvin / second ** 3 : False : (0, None)
+         Heat Duty : 0.0000 :                            watt : False : (None, None)
+
+    Expressions: 
+
+    Key             : Value  : Units
+    Delta T Driving : 10.050 : kelvin
+         Delta T In : 10.000 : kelvin
+        Delta T Out : 10.100 : kelvin
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                     Units         Hot Inlet  Hot Outlet  Cold Inlet  Cold Outlet
+    Molar Flow (mol/s)              mole / second     100.00      1.0000      100.00      1.0000 
+    Mass Flow (kg/s)            kilogram / second     1.8015    0.018015      1.8015    0.018015 
+    T (K)                                  kelvin     326.17      286.34      312.89      286.34 
+    P (Pa)                                 pascal 1.0132e+05  1.0000e+05  1.0132e+05  1.0000e+05 
+    Vapor Fraction                  dimensionless     0.0000      0.0000      0.0000      0.0000 
+    Molar Enthalpy (J/mol) Vap       joule / mole     42031.      2168.6      45975.      2168.6 
+    Molar Enthalpy (J/mol) Liq       joule / mole     4000.0      1000.0      3000.0      1000.0 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 class TestHXLCTransientSCO2(object):

@@ -16,6 +16,8 @@ Author: Akula Paul, Andrew Lee
 """
 
 import pytest
+from io import StringIO
+
 from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
@@ -314,9 +316,27 @@ class TestHXNTU(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, model):
-        model.fs.unit.report()
+        stream = StringIO()
+
+        model.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                Units       Hot Inlet  Hot Outlet  Cold Inlet  Cold Outlet
+    Total Molar Flowrate     mole / second     60.549      60.549      63.019      63.019 
+    Total Mole Fraction H2O  dimensionless    0.87470     0.87470     0.85090     0.85090 
+    Total Mole Fraction MEA  dimensionless    0.10950     0.10950     0.10770     0.10770 
+    Total Mole Fraction CO2  dimensionless   0.015800    0.015800    0.041400    0.041400 
+    Temperature                     kelvin     392.23      364.31      326.36      357.93 
+    Pressure                        pascal 2.0265e+05  2.0065e+05  2.0265e+05  2.0065e+05 
+====================================================================================
+
+"""
 
     @pytest.mark.component
     def test_initialization_error(self, model):

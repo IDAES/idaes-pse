@@ -16,6 +16,7 @@ Tests for Separator unit model.
 Author: Andrew Lee
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -979,9 +980,38 @@ class TestSaponification(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, sapon):
-        sapon.fs.unit.report()
+        stream = StringIO()
+
+        sapon.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                     : Value   : Units         : Fixed : Bounds
+    Split Fraction [('c',)] : 0.20000 : dimensionless : False : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                             Units            Inlet  
+    Volumetric Flowrate                meter ** 3 / second     1.0000
+    Molar Concentration H2O              mole / meter ** 3     55388.
+    Molar Concentration NaOH             mole / meter ** 3     100.00
+    Molar Concentration EthylAcetate     mole / meter ** 3     100.00
+    Molar Concentration SodiumAcetate    mole / meter ** 3     0.0000
+    Molar Concentration Ethanol          mole / meter ** 3     0.0000
+    Temperature                                     kelvin     303.15
+    Pressure                                        pascal 1.0132e+05
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -1192,9 +1222,35 @@ class TestBTXIdeal(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                                  : Value   : Units         : Fixed : Bounds
+    Split Fraction [('outlet_2', 'Vap')] : 0.20000 : dimensionless : False : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                               Units         Inlet  
+    flow_mol                mole / second     1.0000
+    mole_frac_comp benzene  dimensionless    0.50000
+    mole_frac_comp toluene  dimensionless    0.50000
+    temperature                    kelvin     368.00
+    pressure                       pascal 1.0132e+05
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -1337,9 +1393,37 @@ class TestIAPWS(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, iapws):
-        iapws.fs.unit.report()
+        stream = StringIO()
+
+        iapws.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                                  : Value   : Units         : Fixed : Bounds
+    Split Fraction [('outlet_3', 'H2O')] : 0.10000 : dimensionless : False : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                     Units           Inlet  
+    Molar Flow (mol/s)              mole / second     100.00
+    Mass Flow (kg/s)            kilogram / second     1.8015
+    T (K)                                  kelvin     326.17
+    P (Pa)                                 pascal 1.0132e+05
+    Vapor Fraction                  dimensionless     0.0000
+    Molar Enthalpy (J/mol) Vap       joule / mole     42031.
+    Molar Enthalpy (J/mol) Liq       joule / mole     4000.0
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -2976,9 +3060,31 @@ class TestBTX_Ideal(object):
         # Assume energy conservation is covered by control volume tests
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+
+------------------------------------------------------------------------------------
+    Stream Table
+                            outlet_1   outlet_2     inlet  
+    flow_mol                  0.39612    0.60388     1.0000
+    mole_frac_comp benzene    0.63398    0.41212    0.50000
+    mole_frac_comp toluene    0.36602    0.58788    0.50000
+    temperature                368.00     368.00     368.00
+    pressure               1.0132e+05 1.0132e+05 1.0132e+05
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 @pytest.mark.unit

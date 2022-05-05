@@ -16,6 +16,8 @@ Authors: Andrew Lee
 """
 
 import pytest
+from io import StringIO
+
 from pyomo.environ import ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
 
@@ -145,9 +147,30 @@ class TestSaponification(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, sapon):
-        sapon.fs.unit.report()
+        stream = StringIO()
+
+        sapon.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                             Units           Outlet  
+    Volumetric Flowrate                meter ** 3 / second  0.0010000
+    Molar Concentration H2O              mole / meter ** 3     55388.
+    Molar Concentration NaOH             mole / meter ** 3     100.00
+    Molar Concentration EthylAcetate     mole / meter ** 3     100.00
+    Molar Concentration SodiumAcetate    mole / meter ** 3     0.0000
+    Molar Concentration Ethanol          mole / meter ** 3     0.0000
+    Temperature                                     kelvin     303.15
+    Pressure                                        pascal 1.0132e+05
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -222,6 +245,26 @@ class TestIAPWS(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, iapws):
-        iapws.fs.unit.report()
+        stream = StringIO()
+
+        iapws.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                     Units          Outlet  
+    Molar Flow (mol/s)              mole / second     100.00
+    Mass Flow (kg/s)            kilogram / second     1.8015
+    T (K)                                  kelvin     373.13
+    P (Pa)                                 pascal 1.0132e+05
+    Vapor Fraction                  dimensionless    0.40467
+    Molar Enthalpy (J/mol) Vap       joule / mole     48201.
+    Molar Enthalpy (J/mol) Liq       joule / mole     7549.7
+====================================================================================
+"""
+
+        assert output in stream.getvalue()

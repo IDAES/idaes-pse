@@ -251,7 +251,7 @@ class TestSaponification(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, sapon):
         stream = StringIO()
 

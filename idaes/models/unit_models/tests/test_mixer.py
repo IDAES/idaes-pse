@@ -16,6 +16,7 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -723,7 +724,26 @@ class TestMixer(object):
 
         m.fs.mix = Mixer(default={"property_package": m.fs.pp})
 
-        m.fs.mix.report()
+        stream = StringIO()
+
+        m.fs.mix.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.mix                                                              Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                          Units        inlet_1    inlet_2    Outlet  
+    component_flow_phase ('p1', 'c1')  mole / second     2.0000     2.0000     2.0000
+    component_flow_phase ('p1', 'c2')  mole / second     2.0000     2.0000     2.0000
+    component_flow_phase ('p2', 'c1')  mole / second     2.0000     2.0000     2.0000
+    component_flow_phase ('p2', 'c2')  mole / second     2.0000     2.0000     2.0000
+    temperature                               kelvin     300.00     300.00     300.00
+    pressure                                  pascal 1.0000e+05 1.0000e+05 1.0000e+05
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------

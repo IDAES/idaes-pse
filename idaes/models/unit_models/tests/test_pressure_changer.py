@@ -16,6 +16,7 @@ Tests for Pressure Changer unit model.
 Author: Andrew Lee, Emmanuel Ogbe
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -26,7 +27,6 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import (
     FlowsheetBlock,
@@ -346,9 +346,37 @@ class TestBTX_isothermal(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key             : Value      : Units         : Fixed : Bounds
+    Mechanical Work : 1.8190e-11 :          watt : False : (None, None)
+    Pressure Change :     50000. :        pascal :  True : (None, None)
+     Pressure Ratio :     1.4935 : dimensionless : False : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                               Units         Inlet     Outlet  
+    flow_mol                mole / second     5.0000     5.0000
+    mole_frac_comp benzene  dimensionless    0.50000    0.50000
+    mole_frac_comp toluene  dimensionless    0.50000    0.50000
+    temperature                    kelvin     365.00     365.00
+    pressure                       pascal 1.0132e+05 1.5132e+05
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -575,9 +603,40 @@ class TestIAPWS(object):
             assert value(prop_out.vapor_frac) == xout
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, iapws):
-        iapws.fs.unit.report()
+        stream = StringIO()
+
+        iapws.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                   : Value   : Units         : Fixed : Bounds
+    Isentropic Efficiency : 0.90000 : dimensionless :  True : (None, None)
+          Mechanical Work :  101.44 :          watt : False : (None, None)
+          Pressure Change :  50000. :        pascal :  True : (None, None)
+           Pressure Ratio :  1.4935 : dimensionless : False : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                     Units           Inlet     Outlet  
+    Molar Flow (mol/s)              mole / second     100.00     100.00
+    Mass Flow (kg/s)            kilogram / second     1.8015     1.8015
+    T (K)                                  kelvin     326.17     326.17
+    P (Pa)                                 pascal 1.0132e+05 1.5132e+05
+    Vapor Fraction                  dimensionless     0.0000     0.0000
+    Molar Enthalpy (J/mol) Vap       joule / mole     42031.     45277.
+    Molar Enthalpy (J/mol) Liq       joule / mole     4000.0     4001.0
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
     @pytest.mark.component
     def test_initialization_error(self, iapws):
@@ -725,9 +784,41 @@ class TestSaponification(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, sapon):
-        sapon.fs.unit.report()
+        stream = StringIO()
+
+        sapon.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key             : Value   : Units         : Fixed : Bounds
+         Efficiency : 0.90000 : dimensionless :  True : (None, None)
+    Mechanical Work : -18.000 :          watt : False : (None, None)
+    Pressure Change : -20000. :        pascal :  True : (None, None)
+     Pressure Ratio : 0.80262 : dimensionless : False : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                             Units            Inlet     Outlet  
+    Volumetric Flowrate                meter ** 3 / second  0.0010000  0.0010000
+    Molar Concentration H2O              mole / meter ** 3     55388.     55388.
+    Molar Concentration NaOH             mole / meter ** 3     100.00     100.00
+    Molar Concentration EthylAcetate     mole / meter ** 3     100.00     100.00
+    Molar Concentration SodiumAcetate    mole / meter ** 3     0.0000 8.9990e-05
+    Molar Concentration Ethanol          mole / meter ** 3     0.0000 8.9990e-05
+    Temperature                                     kelvin     320.00     320.00
+    Pressure                                        pascal 1.0132e+05     81325.
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 class TestTurbine(object):

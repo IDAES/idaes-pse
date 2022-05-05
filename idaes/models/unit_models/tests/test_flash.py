@@ -15,6 +15,8 @@ Tests for Flash unit model.
 Author: Jaffer Ghouse
 """
 import pytest
+from io import StringIO
+
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, units, Var
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
@@ -207,9 +209,36 @@ class TestBTXIdeal(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key             : Value  : Units  : Fixed : Bounds
+          Heat Duty : 0.0000 :   watt :  True : (None, None)
+    Pressure Change : 0.0000 : pascal :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                              Inlet    Vapor Outlet  Liquid Outlet
+    flow_mol                   1.0000      0.39612       0.60388  
+    mole_frac_comp benzene    0.50000      0.63398       0.41212  
+    mole_frac_comp toluene    0.50000      0.36602       0.58788  
+    temperature                368.00       368.00        368.00  
+    pressure               1.0132e+05   1.0132e+05    1.0132e+05  
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -365,7 +394,32 @@ class TestIAPWS(object):
     @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, iapws):
-        iapws.fs.unit.report()
+        stream = StringIO()
+
+        iapws.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key             : Value  : Units  : Fixed : Bounds
+          Heat Duty : 0.0000 :   watt :  True : (None, None)
+    Pressure Change : 0.0000 : pascal :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+               Inlet  Vapor Outlet  Liquid Outlet
+    flow_mol     100       40.467        59.533  
+    enth_mol   24000       48201.        7549.7  
+    pressure  101325   1.0132e+05    1.0132e+05  
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

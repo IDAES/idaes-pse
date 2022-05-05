@@ -16,6 +16,7 @@ Tests for 0D heat exchanger models.
 Author: John Eslick
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -189,9 +190,35 @@ class TestBTX(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key       : Value   : Units : Fixed : Bounds
+    Heat Duty : -5000.0 :  watt :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                               Units         Inlet     Outlet  
+    flow_mol                mole / second     5.0000     5.0000
+    mole_frac_comp benzene  dimensionless    0.50000    0.50000
+    mole_frac_comp toluene  dimensionless    0.50000    0.50000
+    temperature                    kelvin     365.00     358.91
+    pressure                       pascal 1.0132e+05 1.0132e+05
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -301,9 +328,35 @@ class TestIAPWS(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, iapws):
-        iapws.fs.unit.report()
+        stream = StringIO()
+
+        iapws.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key       : Value  : Units : Fixed : Bounds
+    Heat Duty : 10000. :  watt :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                     Units           Inlet     Outlet  
+    Molar Flow (mol/s)              mole / second     5.0000     5.0000
+    Mass Flow (kg/s)            kilogram / second   0.090076   0.090076
+    T (K)                                  kelvin     422.60     478.74
+    P (Pa)                                 pascal 1.0132e+05 1.0132e+05
+    Vapor Fraction                  dimensionless     1.0000     1.0000
+    Molar Enthalpy (J/mol) Vap       joule / mole     50000.     52000.
+    Molar Enthalpy (J/mol) Liq       joule / mole     11342.     15799.
+====================================================================================
+"""
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -469,9 +522,36 @@ class TestSaponification(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, sapon):
-        sapon.fs.unit.report()
+        stream = StringIO()
+
+        sapon.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key       : Value  : Units : Fixed : Bounds
+    Heat Duty : 1000.0 :  watt :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                             Units            Inlet     Outlet  
+    Volumetric Flowrate                meter ** 3 / second  0.0010000  0.0010000
+    Molar Concentration H2O              mole / meter ** 3     55388.     55388.
+    Molar Concentration NaOH             mole / meter ** 3     100.00     100.00
+    Molar Concentration EthylAcetate     mole / meter ** 3     100.00     100.00
+    Molar Concentration SodiumAcetate    mole / meter ** 3     0.0000 8.9990e-05
+    Molar Concentration Ethanol          mole / meter ** 3     0.0000 8.9990e-05
+    Temperature                                     kelvin     320.00     320.24
+    Pressure                                        pascal 1.0132e+05 1.0132e+05
+====================================================================================
+"""
 
 
 # -----------------------------------------------------------------------------
@@ -582,6 +662,30 @@ class TestBT_Generic(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btg):
-        btg.fs.unit.report()
+        stream = StringIO()
+
+        btg.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key       : Value   : Units : Fixed : Bounds
+    Heat Duty : -5000.0 :  watt :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                    Units         Inlet     Outlet  
+    Total Molar Flowrate         mole / second     5.0000     5.0000
+    Total Mole Fraction benzene  dimensionless    0.50000    0.50000
+    Total Mole Fraction toluene  dimensionless    0.50000    0.50000
+    Temperature                         kelvin     365.00     358.57
+    Pressure                            pascal 1.0132e+05 1.0132e+05
+====================================================================================
+"""

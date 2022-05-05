@@ -16,6 +16,7 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -438,6 +439,39 @@ class TestMethane(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, methane):
-        methane.fs.unit.report()
+        stream = StringIO()
+
+        methane.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key             : Value       : Units  : Fixed : Bounds
+          Heat Duty : -7.4541e+06 :   watt :  True : (None, None)
+    Pressure Change :      0.0000 : pascal :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                           Units         Inlet     Outlet  
+    flow_mol            mole / second     230.00     250.00
+    mole_frac_comp H2   dimensionless   0.043500   0.096080
+    mole_frac_comp N2   dimensionless    0.65220    0.60003
+    mole_frac_comp O2   dimensionless    0.17390 2.8695e-06
+    mole_frac_comp CH4  dimensionless    0.13040 9.8920e-11
+    mole_frac_comp CO   dimensionless 1.0000e-05    0.10386
+    mole_frac_comp CO2  dimensionless 1.0000e-05   0.016124
+    mole_frac_comp H2O  dimensionless 1.0000e-05    0.18390
+    mole_frac_comp NH3  dimensionless 1.0000e-05 1.3084e-06
+    temperature                kelvin     1500.0     2338.7
+    pressure                   pascal 1.0132e+05 1.0132e+05
+====================================================================================
+"""
+
+        assert output in stream.getvalue()

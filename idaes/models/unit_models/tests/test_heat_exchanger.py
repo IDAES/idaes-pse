@@ -16,6 +16,7 @@ Tests for 0D heat exchanger models.
 Author: John Eslick
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -39,7 +40,7 @@ from idaes.core import (
 from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_lmtd_callback,
     delta_temperature_lmtd2_callback,
-    delta_temperature_lmtd3_callback,
+    # delta_temperature_lmtd3_callback,
     delta_temperature_amtd_callback,
     delta_temperature_underwood_callback,
     HeatExchanger,
@@ -645,9 +646,44 @@ class TestBTX_cocurrent(object):
         assert abs(shell + tube) <= 1e-6
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key            : Value  : Units                           : Fixed : Bounds
+           HX Area : 1.0000 :                      meter ** 2 :  True : (0, None)
+    HX Coefficient : 100.00 : kilogram / kelvin / second ** 3 :  True : (0, None)
+         Heat Duty : 4500.8 :                            watt : False : (None, None)
+
+    Expressions: 
+
+    Key             : Value  : Units
+    Delta T Driving : 45.008 : kelvin
+         Delta T In : 65.000 : kelvin
+        Delta T Out : 29.607 : kelvin
+
+------------------------------------------------------------------------------------
+    Stream Table
+                               Units       Hot Inlet  Hot Outlet  Cold Inlet  Cold Outlet
+    flow_mol                mole / second     5.0000      5.0000      1.0000      1.0000 
+    mole_frac_comp benzene  dimensionless    0.50000     0.50000     0.50000     0.50000 
+    mole_frac_comp toluene  dimensionless    0.50000     0.50000     0.50000     0.50000 
+    temperature                    kelvin     365.00      359.52      300.00      329.91 
+    pressure                       pascal 1.0132e+05  1.0132e+05  1.0132e+05  1.0132e+05 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -822,9 +858,44 @@ class TestBTX_cocurrent_alt_name(object):
         assert abs(shell + tube) <= 1e-6
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key            : Value  : Units                           : Fixed : Bounds
+           HX Area : 1.0000 :                      meter ** 2 :  True : (0, None)
+    HX Coefficient : 100.00 : kilogram / kelvin / second ** 3 :  True : (0, None)
+         Heat Duty : 4500.8 :                            watt : False : (None, None)
+
+    Expressions: 
+
+    Key             : Value  : Units
+    Delta T Driving : 45.008 : kelvin
+         Delta T In : 65.000 : kelvin
+        Delta T Out : 29.607 : kelvin
+
+------------------------------------------------------------------------------------
+    Stream Table
+                               Units       Hot Inlet  Hot Outlet  Cold Inlet  Cold Outlet
+    flow_mol                mole / second     5.0000      5.0000      1.0000      1.0000 
+    mole_frac_comp benzene  dimensionless    0.50000     0.50000     0.50000     0.50000 
+    mole_frac_comp toluene  dimensionless    0.50000     0.50000     0.50000     0.50000 
+    temperature                    kelvin     365.00      359.52      300.00      329.91 
+    pressure                       pascal 1.0132e+05  1.0132e+05  1.0132e+05  1.0132e+05 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -1041,9 +1112,46 @@ class TestIAPWS_countercurrent(object):
         assert abs(shell_side + tube_side) <= 1e-6
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, iapws):
-        iapws.fs.unit.report()
+        stream = StringIO()
+
+        iapws.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key            : Value  : Units                           : Fixed : Bounds
+           HX Area : 1000.0 :                      meter ** 2 :  True : (0, None)
+    HX Coefficient : 100.00 : kilogram / kelvin / second ** 3 :  True : (0, None)
+         Heat Duty : 46497. :                            watt : False : (None, None)
+
+    Expressions: 
+
+    Key             : Value   : Units
+    Delta T Driving : 0.46497 : kelvin
+         Delta T In : 0.46488 : kelvin
+        Delta T Out : 0.46507 : kelvin
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                     Units         Hot Inlet  Hot Outlet  Cold Inlet  Cold Outlet
+    Molar Flow (mol/s)              mole / second     100.00      100.00      100.00      100.00 
+    Mass Flow (kg/s)            kilogram / second     1.8015      1.8015      1.8015      1.8015 
+    T (K)                                  kelvin     326.17      319.99      319.53      325.70 
+    P (Pa)                                 pascal 1.0132e+05  1.0132e+05  1.0132e+05  1.0132e+05 
+    Vapor Fraction                  dimensionless     0.0000      0.0000      0.0000      0.0000 
+    Molar Enthalpy (J/mol) Vap       joule / mole     42031.      46204.      35854.      37647. 
+    Molar Enthalpy (J/mol) Liq       joule / mole     4000.0      3535.0      3500.0      3965.0 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -1242,9 +1350,45 @@ class TestSaponification_crossflow(object):
         assert abs(shell_side + tube_side) <= 1e0
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, sapon):
-        sapon.fs.unit.report()
+        stream = StringIO()
+
+        sapon.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key              : Value   : Units         : Fixed : Bounds
+    Crossflow Factor : 0.60000 : dimensionless :  True : (None, None)
+
+    Expressions: 
+
+    Key             : Value  : Units
+    Delta T Driving : 1.3003 : kelvin
+         Delta T In : 1.3003 : kelvin
+        Delta T Out : 1.3003 : kelvin
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                             Units          Hot Inlet  Hot Outlet  Cold Inlet  Cold Outlet
+    Volumetric Flowrate                meter ** 3 / second  0.0010000   0.0010000   0.0010000   0.0010000 
+    Molar Concentration H2O              mole / meter ** 3     55388.      55388.      55388.      55388. 
+    Molar Concentration NaOH             mole / meter ** 3     100.00      100.00      100.00      100.00 
+    Molar Concentration EthylAcetate     mole / meter ** 3     100.00      100.00      100.00      100.00 
+    Molar Concentration SodiumAcetate    mole / meter ** 3     0.0000  1.0059e-06      0.0000  1.0059e-06 
+    Molar Concentration Ethanol          mole / meter ** 3     0.0000  1.0059e-06      0.0000  1.0059e-06 
+    Temperature                                     kelvin     320.00      301.30      300.00      318.70 
+    Pressure                                        pascal 1.0132e+05  1.0132e+05  1.0132e+05  1.0132e+05 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -1538,9 +1682,44 @@ class TestBT_Generic_cocurrent(object):
         assert abs(shell + tube) <= 1e-6
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
-        btx.fs.unit.report()
+        stream = StringIO()
+
+        btx.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key            : Value  : Units                           : Fixed : Bounds
+           HX Area : 1.0000 :                      meter ** 2 :  True : (0, None)
+    HX Coefficient : 100.00 : kilogram / kelvin / second ** 3 :  True : (0, None)
+         Heat Duty : 4378.4 :                            watt : False : (None, None)
+
+    Expressions: 
+
+    Key             : Value  : Units
+    Delta T Driving : 43.784 : kelvin
+         Delta T In : 65.000 : kelvin
+        Delta T Out : 27.780 : kelvin
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                    Units       Hot Inlet  Hot Outlet  Cold Inlet  Cold Outlet
+    Total Molar Flowrate         mole / second     5.0000      5.0000      1.0000      1.0000 
+    Total Mole Fraction benzene  dimensionless    0.50000     0.50000     0.50000     0.50000 
+    Total Mole Fraction toluene  dimensionless    0.50000     0.50000     0.50000     0.50000 
+    Temperature                         kelvin     365.00      359.38      300.00      331.60 
+    Pressure                            pascal 1.0132e+05  1.0132e+05  1.0132e+05  1.0132e+05 
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
     @pytest.mark.component
     def test_initialization_error(self, btx):
