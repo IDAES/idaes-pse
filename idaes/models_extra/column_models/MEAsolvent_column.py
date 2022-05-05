@@ -19,7 +19,8 @@ import numpy as np
 
 # Import Pyomo libraries
 from pyomo.environ import ConcreteModel, value, Var, NonNegativeReals, Param, TransformationFactory,\
-    Constraint, Expression, Objective, SolverStatus, TerminationCondition, exp, units as pyunits
+    Constraint, Expression, Objective, SolverStatus, TerminationCondition,\
+        check_optimal_termination, exp, units as pyunits
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES Libraries
@@ -865,9 +866,17 @@ class MEAColumnData(PackedColumnData):
                     default=1,
                     warning=True))
             
-    def set_init_values_correlation_vars(blk, nfe, interp=False):
-        nfe_base = 30
-        x_nfe_list_base = [i / nfe_base for i in range(nfe_base + 1)]
+    def set_init_values_correlation_vars(blk, nfe):
+        """
+        This method fixes the initial values of mass and heat transfer coefficients
+        interfacial area, enhancement factor, and liquid holdup, based on
+        the number of finite elements required by the user.
+        
+        A known set of values is used as the basis for fixing the initial values.
+        If the number of finite elements required by the user differs from the 
+        length of the base set of values, linear interpolation is used to 
+        obtain the initial values.
+        """
         
         # Define vapor phase mass transfer coefficient known values   
         k_v_co2_values = [0, 2.81735E-05, 2.82192E-05, 2.82675E-05, 2.83159E-05, 
@@ -926,31 +935,35 @@ class MEAColumnData(PackedColumnData):
                                       36.99441863, 47.67140404, 66.4626304, 101.9815504,
                                       169.7954706, 258.2290563, 1]
         
+        nfe_base = len(interfacial_area_values) - 1
+        x_nfe_list_base = [i / nfe_base for i in range(nfe_base + 1)]
+        
         # Linear Interpolation
         def interpolate_init_values(numdiscretepts, xdata, ydata):
             
             x_interpolate = [i / numdiscretepts for i in range(numdiscretepts)]
             y_interpolate = np.interp(x_interpolate, xdata, ydata)
             
-            return x_interpolate, y_interpolate
+            return y_interpolate
         
         # Interpolate values based on nfe required by user
-        if interp is True:
-            xinterp, kvco2_interp = interpolate_init_values(nfe+1, x_nfe_list_base, k_v_co2_values)
+        if nfe!=nfe_base:
+            kvco2_interp = interpolate_init_values(nfe+1, x_nfe_list_base, k_v_co2_values)
             k_v_co2_values = kvco2_interp
-            xinterp, kvh2o_interp = interpolate_init_values(nfe+1, x_nfe_list_base, k_v_h2o_values)
+            
+            kvh2o_interp = interpolate_init_values(nfe+1, x_nfe_list_base, k_v_h2o_values)
             k_v_h2o_values = kvh2o_interp
             
-            xinterp, klco2_interp = interpolate_init_values(nfe+1, x_nfe_list_base, k_l_co2_values)
+            klco2_interp = interpolate_init_values(nfe+1, x_nfe_list_base, k_l_co2_values)
             k_l_co2_values = klco2_interp
             
-            xinterp, hv_interp = interpolate_init_values(nfe+1, x_nfe_list_base, h_v_values)
+            hv_interp = interpolate_init_values(nfe+1, x_nfe_list_base, h_v_values)
             h_v_values = hv_interp
             
-            xinterp, interfarea_interp = interpolate_init_values(nfe+1, x_nfe_list_base, interfacial_area_values)
+            interfarea_interp = interpolate_init_values(nfe+1, x_nfe_list_base, interfacial_area_values)
             interfacial_area_values = interfarea_interp
             
-            xinterp, enhfactor_interp = interpolate_init_values(nfe+1, x_nfe_list_base, enhancement_factor_values)
+            enhfactor_interp = interpolate_init_values(nfe+1, x_nfe_list_base, enhancement_factor_values)
             enhancement_factor_values = enhfactor_interp
         
         # Fix values for all correlation variables
@@ -958,39 +971,22 @@ class MEAColumnData(PackedColumnData):
             if x == blk.vapor_phase.length_domain.first():
                 blk.mass_transfer_coeff_vap[0, x, 'CO2'].fix(0.001)
                 blk.mass_transfer_coeff_vap[0, x, 'H2O'].fix(0.001)
+                blk.heat_transfer_coeff_base[0, x].fix(100)
+                blk.area_interfacial[0, x].fix(0.001)
             else:
                 blk.mass_transfer_coeff_vap[0, x, 'CO2'].fix(k_v_co2_values[i])
                 blk.mass_transfer_coeff_vap[0, x, 'H2O'].fix(k_v_h2o_values[i])
-    
-        for i,x in enumerate(blk.liquid_phase.length_domain):
-            for j,comp in enumerate(['CO2']):
-                if x == blk.liquid_phase.length_domain.last():
-                    blk.mass_transfer_coeff_liq[0, x, comp].fix(0.001)
-                else:
-                    blk.mass_transfer_coeff_liq[0, x, comp].fix(k_l_co2_values[i])
-    
-        for i,x in enumerate(blk.vapor_phase.length_domain):
-            if x == blk.vapor_phase.length_domain.first():
-                blk.heat_transfer_coeff_base[0, x].fix(100)
-            else:
                 blk.heat_transfer_coeff_base[0, x].fix(h_v_values[i])
-    
-        for i,x in enumerate(blk.vapor_phase.length_domain):
-            if x == blk.vapor_phase.length_domain.first():
-                blk.area_interfacial[0, x].fix(0.001)
-            else:
                 blk.area_interfacial[0, x].fix(interfacial_area_values[i])
-                    
-        for i,x in enumerate(blk.liquid_phase.length_domain):
-            if x == blk.liquid_phase.length_domain.last():
-                blk.holdup_liq[0, x].fix(0.001)
-            else:
-                blk.holdup_liq[0, x].fix(0.01)
     
         for i,x in enumerate(blk.liquid_phase.length_domain):
             if x == blk.liquid_phase.length_domain.last():
+                blk.mass_transfer_coeff_liq[0, x, 'CO2'].fix(0.001)
+                blk.holdup_liq[0, x].fix(0.001)
                 blk.enhancement_factor[0, x].fix(1)
             else:
+                blk.mass_transfer_coeff_liq[0, x, 'CO2'].fix(k_l_co2_values[i])
+                blk.holdup_liq[0, x].fix(0.01)
                 blk.enhancement_factor[0, x].fix(enhancement_factor_values[i])    
 
     # =========================================================================
@@ -1093,7 +1089,7 @@ class MEAColumnData(PackedColumnData):
         # Fix variables
         
         nfe= blk.config.finite_elements
-        blk.set_init_values_correlation_vars(nfe, interp=True)
+        blk.set_init_values_correlation_vars(nfe)
 
         # Interface pressure
         blk.pressure_equil.fix()
@@ -1448,8 +1444,7 @@ class MEAColumnData(PackedColumnData):
             )
 
         # Check solver status
-        if (res.solver.termination_condition != TerminationCondition.optimal or
-                res.solver.status != SolverStatus.ok):
+        if not check_optimal_termination(res):
             raise InitializationError(
                 f"Model failed to initialize successfully. Please check "
                 f"the output logs for more information.")
