@@ -19,7 +19,6 @@ import sys
 # package
 from idaes.dmf import DMF
 from idaes.dmf import errors
-from idaes.dmf import propindex
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
@@ -62,27 +61,3 @@ def get_workspace(path='', name=None, desc=None, create=False, errs=None,
         msg += '\npath: {}\nname: {}\ndesc: {}\n'.format(path, name, desc)
         errs.write(msg)
     return dmf
-
-
-def find_property_packages(dmf, properties=None):
-    """Find all property packages matching provided criteria.
-
-    Return the matching packages as a generator.
-
-    Args:
-        dmf (DMF): Data Management Framework instance
-        properties (List[str]): Names of properties that must be present in the
-              returned packages.
-    Returns:
-        Generator[idaes.dmf.resource.Resource]: Each object has the property
-            data (properties and default units) in its `.data` attribute.
-    """
-    query = {'tags': [propindex.DMFVisitor.INDEXED_PROPERTY_TAG]}
-    for prop in properties:
-        field = 'data.properties.' + prop
-        query[field] = True
-    return dmf.find(query)
-
-
-def index_property_packages(dmf):
-    propindex.index_property_metadata(dmf)
