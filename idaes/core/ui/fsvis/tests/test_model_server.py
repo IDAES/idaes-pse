@@ -18,7 +18,7 @@ Tests for model_server module
 import pytest
 from pyomo.environ import ConcreteModel
 # pkg
-from idaes.ui.fsvis import model_server, errors, persist
+from idaes.core.ui.fsvis import model_server, errors, persist
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,

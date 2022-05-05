@@ -58,8 +58,8 @@ There are three ways to invoke the `visualize` functionality, which in the end d
 have the same arguments.
 
 1. Use the `visualize` method of a flowsheet (as above)
-2. Call the `visualize` function from the package `idaes.ui.fsvis`, passing it a flowsheet object
-3. Call the same `visualize` function from the module `idaes.ui.fsvis.fsvis`, passing it a flowsheet object
+2. Call the `visualize` function from the package `idaes.core.ui.fsvis`, passing it a flowsheet object
+3. Call the same `visualize` function from the module `idaes.core.ui.fsvis.fsvis`, passing it a flowsheet object
 
 In all cases, the arguments and behavior are the same.
 See the :ref:`visualize function documentation <visualize-function>` for details on parameters to this function.
@@ -221,7 +221,7 @@ documentation for details.
 Reference
 ---------
 
-.. currentmodule:: idaes.ui.fsvis
+.. currentmodule:: idaes.core.ui.fsvis
 
 .. _visualize-function:
 
@@ -270,9 +270,9 @@ The architecture diagram is shown below.
 
 Persistence architecture
 ++++++++++++++++++++++++
-.. py:currentmodule:: idaes.ui.fsvis.persist
+.. py:currentmodule:: idaes.core.ui.fsvis.persist
 
-The saving of the model uses the the module :mod:`idaes.ui.fsvis.persist`.
+The saving of the model uses the the module :mod:`idaes.core.ui.fsvis.persist`.
 This module implements the well-known "|factory-link|", which makes it easy to extend by adding
 a new :class:`~.DataStore` sub-class and updating the logic in the factory method,
 :func:`~.DataStore.create`, to create and return instances of that class for a given input type.

@@ -30,7 +30,7 @@ from pyomo.network.port import Port
 
 # package
 from idaes import logger
-from idaes.ui.icons import UnitModelIcon
+from idaes.core.ui.icons import UnitModelIcon
 
 _log = logger.getLogger(__name__)
 
