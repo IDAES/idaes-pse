@@ -193,7 +193,7 @@ class N2OAnalogy:
         
         cobj.lwm_coeff_2 = Var(
                 doc="N2O Analogy Henry's constant coefficient 2",
-                units=pyunits.K)
+                units=pyunits.dimensionless)
         set_param_from_config(cobj, param="lwm_coeff", index="2")
         
         cobj.lwm_coeff_3 = Var(
