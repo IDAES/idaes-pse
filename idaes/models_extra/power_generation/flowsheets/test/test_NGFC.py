@@ -53,6 +53,7 @@ from idaes.models_extra.power_generation.flowsheets.NGFC.NGFC_flowsheet \
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
+from idaes.core.util import scaling as iscale
 from idaes.core.util.scaling import (extreme_jacobian_columns,
                                      extreme_jacobian_rows)
 from idaes.core.util import model_serializer as ms
@@ -103,6 +104,47 @@ def test_scaling(m):
     badly_scaled_cons = extreme_jacobian_rows(m)
     all_con = list(m.component_data_objects(pyo.Constraint, descend_into=True))
     assert len(badly_scaled_cons)/len(all_con) < 0.1
+
+    # some specific scaling checks
+    
+    # heat exchanger areas and overall heat transfer coefficiencts
+    assert iscale.get_scaling_factor(m.fs.anode_hx.area) == pytest.approx(1e-4, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.anode_hx.overall_heat_transfer_coefficient) == pytest.approx(1, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.cathode_hx.area) == pytest.approx(1e-4, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.cathode_hx.overall_heat_transfer_coefficient) == pytest.approx(1, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.reformer_recuperator.area) == pytest.approx(1e-4, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.reformer_recuperator.overall_heat_transfer_coefficient) == pytest.approx(1, rel=1e-5)
+
+    # control volume heats
+    assert iscale.get_scaling_factor(m.fs.anode_hx.tube.heat) == pytest.approx(1e-7, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.anode_hx.shell.heat) == pytest.approx(1e-7, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.anode.control_volume.heat) == pytest.approx(1e-8, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.cathode_hx.tube.heat) == pytest.approx(1e-8, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.cathode_hx.shell.heat) == pytest.approx(1e-8, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.cathode_heat.control_volume.heat) == pytest.approx(1e-8, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.cathode_HRSG.control_volume.heat) == pytest.approx(1e-6, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.intercooler_s1.control_volume.heat) == pytest.approx(1e-6, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.intercooler_s2.control_volume.heat) == pytest.approx(1e-6, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.anode_HRSG.control_volume.heat) == pytest.approx(1e-8, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.prereformer.control_volume.heat) == pytest.approx(1e-6, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.reformer.control_volume.heat) == pytest.approx(1e-6, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.reformer_recuperator.shell.heat) == pytest.approx(1e-6, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.reformer_recuperator.tube.heat) == pytest.approx(1e-6, rel=1e-5)
+
+    # work
+    assert iscale.get_scaling_factor(m.fs.anode_blower.control_volume.work) == pytest.approx(1e-5, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.air_blower.control_volume.work) == pytest.approx(1e-6, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.cathode_blower.control_volume.work) == pytest.approx(1e-5, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.air_compressor_s1.control_volume.work) == pytest.approx(1e-6, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.air_compressor_s2.control_volume.work) == pytest.approx(1e-6, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.cathode_expander.control_volume.work) == pytest.approx(1e-6, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.combustor_expander.control_volume.work) == pytest.approx(1e-6, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.NG_expander.control_volume.work) == pytest.approx(1e-6, rel=1e-5)
+
+    # reaction extents
+    assert iscale.get_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "h2_cmb"]) == pytest.approx(1e2, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "co_cmb"]) == pytest.approx(1e2, rel=1e-5)
+    assert iscale.get_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "ch4_cmb"]) == pytest.approx(1e5, rel=1e-5)
 
 
 @pytest.mark.integration
