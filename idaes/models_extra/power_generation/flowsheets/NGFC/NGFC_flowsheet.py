@@ -943,9 +943,6 @@ def scale_flowsheet(m):
         if hasattr(unit, 'mixture_pressure'):
             for t, c in unit.mixture_pressure.items():
                 iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-        if hasattr(unit, 'pressure_equality_constraints'):
-            for (t, i), c in unit.pressure_equality_constraints.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
 
         # separator constraints
         if hasattr(unit, 'material_splitting_eqn'):
@@ -954,12 +951,6 @@ def scale_flowsheet(m):
         if hasattr(unit, 'temperature_equality_eqn'):
             for (t, o), c in unit.temperature_equality_eqn.items():
                 iscale.constraint_scaling_transform(c, 1e-2, overwrite=False)
-        if hasattr(unit, 'molar_enthalpy_equality_eqn'):
-            for (t, o), c in unit.molar_enthalpy_equality_eqn.items():
-                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-        if hasattr(unit, 'molar_enthalpy_splitting_eqn'):
-            for (t, o), c in unit.molar_enthalpy_splitting_eqn.items():
-                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
         if hasattr(unit, 'pressure_equality_eqn'):
             for (t, o), c in unit.pressure_equality_eqn.items():
                 iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
@@ -973,10 +964,6 @@ def scale_flowsheet(m):
             for t, c in unit.ratioP_calculation.items():
                 iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
 
-        if hasattr(unit, "fluid_work_calculation"):
-            for t, c in unit.fluid_work_calculation.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-
         if hasattr(unit, "actual_work"):
             for t, c in unit.actual_work.items():
                 iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
@@ -984,10 +971,6 @@ def scale_flowsheet(m):
         if hasattr(unit, "isentropic_pressure"):
             for t, c in unit.isentropic_pressure.items():
                 iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-
-        if hasattr(unit, "isothermal"):
-            for t, c in unit.isothermal.items():
-                iscale.constraint_scaling_transform(c, 1e-2, overwrite=False)
 
         if hasattr(unit, "isentropic"):
             for t, c in unit.isentropic.items():
@@ -997,63 +980,9 @@ def scale_flowsheet(m):
             for t, c in unit.isentropic_energy_balance.items():
                 iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
 
-        if hasattr(unit, "zero_work_equation"):
-            for t, c in unit.zero_work_equation.items():
-                iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
-
         if hasattr(unit, "state_material_balances"):
             for (t, j), c in unit.state_material_balances.items():
                 iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-
-        # heater and Stoic reactor only add 0D control volume constraints
-        if hasattr(unit, 'material_holdup_calculation'):
-            for (t, p, j), c in unit.material_holdup_calculation.items():
-                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-        if hasattr(unit, 'rate_reaction_stoichiometry_constraint'):
-            for (t, p, j), c in (
-                    unit.rate_reaction_stoichiometry_constraint.items()):
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-        if hasattr(unit, 'equilibrium_reaction_stoichiometry_constraint'):
-            for (t, p, j), c in (
-                    unit.equilibrium_reaction_stoichiometry_constraint
-                    .items()):
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-        if hasattr(unit, 'inherent_reaction_stoichiometry_constraint'):
-            for (t, p, j), c in (
-                    unit.inherent_reaction_stoichiometry_constraint.items()):
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-        if hasattr(unit, 'material_balances'):
-            for (t, p, j), c in unit.material_balances.items():
-                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-        if hasattr(unit, 'element_balances'):
-            for (t, e), c in unit.element_balances.items():
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-        if hasattr(unit, 'elemental_holdup_calculation'):
-            for (t, e), c in unit.elemental_holdup_calculation.items():
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-        if hasattr(unit, 'enthalpy_balances'):
-            for t, c in unit.enthalpy_balances.items():
-                iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
-        if hasattr(unit, 'energy_holdup_calculation'):
-            for (t, p), c in unit.energy_holdup_calculation.items():
-                iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
-        if hasattr(unit, 'pressure_balance'):
-            for t, c in unit.pressure_balance.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-        if hasattr(unit, 'sum_of_phase_fractions'):
-            for t, c in unit.sum_of_phase_fractions.items():
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-        if hasattr(unit, "material_accumulation_disc_eq"):
-            for (t, p, j), c in unit.material_accumulation_disc_eq.items():
-                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-
-        if hasattr(unit, "energy_accumulation_disc_eq"):
-            for (t, p), c in unit.energy_accumulation_disc_eq.items():
-                iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
-
-        if hasattr(unit, "element_accumulation_disc_eq"):
-            for (t, e), c in unit.element_accumulation_disc_eq.items():
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
 
         # HeatExchanger non-CV constraints
         if hasattr(unit, "heat_transfer_equation"):
@@ -1085,133 +1014,11 @@ def scale_flowsheet(m):
 
         # check material density expressions - properties are indexed by time, constraints by (phase, component)
         if hasattr(unit, "control_volume"):
-
-            if hasattr(unit.control_volume, 'properties_in'):
-                for t in m.fs.time:
-                    if hasattr(unit.control_volume.properties_in[t], "_material_density_term"):
-                        for (p, i), c in unit.control_volume.properties_in[t]._material_density_term.items():
-                            iscale.set_scaling_factor(c, 1e-3)
-
             if hasattr(unit.control_volume, 'properties_out'):
                 for t in m.fs.time:
                     if hasattr(unit.control_volume.properties_out[t], "_material_density_term"):
                         for (p, i), c in unit.control_volume.properties_out[t]._material_density_term.items():
                             iscale.set_scaling_factor(c, 1e-3)
-
-    # equality constraints between ports at Arc sources and destinations
-    for arc in m.fs.component_data_objects(Arc, descend_into=True):
-        for c in arc.component_data_objects(pyo.Constraint, descend_into=True):
-            if hasattr(unit, "enth_mol_equality"):
-                for t, c in unit.enth_mol_equality.items():
-                    iscale.constraint_scaling_transform(c, 1e-3,
-                                                        overwrite=False)
-            if hasattr(unit, "flow_mol_equality"):
-                for t, c in unit.flow_mol_equality.items():
-                    iscale.constraint_scaling_transform(c, 1e-3,
-                                                        overwrite=False)
-            if hasattr(unit, "mole_frac_comp_equality"):
-                for (t, j), c in unit.mole_frac_comp_equality.items():
-                    iscale.constraint_scaling_transform(c, 1e2,
-                                                        overwrite=False)
-            if hasattr(unit, "pressure_equality"):
-                for t, c in unit.pressure_equality.items():
-                    iscale.constraint_scaling_transform(c, 1e-5,
-                                                        overwrite=False)
-            if hasattr(unit, "temperature_equality"):
-                for t, c in unit.temperature_equality.items():
-                    iscale.constraint_scaling_transform(c, 1e-2,
-                                                        overwrite=False)
-
-    # scale flowsheet-level constraints
-    if hasattr(unit, "anode_translator_F"):
-        for t, c in unit.anode_translator_F.items():
-            iscale.constraint_scaling_transform(c, 1e-3,
-                                                overwrite=False)
-
-    if hasattr(unit, "anode_translator_T"):
-        for t, c in unit.anode_translator_T.items():
-            iscale.constraint_scaling_transform(c, 1e-2,
-                                                overwrite=False)
-
-    if hasattr(unit, "anode_translator_P"):
-        for t, c in unit.anode_translator_P.items():
-            iscale.constraint_scaling_transform(c, 1e-5,
-                                                overwrite=False)
-
-    if hasattr(unit, "anode_translator_x"):
-        for t, c in unit.anode_translator_x.items():
-            iscale.constraint_scaling_transform(c, 1e2,
-                                                overwrite=False)
-
-    if hasattr(unit, "ion_mix_constraint"):
-        for t, c in unit.ion_mix_constraint.items():
-            iscale.constraint_scaling_transform(c, 1e-5,
-                                                overwrite=False)
-
-    if hasattr(unit, "recycle_translator_F"):
-        for t, c in unit.recycle_translator_F.items():
-            iscale.constraint_scaling_transform(c, 1e-3,
-                                                overwrite=False)
-
-    if hasattr(unit, "recycle_translator_T"):
-        for t, c in unit.recycle_translator_T.items():
-            iscale.constraint_scaling_transform(c, 1e-2,
-                                                overwrite=False)
-
-    if hasattr(unit, "recycle_translator_P"):
-        for t, c in unit.recycle_translator_P.items():
-            iscale.constraint_scaling_transform(c, 1e-5,
-                                                overwrite=False)
-
-    if hasattr(unit, "recycle_translator_x"):
-        for t, c in unit.recycle_translator_x.items():
-            iscale.constraint_scaling_transform(c, 1e2,
-                                                overwrite=False)
-
-    if hasattr(unit, "cathode_translator_F"):
-        for t, c in unit.cathode_translator_F.items():
-            iscale.constraint_scaling_transform(c, 1e-3,
-                                                overwrite=False)
-
-    if hasattr(unit, "cathode_translator_T"):
-        for t, c in unit.cathode_translator_T.items():
-            iscale.constraint_scaling_transform(c, 1e-2,
-                                                overwrite=False)
-
-    if hasattr(unit, "cathode_translator_P"):
-        for t, c in unit.cathode_translator_P.items():
-            iscale.constraint_scaling_transform(c, 1e-5,
-                                                overwrite=False)
-
-    if hasattr(unit, "cathode_exhaust_translator_F"):
-        for t, c in unit.cathode_exhaust_translator_F.items():
-            iscale.constraint_scaling_transform(c, 1e-3,
-                                                overwrite=False)
-
-    if hasattr(unit, "cathode_exhaust_translator_T"):
-        for t, c in unit.cathode_exhaust_translator_T.items():
-            iscale.constraint_scaling_transform(c, 1e-2,
-                                                overwrite=False)
-
-    if hasattr(unit, "cathode_exhaust_translator_P"):
-        for t, c in unit.cathode_exhaust_translator_P.items():
-            iscale.constraint_scaling_transform(c, 1e-5,
-                                                overwrite=False)
-
-    if hasattr(unit, "cathode_exhaust_translator_x"):
-        for t, c in unit.cathode_exhaust_translator_x.items():
-            iscale.constraint_scaling_transform(c, 1e2,
-                                                overwrite=False)
-
-    if hasattr(unit, "reformer_air_rule"):
-        for t, c in unit.reformer_air_rule.items():
-            iscale.constraint_scaling_transform(c, 1e-3,
-                                                overwrite=False)
-
-    if hasattr(unit, "reformer_steam_flow"):
-        for t, c in unit.reformer_steam_flow.items():
-            iscale.constraint_scaling_transform(c, 1e-3,
-                                                overwrite=False)
 
     print('Calculating scaling factors')
     iscale.calculate_scaling_factors(m)
@@ -1918,8 +1725,8 @@ if __name__ == "__main__":
     m = pyo.ConcreteModel(name="NGFC without carbon capture")
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    reinit = False  # switch to True to re-initialize and re-solve
-    resolve = False  # switch to True to re-solve only (for debugging)
+    reinit = True  # switch to True to re-initialize and re-solve
+    resolve = True  # switch to True to re-solve only (for debugging)
     if os.path.exists("NGFC_flowsheet_init.json.gz") and reinit is False:
         # already initialized, can build model and load results from json
         build_power_island(m)
