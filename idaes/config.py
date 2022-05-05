@@ -76,6 +76,17 @@ orig_environ = {
     "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
     "DYLD_LIBRARY_PATH": os.environ.get("DYLD_LIBRARY_PATH", ""),
 }
+# Define set of default units of measurement for common derived quantities
+default_uom = {
+    "pressure": "Pa",
+    "energy": "J",
+    "energy_mol": "J/mol",
+    "energy_mass": "J/kg",
+    "entropy": "J/K",
+    "entropy_mol": "J/mol/K",
+    "entropy_mass": "J/kg/K",
+    "power": "W",
+}
 
 def canonical_arch(arch):
     """Get the offical machine type in {x86_64, aarch64} if possible, otherwise
@@ -396,6 +407,14 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigValue(
             default=True,
             description="Solver output captured by logger?",
+        ),
+    )
+
+    cfg.declare(
+        "reporting_units",
+        pyomo.common.config.ConfigValue(
+            default=default_uom,
+            description="Units of measurement for reporting quantities",
         ),
     )
     return cfg
