@@ -36,7 +36,7 @@ from idaes.core.util.config import (
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import DynamicError, ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.ui.fsvis.fsvis import visualize
+from idaes.core.ui.fsvis.fsvis import visualize
 
 from idaes.core.util import unit_costing as costing
 import idaes.logger as idaeslog
@@ -232,7 +232,7 @@ within this flowsheet if not otherwise specified,
             model_name : The name of the model that flask will use as an argument
                          for the webpage
         Keyword Args:
-            **kwargs: Additional keywords for :func:`idaes.ui.fsvis.visualize()`
+            **kwargs: Additional keywords for :func:`idaes.core.ui.fsvis.visualize()`
 
         Returns:
             None
