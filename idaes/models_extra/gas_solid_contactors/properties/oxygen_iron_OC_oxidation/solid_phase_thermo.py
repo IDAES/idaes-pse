@@ -249,7 +249,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
             domain=Reals,
             initialize=0.45,
             doc="Voidage at minimum fluidization [-]",
-            units=pyunits.m**3 / pyunits.m**3,
+            units=pyunits.dimensionless,
         )
         self.voidage_mf.fix()
 
@@ -258,7 +258,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
             domain=Reals,
             initialize=0.35,
             doc="Voidage [-]",
-            units=pyunits.m**3 / pyunits.m**3,
+            units=pyunits.dimensionless,
         )
         self.voidage.fix()
 
@@ -290,22 +290,16 @@ class PhysicalParameterData(PhysicalParameterBlock):
     def define_metadata(cls, obj):
         obj.add_properties(
             {
-                "flow_mass": {"method": None, "units": "kg/s"},
-                "particle_porosity": {"method": None, "units": None},
-                "temperature": {"method": None, "units": "K"},
-                "mass_frac_comp": {"method": None, "units": None},
-                "dens_mass_skeletal": {
-                    "method": "_dens_mass_skeletal",
-                    "units": "kg/m3",
-                },
-                "dens_mass_particle": {
-                    "method": "_dens_mass_particle",
-                    "units": "kg/m3",
-                },
-                "cp_mol_comp": {"method": "_cp_mol_comp", "units": "J/mol.K"},
-                "cp_mass": {"method": "_cp_mass", "units": "J/kg.K"},
-                "enth_mass": {"method": "_enth_mass", "units": "J/kg"},
-                "enth_mol_comp": {"method": "_enth_mol_comp", "units": "J/mol"},
+                "flow_mass": {"method": None},
+                "particle_porosity": {"method": None},
+                "temperature": {"method": None},
+                "mass_frac_comp": {"method": None},
+                "dens_mass_skeletal": {"method": "_dens_mass_skeletal"},
+                "dens_mass_particle": {"method": "_dens_mass_particle"},
+                "cp_mol_comp": {"method": "_cp_mol_comp"},
+                "cp_mass": {"method": "_cp_mass"},
+                "enth_mass": {"method": "_enth_mass"},
+                "enth_mol_comp": {"method": "_enth_mol_comp"},
             }
         )
 
@@ -494,19 +488,19 @@ class SolidPhaseStateBlockData(StateBlockData):
             initialize=1.0,
             domain=Reals,
             doc="Component mass flowrate",
-            units=units_meta["mass"] / units_meta["time"],
+            units=units_meta["flow_mass"],
         )
         self.particle_porosity = Var(
             domain=Reals,
             initialize=0.27,
             doc="Porosity of oxygen carrier [-]",
-            units=units_meta["length"] ** 3 / units_meta["length"] ** 3,
+            units=pyunits.dimensionless,
         )
         self.mass_frac_comp = Var(
             self._params.component_list,
             initialize=1 / len(self._params.component_list),
             doc="State component mass fractions [-]",
-            units=units_meta["mass"] / units_meta["mass"],
+            units=pyunits.dimensionless,
         )
         self.temperature = Var(
             initialize=298.15,
@@ -533,7 +527,7 @@ class SolidPhaseStateBlockData(StateBlockData):
             domain=Reals,
             initialize=3251.75,
             doc="Skeletal density of OC",
-            units=units_meta["mass"] * units_meta["length"] ** -3,
+            units=units_meta["density_mass"],
         )
 
         def density_skeletal_constraint(b):
@@ -564,7 +558,7 @@ class SolidPhaseStateBlockData(StateBlockData):
             domain=Reals,
             initialize=3251.75,
             doc="Particle density of oxygen carrier",
-            units=units_meta["mass"] * units_meta["length"] ** -3,
+            units=units_meta["density_mass"],
         )
 
         def density_particle_constraint(b):
@@ -586,11 +580,7 @@ class SolidPhaseStateBlockData(StateBlockData):
     def _cp_mol_comp(self):
         # Pure component solid heat capacities
         units_meta = self._params.get_metadata().derived_units
-        units_cp_mol = (
-            units_meta["energy"]
-            * units_meta["amount"] ** -1
-            * units_meta["temperature"] ** -1
-        )
+        units_cp_mol = units_meta["heat_capacity_mole"]
         self.cp_mol_comp = Var(
             self._params.component_list,
             domain=Reals,
@@ -626,11 +616,7 @@ class SolidPhaseStateBlockData(StateBlockData):
     def _cp_mass(self):
         # Mixture heat capacities
         units_meta = self._params.get_metadata().derived_units
-        units_cp_mass = (
-            units_meta["energy"]
-            * units_meta["mass"] ** -1
-            * units_meta["temperature"] ** -1
-        )
+        units_cp_mass = units_meta["heat_capacity_mass"]
         self.cp_mass = Var(
             domain=Reals,
             initialize=1.0,
@@ -656,7 +642,7 @@ class SolidPhaseStateBlockData(StateBlockData):
     def _enth_mol_comp(self):
         # Pure component vapour enthalpies
         units_meta = self._params.get_metadata().derived_units
-        units_enth_mol = units_meta["energy"] * units_meta["amount"] ** -1
+        units_enth_mol = units_meta["energy_mole"]
         self.enth_mol_comp = Var(
             self._params.component_list,
             domain=Reals,
@@ -696,7 +682,7 @@ class SolidPhaseStateBlockData(StateBlockData):
     def _enth_mass(self):
         # Mixture mass enthalpy
         units_meta = self._params.get_metadata().derived_units
-        units_enth_mass = units_meta["energy"] * units_meta["mass"] ** -1
+        units_enth_mass = units_meta["energy_mass"]
         self.enth_mass = Var(
             domain=Reals,
             initialize=0.0,

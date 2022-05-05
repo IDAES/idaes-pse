@@ -181,7 +181,7 @@ class ReactionParameterData(ReactionParameterBlock):
             domain=Reals,
             initialize=0.28,
             doc="Available reaction vol. per vol. of OC",
-            units=pyunits.m**3 / pyunits.m**3,
+            units=pyunits.dimensionless,
         )
         self.a_vol.fix()
 
@@ -201,6 +201,7 @@ class ReactionParameterData(ReactionParameterBlock):
             domain=Reals,
             initialize=1.0,
             doc="Reaction order in gas species [-]",
+            units=pyunits.dimensionless
         )
         self.rxn_order.fix()
 
@@ -218,13 +219,10 @@ class ReactionParameterData(ReactionParameterBlock):
     def define_metadata(cls, obj):
         obj.add_properties(
             {
-                "k_rxn": {
-                    "method": "_k_rxn",
-                    "units": "mol^(1-N_reaction)m^(3*N_reaction -2)/s]",
-                },
-                "OC_conv": {"method": "_OC_conv", "units": None},
-                "OC_conv_temp": {"method": "_OC_conv_temp", "units": None},
-                "reaction_rate": {"method": "_reaction_rate", "units": "mol_rxn/m3.s"},
+                "k_rxn": {"method": "_k_rxn"},
+                "OC_conv": {"method": "_OC_conv"},
+                "OC_conv_temp": {"method": "_OC_conv_temp"},
+                "reaction_rate": {"method": "_reaction_rate"},
             }
         )
 
@@ -442,7 +440,7 @@ class ReactionBlockData(ReactionBlockDataBase):
             self._params.rate_reaction_idx,
             domain=Reals,
             initialize=1,
-            doc="Rate constant " "[mol^(1-rxn_order) * m^(3*rxn_order -2)/s]",
+            doc="Rate constant [mol^(1-rxn_order) * m^(3*rxn_order -2)/s]",
             units=pyunits.m / pyunits.s,
         )
 
@@ -516,6 +514,7 @@ class ReactionBlockData(ReactionBlockDataBase):
             domain=Reals,
             initialize=1.0,
             doc="Reformulation term for" "X to help eqn scaling",
+            units=pyunits.dimensionless
         )
 
         def OC_conv_temp_eqn(b):
