@@ -307,6 +307,11 @@ class PropertyClassMetadata(object):
                     * self.default_units["time"] ** -2
                     * self.default_units["amount"] ** -1
                 ),
+                "dynamic_viscosity": (
+                    self.default_units["mass"]
+                    * self.default_units["length"] ** -1
+                    * self.default_units["time"] ** -1
+                ),
                 "entropy": (
                     self.default_units["mass"]
                     * self.default_units["length"] ** 2

@@ -19,15 +19,13 @@ import json
 import logging
 import math
 import os
-from pathlib import Path
 import shutil
-import sys
 
 # third-party
 import pytest
 
 # local
-from idaes.dmf import resource, propdata
+from idaes.dmf import resource
 from idaes.dmf.resource import Predicates
 from idaes.util.system import mkdtemp
 
@@ -101,16 +99,6 @@ _propm = {
     "date": "1970-01-01",
 }
 
-
-@pytest.mark.unit
-def test_property_data_resource():
-    r = resource.Resource()
-    r.data = {"data": _propd, "meta": _propm}
-    tbl = propdata.PropertyTable(data=r.data["data"], metadata=r.data["meta"])
-    assert tbl.data.properties[0]
-    assert tbl.data.properties[0]["values"] == _propd[0]["values"]
-    assert tbl.data.properties[0]["errors"] == _propd[0]["errors"]
-    assert tbl.metadata[0].title == _propm["title"]
 
 
 @pytest.mark.unit
