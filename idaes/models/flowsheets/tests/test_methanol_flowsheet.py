@@ -280,7 +280,7 @@ def test_initialize_flowsheet(model):
         142.57, 1e-3)
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 def test_unit_consistency(model):
     assert_units_consistent(model)
 
@@ -379,7 +379,7 @@ def test_solve_flowsheet(model):
         pytest.approx(31e5, abs=1e-2)
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 def test_add_costing(model):
     add_costing(model)
 
@@ -457,7 +457,7 @@ def test_optimize_with_costing(model):
         81.0476, abs=1e-2)
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 def test_report(model):
     stream = StringIO()
     sys.stdout = stream
