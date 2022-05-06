@@ -47,7 +47,6 @@ from idaes.core import (
     ReactionBlockBase,
 )
 from idaes.core.util.misc import add_object_reference
-from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
@@ -61,7 +60,10 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
+from idaes.core.util.constants import Constants
 import idaes.logger as idaeslog
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"
@@ -114,6 +116,8 @@ class ReactionParameterData(ReactionParameterBlock):
 
         self._reaction_block_class = ReactionBlock
 
+        self.default_scaling_factor = {}
+
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])
 
@@ -128,17 +132,22 @@ class ReactionParameterData(ReactionParameterBlock):
             ("R1", "Sol", "Al2O3"): 0,
         }
 
-        # Standard Heat of Reaction - kJ/mol_rxn
-        dh_rxn_dict = {"R1": -469.4432}
+        # Standard Heat of Reaction - J/mol_rxn
+        dh_rxn_dict = {"R1": -469.4432e3}
         self.dh_rxn = Param(
             self.rate_reaction_idx,
             initialize=dh_rxn_dict,
-            doc="Heat of reaction [kJ/mol]",
-            units=pyunits.kJ / pyunits.mol,
+            doc="Heat of reaction [J/mol]",
+            units=pyunits.J / pyunits.mol,
         )
 
         # Smoothing factor
-        self.eps = Param(mutable=True, default=1e-8, doc="Smoothing Factor")
+        self.eps = Param(
+            mutable=True,
+            default=1e-8,
+            doc="Smoothing Factor",
+            units=pyunits.mol / pyunits.m**3,
+        )
         # Reaction rate scale factor
         self._scale_factor_rxn = Param(
             mutable=True,
@@ -172,7 +181,7 @@ class ReactionParameterData(ReactionParameterBlock):
             domain=Reals,
             initialize=0.28,
             doc="Available reaction vol. per vol. of OC",
-            units=pyunits.m**3 / pyunits.m**3,
+            units=pyunits.dimensionless,
         )
         self.a_vol.fix()
 
@@ -180,9 +189,9 @@ class ReactionParameterData(ReactionParameterBlock):
         self.energy_activation = Var(
             self.rate_reaction_idx,
             domain=Reals,
-            initialize=1.4e1,
-            doc="Activation energy [kJ/mol]",
-            units=pyunits.kJ / pyunits.mol,
+            initialize=1.4e4,
+            doc="Activation energy [J/mol]",
+            units=pyunits.J / pyunits.mol,
         )
         self.energy_activation.fix()
 
@@ -192,6 +201,7 @@ class ReactionParameterData(ReactionParameterBlock):
             domain=Reals,
             initialize=1.0,
             doc="Reaction order in gas species [-]",
+            units=pyunits.dimensionless
         )
         self.rxn_order.fix()
 
@@ -201,6 +211,7 @@ class ReactionParameterData(ReactionParameterBlock):
             domain=Reals,
             initialize=3.1e-4,
             doc="Pre-exponential factor" "[mol^(1-N_reaction)m^(3*N_reaction -2)/s]",
+            units=pyunits.m / pyunits.s
         )
         self.k0_rxn.fix()
 
@@ -208,13 +219,10 @@ class ReactionParameterData(ReactionParameterBlock):
     def define_metadata(cls, obj):
         obj.add_properties(
             {
-                "k_rxn": {
-                    "method": "_k_rxn",
-                    "units": "mol^(1-N_reaction)m^(3*N_reaction -2)/s]",
-                },
-                "OC_conv": {"method": "_OC_conv", "units": None},
-                "OC_conv_temp": {"method": "_OC_conv_temp", "units": None},
-                "reaction_rate": {"method": "_reaction_rate", "units": "mol_rxn/m3.s"},
+                "k_rxn": {"method": "_k_rxn"},
+                "OC_conv": {"method": "_OC_conv"},
+                "OC_conv_temp": {"method": "_OC_conv_temp"},
+                "reaction_rate": {"method": "_reaction_rate"},
             }
         )
 
@@ -432,17 +440,21 @@ class ReactionBlockData(ReactionBlockDataBase):
             self._params.rate_reaction_idx,
             domain=Reals,
             initialize=1,
-            doc="Rate constant " "[mol^(1-N_reaction)m^(3*N_reaction -2)/s]",
+            doc="Rate constant [mol^(1-rxn_order) * m^(3*rxn_order -2)/s]",
+            units=pyunits.m / pyunits.s,
         )
 
         def rate_constant_eqn(b, j):
             if j == "R1":
-                return 1e6 * self.k_rxn[j] == 1e6 * (
+                return self.k_rxn[j] == (
                     self._params.k0_rxn[j]
                     * exp(
                         -self._params.energy_activation[j]
                         / (
-                            self.gas_state_ref._params.gas_const
+                            pyunits.convert(
+                                Constants.gas_constant,  # J/mol/K
+                                to_units=pyunits.J / pyunits.mol / pyunits.K,
+                            )
                             * self.solid_state_ref.temperature
                         )
                     )
@@ -464,13 +476,15 @@ class ReactionBlockData(ReactionBlockDataBase):
     # Conversion of oxygen carrier
     def _OC_conv(self):
         self.OC_conv = Var(
-            domain=Reals, initialize=0.0, doc="Fraction of metal oxide converted"
+            domain=Reals,
+            initialize=0.0,
+            doc="Fraction of metal oxide converted",
+            units=pyunits.dimensionless,
         )
 
         def OC_conv_eqn(b):
             return (
-                1e6
-                * b.OC_conv
+                b.OC_conv
                 * (
                     b.solid_state_ref.mass_frac_comp["Fe2O3"]
                     + (
@@ -483,7 +497,7 @@ class ReactionBlockData(ReactionBlockDataBase):
                     )
                     * b.solid_state_ref.mass_frac_comp["Fe3O4"]
                 )
-                == 1e6 * b.solid_state_ref.mass_frac_comp["Fe2O3"]
+                == b.solid_state_ref.mass_frac_comp["Fe2O3"]
             )
 
         try:
@@ -500,10 +514,11 @@ class ReactionBlockData(ReactionBlockDataBase):
             domain=Reals,
             initialize=1.0,
             doc="Reformulation term for" "X to help eqn scaling",
+            units=pyunits.dimensionless
         )
 
         def OC_conv_temp_eqn(b):
-            return 1e3 * b.OC_conv_temp**3 == 1e3 * (1 - b.OC_conv) ** 2
+            return b.OC_conv_temp**3 == (1 - b.OC_conv) ** 2
 
         try:
             # Try to build constraint
@@ -524,7 +539,7 @@ class ReactionBlockData(ReactionBlockDataBase):
         )
 
         def rate_rule(b, r):
-            return b.reaction_rate[r] * 1e4 == b._params._scale_factor_rxn * 1e4 * (
+            return b.reaction_rate[r]== b._params._scale_factor_rxn * (
                 b.solid_state_ref.mass_frac_comp["Fe3O4"]
                 * (1 - b.solid_state_ref.particle_porosity)
                 * b.solid_state_ref.dens_mass_skeletal
@@ -567,3 +582,43 @@ class ReactionBlockData(ReactionBlockDataBase):
             _log.error("{} Temperature set below lower bound.".format(blk.name))
         if value(blk.temperature) > blk.temperature.ub:
             _log.error("{} Temperature set above upper bound.".format(blk.name))
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        # Set default scaling
+        def _set_default_factor(v, s):
+            for i in v:
+                if iscale.get_scaling_factor(v[i]) is None:
+                    iscale.set_scaling_factor(v[i], s)
+
+        _set_default_factor(self.k_rxn, 1e6)
+        _set_default_factor(self.OC_conv, 1e6)
+        _set_default_factor(self.OC_conv_temp, 1e3)
+        _set_default_factor(self.reaction_rate, 1e4)
+
+        if self.is_property_constructed("OC_conv_eqn"):
+            iscale.constraint_scaling_transform(
+                self.OC_conv_eqn,
+                iscale.get_scaling_factor(self.OC_conv),
+                overwrite=False,
+            )
+
+        if self.is_property_constructed("OC_conv_temp_eqn"):
+            iscale.constraint_scaling_transform(
+                self.OC_conv_temp_eqn,
+                iscale.get_scaling_factor(self.OC_conv_temp),
+                overwrite=False,
+            )
+
+        if self.is_property_constructed("rate_constant_eqn"):
+            for i, c in self.rate_constant_eqn.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.k_rxn[i]), overwrite=False
+                )
+
+        if self.is_property_constructed("gen_rate_expression"):
+            for i, c in self.gen_rate_expression.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.reaction_rate[i]), overwrite=False
+                )

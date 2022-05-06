@@ -44,6 +44,7 @@ from idaes.core.util.model_statistics import (
 )
 
 from idaes.core.solvers import get_solver
+from idaes.core.util import scaling as iscale
 
 from idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_phase_thermo import (
     GasPhaseParameterBlock,
@@ -67,7 +68,7 @@ def gas_prop():
 
     m.fs.unit[0].flow_mol.fix(1)
     m.fs.unit[0].temperature.fix(450)
-    m.fs.unit[0].pressure.fix(1.60)
+    m.fs.unit[0].pressure.fix(1.60e5)
     m.fs.unit[0].mole_frac_comp["CO2"].fix(0.0004)
     m.fs.unit[0].mole_frac_comp["H2O"].fix(0.0093)
     m.fs.unit[0].mole_frac_comp["O2"].fix(0.2095)
@@ -91,6 +92,181 @@ def test_build_inlet_state_block(gas_prop):
 @pytest.mark.unit
 def test_setInputs_state_block(gas_prop):
     assert degrees_of_freedom(gas_prop.fs.unit[0]) == 0
+
+
+@pytest.fixture(scope="class")
+def gas_prop_unscaled():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # gas properties and state inlet block
+    m.fs.properties = GasPhaseParameterBlock()
+    m.fs.unit = m.fs.properties.build_state_block(
+        [0], default={"parameters": m.fs.properties, "defined_state": True}
+    )
+
+    m.fs.unit[0].flow_mol.fix(1)
+    m.fs.unit[0].temperature.fix(450)
+    m.fs.unit[0].pressure.fix(1.60e5)
+    m.fs.unit[0].mole_frac_comp["CO2"].fix(0.0004)
+    m.fs.unit[0].mole_frac_comp["H2O"].fix(0.0093)
+    m.fs.unit[0].mole_frac_comp["O2"].fix(0.2095)
+    m.fs.unit[0].mole_frac_comp["N2"].fix(0.7808)
+
+    return m
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_initialize_unscaled(gas_prop_unscaled):
+    orig_fixed_vars = fixed_variables_set(gas_prop_unscaled)
+    orig_act_consts = activated_constraints_set(gas_prop_unscaled)
+
+    gas_prop_unscaled.fs.unit.initialize()
+
+    assert degrees_of_freedom(gas_prop_unscaled) == 0
+
+    fin_fixed_vars = fixed_variables_set(gas_prop_unscaled)
+    fin_act_consts = activated_constraints_set(gas_prop_unscaled)
+
+    assert len(fin_act_consts) == len(orig_act_consts)
+    assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+    for c in fin_act_consts:
+        assert c in orig_act_consts
+    for v in fin_fixed_vars:
+        assert v in orig_fixed_vars
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_solve_unscaled(gas_prop_unscaled):
+
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "mw")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "dens_mol")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "dens_mol_comp")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "dens_mass")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "visc_d")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "therm_cond")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "diffusion_comp")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "cp_mol_comp")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "cp_mol")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "cp_mass")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "enth_mol")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "enth_mol_comp")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "entr_mol")
+
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "get_material_flow_terms")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "get_enthalpy_flow_terms")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "get_material_density_terms")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "get_energy_density_terms")
+
+    results = solver.solve(gas_prop_unscaled)
+
+    # Check for optimal solution
+    assert check_optimal_termination(results)
+
+
+@pytest.mark.component
+def test_scaling(gas_prop):
+    # Calculate scaling factors
+
+    # Construct property methods to build the constraints
+    assert hasattr(gas_prop.fs.unit[0], "mw")
+    assert hasattr(gas_prop.fs.unit[0], "dens_mol")
+    assert hasattr(gas_prop.fs.unit[0], "dens_mol_comp")
+    assert hasattr(gas_prop.fs.unit[0], "dens_mass")
+    assert hasattr(gas_prop.fs.unit[0], "visc_d")
+    assert hasattr(gas_prop.fs.unit[0], "therm_cond")
+    assert hasattr(gas_prop.fs.unit[0], "diffusion_comp")
+    assert hasattr(gas_prop.fs.unit[0], "cp_mol_comp")
+    assert hasattr(gas_prop.fs.unit[0], "cp_mol")
+    assert hasattr(gas_prop.fs.unit[0], "cp_mass")
+    assert hasattr(gas_prop.fs.unit[0], "enth_mol")
+    assert hasattr(gas_prop.fs.unit[0], "enth_mol_comp")
+    assert hasattr(gas_prop.fs.unit[0], "entr_mol")
+
+    # Call flow and density methods to construct flow and density expressions
+    for i in gas_prop.fs.unit[0]._params.component_list:
+        gas_prop.fs.unit[0].get_material_flow_terms("Vap", i)
+        gas_prop.fs.unit[0].get_material_density_terms("Vap", i)
+    gas_prop.fs.unit[0].get_enthalpy_flow_terms("Vap")
+    gas_prop.fs.unit[0].get_energy_density_terms("Vap")
+
+    # Calculate scaling factors now that constraints/expressions are built
+    iscale.calculate_scaling_factors(gas_prop)
+
+    # Test scaling
+    assert pytest.approx(1e-3, rel=1e-5) == iscale.get_scaling_factor(
+        gas_prop.fs.unit[0].dens_mol
+    )
+
+    for i, c in gas_prop.fs.unit[0].material_flow_terms.items():
+        assert pytest.approx(1e-2, rel=1e-5) == iscale.get_scaling_factor(c)
+    for i, c in gas_prop.fs.unit[0].material_density_terms.items():
+        assert pytest.approx(1e-2, rel=1e-5) == iscale.get_scaling_factor(c)
+    for i, c in gas_prop.fs.unit[0].energy_density_terms.items():
+        assert pytest.approx(1e-9, rel=1e-5) == iscale.get_scaling_factor(c)
+    for i, c in gas_prop.fs.unit[0].enthalpy_flow_terms.items():
+        assert pytest.approx(1e-9, rel=1e-5) == iscale.get_scaling_factor(c)
+
+    assert pytest.approx(
+        1e2, rel=1e-5
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].mw_eqn
+    )
+    assert pytest.approx(
+        1e-5, rel=1e-5
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].ideal_gas
+    )
+    for i, c in gas_prop.fs.unit[0].comp_conc_eqn.items():
+        assert pytest.approx(
+            1e-2, rel=1e-5
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+    for i, c in gas_prop.fs.unit[0].visc_d_constraint.items():
+        assert pytest.approx(
+            1e5, rel=1e-5
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+    for i, c in gas_prop.fs.unit[0].diffusion_comp_constraint.items():
+        assert pytest.approx(
+            1e5, rel=1e-5
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+    assert pytest.approx(
+        1, rel=1e-5
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].therm_cond_constraint
+    )
+    for i, c in gas_prop.fs.unit[0].cp_shomate_eqn.items():
+        assert pytest.approx(
+            1e-6, rel=1e-5
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+    assert pytest.approx(
+        1e-6, rel=1e-5
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].mixture_heat_capacity_eqn
+    )
+    assert pytest.approx(
+        1e-6, rel=1e-5
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].cp_mass_basis
+    )
+    for i, c in gas_prop.fs.unit[0].enthalpy_shomate_eqn.items():
+        assert pytest.approx(
+            1e-6, rel=1e-5
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+    assert pytest.approx(
+        1e-6, rel=1e-5
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].mixture_enthalpy_eqn
+    )
+    assert pytest.approx(
+        1e-5, rel=1e-5
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        gas_prop.fs.unit[0].entropy_correlation
+    )
 
 
 @pytest.mark.solver
@@ -135,10 +311,37 @@ def test_solve(gas_prop):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_solution(gas_prop):
-    assert pytest.approx(1, abs=1e-2) == gas_prop.fs.unit[0].mw.value
-    assert pytest.approx(1, abs=1e-2) == gas_prop.fs.unit[0].cp_mol.value
-    assert pytest.approx(1, abs=1e-2) == gas_prop.fs.unit[0].enth_mol.value
+    assert pytest.approx(1, rel=1e-5) == gas_prop.fs.unit[0].mw.value
+    assert pytest.approx(1, rel=1e-5) == gas_prop.fs.unit[0].cp_mol.value
+    assert pytest.approx(1, rel=1e-5) == gas_prop.fs.unit[0].enth_mol.value
 
+
+@pytest.mark.component
+def test_units_consistent(gas_prop):
+
+    # Construct property methods to build the constraints
+    assert hasattr(gas_prop.fs.unit[0], "mw")
+    assert hasattr(gas_prop.fs.unit[0], "dens_mol")
+    assert hasattr(gas_prop.fs.unit[0], "dens_mol_comp")
+    assert hasattr(gas_prop.fs.unit[0], "dens_mass")
+    assert hasattr(gas_prop.fs.unit[0], "visc_d")
+    assert hasattr(gas_prop.fs.unit[0], "therm_cond")
+    assert hasattr(gas_prop.fs.unit[0], "diffusion_comp")
+    assert hasattr(gas_prop.fs.unit[0], "cp_mol_comp")
+    assert hasattr(gas_prop.fs.unit[0], "cp_mol")
+    assert hasattr(gas_prop.fs.unit[0], "cp_mass")
+    assert hasattr(gas_prop.fs.unit[0], "enth_mol")
+    assert hasattr(gas_prop.fs.unit[0], "enth_mol_comp")
+    assert hasattr(gas_prop.fs.unit[0], "entr_mol")
+
+    # Call flow and density methods to construct flow and density expressions
+    for i in gas_prop.fs.unit[0]._params.component_list:
+        gas_prop.fs.unit[0].get_material_flow_terms("Vap", i)
+        gas_prop.fs.unit[0].get_material_density_terms("Vap", i)
+    gas_prop.fs.unit[0].get_enthalpy_flow_terms("Vap")
+    gas_prop.fs.unit[0].get_energy_density_terms("Vap")
+
+    assert_units_consistent(gas_prop)
 
 # -----------------------------------------------------------------------------
 
@@ -223,6 +426,7 @@ def test_property_construction_ordered():
         ("cp_mass", "cp_mass_basis"),
         ("enth_mol_comp", "enthalpy_shomate_eqn"),
         ("enth_mol", "mixture_enthalpy_eqn"),
+        ("entr_mol", "entropy_correlation"),
     ]
 
     # Make sure the matching captures all the non-state vars.
@@ -447,12 +651,12 @@ class TestProperties(TestCase):
                 # Sanity check that inputs are what we expect
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(val, abs=1e-3)
+                    assert var.value == pytest.approx(val, rel=1e-3)
 
                 # Check that state block performs the calculations we expect
                 for var, val in target.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(val, abs=1e-3)
+                    assert var.value == pytest.approx(val, rel=1e-3)
 
     def test_dens_mol_comp(self):
         m = self._make_model()
@@ -525,13 +729,13 @@ class TestProperties(TestCase):
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
                     # ^ Problem converting units when value is zero
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 # Make sure property values are what we expect
                 for var, val in target.items():
                     # val = value(pyunits.convert(val, var.get_units()))
                     # ^ Problem converting units when value is zero
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
     def test_visc_d(self):
         m = self._make_model()
@@ -594,12 +798,12 @@ class TestProperties(TestCase):
                 # Sanity check that inputs are properly set
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 # Make sure properties have been calculated as expected
                 for var, val in target.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
     def test_diffusion_comp(self):
         m = self._make_model()
@@ -702,56 +906,56 @@ class TestProperties(TestCase):
             # These values look reasonable
             # TODO: Verify with external source.
             "diffusion_comp[O2]": [
-                3.11792621830951 * cm**2 / s,
-                2.456227751888218 * cm**2 / s,
-                3.034740091620132 * cm**2 / s,
-                1.9479388404541838 * cm**2 / s,
-                0.206691259894311 * cm**2 / s,
-                0.6952237580376006 * cm**2 / s,
-                1.4134625566198689 * cm**2 / s,
-                2.3384446637321363 * cm**2 / s,
-                4.676889327464272 * cm**2 / s,
-                1.5589631091547582 * cm**2 / s,
-                1.1692223318660684 * cm**2 / s,
+                3.11792621830951e-5 * cm**2 / s,
+                2.456227751888218e-5 * cm**2 / s,
+                3.034740091620132e-5 * cm**2 / s,
+                1.9479388404541838e-5 * cm**2 / s,
+                0.206691259894311e-5 * cm**2 / s,
+                0.6952237580376006e-5 * cm**2 / s,
+                1.4134625566198689e-5 * cm**2 / s,
+                2.3384446637321363e-5 * cm**2 / s,
+                4.676889327464272e-5 * cm**2 / s,
+                1.5589631091547582e-5 * cm**2 / s,
+                1.1692223318660684e-5 * cm**2 / s,
             ],
             "diffusion_comp[N2]": [
-                2.457518754629481 * cm**2 / s,
-                3.1383309495574956 * cm**2 / s,
-                3.0334118458311523 * cm**2 / s,
-                1.9790010245966736 * cm**2 / s,
-                0.2080439152537244 * cm**2 / s,
-                0.6997735302088169 * cm**2 / s,
-                1.422712718932098 * cm**2 / s,
-                2.353748212168125 * cm**2 / s,
-                4.70749642433625 * cm**2 / s,
-                1.5691654747787498 * cm**2 / s,
-                1.176874106084062 * cm**2 / s,
+                2.457518754629481e-5 * cm**2 / s,
+                3.1383309495574956e-5 * cm**2 / s,
+                3.0334118458311523e-5 * cm**2 / s,
+                1.9790010245966736e-5 * cm**2 / s,
+                0.2080439152537244e-5 * cm**2 / s,
+                0.6997735302088169e-5 * cm**2 / s,
+                1.422712718932098e-5 * cm**2 / s,
+                2.353748212168125e-5 * cm**2 / s,
+                4.70749642433625e-5 * cm**2 / s,
+                1.5691654747787498e-5 * cm**2 / s,
+                1.176874106084062e-5 * cm**2 / s,
             ],
             "diffusion_comp[H2O]": [
-                3.0845168350215713 * cm**2 / s,
-                3.0811129521516416 * cm**2 / s,
-                3.719143107603082 * cm**2 / s,
-                2.5051274838003996 * cm**2 / s,
-                0.24654668546150185 * cm**2 / s,
-                0.8292808959890481 * cm**2 / s,
-                1.6860147281349098 * cm**2 / s,
-                2.7893573307023156 * cm**2 / s,
-                5.578714661404631 * cm**2 / s,
-                1.8595715538015434 * cm**2 / s,
-                1.3946786653511578 * cm**2 / s,
+                3.0845168350215713e-5 * cm**2 / s,
+                3.0811129521516416e-5 * cm**2 / s,
+                3.719143107603082e-5 * cm**2 / s,
+                2.5051274838003996e-5 * cm**2 / s,
+                0.24654668546150185e-5 * cm**2 / s,
+                0.8292808959890481e-5 * cm**2 / s,
+                1.6860147281349098e-5 * cm**2 / s,
+                2.7893573307023156e-5 * cm**2 / s,
+                5.578714661404631e-5 * cm**2 / s,
+                1.8595715538015434e-5 * cm**2 / s,
+                1.3946786653511578e-5 * cm**2 / s,
             ],
             "diffusion_comp[CO2]": [
-                1.929322600571961 * cm**2 / s,
-                1.9589681584041365 * cm**2 / s,
-                2.4422863072776697 * cm**2 / s,
-                2.7098612589802444 * cm**2 / s,
-                0.17964011927809195 * cm**2 / s,
-                0.6042349293467888 * cm**2 / s,
-                1.2284727588198259 * cm**2 / s,
-                2.0323959442351844 * cm**2 / s,
-                4.064791888470369 * cm**2 / s,
-                1.3549306294901227 * cm**2 / s,
-                1.0161979721175922 * cm**2 / s,
+                1.929322600571961e-5 * cm**2 / s,
+                1.9589681584041365e-5 * cm**2 / s,
+                2.4422863072776697e-5 * cm**2 / s,
+                2.7098612589802444e-5 * cm**2 / s,
+                0.17964011927809195e-5 * cm**2 / s,
+                0.6042349293467888e-5 * cm**2 / s,
+                1.2284727588198259e-5 * cm**2 / s,
+                2.0323959442351844e-5 * cm**2 / s,
+                4.064791888470369e-5 * cm**2 / s,
+                1.3549306294901227e-5 * cm**2 / s,
+                1.0161979721175922e-5 * cm**2 / s,
             ],
         }
         target_values = ComponentMap(
@@ -775,12 +979,12 @@ class TestProperties(TestCase):
                 # Sanity check that inputs are properly set
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 # Make sure properties have been calculated as expected
                 for var, val in target.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
     def test_therm_cond(self):
         m = self._make_model()
@@ -842,12 +1046,12 @@ class TestProperties(TestCase):
                 # Sanity check that inputs are properly set
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 # Make sure properties have been calculated as expected
                 for var, val in target.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
     def test_cp(self):
         m = self._make_model()
@@ -968,12 +1172,12 @@ class TestProperties(TestCase):
                 # Sanity check that inputs are properly set
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 # Make sure properties have been calculated as expected
                 for var, val in target.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
     def test_enth(self):
         m = self._make_model()
@@ -1083,12 +1287,12 @@ class TestProperties(TestCase):
                 # Sanity check that inputs are properly set
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 # Make sure properties have been calculated as expected
                 for var, val in target.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
 
 if __name__ == "__main__":
