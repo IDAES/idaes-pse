@@ -56,6 +56,7 @@ class MEAColumnData(PackedColumnData):
         vap_comp = self.config.vapor_phase.property_package.component_list
         liq_comp = self.config.liquid_phase.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
+        solute_comp_list = ['CO2']
 
         lunits = self.config.liquid_phase.property_package.get_metadata(
             ).get_derived_units
@@ -64,7 +65,7 @@ class MEAColumnData(PackedColumnData):
         self.mass_transfer_coeff_liq = Var(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
-            equilibrium_comp,
+            solute_comp_list,
             units=lunits("length")/lunits("time"),
             doc='Liquid phase mass transfer coefficient')
 
@@ -88,7 +89,7 @@ class MEAColumnData(PackedColumnData):
         self.phi = Expression(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
-            equilibrium_comp,
+            solute_comp_list,
             rule=rule_phi,
             doc='Equilibrium partial pressure intermediate term')
 
