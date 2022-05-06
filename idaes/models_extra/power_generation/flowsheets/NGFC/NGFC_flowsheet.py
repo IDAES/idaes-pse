@@ -1725,8 +1725,8 @@ if __name__ == "__main__":
     m = pyo.ConcreteModel(name="NGFC without carbon capture")
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    reinit = True  # switch to True to re-initialize and re-solve
-    resolve = True  # switch to True to re-solve only (for debugging)
+    reinit = False  # switch to True to re-initialize and re-solve
+    resolve = False  # switch to True to re-solve only (for debugging)
     if os.path.exists("NGFC_flowsheet_init.json.gz") and reinit is False:
         # already initialized, can build model and load results from json
         build_power_island(m)
