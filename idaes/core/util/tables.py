@@ -256,6 +256,11 @@ def create_stream_table_dataframe(
 
     for key, sb in stream_states.items():
         stream_attributes[key] = {}
+
+        if add_variable_type:
+            var_type_key = f"{key}{variable_type_suffix}"
+            stream_attributes[var_type_key] = {}
+
         if true_state:
             disp_dict = sb.define_state_vars()
         else:
@@ -272,8 +277,6 @@ def create_stream_table_dataframe(
                 stream_attributes["Units"][stream_key] = quant.u
 
                 if add_variable_type:
-                    var_type_key = f"{key}{variable_type_suffix}"
-                    stream_attributes[var_type_key] = {}
                     if isinstance(disp_dict[k][i], (_GeneralVarData, Var)):
                         if disp_dict[k][i].fixed:
                             stream_attributes[var_type_key][stream_key] = VariableType.FIXED

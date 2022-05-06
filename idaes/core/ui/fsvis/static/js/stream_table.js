@@ -55,7 +55,7 @@ export class StreamTable {
         // Adding header
         if (this.existing_var_types.size > 0) {
             const header_vartype = document.createElement('p');
-            header_vartype.innerHTML = 'Variable Types:';
+            header_vartype.innerHTML = 'Annotated Variable Types:';
             header_vartype.className = stream_table_class;
             var_types_panel.appendChild(header_vartype);
         }
