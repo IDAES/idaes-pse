@@ -40,9 +40,9 @@ MAX_SAVED_VERSIONS = 100
 #: Return value for `visualize()` function. This namedtuple has three
 #: attributes that can be accessed by position or name:
 #:
-#: - store = :class:`idaes.ui.fsvis.persist.DataStore` object (with a ``.filename`` attribute)
+#: - store = :class:`idaes.core.ui.fsvis.persist.DataStore` object (with a ``.filename`` attribute)
 #: - port = Port number (integer) where web server is listening
-#: - server = :class:`idaes.ui.fsvis.model_server.FlowsheetServer` object for the web server thread
+#: - server = :class:`idaes.core.ui.fsvis.model_server.FlowsheetServer` object for the web server thread
 #:
 VisualizeResult = namedtuple("VisualizeResult", ["store", "port", "server"])
 
@@ -92,8 +92,8 @@ def visualize(
         See :data:`VisualizeResult`
 
     Raises:
-        :mod:`idaes.ui.fsvis.errors.VisualizerSaveError`: if the data storage at 'save_as' can't be opened
-        :mod:`idaes.ui.fsvis.errors.VisualizerError`: Any other errors
+        :mod:`idaes.core.ui.fsvis.errors.VisualizerSaveError`: if the data storage at 'save_as' can't be opened
+        :mod:`idaes.core.ui.fsvis.errors.VisualizerError`: Any other errors
         RuntimeError: If too many versions of the save file already exist. See :data:`MAX_SAVED_VERSIONS`.
     """
     global web_server
