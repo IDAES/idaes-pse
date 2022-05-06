@@ -445,9 +445,9 @@ class ReactionBlockData(ReactionBlockDataBase):
 
         def rate_constant_eqn(b, j):
             if j == "R1":
-                return ((self.k_rxn[j] / 
-                    self._params.k0_rxn[j]) ** 1E-3
-                    == (exp((
+                return self.k_rxn[j] == (
+                    self._params.k0_rxn[j]
+                    * exp(
                         -self._params.energy_activation[j]
                         / (
                             pyunits.convert(
@@ -456,11 +456,11 @@ class ReactionBlockData(ReactionBlockDataBase):
                             )
                             * self.solid_state_ref.temperature
                         )
-                    ) * 1E-3)
-                )
                     )
+                )
             else:
                 return Constraint.Skip
+            
 
         try:
             # Try to build constraint

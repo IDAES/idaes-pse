@@ -182,7 +182,7 @@ class TestIronOC(object):
     def iron_oc_unscaled(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(
-            default={"dynamic": True, "time_set": [0, 3600], "time_units": pyunits.s}
+            default={"dynamic": True, "time_set": [0, 360], "time_units": pyunits.s}
         )
 
         m.fs.gas_props = GasPhaseParameterBlock()
@@ -204,7 +204,7 @@ class TestIronOC(object):
 
         # Discretize time domain
         m.discretizer = TransformationFactory("dae.finite_difference")
-        m.discretizer.apply_to(m, nfe=100, wrt=m.fs.time, scheme="BACKWARD")
+        m.discretizer.apply_to(m, nfe=10, wrt=m.fs.time, scheme="BACKWARD")
 
         # Set reactor design conditions
         m.fs.unit.bed_diameter.fix(1)  # diameter of the TGA reactor [m]
