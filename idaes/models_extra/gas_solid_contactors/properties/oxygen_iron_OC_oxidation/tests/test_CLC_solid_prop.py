@@ -25,6 +25,7 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
+from pyomo.util.check_units import assert_units_consistent
 import pyomo.common.unittest as unittest
 from pyomo.common.collections import ComponentMap
 from pyomo.util.subsystems import ParamSweeper
@@ -42,6 +43,7 @@ from idaes.core.util.model_statistics import (
 )
 
 from idaes.core.solvers import get_solver
+from idaes.core.util import scaling as iscale
 
 from idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_phase_thermo import (
     SolidPhaseParameterBlock,
@@ -88,6 +90,133 @@ def test_setInputs_state_block(solid_prop):
     assert degrees_of_freedom(solid_prop.fs.unit[0]) == 0
 
 
+@pytest.fixture(scope="class")
+def solid_prop_unscaled():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # solid properties and state inlet block
+    m.fs.properties = SolidPhaseParameterBlock()
+
+    m.fs.unit = m.fs.properties.build_state_block(
+        [0], default={"parameters": m.fs.properties, "defined_state": True}
+    )
+
+    m.fs.unit[0].flow_mass.fix(1)
+    m.fs.unit[0].particle_porosity.fix(0.27)
+    m.fs.unit[0].temperature.fix(1183.15)
+    m.fs.unit[0].mass_frac_comp["Fe2O3"].fix(0.244)
+    m.fs.unit[0].mass_frac_comp["Fe3O4"].fix(0.202)
+    m.fs.unit[0].mass_frac_comp["Al2O3"].fix(0.554)
+
+    return m
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_initialize_unscaled(solid_prop_unscaled):
+    orig_fixed_vars = fixed_variables_set(solid_prop_unscaled)
+    orig_act_consts = activated_constraints_set(solid_prop_unscaled)
+
+    solid_prop_unscaled.fs.unit.initialize()
+
+    assert degrees_of_freedom(solid_prop_unscaled) == 0
+
+    fin_fixed_vars = fixed_variables_set(solid_prop_unscaled)
+    fin_act_consts = activated_constraints_set(solid_prop_unscaled)
+
+    assert len(fin_act_consts) == len(orig_act_consts)
+    assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+    for c in fin_act_consts:
+        assert c in orig_act_consts
+    for v in fin_fixed_vars:
+        assert v in orig_fixed_vars
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_solve_unscaled(solid_prop_unscaled):
+
+    assert hasattr(solid_prop_unscaled.fs.unit[0], "dens_mass_skeletal")
+    assert hasattr(solid_prop_unscaled.fs.unit[0], "cp_mass")
+    assert hasattr(solid_prop_unscaled.fs.unit[0], "enth_mass")
+
+    results = solver.solve(solid_prop_unscaled)
+
+    # Check for optimal solution
+    assert check_optimal_termination(results)
+
+
+@pytest.mark.component
+def test_scaling(solid_prop):
+    # Calculate scaling factors
+
+    # Construct property methods to build the constraints
+
+    assert hasattr(solid_prop.fs.unit[0], "dens_mass_skeletal")
+    assert hasattr(solid_prop.fs.unit[0], "dens_mass_particle")
+    assert hasattr(solid_prop.fs.unit[0], "cp_mol_comp")
+    assert hasattr(solid_prop.fs.unit[0], "cp_mass")
+    assert hasattr(solid_prop.fs.unit[0], "enth_mass")
+    assert hasattr(solid_prop.fs.unit[0], "enth_mol_comp")
+
+    # Call flow and density methods to construct flow and density expressions
+    for i in solid_prop.fs.unit[0]._params.component_list:
+        solid_prop.fs.unit[0].get_material_flow_terms("Sol", i)
+        solid_prop.fs.unit[0].get_material_density_terms("Sol", i)
+    solid_prop.fs.unit[0].get_enthalpy_flow_terms("Sol")
+    solid_prop.fs.unit[0].get_energy_density_terms("Sol")
+
+    # Calculate scaling factors now that constraints/expressions are built
+    iscale.calculate_scaling_factors(solid_prop)
+
+    # Test scaling
+    assert pytest.approx(1e-2, rel=1e-5) == iscale.get_scaling_factor(
+        solid_prop.fs.unit[0].dens_mass_particle
+    )
+
+    for i, c in solid_prop.fs.unit[0].material_flow_terms.items():
+        assert pytest.approx(1e-2, rel=1e-5) == iscale.get_scaling_factor(c)
+    for i, c in solid_prop.fs.unit[0].material_density_terms.items():
+        assert pytest.approx(1e-1, rel=1e-5) == iscale.get_scaling_factor(c)
+    for i, c in solid_prop.fs.unit[0].energy_density_terms.items():
+        assert pytest.approx(1e-8, rel=1e-5) == iscale.get_scaling_factor(c)
+    for i, c in solid_prop.fs.unit[0].enthalpy_flow_terms.items():
+        assert pytest.approx(1e-9, rel=1e-5) == iscale.get_scaling_factor(c)
+
+    assert pytest.approx(
+        1e-2, rel=1e-5
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        solid_prop.fs.unit[0].density_particle_constraint
+    )
+    assert pytest.approx(
+        1e-2, rel=1e-5
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        solid_prop.fs.unit[0].density_skeletal_constraint
+    )
+    for i, c in solid_prop.fs.unit[0].cp_shomate_eqn.items():
+        assert pytest.approx(
+            1e-6, rel=1e-5
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+    assert pytest.approx(
+        1e-6, rel=1e-5
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        solid_prop.fs.unit[0].mixture_heat_capacity_eqn
+    )
+    for i, c in solid_prop.fs.unit[0].enthalpy_shomate_eqn.items():
+        assert pytest.approx(
+            1e-6, rel=1e-5
+        ) == iscale.get_constraint_transform_applied_scaling_factor(c)
+    assert pytest.approx(
+        1e-6, rel=1e-5
+    ) == iscale.get_constraint_transform_applied_scaling_factor(
+        solid_prop.fs.unit[0].mixture_enthalpy_eqn
+    )
+
+
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
@@ -131,11 +260,33 @@ def test_solve(solid_prop):
 @pytest.mark.component
 def test_solution(solid_prop):
     assert (
-        pytest.approx(3251.75, abs=1e-2)
+        pytest.approx(3251.75, rel=1e-5)
         == solid_prop.fs.unit[0].dens_mass_skeletal.value
     )
-    assert pytest.approx(1, abs=1e-2) == solid_prop.fs.unit[0].cp_mass.value
-    assert pytest.approx(0.0039, abs=1e-2) == solid_prop.fs.unit[0].enth_mass.value
+    assert pytest.approx(1, rel=1e-5) == solid_prop.fs.unit[0].cp_mass.value
+    assert pytest.approx(0.0000, rel=1e-5) == solid_prop.fs.unit[0].enth_mass.value
+
+
+@pytest.mark.component
+def test_units_consistent(solid_prop):
+
+    # Construct property methods to build the constraints
+
+    assert hasattr(solid_prop.fs.unit[0], "dens_mass_skeletal")
+    assert hasattr(solid_prop.fs.unit[0], "dens_mass_particle")
+    assert hasattr(solid_prop.fs.unit[0], "cp_mol_comp")
+    assert hasattr(solid_prop.fs.unit[0], "cp_mass")
+    assert hasattr(solid_prop.fs.unit[0], "enth_mass")
+    assert hasattr(solid_prop.fs.unit[0], "enth_mol_comp")
+
+    # Call flow and density methods to construct flow and density expressions
+    for i in solid_prop.fs.unit[0]._params.component_list:
+        solid_prop.fs.unit[0].get_material_flow_terms("Sol", i)
+        solid_prop.fs.unit[0].get_material_density_terms("Sol", i)
+    solid_prop.fs.unit[0].get_enthalpy_flow_terms("Sol")
+    solid_prop.fs.unit[0].get_energy_density_terms("Sol")
+
+    assert_units_consistent(solid_prop)
 
 
 @pytest.mark.unit
@@ -278,11 +429,11 @@ class TestProperties(unittest.TestCase):
 
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 for var, val in outputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
     def test_dens_mass_particle(self):
         m = self._make_model()
@@ -329,11 +480,11 @@ class TestProperties(unittest.TestCase):
                 # Sanity check that inputs have been set properly
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 for var, val in outputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
     def test_cp(self):
         m = self._make_model()
@@ -401,11 +552,11 @@ class TestProperties(unittest.TestCase):
                 # Sanity check that inputs have been set properly
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 for var, val in outputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
     def test_enth(self):
         m = self._make_model()
@@ -473,11 +624,11 @@ class TestProperties(unittest.TestCase):
                 # Sanity check that inputs have been set properly
                 for var, val in inputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
                 for var, val in outputs.items():
                     val = value(pyunits.convert(val, var.get_units()))
-                    assert var.value == pytest.approx(value(val), abs=1e-3)
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
 
 
 if __name__ == "__main__":
