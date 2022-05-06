@@ -27,6 +27,10 @@ export class App {
     constructor (flowsheetId) {
         this.paper = new Paper(this);
         const url = `/fs?id=${ flowsheetId }`;
+
+        // Adding a special flag to block redundant saves to the model
+        this._save_model_called = false;
+
         $.ajax({url: url, datatype: 'json'})
             .done((model) => {
                 this.renderModel(model);
@@ -135,24 +139,38 @@ export class App {
     }
 
     /**
-     * Save the model value.
+     * Save the model value. Waiting time could be specified to
+     * disable multiple redundant saves caused by a stream of events
+     *
+     * Changing cell positions & link vertices fire multiple events
+     * subsequently. That's why we add waiting time before actually
+     * saving the model.
      *
      * This sends a PUT to the server to save the current model value.
      *
      * @param url The HTTP server that is running in the Python process
      * @param model The model to save
+     * @param wait waiting time before actually saving the model
      */
-    saveModel(url, model) {
-        let clientData = JSON.stringify(model.toJSON());
-        // console.debug(`Sending to ${url}: ` + clientData);
-        this.informUser(0, "Save current values from model");
-        $.ajax({url: url, type: 'PUT', contentType: "application/json", data: clientData})
-            // On failure inform user and stop
-            .fail(error => this.informUser(
-                2, "Fatal error: cannot save current model: " + error))
-            .done(() => {
-                this.informUser(0, "Saved new model values");
-            });
+    saveModel(url, model, wait=5000) {
+        if (this._save_model_called == false) {
+            this._save_model_called = true;
+            setTimeout(() => {
+                let clientData = JSON.stringify(model.toJSON());
+                // console.debug(`Sending to ${url}: ` + clientData);
+                this.informUser(0, "Save current values from model");
+                $.ajax({url: url, type: 'PUT', contentType: "application/json", data: clientData})
+                    // On failure inform user and stop
+                    .fail(error => this.informUser(
+                        2, "Fatal error: cannot save current model: " + error))
+                    .done(() => {
+                        this.informUser(0, "Saved new model values");
+                    });
+
+                // reset flag
+                this._save_model_called = false;
+            }, wait);
+        }
     }
 }
 
