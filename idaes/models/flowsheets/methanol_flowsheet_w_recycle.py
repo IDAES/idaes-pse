@@ -539,7 +539,7 @@ def initialize_flowsheet(m):
         print(o[0].name)
     print()
 
-    tear_guesses = {  # is there a way to generalize these values???
+    tear_guesses = {
         "flow_mol": {0: 954.00},
         "mole_frac_comp": {
                 (0, "CH4"): 1e-6,

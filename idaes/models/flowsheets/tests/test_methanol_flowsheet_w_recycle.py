@@ -289,6 +289,8 @@ def test_initialize_flowsheet(model):
     assert model.fs.F101.liq_outlet.flow_mol[0].expr.value == pytest.approx(
         142.59, 1e-3)
 
+    assert not model.fs.M102.outlet.is_fixed()
+
 
 @pytest.mark.integration
 def test_unit_consistency(model):
@@ -423,8 +425,25 @@ def test_solve_flowsheet(model):
 
 
 @pytest.mark.integration
-def test_optimize_with_costing(model):
+def test_add_costing(model):
     add_costing(model)
+
+    assert hasattr(model.fs, "cooling_cost")
+    assert hasattr(model.fs, "heating_cost")
+    assert hasattr(model.fs, "electricity_cost")
+    assert hasattr(model.fs, "operating_cost")
+    assert hasattr(model.fs.R101, "L_eq")
+    assert hasattr(model.fs.H101, "cost_heater")
+    assert hasattr(model.fs.H102, "cost_heater")
+    assert hasattr(model.fs, "annualized_capital_cost")
+    assert hasattr(model.fs, "sales")
+    assert hasattr(model.fs, "raw_mat_cost")
+    assert hasattr(model.fs, "objective")
+    assert degrees_of_freedom(model) == 0
+
+
+@pytest.mark.integration
+def test_optimize_with_costing(model):
 
     # Set up Optimization Problem (Maximize Revenue)
     # keep process pre-reaction fixed and unfix some post-process specs
