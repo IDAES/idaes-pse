@@ -14,6 +14,7 @@
 Tests for CSTR unit model.
 Authors: Andrew Lee, Vibhav Dabadghao
 """
+from io import StringIO
 
 import pytest
 from pyomo.environ import check_optimal_termination, ConcreteModel, units, value, Var
@@ -252,7 +253,38 @@ class TestSaponification(object):
     @pytest.mark.ui
     @pytest.mark.unit
     def test_report(self, sapon):
-        sapon.fs.unit.report()
+        stream = StringIO()
+
+        sapon.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key             : Value     : Units      : Fixed : Bounds
+          Heat Duty :    0.0000 :       watt :  True : (None, None)
+    Pressure Change :    0.0000 :     pascal :  True : (None, None)
+             Volume : 0.0015000 : meter ** 3 :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                             Units            Inlet     Outlet  
+    Volumetric Flowrate                meter ** 3 / second  0.0010000  0.0010000
+    Molar Concentration H2O              mole / meter ** 3     55388.     55388.
+    Molar Concentration NaOH             mole / meter ** 3     100.00     20.316
+    Molar Concentration EthylAcetate     mole / meter ** 3     100.00     20.316
+    Molar Concentration SodiumAcetate    mole / meter ** 3     0.0000     79.684
+    Molar Concentration Ethanol          mole / meter ** 3     0.0000     79.684
+    Temperature                                     kelvin     303.15     304.09
+    Pressure                                        pascal 1.0132e+05 1.0132e+05
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
