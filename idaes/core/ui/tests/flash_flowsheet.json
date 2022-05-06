@@ -490,24 +490,20 @@
         "stream_table": {
             "columns": [
                 "Variable",
-<<<<<<< HEAD:idaes/core/ui/tests/flash_flowsheet.json
                 "Units",
-                "s_inlet_1"
-=======
                 "s_inlet_1",
                 "s_inlet_1_vartype"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/flash_flowsheet.json
             ],
             "data": [
                 [
                     "flow_mol",
-<<<<<<< HEAD:idaes/core/ui/tests/flash_flowsheet.json
                     {
                         "html": "mol/s",
                         "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                         "raw": "mole / second"
                     },
-                    -Infinity
+                    -Infinity,
+                    2
                 ],
                 [
                     "mole_frac_comp benzene",
@@ -516,7 +512,8 @@
                         "latex": "",
                         "raw": "dimensionless"
                     },
-                    0.5
+                    0.5,
+                    2
                 ],
                 [
                     "mole_frac_comp toluene",
@@ -525,7 +522,8 @@
                         "latex": "",
                         "raw": "dimensionless"
                     },
-                    0.5
+                    0.5,
+                    2
                 ],
                 [
                     "temperature",
@@ -534,7 +532,8 @@
                         "latex": "\\mathrm{K}",
                         "raw": "kelvin"
                     },
-                    Infinity
+                    Infinity,
+                    2
                 ],
                 [
                     "pressure",
@@ -543,31 +542,8 @@
                         "latex": "\\mathrm{Pa}",
                         "raw": "pascal"
                     },
-                    NaN
-=======
-                    -Infinity,
-                    "-"
-                ],
-                [
-                    "mole_frac_comp benzene",
-                    0.5,
-                    "-"
-                ],
-                [
-                    "mole_frac_comp toluene",
-                    0.5,
-                    "-"
-                ],
-                [
-                    "temperature",
-                    Infinity,
-                    "-"
-                ],
-                [
-                    "pressure",
                     NaN,
                     2
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/flash_flowsheet.json
                 ]
             ],
             "index": [

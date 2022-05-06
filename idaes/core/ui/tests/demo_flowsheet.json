@@ -3498,19 +3498,19 @@
                     "-",
                     "-",
                     1.0,
+                    1,
+                    1.0,
+                    1,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     1.0,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
+                    1,
                     1.0,
-                    "-",
-                    1.0,
-                    "-",
+                    1,
                     "-",
                     "-",
                     "-",
@@ -3546,19 +3546,19 @@
                     "-",
                     "-",
                     0.5,
+                    1,
+                    0.5,
+                    1,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     0.5,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
+                    1,
                     0.5,
-                    "-",
-                    0.5,
-                    "-",
+                    1,
                     "-",
                     "-",
                     "-",
@@ -3594,19 +3594,19 @@
                     "-",
                     "-",
                     0.5,
+                    1,
+                    0.5,
+                    1,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     0.5,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
+                    1,
                     0.5,
-                    "-",
-                    0.5,
-                    "-",
+                    1,
                     "-",
                     "-",
                     "-",
@@ -3642,19 +3642,19 @@
                     "-",
                     "-",
                     298.15,
+                    1,
+                    298.15,
+                    1,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     298.15,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
+                    1,
                     298.15,
-                    "-",
-                    298.15,
-                    "-",
+                    1,
                     "-",
                     "-",
                     "-",
@@ -3728,45 +3728,45 @@
                         "raw": "mole / second"
                     },
                     1,
-                    "-",
                     1,
-                    "-",
                     1,
-                    "-",
                     1,
-                    "-",
                     1,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
                     1,
-                    "-",
                     1,
-                    "-",
+                    1,
+                    1,
                     1,
                     "-",
                     "-",
                     "-",
                     "-",
-                    "-",
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
                     1,
                     "-",
-                    1,
+                    "-",
+                    "-",
                     "-",
                     1,
-                    "-",
                     1,
-                    "-",
                     1,
-                    "-",
                     1,
-                    "-",
                     1,
-                    "-",
                     1,
-                    "-"
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
                 ],
                 [
                     "Mass Flow (kg/s)",
@@ -3776,45 +3776,45 @@
                         "raw": "kilogram / second"
                     },
                     0.04401,
-                    "-",
+                    4,
                     0.04401,
-                    "-",
+                    4,
                     0.04401,
-                    "-",
+                    4,
                     0.04401,
-                    "-",
+                    4,
                     0.04401,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    0.04401,
-                    "-",
-                    0.04401,
-                    "-",
-                    0.04401,
-                    "-",
+                    4,
                     "-",
                     "-",
                     "-",
                     "-",
                     0.04401,
+                    4,
+                    0.04401,
+                    4,
+                    0.04401,
+                    4,
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     0.04401,
-                    "-",
+                    4,
                     0.04401,
-                    "-",
+                    4,
                     0.04401,
-                    "-",
+                    4,
                     0.04401,
-                    "-",
+                    4,
                     0.04401,
-                    "-",
+                    4,
                     0.04401,
-                    "-",
+                    4,
                     0.04401,
-                    "-"
+                    4,
+                    0.04401,
+                    4
                 ],
                 [
                     "T (K)",
@@ -3824,45 +3824,45 @@
                         "raw": "kelvin"
                     },
                     325.52764,
-                    "-",
+                    4,
                     325.52764,
-                    "-",
+                    4,
                     325.52764,
-                    "-",
+                    4,
                     325.52764,
-                    "-",
+                    4,
                     325.52764,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    325.52764,
-                    "-",
-                    325.52764,
-                    "-",
-                    325.52764,
-                    "-",
+                    4,
                     "-",
                     "-",
                     "-",
                     "-",
                     325.52764,
+                    4,
+                    325.52764,
+                    4,
+                    325.52764,
+                    4,
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     325.52764,
-                    "-",
+                    4,
                     325.52764,
-                    "-",
+                    4,
                     325.52764,
-                    "-",
+                    4,
                     325.52764,
-                    "-",
+                    4,
                     325.52764,
-                    "-",
+                    4,
                     325.52764,
-                    "-",
+                    4,
                     325.52764,
-                    "-"
+                    4,
+                    325.52764,
+                    4
                 ],
                 [
                     "P (Pa)",
@@ -3872,45 +3872,45 @@
                         "raw": "pascal"
                     },
                     100000.0,
-                    "-",
+                    1,
                     100000.0,
-                    "-",
+                    1,
                     100000.0,
-                    "-",
+                    1,
                     100000.0,
-                    "-",
+                    1,
                     100000.0,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    100000.0,
-                    "-",
-                    100000.0,
-                    "-",
-                    100000.0,
-                    "-",
+                    1,
                     "-",
                     "-",
                     "-",
                     "-",
                     100000.0,
+                    1,
+                    100000.0,
+                    1,
+                    100000.0,
+                    1,
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     100000.0,
-                    "-",
+                    1,
                     100000.0,
-                    "-",
+                    1,
                     100000.0,
-                    "-",
+                    1,
                     100000.0,
-                    "-",
+                    1,
                     100000.0,
-                    "-",
+                    1,
                     100000.0,
-                    "-",
+                    1,
                     100000.0,
-                    "-"
+                    1,
+                    100000.0,
+                    1
                 ],
                 [
                     "Vapor Fraction",
@@ -3920,45 +3920,45 @@
                         "raw": "dimensionless"
                     },
                     1.0,
-                    "-",
+                    4,
                     1.0,
-                    "-",
+                    4,
                     1.0,
-                    "-",
+                    4,
                     1.0,
-                    "-",
+                    4,
                     1.0,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
+                    4,
                     "-",
                     "-",
                     "-",
                     "-",
                     1.0,
+                    4,
+                    1.0,
+                    4,
+                    1.0,
+                    4,
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     1.0,
-                    "-",
+                    4,
                     1.0,
-                    "-",
+                    4,
                     1.0,
-                    "-",
+                    4,
                     1.0,
-                    "-",
+                    4,
                     1.0,
-                    "-",
+                    4,
                     1.0,
-                    "-",
+                    4,
                     1.0,
-                    "-"
+                    4,
+                    1.0,
+                    4
                 ],
                 [
                     "Molar Enthalpy (J/mol) Vap",
@@ -3968,45 +3968,45 @@
                         "raw": "joule / mole"
                     },
                     1000.0,
-                    "-",
+                    null,
                     1000.0,
-                    "-",
+                    null,
                     1000.0,
-                    "-",
+                    null,
                     1000.0,
-                    "-",
+                    null,
                     1000.0,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    1000.0,
-                    "-",
-                    1000.0,
-                    "-",
-                    1000.0,
-                    "-",
+                    null,
                     "-",
                     "-",
                     "-",
                     "-",
                     1000.0,
+                    null,
+                    1000.0,
+                    null,
+                    1000.0,
+                    null,
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     1000.0,
-                    "-",
+                    null,
                     1000.0,
-                    "-",
+                    null,
                     1000.0,
-                    "-",
+                    null,
                     1000.0,
-                    "-",
+                    null,
                     1000.0,
-                    "-",
+                    null,
                     1000.0,
-                    "-",
+                    null,
                     1000.0,
-                    "-"
+                    null,
+                    1000.0,
+                    null
                 ],
                 [
                     "Molar Enthalpy (J/mol) Liq",
@@ -4131,120 +4131,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -4262,86 +4213,51 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "flow_mol"
                     },
                     "1": {
                         "Inlet": 0.5,
                         "Outlet": 0.5,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "mole_frac_comp benzene"
                     },
                     "2": {
                         "Inlet": 0.5,
                         "Outlet": 0.5,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "mole_frac_comp toluene"
                     },
                     "3": {
                         "Inlet": 298.15,
                         "Outlet": 298.15,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "temperature"
                     },
                     "4": {
                         "Inlet": 101325.0,
                         "Outlet": 101325.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "pressure"
                     }
                 },
@@ -4359,120 +4275,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -4490,120 +4357,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -4615,90 +4433,55 @@
                 "stream_contents": {
                     "0": {
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "flow_mol",
                         "inlet_1": 1.0,
                         "inlet_2": 1.0
                     },
                     "1": {
                         "Outlet": 0.5,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "mole_frac_comp benzene",
                         "inlet_1": 0.5,
                         "inlet_2": 0.5
                     },
                     "2": {
                         "Outlet": 0.5,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "mole_frac_comp toluene",
                         "inlet_1": 0.5,
                         "inlet_2": 0.5
                     },
                     "3": {
                         "Outlet": 298.15,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "temperature",
                         "inlet_1": 298.15,
                         "inlet_2": 298.15
                     },
                     "4": {
                         "Outlet": 101325.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "pressure",
                         "inlet_1": 101325.0,
                         "inlet_2": 101325.0
@@ -4718,120 +4501,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -4861,120 +4595,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -5048,120 +4733,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -5211,120 +4847,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -5354,120 +4941,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.04401,
                         "Outlet": 0.04401,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 325.52764,
                         "Outlet": 325.52764,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/demo_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/demo_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/demo_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },

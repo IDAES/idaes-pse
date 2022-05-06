@@ -2211,39 +2211,39 @@
                         "raw": "mole / second"
                     },
                     1,
-                    "-",
-                    "-",
-                    "-",
-                    1,
-                    "-",
-                    1,
-                    "-",
-                    1,
-                    "-",
-                    1,
-                    "-",
-                    1,
-                    "-",
                     1,
                     "-",
                     "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
                     1,
                     "-",
                     "-",
                     "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
                     1,
-                    "-"
+                    1,
+                    "-",
+                    "-",
+                    1,
+                    1
                 ],
                 [
                     "Mass Flow (kg/s)",
@@ -2253,39 +2253,39 @@
                         "raw": "kilogram / second"
                     },
                     0.01802,
+                    4,
+                    "-",
+                    "-",
+                    0.01802,
+                    4,
+                    0.01802,
+                    4,
+                    0.01802,
+                    4,
+                    0.01802,
+                    4,
+                    0.01802,
+                    4,
+                    0.01802,
+                    4,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     "-",
                     "-",
                     0.01802,
-                    "-",
-                    0.01802,
-                    "-",
-                    0.01802,
-                    "-",
-                    0.01802,
-                    "-",
-                    0.01802,
-                    "-",
-                    0.01802,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
+                    4,
                     "-",
                     "-",
                     0.01802,
-                    "-",
-                    "-",
-                    "-",
-                    0.01802,
-                    "-"
+                    4
                 ],
                 [
                     "T (K)",
@@ -2295,39 +2295,39 @@
                         "raw": "kelvin"
                     },
                     286.34379,
+                    4,
+                    "-",
+                    "-",
+                    286.34379,
+                    4,
+                    286.34379,
+                    4,
+                    286.34379,
+                    4,
+                    286.34379,
+                    4,
+                    286.34379,
+                    4,
+                    286.34379,
+                    4,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     "-",
                     "-",
                     286.34379,
-                    "-",
-                    286.34379,
-                    "-",
-                    286.34379,
-                    "-",
-                    286.34379,
-                    "-",
-                    286.34379,
-                    "-",
-                    286.34379,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
+                    4,
                     "-",
                     "-",
                     286.34379,
-                    "-",
-                    "-",
-                    "-",
-                    286.34379,
-                    "-"
+                    4
                 ],
                 [
                     "P (Pa)",
@@ -2337,39 +2337,39 @@
                         "raw": "pascal"
                     },
                     100000.0,
+                    1,
+                    "-",
+                    "-",
+                    100000.0,
+                    1,
+                    100000.0,
+                    1,
+                    100000.0,
+                    1,
+                    100000.0,
+                    1,
+                    100000.0,
+                    1,
+                    100000.0,
+                    1,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     "-",
                     "-",
                     100000.0,
-                    "-",
-                    100000.0,
-                    "-",
-                    100000.0,
-                    "-",
-                    100000.0,
-                    "-",
-                    100000.0,
-                    "-",
-                    100000.0,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
+                    1,
                     "-",
                     "-",
                     100000.0,
-                    "-",
-                    "-",
-                    "-",
-                    100000.0,
-                    "-"
+                    1
                 ],
                 [
                     "Vapor Fraction",
@@ -2379,39 +2379,39 @@
                         "raw": "dimensionless"
                     },
                     0.0,
+                    4,
+                    "-",
+                    "-",
+                    0.0,
+                    4,
+                    0.0,
+                    4,
+                    0.0,
+                    4,
+                    0.0,
+                    4,
+                    0.0,
+                    4,
+                    0.0,
+                    4,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     "-",
                     "-",
                     0.0,
-                    "-",
-                    0.0,
-                    "-",
-                    0.0,
-                    "-",
-                    0.0,
-                    "-",
-                    0.0,
-                    "-",
-                    0.0,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
+                    4,
                     "-",
                     "-",
                     0.0,
-                    "-",
-                    "-",
-                    "-",
-                    0.0,
-                    "-"
+                    4
                 ],
                 [
                     "Molar Enthalpy (J/mol) Vap",
@@ -2421,39 +2421,39 @@
                         "raw": "joule / mole"
                     },
                     2168.59605,
+                    null,
+                    "-",
+                    "-",
+                    2168.59605,
+                    null,
+                    2168.59605,
+                    null,
+                    2168.59605,
+                    null,
+                    2168.59605,
+                    null,
+                    2168.59605,
+                    null,
+                    2168.59605,
+                    null,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     "-",
                     "-",
                     2168.59605,
-                    "-",
-                    2168.59605,
-                    "-",
-                    2168.59605,
-                    "-",
-                    2168.59605,
-                    "-",
-                    2168.59605,
-                    "-",
-                    2168.59605,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
+                    null,
                     "-",
                     "-",
                     2168.59605,
-                    "-",
-                    "-",
-                    "-",
-                    2168.59605,
-                    "-"
+                    null
                 ],
                 [
                     "Molar Enthalpy (J/mol) Liq",
@@ -2499,51 +2499,43 @@
                 ],
                 [
                     "flow_mol_comp N2",
-                    "-",
-                    "-",
-                    1.0,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-                    0.01802,
-                    3
-                ],
-                [
-                    "flow_mol_comp N2",
                     {
                         "html": "mol/s",
                         "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                         "raw": "mole / second"
                     },
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     "-",
                     "-",
                     1.0,
+                    1,
                     "-",
-                    1.0,
                     "-",
-                    1.0,
                     "-",
-                    1.0,
                     "-",
-                    1.0,
                     "-",
-                    1.0,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
                     "-",
                     "-",
                     "-",
                     1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
                     "-",
+                    "-",
+                    1.0,
+                    1,
                     "-",
                     "-"
                 ],
@@ -2557,7 +2549,7 @@
                     "-",
                     "-",
                     1.0,
-                    "-",
+                    1,
                     "-",
                     "-",
                     "-",
@@ -2571,21 +2563,21 @@
                     "-",
                     "-",
                     1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    "-",
                     "-",
                     1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    "-",
-                    "-",
-                    1.0,
-                    "-",
+                    1,
                     "-",
                     "-"
                 ],
@@ -2599,7 +2591,7 @@
                     "-",
                     "-",
                     1.0,
-                    "-",
+                    1,
                     "-",
                     "-",
                     "-",
@@ -2613,21 +2605,21 @@
                     "-",
                     "-",
                     1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    "-",
                     "-",
                     1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    "-",
-                    "-",
-                    1.0,
-                    "-",
+                    1,
                     "-",
                     "-"
                 ],
@@ -2641,7 +2633,7 @@
                     "-",
                     "-",
                     1.0,
-                    "-",
+                    1,
                     "-",
                     "-",
                     "-",
@@ -2655,21 +2647,21 @@
                     "-",
                     "-",
                     1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    "-",
                     "-",
                     1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    "-",
-                    "-",
-                    1.0,
-                    "-",
+                    1,
                     "-",
                     "-"
                 ],
@@ -2683,7 +2675,7 @@
                     "-",
                     "-",
                     1.0,
-                    "-",
+                    1,
                     "-",
                     "-",
                     "-",
@@ -2697,21 +2689,21 @@
                     "-",
                     "-",
                     1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    "-",
                     "-",
                     1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    "-",
-                    "-",
-                    1.0,
-                    "-",
+                    1,
                     "-",
                     "-"
                 ],
@@ -2725,7 +2717,7 @@
                     "-",
                     "-",
                     1.0,
-                    "-",
+                    1,
                     "-",
                     "-",
                     "-",
@@ -2739,21 +2731,21 @@
                     "-",
                     "-",
                     1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    1.0,
+                    1,
+                    "-",
                     "-",
                     1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    1.0,
-                    "-",
-                    "-",
-                    "-",
-                    1.0,
-                    "-",
+                    1,
                     "-",
                     "-"
                 ],
@@ -2767,7 +2759,7 @@
                     "-",
                     "-",
                     500,
-                    "-",
+                    1,
                     "-",
                     "-",
                     "-",
@@ -2781,21 +2773,21 @@
                     "-",
                     "-",
                     500,
+                    1,
+                    500,
+                    1,
+                    500,
+                    1,
+                    500,
+                    1,
+                    500,
+                    1,
+                    500,
+                    1,
+                    "-",
                     "-",
                     500,
-                    "-",
-                    500,
-                    "-",
-                    500,
-                    "-",
-                    500,
-                    "-",
-                    500,
-                    "-",
-                    "-",
-                    "-",
-                    500,
-                    "-",
+                    1,
                     "-",
                     "-"
                 ],
@@ -2869,126 +2861,77 @@
                         "Outlet": 1.0,
                         "SprayWater": 1.0,
                         "Steam": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Steam_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Outlet": 0.01802,
                         "SprayWater": 0.01802,
                         "Steam": 0.01802,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Steam_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Outlet": 286.34379,
                         "SprayWater": 286.34379,
                         "Steam": 286.34379,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Steam_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Outlet": 100000.0,
                         "SprayWater": 100000.0,
                         "Steam": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Steam_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Outlet": 0.0,
                         "SprayWater": 0.0,
                         "Steam": 0.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Steam_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Outlet": 2168.59605,
                         "SprayWater": 2168.59605,
                         "Steam": 2168.59605,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Steam_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Outlet": 1000.0,
                         "SprayWater": 1000.0,
                         "Steam": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Steam_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -3016,18 +2959,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 1,
                         "Hot Outlet": 1,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
@@ -3035,18 +2971,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 0.01802,
                         "Hot Outlet": 0.01802,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "10": {
@@ -3054,66 +2983,35 @@
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp CO2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp NO"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-                    },
-                    "11": {
-                        "Cold Inlet": 1.0,
-                        "Cold Inlet_vartype": "-",
-                        "Cold Outlet": 1.0,
-                        "Cold Outlet_vartype": "-",
-                        "Hot Inlet": "-",
-                        "Hot Inlet_vartype": "-",
-                        "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp H2O"
-=======
-                        "Hot Outlet_vartype": "-",
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
-                        "Variable": "flow_mol_comp CO2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "11": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-                        "Variable": "flow_mol_comp SO2"
-=======
-                        "Hot Outlet_vartype": "-",
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp H2O"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "12": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "flow_mol_comp SO2"
                     },
                     "13": {
@@ -3121,18 +3019,11 @@
                         "Cold Outlet": 500,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "temperature"
                     },
                     "14": {
@@ -3140,18 +3031,11 @@
                         "Cold Outlet": 101325.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "pressure"
                     },
                     "2": {
@@ -3159,18 +3043,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 286.34379,
                         "Hot Outlet": 286.34379,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
@@ -3178,18 +3055,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 100000.0,
                         "Hot Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
@@ -3197,18 +3067,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 0.0,
                         "Hot Outlet": 0.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
@@ -3216,18 +3079,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 2168.59605,
                         "Hot Outlet": 2168.59605,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
@@ -3235,8 +3091,6 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 1000.0,
                         "Hot Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
@@ -3255,73 +3109,30 @@
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp N2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": "-",
-                        "Cold Inlet_vartype": "-",
-                        "Cold Outlet": "-",
-                        "Cold Outlet_vartype": "-",
-                        "Hot Inlet": 0.01802,
-                        "Hot Inlet_vartype": "-",
-                        "Hot Outlet": 0.01802,
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "Molecular Weight"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Variable": "flow_mol_comp N2"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "8": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp O2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp N2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "flow_mol_comp O2"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "9": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp NO"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp O2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "flow_mol_comp NO"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     }
                 },
                 "type": "boiler_heat_exchanger"
@@ -3348,18 +3159,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 1,
                         "Hot Outlet": 1,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
@@ -3367,18 +3171,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 0.01802,
                         "Hot Outlet": 0.01802,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "10": {
@@ -3386,66 +3183,35 @@
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp CO2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp NO"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-                    },
-                    "11": {
-                        "Cold Inlet": 1.0,
-                        "Cold Inlet_vartype": "-",
-                        "Cold Outlet": 1.0,
-                        "Cold Outlet_vartype": "-",
-                        "Hot Inlet": "-",
-                        "Hot Inlet_vartype": "-",
-                        "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp H2O"
-=======
-                        "Hot Outlet_vartype": "-",
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
-                        "Variable": "flow_mol_comp CO2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "11": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-                        "Variable": "flow_mol_comp SO2"
-=======
-                        "Hot Outlet_vartype": "-",
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp H2O"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "12": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "flow_mol_comp SO2"
                     },
                     "13": {
@@ -3453,18 +3219,11 @@
                         "Cold Outlet": 500,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "temperature"
                     },
                     "14": {
@@ -3472,18 +3231,11 @@
                         "Cold Outlet": 101325.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "pressure"
                     },
                     "2": {
@@ -3491,18 +3243,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 286.34379,
                         "Hot Outlet": 286.34379,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
@@ -3510,18 +3255,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 100000.0,
                         "Hot Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
@@ -3529,18 +3267,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 0.0,
                         "Hot Outlet": 0.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
@@ -3548,18 +3279,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 2168.59605,
                         "Hot Outlet": 2168.59605,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
@@ -3567,8 +3291,6 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 1000.0,
                         "Hot Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
@@ -3587,73 +3309,30 @@
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp N2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": "-",
-                        "Cold Inlet_vartype": "-",
-                        "Cold Outlet": "-",
-                        "Cold Outlet_vartype": "-",
-                        "Hot Inlet": 0.01802,
-                        "Hot Inlet_vartype": "-",
-                        "Hot Outlet": 0.01802,
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "Molecular Weight"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Variable": "flow_mol_comp N2"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "8": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp O2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp N2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "flow_mol_comp O2"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "9": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp NO"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp O2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "flow_mol_comp NO"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     }
                 },
                 "type": "boiler_heat_exchanger"
@@ -3670,120 +3349,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.01802,
                         "Outlet": 0.01802,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 286.34379,
                         "Outlet": 286.34379,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 0.0,
                         "Outlet": 0.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 2168.59605,
                         "Outlet": 2168.59605,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -3811,18 +3441,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 1,
                         "Hot Outlet": 1,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
@@ -3830,18 +3453,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 0.01802,
                         "Hot Outlet": 0.01802,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "10": {
@@ -3849,66 +3465,35 @@
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp CO2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp NO"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-                    },
-                    "11": {
-                        "Cold Inlet": 1.0,
-                        "Cold Inlet_vartype": "-",
-                        "Cold Outlet": 1.0,
-                        "Cold Outlet_vartype": "-",
-                        "Hot Inlet": "-",
-                        "Hot Inlet_vartype": "-",
-                        "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp H2O"
-=======
-                        "Hot Outlet_vartype": "-",
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
-                        "Variable": "flow_mol_comp CO2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "11": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-                        "Variable": "flow_mol_comp SO2"
-=======
-                        "Hot Outlet_vartype": "-",
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp H2O"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "12": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "flow_mol_comp SO2"
                     },
                     "13": {
@@ -3916,18 +3501,11 @@
                         "Cold Outlet": 500,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "temperature"
                     },
                     "14": {
@@ -3935,18 +3513,11 @@
                         "Cold Outlet": 101325.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "pressure"
                     },
                     "2": {
@@ -3954,18 +3525,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 286.34379,
                         "Hot Outlet": 286.34379,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
@@ -3973,18 +3537,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 100000.0,
                         "Hot Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
@@ -3992,18 +3549,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 0.0,
                         "Hot Outlet": 0.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
@@ -4011,18 +3561,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 2168.59605,
                         "Hot Outlet": 2168.59605,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
@@ -4030,8 +3573,6 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 1000.0,
                         "Hot Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
@@ -4050,73 +3591,30 @@
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp N2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": "-",
-                        "Cold Inlet_vartype": "-",
-                        "Cold Outlet": "-",
-                        "Cold Outlet_vartype": "-",
-                        "Hot Inlet": 0.01802,
-                        "Hot Inlet_vartype": "-",
-                        "Hot Outlet": 0.01802,
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "Molecular Weight"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Variable": "flow_mol_comp N2"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "8": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp O2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp N2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "flow_mol_comp O2"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "9": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp NO"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp O2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "flow_mol_comp NO"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     }
                 },
                 "type": "boiler_heat_exchanger"
@@ -4143,18 +3641,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 1,
                         "Hot Outlet": 1,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
@@ -4162,89 +3653,47 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 0.01802,
                         "Hot Outlet": 0.01802,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "10": {
                         "Cold Inlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-                        "Cold Inlet_vartype": "-",
                         "Cold Outlet": 1.0,
-                        "Cold Outlet_vartype": "-",
                         "Hot Inlet": "-",
-                        "Hot Inlet_vartype": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp CO2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp NO"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-                    },
-                    "11": {
-                        "Cold Inlet": 1.0,
-                        "Cold Inlet_vartype": "-",
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp H2O"
-=======
-                        "Hot Outlet_vartype": "-",
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
-                        "Variable": "flow_mol_comp CO2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "11": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-                        "Variable": "flow_mol_comp SO2"
-=======
-                        "Hot Outlet_vartype": "-",
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp H2O"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "12": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
                         "Variable": "flow_mol_comp SO2"
                     },
                     "13": {
@@ -4252,18 +3701,11 @@
                         "Cold Outlet": 500,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "temperature"
                     },
                     "14": {
@@ -4271,18 +3713,11 @@
                         "Cold Outlet": 101325.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "pressure"
                     },
                     "2": {
@@ -4290,18 +3725,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 286.34379,
                         "Hot Outlet": 286.34379,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
@@ -4309,18 +3737,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 100000.0,
                         "Hot Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
@@ -4328,18 +3749,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 0.0,
                         "Hot Outlet": 0.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
@@ -4347,18 +3761,11 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 2168.59605,
                         "Hot Outlet": 2168.59605,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Hot Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
@@ -4366,8 +3773,6 @@
                         "Cold Outlet": "-",
                         "Hot Inlet": 1000.0,
                         "Hot Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
@@ -4386,73 +3791,30 @@
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp N2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": "-",
-                        "Cold Inlet_vartype": "-",
-                        "Cold Outlet": "-",
-                        "Cold Outlet_vartype": "-",
-                        "Hot Inlet": 0.01802,
-                        "Hot Inlet_vartype": "-",
-                        "Hot Outlet": 0.01802,
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "Molecular Weight"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Variable": "flow_mol_comp N2"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "8": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp O2"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp N2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "flow_mol_comp O2"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     },
                     "9": {
                         "Cold Inlet": 1.0,
                         "Cold Outlet": 1.0,
                         "Hot Inlet": "-",
                         "Hot Outlet": "-",
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp NO"
-=======
-                        "Hot Outlet_vartype": "-",
-                        "Variable": "flow_mol_comp O2"
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "flow_mol_comp NO"
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                     }
                 },
                 "type": "boiler_heat_exchanger"
@@ -4468,138 +3830,75 @@
                 "stream_contents": {
                     "0": {
                         "Inlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Inlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp N2"
                     },
                     "1": {
                         "Inlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Inlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp O2"
                     },
                     "2": {
                         "Inlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Inlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp NO"
                     },
                     "3": {
                         "Inlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Inlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp CO2"
                     },
                     "4": {
                         "Inlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Inlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp H2O"
                     },
                     "5": {
                         "Inlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Inlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp SO2"
                     },
                     "6": {
                         "Inlet": 500.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Inlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "temperature"
                     },
                     "7": {
                         "Inlet": 101325.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Inlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
-                        "Variable": "flow_mol_comp CO2"
-                    },
-                    "1": {
-                        "Inlet": 1.0,
-                        "Variable": "flow_mol_comp H2O"
-                    },
-                    "2": {
-                        "Inlet": 1.0,
-                        "Variable": "flow_mol_comp N2"
-                    },
-                    "3": {
-                        "Inlet": 1.0,
-                        "Variable": "flow_mol_comp NO"
-                    },
-                    "4": {
-                        "Inlet": 1.0,
-                        "Variable": "flow_mol_comp O2"
-                    },
-                    "5": {
-                        "Inlet": 1.0,
-                        "Variable": "flow_mol_comp SO2"
-                    },
-                    "6": {
-                        "Inlet": 101325.0,
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "pressure"
-                    },
-                    "7": {
-                        "Inlet": 500.0,
-                        "Variable": "temperature"
                     }
                 },
                 "type": "separator"
@@ -4616,120 +3915,71 @@
                     "0": {
                         "Inlet": 1.0,
                         "Outlet": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Flow (mol/s)"
                     },
                     "1": {
                         "Inlet": 0.01802,
                         "Outlet": 0.01802,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "kg/s",
                             "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
                             "raw": "kilogram / second"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Mass Flow (kg/s)"
                     },
                     "2": {
                         "Inlet": 286.34379,
                         "Outlet": 286.34379,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "T (K)"
                     },
                     "3": {
                         "Inlet": 100000.0,
                         "Outlet": 100000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "P (Pa)"
                     },
                     "4": {
                         "Inlet": 0.0,
                         "Outlet": 0.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "",
                             "latex": "",
                             "raw": "dimensionless"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Vapor Fraction"
                     },
                     "5": {
                         "Inlet": 2168.59605,
                         "Outlet": 2168.59605,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Vap"
                     },
                     "6": {
                         "Inlet": 1000.0,
                         "Outlet": 1000.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "J/mol",
                             "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
                             "raw": "joule / mole"
                         },
-=======
-                        "Outlet_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "Molar Enthalpy (J/mol) Liq"
                     }
                 },
@@ -4743,144 +3993,88 @@
                         "Outlet": 1.0,
                         "PrSH_out": 1.0,
                         "Reheat_out": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Reheat_out_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp N2"
                     },
                     "1": {
                         "Outlet": 1.0,
                         "PrSH_out": 1.0,
                         "Reheat_out": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Reheat_out_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp O2"
                     },
                     "2": {
                         "Outlet": 1.0,
                         "PrSH_out": 1.0,
                         "Reheat_out": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Reheat_out_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp NO"
                     },
                     "3": {
                         "Outlet": 1.0,
                         "PrSH_out": 1.0,
                         "Reheat_out": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Reheat_out_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp CO2"
                     },
                     "4": {
                         "Outlet": 1.0,
                         "PrSH_out": 1.0,
                         "Reheat_out": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Reheat_out_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp H2O"
                     },
                     "5": {
                         "Outlet": 1.0,
                         "PrSH_out": 1.0,
                         "Reheat_out": 1.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
-=======
-                        "Reheat_out_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "flow_mol_comp SO2"
                     },
                     "6": {
                         "Outlet": 500.0,
                         "PrSH_out": 500.0,
                         "Reheat_out": 500.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "K",
                             "latex": "\\mathrm{K}",
                             "raw": "kelvin"
                         },
-=======
-                        "Reheat_out_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "temperature"
                     },
                     "7": {
                         "Outlet": 101325.0,
                         "PrSH_out": 101325.0,
                         "Reheat_out": 101325.0,
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
-<<<<<<< HEAD:idaes/core/ui/tests/serialized_boiler_flowsheet.json
                         "Units": {
                             "html": "Pa",
                             "latex": "\\mathrm{Pa}",
                             "raw": "pascal"
                         },
-=======
-                        "Reheat_out_vartype": "-",
->>>>>>> e2f0d46ef (Fixing tests and cleaning up var types panel):idaes/ui/tests/serialized_boiler_flowsheet.json
-=======
->>>>>>> 289b0d406 (Fixing potential bug):idaes/ui/tests/serialized_boiler_flowsheet.json
                         "Variable": "pressure"
                     }
                 },
