@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for idaes.dmf.dmfbase module
+Tests for idaes.core.dmf.dmfbase module
 
 Skip tests that do chmod() except on Linux, as Windows at least leaves
 the resulting directories in an un-removable state.
@@ -29,9 +29,9 @@ from typing import Union
 import pytest
 
 # package
-from idaes.dmf import resource
-from idaes.dmf import errors
-from idaes.dmf.dmfbase import DMFConfig, DMF
+from idaes.core.dmf import resource
+from idaes.core.dmf import errors
+from idaes.core.dmf.dmfbase import DMFConfig, DMF
 from idaes.util.system import NamedTemporaryFile
 from .util import init_logging
 
@@ -70,7 +70,7 @@ scratch_dmf: Union[DMF, None] = None
 
 def setup_module(module):
     global scratch_dir, scratch_dmf
-    scratch_dir = TemporaryDirectory(prefix="idaes_dmf_").name
+    scratch_dir = TemporaryDirectory(prefix="idaes.core.dmf_").name
     scratch_dmf = DMF(path=scratch_dir, create=True)
 
 
@@ -177,7 +177,7 @@ def test_dmf_init_logconf():
     (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write(
         f"""_id: this-is-a-temporary-config
 logging:
-    idaes.dmf.dmfbase:
+    idaes.core.dmf.dmfbase:
         level: debug
         output: _stderr_
     root:
@@ -187,7 +187,7 @@ logging:
     .dmf.experiment:
         output: _stdout_
     # equivalent to previous
-    idaes.dmf.experiment:
+    idaes.core.dmf.experiment:
         output: {tmp_dir / "experiment.log"}
     # user
     crazy.little.logger:
@@ -208,7 +208,7 @@ _id: this-is-a-temporary-config
 logging:
     root:
         level: debug
-    idaes.dmf.util:
+    idaes.core.dmf.util:
         level: "This is not a valid level"
         output: _stderr_
         """
@@ -220,7 +220,7 @@ _id: this-is-a-temporary-config
 logging:
     root:
         level: debug
-    idaes.dmf.util:
+    idaes.core.dmf.util:
         output: {}
         """.format(
             os.path.join(os.path.sep, *map(str, range(10)))

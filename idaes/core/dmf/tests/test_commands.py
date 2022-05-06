@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for idaes.dmf.commands
+Tests for idaes.core.dmf.commands
 """
 import logging
 import os
@@ -22,7 +22,7 @@ import sys
 import pytest
 
 #
-from idaes.dmf import dmfbase, commands, errors, workspace, util
+from idaes.core.dmf import dmfbase, commands, errors, workspace, util
 from idaes.util.system import mkdtemp
 from .util import init_logging
 

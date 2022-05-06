@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for idaes.dmf.resource2 module
+Tests for idaes.core.dmf.resource2 module
 """
 # stdlib
 from datetime import datetime
@@ -25,8 +25,8 @@ import shutil
 import pytest
 
 # local
-from idaes.dmf import resource
-from idaes.dmf.resource import Predicates
+from idaes.core.dmf import resource
+from idaes.core.dmf.resource import Predicates
 from idaes.util.system import mkdtemp
 
 # for testing
