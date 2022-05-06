@@ -10,18 +10,6 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
-#
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
 """
 Tests to make sure the NGFC example builds and solves correctly.
 """
@@ -369,7 +357,7 @@ def test_initialize_reformer(m):
         pytest.approx(475.8, rel=1e-3)
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 def test_connect_reformer_to_power_island(m):
     connect_reformer_to_power_island(m)
 
@@ -378,7 +366,7 @@ def test_connect_reformer_to_power_island(m):
     assert not m.fs.anode_mix.feed.flow_mol[0].fixed
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 def test_ROM(m):
     SOFC_ROM_setup(m)
 
@@ -390,7 +378,7 @@ def test_ROM(m):
     assert hasattr(m.fs, "stack_power")
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 def test_SOFC_energy_balance(m):
     add_SOFC_energy_balance(m)
 
@@ -399,7 +387,7 @@ def test_SOFC_energy_balance(m):
     assert not m.fs.cathode_heat.outlet.temperature[0].fixed
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 def test_add_result_constraints(m):
     add_result_constraints(m)
 
@@ -415,6 +403,7 @@ def test_add_result_constraints(m):
 
     assert degrees_of_freedom(m) == 0
 
+
 @pytest.mark.integration
 def test_solve(m):
     solve_iteration = 0
@@ -424,7 +413,7 @@ def test_solve(m):
         res = solver.solve(m, tee=True)
         if 'Optimal Solution Found' in res.solver.message:
             break
-    
+
     assert solve_iteration == 1  # this value can be increased if needed
     assert check_optimal_termination(res)
 
@@ -450,7 +439,7 @@ def test_json_load(m):
         pytest.approx(660, 1e-5)
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 def test_make_stream_dict(m):
     make_stream_dict(m)
 
@@ -490,12 +479,13 @@ def test_make_stream_dict(m):
     assert m._streams == ordered_dict
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 def test_pfd_result(m):
     df = create_stream_table_dataframe(streams=m._streams, orient="index")
-    pfd_result("NGFC_results.svg", m, df)
+    pfd_result("results.svg", m, df)
 
-    assert os.path.exists(os.path.join(this_file_dir(),
-                                       "NGFC_results.svg"))
-    assert os.path.exists(os.path.join(this_file_dir(),
-                                       "NGFC_results_template.svg"))
+    # check that a results file was created in the test directory
+    assert os.path.exists(os.path.join(this_file_dir(), "results.svg"))
+    # remove the file to keep the test directory clean
+    os.remove(os.path.join(this_file_dir(), "results.svg"))
+    assert not os.path.exists(os.path.join(this_file_dir(), "results.svg"))
