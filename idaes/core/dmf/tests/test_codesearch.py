@@ -27,7 +27,7 @@ import pytest
 import idaes
 from idaes.core.dmf import codesearch
 from idaes.core.base import property_meta
-from idaes.util.system import mkdtemp
+from idaes.core.dmf.util import mkdtemp
 from .util import init_logging
 
 __author__ = "Dan Gunter"

@@ -18,6 +18,7 @@ import importlib
 import logging
 import os
 import shutil
+import tempfile
 import time
 from unittest.mock import MagicMock, patch
 import warnings
@@ -25,7 +26,7 @@ import warnings
 import pytest
 # local
 from idaes.core.dmf import dmfbase
-from idaes.util.system import mkdtemp
+from idaes.core.dmf.util import mkdtemp, NamedTemporaryFile
 
 __author__ = "Dan Gunter"
 
@@ -199,3 +200,6 @@ def tmp_dmf():
             time.sleep(1)
     if not removed:
         warnings.warn(f"failed to remove temporary directory: {tmpdir}")
+
+
+

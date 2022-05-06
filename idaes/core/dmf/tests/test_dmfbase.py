@@ -20,9 +20,7 @@ import json
 import logging
 import os
 from pathlib import Path
-import shutil
-from tempfile import TemporaryFile, TemporaryDirectory
-import time
+from tempfile import TemporaryDirectory
 from typing import Union
 
 # third-party
@@ -32,8 +30,7 @@ import pytest
 from idaes.core.dmf import resource
 from idaes.core.dmf import errors
 from idaes.core.dmf.dmfbase import DMFConfig, DMF
-from idaes.util.system import NamedTemporaryFile
-from .util import init_logging
+from .util import init_logging, NamedTemporaryFile
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
 

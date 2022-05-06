@@ -27,7 +27,7 @@ import pytest
 # local
 from idaes.core.dmf import resource
 from idaes.core.dmf.resource import Predicates
-from idaes.util.system import mkdtemp
+from idaes.core.dmf.util import mkdtemp
 
 # for testing
 from .util import init_logging
