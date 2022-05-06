@@ -192,7 +192,7 @@ except NameError:  # eg, if invoked from setup.py
     pass
 
 #: Package's version as an object
-package_version = Version(2, 0, 0, "alpha", 1, gh)
+package_version = Version(2, 0, 0, "alpha", 1, label="220506")
 
 #: Package's version as a simple string
 __version__ = str(package_version)
