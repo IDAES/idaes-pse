@@ -11,14 +11,14 @@
 # license information.
 #################################################################################
 """
-Tests for the `idaes.ui.fsvis.persist` module
+Tests for the `idaes.core.ui.fsvis.persist` module
 """
 # stdlib
 import json
 # ext
 import pytest
 # pkg
-from idaes.ui.fsvis import persist, errors
+from idaes.core.ui.fsvis import persist, errors
 
 # === Data ===
 
