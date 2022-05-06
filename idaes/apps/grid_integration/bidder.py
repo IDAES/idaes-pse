@@ -455,8 +455,15 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        day_ahead_price, real_time_energy_price = self.forecaster.forecast(
-            date=date, hour=hour, horizon=self.day_ahead_horizon
+        (
+            day_ahead_price,
+            real_time_energy_price,
+        ) = self.forecaster.forecast_day_ahead_and_real_time_prices(
+            date=date,
+            hour=hour,
+            bus=self.bidding_model_object.model_data.bus,
+            horizon=self.day_ahead_horizon,
+            n_samples=self.n_scenario,
         )
 
         return self._compute_bids(
@@ -488,8 +495,12 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        day_ahead_price, real_time_energy_price = self.forecaster.forecast(
-            date=date, hour=hour, horizon=self.real_time_horizon
+        real_time_energy_price = self.forecaster.forecast_real_time_prices(
+            date=date,
+            hour=hour,
+            bus=self.bidding_model_object.model_data.bus,
+            horizon=self.real_time_horizon,
+            n_samples=self.n_scenario,
         )
 
         self._pass_realized_day_ahead_dispatches(realized_day_ahead_dispatches, hour)

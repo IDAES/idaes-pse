@@ -10,26 +10,76 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-import pandas as pd
+from abc import ABC, abstractmethod
+import numpy as np
 
 
-class PlaceHolderForecaster:
+class AbstractPriceForecaster(ABC):
+    @abstractmethod
+    def forecast_day_ahead_and_real_time_prices(
+        self, date, hour, bus, horizon, n_samples
+    ):
+        pass
+
+    @abstractmethod
+    def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
+        pass
+
+
+class PlaceHolderForecaster(AbstractPriceForecaster):
+
     """
-    This a placeholder for a real price forecaster. This placeholder can
-    manipulate the forecasts in a dataframe and feed to the bidder.
+    This a placeholder for a real price forecaster. This placeholder can takes
+    representative daily values and standard deviations for real-time and
+    day-ahead prices to forecast prices in the future.
     """
 
-    def __init__(self, price_forecasts_df):
-        self.price_forecasts_df = price_forecasts_df
-        self.price_forecasts_df.set_index(["Date", "Hour"], inplace=True)
-        self._rename_columns()
+    def __init__(
+        self,
+        daily_da_price_means: list,
+        daily_rt_price_means: list,
+        daily_da_price_stds: list,
+        daily_rt_price_stds: list,
+    ):
 
-    def _rename_columns(self):
-        col_mapping = {"Scenario {}".format(i): i - 1 for i in range(1, 11)}
-        self.price_forecasts_df.rename(columns=col_mapping, inplace=True)
+        self.daily_da_price_means = daily_da_price_means
+        self.daily_rt_price_means = daily_rt_price_means
+        self.daily_da_price_stds = daily_da_price_stds
+        self.daily_rt_price_stds = daily_rt_price_stds
 
-        return
+    def forecast_day_ahead_and_real_time_prices(
+        self, date, hour, bus, horizon, n_samples
+    ):
+        rt_forecast = self.forecast_real_time_prices(
+            date, hour, bus, horizon, n_samples
+        )
+        da_forecast = self._forecast(
+            means=self.daily_da_price_means,
+            stds=self.daily_da_price_stds,
+            hour=hour,
+            horizon=horizon,
+            n_samples=n_samples,
+        )
 
-    def forecast(self, date, **kwargs):
-        date = str(date)
-        return self.price_forecasts_df.loc[date].to_dict("list")
+        return da_forecast, rt_forecast
+
+    def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
+        return self._forecast(
+            means=self.daily_rt_price_means,
+            stds=self.daily_rt_price_stds,
+            hour=hour,
+            horizon=horizon,
+            n_samples=n_samples,
+        )
+
+    def _forecast(self, means, stds, hour, horizon, n_samples):
+
+        corresponding_means = [means[t % 24] for t in range(hour, hour + horizon)]
+        corresponding_stds = [stds[t % 24] for t in range(hour, hour + horizon)]
+
+        forecasts_arr = np.random.normal(
+            loc=corresponding_means, scale=corresponding_stds, size=(n_samples, horizon)
+        )
+        forecasts_arr[forecasts_arr < 0] = 0
+
+        return {i: list(forecasts_arr[i]) for i in range(n_samples)}
