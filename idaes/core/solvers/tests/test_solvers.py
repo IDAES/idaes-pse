@@ -108,20 +108,30 @@ def test_ipopt_has_ma57():
     if not ipopt_has_linear_solver("ma57"):
         raise RuntimeError("The ma57 linear solver is not available to Ipopt.")
 
+
 @pytest.mark.unit
 def test_ipopt_has_ma77():
     if not ipopt_has_linear_solver("ma77"):
         raise RuntimeError("The ma77 linear solver is not available to Ipopt.")
+
 
 @pytest.mark.unit
 def test_ipopt_has_ma86():
     if not ipopt_has_linear_solver("ma86"):
         raise RuntimeError("The ma86 linear solver is not available to Ipopt.")
 
+
 @pytest.mark.unit
 def test_ipopt_has_ma97():
     if not ipopt_has_linear_solver("ma97"):
         raise RuntimeError("The ma97 linear solver is not available to Ipopt.")
+
+
+@pytest.mark.unit
+def test_ipopt_has_mumps():
+    if not ipopt_has_linear_solver("mumps"):
+        raise RuntimeError("The mumps linear solver is not available to Ipopt.")
+
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
