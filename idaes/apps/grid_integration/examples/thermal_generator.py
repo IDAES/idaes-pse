@@ -38,7 +38,6 @@ class ThermalGenerator:
         self,
         rts_gmlc_generator_dataframe,
         rts_gmlc_bus_dataframe,
-        horizon=48,
         generator="102_STEAM_3",
     ):
 
@@ -55,7 +54,6 @@ class ThermalGenerator:
         """
 
         self.generator = generator
-        self.horizon = horizon
         rts_gmlc_generator_dataframe = rts_gmlc_generator_dataframe.merge(
             rts_gmlc_bus_dataframe[["Bus ID", "Bus Name"]],
             how="left",
@@ -255,7 +253,7 @@ class ThermalGenerator:
 
         return
 
-    def populate_model(self, b):
+    def populate_model(self, b, horizon):
 
         """
         This function builds the model for a thermal generator.
@@ -270,7 +268,7 @@ class ThermalGenerator:
         model_data = self._model_data_dict
 
         ## define the sets
-        b.HOUR = pyo.Set(initialize=list(range(self.horizon)))
+        b.HOUR = pyo.Set(initialize=list(range(horizon)))
         b.SEGMENTS = pyo.Set(initialize=list(range(1, ThermalGenerator.segment_number)))
 
         ## define the parameters
@@ -720,8 +718,8 @@ if __name__ == "__main__":
     horizon = 4
     solver = pyo.SolverFactory("cbc")
 
-    run_tracker = True
-    run_bidder = True
+    run_tracker = False
+    run_bidder = False
     run_prescient = True
 
     if run_tracker:
@@ -730,7 +728,6 @@ if __name__ == "__main__":
         tracking_model_object = ThermalGenerator(
             rts_gmlc_generator_dataframe=rts_gmlc_generator_dataframe,
             rts_gmlc_bus_dataframe=rts_gmlc_bus_dataframe,
-            horizon=horizon,
             generator=generator,
         )
         # make a tracker
@@ -753,7 +750,6 @@ if __name__ == "__main__":
         bidding_model_object = ThermalGenerator(
             rts_gmlc_generator_dataframe=rts_gmlc_generator_dataframe,
             rts_gmlc_bus_dataframe=rts_gmlc_bus_dataframe,
-            horizon=48,
             generator=generator,
         )
 
@@ -763,6 +759,8 @@ if __name__ == "__main__":
 
         thermal_bidder = Bidder(
             bidding_model_object=bidding_model_object,
+            day_ahead_horizon=48,
+            real_time_horizon=4,
             n_scenario=10,
             solver=solver,
             forecaster=forecaster,
