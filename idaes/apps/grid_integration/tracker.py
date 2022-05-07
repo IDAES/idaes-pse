@@ -23,7 +23,9 @@ class Tracker:
     with the DoubleLoopCoordinator.
     """
 
-    def __init__(self, tracking_model_object, tracking_horizon, n_tracking_hour, solver):
+    def __init__(
+        self, tracking_model_object, tracking_horizon, n_tracking_hour, solver
+    ):
 
         """
         Initializes the tracker object.
@@ -220,29 +222,16 @@ class Tracker:
             None
         """
 
-        self._add_tracking_dispatch_constraints()
-        return
-
-    def _add_tracking_dispatch_constraints(self):
-
-        """
-        Add tracking constraints to the model, i.e., power output needs
-        to follow market dispatch signals.
-
-        Arguments:
-            None
-
-        Returns:
-            None
-        """
-
         # declare a constraint list
-        self.model.tracking_dispatch_constraints = pyo.ConstraintList()
-        for t in self.time_set:
-            self.model.tracking_dispatch_constraints.add(
+        def tracking_dispatch_constraint_rule(m, t):
+            return (
                 self.power_output[t] + self.model.power_underdelivered[t]
                 == self.model.power_dispatch[t] + self.model.power_overdelivered[t]
             )
+
+        self.model.tracking_dispatch_constraints = pyo.Constraint(
+            self.time_set, rule=tracking_dispatch_constraint_rule
+        )
 
         return
 
@@ -340,14 +329,21 @@ class Tracker:
         Pass the received market signals into model parameters.
 
         Arguments:
-            market_dispatch: a dictionary that contains the market dispatch signals that we want to track.
+            market_dispatch: a list that contains the market dispatch signals that we want to track.
 
         Returns:
             None
         """
 
-        for t, dipsatch in zip(self.time_set, market_dispatch):
-            self.model.power_dispatch[t] = dipsatch
+        for t in self.time_set:
+
+            try:
+                dispatch = market_dispatch[t]
+            except IndexError as ex:
+                self.model.tracking_dispatch_constraints[t].deactivate()
+            else:
+                self.model.power_dispatch[t] = dispatch
+                self.model.tracking_dispatch_constraints[t].activate()
 
         return
 
