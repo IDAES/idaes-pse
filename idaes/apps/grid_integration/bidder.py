@@ -16,7 +16,7 @@ from pyomo.opt.base.solvers import OptSolver
 import os
 from abc import ABC, abstractmethod
 from idaes.apps.grid_integration.utils import convert_marginal_costs_to_actual_costs
-
+import datetime
 from pyomo.common.dependencies import attempt_import
 
 egret, egret_avail = attempt_import("egret")
@@ -504,7 +504,7 @@ class StochasticProgramBidder(AbstractBidder):
         )
 
         self._pass_realized_day_ahead_dispatches(realized_day_ahead_dispatches, hour)
-        self._pass_realized_day_ahead_prices(realized_day_ahead_prices, hour)
+        self._pass_realized_day_ahead_prices(realized_day_ahead_prices, date, hour)
 
         return self._compute_bids(
             day_ahead_price=None,
@@ -517,23 +517,42 @@ class StochasticProgramBidder(AbstractBidder):
             market="Real-time",
         )
 
-    def _pass_realized_day_ahead_prices(self, realized_day_ahead_prices, hour):
+    def _pass_realized_day_ahead_prices(self, realized_day_ahead_prices, date, hour):
 
         time_index = self.real_time_model.fs[0].day_ahead_energy_price.index_set()
+
+        # forecast the day-ahead price, if not enough realized data
+        if len(realized_day_ahead_prices[hour:]) < len(time_index):
+            forecasts = self.forecaster.forecast_day_ahead_prices(
+                date=date + datetime.timedelta(days=1),
+                hour=0,
+                bus=self.bidding_model_object.model_data.bus,
+                horizon=self.day_ahead_horizon,
+                n_samples=self.n_scenario,
+            )
+
         for s in self.real_time_model.SCENARIOS:
             for t in time_index:
-                self.real_time_model.fs[s].day_ahead_energy_price[
-                    t
-                ] = realized_day_ahead_prices[hour + t]
+                try:
+                    price = realized_day_ahead_prices[t + hour]
+                except IndexError as ex:
+                    self.real_time_model.fs[s].day_ahead_energy_price[t] = forecasts[s][
+                        (t + hour) - 24
+                    ]
+                else:
+                    self.real_time_model.fs[s].day_ahead_energy_price[t] = price
 
     def _pass_realized_day_ahead_dispatches(self, realized_day_ahead_dispatches, hour):
 
         time_index = self.real_time_model.fs[0].day_ahead_power.index_set()
         for s in self.real_time_model.SCENARIOS:
             for t in time_index:
-                self.real_time_model.fs[s].day_ahead_power[t].fix(
-                    realized_day_ahead_dispatches[hour + t]
-                )
+                try:
+                    dispatch = realized_day_ahead_dispatches[t + hour]
+                except IndexError as ex:
+                    self.real_time_model.fs[s].day_ahead_power[t].unfix()
+                else:
+                    self.real_time_model.fs[s].day_ahead_power[t].fix(dispatch)
 
     def update_day_ahead_model(self, **kwargs):
         self._update_model(self.day_ahead_model, **kwargs)
