@@ -406,6 +406,14 @@ def test_add_result_constraints(m):
 
 @pytest.mark.integration
 def test_solve(m):
+    assert solver_available
+    solver.options = {
+        "max_iter": 100,
+        "tol": 1e-7,
+        "bound_push": 1e-12,
+        "linear_solver": "ma57",
+        "ma57_pivtol": 1e-3,
+          }
     solve_iteration = 0
     for i in range(1, 10):  # keep looping until condition is met
         solve_iteration += 1
@@ -414,11 +422,11 @@ def test_solve(m):
         if 'Optimal Solution Found' in res.solver.message:
             break
 
-    assert solve_iteration == 1  # this value can be increased if needed
     assert check_optimal_termination(res)
+    assert solve_iteration == 1  # this value may be updated as needed
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 def test_json_load(m):
     fname = os.path.join(
         os.path.join(os.path.dirname(this_file_dir()), "NGFC"),

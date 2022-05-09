@@ -30,8 +30,9 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 # IDAES Imports
 from idaes.core import FlowsheetBlock
 from idaes.core.util.initialization import propagate_state
-from idaes.core.util import model_serializer as ms
-from idaes.core.util.misc import svg_tag
+from idaes.core.util import model_serializer as ms, ModelTag, ModelTagGroup
+from idaes.core.util.tags import svg_tag
+from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import InitializationError
 
 import idaes.core.util.scaling as iscale
@@ -1665,6 +1666,8 @@ def pfd_result(outfile, m, df):
     # set up tags
     tags = {}
     for i in df.index:
+        if i == 'Units':
+            continue
         tags[i + "_F"] = fstr(df.loc[i, "Total Molar Flowrate"], 0, " mol/s")
         tags[i + "_T"] = fstr(df.loc[i, "Temperature"], 0, " K")
         tags[i + "_P"] = fstr(df.loc[i, "Pressure"] / 1000, 0, " kPa")
@@ -1696,9 +1699,17 @@ def pfd_result(outfile, m, df):
     tags["efficiency"] = fstr(pyo.value(m.fs.HHV_efficiency) * 100, 2)
     tags["emissions"] = fstr(pyo.value(m.fs.CO2_emissions), 1)
 
+    # new syntax for tag groups
+    tag_group = ModelTagGroup()
+    for key, tag in tags.items():
+        tag_format, tag_format_default = {}, "{:.4e}"
+        format_string = tag_format.get(key, tag_format_default)
+        tag_group[key] = ModelTag(expr=tag, format_string=format_string)
+        tag_group.str_include_units = False
+
     original_svg_file = os.path.join(this_file_dir(), "NGFC_results_template.svg")
     with open(original_svg_file, "r") as f:
-        svg_tag(tags, f, outfile=outfile)
+        svg_tag(tags=None, svg=f, tag_group=tag_group, outfile=outfile)
 
 
 def main():
@@ -1783,6 +1794,6 @@ if __name__ == "__main__":
         ms.to_json(m, fname="NGFC_flowsheet_solution.json.gz")
 
     # uncomment to report results
-    # make_stream_dict(m)
-    # df = create_stream_table_dataframe(streams=m._streams, orient="index")
-    # pfd_result("NGFC_results.svg", m, df)
+    make_stream_dict(m)
+    df = create_stream_table_dataframe(streams=m._streams, orient="index")
+    pfd_result("NGFC_results.svg", m, df)
