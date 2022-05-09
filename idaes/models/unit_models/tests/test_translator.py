@@ -139,6 +139,13 @@ class TestTranslate(object):
     # No solve, as problem has is missing linking constraints
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, trans):
+        perf_dict = trans.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, trans):
         stream = StringIO()

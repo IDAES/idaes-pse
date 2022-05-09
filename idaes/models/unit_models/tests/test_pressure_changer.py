@@ -346,6 +346,17 @@ class TestBTX_isothermal(object):
         )
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Mechanical Work": btx.fs.unit.work_mechanical[0],
+                "Pressure Ratio": btx.fs.unit.ratioP[0],
+                "Pressure Change": btx.fs.unit.deltaP[0]}}
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, btx):
         stream = StringIO()
@@ -603,6 +614,18 @@ class TestIAPWS(object):
             assert value(prop_out.vapor_frac) == xout
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Mechanical Work": iapws.fs.unit.work_mechanical[0],
+                "Pressure Ratio": iapws.fs.unit.ratioP[0],
+                "Pressure Change": iapws.fs.unit.deltaP[0],
+                "Isentropic Efficiency": iapws.fs.unit.efficiency_isentropic[0]}}
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, iapws):
         stream = StringIO()
@@ -782,6 +805,18 @@ class TestSaponification(object):
             )
             <= 1e-4
         )
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Mechanical Work": sapon.fs.unit.work_mechanical[0],
+                "Pressure Ratio": sapon.fs.unit.ratioP[0],
+                "Pressure Change": sapon.fs.unit.deltaP[0],
+                "Efficiency": sapon.fs.unit.efficiency_pump[0]}}
 
     @pytest.mark.ui
     @pytest.mark.component

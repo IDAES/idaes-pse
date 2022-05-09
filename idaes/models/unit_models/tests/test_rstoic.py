@@ -253,6 +253,17 @@ class TestSaponification(object):
         )
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Reaction Extent [R1]": sapon.fs.unit.rate_reaction_extent[0, "R1"],
+                "Heat Duty": sapon.fs.unit.heat_duty[0],
+                "Pressure Change": sapon.fs.unit.deltaP[0]}}
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, sapon):
         stream = StringIO()

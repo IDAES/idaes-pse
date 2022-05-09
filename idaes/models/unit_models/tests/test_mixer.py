@@ -724,6 +724,10 @@ class TestMixer(object):
 
         m.fs.mix = Mixer(default={"property_package": m.fs.pp})
 
+        perf_dict = m.fs.mix._get_performance_contents()
+
+        assert perf_dict is None
+
         stream = StringIO()
 
         m.fs.mix.report(ostream=stream)

@@ -1689,7 +1689,7 @@ objects linked the mixed state and all outlet states,
                     }
             return {"vars": var_dict}
         else:
-            return {}
+            return None
 
     def _get_stream_table_contents(self, time_point=0):
         outlet_list = self.create_outlet_list()

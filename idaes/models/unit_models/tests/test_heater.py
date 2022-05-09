@@ -190,6 +190,15 @@ class TestBTX(object):
         )
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": btx.fs.unit.heat_duty[0]}}
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, btx):
         stream = StringIO()
@@ -326,6 +335,15 @@ class TestIAPWS(object):
             )
             <= 1e-6
         )
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": iapws.fs.unit.heat_duty[0]}}
 
     @pytest.mark.ui
     @pytest.mark.component
@@ -522,6 +540,15 @@ class TestSaponification(object):
         )
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": sapon.fs.unit.heat_duty[0]}}
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, sapon):
         stream = StringIO()
@@ -660,6 +687,15 @@ class TestBT_Generic(object):
             )
             <= 1e-6
         )
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btg):
+        perf_dict = btg.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": btg.fs.unit.heat_duty[0]}}
 
     @pytest.mark.ui
     @pytest.mark.component

@@ -209,6 +209,16 @@ class TestBTXIdeal(object):
         )
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": btx.fs.unit.heat_duty[0],
+                "Pressure Change": btx.fs.unit.deltaP[0]}}
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, btx):
         stream = StringIO()
@@ -390,6 +400,16 @@ class TestIAPWS(object):
             )
             <= 1e-6
         )
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": iapws.fs.unit.heat_duty[0],
+                "Pressure Change": iapws.fs.unit.deltaP[0]}}
 
     @pytest.mark.ui
     @pytest.mark.component

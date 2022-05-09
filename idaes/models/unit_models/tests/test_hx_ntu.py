@@ -316,6 +316,13 @@ class TestHXNTU(object):
         )
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, model):
+        perf_dict = model.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, model):
         stream = StringIO()

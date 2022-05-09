@@ -372,6 +372,22 @@ class TestBTX_cocurrent(object):
         assert abs(shell_side - tube_side) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Number of Tubes": btx.fs.unit.N_tubes,
+                "Shell Area": btx.fs.unit.shell.area,
+                "Shell Diameter": btx.fs.unit.d_shell,
+                "Shell Length": btx.fs.unit.shell.length,
+                "Tube Area": btx.fs.unit.tube.area,
+                "Tube Inner Diameter": btx.fs.unit.d_tube_inner,
+                "Tube Length": btx.fs.unit.tube.length,
+                "Tube Outer Diameter": btx.fs.unit.d_tube_outer}}
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, btx):
         stream = StringIO()
@@ -606,6 +622,22 @@ class TestBTX_countercurrent(object):
         assert abs(shell_side - tube_side) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Number of Tubes": btx.fs.unit.N_tubes,
+                "Shell Area": btx.fs.unit.shell.area,
+                "Shell Diameter": btx.fs.unit.d_shell,
+                "Shell Length": btx.fs.unit.shell.length,
+                "Tube Area": btx.fs.unit.tube.area,
+                "Tube Inner Diameter": btx.fs.unit.d_tube_inner,
+                "Tube Length": btx.fs.unit.tube.length,
+                "Tube Outer Diameter": btx.fs.unit.d_tube_outer}}
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, btx):
         stream = StringIO()
@@ -830,6 +862,22 @@ class TestIAPWS_cocurrent(object):
             )
         )
         assert abs(shell_side + tube_side) <= 1e-6
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Number of Tubes": iapws.fs.unit.N_tubes,
+                "Shell Area": iapws.fs.unit.shell.area,
+                "Shell Diameter": iapws.fs.unit.d_shell,
+                "Shell Length": iapws.fs.unit.shell.length,
+                "Tube Area": iapws.fs.unit.tube.area,
+                "Tube Inner Diameter": iapws.fs.unit.d_tube_inner,
+                "Tube Length": iapws.fs.unit.tube.length,
+                "Tube Outer Diameter": iapws.fs.unit.d_tube_outer}}
 
     @pytest.mark.ui
     @pytest.mark.component
@@ -1058,6 +1106,22 @@ class TestIAPWS_countercurrent(object):
             )
         )
         assert abs(shell_side + tube_side) <= 1e-6
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Number of Tubes": iapws.fs.unit.N_tubes,
+                "Shell Area": iapws.fs.unit.shell.area,
+                "Shell Diameter": iapws.fs.unit.d_shell,
+                "Shell Length": iapws.fs.unit.shell.length,
+                "Tube Area": iapws.fs.unit.tube.area,
+                "Tube Inner Diameter": iapws.fs.unit.d_tube_inner,
+                "Tube Length": iapws.fs.unit.tube.length,
+                "Tube Outer Diameter": iapws.fs.unit.d_tube_outer}}
 
     @pytest.mark.ui
     @pytest.mark.component
@@ -1295,6 +1359,22 @@ class TestSaponification_cocurrent(object):
         assert abs(shell_side + tube_side) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Number of Tubes": sapon.fs.unit.N_tubes,
+                "Shell Area": sapon.fs.unit.shell.area,
+                "Shell Diameter": sapon.fs.unit.d_shell,
+                "Shell Length": sapon.fs.unit.shell.length,
+                "Tube Area": sapon.fs.unit.tube.area,
+                "Tube Inner Diameter": sapon.fs.unit.d_tube_inner,
+                "Tube Length": sapon.fs.unit.tube.length,
+                "Tube Outer Diameter": sapon.fs.unit.d_tube_outer}}
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, sapon):
         stream = StringIO()
@@ -1529,6 +1609,22 @@ class TestSaponification_countercurrent(object):
             )
         )
         assert abs(shell_side + tube_side) <= 1e-6
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Number of Tubes": sapon.fs.unit.N_tubes,
+                "Shell Area": sapon.fs.unit.shell.area,
+                "Shell Diameter": sapon.fs.unit.d_shell,
+                "Shell Length": sapon.fs.unit.shell.length,
+                "Tube Area": sapon.fs.unit.tube.area,
+                "Tube Inner Diameter": sapon.fs.unit.d_tube_inner,
+                "Tube Length": sapon.fs.unit.tube.length,
+                "Tube Outer Diameter": sapon.fs.unit.d_tube_outer}}
 
     @pytest.mark.ui
     @pytest.mark.component
@@ -1879,6 +1975,22 @@ class TestBT_Generic_cocurrent(object):
             )
         )
         assert abs((shell_side - tube_side) / shell_side) <= 1e-4
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Number of Tubes": btx.fs.unit.N_tubes,
+                "Shell Area": btx.fs.unit.shell.area,
+                "Shell Diameter": btx.fs.unit.d_shell,
+                "Shell Length": btx.fs.unit.shell.length,
+                "Tube Area": btx.fs.unit.tube.area,
+                "Tube Inner Diameter": btx.fs.unit.d_tube_inner,
+                "Tube Length": btx.fs.unit.tube.length,
+                "Tube Outer Diameter": btx.fs.unit.d_tube_outer}}
 
     @pytest.mark.ui
     @pytest.mark.component

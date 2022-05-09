@@ -140,6 +140,13 @@ class TestBTXIdeal(object):
         )
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, btx):
         stream = StringIO()
@@ -246,6 +253,13 @@ class TestIAPWS(object):
         assert pytest.approx(0.5953, abs=1e-4) == value(
             iapws.fs.unit.control_volume.properties_out[0].phase_frac["Liq"]
         )
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
 
     @pytest.mark.ui
     @pytest.mark.component

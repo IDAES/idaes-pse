@@ -125,6 +125,13 @@ class TestSaponification(object):
     # No solve tests, as Product block has nothing to solve
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, sapon):
         stream = StringIO()
@@ -227,6 +234,13 @@ class TestBTX(object):
         )
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, btx):
         stream = StringIO()
@@ -300,6 +314,13 @@ class TestIAPWS(object):
         initialization_tester(iapws)
 
     # No solve as there is nothing to solve for
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
 
     @pytest.mark.ui
     @pytest.mark.component

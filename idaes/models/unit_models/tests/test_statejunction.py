@@ -128,6 +128,13 @@ class TestSaponification(object):
     # No solve, as problem has no constraints
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, sapon):
         stream = StringIO()
@@ -228,6 +235,13 @@ class TestBTX(object):
         assert pytest.approx(101325, abs=1e2) == value(btx.fs.unit.outlet.pressure[0])
 
     @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
+
+    @pytest.mark.ui
     @pytest.mark.component
     def test_report(self, btx):
         stream = StringIO()
@@ -305,6 +319,13 @@ class TestIAPWS(object):
         initialization_tester(iapws)
 
     # No solve, as problem has no constraints
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
 
     @pytest.mark.ui
     @pytest.mark.component

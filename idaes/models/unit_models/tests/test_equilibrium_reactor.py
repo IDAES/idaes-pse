@@ -242,39 +242,14 @@ class TestSaponification(object):
         )
 
     @pytest.mark.ui
-    @pytest.mark.component
-    def test_report(self, sapon):
-        stream = StringIO()
+    @pytest.mark.unit
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
 
-        sapon.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key             : Value  : Units  : Fixed : Bounds
-          Heat Duty : 0.0000 :   watt :  True : (None, None)
-    Pressure Change : 0.0000 : pascal :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                             Units            Inlet     Outlet  
-    Volumetric Flowrate                meter ** 3 / second  0.0010000  0.0010000
-    Molar Concentration H2O              mole / meter ** 3     55388.     55388.
-    Molar Concentration NaOH             mole / meter ** 3     100.00  0.0026894
-    Molar Concentration EthylAcetate     mole / meter ** 3     100.00  0.0026894
-    Molar Concentration SodiumAcetate    mole / meter ** 3     0.0000     99.997
-    Molar Concentration Ethanol          mole / meter ** 3     0.0000     99.997
-    Temperature                                     kelvin     303.15     304.32
-    Pressure                                        pascal 1.0132e+05 1.0132e+05
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": sapon.fs.unit.heat_duty[0],
+                "Pressure Change": sapon.fs.unit.deltaP[0]}}
 
     @pytest.mark.component
     def test_initialization_error(self, sapon):
