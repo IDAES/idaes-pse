@@ -25,6 +25,10 @@ class AbstractPriceForecaster(ABC):
     def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
         pass
 
+    @abstractmethod
+    def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
+        pass
+
 
 class PlaceHolderForecaster(AbstractPriceForecaster):
 
@@ -53,15 +57,20 @@ class PlaceHolderForecaster(AbstractPriceForecaster):
         rt_forecast = self.forecast_real_time_prices(
             date, hour, bus, horizon, n_samples
         )
-        da_forecast = self._forecast(
+        da_forecast = self.forecast_day_ahead_prices(
+            date, hour, bus, horizon, n_samples
+        )
+
+        return da_forecast, rt_forecast
+
+    def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
+        return self._forecast(
             means=self.daily_da_price_means,
             stds=self.daily_da_price_stds,
             hour=hour,
             horizon=horizon,
             n_samples=n_samples,
         )
-
-        return da_forecast, rt_forecast
 
     def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
         return self._forecast(
