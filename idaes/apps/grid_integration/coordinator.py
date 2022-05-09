@@ -652,19 +652,12 @@ class DoubleLoopCoordinator:
         This function assembles the signals for the tracking model.
 
         Arguments:
-            gen_name: the generator's name
 
             hour: the simulation hour
 
             sced_dispatch: current sced dispatch (a list)
 
             tracking_horizon: length of the tracking horizon
-
-            current_ruc_dispatch_dicts: current day's unit commiment dispatch
-            dictionaries, including profiles for thermal, renewable and etc.
-
-            next_ruc_dispatch_dicts: next day's unit commiment dispatch
-            dictionaries, including profiles for thermal, renewable and etc.
 
 
         Returns:

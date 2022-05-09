@@ -34,7 +34,7 @@ class AbstractBidder(ABC):
     def update_day_ahead_model(self, **kwargs):
 
         """
-        Update the flowsheets advance timesteps with necessary parameters in kwargs.
+        Update the day-ahead model (advance timesteps) with necessary parameters in kwargs.
 
         Arguments:
             kwargs: necessary profiles to update the underlying model. {stat_name: [...]}
@@ -49,7 +49,7 @@ class AbstractBidder(ABC):
     def update_real_time_model(self, **kwargs):
 
         """
-        Update the flowsheets advance timesteps with necessary parameters in kwargs.
+        Update the real-time model (advance timesteps) with necessary parameters in kwargs.
 
         Arguments:
             kwargs: necessary profiles to update the underlying model. {stat_name: [...]}
@@ -64,14 +64,16 @@ class AbstractBidder(ABC):
     def compute_day_ahead_bids(self, date, hour, **kwargs):
 
         """
-        Solve the model to bid/self-schedule into the markets. After solving, record
-        the schedule from the solve.
+        Solve the model to bid/self-schedule into the day-ahead market. After solving,
+        record the schedule from the solve.
 
         Arguments:
 
             date: current simulation date
 
             hour: current simulation hour
+
+            **kwargs: other information to record
 
         Returns:
             None
@@ -83,14 +85,16 @@ class AbstractBidder(ABC):
     def compute_real_time_bids(self, date, hour, **kwargs):
 
         """
-        Solve the model to bid/self-schedule into the markets. After solving, record
-        the schedule from the solve.
+        Solve the model to bid/self-schedule into the real-time market. After solving,
+        record the schedule from the solve.
 
         Arguments:
 
             date: current simulation date
 
             hour: current simulation hour
+
+            **kwargs: other information to record
 
         Returns:
             None
@@ -117,7 +121,7 @@ class AbstractBidder(ABC):
     def formulate_DA_bidding_problem(self):
 
         """
-        Formulate the bidding optimization problem by adding necessary
+        Formulate the day-ahead bidding optimization problem by adding necessary
         parameters, constraints, and objective function.
 
         Arguments:
@@ -133,7 +137,7 @@ class AbstractBidder(ABC):
     def formulate_RT_bidding_problem(self):
 
         """
-        Formulate the bidding optimization problem by adding necessary
+        Formulate the real-time bidding optimization problem by adding necessary
         parameters, constraints, and objective function.
 
         Arguments:
@@ -153,7 +157,9 @@ class AbstractBidder(ABC):
         underlying bidding model.
 
         Arguments:
-            bids: the obtained bids for this date.
+            bids: the obtained bids for this date
+
+            model: the model we obtained bids from
 
             date: the date we bid into
 
@@ -252,6 +258,26 @@ class StochasticProgramBidder(AbstractBidder):
         forecaster,
     ):
 
+        """
+        Initializes the stochastic bidder object.
+
+        Arguments:
+            bidding_model_object: the model object for bidding
+
+            day_ahead_horizon: number of time periods in the day-ahead bidding problem
+
+            real_time_horizon: number of time periods in the real-time bidding problem
+
+            n_scenario: number of uncertain LMP scenarios
+
+            solver: a Pyomo mathematical programming solver object
+
+            forecaster: an initialized LMP forecaster object
+
+        Returns:
+            None
+        """
+
         self.bidding_model_object = bidding_model_object
         self.day_ahead_horizon = day_ahead_horizon
         self.real_time_horizon = real_time_horizon
@@ -271,6 +297,16 @@ class StochasticProgramBidder(AbstractBidder):
         self.bids_result_list = []
 
     def _set_up_bidding_problem(self, horizon):
+        """
+        Set up the base stochastic programming bidding problems.
+
+        Arguments:
+            horizon: number of time periods in the bidding problem
+
+        Returns:
+            pyomo.core.base.PyomoModel.ConcreteModel: base bidding model
+
+        """
 
         model = pyo.ConcreteModel()
 
@@ -290,12 +326,28 @@ class StochasticProgramBidder(AbstractBidder):
 
     def formulate_DA_bidding_problem(self):
 
+        """
+        Set up the day-ahead stochastic programming bidding problems.
+
+        Returns:
+            pyomo.core.base.PyomoModel.ConcreteModel: base bidding model
+
+        """
+
         model = self._set_up_bidding_problem(self.day_ahead_horizon)
         self._add_DA_bidding_constraints(model)
 
         return model
 
     def formulate_RT_bidding_problem(self):
+
+        """
+        Set up the real-time stochastic programming bidding problems.
+
+        Returns:
+            pyomo.core.base.PyomoModel.ConcreteModel: base bidding model
+
+        """
 
         model = self._set_up_bidding_problem(self.real_time_horizon)
         self._add_RT_bidding_constraints(model)
@@ -330,7 +382,7 @@ class StochasticProgramBidder(AbstractBidder):
         Add necessary bidding parameters to the model, i.e., market energy price.
 
         Arguments:
-            None
+            model: bidding model
 
         Returns:
             None
@@ -353,7 +405,7 @@ class StochasticProgramBidder(AbstractBidder):
         Add necessary bidding parameters to the model, i.e., market energy price.
 
         Arguments:
-            None
+            model: bidding model
 
         Returns:
             None
@@ -381,7 +433,7 @@ class StochasticProgramBidder(AbstractBidder):
         of the energy system.
 
         Arguments:
-            None
+            model: bidding model
 
         Returns:
             None
@@ -423,6 +475,31 @@ class StochasticProgramBidder(AbstractBidder):
         market,
     ):
 
+        """
+        Solve the model to bid into the markets. After solving, record the bids from the solve.
+
+        Arguments:
+
+            day_ahead_price: day-ahead price forecasts needed to solve the bidding problem
+
+            real_time_energy_price: real-time price forecasts needed to solve the bidding problem
+
+            date: current simulation date
+
+            hour: current simulation hour
+
+            model: bidding model
+
+            power_var_name: the name of the power output (str)
+
+            energy_price_param_name: the name of the energy price forecast params (str)
+
+            market: the market name (str), e.g., Day-ahead, real-time
+
+        Returns:
+            dict: the obtained bids
+        """
+
         # update the price forecasts
         self._pass_price_forecasts(model, day_ahead_price, real_time_energy_price)
 
@@ -442,8 +519,8 @@ class StochasticProgramBidder(AbstractBidder):
     def compute_day_ahead_bids(self, date, hour=0):
 
         """
-        Solve the model to bid into the markets. After solving, record the bids
-        from the solve.
+        Solve the model to bid into the day-ahead market. After solving, record
+        the bids from the solve.
 
         Arguments:
 
@@ -452,7 +529,7 @@ class StochasticProgramBidder(AbstractBidder):
             hour: current simulation hour
 
         Returns:
-            None
+            dict: the obtained bids
         """
 
         (
@@ -482,8 +559,8 @@ class StochasticProgramBidder(AbstractBidder):
     ):
 
         """
-        Solve the model to bid into the markets. After solving, record the bids
-        from the solve.
+        Solve the model to bid into the real-time market. After solving, record
+        the bids from the solve.
 
         Arguments:
 
@@ -492,7 +569,7 @@ class StochasticProgramBidder(AbstractBidder):
             hour: current simulation hour
 
         Returns:
-            None
+            dict: the obtained bids
         """
 
         real_time_energy_price = self.forecaster.forecast_real_time_prices(
@@ -519,6 +596,20 @@ class StochasticProgramBidder(AbstractBidder):
 
     def _pass_realized_day_ahead_prices(self, realized_day_ahead_prices, date, hour):
 
+        """
+        Pass the realized day-ahead prices into model parameters.
+
+        Arguments:
+            realized_day_ahead_prices: realized day-ahead prices
+
+            date: current simulation date
+
+            hour: current simulation hour
+
+        Returns:
+            None
+        """
+
         time_index = self.real_time_model.fs[0].day_ahead_energy_price.index_set()
 
         # forecast the day-ahead price, if not enough realized data
@@ -544,6 +635,18 @@ class StochasticProgramBidder(AbstractBidder):
 
     def _pass_realized_day_ahead_dispatches(self, realized_day_ahead_dispatches, hour):
 
+        """
+        Pass the realized day-ahead dispatches into model and fix the corresponding variables.
+
+        Arguments:
+            realized_day_ahead_dispatches: realized day-ahead dispatches
+
+            hour: current simulation hour
+
+        Returns:
+            None
+        """
+
         time_index = self.real_time_model.fs[0].day_ahead_power.index_set()
         for s in self.real_time_model.SCENARIOS:
             for t in time_index:
@@ -555,9 +658,31 @@ class StochasticProgramBidder(AbstractBidder):
                     self.real_time_model.fs[s].day_ahead_power[t].fix(dispatch)
 
     def update_day_ahead_model(self, **kwargs):
+
+        """
+        This method updates the parameters in the day-ahead model based on the implemented profiles.
+
+        Arguments:
+            kwargs: the newly implemented stats. {stat_name: [...]}
+
+        Returns:
+            None
+        """
+
         self._update_model(self.day_ahead_model, **kwargs)
 
     def update_real_time_model(self, **kwargs):
+
+        """
+        This method updates the parameters in the real-time model based on the implemented profiles.
+
+        Arguments:
+            kwargs: the newly implemented stats. {stat_name: [...]}
+
+        Returns:
+            None
+        """
+
         self._update_model(self.real_time_model, **kwargs)
 
     def _update_model(self, model, **kwargs):
@@ -567,6 +692,9 @@ class StochasticProgramBidder(AbstractBidder):
         step.
 
         Arguments:
+
+            model: bidding model
+
             kwargs: necessary profiles to update the underlying model. {stat_name: [...]}
 
         Returns:
@@ -585,6 +713,8 @@ class StochasticProgramBidder(AbstractBidder):
 
         Arguments:
             bids: the obtained bids for this date.
+
+            model: bidding model
 
             date: the date we bid into
 
@@ -612,7 +742,9 @@ class StochasticProgramBidder(AbstractBidder):
         Pass the price forecasts into model parameters.
 
         Arguments:
-            price_forecasts: price forecasts needed to solve the bidding problem. {LMP scenario: [forecast timeseries] }
+            day_ahead_price: day-ahead price forecasts needed to solve the bidding problem
+
+            real_time_energy_price: real-time price forecasts needed to solve the bidding problem
 
         Returns:
             None
@@ -678,6 +810,28 @@ class SelfScheduler(StochasticProgramBidder):
         forecaster,
         fixed_to_schedule=False,
     ):
+        """
+        Initializes the stochastic self-scheduler object.
+
+        Arguments:
+            bidding_model_object: the model object for bidding
+
+            day_ahead_horizon: number of time periods in the day-ahead bidding problem
+
+            real_time_horizon: number of time periods in the real-time bidding problem
+
+            n_scenario: number of uncertain LMP scenarios
+
+            solver: a Pyomo mathematical programming solver object
+
+            forecaster: an initialized LMP forecaster object
+
+            fixed_to_schedule: If True, forece market simulator to give the same schedule.
+
+        Returns:
+            None
+        """
+
         super().__init__(
             bidding_model_object,
             day_ahead_horizon,
@@ -695,7 +849,7 @@ class SelfScheduler(StochasticProgramBidder):
         stage need to be the same across all the scenarios.
 
         Arguments:
-            None
+            model: bidding model
 
         Returns:
             None
@@ -725,7 +879,7 @@ class SelfScheduler(StochasticProgramBidder):
         stage need to be the same across all the scenarios.
 
         Arguments:
-            None
+            model: bidding model
 
         Returns:
             None
@@ -755,9 +909,16 @@ class SelfScheduler(StochasticProgramBidder):
         organize them.
 
         Arguments:
+            model: bidding model
+
+            power_var_name: the name of the power output (str)
+
+            energy_price_param_name: the name of the energy price forecast params (str)
+
+            hour: current simulation hour
 
         Returns:
-            bids: the bid we computed.
+            dict: the bid we computed.
         """
 
         bids = {}
@@ -868,14 +1029,17 @@ class Bidder(StochasticProgramBidder):
         Initializes the bidder object.
 
         Arguments:
-            bidding_model_object: the model object for tracking for bidding
+            bidding_model_object: the model object for bidding
 
-            n_scenario: number of LMP scenarios
+            day_ahead_horizon: number of time periods in the day-ahead bidding problem
+
+            real_time_horizon: number of time periods in the real-time bidding problem
+
+            n_scenario: number of uncertain LMP scenarios
 
             solver: a Pyomo mathematical programming solver object
 
             forecaster: an initialized LMP forecaster object
-
 
         Returns:
             None
@@ -897,7 +1061,7 @@ class Bidder(StochasticProgramBidder):
         nondecreasing.
 
         Arguments:
-            None
+            model: bidding model
 
         Returns:
             None
@@ -931,7 +1095,7 @@ class Bidder(StochasticProgramBidder):
         nondecreasing.
 
         Arguments:
-            None
+            model: bidding model
 
         Returns:
             None
@@ -965,6 +1129,13 @@ class Bidder(StochasticProgramBidder):
         organize them.
 
         Arguments:
+            model: bidding model
+
+            power_var_name: the name of the power output (str)
+
+            energy_price_param_name: the name of the energy price forecast params (str)
+
+            hour: current simulation hour
 
         Returns:
             bids: the bid we computed.

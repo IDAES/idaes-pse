@@ -31,8 +31,12 @@ class Tracker:
         Initializes the tracker object.
 
         Arguments:
-            tracking_model_class: the model object class for tracking
+            tracking_model_object: the model object for tracking
+
+            tracking_horizon: number of time periods in the tracking problem
+
             n_tracking_hour: number of implemented hours after each solve
+
             solver: a Pyomo mathematical programming solver object
 
         Returns:
@@ -263,6 +267,17 @@ class Tracker:
         return
 
     def update_model(self, **profiles):
+
+        """
+        This method updates the parameters in the model based on the implemented profiles.
+
+        Arguments:
+            profiles: the newly implemented stats. {stat_name: [...]}
+
+        Returns:
+            None
+        """
+
         self.tracking_model_object.update_model(self.model.fs, **profiles)
 
     def track_market_dispatch(self, market_dispatch, date, hour):
@@ -272,8 +287,7 @@ class Tracker:
         record the results from the solve and update the model.
 
         Arguments:
-            market_dispatch: a dictionary that contains the market dispatch
-            signals that we want to track. {generator name: [float]}
+            market_dispatch: a list that contains the market dispatch signals
 
             date: current simulation date
 
@@ -329,7 +343,7 @@ class Tracker:
         Pass the received market signals into model parameters.
 
         Arguments:
-            market_dispatch: a list that contains the market dispatch signals that we want to track.
+            market_dispatch: a list that contains the market dispatch signals
 
         Returns:
             None
