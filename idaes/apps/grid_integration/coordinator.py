@@ -381,10 +381,11 @@ class DoubleLoopCoordinator:
                 if "p_fuel" in gen_dict:
                     gen_dict.pop("p_fuel")
             else:
+                # update generator parameters with value
                 gen_dict[param] = value
 
-            if param == "startup_cost" and "startup_fuel" in gen_dict:
-                gen_dict.pop("startup_fuel")
+                if param == "startup_cost" and "startup_fuel" in gen_dict:
+                    gen_dict.pop("startup_fuel")
 
     def pass_static_params_to_DA(
         self, options, simulator, ruc_instance, ruc_date, ruc_hour
