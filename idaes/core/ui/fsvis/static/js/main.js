@@ -28,8 +28,10 @@ export class App {
         this.paper = new Paper(this);
         const url = `/fs?id=${ flowsheetId }`;
 
-        // Adding a special flag to block redundant saves to the model
-        this._save_model_called = false;
+        // Adding a special flag to mark that the graph changed
+        this._is_graph_changed = false;
+
+        this.setupGraphChangeChecker();
 
         $.ajax({url: url, datatype: 'json'})
             .done((model) => {
@@ -139,6 +141,36 @@ export class App {
     }
 
     /**
+     * Set `_is_graph_changed` flag to true.
+     *
+     * An example application for this flag is to save the model whenever the
+     * graph is changed.
+     */
+    graphChanged() {
+        this._is_graph_changed = true;
+    }
+
+    /**
+     * Setup an JS interval that check if the graph has changed and saveModel
+     * if it does change.
+     *
+     * @param wait waiting time before actually saving the model
+     */
+    setupGraphChangeChecker(wait=5000) {
+        let model_id = $("#idaes-fs-name").data("flowsheetId");
+        let url = "/fs?id=".concat(model_id);
+
+        var graphChangedChecker = setInterval(() => {
+            if (this._is_graph_changed) {
+                this.saveModel(url, this.paper.graph);
+                // reset flag
+                this._is_graph_changed = false;
+            }
+        }, wait);
+        return graphChangedChecker;
+    }
+
+    /**
      * Save the model value. Waiting time could be specified to
      * disable multiple redundant saves caused by a stream of events
      *
@@ -150,27 +182,17 @@ export class App {
      *
      * @param url The HTTP server that is running in the Python process
      * @param model The model to save
-     * @param wait waiting time before actually saving the model
      */
-    saveModel(url, model, wait=5000) {
-        if (this._save_model_called == false) {
-            this._save_model_called = true;
-            setTimeout(() => {
-                let clientData = JSON.stringify(model.toJSON());
-                // console.debug(`Sending to ${url}: ` + clientData);
-                this.informUser(0, "Save current values from model");
-                $.ajax({url: url, type: 'PUT', contentType: "application/json", data: clientData})
-                    // On failure inform user and stop
-                    .fail(error => this.informUser(
-                        2, "Fatal error: cannot save current model: " + error))
-                    .done(() => {
-                        this.informUser(0, "Saved new model values");
-                    });
-
-                // reset flag
-                this._save_model_called = false;
-            }, wait);
-        }
+    saveModel(url, model) {
+        let clientData = JSON.stringify(model.toJSON());
+        this.informUser(0, "Save current values from model");
+        $.ajax({url: url, type: 'PUT', contentType: "application/json", data: clientData})
+            // On failure inform user and stop
+            .fail(error => this.informUser(
+                2, "Fatal error: cannot save current model: " + error))
+            .done(() => {
+                this.informUser(0, "Saved new model values");
+            });
     }
 }
 

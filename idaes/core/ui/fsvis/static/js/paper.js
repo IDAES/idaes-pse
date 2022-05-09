@@ -74,12 +74,10 @@ export class Paper {
      * Register Events before the graph model is loaded
      */
     preSetupRegisterEvents() {
-        let model_id = $("#idaes-fs-name").data("flowsheetId");
-        let url = "/fs?id=".concat(model_id);
 
         // Save model every time the graph changes
         this._graph.on('change:position change:angle change:vertices', () => {
-            this._app.saveModel(url, this._graph);
+            this._app.graphChanged();
         });
 
         // Getting the main elements for the idaes canvas and the stream table
