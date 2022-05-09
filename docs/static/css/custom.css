@@ -53,3 +53,7 @@ h2 {
     color: #404040;
     border-top: none;
 }
+
+.simulated-codeblock.code.literal {
+  background: #eeffcc;
+}
