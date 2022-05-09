@@ -30,8 +30,12 @@ export class App {
 
         // Adding a special flag to mark that the graph changed
         this._is_graph_changed = false;
+        // Setting name (key) that defines the save model time interval
+        this._save_time_interval_key = 'save_time_interval';
+        this._default_save_time_interval = 5000; // Default time interval
+        this._save_time_interval = this.getSaveTimeInterval();
 
-        this.setupGraphChangeChecker();
+        this.setupGraphChangeChecker(this._save_time_interval);
 
         $.ajax({url: url, datatype: 'json'})
             .done((model) => {
@@ -98,12 +102,10 @@ export class App {
      */
     refreshModel(url, paper) {
         // Inform user of progress (1)
-        // console.debug("paper.model=", paper.model);
         this.informUser(0, "Refresh: save current values from model");
         // First save our version of the model
         let clientModel = paper.graph;
         let clientData = JSON.stringify(clientModel.toJSON());
-        // console.debug(`Sending to ${url}: ` + clientData);
         $.ajax({url: url, type: 'PUT', contentType: "application/json", data: clientData})
             // On failure inform user and stop
             .fail(error => this.informUser(
@@ -141,6 +143,30 @@ export class App {
     }
 
     /**
+     * Get the save time interval value from the application's setting block.
+     */
+    getSaveTimeInterval() {
+        let settings_url = "/setting?setting_key=".concat(this._save_time_interval_key);
+
+        let save_time_interval = this._default_save_time_interval;
+
+        $.ajax({url: settings_url, type: 'GET', contentType: "application/json"})
+            // On failure inform user and stop
+            .fail(error => this.informUser(
+                2, "Fatal error: cannot get setting value: " + error))
+            .done((response) => {
+                if (response.value != 'None') {
+                    save_time_interval = response.value;
+                }
+                else {
+                    this.informUser(1, "Warning: save_time_interval was not set correctly. " +
+                        "Default time value of " + this._default_save_time_interval.toString() + "will be set.");
+                }
+            });
+        return save_time_interval;
+    }
+
+    /**
      * Set `_is_graph_changed` flag to true.
      *
      * An example application for this flag is to save the model whenever the
@@ -156,13 +182,13 @@ export class App {
      *
      * @param wait waiting time before actually saving the model
      */
-    setupGraphChangeChecker(wait=5000) {
+    setupGraphChangeChecker(wait) {
         let model_id = $("#idaes-fs-name").data("flowsheetId");
-        let url = "/fs?id=".concat(model_id);
+        let flowsheet_url = "/fs?id=".concat(model_id);
 
         var graphChangedChecker = setInterval(() => {
             if (this._is_graph_changed) {
-                this.saveModel(url, this.paper.graph);
+                this.saveModel(flowsheet_url, this.paper.graph);
                 // reset flag
                 this._is_graph_changed = false;
             }

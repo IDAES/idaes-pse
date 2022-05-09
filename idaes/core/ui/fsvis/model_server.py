@@ -58,6 +58,7 @@ class FlowsheetServer(http.server.HTTPServer):
         self._dsm = persist.DataStoreManager()
         self._flowsheets = {}
         self._thr = None
+        self._settings_block = {}
 
     @property
     def port(self):
@@ -69,6 +70,36 @@ class FlowsheetServer(http.server.HTTPServer):
         self._thr = threading.Thread(target=self._run)
         self._thr.setDaemon(True)
         self._thr.start()
+
+    def add_setting(self, key: str, value):
+        """Add a setting to the flowsheet's settings block. Settings block is
+        a dict that has general setting values related to the UI server. Such
+        values could be retrieved to set some settings in the UI.
+
+        An example setting value is the `save_model_time_interval` which sets
+        the time interval at which the model checks if the graph has changed
+        or not for the model to be saved.
+
+        Args:
+            key: Setting name
+            value: Setting value
+        """
+        self._settings_block[key] = value
+
+    def get_setting(self, key: str):
+        """Get a setting value from the flowsheet's settings block.
+
+        Args:
+            key: Setting name
+
+        Returns:
+            Setting value. None if Setting name (key) doesn't exist
+        """
+        if key not in self._settings_block:
+            _log.warning(f"key '{key}' is not set in the flowsheet settings block")
+            return None
+        return self._settings_block[key]
+
 
     def add_flowsheet(self, id_, flowsheet, store: persist.DataStore) -> str:
         """Add a flowsheet, and also the method of saving it.
@@ -228,19 +259,26 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         Routes:
           * `/app`: Return the web page
           * `/fs`: Retrieve an updated flowsheet.
+          * `/setting`: Retrieve a setting value.
           * `/path/to/file`: Retrieve file stored static directory
         """
-        u, id_ = self._parse_flowsheet_url(self.path)
+        u, queries = self._parse_flowsheet_url(self.path)
+        id_ = queries.get("id", None) if queries else None
+
         _log.debug(f"do_GET: path={self.path} id=={id_}")
         if u.path in ("/app", "/fs") and id_ is None:
             self.send_error(
                 400, message=f"Query parameter 'id' is required for '{u.path}'"
             )
             return
+
         if u.path == "/app":
             self._get_app(id_)
         elif u.path == "/fs":
             self._get_fs(id_)
+        elif u.path == "/setting":
+            setting_key_ = queries.get("setting_key", None)
+            self._get_setting(setting_key_)
         else:
             # Try to serve a file
             self.directory = _static_dir  # keep here: overwritten if set earlier
@@ -277,12 +315,25 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         # Return merged flowsheet
         self._write_json(200, merged)
 
+    def _get_setting(self, setting_key_: str):
+        """Get setting value.
+
+        Args:
+            id_: Flowsheet identifier
+            setting_key_: Setting name (key)
+
+        Returns:
+            Setting value
+        """
+        self._write_json(200, {'setting_value': self.server.get_setting(setting_key_)})
+
     # === PUT ===
 
     def do_PUT(self):
         """Process a request to store data.
         """
-        u, id_ = self._parse_flowsheet_url(self.path)
+        u, queries = self._parse_flowsheet_url(self.path)
+        id_ = queries.get("id", None) if queries else None
         _log.info(f"do_PUT: route={u} id={id_}")
         if u.path in ("/fs",) and id_ is None:
             self.send_error(
@@ -328,11 +379,10 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(value)
 
     def _parse_flowsheet_url(self, path):
-        u, id_ = urlparse(self.path), None
+        u, queries = urlparse(path), None
         if u.query:
             queries = dict([q.split("=") for q in u.query.split("&")])
-            id_ = queries.get("id", None)
-        return u, id_
+        return u, queries
 
     # === Logging ===
 
