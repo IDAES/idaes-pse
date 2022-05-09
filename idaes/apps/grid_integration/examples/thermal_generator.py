@@ -712,14 +712,18 @@ if __name__ == "__main__":
         rts_gmlc_generator_dataframe,
         rts_gmlc_bus_dataframe,
         prescient_5bus,
+        daily_da_price_means,
+        daily_rt_price_means,
+        daily_da_price_stds,
+        daily_rt_price_stds,
     )
 
     generator = "10_STEAM"
     horizon = 4
     solver = pyo.SolverFactory("cbc")
 
-    run_tracker = False
-    run_bidder = False
+    run_tracker = True
+    run_bidder = True
     run_prescient = True
 
     if run_tracker:
@@ -733,6 +737,7 @@ if __name__ == "__main__":
         # make a tracker
         thermal_tracker = Tracker(
             tracking_model_object=tracking_model_object,
+            tracking_horizon=horizon,
             n_tracking_hour=1,
             solver=solver,
         )
@@ -754,8 +759,12 @@ if __name__ == "__main__":
         )
 
         # create forecaster
-        price_forecasts_df = pd.read_csv("lmp_forecasts_concat.csv")
-        forecaster = PlaceHolderForecaster(price_forecasts_df=price_forecasts_df)
+        forecaster = PlaceHolderForecaster(
+            daily_da_price_means=daily_da_price_means,
+            daily_rt_price_means=daily_rt_price_means,
+            daily_da_price_stds=daily_da_price_stds,
+            daily_rt_price_stds=daily_rt_price_stds,
+        )
 
         thermal_bidder = Bidder(
             bidding_model_object=bidding_model_object,
@@ -767,8 +776,8 @@ if __name__ == "__main__":
         )
 
         date = "2020-07-10"
-        hour = "13:00"
-        bids = thermal_bidder.compute_bids(date, hour)
+        hour = 13
+        bids = thermal_bidder.compute_day_ahead_bids(date, hour)
         thermal_bidder.write_results(path="./")
 
     if run_prescient and prescient_avail:
