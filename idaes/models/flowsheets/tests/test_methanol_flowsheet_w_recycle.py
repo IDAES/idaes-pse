@@ -514,12 +514,18 @@ def test_optimize_with_costing(model):
 
 @pytest.mark.unit
 def test_report(model):
-    stream = StringIO()
-    sys.stdout = stream
-    report(model)
-    sys.stdout = sys.__stdout__
+    # output is different for unit/integration test runs in order to test
+    # report method during unit tests, and actual solution during integration
 
-    output = """
+    if value(model.fs.R101.rate_reaction_extent[0, "R1"]) != 0.0:
+
+        stream = StringIO()
+        sys.stdout = stream
+        report(model)
+        sys.stdout = sys.__stdout__
+
+        # this case contains solved solution values
+        output = """
 
 Extent of reaction:  311.3069854949999
 Stoichiometry of each component normalized by the extent:
@@ -626,5 +632,124 @@ Unit : fs.S101                                                             Time:
     Total Mole Fraction H2       0.67379
 ====================================================================================
 """
+        assert output in stream.getvalue()
+    else:
+        # model is not solved when integration tests are skipped, so need to
+        # set a temporary nonzero extent value to allow unit testing of report
+        # method and increase total code coverage from test module
+        model.fs.R101.rate_reaction_extent[0, "R1"].fix(0.01)
 
-    assert output in stream.getvalue()
+        stream = StringIO()
+        sys.stdout = stream
+        report(model)
+        sys.stdout = sys.__stdout__
+
+        # this case is pre-initialization, pre-solve and contain defaults
+        output = """
+
+Extent of reaction:  0.01
+Stoichiometry of each component normalized by the extent:
+CH4 :  0.0
+H2 :  0.0
+CH3OH :  0.0
+CO :  0.0
+These coefficients should follow 1*CO + 2*H2 => 1*CH3OH
+
+Reaction conversion:  0.75
+Reactor duty (MW):  0.0
+Duty from Reaction (MW)): 0.0009064
+Compressor work (MW):  0.0
+Turbine work (MW):  0.0
+Feed Mixer outlet temperature (C)):  25.0
+Recycle Mixer outlet temperature (C)):  25.0
+Feed Compressor outlet temperature (C)):  25.0
+Feed Compressor outlet pressure (Pa)):  5100000.0
+Heater outlet temperature (C)):  25.0
+Reactor outlet temperature (C)):  25.0
+Turbine outlet temperature (C)):  25.0
+Turbine outlet pressure (Pa)):  100000.0
+Cooler outlet temperature (C)):  25.0
+Flash outlet temperature (C)):  25.0
+Purge percentage (amount of vapor vented to exhaust): 99.99  %
+Methanol recovery(%):  1.0
+annualized capital cost ($/year) = 121776.27770012307
+operating cost ($/year) =  0.0
+sales ($/year) =  5671299423.599999
+raw materials cost ($/year) = 35229454878.16397
+revenue (1000$/year)=  -29558277.23084167
+
+
+====================================================================================
+Unit : fs.M101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                H2_WGS      CO_WGS     Outlet  
+    Total Molar Flowrate          637.20      316.80     100.00
+    Total Mole Fraction CH4   1.0000e-06  1.0000e-06    0.25000
+    Total Mole Fraction CO    1.0000e-06      1.0000    0.25000
+    Total Mole Fraction H2        1.0000  1.0000e-06    0.25000
+    Total Mole Fraction CH3OH 1.0000e-06  1.0000e-06    0.25000
+    Molar Enthalpy               -142.40 -1.1068e+05     100.00
+    Pressure                  3.0000e+06  3.0000e+06 1.0000e+05
+====================================================================================
+
+====================================================================================
+Unit : fs.M102                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                 feed      recycle    Outlet  
+    Total Molar Flowrate          100.00     100.00     100.00
+    Total Mole Fraction CH4      0.25000    0.25000    0.25000
+    Total Mole Fraction CO       0.25000    0.25000    0.25000
+    Total Mole Fraction H2       0.25000    0.25000    0.25000
+    Total Mole Fraction CH3OH    0.25000    0.25000    0.25000
+    Molar Enthalpy                100.00     100.00     100.00
+    Pressure                  1.0000e+05 1.0000e+05 1.0000e+05
+====================================================================================
+
+====================================================================================
+Unit : fs.F101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key             : Value  : Fixed : Bounds
+          Heat Duty : 0.0000 : False : (None, None)
+    Pressure Change : 0.0000 :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                            Inlet    Vapor Outlet  Liquid Outlet
+    flow_mol                 100.00       50.000        50.000  
+    mole_frac_comp CH4      0.25000      0.25000    1.0000e-08  
+    mole_frac_comp CO       0.25000      0.25000    1.0000e-08  
+    mole_frac_comp H2       0.25000      0.25000    1.0000e-08  
+    mole_frac_comp CH3OH    0.25000      0.25000       0.25000  
+    enth_mol                 100.00      -97532.       -59600.  
+    pressure             1.0000e+05   1.0000e+05    1.0000e+05  
+====================================================================================
+
+====================================================================================
+Unit : fs.S101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                           : Value   : Fixed : Bounds
+    Split Fraction [('recycle',)] : 0.50000 : False : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                 Inlet  
+    Molar Enthalpy                100.00
+    Pressure                  1.0000e+05
+    Total Molar Flowrate          100.00
+    Total Mole Fraction CH3OH    0.25000
+    Total Mole Fraction CH4      0.25000
+    Total Mole Fraction CO       0.25000
+    Total Mole Fraction H2       0.25000
+====================================================================================
+"""
+        assert output in stream.getvalue()
