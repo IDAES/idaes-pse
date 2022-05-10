@@ -72,6 +72,17 @@ orig_environ = {
     "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
     "DYLD_LIBRARY_PATH": os.environ.get("DYLD_LIBRARY_PATH", ""),
 }
+# Define set of default units of measurement for common derived quantities
+default_uom = {
+    "pressure": "Pa",
+    "energy": "J",
+    "energy_mol": "J/mol",
+    "energy_mass": "J/kg",
+    "entropy": "J/K",
+    "entropy_mol": "J/mol/K",
+    "entropy_mass": "J/kg/K",
+    "power": "W",
+}
 
 def canonical_arch(arch):
     """Get the offical machine type in {x86_64, aarch64} if possible, otherwise
@@ -116,6 +127,24 @@ def _new_idaes_config_block():
     the idaes configuration system to function improperly.
     """
     cfg = pyomo.common.config.ConfigBlock("idaes", implicit=True)
+    cfg.declare(
+        "warning_to_exception",
+        pyomo.common.config.ConfigValue(
+            domain=bool,
+            default=False,
+            description="Convert any logged warnings or errors to exceptions",
+            doc="Convert any logged warnings or errors to exceptions"
+        ),
+    )
+    cfg.declare(
+        "deprecation_to_exception",
+        pyomo.common.config.ConfigValue(
+            domain=bool,
+            default=False,
+            description="Convert any logged deprecation warnings to exceptions",
+            doc="Convert any logged deprecation warnings to exceptions"
+        ),
+    )
     cfg.declare(
         "logging",
         pyomo.common.config.ConfigBlock(
@@ -376,6 +405,14 @@ def _new_idaes_config_block():
             description="Solver output captured by logger?",
         ),
     )
+
+    cfg.declare(
+        "reporting_units",
+        pyomo.common.config.ConfigValue(
+            default=default_uom,
+            description="Units of measurement for reporting quantities",
+        ),
+    )
     return cfg
 
 
@@ -412,8 +449,38 @@ def write_config(path, cfg=None):
         json.dump(cfg.value(), f, cls=ConfigBlockJSONEncoder, indent=4)
 
 
+class _WarningToExceptionFilter(logging.Filter):
+    """Filter applied to IDAES loggers returned by this module."""
+
+    @staticmethod
+    def filter(record):
+        if record.levelno >= logging.WARNING:
+            raise RuntimeError(
+                f"Logged Warning converted to exception: {record.msg}")
+
+
+class _DeprecationToExceptionFilter(logging.Filter):
+    """Filter applied to IDAES loggers returned by this module."""
+
+    @staticmethod
+    def filter(record):
+        if record.levelno >= logging.WARNING:
+            if "deprecat" in record.msg.lower():
+                raise RuntimeError(
+                    f"Logged deprecation converted to exception: {record.msg}")
+
+
 def reconfig(cfg):
     logging.config.dictConfig(cfg.logging.value())
+    _log = logging.getLogger("idaes")
+    if cfg.deprecation_to_exception:
+        _log.addFilter(_DeprecationToExceptionFilter)
+    else:
+        _log.removeFilter(_DeprecationToExceptionFilter)
+    if cfg.warning_to_exception:
+        _log.addFilter(_WarningToExceptionFilter)
+    else:
+        _log.removeFilter(_WarningToExceptionFilter)
     setup_environment(bin_directory, cfg.use_idaes_solvers)
 
 
@@ -434,12 +501,21 @@ def create_dir(d):
 
 def get_data_directory():
     """Return the standard data directory for idaes, based on the OS."""
-    try:
-        if os.name == 'nt':  # Windows
-            data_directory = os.path.join(os.environ['LOCALAPPDATA'], "idaes")
-        else:  # any other OS
-            data_directory = os.path.join(os.environ['HOME'], ".idaes")
-    except AttributeError:
+    if 'IDAES_DATA' in os.environ:
+        data_directory = os.environ['IDAES_DATA']
+    else:
+        try:
+            if os.name == 'nt':  # Windows
+                data_directory = os.path.join(os.environ['LOCALAPPDATA'], "idaes")
+            else:  # any other OS
+                data_directory = os.path.join(os.environ['HOME'], ".idaes")
+        except AttributeError:
+            data_directory = None
+    if data_directory is None or not os.path.isdir(os.path.dirname(data_directory)):
+        _log.warning(
+            "IDAES data directory location does not exist: "
+            f"{os.path.dirname(data_directory)}"
+        )
         data_directory = None
     # Standard location for executable binaries.
     if data_directory is not None:
@@ -468,6 +544,8 @@ def setup_environment(bin_directory, use_idaes_solvers):
     Returns:
         None
     """
+    if bin_directory is None:
+        return
     oe = orig_environ
     if use_idaes_solvers:
         os.environ['PATH'] = os.pathsep.join([bin_directory, oe.get('PATH', '')])

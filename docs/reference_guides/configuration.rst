@@ -102,6 +102,26 @@ additional loggers can be added if desired.  The standard loggers are:
 If changes to the logger configuration dictionary are made after importing
 ``idaes`` a call to ``idaes.reconfig()`` is required for it to take effect.
 
+warning_to_exception
+~~~~~~~~~~~~~~~~~~~~
+
+If this option is True, any log messages at level warning or above will be
+converted to a RuntimeError exception.  This can be used to ensure a model doesn't
+generate warnings. It can also be used to generate a traceback for warnings, which
+can provide additional debugging information.
+
+Changes require ``idaes.reconfig()``.  The default setting is ``False``.
+
+depracation_to_exception
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+If this option is True, any log messages at level warning or above that contain
+"deprecation," "deprecate," or "deprecated" will be converted to a RuntimeError
+exception.  This can be used to ensure a model doesn't use any deprecated models
+or methods.
+
+Changes require ``idaes.reconfig()``.  The default setting is ``False``.
+
 use_idaes_solvers
 ~~~~~~~~~~~~~~~~~
 
