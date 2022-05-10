@@ -516,6 +516,7 @@ def test_optimize_with_costing(model):
 def test_report(model):
     # output is different for unit/integration test runs in order to test
     # report method during unit tests, and actual solution during integration
+    # split into pieces to avoid errors due to line breaks not matching
 
     if value(model.fs.R101.rate_reaction_extent[0, "R1"]) != 0.0:
 
@@ -525,17 +526,15 @@ def test_report(model):
         sys.stdout = sys.__stdout__
 
         # this case contains solved solution values
-        output = """
-
-Extent of reaction:  311.3069854949999
+        output1 = """Extent of reaction:  311.3069854949999
 Stoichiometry of each component normalized by the extent:
 CH4 :  0.0
 H2 :  -2.0
 CH3OH :  1.0
 CO :  -1.0
-These coefficients should follow 1*CO + 2*H2 => 1*CH3OH
+These coefficients should follow 1*CO + 2*H2 => 1*CH3OH"""
 
-Reaction conversion:  0.8500000099995839
+        output2 = """Reaction conversion:  0.8500000099995839
 Reactor duty (MW):  -59.35006318307154
 Duty from Reaction (MW)): 28.21686516526679
 Compressor work (MW):  -1.3029463025439575e-25
@@ -556,10 +555,9 @@ annualized capital cost ($/year) = 284310.49282557645
 operating cost ($/year) =  523119766.24597174
 sales ($/year) =  140530623320.32684
 raw materials cost ($/year) = 35229454878.16397
-revenue (1000$/year)=  104777764.36542407
+revenue (1000$/year)=  104777764.36542407"""
 
-
-====================================================================================
+        output3 = """====================================================================================
 Unit : fs.M101                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Stream Table
@@ -630,13 +628,15 @@ Unit : fs.S101                                                             Time:
     Total Mole Fraction CH4   4.4069e-05
     Total Mole Fraction CO       0.25377
     Total Mole Fraction H2       0.67379
-====================================================================================
-"""
-        assert output in stream.getvalue()
+===================================================================================="""
+        assert output1 in stream.getvalue()
+        assert output2 in stream.getvalue()
+        assert output3 in stream.getvalue()
     else:
         # model is not solved when integration tests are skipped, so need to
         # set a temporary nonzero extent value to allow unit testing of report
         # method and increase total code coverage from test module
+        # split into pieces to avoid errors due to line breaks not matching
         model.fs.R101.rate_reaction_extent[0, "R1"].fix(0.01)
 
         stream = StringIO()
@@ -645,17 +645,15 @@ Unit : fs.S101                                                             Time:
         sys.stdout = sys.__stdout__
 
         # this case is pre-initialization, pre-solve and contain defaults
-        output = """
-
-Extent of reaction:  0.01
+        output1 = """Extent of reaction:  0.01
 Stoichiometry of each component normalized by the extent:
 CH4 :  0.0
 H2 :  0.0
 CH3OH :  0.0
 CO :  0.0
-These coefficients should follow 1*CO + 2*H2 => 1*CH3OH
+These coefficients should follow 1*CO + 2*H2 => 1*CH3OH"""
 
-Reaction conversion:  0.75
+        output2 = """Reaction conversion:  0.75
 Reactor duty (MW):  0.0
 Duty from Reaction (MW)): 0.0009064
 Compressor work (MW):  0.0
@@ -676,10 +674,9 @@ annualized capital cost ($/year) = 121776.27770012307
 operating cost ($/year) =  0.0
 sales ($/year) =  5671299423.599999
 raw materials cost ($/year) = 35229454878.16397
-revenue (1000$/year)=  -29558277.23084167
+revenue (1000$/year)=  -29558277.23084167"""
 
-
-====================================================================================
+        output3 = """====================================================================================
 Unit : fs.M101                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Stream Table
@@ -750,6 +747,7 @@ Unit : fs.S101                                                             Time:
     Total Mole Fraction CH4      0.25000
     Total Mole Fraction CO       0.25000
     Total Mole Fraction H2       0.25000
-====================================================================================
-"""
-        assert output in stream.getvalue()
+===================================================================================="""
+        assert output1 in stream.getvalue()
+        assert output2 in stream.getvalue()
+        assert output3 in stream.getvalue()
