@@ -461,7 +461,6 @@ def test_optimize_with_costing(model):
 def test_report(model):
     # output is different for unit/integration test runs in order to test
     # report method during unit tests, and actual solution during integration
-    # split into pieces to avoid errors due to line breaks not matching
 
     if value(model.fs.R101.rate_reaction_extent[0, "R1"]) != 0.0:
 
@@ -471,15 +470,15 @@ def test_report(model):
         sys.stdout = sys.__stdout__
 
         # this case contains solved solution values
-        output1 = """Extent of reaction:  269.28054478798873
+        output = """
+Extent of reaction:  269.28054478798873
 Stoichiometry of each component normalized by the extent:
 CH4 :  0.0
 H2 :  -2.0
 CH3OH :  1.0
 CO :  -1.0
-These coefficients should follow 1*CO + 2*H2 => 1*CH3OH"""
-
-        output2 = """Reaction conversion:  0.8500000099999442
+These coefficients should follow 1*CO + 2*H2 => 1*CH3OH
+Reaction conversion:  0.8500000099999442
 Reactor duty (MW):  -51.36357357754515
 Duty from Reaction (MW)): 24.407588579583297
 Turbine work (MW):  -1.9904899177794635
@@ -497,15 +496,48 @@ annualized capital cost ($/year) = 262011.81501550632
 operating cost ($/year) =  451845877.93162763
 sales ($/year) =  116729133888.84218
 raw materials cost ($/year) = 35229454878.16397
-revenue (1000$/year)=  81047571.12093157"""
-
-        assert output1 in stream.getvalue()
-        assert output2 in stream.getvalue()
+revenue (1000$/year)=  81047571.12093157
+====================================================================================
+Unit : fs.M101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                H2_WGS      CO_WGS     Outlet  
+    Total Molar Flowrate          637.20      316.80     954.00
+    Total Mole Fraction CH4   1.0000e-06  1.0000e-06 1.0000e-06
+    Total Mole Fraction CO    1.0000e-06      1.0000    0.33208
+    Total Mole Fraction H2        1.0000  1.0000e-06    0.66792
+    Total Mole Fraction CH3OH 1.0000e-06  1.0000e-06 1.0000e-06
+    Molar Enthalpy               -142.40 -1.1068e+05    -36848.
+    Pressure                  3.0000e+06  3.0000e+06 3.0000e+06
+====================================================================================
+====================================================================================
+Unit : fs.F101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+    Variables: 
+    Key             : Value       : Fixed : Bounds
+          Heat Duty : -8.3431e+06 : False : (None, None)
+    Pressure Change :  1.0119e+07 : False : (None, None)
+------------------------------------------------------------------------------------
+    Stream Table
+                             Inlet    Vapor Outlet  Liquid Outlet
+    flow_mol                  415.44       158.16        257.28  
+    mole_frac_comp CH4    2.2964e-06   6.0318e-06    1.0000e-08  
+    mole_frac_comp CO        0.11438      0.30045    1.0000e-08  
+    mole_frac_comp H2        0.23743      0.62366    1.0000e-08  
+    mole_frac_comp CH3OH     0.64818     0.075879        1.0000  
+    enth_mol             -1.4444e+05      -45435.   -2.3772e+05  
+    pressure              1.4277e+06   1.1547e+07    1.1547e+07  
+====================================================================================
+"""
+        output_string = output.replace(" ", "").replace("\n", "")
+        stream_string = str(stream.getvalue()).replace(" ", "").replace("\n", "")
+        assert output_string == stream_string
+            
     else:
         # model is not solved when integration tests are skipped, so need to
         # set a temporary nonzero extent value to allow unit testing of report
         # method and increase total code coverage from test module
-        # split into pieces to avoid errors due to line breaks not matching
         model.fs.R101.rate_reaction_extent[0, "R1"].fix(0.01)
 
         stream = StringIO()
@@ -514,15 +546,15 @@ revenue (1000$/year)=  81047571.12093157"""
         sys.stdout = sys.__stdout__
 
         # this case is pre-initialization, pre-solve and contain defaults
-        output1 = """Extent of reaction:  0.01
+        output = """
+Extent of reaction:  0.01
 Stoichiometry of each component normalized by the extent:
 CH4 :  0.0
 H2 :  0.0
 CH3OH :  0.0
 CO :  0.0
-These coefficients should follow 1*CO + 2*H2 => 1*CH3OH"""
-
-        output2 = """Reaction conversion:  0.75
+These coefficients should follow 1*CO + 2*H2 => 1*CH3OH
+Reaction conversion:  0.75
 Reactor duty (MW):  0.0
 Duty from Reaction (MW)): 0.0009064
 Turbine work (MW):  0.0
@@ -540,7 +572,40 @@ annualized capital cost ($/year) = 121776.27770012307
 operating cost ($/year) =  0.0
 sales ($/year) =  5671299423.599999
 raw materials cost ($/year) = 35229454878.16397
-revenue (1000$/year)=  -29558277.23084167"""
-
-        assert output1 in stream.getvalue()
-        assert output2 in stream.getvalue()
+revenue (1000$/year)=  -29558277.23084167
+====================================================================================
+Unit : fs.M101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+                                H2_WGS      CO_WGS     Outlet  
+    Total Molar Flowrate          637.20      316.80     100.00
+    Total Mole Fraction CH4   1.0000e-06  1.0000e-06    0.25000
+    Total Mole Fraction CO    1.0000e-06      1.0000    0.25000
+    Total Mole Fraction H2        1.0000  1.0000e-06    0.25000
+    Total Mole Fraction CH3OH 1.0000e-06  1.0000e-06    0.25000
+    Molar Enthalpy               -142.40 -1.1068e+05     100.00
+    Pressure                  3.0000e+06  3.0000e+06 1.0000e+05
+====================================================================================
+====================================================================================
+Unit : fs.F101                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+    Variables: 
+    Key             : Value  : Fixed : Bounds
+          Heat Duty : 0.0000 : False : (None, None)
+    Pressure Change : 0.0000 :  True : (None, None)
+------------------------------------------------------------------------------------
+    Stream Table
+                            Inlet    Vapor Outlet  Liquid Outlet
+    flow_mol                 100.00       50.000        50.000  
+    mole_frac_comp CH4      0.25000      0.25000    1.0000e-08  
+    mole_frac_comp CO       0.25000      0.25000    1.0000e-08  
+    mole_frac_comp H2       0.25000      0.25000    1.0000e-08  
+    mole_frac_comp CH3OH    0.25000      0.25000       0.25000  
+    enth_mol                 100.00      -97532.       -59600.  
+    pressure             1.0000e+05   1.0000e+05    1.0000e+05  
+====================================================================================
+"""
+        output_string = output.replace(" ", "").replace("\n", "")
+        stream_string = str(stream.getvalue()).replace(" ", "").replace("\n", "")
+        assert output_string == stream_string
