@@ -25,6 +25,7 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.environ import check_optimal_termination
 from pyomo.common.fileutils import this_file_dir
+from pyomo.common.tempfiles import TempfileManager
 
 from idaes.models_extra.power_generation.flowsheets.NGFC.NGFC_flowsheet \
     import (
@@ -52,7 +53,6 @@ from idaes.core.util.scaling import (extreme_jacobian_columns,
                                      extreme_jacobian_rows)
 from idaes.core.util import model_serializer as ms
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes import testing_directory
 
 solver_available = pyo.SolverFactory("ipopt").available()
 solver = get_solver()
@@ -480,23 +480,31 @@ def test_make_stream_dict(m):
 @pytest.mark.unit
 def test_pfd_result(m):
     df = create_stream_table_dataframe(streams=m._streams, orient="index")
-    pfd_result("results.svg", m, df)
 
-    # check that a results file was created in the results directory
-    assert os.path.exists(os.path.join(this_file_dir(), "results.svg"))
-    # remove the file to keep the test directory clean
-    os.remove(os.path.join(this_file_dir(), "results.svg"))
-    assert not os.path.exists(os.path.join(this_file_dir(), "results.svg"))
+    with TempfileManager.new_context() as tf:
+        dname = tf.mkdtemp()
+        assert os.path.isdir(dname)
+        pfd_result(os.path.join(dname, "results.svg"), m, df)
+
+        # check that a results file was created in the results directory
+        assert os.path.isfile(os.path.join(dname, "results.svg"))
+    # check that the temporary directory and file are cleaned up
+    assert not os.path.isdir(dname)
 
 
 @pytest.mark.unit
 def test_main():
-    stream = StringIO()
-    sys.stdout = stream
-    m = main()
-    sys.stdout = sys.__stdout__
 
-    output = """Scaling flowsheet variables
+    with TempfileManager.new_context() as tf:
+        dname = tf.mkdtemp()
+        assert os.path.isdir(dname)
+
+        stream = StringIO()
+        sys.stdout = stream
+        m = main(dname)
+        sys.stdout = sys.__stdout__
+
+        output = """Scaling flowsheet variables
 overwriting mole_frac lower bound, set to 0 to remove warnings
 Scaling flowsheet constraints\nCalculating scaling factors
 
@@ -506,11 +514,10 @@ Loading solved model
 PFD Results Created
 """
 
-    assert isinstance(m, pyo.ConcreteModel)
-    assert output in stream.getvalue()
+        assert isinstance(m, pyo.ConcreteModel)
+        assert output in stream.getvalue()
 
-    # check that a results file was created in the results directory
-    assert os.path.exists(os.path.join(this_file_dir(), "NGFC_results.svg"))
-    # remove the file to keep the test directory clean
-    os.remove(os.path.join(this_file_dir(), "NGFC_results.svg"))
-    assert not os.path.exists(os.path.join(this_file_dir(), "NGFC_results.svg"))
+        # check that a results file was created in the results directory
+        assert os.path.isfile(os.path.join(dname, "NGFC_results.svg"))
+    # check that the temporary directory and file are cleaned up
+    assert not os.path.isdir(dname)

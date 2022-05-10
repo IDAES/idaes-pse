@@ -1704,7 +1704,7 @@ def pfd_result(outfile, m, df):
         svg_tag(tags=None, svg=f, tag_group=tag_group, outfile=outfile)
 
 
-def main():
+def main(resultsdir=None):
     # create model and flowsheet
     m = pyo.ConcreteModel(name="NGFC without carbon capture")
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1781,7 +1781,10 @@ def main():
     # uncomment to report results
     make_stream_dict(m)
     df = create_stream_table_dataframe(streams=m._streams, orient="index")
-    pfd_result("NGFC_results.svg", m, df)
+    if resultsdir is not None:
+        pfd_result(os.path.join(resultsdir, "NGFC_results.svg"), m, df)
+    else:  # save to current directory
+        pfd_result("NGFC_results.svg", m, df)
     print('PFD Results Created')
 
     return m
