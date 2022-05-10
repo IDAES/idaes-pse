@@ -90,6 +90,28 @@ def m():
     return m
 
 
+@pytest.fixture()
+def m_with_variable_types():
+    """Flash unit model. Use '.fs' attribute to get the flowsheet."""
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    # Flash properties
+    m.fs.properties = BTXParameterBlock(
+        default={
+            "valid_phase": ("Liq", "Vap"),
+            "activity_coeff_model": "Ideal",
+            "state_vars": "FTPz",
+        }
+    )
+    # Flash unit
+    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    # Adding fixed and unfixed variables
+    m.fs.flash.inlet.pressure.fix(3.14)
+    m.fs.flash.inlet.pressure.unfix()
+    m.fs.flash.inlet.temperature.fix(368)
+
+    return m
+
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock(m):
     d = arcs_to_stream_dict(m, descend_into=True, prepend="model")
@@ -238,6 +260,30 @@ def test_create_stream_table_dataframe_from_Arc(m):
     assert df.loc["Molar Concentration EthylAcetate"]["state"] == 100.0
     assert df.loc["Molar Concentration SodiumAcetate"]["state"] == 100.0
     assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
+
+
+@pytest.mark.unit
+def test_create_stream_table_dataframe_variable_types(m_with_variable_types):
+    m = m_with_variable_types
+
+    state_name = 'state'
+    suffix = '_suffix'
+    state_dict = {
+        state_name: m.fs.flash.inlet
+    }
+    df = create_stream_table_dataframe(
+        state_dict,
+        add_variable_type=True,
+        variable_type_suffix=suffix
+        )
+
+    streams = df.columns[1:]
+    for i in range(0, len(streams), 2):
+        stream = streams[i]
+        assert streams[i+1] == stream + suffix
+
+    assert df.loc["pressure"][state_name + suffix] == 1
+    assert df.loc["temperature"][state_name + suffix] == 2
 
 
 @pytest.mark.unit
