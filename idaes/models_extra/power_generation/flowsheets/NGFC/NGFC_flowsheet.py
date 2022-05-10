@@ -1001,14 +1001,6 @@ def scale_flowsheet(m):
             for (t, p, j), c in unit.inert_species_balance.items():
                 iscale.constraint_scaling_transform(c, 1, overwrite=False)
 
-        # check material density expressions - properties are indexed by time, constraints by (phase, component)
-        if hasattr(unit, "control_volume"):
-            if hasattr(unit.control_volume, 'properties_out'):
-                for t in m.fs.time:
-                    if hasattr(unit.control_volume.properties_out[t], "_material_density_term"):
-                        for (p, i), c in unit.control_volume.properties_out[t]._material_density_term.items():
-                            iscale.set_scaling_factor(c, 1e-3)
-
     print('Calculating scaling factors')
     iscale.calculate_scaling_factors(m)
     print()
@@ -1713,13 +1705,6 @@ def pfd_result(outfile, m, df):
 
 
 def main():
-    print('main function moved to run when script is called in console')
-
-    return m
-
-
-# %%       # ------------------------------------------------------------------
-if __name__ == "__main__":
     # create model and flowsheet
     m = pyo.ConcreteModel(name="NGFC without carbon capture")
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1797,3 +1782,11 @@ if __name__ == "__main__":
     make_stream_dict(m)
     df = create_stream_table_dataframe(streams=m._streams, orient="index")
     pfd_result("NGFC_results.svg", m, df)
+    print('PFD Results Created')
+
+    return m
+
+
+# %%       # ------------------------------------------------------------------
+if __name__ == "__main__":
+    m = main()

@@ -16,6 +16,8 @@ Tests to make sure the NGFC example builds and solves correctly.
 
 __author__ = "Alex Noring, Brandon Paul"
 
+from io import StringIO
+import sys
 import os
 from collections import OrderedDict
 
@@ -39,6 +41,7 @@ from idaes.models_extra.power_generation.flowsheets.NGFC.NGFC_flowsheet \
         add_result_constraints,
         make_stream_dict,
         pfd_result,
+        main,
         )
 
 from idaes.core import FlowsheetBlock
@@ -49,6 +52,7 @@ from idaes.core.util.scaling import (extreme_jacobian_columns,
                                      extreme_jacobian_rows)
 from idaes.core.util import model_serializer as ms
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes import testing_directory
 
 solver_available = pyo.SolverFactory("ipopt").available()
 solver = get_solver()
@@ -202,13 +206,6 @@ def test_scaling(m):
 
 @pytest.mark.integration
 def test_initialize_power_island(m):
-    solver.options = {
-        "max_iter": 500,
-        "tol": 1e-7,
-        "bound_push": 1e-12,
-        "linear_solver": "ma57",
-        "ma57_pivtol": 1e-3,
-          }
     initialize_power_island(m)
 
     assert pyo.value(m.fs.cathode.inlet.flow_mol[0]) == \
@@ -285,13 +282,6 @@ def test_initialize_power_island(m):
 
 @pytest.mark.integration
 def test_initialize_reformer(m):
-    solver.options = {
-        "max_iter": 500,
-        "tol": 1e-7,
-        "bound_push": 1e-12,
-        "linear_solver": "ma57",
-        "ma57_pivtol": 1e-3,
-          }
     initialize_reformer(m)
 
     assert pyo.value(m.fs.reformer.inlet.flow_mol[0]) == \
@@ -492,8 +482,35 @@ def test_pfd_result(m):
     df = create_stream_table_dataframe(streams=m._streams, orient="index")
     pfd_result("results.svg", m, df)
 
-    # check that a results file was created in the test directory
-    # assert os.path.exists(os.path.join(this_file_dir(), "results.svg")) - file not created on CI client, how can we do this?
+    # check that a results file was created in the results directory
+    assert os.path.exists(os.path.join(this_file_dir(), "results.svg"))
     # remove the file to keep the test directory clean
-    # os.remove(os.path.join(this_file_dir(), "results.svg"))
-    # assert not os.path.exists(os.path.join(this_file_dir(), "results.svg"))
+    os.remove(os.path.join(this_file_dir(), "results.svg"))
+    assert not os.path.exists(os.path.join(this_file_dir(), "results.svg"))
+
+
+@pytest.mark.unit
+def test_main():
+    stream = StringIO()
+    sys.stdout = stream
+    m = main()
+    sys.stdout = sys.__stdout__
+
+    output = """Scaling flowsheet variables
+overwriting mole_frac lower bound, set to 0 to remove warnings
+Scaling flowsheet constraints\nCalculating scaling factors
+
+Starting ROM initialization
+ROM initialization completed
+Loading solved model
+PFD Results Created
+"""
+
+    assert isinstance(m, pyo.ConcreteModel)
+    assert output in stream.getvalue()
+
+    # check that a results file was created in the results directory
+    assert os.path.exists(os.path.join(this_file_dir(), "NGFC_results.svg"))
+    # remove the file to keep the test directory clean
+    os.remove(os.path.join(this_file_dir(), "NGFC_results.svg"))
+    assert not os.path.exists(os.path.join(this_file_dir(), "NGFC_results.svg"))
