@@ -495,13 +495,14 @@ def test_pfd_result(m):
 @pytest.mark.unit
 def test_main():
 
+    jsontestdir = this_file_dir()
     with TempfileManager.new_context() as tf:
         dname = tf.mkdtemp()
         assert os.path.isdir(dname)
 
         stream = StringIO()
         sys.stdout = stream
-        m = main(dname)
+        m = main(dname, jsontestdir)
         sys.stdout = sys.__stdout__
 
         output = """Scaling flowsheet variables
