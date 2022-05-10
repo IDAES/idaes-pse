@@ -277,7 +277,12 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         elif u.path == "/fs":
             self._get_fs(id_)
         elif u.path == "/setting":
-            setting_key_ = queries.get("setting_key", None)
+            setting_key_ = queries.get("setting_key", None) if queries else None
+            if setting_key_ is None:
+                self.send_error(
+                    400, message=f"Query parameter 'setting_key' is required for '{u.path}'"
+                )
+                return
             self._get_setting(setting_key_)
         else:
             # Try to serve a file
