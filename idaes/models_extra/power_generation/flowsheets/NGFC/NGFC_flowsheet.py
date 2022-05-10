@@ -1749,7 +1749,7 @@ def main(resultsdir=None, jsontestdir=None):
             for i in range(1, 10):  # keep looping until condition is met
                 solve_iteration += 1
                 print('Solve # ', solve_iteration)
-                res = solver.solve(m.fs.air_compressor_s2, tee=True)
+                res = solver.solve(m, tee=True)
                 if 'Optimal Solution Found' in res.solver.message:
                     break
             ms.to_json(m, fname=solnpath)
@@ -1779,7 +1779,7 @@ def main(resultsdir=None, jsontestdir=None):
         for i in range(1, 10):  # keep looping until condition is met
             solve_iteration += 1
             print('Solve # ', solve_iteration)
-            res = solver.solve(m.fs.air_compressor_s2, tee=True)
+            res = solver.solve(m, tee=True)
             if 'Optimal Solution Found' in res.solver.message:
                 break
 
