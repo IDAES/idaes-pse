@@ -1377,6 +1377,7 @@ class TestIAPWS(object):
     @pytest.mark.unit
     def test_get_stream_table_contents(self, iapws):
         stable = iapws.fs.unit._get_stream_table_contents()
+        print(stable.dtypes)
 
         expected = {
             'Units': {
