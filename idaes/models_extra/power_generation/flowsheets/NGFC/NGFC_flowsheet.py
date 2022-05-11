@@ -1704,7 +1704,7 @@ def pfd_result(outfile, m, df):
         svg_tag(tags=None, svg=f, tag_group=tag_group, outfile=outfile)
 
 
-def main(resultsdir=None, jsontestdir=None):
+def main(resultsdir="", jsontestdir=""):
     # create model and flowsheet
     m = pyo.ConcreteModel(name="NGFC without carbon capture")
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1712,12 +1712,9 @@ def main(resultsdir=None, jsontestdir=None):
     reinit = False  # switch to True to re-initialize and re-solve
     resolve = False  # switch to True to re-solve only (for debugging)
 
-    if jsontestdir is not None:  # solution exists and should be loaded for test
-        initpath = os.path.join(jsontestdir, "NGFC_flowsheet_init.json.gz")
-        solnpath = os.path.join(jsontestdir, "NGFC_flowsheet_solution.json.gz")
-    else:  # assume files exist in local directory
-        initpath = "NGFC_flowsheet_init.json.gz"
-        solnpath = "NGFC_flowsheet_solution.json.gz"
+    initpath = os.path.join(jsontestdir, "NGFC_flowsheet_init.json.gz")
+    solnpath = os.path.join(jsontestdir, "NGFC_flowsheet_solution.json.gz")
+
     if os.path.exists(initpath) and reinit is False:
         # already initialized, can build model and load results from json
         build_power_island(m)
@@ -1788,10 +1785,7 @@ def main(resultsdir=None, jsontestdir=None):
     # uncomment to report results
     make_stream_dict(m)
     df = create_stream_table_dataframe(streams=m._streams, orient="index")
-    if resultsdir is not None:
-        pfd_result(os.path.join(resultsdir, "NGFC_results.svg"), m, df)
-    else:  # save to current directory
-        pfd_result("NGFC_results.svg", m, df)
+    pfd_result(os.path.join(resultsdir, "NGFC_results.svg"), m, df)
     print('PFD Results Created')
 
     return m

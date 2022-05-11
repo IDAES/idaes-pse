@@ -87,7 +87,7 @@ def test_build(m):
     assert hasattr(m.fs.reformer, "deltaP")
 
 
-@pytest.mark.unit
+@pytest.mark.component
 def test_scaling(m):
 
     # check that less than 10% of model variables are badly scaled pre-solve
@@ -208,143 +208,26 @@ def test_scaling(m):
 def test_initialize_power_island(m):
     initialize_power_island(m)
 
+    # a few checks to make sure this method worked as expected
     assert pyo.value(m.fs.cathode.inlet.flow_mol[0]) == \
         pytest.approx(34168, rel=1e-3)
     assert pyo.value(m.fs.cathode.inlet.temperature[0]) == \
         pytest.approx(892, rel=1e-3)
     assert pyo.value(m.fs.cathode.inlet.pressure[0]) == \
         pytest.approx(105490, rel=1e-3)
-    assert pyo.value(m.fs.cathode.inlet.mole_frac_comp[0, "H2O"]) == \
-        pytest.approx(0.0109, rel=1e-3)
-    assert pyo.value(m.fs.cathode.inlet.mole_frac_comp[0, "CO2"]) == \
-        pytest.approx(0.0003073, rel=1e-3)
-    assert pyo.value(m.fs.cathode.inlet.mole_frac_comp[0, "N2"]) == \
-        pytest.approx(0.8099, rel=1e-3)
-    assert pyo.value(m.fs.cathode.inlet.mole_frac_comp[0, "O2"]) == \
-        pytest.approx(0.1690, rel=1e-3)
-    assert pyo.value(m.fs.cathode.inlet.mole_frac_comp[0, "Ar"]) == \
-        pytest.approx(0.009880, rel=1e-3)
-
-    assert pyo.value(m.fs.anode.inlet.flow_mol[0]) == \
-        pytest.approx(5898, rel=1e-3)
-    assert pyo.value(m.fs.anode.inlet.temperature[0]) == \
-        pytest.approx(1413, rel=1e-3)
-    assert pyo.value(m.fs.anode.inlet.pressure[0]) == \
-        pytest.approx(186611, rel=1e-3)
-    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "CH4"]) == \
-        pytest.approx(0.2382, rel=1e-3)
-    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "CO"]) == \
-        pytest.approx(0.3772, rel=1e-3)
-    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "CO2"]) == \
-        pytest.approx(0.2585, rel=1e-3)
-    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "H2"]) == \
-        pytest.approx(0.3433, rel=1e-3)
-    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "H2O"]) == \
-        pytest.approx(0.2422, rel=1e-3)
-    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "N2"]) == \
-        pytest.approx(0.2880, rel=1e-3)
-    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "O2"]) == \
-        pytest.approx(0.3086, rel=1e-3)
-    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "Ar"]) == \
-        pytest.approx(0.2871, rel=1e-3)
-
-    assert pyo.value(m.fs.anode.lagrange_mult[0, "C"]) == \
-        pytest.approx(26137, rel=1e-3)
-    assert pyo.value(m.fs.anode.lagrange_mult[0, "H"]) == \
-        pytest.approx(75542, rel=1e-3)
-    assert pyo.value(m.fs.anode.lagrange_mult[0, "O"]) == \
-        pytest.approx(304676, rel=1e-3)
-
-    assert pyo.value(m.fs.anode.outlet.mole_frac_comp[0, "O2"]) == \
-        pytest.approx(8.8565e-12, rel=1e-3)
-
-    assert pyo.value(m.fs.prereformer.gibbs_scaling) == \
-        pytest.approx(1e-4, rel=1e-3)
-
-    assert pyo.value(m.fs.prereformer.lagrange_mult[0, "C"]) == \
-        pytest.approx(7764, rel=1e-3)
-    assert pyo.value(m.fs.prereformer.lagrange_mult[0, "H"]) == \
-        pytest.approx(66902, rel=1e-3)
-    assert pyo.value(m.fs.prereformer.lagrange_mult[0, "O"]) == \
-        pytest.approx(301919, rel=1e-3)
-
-    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "O2"]) == \
-        pytest.approx(0, 1e-3)
-    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "Ar"]) == \
-        pytest.approx(0.07344, rel=1e-3)
-    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "C2H6"]) == \
-        pytest.approx(7.0975e-7, rel=1e-3)
-    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "C3H8"]) == \
-        pytest.approx(0, 1e-3)
-    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "C4H10"]) == \
-        pytest.approx(0, 1e-3)
 
 
 @pytest.mark.integration
 def test_initialize_reformer(m):
     initialize_reformer(m)
 
+    # a few checks to make sure this method worked as expected
     assert pyo.value(m.fs.reformer.inlet.flow_mol[0]) == \
         pytest.approx(3879, rel=1e-3)  # mol/s
     assert pyo.value(m.fs.reformer.inlet.temperature[0]) == \
         pytest.approx(1251, rel=1e-3)  # K
     assert pyo.value(m.fs.reformer.inlet.pressure[0]) == \
         pytest.approx(5555795, rel=1e-3)  # Pa
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "CH4"]) == \
-        pytest.approx(0.47992, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "C2H6"]) == \
-        pytest.approx(0.46836, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "C3H8"]) == \
-        pytest.approx(0.45690, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "C4H10"]) == \
-        pytest.approx(0.44557, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "H2"]) == \
-        pytest.approx(0.49154, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "CO"]) == \
-        pytest.approx(0.47632, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "CO2"]) == \
-        pytest.approx(0.45510, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "H2O"]) == \
-        pytest.approx(0.47011, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "N2"]) == \
-        pytest.approx(0.52541, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "O2"]) == \
-        pytest.approx(0.45772, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "Ar"]) == \
-        pytest.approx(0.52542, rel=1e-3)
-
-    assert pyo.value(m.fs.reformer.lagrange_mult[0, "C"]) == \
-        pytest.approx(-25493, rel=1e-3)
-    assert pyo.value(m.fs.reformer.lagrange_mult[0, "H"]) == \
-        pytest.approx(83053, rel=1e-3)
-    assert pyo.value(m.fs.reformer.lagrange_mult[0, "O"]) == \
-        pytest.approx(370367, rel=1e-3)
-
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "O2"]) == \
-        pytest.approx(0, rel=1e-3)
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "Ar"]) == \
-        pytest.approx(0.062046, rel=1e-3)
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "CH4"]) == \
-        pytest.approx(0.32244, rel=1e-3)
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "C2H6"]) == \
-        pytest.approx(0.000140979, rel=1e-3)
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "C3H8"]) == \
-        pytest.approx(2.2842e-7, rel=1e-3)
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "C4H10"]) == \
-        pytest.approx(3.460668e-10, rel=1e-3)
-
-    assert pyo.value(m.fs.reformer.lagrange_mult[(0, "H")]) == \
-        pytest.approx(83053, rel=1e-3)
-    assert pyo.value(m.fs.prereformer.lagrange_mult[(0, "H")]) == \
-        pytest.approx(66902, rel=1e-3)
-    assert pyo.value(m.fs.anode.lagrange_mult[(0, "H")]) == \
-        pytest.approx(75542, rel=1e-3)
-    assert pyo.value(m.fs.bypass_rejoin.outlet.temperature[0]) == \
-        pytest.approx(1019, rel=1e-3)
-    assert pyo.value(m.fs.anode_hx.shell_outlet.temperature[0]) == \
-        pytest.approx(869, rel=1e-3)
-    assert pyo.value(m.fs.cathode_hx.shell_outlet.temperature[0]) == \
-        pytest.approx(475.8, rel=1e-3)
 
 
 @pytest.mark.unit
@@ -417,7 +300,151 @@ def test_solve(m):
 
 
 @pytest.mark.unit
-def test_json_load(m):
+def test_json_load_init(m):
+    fname = os.path.join(
+        os.path.join(os.path.dirname(this_file_dir()), "NGFC"),
+        "NGFC_flowsheet_init.json.gz",
+    )
+
+    ms.from_json(m, fname=fname)
+
+    # check values
+    assert pyo.value(m.fs.cathode.inlet.flow_mol[0]) == \
+        pytest.approx(34168, rel=1e-3)
+    assert pyo.value(m.fs.cathode.inlet.temperature[0]) == \
+        pytest.approx(892, rel=1e-3)
+    assert pyo.value(m.fs.cathode.inlet.pressure[0]) == \
+        pytest.approx(105490, rel=1e-3)
+    assert pyo.value(m.fs.cathode.inlet.mole_frac_comp[0, "H2O"]) == \
+        pytest.approx(0.0109, rel=1e-3)
+    assert pyo.value(m.fs.cathode.inlet.mole_frac_comp[0, "CO2"]) == \
+        pytest.approx(0.0003073, rel=1e-3)
+    assert pyo.value(m.fs.cathode.inlet.mole_frac_comp[0, "N2"]) == \
+        pytest.approx(0.8099, rel=1e-3)
+    assert pyo.value(m.fs.cathode.inlet.mole_frac_comp[0, "O2"]) == \
+        pytest.approx(0.1690, rel=1e-3)
+    assert pyo.value(m.fs.cathode.inlet.mole_frac_comp[0, "Ar"]) == \
+        pytest.approx(0.009880, rel=1e-3)
+
+    assert pyo.value(m.fs.anode.inlet.flow_mol[0]) == \
+        pytest.approx(5898, rel=1e-3)
+    assert pyo.value(m.fs.anode.inlet.temperature[0]) == \
+        pytest.approx(1413, rel=1e-3)
+    assert pyo.value(m.fs.anode.inlet.pressure[0]) == \
+        pytest.approx(186611, rel=1e-3)
+    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "CH4"]) == \
+        pytest.approx(0.2382, rel=1e-3)
+    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "CO"]) == \
+        pytest.approx(0.3772, rel=1e-3)
+    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "CO2"]) == \
+        pytest.approx(0.2585, rel=1e-3)
+    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "H2"]) == \
+        pytest.approx(0.3433, rel=1e-3)
+    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "H2O"]) == \
+        pytest.approx(0.2422, rel=1e-3)
+    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "N2"]) == \
+        pytest.approx(0.2880, rel=1e-3)
+    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "O2"]) == \
+        pytest.approx(0.3086, rel=1e-3)
+    assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "Ar"]) == \
+        pytest.approx(0.2871, rel=1e-3)
+
+    assert pyo.value(m.fs.anode.lagrange_mult[0, "C"]) == \
+        pytest.approx(26137, rel=1e-3)
+    assert pyo.value(m.fs.anode.lagrange_mult[0, "H"]) == \
+        pytest.approx(75542, rel=1e-3)
+    assert pyo.value(m.fs.anode.lagrange_mult[0, "O"]) == \
+        pytest.approx(304676, rel=1e-3)
+
+    assert pyo.value(m.fs.anode.outlet.mole_frac_comp[0, "O2"]) == \
+        pytest.approx(8.8565e-12, rel=1e-3)
+
+    assert pyo.value(m.fs.prereformer.gibbs_scaling) == \
+        pytest.approx(1e-4, rel=1e-3)
+
+    assert pyo.value(m.fs.prereformer.lagrange_mult[0, "C"]) == \
+        pytest.approx(7764, rel=1e-3)
+    assert pyo.value(m.fs.prereformer.lagrange_mult[0, "H"]) == \
+        pytest.approx(66902, rel=1e-3)
+    assert pyo.value(m.fs.prereformer.lagrange_mult[0, "O"]) == \
+        pytest.approx(301919, rel=1e-3)
+
+    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "O2"]) == \
+        pytest.approx(0, rel=1e-3)
+    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "Ar"]) == \
+        pytest.approx(0.07344, rel=1e-3)
+    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "C2H6"]) == \
+        pytest.approx(7.0975e-7, rel=1e-3)
+    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "C3H8"]) == \
+        pytest.approx(0, rel=1e-3)
+    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "C4H10"]) == \
+        pytest.approx(0, rel=1e-3)
+
+    assert pyo.value(m.fs.reformer.inlet.flow_mol[0]) == \
+        pytest.approx(3879, rel=1e-3)  # mol/s
+    assert pyo.value(m.fs.reformer.inlet.temperature[0]) == \
+        pytest.approx(1251, rel=1e-3)  # K
+    assert pyo.value(m.fs.reformer.inlet.pressure[0]) == \
+        pytest.approx(5555795, rel=1e-3)  # Pa
+    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "CH4"]) == \
+        pytest.approx(0.47992, rel=1e-3)
+    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "C2H6"]) == \
+        pytest.approx(0.46836, rel=1e-3)
+    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "C3H8"]) == \
+        pytest.approx(0.45690, rel=1e-3)
+    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "C4H10"]) == \
+        pytest.approx(0.44557, rel=1e-3)
+    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "H2"]) == \
+        pytest.approx(0.49154, rel=1e-3)
+    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "CO"]) == \
+        pytest.approx(0.47632, rel=1e-3)
+    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "CO2"]) == \
+        pytest.approx(0.45510, rel=1e-3)
+    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "H2O"]) == \
+        pytest.approx(0.47011, rel=1e-3)
+    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "N2"]) == \
+        pytest.approx(0.52541, rel=1e-3)
+    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "O2"]) == \
+        pytest.approx(0.45772, rel=1e-3)
+    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "Ar"]) == \
+        pytest.approx(0.52542, rel=1e-3)
+
+    assert pyo.value(m.fs.reformer.lagrange_mult[0, "C"]) == \
+        pytest.approx(-25493, rel=1e-3)
+    assert pyo.value(m.fs.reformer.lagrange_mult[0, "H"]) == \
+        pytest.approx(83053, rel=1e-3)
+    assert pyo.value(m.fs.reformer.lagrange_mult[0, "O"]) == \
+        pytest.approx(370367, rel=1e-3)
+
+    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "O2"]) == \
+        pytest.approx(0, rel=1e-3)
+    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "Ar"]) == \
+        pytest.approx(0.062046, rel=1e-3)
+    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "CH4"]) == \
+        pytest.approx(0.32244, rel=1e-3)
+    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "C2H6"]) == \
+        pytest.approx(0.000140979, rel=1e-3)
+    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "C3H8"]) == \
+        pytest.approx(2.2842e-7, rel=1e-3)
+    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "C4H10"]) == \
+        pytest.approx(3.460668e-10, rel=1e-3)
+
+    assert pyo.value(m.fs.reformer.lagrange_mult[(0, "H")]) == \
+        pytest.approx(83053, rel=1e-3)
+    assert pyo.value(m.fs.prereformer.lagrange_mult[(0, "H")]) == \
+        pytest.approx(66902, rel=1e-3)
+    assert pyo.value(m.fs.anode.lagrange_mult[(0, "H")]) == \
+        pytest.approx(75542, rel=1e-3)
+    assert pyo.value(m.fs.bypass_rejoin.outlet.temperature[0]) == \
+        pytest.approx(1019, rel=1e-3)
+    assert pyo.value(m.fs.anode_hx.shell_outlet.temperature[0]) == \
+        pytest.approx(869, rel=1e-3)
+    assert pyo.value(m.fs.cathode_hx.shell_outlet.temperature[0]) == \
+        pytest.approx(475.8, rel=1e-3)
+
+
+@pytest.mark.unit
+def test_json_load_solution(m):
     fname = os.path.join(
         os.path.join(os.path.dirname(this_file_dir()), "NGFC"),
         "NGFC_flowsheet_solution.json.gz",
@@ -426,15 +453,15 @@ def test_json_load(m):
     ms.from_json(m, fname=fname)
 
     assert pyo.value(m.fs.cathode.ion_outlet.flow_mol[0]) == \
-        pytest.approx(1670, 1e-5)
+        pytest.approx(1670, rel=1e-3)
     assert pyo.value(m.fs.reformer_recuperator.area) == \
-        pytest.approx(2328, 1e-3)
+        pytest.approx(2328, rel=1e-3)
     assert pyo.value(m.fs.anode.heat_duty[0]) == \
-        pytest.approx(-871373774, 1e-5)
+        pytest.approx(-871373774, rel=1e-3)
     assert pyo.value(m.fs.CO2_emissions) == \
-        pytest.approx(300, 1e-5)
+        pytest.approx(300, rel=1e-3)
     assert pyo.value(m.fs.net_power) == \
-        pytest.approx(660, 1e-5)
+        pytest.approx(660, rel=1e-3)
 
 
 @pytest.mark.unit
@@ -496,6 +523,11 @@ def test_pfd_result(m):
 def test_main():
 
     jsontestdir = this_file_dir()
+    assert os.path.exists(os.path.join(jsontestdir,
+                                       "NGFC_flowsheet_init.json.gz"))
+    assert os.path.exists(os.path.join(jsontestdir,
+                                       "NGFC_flowsheet_solution.json.gz"))
+
     with TempfileManager.new_context() as tf:
         dname = tf.mkdtemp()
         assert os.path.isdir(dname)
@@ -507,7 +539,8 @@ def test_main():
 
         output = """Scaling flowsheet variables
 overwriting mole_frac lower bound, set to 0 to remove warnings
-Scaling flowsheet constraints\nCalculating scaling factors
+Scaling flowsheet constraints
+Calculating scaling factors
 
 Starting ROM initialization
 ROM initialization completed
