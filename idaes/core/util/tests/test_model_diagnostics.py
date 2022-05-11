@@ -18,6 +18,8 @@ import pytest
 
 # Need to update
 import pyomo.environ as pyo
+import numpy as np
+import idaes.core.util.scaling as iscale
 
 # TODO: Add pyomo.dae test case
 """
@@ -26,9 +28,174 @@ from pyomo.dae import ContinuousSet, DerivativeVar
 """
 
 # Need to update
-from idaes.core.util.model_diagnostics import *
+from idaes.core.util.model_diagnostics import DegeneracyHunter
 
-# Author: Alex Dowling
+__author__ = "Alex Dowling, Douglas Allan"
+
+
+@pytest.fixture()
+def dummy_problem():
+    m = pyo.ConcreteModel()
+
+    m.I = pyo.Set(initialize=[i for i in range(5)])
+
+    m.x = pyo.Var(m.I, initialize=1.0)
+
+    diag = [100, 1, 10, 0.1, 5]
+    out = [1, 1, 1, 1, 1]
+
+    @m.Constraint(m.I)
+    def dummy_eqn(b, i):
+        return out[i] == diag[i] * m.x[i]
+
+    m.obj = pyo.Objective(expr=0)
+    return m
+
+
+@pytest.fixture()
+def u_exp():
+    return np.array(
+        [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 0, 1, 0]]
+    )
+
+
+@pytest.fixture()
+def s_exp():
+    return np.array([0.1, 1, 5, 10])
+
+
+@pytest.fixture()
+def v_exp():
+    return np.array(
+        [[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1], [0, 0, 1, 0, 0]]
+    ).T
+
+
+@pytest.mark.unit
+def test_dense_svd(dummy_problem, u_exp, s_exp, v_exp):
+    m = dummy_problem
+    dh = DegeneracyHunter(m)
+    dh.svd_analysis(dense=True)
+    assert dh.s == pytest.approx(s_exp, 1e-6)
+    assert u_exp == pytest.approx(np.abs(dh.u), 1e-6)
+    assert v_exp == pytest.approx(np.abs(dh.v), 1e-6)
+
+
+@pytest.mark.unit
+def test_sparse_svd(dummy_problem, u_exp, s_exp, v_exp):
+    m = dummy_problem
+    dh = DegeneracyHunter(m)
+    dh.svd_analysis()
+    assert dh.s == pytest.approx(s_exp, 1e-6)
+    assert u_exp == pytest.approx(np.abs(dh.u), 1e-6)
+    assert v_exp == pytest.approx(np.abs(dh.v), 1e-6)
+
+
+@pytest.mark.unit
+def test_scaling(dummy_problem, u_exp, s_exp, v_exp):
+    ssf = iscale.set_scaling_factor
+    cst = iscale.constraint_scaling_transform
+    m = dummy_problem
+    cst(m.dummy_eqn[0], 1e-2)
+    ssf(m.x[1], 1e3)
+    cst(m.dummy_eqn[1], 1e3)
+    cst(m.dummy_eqn[2], 1e-1)
+    ssf(m.x[3], 1e-3)
+    cst(m.dummy_eqn[3], 1e2)
+    cst(m.dummy_eqn[4], 0.2)
+
+    dh = DegeneracyHunter(m)
+    dh.svd_analysis(dense=False)
+    assert dh.s == pytest.approx(np.ones((4,)), 1e-6)
+    dh.svd_analysis(dense=True)
+    assert dh.s == pytest.approx(np.ones((4,)), 1e-6)
+
+
+@pytest.mark.unit
+def test_underdetermined_variables_and_constraints(dummy_problem, capsys):
+    m = dummy_problem
+    dh = DegeneracyHunter(m)
+
+    dh.svd_analysis(n_sv=3)
+    captured = capsys.readouterr()
+    assert captured.out == "Computing the 3 smallest singular value(s)\n"
+
+    dh.underdetermined_variables_and_constraints()
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "Column:    Variable\n3: x[3]\n\nRow:    " "Constraint\n3: dummy_eqn[3]\n"
+    )
+
+    dh.underdetermined_variables_and_constraints(n_calc=3)
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "Column:    Variable\n4: x[4]\n\nRow:    " "Constraint\n4: dummy_eqn[4]\n"
+    )
+    with pytest.raises(
+        ValueError,
+        match="User wanted constraints and variables associated "
+        "with the 4-th smallest singular value, "
+        "but only 3 small singular values have been "
+        "calculated. Run svd_analysis again and specify "
+        "n_sv>=4.",
+    ):
+        dh.underdetermined_variables_and_constraints(n_calc=4)
+
+    dh.underdetermined_variables_and_constraints(tol=2)
+    captured = capsys.readouterr()
+    assert captured.out == ("Column:    Variable\n\nRow:    Constraint\n")
+
+
+@pytest.mark.unit
+def test_underdetermined_calls_svd_analysis(dummy_problem, capsys):
+    m = dummy_problem
+    dh = DegeneracyHunter(m)
+
+    dh.underdetermined_variables_and_constraints(n_calc=1)
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "Computing the 4 smallest singular value(s)\n"
+        "Column:    Variable\n3: x[3]\n\nRow:    "
+        "Constraint\n3: dummy_eqn[3]\n"
+    )
+
+
+@pytest.mark.unit
+def test_sv_value_error(dummy_problem):
+    m = dummy_problem
+    dh = DegeneracyHunter(m)
+    with pytest.raises(
+        ValueError,
+        match="For a 5 by 5 system, svd_analysis can compute at most 4 "
+        "singular values and vectors, but 5 were called for.",
+    ):
+        dh.svd_analysis(n_sv=5)
+    with pytest.raises(ValueError, match="Nonsense value for n_sv=-1 received."):
+        dh.svd_analysis(n_sv=-1)
+
+
+@pytest.mark.unit
+def test_single_eq_error(capsys):
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var(initialize=1)
+    m.con = pyo.Constraint(expr=(2 * m.x == 1))
+    m.obj = pyo.Objective(expr=0)
+
+    dh = DegeneracyHunter(m)
+    with pytest.raises(
+        ValueError,
+        match="Model needs at least 2 equality constraints to " "perform svd_analysis.",
+    ):
+        dh.svd_analysis()
+
+    dh.check_rank_equality_constraints()
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "\nChecking rank of Jacobian of equality constraints...\n"
+        "Model contains 1 equality constraints and 1 variables.\n"
+        "Only singular value: 2.0\n"
+    )
+
 
 # This was from
 # @pytest.fixture()
@@ -244,6 +411,8 @@ def test_problem2_with_degenerate_constraint():
 
     # Check the rank
     n_rank_deficient = dh2.check_rank_equality_constraints()
+
+    # Test DH with SVD
 
     assert n_rank_deficient == 1
 

@@ -11,22 +11,18 @@
 # license information.
 #################################################################################
 
-import importlib
+try:
+    # Pyton 3.8+
+    from importlib import resources
+except ImportError:
+    # Python 3.7
+    import importlib_resources as resources
 from numbers import Number
 from pathlib import Path
 from typing import Dict, Union, List
 
 import pytest
 import pandas as pd
-
-
-prescient_simulator = pytest.importorskip("prescient.simulator", reason="prescient (optional dependency) not available")
-
-
-@pytest.fixture(scope="module")
-def base_dir() -> Path:
-    pkg_init_path = Path(importlib.util.find_spec("idaes.tests.prescient").origin)
-    return pkg_init_path.parent
 
 
 # define custom type for type hinting
@@ -37,8 +33,13 @@ class Test5Bus:
     "Simple test using 5bus use case"
 
     @pytest.fixture
-    def data_path(self, base_dir: Path) -> Path:
-        return base_dir / "5bus"
+    def data_path(self) -> Path:
+        # NOTE here we want the path to the entire 5bus directory
+        # we need to specify __init__.py as a workaround for Python 3.9,
+        # where importlib.resources.path() requires the resource to be a file
+        # directories are not supported and will raise an error if attempted
+        with resources.path("idaes.tests.prescient.5bus", "__init__.py") as pkg_file:
+            return Path(pkg_file).parent
 
     @pytest.mark.unit
     def test_data_path_available(self, data_path: Path):
@@ -78,7 +79,9 @@ class Test5Bus:
 
     @pytest.fixture
     def run_simulator(self, prescient_options: PrescientOptions) -> None:
-        from prescient.simulator import Prescient
+        Prescient = pytest.importorskip(
+            "prescient.simulator.Prescient", 
+            reason="Prescient (optional dependency) not available")
 
         sim = Prescient()
         sim.simulate(**prescient_options)
