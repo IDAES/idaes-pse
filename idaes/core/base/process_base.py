@@ -287,7 +287,12 @@ class ProcessBlockData(_BlockData):
                     prefix + tab,
                     ((k, v) for k, v in performance["vars"].items()),
                     ("Value", "Units", "Fixed", "Bounds"),
-                    lambda k, v: ["{:#.5g}".format(report_quantity(v).m), report_quantity(v).u, v.fixed, v.bounds],
+                    lambda k, v: [
+                        "{:#.5g}".format(report_quantity(v).m),
+                        report_quantity(v).u,
+                        v.fixed,
+                        v.bounds,
+                    ],
                 )
 
             if "exprs" in performance.keys() and len(performance["exprs"]) > 0:
@@ -298,8 +303,14 @@ class ProcessBlockData(_BlockData):
                     ostream,
                     prefix + tab,
                     ((k, v) for k, v in performance["exprs"].items()),
-                    ("Value", "Units",),
-                    lambda k, v: ["{:#.5g}".format(report_quantity(v).m), report_quantity(v).u],
+                    (
+                        "Value",
+                        "Units",
+                    ),
+                    lambda k, v: [
+                        "{:#.5g}".format(report_quantity(v).m),
+                        report_quantity(v).u,
+                    ],
                 )
 
             if "params" in performance.keys() and len(performance["params"]) > 0:
@@ -311,7 +322,11 @@ class ProcessBlockData(_BlockData):
                     prefix + tab,
                     ((k, v) for k, v in performance["params"].items()),
                     ("Value", "Units", "Mutable"),
-                    lambda k, v: [report_quantity(v).m, report_quantity(v).u, not v.is_constant()],
+                    lambda k, v: [
+                        report_quantity(v).m,
+                        report_quantity(v).u,
+                        not v.is_constant(),
+                    ],
                 )
 
         if stream_table is not None:

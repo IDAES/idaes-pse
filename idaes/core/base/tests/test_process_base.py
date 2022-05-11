@@ -113,13 +113,11 @@ def test_report_perf_dict():
 
     def dummy_performance(self, time_point):
         return {
-            "vars": {
-                "Scalar Var": m.b.sv,
-                "Indexed Var 1": m.b.iv[1]},
-            "params": {
-                "Param": m.b.p},
-            "exprs": {
-                "Expression": m.b.e}}
+            "vars": {"Scalar Var": m.b.sv, "Indexed Var 1": m.b.iv[1]},
+            "params": {"Param": m.b.p},
+            "exprs": {"Expression": m.b.e},
+        }
+
     m.b._get_performance_contents = types.MethodType(dummy_performance, m.b)
 
     stream = StringIO()
