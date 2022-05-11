@@ -57,7 +57,6 @@ def _as_quantity(x):
     return value(x) * unit._get_pint_unit()
 
 
-@pytest.mark.unit
 class TestBTIdeal(PropertyTestHarness):
     def configure(self):
         self.prop_pack = GenericParameterBlock
