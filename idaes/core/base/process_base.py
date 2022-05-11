@@ -325,10 +325,10 @@ class ProcessBlockData(_BlockData):
             )
         ostream.write("\n" + "=" * max_str_length + "\n")
 
-    def _get_performance_contents(self, time_point):
+    def _get_performance_contents(self, time_point=0):
         return None
 
-    def _get_stream_table_contents(self, time_point):
+    def _get_stream_table_contents(self, time_point=0):
         return None
 
     def serialize_contents(self, time_point=0):
